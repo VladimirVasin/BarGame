@@ -9,11 +9,16 @@ Assets/
     BarInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
+    PC_Renderer.asset             active PC PS1 renderer feature
   Resources/
     Materials/
       CityNoirEmission.mat
+      Ps1Composite.mat
+    Rendering/
+      Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      Ps1Composite.shader         average, perceptual RGB555 blend, point upscale
     Audio/
       CityMusic/
         city_theme.*  looping City theme
@@ -29,7 +34,8 @@ Assets/
   Scripts/
     Runtime/
       Core/          bootstrap, city root, session, transitions
-      Audio/         scene-local looping City and BarInterior themes
+      Audio/         filtered scene themes, generated retro SFX and ambience
+      Rendering/     PC RenderGraph PS1 world composite and settings
       Map/           ordered road-route model and deterministic pathfinding
       World/         layout, graph generation, world/night, local fog and halos
       Player/        motor, factory, 13-part rig, billboard, camera
@@ -37,11 +43,11 @@ Assets/
       Scenes/        generated bar interior
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
-      UI/            prompts, HUD, cocktail presentation and modal city map
-    Editor/          scene/build helpers and reproducible noir asset setup
+      UI/            crisp retro theme, prompts, HUD, cocktail view and city map
+    Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout, roads, night, cocktails, session, localization
-    PlayMode/        presentation, cocktail modal and complete scene flow
+    EditMode/        layout, roads, night, cocktails, session, retro UI/audio
+    PlayMode/        PS1 GPU presentation, cocktail modal and complete flow
 Packages/
 ProjectSettings/
 ```
@@ -64,4 +70,8 @@ player -> PlayerInteractor -> BarEntrance -> SceneTransitionService
                             -> pending Wasted -> intoxication effects
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
+scene root -> matching procedural ambience
+input/gameplay events -> RetroAudioService -> pooled generated SFX
+URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
+world composite -> crisp retro IMGUI overlay
 ```

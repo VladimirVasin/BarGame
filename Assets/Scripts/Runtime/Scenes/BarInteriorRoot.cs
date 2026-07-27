@@ -38,7 +38,9 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public PlayerRuntime Player { get; private set; }
+        public RetroAudioService Audio { get; private set; }
         public BarMusicPlayer Music { get; private set; }
+        public BarAmbiencePlayer Ambience { get; private set; }
         public BarCounterStation CounterStation { get; private set; }
         public CocktailMinigameController CocktailMinigame
         {
@@ -60,11 +62,17 @@ namespace BarPromenade
 
             GameSessionState.MarkBarVisited(GameSessionState.ActiveBarId);
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
+            Audio = RetroAudioService.EnsureInstalled();
             BuildRoom();
 
             GameObject musicObject = new GameObject("Bar Music");
             musicObject.transform.SetParent(transform, false);
             Music = musicObject.AddComponent<BarMusicPlayer>();
+            GameObject ambienceObject =
+                new GameObject("Bar Ambience");
+            ambienceObject.transform.SetParent(transform, false);
+            Ambience =
+                ambienceObject.AddComponent<BarAmbiencePlayer>();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

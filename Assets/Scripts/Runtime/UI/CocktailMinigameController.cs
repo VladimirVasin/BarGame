@@ -254,6 +254,7 @@ namespace BarPromenade
 
             phaseElapsed = 0f;
             phaseDuration = 0f;
+            RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
 
@@ -280,6 +281,7 @@ namespace BarPromenade
             BeginPhase(
                 CocktailPresentationPhase.Pouring,
                 BasePourDuration);
+            RetroAudio.Play(RetroSfxId.Pour);
             return true;
         }
 
@@ -317,6 +319,7 @@ namespace BarPromenade
             BeginPhase(
                 CocktailPresentationPhase.Pouring,
                 IngredientPourDuration);
+            RetroAudio.Play(RetroSfxId.Pour);
             return true;
         }
 
@@ -342,20 +345,35 @@ namespace BarPromenade
             }
 
             int normalizedDirection = direction < 0 ? -1 : 1;
+            int previousIndex;
+            int currentIndex;
             if (PresentationPhase ==
                 CocktailPresentationPhase.ChoosingBase)
             {
+                previousIndex = HighlightedBaseIndex;
                 HighlightedBaseIndex = Wrap(
                     HighlightedBaseIndex + normalizedDirection,
                     bases.Length);
+                currentIndex = HighlightedBaseIndex;
             }
             else if (PresentationPhase ==
                      CocktailPresentationPhase.Mixing &&
                      offers.Length > 0)
             {
+                previousIndex = HighlightedIngredientIndex;
                 HighlightedIngredientIndex = FindNextAvailableOffer(
                     HighlightedIngredientIndex,
                     normalizedDirection);
+                currentIndex = HighlightedIngredientIndex;
+            }
+            else
+            {
+                return;
+            }
+
+            if (currentIndex != previousIndex)
+            {
+                RetroAudio.Play(RetroSfxId.UiMove);
             }
         }
 
@@ -457,6 +475,12 @@ namespace BarPromenade
 
         public void Cancel()
         {
+            if (!IsOpen)
+            {
+                return;
+            }
+
+            RetroAudio.Play(RetroSfxId.UiCancel);
             Close();
         }
 
@@ -483,6 +507,7 @@ namespace BarPromenade
                 CocktailPresentationPhase.RoundResult &&
                 IsConfirmPressed())
             {
+                RetroAudio.Play(RetroSfxId.UiConfirm);
                 CompleteRoundResult();
                 return;
             }
@@ -491,6 +516,7 @@ namespace BarPromenade
                 CocktailPresentationPhase.FinalResult &&
                 IsConfirmPressed())
             {
+                RetroAudio.Play(RetroSfxId.UiConfirm);
                 Close();
                 return;
             }
@@ -547,6 +573,7 @@ namespace BarPromenade
             }
             else
             {
+                RetroAudio.Play(RetroSfxId.Clink);
                 PresentationPhase =
                     CocktailPresentationPhase.Mixing;
                 inputUnlockFrame = Time.frameCount + 1;
@@ -557,6 +584,12 @@ namespace BarPromenade
         {
             phaseElapsed = 0f;
             phaseDuration = 0f;
+            RetroAudio.Play(
+                lastRound.HasValue &&
+                (lastRound.Value.HasBadMix ||
+                 lastRound.Value.RequiresWastedDebuff)
+                    ? RetroSfxId.Bad
+                    : RetroSfxId.Good);
             BeginPhase(
                 CocktailPresentationPhase.RoundResult,
                 RoundResultDuration);
@@ -571,6 +604,7 @@ namespace BarPromenade
                 session.Intoxication,
                 session.LastAlcoholicDrink,
                 session.CocktailsConsumed);
+            RetroAudio.Play(RetroSfxId.Shake);
 
             BeginPhase(
                 CocktailPresentationPhase.Serving,

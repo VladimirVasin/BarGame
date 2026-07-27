@@ -21,25 +21,56 @@ namespace BarPromenade
                 return;
             }
 
-            if (style == null)
+            EnsureStyle();
+            GUI.depth = -80;
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
+                Screen.width,
+                Screen.height);
+            Matrix4x4 previousMatrix =
+                RetroUiTheme.BeginCanvas(canvas);
+            try
             {
-                style = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 22,
-                    fontStyle = FontStyle.Bold,
-                    normal = { textColor = Color.white }
-                };
+                const float width = 180f;
+                const float height = 24f;
+                Rect rect = new Rect(
+                    (RetroUiTheme.LogicalWidth - width) * 0.5f,
+                    RetroUiTheme.LogicalHeight - height - 17f,
+                    width,
+                    height);
+                RetroUiTheme.DrawPanel(
+                    rect,
+                    RetroUiTheme.PanelRaised,
+                    RetroUiTheme.Accent,
+                    true,
+                    2f,
+                    1f);
+                GUI.Label(
+                    new Rect(
+                        rect.x + 4f,
+                        rect.y + 1f,
+                        rect.width - 8f,
+                        rect.height - 2f),
+                    LocalizationService.Get(promptKey),
+                    style);
+            }
+            finally
+            {
+                RetroUiTheme.EndCanvas(previousMatrix);
+            }
+        }
+
+        private void EnsureStyle()
+        {
+            if (style != null)
+            {
+                return;
             }
 
-            const float width = 360f;
-            const float height = 48f;
-            Rect rect = new Rect(
-                (Screen.width - width) * 0.5f,
-                Screen.height - height - 34f,
-                width,
-                height);
-            GUI.Box(rect, LocalizationService.Get(promptKey), style);
+            style = RetroUiTheme.CreateLabelStyle(
+                11,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                true);
         }
     }
 }

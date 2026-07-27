@@ -4,7 +4,8 @@
 
 - Product name: **Барный Променад** (Bar Promenade).
 - Engine: Unity `6000.5.5f1`.
-- Rendering: Universal Render Pipeline package `17.5.0`.
+- Rendering: Universal Render Pipeline package `17.5.0` with a PC-targeted
+  PS1 composite after URP post-processing.
 - Input: Input System `1.19.0`; keyboard, mouse and gamepad are supported
   across movement, interaction and modal interfaces.
 - Build scenes: `Assets/Scenes/City.unity` and
@@ -25,14 +26,26 @@ The vertical slice contains:
 - a fixed atmospheric noir night with dense luminous gray-green fog, lifted
   geometry values, cold moonlight and a retuned City-only
   Bloom/ColorAdjustments/Vignette/FilmGrain profile;
+- a default `640x360` PS1 world composite with four-tap footprint averaging,
+  exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
+  without a screen-space dither grid, and point upscaling; lower `426x240`
+  and `320x180` presets remain available;
+- a crisp retro IMGUI layer after the world composite: prompts, HUD and city
+  map use a logical `640x360` canvas, while the information-dense cocktail
+  interface keeps responsive sizing;
+- shared 8-sided cylinder geometry, hard directional shadows and disabled
+  camera MSAA for a deliberate low-poly silhouette;
 - one player-following `CityFogField`, capped at 36 slowly drifting particles,
   plus depth-tested soft halos around lamps, bar lights and active signals;
 - deterministic collider-free street lamps with shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
-  `Resources/Audio/BarMusic` in `BarInterior`; each player is destroyed by the
-  next Single-mode scene load;
+  `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
+  treatment and each player is destroyed by the next Single-mode scene load;
+- deterministic generated mono retro SFX at `22050 Hz`, with bounded
+  category pools, per-effect cooldowns and voice limits, plus separate
+  scene-local procedural city and bar ambience;
 - a spanning-tree road graph with deterministic loops;
 - 16 building lots by default, including exactly 3 reachable bars;
 - diegetic bar identification through warm windows, framed entrances and
@@ -62,9 +75,12 @@ The vertical slice contains:
 - Dynamic day/night, weather, rain, puddles and volumetric light shafts.
 - Vehicle or skating physics.
 - Multiple bespoke bar interiors.
+- Mobile renderer parity for the PS1 composite; the current presentation
+  feature targets the PC renderer.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, economy, dialogue, quests, combat,
   save slots, and online features.
-- Final art, audio, accessibility, localization coverage, and platform release work.
+- Final bespoke art and audio masters, accessibility, localization coverage,
+  and platform release work.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

@@ -31,11 +31,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; emissive and atmosphere effects reuse cached shared
   resources, with no per-instance materials or runtime `Shader.Find`.
+- **Accepted — PC PS1 world composite:** The active PC renderer runs one native
+  Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
+  Game camera. It footprint-averages the world to `640x360` by default, blends
+  35% perceptual-space RGB555 into the original tone without a screen-space
+  dither overlay, then point-upscales it, producing exact 2x/3x scaling at
+  720p/1080p. Lower `426x240` and `320x180` presets remain available; mobile
+  renderer integration is deferred.
+- **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
+  drawn after the world composite instead of being degraded with the 3D image.
+  Prompts, HUD and map use a logical `640x360` canvas; the denser cocktail view
+  remains responsive while sharing the same palette, stepped frames and
+  point-filtered accents.
+- **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
+  the stock visual mesh with one cached flat-shaded 8-sided mesh while
+  preserving the primitive collider contract. No per-instance mesh or
+  material is created.
 - **Accepted — Fixed noir exterior:** `City` applies a lifted blue-green camera,
-  dense luminous gray-green exponential-squared fog, softened shadows, cold
-  moon/ambient lighting and a dedicated Bloom/ColorAdjustments/Vignette/
-  FilmGrain `CityNoirVolumeProfile`; `BarInterior` explicitly disables exterior
-  fog and presentation objects.
+  dense luminous gray-green exponential-squared fog, hard directional shadows,
+  disabled camera MSAA, cold moon/ambient lighting and a dedicated
+  Bloom/ColorAdjustments/Vignette/FilmGrain `CityNoirVolumeProfile`;
+  `BarInterior` explicitly disables exterior fog and presentation objects.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles.
   It reuses the shared atmosphere material and has no collision, trails or
@@ -57,8 +73,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Scene-local music:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
   `bar_theme` from `Resources/Audio/BarMusic`. Each uses a non-spatial looping
-  `AudioSource` under its matching scene root, so a Single-mode scene load
-  destroys the old player and stops its theme automatically.
+  `AudioSource` and a mild low-pass filter under its matching scene root, so a
+  Single-mode scene load destroys the old player and stops its theme
+  automatically.
+- **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
+  the mono `22050 Hz` UI, footstep, door and cocktail clips in memory.
+  `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
+  source pools, and applies per-effect cooldown and concurrent-voice limits.
+- **Accepted — Scene-local procedural ambience:** City and bar roots each own a
+  quiet deterministic `22050 Hz` ambience loop and tone filter. Single-mode
+  transitions destroy the old scene ambience, while the persistent SFX
+  service remains available to the next scene.
 - **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright

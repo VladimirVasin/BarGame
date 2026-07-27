@@ -86,11 +86,11 @@ namespace BarPromenade.Editor
 
             Bloom bloom = GetOrAdd<Bloom>(profile);
             bloom.active = true;
-            bloom.threshold.Override(0.52f);
-            bloom.intensity.Override(0.78f);
-            bloom.scatter.Override(0.84f);
+            bloom.threshold.Override(0.60f);
+            bloom.intensity.Override(0.62f);
+            bloom.scatter.Override(0.48f);
             bloom.clamp.Override(10f);
-            bloom.highQualityFiltering.Override(true);
+            bloom.highQualityFiltering.Override(false);
 
             ColorAdjustments color = GetOrAdd<ColorAdjustments>(profile);
             color.active = true;
@@ -109,7 +109,7 @@ namespace BarPromenade.Editor
             FilmGrain grain = GetOrAdd<FilmGrain>(profile);
             grain.active = true;
             grain.type.Override(FilmGrainLookup.Thin1);
-            grain.intensity.Override(0.08f);
+            grain.intensity.Override(0.015f);
             grain.response.Override(0.80f);
 
             return profile;

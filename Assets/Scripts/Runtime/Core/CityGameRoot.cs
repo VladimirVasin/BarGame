@@ -8,7 +8,9 @@ namespace BarPromenade
         public CityLayout Layout { get; private set; }
         public CityWorldResult World { get; private set; }
         public CityNightWorldResult Night { get; private set; }
+        public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
+        public CityAmbiencePlayer Ambience { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CityMapController Map { get; private set; }
 
@@ -25,6 +27,7 @@ namespace BarPromenade
             }
 
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
+            Audio = RetroAudioService.EnsureInstalled();
 
             CityGenerationSettings settings = CityGenerationSettings.Default;
             Layout = CityLayoutGenerator.Generate(settings, GameSessionState.CitySeed);
@@ -38,6 +41,11 @@ namespace BarPromenade
             GameObject musicObject = new GameObject("City Music");
             musicObject.transform.SetParent(transform, false);
             Music = musicObject.AddComponent<CityMusicPlayer>();
+            GameObject ambienceObject =
+                new GameObject("City Ambience");
+            ambienceObject.transform.SetParent(transform, false);
+            Ambience =
+                ambienceObject.AddComponent<CityAmbiencePlayer>();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

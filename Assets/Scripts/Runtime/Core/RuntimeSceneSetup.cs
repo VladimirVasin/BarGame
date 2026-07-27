@@ -69,7 +69,7 @@ namespace BarPromenade
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = backgroundColor;
             camera.allowHDR = true;
-            camera.allowMSAA = true;
+            camera.allowMSAA = false;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 220f;
             return camera;
@@ -112,7 +112,7 @@ namespace BarPromenade
             directional.transform.rotation = Quaternion.Euler(48f, -34f, 0f);
             directional.color = color;
             directional.intensity = intensity;
-            directional.shadows = LightShadows.Soft;
+            directional.shadows = LightShadows.Hard;
             directional.shadowStrength = shadowStrength;
             RenderSettings.sun = directional;
 

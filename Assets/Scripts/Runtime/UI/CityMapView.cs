@@ -52,23 +52,23 @@ namespace BarPromenade
         }
 
         private static readonly Color Backdrop =
-            new Color(0.015f, 0.012f, 0.017f, 0.94f);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Backdrop, 0.96f);
         private static readonly Color MapGround =
-            new Color(0.11f, 0.12f, 0.13f);
+            RetroUiTheme.MapGround;
         private static readonly Color Building =
-            new Color(0.25f, 0.25f, 0.27f);
+            RetroUiTheme.MapBuilding;
         private static readonly Color BarBuilding =
-            new Color(0.43f, 0.16f, 0.08f);
+            RetroUiTheme.MapBar;
         private static readonly Color Road =
-            new Color(0.34f, 0.36f, 0.39f);
+            RetroUiTheme.MapRoad;
         private static readonly Color Route =
-            new Color(1f, 0.67f, 0.16f);
+            RetroUiTheme.Accent;
         private static readonly Color UnselectedBar =
-            new Color(0.55f, 0.17f, 0.08f);
+            RetroUiTheme.MapBar;
         private static readonly Color SelectedBar =
-            new Color(1f, 0.67f, 0.16f);
+            RetroUiTheme.Accent;
         private static readonly Color Player =
-            new Color(0.20f, 0.86f, 0.94f);
+            RetroUiTheme.Cyan;
 
         private CityMapController controller;
         private GUIStyle titleStyle;
@@ -93,81 +93,113 @@ namespace BarPromenade
 
             EnsureStyles();
             GUI.depth = -90;
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
+                Screen.width,
+                Screen.height);
 
             if (!controller.IsOpen)
             {
-                DrawOpenHint();
+                Matrix4x4 hintMatrix =
+                    RetroUiTheme.BeginCanvas(canvas);
+                try
+                {
+                    DrawOpenHint();
+                }
+                finally
+                {
+                    RetroUiTheme.EndCanvas(hintMatrix);
+                }
+
                 return;
             }
 
-            DrawSolidRect(
+            RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
                 Backdrop);
+            Matrix4x4 previousMatrix =
+                RetroUiTheme.BeginCanvas(canvas);
+            try
+            {
+                Rect panel = new Rect(
+                    8f,
+                    8f,
+                    RetroUiTheme.LogicalWidth - 16f,
+                    RetroUiTheme.LogicalHeight - 16f);
+                RetroUiTheme.DrawPanel(
+                    panel,
+                    RetroUiTheme.Panel,
+                    RetroUiTheme.Accent,
+                    true,
+                    3f,
+                    1f);
 
-            float panelWidth = Mathf.Min(1240f, Screen.width - 32f);
-            float panelHeight = Mathf.Min(760f, Screen.height - 32f);
-            Rect panel = new Rect(
-                (Screen.width - panelWidth) * 0.5f,
-                (Screen.height - panelHeight) * 0.5f,
-                panelWidth,
-                panelHeight);
-            GUI.Box(panel, GUIContent.none);
+                GUI.Label(
+                    new Rect(
+                        panel.x + 12f,
+                        panel.y + 7f,
+                        panel.width - 24f,
+                        22f),
+                    LocalizationService.Get("map.title"),
+                    titleStyle);
 
-            GUI.Label(
-                new Rect(
-                    panel.x + 24f,
-                    panel.y + 14f,
-                    panel.width - 48f,
-                    44f),
-                LocalizationService.Get("map.title"),
-                titleStyle);
+                const float outerMargin = 11f;
+                const float headerHeight = 33f;
+                const float footerHeight = 27f;
+                float routePanelWidth = Mathf.Clamp(
+                    panel.width * 0.28f,
+                    130f,
+                    170f);
+                Rect content = new Rect(
+                    panel.x + outerMargin,
+                    panel.y + headerHeight,
+                    panel.width - outerMargin * 2f,
+                    panel.height - headerHeight - footerHeight);
+                Rect mapArea = new Rect(
+                    content.x,
+                    content.y,
+                    content.width - routePanelWidth - 9f,
+                    content.height);
+                Rect routePanel = new Rect(
+                    mapArea.xMax + 9f,
+                    content.y,
+                    routePanelWidth,
+                    content.height);
 
-            const float outerMargin = 22f;
-            const float headerHeight = 66f;
-            const float footerHeight = 54f;
-            float routePanelWidth = Mathf.Clamp(
-                panel.width * 0.28f,
-                260f,
-                340f);
-            Rect content = new Rect(
-                panel.x + outerMargin,
-                panel.y + headerHeight,
-                panel.width - outerMargin * 2f,
-                panel.height - headerHeight - footerHeight);
-            Rect mapArea = new Rect(
-                content.x,
-                content.y,
-                content.width - routePanelWidth - 18f,
-                content.height);
-            Rect routePanel = new Rect(
-                mapArea.xMax + 18f,
-                content.y,
-                routePanelWidth,
-                content.height);
+                MapProjection projection = CreateProjection(mapArea);
+                DrawMap(projection);
+                DrawRoutePanel(routePanel);
 
-            MapProjection projection = CreateProjection(mapArea);
-            DrawMap(projection);
-            DrawRoutePanel(routePanel);
-
-            GUI.Label(
-                new Rect(
-                    panel.x + 20f,
-                    panel.yMax - footerHeight + 8f,
-                    panel.width - 40f,
-                    32f),
-                LocalizationService.Get("map.instructions"),
-                centeredStyle);
+                GUI.Label(
+                    new Rect(
+                        panel.x + 10f,
+                        panel.yMax - footerHeight + 4f,
+                        panel.width - 20f,
+                        16f),
+                    LocalizationService.Get("map.instructions"),
+                    centeredStyle);
+            }
+            finally
+            {
+                RetroUiTheme.EndCanvas(previousMatrix);
+            }
         }
 
         private void DrawOpenHint()
         {
-            const float width = 174f;
-            const float height = 42f;
+            const float width = 87f;
+            const float height = 21f;
             Rect hint = new Rect(
-                Screen.width - width - 20f,
-                18f,
+                RetroUiTheme.LogicalWidth - width - 10f,
+                9f,
                 width,
                 height);
+            RetroUiTheme.DrawPanel(
+                hint,
+                RetroUiTheme.PanelRaised,
+                RetroUiTheme.Accent,
+                true,
+                2f,
+                1f);
             if (GUI.Button(
                 hint,
                 LocalizationService.Get("map.open_hint"),
@@ -179,7 +211,13 @@ namespace BarPromenade
 
         private void DrawMap(MapProjection projection)
         {
-            DrawSolidRect(projection.ScreenRect, MapGround);
+            RetroUiTheme.DrawPanel(
+                projection.ScreenRect,
+                MapGround,
+                RetroUiTheme.BorderMuted,
+                true,
+                2f,
+                1f);
             DrawBuildings(projection);
             DrawRoads(projection);
             DrawRoute(projection);
@@ -222,11 +260,12 @@ namespace BarPromenade
             float worldWidth =
                 projection.MaximumX - projection.MinimumX;
             float roadWidth = Mathf.Clamp(
-                controller.Layout.RoadWidth /
-                Mathf.Max(0.01f, worldWidth) *
-                projection.ScreenRect.width,
-                3f,
-                16f);
+                Mathf.Round(
+                    controller.Layout.RoadWidth /
+                    Mathf.Max(0.01f, worldWidth) *
+                    projection.ScreenRect.width),
+                2f,
+                8f);
 
             IReadOnlyList<RoadEdge> roads =
                 controller.Layout.RoadEdges;
@@ -257,7 +296,7 @@ namespace BarPromenade
                 DrawLine(
                     projection.WorldToScreen(points[index - 1]),
                     projection.WorldToScreen(points[index]),
-                    6f,
+                    3f,
                     Route);
             }
         }
@@ -272,7 +311,7 @@ namespace BarPromenade
                 int routeOrder = controller.GetRouteOrder(bar.BarId);
                 bool selected = routeOrder >= 0;
                 bool focused = index == controller.SelectedBarIndex;
-                const float markerSize = 34f;
+                const float markerSize = 17f;
                 Rect marker = new Rect(
                     position.x - markerSize * 0.5f,
                     position.y - markerSize * 0.5f,
@@ -283,11 +322,11 @@ namespace BarPromenade
                 {
                     DrawSolidRect(
                         new Rect(
-                            marker.x - 4f,
-                            marker.y - 4f,
-                            marker.width + 8f,
-                            marker.height + 8f),
-                        Color.white);
+                            marker.x - 2f,
+                            marker.y - 2f,
+                            marker.width + 4f,
+                            marker.height + 4f),
+                        RetroUiTheme.Text);
                 }
 
                 DrawSolidRect(
@@ -296,8 +335,8 @@ namespace BarPromenade
 
                 Color previousContentColor = GUI.contentColor;
                 GUI.contentColor = selected
-                    ? new Color(0.12f, 0.07f, 0.03f)
-                    : Color.white;
+                    ? RetroUiTheme.Ink
+                    : RetroUiTheme.Text;
                 string markerLabel = selected
                     ? (routeOrder + 1).ToString()
                     : (index + 1).ToString();
@@ -322,25 +361,49 @@ namespace BarPromenade
             }
 
             screenForward.Normalize();
+            Vector2 arrowTip = position + screenForward * 11f;
+            Vector2 arrowSide = new Vector2(
+                -screenForward.y,
+                screenForward.x);
             DrawLine(
                 position,
-                position + screenForward * 18f,
-                5f,
+                arrowTip,
+                3f,
+                Player);
+            DrawLine(
+                arrowTip,
+                arrowTip - screenForward * 4f + arrowSide * 3f,
+                2f,
+                Player);
+            DrawLine(
+                arrowTip,
+                arrowTip - screenForward * 4f - arrowSide * 3f,
+                2f,
                 Player);
             DrawSolidRect(
-                new Rect(position.x - 6f, position.y - 6f, 12f, 12f),
+                new Rect(position.x - 3f, position.y - 3f, 6f, 6f),
                 Player);
             GUI.Label(
-                new Rect(position.x + 10f, position.y - 13f, 110f, 26f),
+                new Rect(position.x + 5f, position.y - 7f, 55f, 13f),
                 LocalizationService.Get("map.player"),
                 routeItemStyle);
         }
 
         private void DrawRoutePanel(Rect panel)
         {
-            GUI.Box(panel, GUIContent.none);
+            RetroUiTheme.DrawPanel(
+                panel,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                true,
+                2f,
+                1f);
             GUI.Label(
-                new Rect(panel.x + 12f, panel.y + 10f, panel.width - 24f, 36f),
+                new Rect(
+                    panel.x + 6f,
+                    panel.y + 5f,
+                    panel.width - 12f,
+                    18f),
                 LocalizationService.Get("map.route_title"),
                 subtitleStyle);
 
@@ -349,10 +412,10 @@ namespace BarPromenade
             {
                 GUI.Label(
                     new Rect(
-                        panel.x + 18f,
-                        panel.y + 64f,
-                        panel.width - 36f,
-                        84f),
+                        panel.x + 9f,
+                        panel.y + 32f,
+                        panel.width - 18f,
+                        42f),
                     LocalizationService.Get("map.route_empty"),
                     centeredStyle);
             }
@@ -365,25 +428,33 @@ namespace BarPromenade
             float distance = path == null ? 0f : path.TotalLength;
             GUI.Label(
                 new Rect(
-                    panel.x + 14f,
-                    panel.yMax - 82f,
-                    panel.width - 28f,
-                    28f),
+                    panel.x + 7f,
+                    panel.yMax - 41f,
+                    panel.width - 14f,
+                    14f),
                 string.Format(
                     LocalizationService.Get("map.distance"),
                     distance),
                 centeredStyle);
 
             Rect clearButton = new Rect(
-                panel.x + 16f,
-                panel.yMax - 48f,
-                panel.width - 32f,
-                32f);
+                panel.x + 8f,
+                panel.yMax - 24f,
+                panel.width - 16f,
+                16f);
+            RetroUiTheme.DrawPanel(
+                clearButton,
+                RetroUiTheme.PanelRaised,
+                RetroUiTheme.Accent,
+                false,
+                1f,
+                1f);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = route.Count > 0;
             if (GUI.Button(
                 clearButton,
-                LocalizationService.Get("map.clear")))
+                LocalizationService.Get("map.clear"),
+                hintStyle))
             {
                 controller.QueueClearRoute();
             }
@@ -395,9 +466,9 @@ namespace BarPromenade
             Rect panel,
             IReadOnlyList<string> route)
         {
-            const float rowHeight = 44f;
-            const float rowGap = 8f;
-            float rowY = panel.y + 58f;
+            const float rowHeight = 22f;
+            const float rowGap = 4f;
+            float rowY = panel.y + 29f;
 
             for (int routeIndex = 0;
                  routeIndex < route.Count;
@@ -411,35 +482,53 @@ namespace BarPromenade
                 }
 
                 Rect row = new Rect(
-                    panel.x + 12f,
+                    panel.x + 6f,
                     rowY,
-                    panel.width - 24f,
+                    panel.width - 12f,
                     rowHeight);
                 bool focused =
                     barIndex == controller.SelectedBarIndex;
-                DrawSolidRect(
+                RetroUiTheme.DrawPanel(
                     row,
                     focused
-                        ? new Color(0.35f, 0.25f, 0.12f)
-                        : new Color(0.17f, 0.17f, 0.19f));
+                        ? RetroUiTheme.PanelRaised
+                        : RetroUiTheme.Panel,
+                    focused
+                        ? RetroUiTheme.Accent
+                        : RetroUiTheme.BorderMuted,
+                    false,
+                    1f,
+                    1f);
 
-                const float buttonWidth = 30f;
-                const float buttonGap = 4f;
+                const float buttonWidth = 15f;
+                const float buttonGap = 2f;
                 float buttonsWidth = buttonWidth * 3f + buttonGap * 2f;
                 GUI.Label(
                     new Rect(
-                        row.x + 10f,
+                        row.x + 5f,
                         row.y,
-                        row.width - buttonsWidth - 18f,
+                        row.width - buttonsWidth - 9f,
                         row.height),
                     $"{routeIndex + 1}. {controller.GetBarLabel(barIndex)}",
                     routeItemStyle);
 
-                float buttonX = row.xMax - buttonsWidth - 6f;
+                float buttonX = row.xMax - buttonsWidth - 3f;
                 bool previousEnabled = GUI.enabled;
+                Rect upButton = new Rect(
+                    buttonX,
+                    row.y + 3f,
+                    buttonWidth,
+                    15f);
+                RetroUiTheme.DrawPanel(
+                    upButton,
+                    RetroUiTheme.PanelRaised,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    1f,
+                    1f);
                 GUI.enabled = routeIndex > 0;
                 if (GUI.Button(
-                    new Rect(buttonX, row.y + 7f, buttonWidth, 30f),
+                    upButton,
                     "\u25B2",
                     smallButtonStyle))
                 {
@@ -447,9 +536,21 @@ namespace BarPromenade
                 }
 
                 buttonX += buttonWidth + buttonGap;
+                Rect downButton = new Rect(
+                    buttonX,
+                    row.y + 3f,
+                    buttonWidth,
+                    15f);
+                RetroUiTheme.DrawPanel(
+                    downButton,
+                    RetroUiTheme.PanelRaised,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    1f,
+                    1f);
                 GUI.enabled = routeIndex < route.Count - 1;
                 if (GUI.Button(
-                    new Rect(buttonX, row.y + 7f, buttonWidth, 30f),
+                    downButton,
                     "\u25BC",
                     smallButtonStyle))
                 {
@@ -457,9 +558,21 @@ namespace BarPromenade
                 }
 
                 buttonX += buttonWidth + buttonGap;
+                Rect removeButton = new Rect(
+                    buttonX,
+                    row.y + 3f,
+                    buttonWidth,
+                    15f);
+                RetroUiTheme.DrawPanel(
+                    removeButton,
+                    RetroUiTheme.PanelRaised,
+                    RetroUiTheme.Bad,
+                    false,
+                    1f,
+                    1f);
                 GUI.enabled = true;
                 if (GUI.Button(
-                    new Rect(buttonX, row.y + 7f, buttonWidth, 30f),
+                    removeButton,
                     "\u00D7",
                     smallButtonStyle))
                 {
@@ -534,22 +647,36 @@ namespace BarPromenade
             Matrix4x4 previousMatrix = GUI.matrix;
             Color previousColor = GUI.color;
             GUI.color = color;
-            GUIUtility.RotateAroundPivot(
-                Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg,
-                start);
+            GUI.matrix = CreateLineMatrix(
+                previousMatrix,
+                start,
+                end);
             GUI.DrawTexture(
-                new Rect(start.x, start.y - width * 0.5f, length, width),
+                new Rect(0f, -width * 0.5f, length, width),
                 Texture2D.whiteTexture);
             GUI.matrix = previousMatrix;
             GUI.color = previousColor;
         }
 
+        private static Matrix4x4 CreateLineMatrix(
+            Matrix4x4 parentMatrix,
+            Vector2 start,
+            Vector2 end)
+        {
+            Vector2 direction = (end - start).normalized;
+            var logicalLineTransform = Matrix4x4.identity;
+            logicalLineTransform.m00 = direction.x;
+            logicalLineTransform.m01 = -direction.y;
+            logicalLineTransform.m03 = start.x;
+            logicalLineTransform.m10 = direction.y;
+            logicalLineTransform.m11 = direction.x;
+            logicalLineTransform.m13 = start.y;
+            return parentMatrix * logicalLineTransform;
+        }
+
         private static void DrawSolidRect(Rect rectangle, Color color)
         {
-            Color previousColor = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(rectangle, Texture2D.whiteTexture);
-            GUI.color = previousColor;
+            RetroUiTheme.FillRect(rectangle, color);
         }
 
         private void EnsureStyles()
@@ -559,57 +686,42 @@ namespace BarPromenade
                 return;
             }
 
-            titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 30,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Route }
-            };
-            subtitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 22,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Route }
-            };
-            centeredStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 17,
-                wordWrap = true,
-                normal = { textColor = Color.white }
-            };
-            routeItemStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 16,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white }
-            };
-            markerButtonStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 18,
-                fontStyle = FontStyle.Bold
-            };
-            markerButtonStyle.normal.background = null;
-            markerButtonStyle.hover.background = null;
-            markerButtonStyle.active.background = null;
-            markerButtonStyle.focused.background = null;
-            hintStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 18,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white }
-            };
-            smallButtonStyle = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 17,
-                fontStyle = FontStyle.Bold
-            };
+            titleStyle = RetroUiTheme.CreateLabelStyle(
+                15,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Accent,
+                true);
+            subtitleStyle = RetroUiTheme.CreateLabelStyle(
+                11,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.AccentPale,
+                true);
+            centeredStyle = RetroUiTheme.CreateLabelStyle(
+                8,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                false,
+                true);
+            routeItemStyle = RetroUiTheme.CreateLabelStyle(
+                8,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text,
+                true);
+            markerButtonStyle = RetroUiTheme.CreateButtonStyle(
+                9,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                true);
+            hintStyle = RetroUiTheme.CreateButtonStyle(
+                9,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                true);
+            smallButtonStyle = RetroUiTheme.CreateButtonStyle(
+                8,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                true);
         }
     }
 }

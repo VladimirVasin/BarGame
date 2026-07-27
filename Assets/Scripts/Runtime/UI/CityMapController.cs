@@ -134,10 +134,16 @@ namespace BarPromenade
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             RefreshPath();
+            RetroAudio.Play(RetroSfxId.MapOpen);
             return true;
         }
 
         public bool Close()
+        {
+            return Close(true);
+        }
+
+        private bool Close(bool playSound)
         {
             if (!IsOpen)
             {
@@ -151,6 +157,11 @@ namespace BarPromenade
             if (intoxicationHud != null)
             {
                 intoxicationHud.Visible = previousHudVisibility;
+            }
+
+            if (playSound)
+            {
+                RetroAudio.Play(RetroSfxId.UiCancel);
             }
 
             return true;
@@ -176,7 +187,14 @@ namespace BarPromenade
             }
 
             RefreshPath();
-            return wasSelected != (GetRouteOrder(barId) >= 0);
+            bool changed =
+                wasSelected != (GetRouteOrder(barId) >= 0);
+            if (changed)
+            {
+                RetroAudio.Play(RetroSfxId.UiConfirm);
+            }
+
+            return changed;
         }
 
         public bool MoveBar(string barId, int direction)
@@ -195,7 +213,13 @@ namespace BarPromenade
 
             GameSessionState.MoveRouteStop(barId, direction);
             RefreshPath();
-            return GetRouteOrder(barId) != previousIndex;
+            bool changed = GetRouteOrder(barId) != previousIndex;
+            if (changed)
+            {
+                RetroAudio.Play(RetroSfxId.UiMove);
+            }
+
+            return changed;
         }
 
         public bool ClearRoute()
@@ -207,6 +231,7 @@ namespace BarPromenade
 
             GameSessionState.ClearRoute();
             RefreshPath();
+            RetroAudio.Play(RetroSfxId.UiCancel);
             return true;
         }
 
@@ -302,7 +327,7 @@ namespace BarPromenade
 
             if (SceneTransitionService.IsTransitioning)
             {
-                Close();
+                Close(false);
                 return;
             }
 
@@ -344,12 +369,12 @@ namespace BarPromenade
         private void OnDisable()
         {
             pendingCommands.Clear();
-            Close();
+            Close(false);
         }
 
         private void OnDestroy()
         {
-            Close();
+            Close(false);
         }
 
         private void ProcessQueuedCommands()
@@ -441,10 +466,16 @@ namespace BarPromenade
                 return;
             }
 
+            int previousIndex = SelectedBarIndex;
             SelectedBarIndex = (SelectedBarIndex + Math.Sign(delta)) % bars.Count;
             if (SelectedBarIndex < 0)
             {
                 SelectedBarIndex += bars.Count;
+            }
+
+            if (SelectedBarIndex != previousIndex)
+            {
+                RetroAudio.Play(RetroSfxId.UiMove);
             }
         }
 

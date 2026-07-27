@@ -34,6 +34,7 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.fogColor.maxColorComponent,
                 Is.GreaterThan(0.20f));
             Assert.That(Camera.main, Is.Not.Null);
+            Assert.That(Camera.main.allowMSAA, Is.False);
             Assert.That(
                 Camera.main.backgroundColor.maxColorComponent,
                 Is.InRange(0.15f, 0.25f));
@@ -42,6 +43,9 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.sun.shadowStrength,
                 Is.EqualTo(RuntimeSceneSetup.CityShadowStrength)
                     .Within(0.001f));
+            Assert.That(
+                RenderSettings.sun.shadows,
+                Is.EqualTo(LightShadows.Hard));
 
             Volume volume =
                 UnityEngine.Object.FindAnyObjectByType<Volume>();
@@ -54,10 +58,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 volume.sharedProfile.TryGet(out Bloom bloom),
                 Is.True);
-            Assert.That(bloom.threshold.value, Is.EqualTo(0.52f));
-            Assert.That(bloom.intensity.value, Is.EqualTo(0.78f));
-            Assert.That(bloom.scatter.value, Is.EqualTo(0.84f));
+            Assert.That(bloom.threshold.value, Is.EqualTo(0.60f));
+            Assert.That(bloom.intensity.value, Is.EqualTo(0.62f));
+            Assert.That(bloom.scatter.value, Is.EqualTo(0.48f));
             Assert.That(bloom.clamp.value, Is.EqualTo(10f));
+            Assert.That(bloom.highQualityFiltering.value, Is.False);
             Assert.That(
                 volume.sharedProfile.TryGet(
                     out ColorAdjustments colorAdjustments),
@@ -75,7 +80,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 volume.sharedProfile.TryGet(out FilmGrain grain),
                 Is.True);
-            Assert.That(grain.intensity.value, Is.EqualTo(0.08f));
+            Assert.That(grain.intensity.value, Is.EqualTo(0.015f));
 
             CityNightWorldResult night = city.Night;
             Assert.That(night, Is.Not.Null);

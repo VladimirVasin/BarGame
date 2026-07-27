@@ -2,7 +2,9 @@
   "name": "BarPromenade.EditModeTests",
   "rootNamespace": "BarPromenade.Tests.EditMode",
   "references": [
-    "BarPromenade.Runtime"
+    "BarPromenade.Runtime",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
   ],
   "includePlatforms": [
     "Editor"

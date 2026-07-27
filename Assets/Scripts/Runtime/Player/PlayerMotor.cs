@@ -7,6 +7,8 @@ namespace BarPromenade
     {
         private const float MoveSpeed = 5.2f;
         private const float Gravity = 24f;
+        private const float FootstepStride = 1.35f;
+        private const float FootstepMinimumSpeedSquared = 0.36f;
 
         private CharacterController controller;
         private Camera movementCamera;
@@ -14,6 +16,7 @@ namespace BarPromenade
         private PlayerSpriteRig spriteRig;
         private float verticalSpeed;
         private float speedMultiplier = 1f;
+        private float footstepDistance;
 
         public bool InputEnabled { get; private set; } = true;
         public float SpeedMultiplier => speedMultiplier;
@@ -36,6 +39,7 @@ namespace BarPromenade
             if (!enabled)
             {
                 PlanarVelocity = Vector3.zero;
+                footstepDistance = 0f;
                 spriteRig?.SetMotion(Vector3.zero);
             }
         }
@@ -101,6 +105,32 @@ namespace BarPromenade
             planarVelocity.y = 0f;
             PlanarVelocity = planarVelocity * inverseDelta;
             spriteRig?.SetMotion(PlanarVelocity);
+            UpdateFootsteps(planarVelocity);
+        }
+
+        private void UpdateFootsteps(Vector3 planarDisplacement)
+        {
+            if (!InputEnabled ||
+                SceneTransitionService.IsTransitioning ||
+                PlanarVelocity.sqrMagnitude <
+                FootstepMinimumSpeedSquared)
+            {
+                footstepDistance = Mathf.Min(
+                    footstepDistance,
+                    FootstepStride * 0.35f);
+                return;
+            }
+
+            footstepDistance += planarDisplacement.magnitude;
+            if (footstepDistance < FootstepStride)
+            {
+                return;
+            }
+
+            footstepDistance %= FootstepStride;
+            RetroAudio.PlayAt(
+                RetroSfxId.Footstep,
+                transform.position);
         }
 
         private void FaceCameraHeading()

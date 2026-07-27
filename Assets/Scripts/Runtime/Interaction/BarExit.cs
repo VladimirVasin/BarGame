@@ -22,7 +22,13 @@ namespace BarPromenade
             PlayerMotor motor = interactor.GetComponent<PlayerMotor>();
             motor?.SetInputEnabled(false);
             GameSessionState.PrepareCityReturn();
-            if (!SceneTransitionService.RequestLoad(SceneIds.City))
+            if (SceneTransitionService.RequestLoad(SceneIds.City))
+            {
+                RetroAudio.PlayAt(
+                    RetroSfxId.Door,
+                    InteractionPosition);
+            }
+            else
             {
                 motor?.SetInputEnabled(true);
             }

@@ -8,23 +8,23 @@ namespace BarPromenade
     public sealed class CocktailMinigameView : MonoBehaviour
     {
         private static readonly Color BackdropColor =
-            new Color(0.015f, 0.008f, 0.018f, 0.96f);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Backdrop, 0.96f);
         private static readonly Color PanelColor =
-            new Color(0.075f, 0.035f, 0.065f, 0.985f);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Panel, 0.985f);
         private static readonly Color PanelInsetColor =
-            new Color(0.035f, 0.018f, 0.038f, 0.96f);
+            RetroUiTheme.WithAlpha(RetroUiTheme.PanelInset, 0.96f);
         private static readonly Color ShelfColor =
-            new Color(0.13f, 0.055f, 0.045f, 1f);
+            RetroUiTheme.PanelRaised;
         private static readonly Color Gold =
-            new Color(1f, 0.70f, 0.23f, 1f);
+            RetroUiTheme.Accent;
         private static readonly Color PaleGold =
-            new Color(1f, 0.87f, 0.57f, 1f);
+            RetroUiTheme.AccentPale;
         private static readonly Color Good =
-            new Color(0.35f, 0.94f, 0.59f, 1f);
+            RetroUiTheme.Good;
         private static readonly Color Bad =
-            new Color(0.88f, 0.22f, 0.58f, 1f);
+            RetroUiTheme.Bad;
         private static readonly Color Muted =
-            new Color(0.57f, 0.52f, 0.57f, 1f);
+            RetroUiTheme.Muted;
 
         private CocktailMinigameController controller;
         private GUIStyle titleStyle;
@@ -35,6 +35,9 @@ namespace BarPromenade
         private GUIStyle smallStyle;
         private GUIStyle cardStyle;
         private GUIStyle scoreStyle;
+        private GUIStyle feedbackGoodStyle;
+        private GUIStyle feedbackBadStyle;
+        private GUIStyle checkStyle;
         private GUIStyle resultStyle;
         private GUIStyle rankStyle;
 
@@ -61,11 +64,11 @@ namespace BarPromenade
             float panelHeight = Mathf.Min(
                 680f,
                 Mathf.Max(560f, Screen.height - 24f));
-            Rect panel = new Rect(
+            Rect panel = RetroUiTheme.SnapRect(new Rect(
                 (Screen.width - panelWidth) * 0.5f,
                 (Screen.height - panelHeight) * 0.5f,
                 panelWidth,
-                panelHeight);
+                panelHeight));
 
             DrawPanel(panel);
             DrawHeader(panel);
@@ -100,27 +103,30 @@ namespace BarPromenade
             FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
                 BackdropColor);
-            for (float y = 1f; y < Screen.height; y += 4f)
-            {
-                FillRect(
-                    new Rect(0f, y, Screen.width, 1f),
-                    new Color(0.34f, 0.13f, 0.31f, 0.035f));
-            }
+            RetroUiTheme.DrawDither(
+                new Rect(0f, 0f, Screen.width, Screen.height),
+                RetroUiTheme.WithAlpha(
+                    RetroUiTheme.AccentPale,
+                    0.035f));
         }
 
         private static void DrawPanel(Rect panel)
         {
-            FillRect(Expand(panel, 5f), new Color(0f, 0f, 0f, 0.75f));
-            FillRect(panel, PanelColor);
-            StrokeRect(panel, 3f, Gold);
+            RetroUiTheme.DrawPanel(
+                panel,
+                PanelColor,
+                Gold,
+                true,
+                6f,
+                3f);
             StrokeRect(
                 new Rect(
-                    panel.x + 7f,
-                    panel.y + 7f,
-                    panel.width - 14f,
-                    panel.height - 14f),
+                    panel.x + 8f,
+                    panel.y + 8f,
+                    panel.width - 16f,
+                    panel.height - 16f),
                 1f,
-                new Color(0.58f, 0.23f, 0.31f, 1f));
+                RetroUiTheme.BorderMuted);
         }
 
         private void DrawHeader(Rect panel)
@@ -130,7 +136,13 @@ namespace BarPromenade
                 panel.y + 12f,
                 panel.width - 28f,
                 70f);
-            FillRect(header, new Color(0.11f, 0.035f, 0.075f, 1f));
+            RetroUiTheme.DrawPanel(
+                header,
+                RetroUiTheme.PanelRaised,
+                RetroUiTheme.BorderMuted,
+                true,
+                4f,
+                1f);
             FillRect(
                 new Rect(header.x, header.yMax - 2f, header.width, 2f),
                 Gold);
@@ -203,8 +215,8 @@ namespace BarPromenade
                     completed
                         ? PaleGold
                         : current
-                            ? Color.white
-                            : new Color(0.42f, 0.36f, 0.42f, 0.8f));
+                            ? RetroUiTheme.Text
+                            : RetroUiTheme.WithAlpha(Muted, 0.8f));
             }
         }
 
@@ -252,18 +264,21 @@ namespace BarPromenade
 
         private void DrawBaseCard(Rect card, int index)
         {
+            card = RetroUiTheme.SnapRect(card);
             bool highlighted =
                 index == controller.HighlightedBaseIndex;
             bool hovered = card.Contains(Event.current.mousePosition);
-            FillRect(
+            RetroUiTheme.DrawPanel(
                 card,
                 highlighted || hovered
-                    ? new Color(0.22f, 0.075f, 0.09f, 1f)
-                    : PanelInsetColor);
-            StrokeRect(
-                card,
-                highlighted ? 4f : 2f,
-                highlighted ? Gold : new Color(0.35f, 0.20f, 0.28f));
+                    ? RetroUiTheme.PanelRaised
+                    : PanelInsetColor,
+                highlighted
+                    ? Gold
+                    : RetroUiTheme.BorderMuted,
+                !highlighted,
+                4f,
+                highlighted ? 3f : 1f);
 
             CocktailBaseId baseId = controller.GetBaseId(index);
             CocktailIngredientId ingredientId =
@@ -305,11 +320,13 @@ namespace BarPromenade
                 panel.y + 92f,
                 panel.width - 40f,
                 panel.height - 262f);
-            FillRect(workArea, PanelInsetColor);
-            StrokeRect(
+            RetroUiTheme.DrawPanel(
                 workArea,
-                1f,
-                new Color(0.42f, 0.18f, 0.30f, 1f));
+                PanelInsetColor,
+                RetroUiTheme.BorderMuted,
+                true,
+                4f,
+                1f);
 
             float sideWidth = Mathf.Clamp(
                 (workArea.width - 360f) * 0.5f,
@@ -339,8 +356,13 @@ namespace BarPromenade
 
         private void DrawRecipePanel(Rect rect)
         {
-            FillRect(rect, new Color(0.085f, 0.035f, 0.055f, 1f));
-            StrokeRect(rect, 1f, new Color(0.40f, 0.20f, 0.23f, 1f));
+            RetroUiTheme.DrawPanel(
+                rect,
+                RetroUiTheme.Panel,
+                RetroUiTheme.BorderMuted,
+                true,
+                3f,
+                1f);
 
             GUI.Label(
                 new Rect(rect.x + 8f, rect.y + 8f, rect.width - 16f, 30f),
@@ -370,8 +392,12 @@ namespace BarPromenade
                 FillRect(
                     icon,
                     index == 0
-                        ? new Color(0.25f, 0.10f, 0.08f, 0.9f)
-                        : new Color(0.12f, 0.065f, 0.10f, 0.9f));
+                        ? RetroUiTheme.WithAlpha(
+                            RetroUiTheme.PanelRaised,
+                            0.9f)
+                        : RetroUiTheme.WithAlpha(
+                            RetroUiTheme.PanelInset,
+                            0.9f));
                 CocktailSpriteLibrary.DrawIngredient(
                     icon,
                     ingredients[index],
@@ -665,7 +691,7 @@ namespace BarPromenade
                         Mathf.Min(streamTop, streamBottom),
                         2f,
                         Mathf.Abs(streamBottom - streamTop)),
-                    new Color(1f, 0.91f, 0.65f, 0.75f));
+                    RetroUiTheme.WithAlpha(PaleGold, 0.75f));
             }
 
             Matrix4x4 previousMatrix = GUI.matrix;
@@ -679,8 +705,13 @@ namespace BarPromenade
 
         private void DrawScorePanel(Rect rect)
         {
-            FillRect(rect, new Color(0.085f, 0.035f, 0.055f, 1f));
-            StrokeRect(rect, 1f, new Color(0.40f, 0.20f, 0.23f, 1f));
+            RetroUiTheme.DrawPanel(
+                rect,
+                RetroUiTheme.Panel,
+                RetroUiTheme.BorderMuted,
+                true,
+                3f,
+                1f);
 
             GUI.Label(
                 new Rect(
@@ -707,15 +738,6 @@ namespace BarPromenade
                 string feedback = string.Format(
                     LocalizationService.Get(controller.FeedbackKey),
                     controller.FeedbackScore);
-                GUIStyle feedbackStyle = new GUIStyle(centeredStyle)
-                {
-                    fontStyle = FontStyle.Bold,
-                    wordWrap = true,
-                    normal =
-                    {
-                        textColor = compatible ? Good : Bad
-                    }
-                };
                 GUI.Label(
                     new Rect(
                         rect.x + 8f,
@@ -723,7 +745,9 @@ namespace BarPromenade
                         rect.width - 16f,
                         76f),
                     feedback,
-                    feedbackStyle);
+                    compatible
+                        ? feedbackGoodStyle
+                        : feedbackBadStyle);
             }
             else
             {
@@ -739,13 +763,18 @@ namespace BarPromenade
 
             if (controller.CanServe)
             {
-                Rect serveButton = new Rect(
+                Rect serveButton = RetroUiTheme.SnapRect(new Rect(
                     rect.x + 10f,
                     rect.yMax - 60f,
                     rect.width - 20f,
-                    46f);
-                FillRect(serveButton, new Color(0.42f, 0.13f, 0.08f, 1f));
-                StrokeRect(serveButton, 2f, Gold);
+                    46f));
+                RetroUiTheme.DrawPanel(
+                    serveButton,
+                    RetroUiTheme.PanelRaised,
+                    Gold,
+                    true,
+                    4f,
+                    2f);
                 GUI.Label(
                     serveButton,
                     LocalizationService.Get("cocktail.controls.serve"),
@@ -773,8 +802,13 @@ namespace BarPromenade
                 rect.y + 29f,
                 rect.width,
                 18f);
-            FillRect(track, new Color(0.02f, 0.01f, 0.02f, 1f));
-            StrokeRect(track, 1f, new Color(0.45f, 0.24f, 0.32f));
+            RetroUiTheme.DrawPanel(
+                track,
+                RetroUiTheme.Ink,
+                RetroUiTheme.BorderMuted,
+                false,
+                2f,
+                1f);
             float normalized = controller.IntoxicationLevel / 100f;
             FillRect(
                 new Rect(
@@ -805,7 +839,7 @@ namespace BarPromenade
                     shelf.y + 8f,
                     shelf.width + 20f,
                     8f),
-                new Color(0.40f, 0.18f, 0.08f, 1f));
+                RetroUiTheme.Accent);
 
             const float gap = 7f;
             float cardWidth =
@@ -824,6 +858,7 @@ namespace BarPromenade
 
         private void DrawIngredientCard(Rect card, int index)
         {
+            card = RetroUiTheme.SnapRect(card);
             CocktailIngredientId ingredientId =
                 controller.GetOfferId(index);
             bool used = controller.IsIngredientUsed(ingredientId);
@@ -837,19 +872,21 @@ namespace BarPromenade
                 interactive &&
                 card.Contains(Event.current.mousePosition);
 
-            FillRect(
+            RetroUiTheme.DrawPanel(
                 card,
                 used
-                    ? new Color(0.055f, 0.035f, 0.045f, 0.82f)
+                    ? RetroUiTheme.WithAlpha(
+                        RetroUiTheme.PanelInset,
+                        0.82f)
                     : highlighted || hovered
-                        ? new Color(0.24f, 0.09f, 0.09f, 1f)
-                        : new Color(0.09f, 0.045f, 0.065f, 1f));
-            StrokeRect(
-                card,
-                highlighted && interactive ? 3f : 1f,
+                        ? RetroUiTheme.PanelRaised
+                        : RetroUiTheme.Panel,
                 highlighted && interactive
                     ? Gold
-                    : new Color(0.40f, 0.22f, 0.28f, 1f));
+                    : RetroUiTheme.BorderMuted,
+                !highlighted,
+                3f,
+                highlighted && interactive ? 2f : 1f);
 
             float spriteSide = Mathf.Min(card.width - 8f, 78f);
             Rect sprite = new Rect(
@@ -861,8 +898,10 @@ namespace BarPromenade
                 sprite,
                 ingredientId,
                 used
-                    ? new Color(0.40f, 0.36f, 0.40f, 0.75f)
-                    : Color.white);
+                    ? RetroUiTheme.WithAlpha(
+                        RetroUiTheme.Muted,
+                        0.75f)
+                    : RetroUiTheme.Text);
             GUI.Label(
                 new Rect(
                     card.x + 3f,
@@ -874,11 +913,6 @@ namespace BarPromenade
 
             if (used)
             {
-                GUIStyle checkStyle = new GUIStyle(scoreStyle)
-                {
-                    fontSize = 27,
-                    normal = { textColor = Good }
-                };
                 GUI.Label(
                     new Rect(card.xMax - 35f, card.y + 3f, 30f, 30f),
                     "✓",
@@ -900,7 +934,9 @@ namespace BarPromenade
                     panel.y + 98f,
                     panel.width - 120f,
                     panel.height - 170f),
-                new Color(0.025f, 0.012f, 0.027f, 0.965f));
+                RetroUiTheme.WithAlpha(
+                    RetroUiTheme.Backdrop,
+                    0.965f));
             CocktailRoundResult result =
                 controller.LastRoundResult;
             Color accent = result.HasBadMix ? Bad : Gold;
@@ -909,8 +945,13 @@ namespace BarPromenade
                 panel.center.y - 155f,
                 600f,
                 300f);
-            FillRect(resultCard, new Color(0.11f, 0.035f, 0.07f, 1f));
-            StrokeRect(resultCard, 4f, accent);
+            RetroUiTheme.DrawPanel(
+                resultCard,
+                RetroUiTheme.PanelRaised,
+                accent,
+                true,
+                6f,
+                4f);
 
             Rect glass = new Rect(
                 resultCard.x + 28f,
@@ -962,17 +1003,21 @@ namespace BarPromenade
                     panel.y + 90f,
                     panel.width - 52f,
                     panel.height - 138f),
-                new Color(0.018f, 0.008f, 0.022f, 0.985f));
+                RetroUiTheme.WithAlpha(
+                    RetroUiTheme.Backdrop,
+                    0.985f));
             Rect resultCard = new Rect(
                 panel.center.x - 360f,
                 panel.center.y - 190f,
                 720f,
                 370f);
-            FillRect(resultCard, new Color(0.105f, 0.03f, 0.065f, 1f));
-            StrokeRect(
+            RetroUiTheme.DrawPanel(
                 resultCard,
-                5f,
-                controller.FinishedWasted ? Bad : Gold);
+                RetroUiTheme.PanelRaised,
+                controller.FinishedWasted ? Bad : Gold,
+                true,
+                7f,
+                5f);
 
             for (int index = 0;
                  index < CocktailMinigameSession.RoundLimit;
@@ -1098,15 +1143,18 @@ namespace BarPromenade
 
         private void DrawCloseButton(Rect panel)
         {
-            Rect closeButton = new Rect(
+            Rect closeButton = RetroUiTheme.SnapRect(new Rect(
                 panel.xMax - 48f,
                 panel.y + 22f,
                 28f,
-                28f);
-            FillRect(
+                28f));
+            RetroUiTheme.DrawPanel(
                 closeButton,
-                new Color(0.25f, 0.055f, 0.085f, 1f));
-            StrokeRect(closeButton, 1f, Bad);
+                RetroUiTheme.PanelRaised,
+                Bad,
+                false,
+                3f,
+                1f);
             GUI.Label(closeButton, "×", scoreStyle);
             if (GUI.Button(
                     closeButton,
@@ -1182,10 +1230,7 @@ namespace BarPromenade
 
         private static void FillRect(Rect rect, Color color)
         {
-            Color previousColor = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = previousColor;
+            RetroUiTheme.FillRect(rect, color);
         }
 
         private static void StrokeRect(
@@ -1193,26 +1238,7 @@ namespace BarPromenade
             float thickness,
             Color color)
         {
-            FillRect(
-                new Rect(rect.x, rect.y, rect.width, thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x,
-                    rect.yMax - thickness,
-                    rect.width,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(rect.x, rect.y, thickness, rect.height),
-                color);
-            FillRect(
-                new Rect(
-                    rect.xMax - thickness,
-                    rect.y,
-                    thickness,
-                    rect.height),
-                color);
+            RetroUiTheme.StrokeRect(rect, thickness, color);
         }
 
         private static Rect Expand(Rect rect, float amount)
@@ -1251,34 +1277,27 @@ namespace BarPromenade
                 return;
             }
 
-            titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 27,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = Gold }
-            };
-            stageStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 20,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = PaleGold }
-            };
-            headingStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = 24,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = PaleGold }
-            };
-            bodyStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 17,
-                wordWrap = true,
-                normal = { textColor = Color.white }
-            };
+            titleStyle = RetroUiTheme.CreateLabelStyle(
+                27,
+                TextAnchor.MiddleLeft,
+                Gold,
+                true);
+            stageStyle = RetroUiTheme.CreateLabelStyle(
+                20,
+                TextAnchor.MiddleCenter,
+                PaleGold,
+                true);
+            headingStyle = RetroUiTheme.CreateLabelStyle(
+                24,
+                TextAnchor.MiddleCenter,
+                PaleGold,
+                true);
+            bodyStyle = RetroUiTheme.CreateLabelStyle(
+                17,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text,
+                false,
+                true);
             centeredStyle = new GUIStyle(bodyStyle)
             {
                 alignment = TextAnchor.MiddleCenter
@@ -1292,13 +1311,28 @@ namespace BarPromenade
                 fontSize = 18,
                 fontStyle = FontStyle.Bold,
                 wordWrap = true,
-                normal = { textColor = Color.white }
+                normal = { textColor = RetroUiTheme.Text }
             };
             scoreStyle = new GUIStyle(centeredStyle)
             {
                 fontSize = 20,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Gold }
+            };
+            feedbackGoodStyle = new GUIStyle(centeredStyle)
+            {
+                fontStyle = FontStyle.Bold,
+                wordWrap = true,
+                normal = { textColor = Good }
+            };
+            feedbackBadStyle = new GUIStyle(feedbackGoodStyle)
+            {
+                normal = { textColor = Bad }
+            };
+            checkStyle = new GUIStyle(scoreStyle)
+            {
+                fontSize = 27,
+                normal = { textColor = Good }
             };
             resultStyle = new GUIStyle(centeredStyle)
             {

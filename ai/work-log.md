@@ -2,6 +2,63 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — PS1 tonal response correction
+
+- Moved RGB555 quantization from linear-light values to perceptual sRGB space,
+  then blended it at 35% instead of replacing the source color.
+- Preserved the original HDR delta and restored continuous dark fog, shadow
+  detail and lamp falloff while keeping the low-resolution pixel structure.
+- Strengthened the GPU test with a one-pixel checker plus exact dark and bright
+  tone fields, isolating the test camera from scene fog and post-processing.
+
+Verification:
+
+- Unity EditMode: 141/141 passed.
+- Unity PlayMode: 20/20 passed.
+- Windows x64 Player build: succeeded, 0 warnings, 124,166,277 bytes.
+
+## 2026-07-28 — PS1 readability and map projection correction
+
+- Raised the default internal world frame from `320x180` to `640x360`, removed
+  the visible screen-space Bayer grid and added four-tap footprint averaging
+  before RGB555 quantization.
+- Kept point upscaling and lower-resolution presets available, but made the
+  default output substantially cleaner at 720p and 1080p.
+- Replaced the city map's nested `GUIUtility.RotateAroundPivot` calls with one
+  logical line transform composed under the retro canvas matrix.
+- Restored road and route alignment and replaced the player's short heading
+  line with a clear chevron arrow.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 141/141 passed.
+- Unity PlayMode: 20/20 passed, including the updated D3D composite test.
+- Windows x64 Player build: succeeded, 0 warnings, 124,165,413 bytes.
+
+## 2026-07-28 — PS1-inspired presentation and audio
+
+- Added a PC RenderGraph world composite with a default `320x180` internal
+  frame, RGB555 quantization, stable 4x4 Bayer dithering and point upscaling;
+  retained `426x240` as an optional readability preset.
+- Restyled the interaction prompt, intoxication HUD, city map and cocktail
+  minigame with one burgundy/amber retro theme while keeping the UI crisp
+  above the pixelated world.
+- Replaced smooth runtime cylinder visuals with one shared flat-shaded
+  8-sided mesh, enabled hard directional shadows and disabled camera MSAA.
+- Added deterministic generated `22050 Hz` retro SFX, bounded source pools,
+  cooldowns, scene-local city/bar ambience and mild filtering for the existing
+  correctly routed music themes.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 137/137 passed.
+- Unity PlayMode: 20/20 passed, including the D3D GPU composite smoke test.
+- Windows x64 Player build: succeeded, 0 warnings, 124,164,821 bytes.
+
 ## 2026-07-28 — Cocktail glass liquid polish
 
 - Realigned the procedural liquid to the transparent inner cavity of the

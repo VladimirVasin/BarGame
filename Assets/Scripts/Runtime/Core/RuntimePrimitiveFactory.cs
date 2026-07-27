@@ -4,8 +4,11 @@ namespace BarPromenade
 {
     public static class RuntimePrimitiveFactory
     {
+        private const int LowPolyCylinderSides = 8;
+
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static Mesh lowPolyCylinderMesh;
 
         public static GameObject CreateBox(
             string name,
@@ -120,6 +123,15 @@ namespace BarPromenade
                 renderer.sharedMaterial = sharedMaterial;
             }
 
+            if (type == PrimitiveType.Cylinder)
+            {
+                MeshFilter meshFilter = result.GetComponent<MeshFilter>();
+                if (meshFilter != null)
+                {
+                    meshFilter.sharedMesh = GetLowPolyCylinderMesh();
+                }
+            }
+
             SetColor(renderer, color);
 
             if (!collider)
@@ -127,11 +139,125 @@ namespace BarPromenade
                 Collider primitiveCollider = result.GetComponent<Collider>();
                 if (primitiveCollider != null)
                 {
-                    Object.Destroy(primitiveCollider);
+                    if (Application.isPlaying)
+                    {
+                        Object.Destroy(primitiveCollider);
+                    }
+                    else
+                    {
+                        Object.DestroyImmediate(primitiveCollider);
+                    }
                 }
             }
 
             return result;
+        }
+
+        private static Mesh GetLowPolyCylinderMesh()
+        {
+            if (lowPolyCylinderMesh != null)
+            {
+                return lowPolyCylinderMesh;
+            }
+
+            int sideVertexCount = LowPolyCylinderSides * 4;
+            int capRingVertexCount = LowPolyCylinderSides * 2;
+            int vertexCount = sideVertexCount + capRingVertexCount + 2;
+            var vertices = new Vector3[vertexCount];
+            var normals = new Vector3[vertexCount];
+            var uvs = new Vector2[vertexCount];
+            var triangles = new int[LowPolyCylinderSides * 12];
+
+            int triangleIndex = 0;
+            for (int side = 0; side < LowPolyCylinderSides; side++)
+            {
+                float angleA = side * Mathf.PI * 2f / LowPolyCylinderSides;
+                float angleB =
+                    (side + 1) * Mathf.PI * 2f / LowPolyCylinderSides;
+                Vector3 bottomA = new Vector3(
+                    Mathf.Cos(angleA) * 0.5f,
+                    -1f,
+                    Mathf.Sin(angleA) * 0.5f);
+                Vector3 bottomB = new Vector3(
+                    Mathf.Cos(angleB) * 0.5f,
+                    -1f,
+                    Mathf.Sin(angleB) * 0.5f);
+                Vector3 topA = new Vector3(bottomA.x, 1f, bottomA.z);
+                Vector3 topB = new Vector3(bottomB.x, 1f, bottomB.z);
+                Vector3 faceNormal =
+                    Vector3.Cross(topA - bottomA, bottomB - bottomA).normalized;
+
+                int vertex = side * 4;
+                vertices[vertex] = bottomA;
+                vertices[vertex + 1] = topA;
+                vertices[vertex + 2] = topB;
+                vertices[vertex + 3] = bottomB;
+                for (int offset = 0; offset < 4; offset++)
+                {
+                    normals[vertex + offset] = faceNormal;
+                }
+
+                float uA = side / (float)LowPolyCylinderSides;
+                float uB = (side + 1f) / LowPolyCylinderSides;
+                uvs[vertex] = new Vector2(uA, 0f);
+                uvs[vertex + 1] = new Vector2(uA, 1f);
+                uvs[vertex + 2] = new Vector2(uB, 1f);
+                uvs[vertex + 3] = new Vector2(uB, 0f);
+
+                triangles[triangleIndex++] = vertex;
+                triangles[triangleIndex++] = vertex + 1;
+                triangles[triangleIndex++] = vertex + 2;
+                triangles[triangleIndex++] = vertex;
+                triangles[triangleIndex++] = vertex + 2;
+                triangles[triangleIndex++] = vertex + 3;
+            }
+
+            int topRingStart = sideVertexCount;
+            int bottomRingStart = topRingStart + LowPolyCylinderSides;
+            int topCenter = bottomRingStart + LowPolyCylinderSides;
+            int bottomCenter = topCenter + 1;
+            vertices[topCenter] = Vector3.up;
+            normals[topCenter] = Vector3.up;
+            uvs[topCenter] = new Vector2(0.5f, 0.5f);
+            vertices[bottomCenter] = Vector3.down;
+            normals[bottomCenter] = Vector3.down;
+            uvs[bottomCenter] = new Vector2(0.5f, 0.5f);
+
+            for (int side = 0; side < LowPolyCylinderSides; side++)
+            {
+                float angle = side * Mathf.PI * 2f / LowPolyCylinderSides;
+                float x = Mathf.Cos(angle) * 0.5f;
+                float z = Mathf.Sin(angle) * 0.5f;
+                int top = topRingStart + side;
+                int bottom = bottomRingStart + side;
+                vertices[top] = new Vector3(x, 1f, z);
+                normals[top] = Vector3.up;
+                uvs[top] = new Vector2(x + 0.5f, z + 0.5f);
+                vertices[bottom] = new Vector3(x, -1f, z);
+                normals[bottom] = Vector3.down;
+                uvs[bottom] = new Vector2(x + 0.5f, z + 0.5f);
+
+                int next = (side + 1) % LowPolyCylinderSides;
+                triangles[triangleIndex++] = topCenter;
+                triangles[triangleIndex++] = topRingStart + next;
+                triangles[triangleIndex++] = top;
+                triangles[triangleIndex++] = bottomCenter;
+                triangles[triangleIndex++] = bottom;
+                triangles[triangleIndex++] = bottomRingStart + next;
+            }
+
+            lowPolyCylinderMesh = new Mesh
+            {
+                name = "Shared PS1 Eight-Sided Cylinder",
+                hideFlags = HideFlags.HideAndDontSave,
+                vertices = vertices,
+                normals = normals,
+                uv = uvs,
+                triangles = triangles
+            };
+            lowPolyCylinderMesh.RecalculateBounds();
+            lowPolyCylinderMesh.UploadMeshData(true);
+            return lowPolyCylinderMesh;
         }
     }
 }

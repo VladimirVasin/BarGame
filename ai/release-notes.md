@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### PS1-inspired presentation and audio
+
+- Added a PC renderer feature that composites the post-processed world at
+  `640x360` by default, applies four-tap footprint averaging and RGB555
+  quantization as a 35% perceptual-space blend without a visible screen-space
+  dither grid, then point-upscales at exact 2x/3x scale on 720p/1080p outputs;
+  lower `426x240` and `320x180` modes remain available.
+- Restyled prompts, intoxication HUD, city map and cocktail interface with a
+  compact burgundy/amber PS1-era UI theme. General overlays use a logical
+  `640x360` canvas, while the cocktail screen remains responsive.
+- Replaced smooth cylinder visuals with one shared flat-shaded 8-sided mesh,
+  switched the main directional light to hard shadows and disabled camera
+  MSAA for sharper low-poly silhouettes.
+- Added deterministic `22050 Hz` retro UI, movement, door and cocktail SFX with
+  pooled playback, cooldowns and voice limits.
+- Added separate procedural ambience for the city and bar, while preserving
+  the correct `city_theme`/`bar_theme` split and applying a mild low-pass tone
+  to both music players.
+- Kept runtime IMGUI intentionally crisp after the pixelated world composite.
+  The current renderer integration targets PC; mobile parity is deferred.
+- Fixed city-map road/route/player-heading lines being displaced by nested
+  GUI transforms; the player now uses a clear chevron heading indicator.
+
 ### Cocktail mixing minigame
 
 - Replaced the five-pick drink selection with a hands-on three-cocktail game
