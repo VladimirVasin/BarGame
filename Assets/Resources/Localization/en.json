@@ -1,0 +1,244 @@
+{
+  "entries": [
+    {
+      "key": "interaction.enter_bar",
+      "value": "E — enter the bar"
+    },
+    {
+      "key": "interaction.exit_bar",
+      "value": "E — return to the city"
+    },
+    {
+      "key": "interaction.order_drinks",
+      "value": "E — mix cocktails"
+    },
+    {
+      "key": "drinking.intoxication",
+      "value": "Intoxication: {0}/100"
+    },
+    {
+      "key": "drinking.wasted",
+      "value": "Wasted — {0}s remaining"
+    },
+    {
+      "key": "drinking.none",
+      "value": "nothing"
+    },
+    {
+      "key": "cocktail.title",
+      "value": "Mix Your Cocktail"
+    },
+    {
+      "key": "cocktail.stage",
+      "value": "Cocktail {0}/3"
+    },
+    {
+      "key": "cocktail.choose_base",
+      "value": "Choose a base"
+    },
+    {
+      "key": "cocktail.choose_base_hint",
+      "value": "Your base defines the flavor and compatible ingredients"
+    },
+    {
+      "key": "cocktail.mix_hint",
+      "value": "Add 2 to 4 ingredients without ruining the mix"
+    },
+    {
+      "key": "cocktail.controls.choose",
+      "value": "←/→ — choose"
+    },
+    {
+      "key": "cocktail.controls.add",
+      "value": "E / Enter — add"
+    },
+    {
+      "key": "cocktail.controls.serve",
+      "value": "Space — serve"
+    },
+    {
+      "key": "cocktail.controls.back",
+      "value": "Esc — back"
+    },
+    {
+      "key": "cocktail.score.current",
+      "value": "This cocktail: {0}"
+    },
+    {
+      "key": "cocktail.score.total",
+      "value": "Total: {0}"
+    },
+    {
+      "key": "cocktail.feedback.good",
+      "value": "Great match! +{0}"
+    },
+    {
+      "key": "cocktail.feedback.bad",
+      "value": "Bad match! −{0}"
+    },
+    {
+      "key": "cocktail.result.round",
+      "value": "Cocktail served: {0} points"
+    },
+    {
+      "key": "cocktail.result.final",
+      "value": "Final score: {0}/300 — {1}"
+    },
+    {
+      "key": "cocktail.result.wasted_early",
+      "value": "Too strong — Wasted!"
+    },
+    {
+      "key": "cocktail.rank.slop",
+      "value": "Bar Slop"
+    },
+    {
+      "key": "cocktail.rank.okay",
+      "value": "Drinkable"
+    },
+    {
+      "key": "cocktail.rank.amateur",
+      "value": "Bar Amateur"
+    },
+    {
+      "key": "cocktail.rank.master",
+      "value": "Mix Master"
+    },
+    {
+      "key": "cocktail.rank.perfect",
+      "value": "Bar Legend"
+    },
+    {
+      "key": "cocktail.ingredient.beer",
+      "value": "Beer"
+    },
+    {
+      "key": "cocktail.ingredient.wine",
+      "value": "Red wine"
+    },
+    {
+      "key": "cocktail.ingredient.vodka",
+      "value": "Vodka"
+    },
+    {
+      "key": "cocktail.ingredient.cognac",
+      "value": "Cognac"
+    },
+    {
+      "key": "cocktail.ingredient.tonic",
+      "value": "Tonic"
+    },
+    {
+      "key": "cocktail.ingredient.soda",
+      "value": "Soda water"
+    },
+    {
+      "key": "cocktail.ingredient.cola",
+      "value": "Cola"
+    },
+    {
+      "key": "cocktail.ingredient.orange",
+      "value": "Orange"
+    },
+    {
+      "key": "cocktail.ingredient.lemon",
+      "value": "Lemon"
+    },
+    {
+      "key": "cocktail.ingredient.ginger_ale",
+      "value": "Ginger ale"
+    },
+    {
+      "key": "cocktail.ingredient.honey",
+      "value": "Honey"
+    },
+    {
+      "key": "cocktail.ingredient.mint",
+      "value": "Mint"
+    },
+    {
+      "key": "cocktail.ingredient.berries",
+      "value": "Berries"
+    },
+    {
+      "key": "cocktail.ingredient.cherry",
+      "value": "Cherry"
+    },
+    {
+      "key": "cocktail.ingredient.ice",
+      "value": "Ice"
+    },
+    {
+      "key": "drink.light_beer",
+      "value": "Light beer"
+    },
+    {
+      "key": "drink.dark_beer",
+      "value": "Dark beer"
+    },
+    {
+      "key": "drink.white_wine",
+      "value": "White wine"
+    },
+    {
+      "key": "drink.red_wine",
+      "value": "Red wine"
+    },
+    {
+      "key": "drink.vodka",
+      "value": "Vodka"
+    },
+    {
+      "key": "drink.pepper_vodka",
+      "value": "Pepper vodka"
+    },
+    {
+      "key": "drink.cognac_vs",
+      "value": "Cognac VS"
+    },
+    {
+      "key": "drink.cognac_vsop",
+      "value": "Cognac VSOP"
+    },
+    {
+      "key": "drink.water",
+      "value": "Water"
+    },
+    {
+      "key": "map.open_hint",
+      "value": "M — city map"
+    },
+    {
+      "key": "map.title",
+      "value": "Promenade Map"
+    },
+    {
+      "key": "map.instructions",
+      "value": "LMB / E — add   •   ←/→ — select   •   ↑/↓ — reorder   •   R — clear   •   Esc / M — close"
+    },
+    {
+      "key": "map.route_title",
+      "value": "Bar Route"
+    },
+    {
+      "key": "map.route_empty",
+      "value": "Choose bars on the map in visiting order"
+    },
+    {
+      "key": "map.bar_name",
+      "value": "Bar {0}"
+    },
+    {
+      "key": "map.player",
+      "value": "You are here"
+    },
+    {
+      "key": "map.clear",
+      "value": "Clear route"
+    },
+    {
+      "key": "map.distance",
+      "value": "Distance: {0:0} m"
+    }
+  ]
+}

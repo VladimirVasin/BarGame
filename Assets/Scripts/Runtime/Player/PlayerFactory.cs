@@ -1,0 +1,60 @@
+using UnityEngine;
+
+namespace BarPromenade
+{
+    public readonly struct PlayerRuntime
+    {
+        public PlayerRuntime(
+            GameObject gameObject,
+            PlayerMotor motor,
+            PlayerInteractor interactor,
+            PlayerSpriteRig visual)
+        {
+            GameObject = gameObject;
+            Motor = motor;
+            Interactor = interactor;
+            Visual = visual;
+        }
+
+        public GameObject GameObject { get; }
+        public PlayerMotor Motor { get; }
+        public PlayerInteractor Interactor { get; }
+        public PlayerSpriteRig Visual { get; }
+    }
+
+    public static class PlayerFactory
+    {
+        public static PlayerRuntime Create(
+            Transform parent,
+            Vector3 position,
+            Camera camera,
+            IWalkableArea walkableArea,
+            InteractionPromptView promptView)
+        {
+            GameObject player = new GameObject("Sprite Player");
+            player.transform.SetParent(parent, false);
+            player.transform.position = position;
+
+            CharacterController controller = player.AddComponent<CharacterController>();
+            controller.height = 1.7f;
+            controller.radius = 0.32f;
+            controller.center = new Vector3(0f, 0.85f, 0f);
+            controller.stepOffset = 0.28f;
+            controller.slopeLimit = 45f;
+            controller.skinWidth = 0.04f;
+
+            GameObject visualObject = new GameObject("13-Part Sprite Visual");
+            visualObject.transform.SetParent(player.transform, false);
+            visualObject.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            PlayerSpriteRig visual = visualObject.AddComponent<PlayerSpriteRig>();
+            visual.Initialize(camera);
+
+            PlayerMotor motor = player.AddComponent<PlayerMotor>();
+            motor.Initialize(camera, walkableArea, visual);
+
+            PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
+            interactor.Initialize(promptView);
+            return new PlayerRuntime(player, motor, interactor, visual);
+        }
+    }
+}

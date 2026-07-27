@@ -1,0 +1,48 @@
+# Unity-generated directories
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Unity-generated IDE files
+/*.csproj
+/*.sln
+/*.slnx
+/*.unityproj
+/*.pidb
+/*.booproj
+/*.svd
+/*.pdb
+/*.mdb
+/*.opendb
+/*.VC.db
+
+# IDE and editor state
+/.vs/
+/.vscode/
+/.idea/
+*.user
+*.userprefs
+*.suo
+*.tmp
+
+# Unity / OS transient files
+sysinfo.txt
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+crashlytics-build.properties
+/[Ee]xportedObj/
+/.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test and coverage output
+/TestResults/
+/CodeCoverage/
+

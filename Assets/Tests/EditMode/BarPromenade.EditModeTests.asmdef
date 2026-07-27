@@ -1,0 +1,21 @@
+{
+  "name": "BarPromenade.EditModeTests",
+  "rootNamespace": "BarPromenade.Tests.EditMode",
+  "references": [
+    "BarPromenade.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

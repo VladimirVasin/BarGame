@@ -1,0 +1,244 @@
+{
+  "entries": [
+    {
+      "key": "interaction.enter_bar",
+      "value": "E — войти в бар"
+    },
+    {
+      "key": "interaction.exit_bar",
+      "value": "E — выйти в город"
+    },
+    {
+      "key": "interaction.order_drinks",
+      "value": "E — смешать коктейли"
+    },
+    {
+      "key": "drinking.intoxication",
+      "value": "Опьянение: {0}/100"
+    },
+    {
+      "key": "drinking.wasted",
+      "value": "В никакашку — ещё {0} с"
+    },
+    {
+      "key": "drinking.none",
+      "value": "ничего"
+    },
+    {
+      "key": "cocktail.title",
+      "value": "Смешай свой коктейль"
+    },
+    {
+      "key": "cocktail.stage",
+      "value": "Коктейль {0}/3"
+    },
+    {
+      "key": "cocktail.choose_base",
+      "value": "Выберите основу"
+    },
+    {
+      "key": "cocktail.choose_base_hint",
+      "value": "Основа задаёт вкус и подходящие ингредиенты"
+    },
+    {
+      "key": "cocktail.mix_hint",
+      "value": "Добавьте от 2 до 4 ингредиентов и не испортите сочетание"
+    },
+    {
+      "key": "cocktail.controls.choose",
+      "value": "←/→ — выбрать"
+    },
+    {
+      "key": "cocktail.controls.add",
+      "value": "E / Enter — добавить"
+    },
+    {
+      "key": "cocktail.controls.serve",
+      "value": "Пробел — подать"
+    },
+    {
+      "key": "cocktail.controls.back",
+      "value": "Esc — назад"
+    },
+    {
+      "key": "cocktail.score.current",
+      "value": "Этот коктейль: {0}"
+    },
+    {
+      "key": "cocktail.score.total",
+      "value": "Всего: {0}"
+    },
+    {
+      "key": "cocktail.feedback.good",
+      "value": "Отлично сочетается! +{0}"
+    },
+    {
+      "key": "cocktail.feedback.bad",
+      "value": "Не сочетается! −{0}"
+    },
+    {
+      "key": "cocktail.result.round",
+      "value": "Коктейль готов: {0} очков"
+    },
+    {
+      "key": "cocktail.result.final",
+      "value": "Итог: {0}/300 — {1}"
+    },
+    {
+      "key": "cocktail.result.wasted_early",
+      "value": "Слишком крепко — В никакашку!"
+    },
+    {
+      "key": "cocktail.rank.slop",
+      "value": "Барные помои"
+    },
+    {
+      "key": "cocktail.rank.okay",
+      "value": "Можно пить"
+    },
+    {
+      "key": "cocktail.rank.amateur",
+      "value": "Бармен-любитель"
+    },
+    {
+      "key": "cocktail.rank.master",
+      "value": "Мастер микса"
+    },
+    {
+      "key": "cocktail.rank.perfect",
+      "value": "Легенда стойки"
+    },
+    {
+      "key": "cocktail.ingredient.beer",
+      "value": "Пиво"
+    },
+    {
+      "key": "cocktail.ingredient.wine",
+      "value": "Красное вино"
+    },
+    {
+      "key": "cocktail.ingredient.vodka",
+      "value": "Водка"
+    },
+    {
+      "key": "cocktail.ingredient.cognac",
+      "value": "Коньяк"
+    },
+    {
+      "key": "cocktail.ingredient.tonic",
+      "value": "Тоник"
+    },
+    {
+      "key": "cocktail.ingredient.soda",
+      "value": "Содовая"
+    },
+    {
+      "key": "cocktail.ingredient.cola",
+      "value": "Кола"
+    },
+    {
+      "key": "cocktail.ingredient.orange",
+      "value": "Апельсин"
+    },
+    {
+      "key": "cocktail.ingredient.lemon",
+      "value": "Лимон"
+    },
+    {
+      "key": "cocktail.ingredient.ginger_ale",
+      "value": "Имбирный эль"
+    },
+    {
+      "key": "cocktail.ingredient.honey",
+      "value": "Мёд"
+    },
+    {
+      "key": "cocktail.ingredient.mint",
+      "value": "Мята"
+    },
+    {
+      "key": "cocktail.ingredient.berries",
+      "value": "Ягоды"
+    },
+    {
+      "key": "cocktail.ingredient.cherry",
+      "value": "Вишня"
+    },
+    {
+      "key": "cocktail.ingredient.ice",
+      "value": "Лёд"
+    },
+    {
+      "key": "drink.light_beer",
+      "value": "Светлое пиво"
+    },
+    {
+      "key": "drink.dark_beer",
+      "value": "Тёмное пиво"
+    },
+    {
+      "key": "drink.white_wine",
+      "value": "Белое вино"
+    },
+    {
+      "key": "drink.red_wine",
+      "value": "Красное вино"
+    },
+    {
+      "key": "drink.vodka",
+      "value": "Водка"
+    },
+    {
+      "key": "drink.pepper_vodka",
+      "value": "Перцовая водка"
+    },
+    {
+      "key": "drink.cognac_vs",
+      "value": "Коньяк VS"
+    },
+    {
+      "key": "drink.cognac_vsop",
+      "value": "Коньяк VSOP"
+    },
+    {
+      "key": "drink.water",
+      "value": "Вода"
+    },
+    {
+      "key": "map.open_hint",
+      "value": "M — карта города"
+    },
+    {
+      "key": "map.title",
+      "value": "Карта променада"
+    },
+    {
+      "key": "map.instructions",
+      "value": "ЛКМ / E — добавить   •   ←/→ — выбрать   •   ↑/↓ — порядок   •   R — очистить   •   Esc / M — закрыть"
+    },
+    {
+      "key": "map.route_title",
+      "value": "Маршрут по барам"
+    },
+    {
+      "key": "map.route_empty",
+      "value": "Выберите бары на карте в порядке посещения"
+    },
+    {
+      "key": "map.bar_name",
+      "value": "Бар {0}"
+    },
+    {
+      "key": "map.player",
+      "value": "Вы здесь"
+    },
+    {
+      "key": "map.clear",
+      "value": "Очистить маршрут"
+    },
+    {
+      "key": "map.distance",
+      "value": "Длина: {0:0} м"
+    }
+  ]
+}
