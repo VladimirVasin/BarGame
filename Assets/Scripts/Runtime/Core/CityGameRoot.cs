@@ -13,6 +13,7 @@ namespace BarPromenade
         public CityAmbiencePlayer Ambience { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CityMapController Map { get; private set; }
+        public MinigameDebugWindow DebugWindow { get; private set; }
 
         private void Awake()
         {
@@ -83,6 +84,12 @@ namespace BarPromenade
             follow.Initialize(camera, Player.GameObject.transform, false);
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(Layout, Player, follow, intoxicationHud);
+            DebugWindow = ui.AddComponent<MinigameDebugWindow>();
+            DebugWindow.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                Map);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
         }

@@ -96,6 +96,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   selects beer pong and the others select cocktails. `BarInterior` constructs
   exactly one matching controller and `BarActivityStation`; both implement one
   completion/cancellation contract and share a state-preserving modal lock.
+- **Accepted — Explicit shared minigame catalog:** `BarMinigameCatalog` owns
+  the ordered definitions and factories used for both normal interiors and
+  debug instances. Cocktail mixing and beer pong are built-ins; registering a
+  unique future activity definition makes it available to the F9 window
+  without changing that window.
+- **Accepted — Isolated F9 debug launch:** Both runtime roots install the same
+  minigame debug window. Opening it closes a conflicting city map and cancels
+  a scene minigame or prior debug game before capturing the modal state.
+  Debug-created controllers start with fresh drinking state, do not write
+  intoxication, drinks or `Wasted` progress, and are not subscribed to
+  bar-visit completion; closing either window or game restores the previously
+  captured input/HUD state.
 - **Accepted — Three served cocktails:** A complete session contains exactly
   three rounds unless intoxication reaches 100. Each round selects beer, wine,
   vodka or cognac as its base, then accepts 2–4 unique additions before serving.

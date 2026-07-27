@@ -327,6 +327,34 @@
     {
       "key": "map.distance",
       "value": "Длина: {0:0} м"
+    },
+    {
+      "key": "debug.minigames.title",
+      "value": "DEBUG: МИНИ-ИГРЫ"
+    },
+    {
+      "key": "debug.minigames.hint",
+      "value": "Запуск из этого окна не меняет посещённые бары и прогресс опьянения"
+    },
+    {
+      "key": "debug.minigames.controls",
+      "value": "↑/↓ — выбрать   •   Enter — запустить   •   Esc / F9 — закрыть"
+    },
+    {
+      "key": "debug.minigames.empty",
+      "value": "Нет зарегистрированных мини-игр"
+    },
+    {
+      "key": "debug.minigames.unavailable",
+      "value": "Не удалось запустить мини-игру"
+    },
+    {
+      "key": "debug.minigame.cocktail",
+      "value": "Смешивание коктейлей"
+    },
+    {
+      "key": "debug.minigame.beer_pong",
+      "value": "Бирпонг"
     }
   ]
 }

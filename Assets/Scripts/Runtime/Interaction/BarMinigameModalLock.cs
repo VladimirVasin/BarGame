@@ -4,6 +4,8 @@ namespace BarPromenade
 {
     public sealed class BarMinigameModalLock
     {
+        private static BarMinigameModalLock activeLock;
+
         private PlayerMotor motor;
         private PlayerInteractor interactor;
         private PlayerCameraFollow cameraFollow;
@@ -14,13 +16,24 @@ namespace BarPromenade
         private bool previousHudVisibility;
 
         public bool IsLocked { get; private set; }
+        public static bool IsAnyLocked =>
+            activeLock != null && activeLock.IsLocked;
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetActiveLock()
+        {
+            activeLock = null;
+        }
 
         public bool TryCaptureAndDisable(
             PlayerInteractor activeInteractor,
             PlayerCameraFollow fallbackCamera,
             IntoxicationHudView intoxicationHud)
         {
-            if (IsLocked || activeInteractor == null)
+            if (IsLocked ||
+                activeLock != null ||
+                activeInteractor == null)
             {
                 return false;
             }
@@ -39,6 +52,7 @@ namespace BarPromenade
             previousHudVisibility =
                 hud == null || hud.Visible;
             IsLocked = true;
+            activeLock = this;
 
             motor?.SetInputEnabled(false);
             interactor.SetInputEnabled(false);
@@ -71,6 +85,11 @@ namespace BarPromenade
             cameraFollow = null;
             hud = null;
             IsLocked = false;
+            if (activeLock == this)
+            {
+                activeLock = null;
+            }
+
             return true;
         }
 

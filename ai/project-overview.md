@@ -65,6 +65,13 @@ The vertical slice contains:
   context for the current city;
 - one generated shared bar-interior scene whose furniture and interaction
   station adapt to the active bar activity, plus one exit;
+- one explicit `BarMinigameCatalog` whose ordered definitions and factories
+  create both normal and debug minigame instances; cocktail mixing and beer
+  pong are registered now, and future registrations appear in the debug list;
+- an `F9` minigame debug window in both `City` and `BarInterior`; opening it
+  closes a conflicting map or minigame before taking the modal lock, while
+  launched debug instances neither complete bar visits nor persist
+  intoxication, drinks or the `Wasted` effect;
 - a same-scene modal cocktail minigame at the counter: exactly three served
   cocktails unless intoxication reaches 100, each built from one of four bases
   and 2–4 unique additions chosen from a deterministic seven-item shelf; its

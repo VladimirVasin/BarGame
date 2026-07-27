@@ -42,16 +42,16 @@ Assets/
       Map/           ordered road-route model and deterministic pathfinding
       World/         layout, graph generation, world/night, local fog and halos
       Player/        motor, factory, 13-part rig, billboard, camera
-      Interaction/   contract, selection, bar entrance and exit
+      Interaction/   contract, shared minigame catalog, selection and entrances
       Scenes/        generated bar interior
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
-      UI/            crisp retro theme, prompts, HUD, cocktail view and city map
+      UI/            retro UI, prompts, HUD, map and F9 minigame debug window
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout, roads, night, cocktails, session, retro UI/audio
-    PlayMode/        PS1 GPU presentation, cocktail modal and complete flow
+    EditMode/        layout, roads, minigame catalog, sessions, retro UI/audio
+    PlayMode/        PS1 GPU presentation, modals, F9 debug and complete flow
 Packages/
 ProjectSettings/
 ```
@@ -68,13 +68,14 @@ player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
        <- restored spawn <- GameSessionState <- BarExit
-       -> BarActivityStation -> CocktailMinigame
-                             -> CocktailRules + deterministic 7-item shelf
-                          or -> BeerPongMinigame
-                             -> 120 Hz ball physics + six-cup session
+       -> BarActivityStation -> BarMinigameCatalog -> CocktailMinigame
+                                                  -> CocktailRules + deterministic 7-item shelf
+                                               or -> BeerPongMinigame
+                                                  -> 120 Hz ball physics + six-cup session
                              -> drinking progress -> GameSessionState
                              -> completed visit -> CityMap
                              -> intoxication effects
+F9 -> MinigameDebugWindow -> BarMinigameCatalog -> isolated minigame instance
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
 scene root -> matching procedural ambience

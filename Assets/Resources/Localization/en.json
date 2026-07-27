@@ -327,6 +327,34 @@
     {
       "key": "map.distance",
       "value": "Distance: {0:0} m"
+    },
+    {
+      "key": "debug.minigames.title",
+      "value": "DEBUG: MINIGAMES"
+    },
+    {
+      "key": "debug.minigames.hint",
+      "value": "Debug launches do not change visited bars or intoxication progress"
+    },
+    {
+      "key": "debug.minigames.controls",
+      "value": "↑/↓ — select   •   Enter — launch   •   Esc / F9 — close"
+    },
+    {
+      "key": "debug.minigames.empty",
+      "value": "No registered minigames"
+    },
+    {
+      "key": "debug.minigames.unavailable",
+      "value": "The minigame could not be launched"
+    },
+    {
+      "key": "debug.minigame.cocktail",
+      "value": "Cocktail mixing"
+    },
+    {
+      "key": "debug.minigame.beer_pong",
+      "value": "Beer pong"
     }
   ]
 }

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### F9 minigame debug window
+
+- Press `F9` in the city or bar interior to open a direct launcher for every
+  registered minigame; cocktail mixing and beer pong are available now.
+- Normal interiors and the debug list use the same explicit catalog, so a
+  future game appears after its definition and factory are registered.
+- Opening the window closes a conflicting map or minigame and preserves the
+  modal input/HUD state when the window or launched game closes.
+- Debug runs are isolated: they do not mark a bar visited or save
+  intoxication, consumed drinks or the `Wasted` effect.
+
 ### Beer-pong minigame
 
 - The second bar on the stable city map now opens beer pong, while the first

@@ -54,6 +54,7 @@ namespace BarPromenade
         private bool serveAfterPour;
         private bool wastedDebuffApplied;
         private bool completionRaised;
+        private bool persistSessionProgress = true;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -191,11 +192,13 @@ namespace BarPromenade
             CocktailMinigameView minigameView,
             IntoxicationHudView intoxicationHud,
             PlayerRuntime player,
-            PlayerCameraFollow follow)
+            PlayerCameraFollow follow,
+            bool persistProgress = true)
         {
             view = minigameView;
             hud = intoxicationHud;
             cameraFollow = follow;
+            persistSessionProgress = persistProgress;
             view?.Initialize(this);
         }
 
@@ -210,11 +213,19 @@ namespace BarPromenade
 
             CocktailMinigameSession newSession =
                 new CocktailMinigameSession(
-                GameSessionState.CitySeed,
-                GameSessionState.ActiveBarId,
-                GameSessionState.IntoxicationLevel,
-                GameSessionState.LastAlcoholicDrink,
-                GameSessionState.DrinksConsumed);
+                    GameSessionState.CitySeed,
+                    persistSessionProgress
+                        ? GameSessionState.ActiveBarId
+                        : "debug-cocktail",
+                    persistSessionProgress
+                        ? GameSessionState.IntoxicationLevel
+                        : 0,
+                    persistSessionProgress
+                        ? GameSessionState.LastAlcoholicDrink
+                        : DrinkId.None,
+                    persistSessionProgress
+                        ? GameSessionState.DrinksConsumed
+                        : 0);
             if (!modalLock.TryCaptureAndDisable(
                     interactor,
                     cameraFollow,
@@ -598,10 +609,14 @@ namespace BarPromenade
             lastRound = session.Serve();
             offers = noOffers;
             ActivePourIngredient = CocktailIngredientId.None;
-            GameSessionState.UpdateDrinkingProgress(
-                session.Intoxication,
-                session.LastAlcoholicDrink,
-                session.CocktailsConsumed);
+            if (persistSessionProgress)
+            {
+                GameSessionState.UpdateDrinkingProgress(
+                    session.Intoxication,
+                    session.LastAlcoholicDrink,
+                    session.CocktailsConsumed);
+            }
+
             RetroAudio.Play(RetroSfxId.Shake);
 
             BeginPhase(
@@ -653,7 +668,11 @@ namespace BarPromenade
                 return;
             }
 
-            GameSessionState.ApplyWasted(WastedDurationSeconds);
+            if (persistSessionProgress)
+            {
+                GameSessionState.ApplyWasted(WastedDurationSeconds);
+            }
+
             wastedDebuffApplied = true;
         }
 

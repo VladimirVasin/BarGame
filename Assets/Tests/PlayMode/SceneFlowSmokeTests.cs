@@ -60,6 +60,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarActivityKind.Cocktail));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
+            Assert.That(cityRoot.DebugWindow, Is.Not.Null);
+            Assert.That(cityRoot.DebugWindow.IsInitialized, Is.True);
             Assert.That(cityRoot.Music, Is.Not.Null);
             Assert.That(cityRoot.Music.Source, Is.Not.Null);
             Assert.That(cityRoot.Music.Source.loop, Is.True);
@@ -116,6 +118,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cityRoot.Player.Interactor.InputEnabled, Is.False);
             Assert.That(follow.OrbitInputEnabled, Is.False);
             Assert.That(hud.Visible, Is.False);
+
+            Assert.That(cityRoot.DebugWindow.Open(), Is.True);
+            Assert.That(map.IsOpen, Is.False);
+            Assert.That(map.Open(), Is.False);
+            Assert.That(
+                cityRoot.DebugWindow.TryLaunch(
+                    BarMinigameCatalog.CocktailId),
+                Is.True);
+            Assert.That(map.Open(), Is.False);
+            cityRoot.DebugWindow.ActiveDebugMinigame.Cancel();
+            Assert.That(cityRoot.Player.Motor.InputEnabled, Is.True);
+            Assert.That(cityRoot.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(follow.OrbitInputEnabled, Is.True);
+            Assert.That(hud.Visible, Is.True);
+            Assert.That(map.Open(), Is.True);
 
             Assert.That(map.ToggleBar(0), Is.True);
             Assert.That(map.ToggleBar(1), Is.True);
@@ -374,6 +391,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(interiorRoot.CocktailMinigame));
             Assert.That(interiorRoot.CocktailMinigame, Is.Not.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
+            Assert.That(interiorRoot.DebugWindow, Is.Not.Null);
+            Assert.That(
+                interiorRoot.DebugWindow.IsInitialized,
+                Is.True);
             Assert.That(interiorRoot.Music, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source.loop, Is.True);

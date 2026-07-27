@@ -2,6 +2,27 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — F9 minigame debug launcher
+
+- Added one localized retro debug window to `City` and `BarInterior`; `F9`
+  opens it and launches the registered cocktail or beer-pong activity directly.
+- Added one explicit `BarMinigameCatalog` for normal and debug construction.
+  A future game appears after registering its unique definition and factory.
+- Opening the window closes a conflicting map or minigame before taking the
+  state-preserving modal lock, and closing restores the captured player,
+  camera and HUD state.
+- Debug instances use fresh transient drinking state, do not mark a bar
+  visited and do not persist intoxication, drinks or `Wasted`.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 181/181 passed.
+- Unity PlayMode: 24/24 passed, including a real Input System F9 press,
+  both isolated debug launches and the complete scene flow.
+- Windows x64 Player build: succeeded, 0 warnings, 129,113,951 bytes.
+
 ## 2026-07-28 — Second-bar beer pong
 
 - Added stable per-bar activities: the second row-major city bar opens beer

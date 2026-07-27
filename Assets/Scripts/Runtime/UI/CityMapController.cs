@@ -45,10 +45,8 @@ namespace BarPromenade
         private PlayerRuntime player;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
-        private bool previousMotorInput;
-        private bool previousInteractorInput;
-        private bool previousOrbitInput;
-        private bool previousHudVisibility;
+        private readonly BarMinigameModalLock modalLock =
+            new BarMinigameModalLock();
         private int inputUnlockFrame;
 
         public bool IsInitialized { get; private set; }
@@ -130,21 +128,12 @@ namespace BarPromenade
                 return false;
             }
 
-            previousMotorInput =
-                player.Motor != null && player.Motor.InputEnabled;
-            previousInteractorInput =
-                player.Interactor != null && player.Interactor.InputEnabled;
-            previousOrbitInput =
-                cameraFollow != null && cameraFollow.OrbitInputEnabled;
-            previousHudVisibility =
-                intoxicationHud == null || intoxicationHud.Visible;
-
-            player.Motor?.SetInputEnabled(false);
-            player.Interactor?.SetInputEnabled(false);
-            cameraFollow?.SetOrbitInputEnabled(false);
-            if (intoxicationHud != null)
+            if (!modalLock.TryCaptureAndDisable(
+                    player.Interactor,
+                    cameraFollow,
+                    intoxicationHud))
             {
-                intoxicationHud.Visible = false;
+                return false;
             }
 
             inputUnlockFrame = Time.frameCount + 1;
@@ -167,13 +156,7 @@ namespace BarPromenade
             }
 
             IsOpen = false;
-            player.Motor?.SetInputEnabled(previousMotorInput);
-            player.Interactor?.SetInputEnabled(previousInteractorInput);
-            cameraFollow?.SetOrbitInputEnabled(previousOrbitInput);
-            if (intoxicationHud != null)
-            {
-                intoxicationHud.Visible = previousHudVisibility;
-            }
+            modalLock.Restore();
 
             if (playSound)
             {

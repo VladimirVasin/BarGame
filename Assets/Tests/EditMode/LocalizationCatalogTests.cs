@@ -85,7 +85,14 @@ namespace BarPromenade.Tests.EditMode
             "map.player",
             "map.clear",
             "map.visited_count",
-            "map.distance"
+            "map.distance",
+            "debug.minigames.title",
+            "debug.minigames.hint",
+            "debug.minigames.controls",
+            "debug.minigames.empty",
+            "debug.minigames.unavailable",
+            "debug.minigame.cocktail",
+            "debug.minigame.beer_pong"
         };
 
         [TestCase("Localization/ru")]

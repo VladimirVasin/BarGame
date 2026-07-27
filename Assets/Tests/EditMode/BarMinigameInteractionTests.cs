@@ -45,6 +45,8 @@ namespace BarPromenade.Tests.EditMode
 
             BarMinigameModalLock modalLock =
                 new BarMinigameModalLock();
+            BarMinigameModalLock competingLock =
+                new BarMinigameModalLock();
             Assert.That(
                 modalLock.TryCaptureAndDisable(
                     interactor,
@@ -62,6 +64,12 @@ namespace BarPromenade.Tests.EditMode
                     cameraFollow,
                     hud),
                 Is.False);
+            Assert.That(
+                competingLock.TryCaptureAndDisable(
+                    interactor,
+                    cameraFollow,
+                    hud),
+                Is.False);
 
             Assert.That(modalLock.Restore(), Is.True);
             Assert.That(modalLock.IsLocked, Is.False);
@@ -70,6 +78,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(cameraFollow.OrbitInputEnabled, Is.False);
             Assert.That(hud.Visible, Is.True);
             Assert.That(modalLock.Restore(), Is.False);
+            Assert.That(
+                competingLock.TryCaptureAndDisable(
+                    interactor,
+                    cameraFollow,
+                    hud),
+                Is.True);
+            Assert.That(competingLock.Restore(), Is.True);
         }
 
         [Test]

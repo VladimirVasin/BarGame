@@ -16,7 +16,9 @@
 | Third-person camera | Perspective chase framing, yaw input and obstacle avoidance | `PlayerCameraFollow.cs`, Input System, physics | Implemented |
 | Sprite presentation | Billboard and procedural 13-part walk pose | `Runtime/Player` | Implemented |
 | Interaction/UI | Select nearby bars, exits and generic activity stations; show localized prompts and use one shared modal input lock through the crisp retro theme | `Runtime/Interaction`, `Runtime/UI`, `RetroUiTheme` | Implemented |
-| Bar activity routing | Assign the stable second row-major bar to beer pong and the other generated bars to cocktails, then preserve that activity through the scene transition | `BarActivityKind`, `BuildingLot`, `BarEntrance`, `GameSessionState` | Implemented |
+| Bar minigame catalog | Own one explicit ordered set of activity IDs, localized labels/prompts and factories used by both normal interiors and debug launches; expose a registered future definition without changing the debug window | `BarMinigameCatalog`, `BarMinigameDefinition`, `IBarMinigame` | Implemented |
+| F9 minigame debug window | List every registered game in `City` and `BarInterior`, close a conflicting map or minigame before taking the modal lock, and launch an isolated instance that does not persist drinking state or complete a bar visit | `MinigameDebugWindow`, `BarMinigameCatalog`, `BarMinigameModalLock`, scene roots | Implemented |
+| Bar activity routing | Assign the stable second row-major bar to beer pong and the other generated bars to cocktails, preserve that activity through the scene transition, then resolve its registered factory | `BarActivityKind`, `BarMinigameCatalog`, `BuildingLot`, `BarEntrance`, `GameSessionState` | Implemented |
 | City map UI | Display roads/player/bars, green completed visits with a count, and edit a separately badged ordered itinerary on a logical `640x360` retro canvas | `CityMapController.cs`, `CityMapView.cs`, `RetroUiTheme`, Input System | Implemented |
 | Scene transition | Guarded async city/interior loads | `SceneTransitionService.cs` | Implemented |
 | Session state | Preserve seed, active bar/activity, ordered route, visited-bar set, return contract, intoxication, last alcohol and consumed-drink count for the current run | `GameSessionState.cs` | Implemented |
@@ -28,7 +30,7 @@
 | Beer-pong presentation | Draw the point-filtered 640x360 table and 4x4 ball/hand/cup/effect atlas, projected shadows, cup reactions, compact aim/power feedback and localized results | `BeerPongSpriteLibrary`, `Resources/BeerPong`, `RetroUiTheme` | Implemented |
 | Intoxication effects | HUD, timed movement slowdown and sprite sway | `IntoxicationStatusController.cs`, `IntoxicationHudView.cs` | Implemented |
 | Bar interior | Generated room, player, camera and exit with activity-specific cocktail-counter or long beer-pong-table station | `BarInteriorRoot.cs` | Implemented |
-| Automated tests | Determinism, cocktail rules/offers/session, beer-pong layout/physics/session, activity routing, state persistence, retro UI/audio, PS1 GPU presentation and full round trip | `Assets/Tests` | Implemented |
+| Automated tests | Determinism, minigame catalog/factories, isolated F9 launch and modal restoration, cocktail/beer-pong behavior, state persistence, retro UI/audio, PS1 GPU presentation and full round trip | `Assets/Tests` | Implemented |
 
 Primary intended flow:
 
@@ -40,11 +42,13 @@ seed -> layout data -> validation -> world builder
 player + lamp anchors -> bounded light pool -> light halos
 player + seed -> player-following local fog field
 player -> interaction -> activity-aware scene transition <-> session state
-                    -> generic bar station -> cocktail rules/offers
+                    -> generic bar station -> minigame catalog
+                                           -> cocktail rules/offers
                                            or beer-pong physics/session
                                            -> drinking progress -> session state
                                            -> completed visit -> city map
                                            -> intoxication effects
+F9 -> close conflicting modal -> minigame catalog -> isolated debug instance
 scene root -> matching scene-local music player -> Single transition stops it
            -> matching procedural ambience player
 gameplay/UI events -> RetroAudioService -> bounded category source pools

@@ -46,6 +46,7 @@ namespace BarPromenade
         public BarActivityKind ActiveActivity { get; private set; }
         public BarActivityStation ActivityStation { get; private set; }
         public IBarMinigame ActiveMinigame { get; private set; }
+        public MinigameDebugWindow DebugWindow { get; private set; }
         public CocktailMinigameController CocktailMinigame
         {
             get;
@@ -112,6 +113,13 @@ namespace BarPromenade
             IntoxicationStatusController intoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             intoxicationStatus.Initialize(Player.Motor, Player.Visual);
+            DebugWindow = ui.AddComponent<MinigameDebugWindow>();
+            DebugWindow.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                null,
+                ActiveMinigame);
 
             BuildActivityStation();
             BuildExit();
@@ -271,32 +279,25 @@ namespace BarPromenade
             IntoxicationHudView intoxicationHud,
             PlayerCameraFollow follow)
         {
-            if (ActiveActivity == BarActivityKind.BeerPong)
+            if (!BarMinigameCatalog.TryGet(
+                    ActiveActivity,
+                    out BarMinigameDefinition definition))
             {
-                BeerPongMinigameView view =
-                    ui.AddComponent<BeerPongMinigameView>();
-                BeerPongMinigame =
-                    ui.AddComponent<BeerPongMinigameController>();
-                BeerPongMinigame.Initialize(
-                    view,
-                    intoxicationHud,
-                    Player,
-                    follow);
-                ActiveMinigame = BeerPongMinigame;
+                throw new System.InvalidOperationException(
+                    $"No minigame is registered for '{ActiveActivity}'.");
             }
-            else
-            {
-                CocktailMinigameView view =
-                    ui.AddComponent<CocktailMinigameView>();
-                CocktailMinigame =
-                    ui.AddComponent<CocktailMinigameController>();
-                CocktailMinigame.Initialize(
-                    view,
-                    intoxicationHud,
-                    Player,
-                    follow);
-                ActiveMinigame = CocktailMinigame;
-            }
+
+            var context = new BarMinigameFactoryContext(
+                ui,
+                intoxicationHud,
+                Player,
+                follow,
+                true);
+            ActiveMinigame = definition.Create(context);
+            CocktailMinigame =
+                ActiveMinigame as CocktailMinigameController;
+            BeerPongMinigame =
+                ActiveMinigame as BeerPongMinigameController;
 
             ActiveMinigame.Completed += HandleMinigameCompleted;
         }
@@ -328,9 +329,11 @@ namespace BarPromenade
             Vector3 triggerSize = isBeerPong
                 ? new Vector3(1.8f, 1.8f, 0.9f)
                 : new Vector3(1.2f, 1.8f, 1.2f);
-            string promptKey = isBeerPong
-                ? "interaction.play_beer_pong"
-                : "interaction.order_drinks";
+            string promptKey = BarMinigameCatalog.TryGet(
+                ActiveActivity,
+                out BarMinigameDefinition definition)
+                ? definition.PromptKey
+                : BarActivityStation.DefaultPromptKey;
 
             GameObject station = new GameObject(
                 isBeerPong
@@ -380,9 +383,7 @@ namespace BarPromenade
         private static BarActivityKind ResolveActivity(
             BarActivityKind activity)
         {
-            return activity == BarActivityKind.BeerPong
-                ? BarActivityKind.BeerPong
-                : BarActivityKind.Cocktail;
+            return BarMinigameCatalog.NormalizeActivity(activity);
         }
     }
 }

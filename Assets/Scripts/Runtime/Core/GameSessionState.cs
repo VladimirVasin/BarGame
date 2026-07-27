@@ -190,9 +190,7 @@ namespace BarPromenade
         private static BarActivityKind NormalizeBarActivity(
             BarActivityKind barActivity)
         {
-            return barActivity == BarActivityKind.BeerPong
-                ? BarActivityKind.BeerPong
-                : BarActivityKind.Cocktail;
+            return BarMinigameCatalog.NormalizeActivity(barActivity);
         }
     }
 }

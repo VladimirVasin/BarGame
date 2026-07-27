@@ -56,6 +56,7 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private bool completionRaised;
         private bool wastedApplied;
+        private bool persistSessionProgress = true;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -130,11 +131,13 @@ namespace BarPromenade
             BeerPongMinigameView minigameView,
             IntoxicationHudView intoxicationHud,
             PlayerRuntime player,
-            PlayerCameraFollow follow)
+            PlayerCameraFollow follow,
+            bool persistProgress = true)
         {
             view = minigameView;
             hud = intoxicationHud;
             cameraFollow = follow;
+            persistSessionProgress = persistProgress;
             view?.Initialize(this);
         }
 
@@ -148,9 +151,15 @@ namespace BarPromenade
             }
 
             var newSession = new BeerPongSession(
-                GameSessionState.IntoxicationLevel,
-                GameSessionState.LastAlcoholicDrink,
-                GameSessionState.DrinksConsumed);
+                persistSessionProgress
+                    ? GameSessionState.IntoxicationLevel
+                    : 0,
+                persistSessionProgress
+                    ? GameSessionState.LastAlcoholicDrink
+                    : DrinkId.None,
+                persistSessionProgress
+                    ? GameSessionState.DrinksConsumed
+                    : 0);
             if (!modalLock.TryCaptureAndDisable(
                     interactor,
                     cameraFollow,
@@ -483,14 +492,18 @@ namespace BarPromenade
             BeerPongThrowResult throwResult =
                 session.CompleteThrow(flightResult);
             lastThrow = throwResult;
-            GameSessionState.UpdateDrinkingProgress(
-                session.Intoxication,
-                session.LastAlcoholicDrink,
-                session.DrinksConsumed);
+            if (persistSessionProgress)
+            {
+                GameSessionState.UpdateDrinkingProgress(
+                    session.Intoxication,
+                    session.LastAlcoholicDrink,
+                    session.DrinksConsumed);
+            }
 
             if (throwResult.SessionOutcome ==
                     BeerPongSessionOutcome.Wasted &&
-                !wastedApplied)
+                !wastedApplied &&
+                persistSessionProgress)
             {
                 GameSessionState.ApplyWasted(
                     WastedDurationSeconds);
