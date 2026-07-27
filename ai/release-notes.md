@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Beer-pong minigame
+
+- The second bar on the stable city map now opens beer pong, while the first
+  and third bars keep the cocktail mixer.
+- Aim with mouse, keyboard or gamepad, charge a throw and watch the ball use
+  deterministic 2.5D physics with real table and cup-rim bounces.
+- Clear six cups in ten throws. Clean sinks score 100, bank shots add 50, and
+  unused throws add an early-clear bonus.
+- Every miss consumes a light beer, adds 8 intoxication and immediately saves
+  that drinking state. The activity ends on a clear, the throw limit or
+  maximum intoxication.
+- Added a point-filtered 640x360 pixel-art bar/table background, a 4x4
+  ball/hand/cup/effect atlas, compact aiming feedback and distinct retro throw,
+  bounce, rim and sink sounds.
+- Completing the activity marks that bar visited and removes it from the
+  itinerary; cancelling leaves both the visit and route untouched.
+
 ### PS1-inspired presentation and audio
 
 - Added a PC renderer feature that composites the post-processed world at
@@ -79,7 +96,7 @@
 - Bars can be added, removed and reordered into a numbered visit itinerary.
 - Each leg follows a deterministic shortest route over the generated roads.
 - The itinerary survives bar scene transitions and removes a stop only after
-  its cocktail minigame is completed.
+  that bar's assigned minigame is completed.
 - Completed bars persist as green numbered map markers with a visited counter;
   amber corner badges keep route order readable independently.
 - Added mouse, keyboard and gamepad controls plus RU/EN map text.

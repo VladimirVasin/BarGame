@@ -33,6 +33,9 @@ namespace BarPromenade.Tests
                 Assert.That(actual.IsBar, Is.EqualTo(expected.IsBar));
                 Assert.That(actual.BarId, Is.EqualTo(expected.BarId));
                 Assert.That(
+                    actual.BarActivity,
+                    Is.EqualTo(expected.BarActivity));
+                Assert.That(
                     actual.FrontageDirection,
                     Is.EqualTo(expected.FrontageDirection));
                 Assert.That(actual.DoorPosition, Is.EqualTo(expected.DoorPosition));
@@ -108,6 +111,39 @@ namespace BarPromenade.Tests
             Assert.That(
                 layout.BuildingLots.Where(lot => lot.IsBar).Select(lot => lot.BarId),
                 Is.Unique);
+        }
+
+        [Test]
+        public void Generate_AssignsBeerPongToSecondBarInRowMajorOrder()
+        {
+            CityGenerationSettings settings = CityGenerationSettings.Default;
+            settings.BarCount = 5;
+
+            CityLayout layout = CityLayoutGenerator.Generate(settings, 91275);
+            BuildingLot[] orderedBars = layout.BuildingLots
+                .Where(lot => lot.IsBar)
+                .OrderBy(lot => lot.Cell.y)
+                .ThenBy(lot => lot.Cell.x)
+                .ToArray();
+
+            Assert.That(orderedBars, Has.Length.EqualTo(settings.BarCount));
+            for (int ordinal = 0; ordinal < orderedBars.Length; ordinal++)
+            {
+                BarActivityKind expected = ordinal == 1
+                    ? BarActivityKind.BeerPong
+                    : BarActivityKind.Cocktail;
+                Assert.That(
+                    orderedBars[ordinal].BarActivity,
+                    Is.EqualTo(expected),
+                    $"Unexpected activity for row-major bar ordinal {ordinal}.");
+            }
+
+            Assert.That(
+                layout.BuildingLots
+                    .Where(lot => !lot.IsBar)
+                    .All(lot => lot.BarActivity == BarActivityKind.None),
+                Is.True);
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
         }
 
         [Test]

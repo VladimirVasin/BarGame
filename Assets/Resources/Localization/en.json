@@ -13,6 +13,10 @@
       "value": "E — mix cocktails"
     },
     {
+      "key": "interaction.play_beer_pong",
+      "value": "E — play beer pong"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Intoxication: {0}/100"
     },
@@ -167,6 +171,86 @@
     {
       "key": "cocktail.ingredient.ice",
       "value": "Ice"
+    },
+    {
+      "key": "beerpong.title",
+      "value": "BEER PONG"
+    },
+    {
+      "key": "beerpong.score",
+      "value": "Score: {0}"
+    },
+    {
+      "key": "beerpong.throws",
+      "value": "Throws: {0}/{1}"
+    },
+    {
+      "key": "beerpong.cups",
+      "value": "Cups: {0}/6"
+    },
+    {
+      "key": "beerpong.intoxication",
+      "value": "Intoxication: {0}/100"
+    },
+    {
+      "key": "beerpong.aim",
+      "value": "Aim"
+    },
+    {
+      "key": "beerpong.power",
+      "value": "Power"
+    },
+    {
+      "key": "beerpong.controls.aim",
+      "value": "Mouse / WASD — aim"
+    },
+    {
+      "key": "beerpong.controls.throw",
+      "value": "LMB / Space — hold and release"
+    },
+    {
+      "key": "beerpong.controls.cancel",
+      "value": "Esc — leave"
+    },
+    {
+      "key": "beerpong.feedback.clean",
+      "value": "+100 — CLEAN SINK!"
+    },
+    {
+      "key": "beerpong.feedback.bank",
+      "value": "+50 — BANK SHOT!"
+    },
+    {
+      "key": "beerpong.feedback.rim",
+      "value": "RIM!"
+    },
+    {
+      "key": "beerpong.feedback.bounce",
+      "value": "BOUNCE"
+    },
+    {
+      "key": "beerpong.feedback.miss",
+      "value": "MISS — DRINK THE PENALTY"
+    },
+    {
+      "key": "beerpong.result.cleared",
+      "value": "Rack cleared!"
+    },
+    {
+      "key": "beerpong.result.out_of_throws",
+      "value": "Out of balls"
+    },
+    {
+      "key": "beerpong.result.wasted",
+      "value": "Wasted!"
+    },
+    {
+      "key": "beerpong.result.final",
+      "value": "Final: {0} points — {1}"
+    },
+    {
+      "key": "beerpong.result.continue",
+      "value": "LMB / Enter — finish"
     },
     {
       "key": "drink.light_beer",

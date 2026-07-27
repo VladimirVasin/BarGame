@@ -13,6 +13,10 @@
       "value": "E — смешать коктейли"
     },
     {
+      "key": "interaction.play_beer_pong",
+      "value": "E — сыграть в бирпонг"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Опьянение: {0}/100"
     },
@@ -167,6 +171,86 @@
     {
       "key": "cocktail.ingredient.ice",
       "value": "Лёд"
+    },
+    {
+      "key": "beerpong.title",
+      "value": "БИРПОНГ"
+    },
+    {
+      "key": "beerpong.score",
+      "value": "Очки: {0}"
+    },
+    {
+      "key": "beerpong.throws",
+      "value": "Броски: {0}/{1}"
+    },
+    {
+      "key": "beerpong.cups",
+      "value": "Стаканы: {0}/6"
+    },
+    {
+      "key": "beerpong.intoxication",
+      "value": "Опьянение: {0}/100"
+    },
+    {
+      "key": "beerpong.aim",
+      "value": "Прицел"
+    },
+    {
+      "key": "beerpong.power",
+      "value": "Сила"
+    },
+    {
+      "key": "beerpong.controls.aim",
+      "value": "Мышь / WASD — целиться"
+    },
+    {
+      "key": "beerpong.controls.throw",
+      "value": "ЛКМ / Пробел — удержать и отпустить"
+    },
+    {
+      "key": "beerpong.controls.cancel",
+      "value": "Esc — выйти"
+    },
+    {
+      "key": "beerpong.feedback.clean",
+      "value": "+100 — ЧИСТО!"
+    },
+    {
+      "key": "beerpong.feedback.bank",
+      "value": "+50 — С ОТСКОКОМ!"
+    },
+    {
+      "key": "beerpong.feedback.rim",
+      "value": "ПО КРАЮ!"
+    },
+    {
+      "key": "beerpong.feedback.bounce",
+      "value": "ОТСКОК"
+    },
+    {
+      "key": "beerpong.feedback.miss",
+      "value": "МИМО — ВЫПЕЙ ШТРАФНОЕ"
+    },
+    {
+      "key": "beerpong.result.cleared",
+      "value": "Стойка выбита!"
+    },
+    {
+      "key": "beerpong.result.out_of_throws",
+      "value": "Мячи закончились"
+    },
+    {
+      "key": "beerpong.result.wasted",
+      "value": "В никакашку!"
+    },
+    {
+      "key": "beerpong.result.final",
+      "value": "Итог: {0} очков — {1}"
+    },
+    {
+      "key": "beerpong.result.continue",
+      "value": "ЛКМ / Enter — закончить"
     },
     {
       "key": "drink.light_beer",

@@ -20,8 +20,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
-  scene loads for the same city. Accepting a completed cocktail minigame marks
-  its bar visited and removes that stop; entering or leaving early does not.
+  scene loads for the same city. A terminal bar activity reports completion
+  through `IBarMinigame`; the interior root marks that bar visited and removes
+  the stop, while entering, cancelling or leaving early does not.
   Both route and visited progress reset when the city seed changes.
 - **Accepted — Road-graph route planning:** Each itinerary leg uses
   deterministic weighted Dijkstra over `CityLayout.RoadEdges`; player and bar
@@ -42,9 +43,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   renderer integration is deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
-  Prompts, HUD and map use a logical `640x360` canvas; the denser cocktail view
-  remains responsive while sharing the same palette, stepped frames and
-  point-filtered accents.
+  Prompts, HUD, map and beer pong use a logical `640x360` canvas; the denser
+  cocktail view remains responsive while sharing the same palette, stepped
+  frames and point-filtered accents.
 - **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or
@@ -79,7 +80,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Single-mode scene load destroys the old player and stops its theme
   automatically.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
-  the mono `22050 Hz` UI, footstep, door and cocktail clips in memory.
+  the mono `22050 Hz` UI, footstep, door, cocktail and beer-pong clips in memory.
   `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
   source pools, and applies per-effect cooldown and concurrent-voice limits.
 - **Accepted — Scene-local procedural ambience:** City and bar roots each own a
@@ -90,10 +91,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone.
-- **Accepted — Same-scene bar minigame:** The cocktail game is a modal runtime
-  overlay inside `BarInterior`; player, interaction and camera inputs are
-  suspended while it is open, while keyboard, gamepad and mouse remain
-  available to the overlay.
+- **Accepted — Activity-specific same-scene minigame:** Every bar carries a
+  stable `BarActivityKind` through the transition. The second row-major bar
+  selects beer pong and the others select cocktails. `BarInterior` constructs
+  exactly one matching controller and `BarActivityStation`; both implement one
+  completion/cancellation contract and share a state-preserving modal lock.
 - **Accepted — Three served cocktails:** A complete session contains exactly
   three rounds unless intoxication reaches 100. Each round selects beer, wine,
   vodka or cognac as its base, then accepts 2–4 unique additions before serving.
@@ -107,10 +109,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   4x4 pixel-art atlas from `Resources/Cocktails` and draws its cells by UV.
   The same-scene view adds a large filling glass, ingredient travel/tilt,
   pouring, good/bad particles, shaking, three-stage progress and a final rank.
+- **Accepted — Deterministic 2.5D beer pong:** Beer-pong state remains plain
+  runtime data. A fixed `120 Hz` simulation integrates x/y/z ball motion,
+  swept table and cup-mouth contacts, table and rim restitution, settlement,
+  timeout and out-of-bounds results. IMGUI projects that physical state onto
+  one point-filtered 640x360 table backdrop and a 4x4 gameplay sprite atlas.
+- **Accepted — Beer-pong scoring and penalty:** A rack contains six cups and a
+  session allows ten throws. A clean sink awards 100, a bank adds 50, and
+  clearing early awards 50 for each unused throw. Every miss immediately adds
+  8 intoxication and one `LightBeer`; clearing the rack, spending all throws or
+  reaching 100 intoxication ends the activity.
 - **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
-  drink and total served-cocktail count are committed through
-  `GameSessionState` after every serving, survive scene loads, and reset when
-  the application subsystem restarts.
+  drink and total consumed-drink count are committed through
+  `GameSessionState` after every cocktail serving and beer-pong miss, survive
+  scene loads, and reset when the application subsystem restarts.
 - **Accepted — Deferred Wasted presentation:** Serving any bad mixture marks a
   pending 45-second unscaled-time debuff, applied at the final result or when
   the modal closes. Reaching 100 intoxication ends the session early. The

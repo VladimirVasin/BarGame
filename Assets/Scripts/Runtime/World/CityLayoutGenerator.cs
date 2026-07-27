@@ -213,18 +213,30 @@ namespace BarPromenade
             }
 
             var lots = new List<BuildingLot>(lotCount);
+            int barOrdinal = 0;
             for (int z = 0; z < settings.BlocksZ; z++)
             {
                 for (int x = 0; x < settings.BlocksX; x++)
                 {
                     int lotIndex = ToLotIndex(x, z, settings.BlocksX);
+                    bool isBar = barLots.Contains(lotIndex);
+                    BarActivityKind barActivity = BarActivityKind.None;
+                    if (isBar)
+                    {
+                        barActivity = barOrdinal == 1
+                            ? BarActivityKind.BeerPong
+                            : BarActivityKind.Cocktail;
+                        barOrdinal++;
+                    }
+
                     lots.Add(CreateBuildingLot(
                         settings,
                         seed,
                         origin,
                         new Vector2Int(x, z),
                         frontages[lotIndex],
-                        barLots.Contains(lotIndex)));
+                        isBar,
+                        barActivity));
                 }
             }
 
@@ -237,7 +249,8 @@ namespace BarPromenade
             Vector3 origin,
             Vector2Int cell,
             Vector2Int frontage,
-            bool isBar)
+            bool isBar,
+            BarActivityKind barActivity)
         {
             var random = new DeterministicRandom(
                 StableHash(seed, cell.x, cell.y, 0x4C4F5453u));
@@ -276,6 +289,7 @@ namespace BarPromenade
                 color,
                 isBar,
                 barId,
+                barActivity,
                 frontage,
                 doorPosition,
                 returnPosition);

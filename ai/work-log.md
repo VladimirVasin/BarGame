@@ -2,6 +2,31 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Second-bar beer pong
+
+- Added stable per-bar activities: the second row-major city bar opens beer
+  pong while the other two retain the cocktail mixer.
+- Replaced the counter-only coupling with one `IBarMinigame` contract, shared
+  modal lock and activity station; the generated interior now builds only the
+  matching game and furniture.
+- Added a deterministic six-cup, ten-throw session and fixed `120 Hz` 2.5D
+  simulation with swept table/cup-mouth contacts, table/rim bounces, settlement,
+  timeout and out-of-bounds results.
+- Added clean/bank/early-clear scoring. Every miss consumes a light beer,
+  adds 8 intoxication and commits the drinking state immediately.
+- Added a point-filtered 640x360 beer-pong backdrop, 4x4 ball/hand/cup/effect
+  atlas, projected flight/shadow/cup feedback, discrete aiming/power UI and
+  dedicated generated throw, bounce, rim and sink SFX.
+- Completion marks the captured bar ID visited and removes it from the route;
+  cancellation restores prior input/HUD state without completing the visit.
+
+Verification:
+
+- Complete .NET solution build: 0 errors, 0 warnings.
+- Unity EditMode: 177/177 passed.
+- Unity PlayMode: 21/21 passed.
+- Windows x64 Player build: succeeded, 0 warnings, 129,102,372 bytes.
+
 ## 2026-07-28 — Completed-bar map progress
 
 - Added a current-city visited-bar set to `GameSessionState`, preserved across

@@ -28,6 +28,9 @@ Assets/
         README.txt
     Cocktails/
       CocktailSpriteAtlas.png  4x4 glass/ingredient pixel-art atlas
+    BeerPong/
+      BeerPongBackground.png  empty 640x360 pixel-art table backdrop
+      BeerPongAtlas.png       4x4 ball/hand/cup/effect sprite atlas
     Localization/
       ru.json
       en.json
@@ -43,6 +46,7 @@ Assets/
       Scenes/        generated bar interior
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
+      BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       UI/            crisp retro theme, prompts, HUD, cocktail view and city map
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
@@ -62,13 +66,15 @@ seed -> CityLayoutGenerator -> CityLayout -> CityWorldBuilder
                                              -> CityNightWorldBuilder
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
-player -> PlayerInteractor -> BarEntrance -> SceneTransitionService
+player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
        <- restored spawn <- GameSessionState <- BarExit
-       -> CounterStation -> CocktailMinigame
-                            -> CocktailRules + deterministic 7-item shelf
-                            -> served progress -> GameSessionState
-                            -> completed visit -> CityMap
-                            -> pending Wasted -> intoxication effects
+       -> BarActivityStation -> CocktailMinigame
+                             -> CocktailRules + deterministic 7-item shelf
+                          or -> BeerPongMinigame
+                             -> 120 Hz ball physics + six-cup session
+                             -> drinking progress -> GameSessionState
+                             -> completed visit -> CityMap
+                             -> intoxication effects
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
 scene root -> matching procedural ambience

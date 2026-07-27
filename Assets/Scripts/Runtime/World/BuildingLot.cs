@@ -12,6 +12,7 @@ namespace BarPromenade
             Color color,
             bool isBar,
             string barId,
+            BarActivityKind barActivity,
             Vector2Int frontageDirection,
             Vector3 doorPosition,
             Vector3 returnPosition)
@@ -23,6 +24,7 @@ namespace BarPromenade
             Color = color;
             IsBar = isBar;
             BarId = barId ?? string.Empty;
+            BarActivity = barActivity;
             FrontageDirection = frontageDirection;
             DoorPosition = doorPosition;
             ReturnPosition = returnPosition;
@@ -40,6 +42,7 @@ namespace BarPromenade
         public Color Color { get; }
         public bool IsBar { get; }
         public string BarId { get; }
+        public BarActivityKind BarActivity { get; }
         public Vector2Int FrontageDirection { get; }
         public bool HasRoadFrontage => FrontageDirection != Vector2Int.zero;
         public Vector3 DoorPosition { get; }

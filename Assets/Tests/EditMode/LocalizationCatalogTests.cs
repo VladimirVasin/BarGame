@@ -12,6 +12,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.enter_bar",
             "interaction.exit_bar",
             "interaction.order_drinks",
+            "interaction.play_beer_pong",
             "drinking.intoxication",
             "drinking.wasted",
             "cocktail.title",
@@ -50,6 +51,26 @@ namespace BarPromenade.Tests.EditMode
             "cocktail.ingredient.berries",
             "cocktail.ingredient.cherry",
             "cocktail.ingredient.ice",
+            "beerpong.title",
+            "beerpong.score",
+            "beerpong.throws",
+            "beerpong.cups",
+            "beerpong.intoxication",
+            "beerpong.aim",
+            "beerpong.power",
+            "beerpong.controls.aim",
+            "beerpong.controls.throw",
+            "beerpong.controls.cancel",
+            "beerpong.feedback.clean",
+            "beerpong.feedback.bank",
+            "beerpong.feedback.rim",
+            "beerpong.feedback.bounce",
+            "beerpong.feedback.miss",
+            "beerpong.result.cleared",
+            "beerpong.result.out_of_throws",
+            "beerpong.result.wasted",
+            "beerpong.result.final",
+            "beerpong.result.continue",
             "drink.light_beer",
             "drink.red_wine",
             "drink.vodka",
@@ -89,6 +110,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(valuesByKey["cocktail.stage"], Does.Contain("{0}"));
             Assert.That(valuesByKey["cocktail.result.final"], Does.Contain("{0}"));
             Assert.That(valuesByKey["cocktail.result.final"], Does.Contain("{1}"));
+            Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{0}"));
+            Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{1}"));
         }
 
         [Test]

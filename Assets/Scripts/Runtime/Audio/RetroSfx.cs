@@ -26,6 +26,10 @@ namespace BarPromenade
         Shake,
         Good,
         Bad,
+        BeerPongThrow,
+        BeerPongBounce,
+        BeerPongRim,
+        BeerPongSink,
         Count
     }
 
@@ -222,7 +226,59 @@ namespace BarPromenade
                 1024,
                 6200f,
                 0f,
-                38)
+                38),
+            new RetroSfxDefinition(
+                RetroSfxId.BeerPongThrow,
+                RetroSfxCategory.Bar,
+                0.22f,
+                0.38f,
+                0f,
+                2,
+                0.05f,
+                2,
+                1024,
+                6500f,
+                0.04f,
+                70),
+            new RetroSfxDefinition(
+                RetroSfxId.BeerPongBounce,
+                RetroSfxCategory.Bar,
+                0.12f,
+                0.32f,
+                0f,
+                3,
+                0.025f,
+                2,
+                1024,
+                5200f,
+                0.05f,
+                72),
+            new RetroSfxDefinition(
+                RetroSfxId.BeerPongRim,
+                RetroSfxCategory.Bar,
+                0.18f,
+                0.45f,
+                0f,
+                3,
+                0.035f,
+                1,
+                2048,
+                8800f,
+                0.04f,
+                52),
+            new RetroSfxDefinition(
+                RetroSfxId.BeerPongSink,
+                RetroSfxCategory.Bar,
+                0.42f,
+                0.48f,
+                0f,
+                2,
+                0.12f,
+                2,
+                2048,
+                7600f,
+                0.02f,
+                42)
         };
 
         public static int Count => definitions.Length - 1;
@@ -342,6 +398,20 @@ namespace BarPromenade
                     return GenerateGood(time, duration);
                 case RetroSfxId.Bad:
                     return GenerateBad(time, duration);
+                case RetroSfxId.BeerPongThrow:
+                    return GenerateBeerPongThrow(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.BeerPongBounce:
+                    return GenerateBeerPongBounce(time, duration);
+                case RetroSfxId.BeerPongRim:
+                    return GenerateBeerPongRim(time, duration);
+                case RetroSfxId.BeerPongSink:
+                    return GenerateBeerPongSink(
+                        time,
+                        duration,
+                        ref noiseState);
                 default:
                     return 0f;
             }
@@ -530,6 +600,61 @@ namespace BarPromenade
                 278f,
                 116f);
             return (first * 0.46f + second * 0.34f) * envelope;
+        }
+
+        private static float GenerateBeerPongThrow(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.003f, 2.2f);
+            float sweep = GlideSine(time, duration, 360f, 105f);
+            float air = NextNoise(ref noiseState) * 0.18f;
+            return (sweep * 0.52f + air) * envelope;
+        }
+
+        private static float GenerateBeerPongBounce(
+            float time,
+            float duration)
+        {
+            float envelope = Envelope(time, duration, 0.001f, 3.6f);
+            float body = GlideSine(time, duration, 235f, 86f);
+            float tick = Mathf.Sin(2f * Mathf.PI * 1180f * time);
+            return (body * 0.62f + tick * 0.18f) * envelope;
+        }
+
+        private static float GenerateBeerPongRim(
+            float time,
+            float duration)
+        {
+            float envelope = Envelope(time, duration, 0.001f, 4.4f);
+            return (
+                       Mathf.Sin(2f * Mathf.PI * 1820f * time) * 0.48f +
+                       Mathf.Sin(2f * Mathf.PI * 2690f * time) * 0.31f +
+                       Mathf.Sin(2f * Mathf.PI * 910f * time) * 0.14f) *
+                   envelope;
+        }
+
+        private static float GenerateBeerPongSink(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.005f, 1.45f);
+            float splash =
+                NextNoise(ref noiseState) *
+                Mathf.Max(0f, 1f - normalized * 2.2f) *
+                0.36f;
+            float tone = normalized < 0.34f
+                ? 392f
+                : normalized < 0.67f
+                    ? 523.25f
+                    : 659.25f;
+            float chime =
+                Mathf.Sin(2f * Mathf.PI * tone * time) * 0.52f +
+                Triangle(tone * 0.5f, time) * 0.11f;
+            return (splash + chime) * envelope;
         }
 
         private static float GlideSine(

@@ -201,6 +201,7 @@ namespace BarPromenade
 
             var cells = new HashSet<Vector2Int>();
             var barIds = new HashSet<string>(StringComparer.Ordinal);
+            var bars = new List<BuildingLot>();
             for (int index = 0; index < BuildingLots.Count; index++)
             {
                 BuildingLot lot = BuildingLots[index];
@@ -212,7 +213,20 @@ namespace BarPromenade
 
                 if (!lot.IsBar)
                 {
+                    if (lot.BarActivity != BarActivityKind.None)
+                    {
+                        throw new InvalidOperationException(
+                            $"Non-bar lot {lot.Cell} cannot define a bar activity.");
+                    }
+
                     continue;
+                }
+
+                if (lot.BarActivity != BarActivityKind.Cocktail &&
+                    lot.BarActivity != BarActivityKind.BeerPong)
+                {
+                    throw new InvalidOperationException(
+                        $"Bar {lot.BarId} must define a supported activity.");
                 }
 
                 if (string.IsNullOrEmpty(lot.BarId) || !barIds.Add(lot.BarId))
@@ -233,7 +247,32 @@ namespace BarPromenade
                     throw new InvalidOperationException(
                         $"Bar {lot.BarId} has a return point outside its frontage road.");
                 }
+
+                bars.Add(lot);
             }
+
+            bars.Sort(CompareLotsRowMajor);
+            for (int ordinal = 0; ordinal < bars.Count; ordinal++)
+            {
+                BarActivityKind expected = ordinal == 1
+                    ? BarActivityKind.BeerPong
+                    : BarActivityKind.Cocktail;
+                if (bars[ordinal].BarActivity != expected)
+                {
+                    throw new InvalidOperationException(
+                        $"Bar {bars[ordinal].BarId} has activity " +
+                        $"{bars[ordinal].BarActivity}, but row-major ordinal " +
+                        $"{ordinal} requires {expected}.");
+                }
+            }
+        }
+
+        private static int CompareLotsRowMajor(BuildingLot left, BuildingLot right)
+        {
+            int rowComparison = left.Cell.y.CompareTo(right.Cell.y);
+            return rowComparison != 0
+                ? rowComparison
+                : left.Cell.x.CompareTo(right.Cell.x);
         }
 
         private static bool ContainsInclusive(Rect rectangle, Vector3 position)

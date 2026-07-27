@@ -89,6 +89,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return LoadInterior(root => interior = root);
             CocktailMinigameController minigame =
                 interior.CocktailMinigame;
+            int completionCount = 0;
+            minigame.Completed += () => completionCount++;
             GameSessionState.TryAddRouteStop(ActiveBarId);
             Assert.That(minigame.Open(interior.Player.Interactor), Is.True);
             Assert.That(
@@ -113,6 +115,13 @@ namespace BarPromenade.Tests.PlayMode
                 minigame.AdvancePresentation(
                     CocktailMinigameController.RoundResultDuration);
                 Assert.That(
+                    completionCount,
+                    Is.EqualTo(
+                        round ==
+                        CocktailMinigameSession.RoundLimit - 1
+                            ? 1
+                            : 0));
+                Assert.That(
                     GameSessionState.IsBarVisited(ActiveBarId),
                     Is.EqualTo(
                         round ==
@@ -122,6 +131,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 minigame.PresentationPhase,
                 Is.EqualTo(CocktailPresentationPhase.FinalResult));
+            minigame.AdvancePresentation(
+                CocktailMinigameController.RoundResultDuration);
+            Assert.That(completionCount, Is.EqualTo(1));
             Assert.That(minigame.TotalScore, Is.EqualTo(300));
             Assert.That(minigame.FinalRankKey, Is.EqualTo("cocktail.rank.perfect"));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));

@@ -18,6 +18,8 @@ namespace BarPromenade
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static string ActiveBarId { get; private set; } = string.Empty;
+        public static BarActivityKind ActiveBarActivity { get; private set; } =
+            BarActivityKind.None;
         public static bool IsReturningToCity { get; private set; }
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
@@ -33,6 +35,7 @@ namespace BarPromenade
         {
             CitySeed = DefaultCitySeed;
             ActiveBarId = string.Empty;
+            ActiveBarActivity = BarActivityKind.None;
             IsReturningToCity = false;
             ResetDrinkingState();
             ClearRoute();
@@ -122,7 +125,17 @@ namespace BarPromenade
 
         public static void EnterBar(string barId)
         {
+            EnterBar(barId, BarActivityKind.Cocktail);
+        }
+
+        public static void EnterBar(
+            string barId,
+            BarActivityKind barActivity)
+        {
             ActiveBarId = barId ?? string.Empty;
+            ActiveBarActivity = string.IsNullOrEmpty(ActiveBarId)
+                ? BarActivityKind.None
+                : NormalizeBarActivity(barActivity);
             IsReturningToCity = false;
         }
 
@@ -172,6 +185,14 @@ namespace BarPromenade
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             WastedSecondsRemaining = 0f;
+        }
+
+        private static BarActivityKind NormalizeBarActivity(
+            BarActivityKind barActivity)
+        {
+            return barActivity == BarActivityKind.BeerPong
+                ? BarActivityKind.BeerPong
+                : BarActivityKind.Cocktail;
         }
     }
 }

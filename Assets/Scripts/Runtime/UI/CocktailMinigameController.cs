@@ -16,7 +16,9 @@ namespace BarPromenade
     }
 
     [DisallowMultipleComponent]
-    public sealed class CocktailMinigameController : MonoBehaviour
+    public sealed class CocktailMinigameController :
+        MonoBehaviour,
+        IBarMinigame
     {
         public const float WastedDurationSeconds = 45f;
         public const float BasePourDuration = 0.85f;
@@ -39,9 +41,9 @@ namespace BarPromenade
 
         private CocktailMinigameView view;
         private IntoxicationHudView hud;
-        private PlayerMotor playerMotor;
-        private PlayerInteractor playerInteractor;
         private PlayerCameraFollow cameraFollow;
+        private readonly BarMinigameModalLock modalLock =
+            new BarMinigameModalLock();
         private CocktailMinigameSession session;
         private CocktailIngredientId[] offers = noOffers;
         private CocktailIngredientSelectionResult? lastSelection;
@@ -51,12 +53,10 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private bool serveAfterPour;
         private bool wastedDebuffApplied;
-        private bool previousMotorInput;
-        private bool previousInteractorInput;
-        private bool previousOrbitInput;
-        private bool inputStateCaptured;
+        private bool completionRaised;
 
         public bool IsOpen { get; private set; }
+        public event Action Completed;
         public CocktailPresentationPhase PresentationPhase { get; private set; }
         public int HighlightedBaseIndex { get; private set; }
         public int HighlightedIngredientIndex { get; private set; }
@@ -195,8 +195,6 @@ namespace BarPromenade
         {
             view = minigameView;
             hud = intoxicationHud;
-            playerMotor = player.Motor;
-            playerInteractor = player.Interactor;
             cameraFollow = follow;
             view?.Initialize(this);
         }
@@ -210,17 +208,22 @@ namespace BarPromenade
                 return false;
             }
 
-            playerInteractor = interactor;
-            playerMotor = interactor.GetComponent<PlayerMotor>();
-            cameraFollow = Camera.main == null
-                ? cameraFollow
-                : Camera.main.GetComponent<PlayerCameraFollow>();
-            session = new CocktailMinigameSession(
+            CocktailMinigameSession newSession =
+                new CocktailMinigameSession(
                 GameSessionState.CitySeed,
                 GameSessionState.ActiveBarId,
                 GameSessionState.IntoxicationLevel,
                 GameSessionState.LastAlcoholicDrink,
                 GameSessionState.DrinksConsumed);
+            if (!modalLock.TryCaptureAndDisable(
+                    interactor,
+                    cameraFollow,
+                    hud))
+            {
+                return false;
+            }
+
+            session = newSession;
 
             offers = noOffers;
             lastSelection = null;
@@ -232,14 +235,9 @@ namespace BarPromenade
             FeedbackScore = 0;
             serveAfterPour = false;
             wastedDebuffApplied = false;
+            completionRaised = false;
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
-            CapturePlayerInputState();
-            SetPlayerInput(false);
-            if (hud != null)
-            {
-                hud.Visible = false;
-            }
 
             if (session.IsFinished)
             {
@@ -620,9 +618,9 @@ namespace BarPromenade
             lastSelection = null;
             if (session.IsFinished)
             {
-                GameSessionState.MarkBarVisited(session.BarId);
                 PresentationPhase =
                     CocktailPresentationPhase.FinalResult;
+                RaiseCompleted();
             }
             else
             {
@@ -668,11 +666,7 @@ namespace BarPromenade
 
             ApplyPendingWastedDebuff();
             IsOpen = false;
-            RestorePlayerInputState();
-            if (hud != null)
-            {
-                hud.Visible = true;
-            }
+            modalLock.Restore();
 
             session = null;
             offers = noOffers;
@@ -686,38 +680,15 @@ namespace BarPromenade
             serveAfterPour = false;
         }
 
-        private void SetPlayerInput(bool enabled)
+        private void RaiseCompleted()
         {
-            playerMotor?.SetInputEnabled(enabled);
-            playerInteractor?.SetInputEnabled(enabled);
-            cameraFollow?.SetOrbitInputEnabled(enabled);
-        }
-
-        private void CapturePlayerInputState()
-        {
-            previousMotorInput =
-                playerMotor != null && playerMotor.InputEnabled;
-            previousInteractorInput =
-                playerInteractor != null &&
-                playerInteractor.InputEnabled;
-            previousOrbitInput =
-                cameraFollow != null &&
-                cameraFollow.OrbitInputEnabled;
-            inputStateCaptured = true;
-        }
-
-        private void RestorePlayerInputState()
-        {
-            if (!inputStateCaptured)
+            if (completionRaised)
             {
                 return;
             }
 
-            playerMotor?.SetInputEnabled(previousMotorInput);
-            playerInteractor?.SetInputEnabled(
-                previousInteractorInput);
-            cameraFollow?.SetOrbitInputEnabled(previousOrbitInput);
-            inputStateCaptured = false;
+            completionRaised = true;
+            Completed?.Invoke();
         }
 
         private int FindNextAvailableOffer(int startIndex, int direction)

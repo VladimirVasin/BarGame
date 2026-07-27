@@ -4,6 +4,8 @@ namespace BarPromenade
 {
     public sealed class BarInteriorRoot : MonoBehaviour
     {
+        private string activeBarId = string.Empty;
+
         private sealed class InteriorWalkableArea : IWalkableArea
         {
             private readonly Rect bounds;
@@ -41,8 +43,15 @@ namespace BarPromenade
         public RetroAudioService Audio { get; private set; }
         public BarMusicPlayer Music { get; private set; }
         public BarAmbiencePlayer Ambience { get; private set; }
-        public BarCounterStation CounterStation { get; private set; }
+        public BarActivityKind ActiveActivity { get; private set; }
+        public BarActivityStation ActivityStation { get; private set; }
+        public IBarMinigame ActiveMinigame { get; private set; }
         public CocktailMinigameController CocktailMinigame
+        {
+            get;
+            private set;
+        }
+        public BeerPongMinigameController BeerPongMinigame
         {
             get;
             private set;
@@ -62,7 +71,10 @@ namespace BarPromenade
 
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
             Audio = RetroAudioService.EnsureInstalled();
-            BuildRoom();
+            activeBarId = GameSessionState.ActiveBarId;
+            ActiveActivity = ResolveActivity(
+                GameSessionState.ActiveBarActivity);
+            BuildRoom(ActiveActivity);
 
             GameObject musicObject = new GameObject("Bar Music");
             musicObject.transform.SetParent(transform, false);
@@ -95,26 +107,26 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, true);
-            CocktailMinigameView minigameView =
-                ui.AddComponent<CocktailMinigameView>();
-            CocktailMinigame =
-                ui.AddComponent<CocktailMinigameController>();
-            CocktailMinigame.Initialize(
-                minigameView,
-                intoxicationHud,
-                Player,
-                follow);
+            BuildMinigame(ui, intoxicationHud, follow);
 
             IntoxicationStatusController intoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             intoxicationStatus.Initialize(Player.Motor, Player.Visual);
 
-            BuildCounterStation();
+            BuildActivityStation();
             BuildExit();
             IsInitialized = true;
         }
 
-        private void BuildRoom()
+        private void OnDestroy()
+        {
+            if (ActiveMinigame != null)
+            {
+                ActiveMinigame.Completed -= HandleMinigameCompleted;
+            }
+        }
+
+        private void BuildRoom(BarActivityKind activity)
         {
             Transform room = new GameObject(
                 $"Interior {GameSessionState.ActiveBarId}").transform;
@@ -150,10 +162,33 @@ namespace BarPromenade
                 "Counter Trim", room, new Vector3(0f, 1.34f, 3.35f),
                 new Vector3(6.9f, 0.12f, 1f), trim, false);
 
-            BuildTable(room, new Vector3(-2.7f, 0f, 0.2f), furniture, trim);
-            BuildTable(room, new Vector3(2.7f, 0f, 0.2f), furniture, trim);
-            BuildTable(room, new Vector3(-2.4f, 0f, -2f), furniture, trim);
-            BuildTable(room, new Vector3(2.4f, 0f, -2f), furniture, trim);
+            if (activity == BarActivityKind.BeerPong)
+            {
+                BuildBeerPongTable(room, furniture, trim);
+            }
+            else
+            {
+                BuildTable(
+                    room,
+                    new Vector3(-2.7f, 0f, 0.2f),
+                    furniture,
+                    trim);
+                BuildTable(
+                    room,
+                    new Vector3(2.7f, 0f, 0.2f),
+                    furniture,
+                    trim);
+                BuildTable(
+                    room,
+                    new Vector3(-2.4f, 0f, -2f),
+                    furniture,
+                    trim);
+                BuildTable(
+                    room,
+                    new Vector3(2.4f, 0f, -2f),
+                    furniture,
+                    trim);
+            }
         }
 
         private static void BuildTable(
@@ -168,6 +203,102 @@ namespace BarPromenade
             RuntimePrimitiveFactory.CreateCylinder(
                 "Table Top", parent, position + (Vector3.up * 0.92f),
                 new Vector3(0.78f, 0.08f, 0.78f), topColor);
+        }
+
+        private static void BuildBeerPongTable(
+            Transform parent,
+            Color baseColor,
+            Color trimColor)
+        {
+            Color tableColor = new Color(0.08f, 0.23f, 0.25f);
+            Vector3 tableCenter = new Vector3(0f, 0.92f, 0.45f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Beer Pong Table",
+                parent,
+                tableCenter,
+                new Vector3(2.35f, 0.14f, 4.25f),
+                tableColor);
+
+            Vector3[] legPositions =
+            {
+                new Vector3(-0.9f, 0.43f, -1.25f),
+                new Vector3(0.9f, 0.43f, -1.25f),
+                new Vector3(-0.9f, 0.43f, 2.15f),
+                new Vector3(0.9f, 0.43f, 2.15f)
+            };
+            for (int index = 0; index < legPositions.Length; index++)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    $"Beer Pong Table Leg {index + 1}",
+                    parent,
+                    legPositions[index],
+                    new Vector3(0.16f, 0.86f, 0.16f),
+                    baseColor);
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Beer Pong Center Line",
+                parent,
+                tableCenter + (Vector3.up * 0.08f),
+                new Vector3(2.1f, 0.025f, 0.06f),
+                trimColor,
+                false);
+
+            Vector3[] cupPositions =
+            {
+                new Vector3(0f, 1.15f, 1.45f),
+                new Vector3(-0.27f, 1.15f, 1.75f),
+                new Vector3(0.27f, 1.15f, 1.75f),
+                new Vector3(-0.54f, 1.15f, 2.05f),
+                new Vector3(0f, 1.15f, 2.05f),
+                new Vector3(0.54f, 1.15f, 2.05f)
+            };
+            Color cupColor = new Color(0.78f, 0.17f, 0.12f);
+            for (int index = 0; index < cupPositions.Length; index++)
+            {
+                RuntimePrimitiveFactory.CreateCylinder(
+                    $"Beer Pong Cup {index + 1}",
+                    parent,
+                    cupPositions[index],
+                    new Vector3(0.22f, 0.16f, 0.22f),
+                    cupColor,
+                    false);
+            }
+        }
+
+        private void BuildMinigame(
+            GameObject ui,
+            IntoxicationHudView intoxicationHud,
+            PlayerCameraFollow follow)
+        {
+            if (ActiveActivity == BarActivityKind.BeerPong)
+            {
+                BeerPongMinigameView view =
+                    ui.AddComponent<BeerPongMinigameView>();
+                BeerPongMinigame =
+                    ui.AddComponent<BeerPongMinigameController>();
+                BeerPongMinigame.Initialize(
+                    view,
+                    intoxicationHud,
+                    Player,
+                    follow);
+                ActiveMinigame = BeerPongMinigame;
+            }
+            else
+            {
+                CocktailMinigameView view =
+                    ui.AddComponent<CocktailMinigameView>();
+                CocktailMinigame =
+                    ui.AddComponent<CocktailMinigameController>();
+                CocktailMinigame.Initialize(
+                    view,
+                    intoxicationHud,
+                    Player,
+                    follow);
+                ActiveMinigame = CocktailMinigame;
+            }
+
+            ActiveMinigame.Completed += HandleMinigameCompleted;
         }
 
         private void BuildExit()
@@ -187,33 +318,71 @@ namespace BarPromenade
                 false);
         }
 
-        private void BuildCounterStation()
+        private void BuildActivityStation()
         {
+            bool isBeerPong =
+                ActiveActivity == BarActivityKind.BeerPong;
+            Vector3 stationPosition = isBeerPong
+                ? new Vector3(0f, 0.9f, -1.95f)
+                : new Vector3(-3.85f, 0.9f, 3.35f);
+            Vector3 triggerSize = isBeerPong
+                ? new Vector3(1.8f, 1.8f, 0.9f)
+                : new Vector3(1.2f, 1.8f, 1.2f);
+            string promptKey = isBeerPong
+                ? "interaction.play_beer_pong"
+                : "interaction.order_drinks";
+
             GameObject station = new GameObject(
-                "Cocktail Minigame Station");
+                isBeerPong
+                    ? "Beer Pong Minigame Station"
+                    : "Cocktail Minigame Station");
             station.transform.SetParent(transform, false);
-            station.transform.localPosition = new Vector3(-3.85f, 0.9f, 3.35f);
+            station.transform.localPosition = stationPosition;
             BoxCollider trigger = station.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
-            trigger.size = new Vector3(1.2f, 1.8f, 1.2f);
-            CounterStation = station.AddComponent<BarCounterStation>();
-            CounterStation.Configure(CocktailMinigame);
+            trigger.size = triggerSize;
+            ActivityStation =
+                station.AddComponent<BarActivityStation>();
+            ActivityStation.Configure(ActiveMinigame, promptKey);
 
             Color markerColor = new Color(0.96f, 0.67f, 0.18f);
             RuntimePrimitiveFactory.CreateBox(
-                "Order Point",
+                isBeerPong ? "Play Point" : "Order Point",
                 transform,
-                new Vector3(-3.85f, 0.07f, 3.35f),
+                new Vector3(
+                    stationPosition.x,
+                    0.07f,
+                    stationPosition.z),
                 new Vector3(0.72f, 0.10f, 0.72f),
                 markerColor,
                 false);
             RuntimePrimitiveFactory.CreateBox(
-                "Order Point Sign",
+                isBeerPong
+                    ? "Beer Pong Point Sign"
+                    : "Order Point Sign",
                 transform,
-                new Vector3(-3.85f, 1.75f, 3.72f),
+                isBeerPong
+                    ? new Vector3(
+                        stationPosition.x,
+                        1.38f,
+                        stationPosition.z + 0.35f)
+                    : new Vector3(-3.85f, 1.75f, 3.72f),
                 new Vector3(0.82f, 0.48f, 0.10f),
                 markerColor,
                 false);
+        }
+
+        private void HandleMinigameCompleted()
+        {
+            GameSessionState.MarkBarVisited(activeBarId);
+        }
+
+        private static BarActivityKind ResolveActivity(
+            BarActivityKind activity)
+        {
+            return activity == BarActivityKind.BeerPong
+                ? BarActivityKind.BeerPong
+                : BarActivityKind.Cocktail;
         }
     }
 }

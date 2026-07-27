@@ -49,6 +49,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<BarEntrance>(true),
                 Has.Length.EqualTo(3));
+            Assert.That(
+                cityRoot.World.Bars[0].BarActivity,
+                Is.EqualTo(BarActivityKind.Cocktail));
+            Assert.That(
+                cityRoot.World.Bars[1].BarActivity,
+                Is.EqualTo(BarActivityKind.BeerPong));
+            Assert.That(
+                cityRoot.World.Bars[2].BarActivity,
+                Is.EqualTo(BarActivityKind.Cocktail));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
             Assert.That(cityRoot.Music, Is.Not.Null);
@@ -356,8 +365,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarExit>(true),
                 Has.Length.EqualTo(1));
-            Assert.That(interiorRoot.CounterStation, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActiveActivity,
+                Is.EqualTo(BarActivityKind.Cocktail));
+            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActiveMinigame,
+                Is.SameAs(interiorRoot.CocktailMinigame));
             Assert.That(interiorRoot.CocktailMinigame, Is.Not.Null);
+            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
             Assert.That(interiorRoot.Music, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source.loop, Is.True);
@@ -372,6 +388,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
+                Is.Empty);
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
                 Has.Length.EqualTo(1));
             Assert.That(CountExactRoots(SceneIds.BarInterior, InteriorRootName), Is.EqualTo(1));
             Assert.That(
@@ -389,15 +408,17 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Empty,
                 "The exterior music player must not survive in BarInterior.");
 
-            Vector3 stationPosition = interiorRoot.CounterStation.transform.position;
+            Vector3 stationPosition =
+                interiorRoot.ActivityStation.transform.position;
             stationPosition.y = 0.12f;
             interiorRoot.Player.Motor.Teleport(stationPosition);
             yield return null;
             Assert.That(
                 interiorRoot.Player.Interactor.ActiveInteractable,
-                Is.EqualTo(interiorRoot.CounterStation));
+                Is.EqualTo(interiorRoot.ActivityStation));
 
-            interiorRoot.CounterStation.Interact(interiorRoot.Player.Interactor);
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
             Assert.That(interiorRoot.CocktailMinigame.IsOpen, Is.True);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(interiorRoot.Player.Interactor.InputEnabled, Is.False);
@@ -409,6 +430,164 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.True);
             Assert.That(interiorRoot.Player.Interactor.InputEnabled, Is.True);
             Assert.That(follow.OrbitInputEnabled, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator BeerPongBarInterior_SelectsOnlyBeerPongActivity()
+        {
+            const string barId = "bar-beer-pong-smoke-test";
+            GameSessionState.EnterBar(
+                barId,
+                BarActivityKind.BeerPong);
+            GameSessionState.TryAddRouteStop(barId);
+
+            BarInteriorRoot interiorRoot = null;
+            yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
+                SceneIds.BarInterior,
+                InteriorRootName,
+                root => interiorRoot = root);
+            yield return WaitUntil(
+                () => interiorRoot.IsInitialized,
+                "Beer-pong interior did not finish initialization.");
+
+            Assert.That(
+                interiorRoot.ActiveActivity,
+                Is.EqualTo(BarActivityKind.BeerPong));
+            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
+            Assert.That(interiorRoot.BeerPongMinigame, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActiveMinigame,
+                Is.SameAs(interiorRoot.BeerPongMinigame));
+            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActivityStation.PromptKey,
+                Is.EqualTo("interaction.play_beer_pong"));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
+                Is.Empty);
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Beer Pong Table"),
+                Is.Not.Null);
+
+            Vector3 stationPosition =
+                interiorRoot.ActivityStation.transform.position;
+            stationPosition.y = 0.12f;
+            interiorRoot.Player.Motor.Teleport(stationPosition);
+            yield return null;
+            Assert.That(
+                interiorRoot.Player.Interactor.ActiveInteractable,
+                Is.EqualTo(interiorRoot.ActivityStation));
+
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.True);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.False);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.False);
+            PlayerCameraFollow beerPongFollow =
+                Camera.main.GetComponent<PlayerCameraFollow>();
+            Assert.That(
+                beerPongFollow.OrbitInputEnabled,
+                Is.False);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+
+            Assert.That(
+                interiorRoot.BeerPongMinigame.BeginCharging(),
+                Is.True);
+            Assert.That(
+                interiorRoot.BeerPongMinigame.ReleaseThrow(),
+                Is.True);
+            Assert.That(
+                interiorRoot.BeerPongMinigame.ResolveFlightForTests(
+                    BeerPongFlightResult.CreateMiss(
+                        BeerPongMissReason.OutOfBounds)),
+                Is.True);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(BeerPongSession.MissIntoxicationGain));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+
+            interiorRoot.BeerPongMinigame.Cancel();
+            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.False);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(
+                beerPongFollow.OrbitInputEnabled,
+                Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Contain(barId));
+
+            int completionCount = 0;
+            interiorRoot.BeerPongMinigame.Completed +=
+                () => completionCount++;
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.True);
+
+            for (int cupIndex = 0;
+                 cupIndex < BeerPongTableLayout.CupCount;
+                 cupIndex++)
+            {
+                Assert.That(
+                    interiorRoot.BeerPongMinigame.BeginCharging(),
+                    Is.True);
+                Assert.That(
+                    interiorRoot.BeerPongMinigame.ReleaseThrow(),
+                    Is.True);
+                Assert.That(
+                    interiorRoot.BeerPongMinigame.ResolveFlightForTests(
+                        BeerPongFlightResult.CreateSink(cupIndex)),
+                    Is.True);
+                Assert.That(
+                    GameSessionState.IsBarVisited(barId),
+                    Is.False,
+                    "A throw result is not yet the accepted final result.");
+                Assert.That(
+                    interiorRoot.BeerPongMinigame
+                        .ContinueAfterResult(),
+                    Is.True);
+            }
+
+            Assert.That(
+                interiorRoot.BeerPongMinigame.PresentationPhase,
+                Is.EqualTo(
+                    BeerPongPresentationPhase.FinalResult));
+            Assert.That(completionCount, Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.True);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Not.Contain(barId));
+            interiorRoot.BeerPongMinigame.Cancel();
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
         }
 
         [UnityTest]
@@ -424,9 +603,10 @@ namespace BarPromenade.Tests.PlayMode
                 "Initial city did not finish initialization.");
             Assert.That(firstCity.Music, Is.Not.Null);
 
-            BarEntrance entrance = firstCity.World.Bars[0];
+            BarEntrance entrance = firstCity.World.Bars[1];
             string expectedBarId = entrance.BarId;
-            string remainingBarId = firstCity.World.Bars[1].BarId;
+            BarActivityKind expectedBarActivity = entrance.BarActivity;
+            string remainingBarId = firstCity.World.Bars[0].BarId;
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
             const int expectedIntoxication = 37;
@@ -469,6 +649,9 @@ namespace BarPromenade.Tests.PlayMode
                 interior.Music.ActiveClip.name,
                 Is.EqualTo(BarMusicPlayer.TrackName));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo(expectedBarId));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(expectedBarActivity));
             CollectionAssert.AreEqual(
                 new[] { expectedBarId, remainingBarId },
                 GameSessionState.PlannedBarRoute);
@@ -504,6 +687,9 @@ namespace BarPromenade.Tests.PlayMode
                 returnedCity.World.TryGetBar(expectedBarId, out BarEntrance returnedBar),
                 Is.True);
             Assert.That(returnedBar.ReturnPosition, Is.EqualTo(expectedReturn));
+            Assert.That(
+                returnedBar.BarActivity,
+                Is.EqualTo(expectedBarActivity));
 
             Vector2 actualPosition = new Vector2(
                 returnedCity.Player.GameObject.transform.position.x,

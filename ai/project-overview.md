@@ -43,11 +43,14 @@ The vertical slice contains:
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
   treatment and each player is destroyed by the next Single-mode scene load;
-- deterministic generated mono retro SFX at `22050 Hz`, with bounded
-  category pools, per-effect cooldowns and voice limits, plus separate
-  scene-local procedural city and bar ambience;
+- deterministic generated mono retro SFX at `22050 Hz`, including distinct
+  beer-pong throw, bounce, rim and sink cues, with bounded category pools,
+  per-effect cooldowns and voice limits, plus separate scene-local procedural
+  city and bar ambience;
 - a spanning-tree road graph with deterministic loops;
-- 16 building lots by default, including exactly 3 reachable bars;
+- 16 building lots by default, including exactly 3 reachable bars; the second
+  bar in stable row-major order hosts beer pong while the others host the
+  cocktail mixer;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - a 13-part procedural billboard sprite with walking motion;
@@ -60,7 +63,8 @@ The vertical slice contains:
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
   context for the current city;
-- one generated shared bar interior with an exit;
+- one generated shared bar-interior scene whose furniture and interaction
+  station adapt to the active bar activity, plus one exit;
 - a same-scene modal cocktail minigame at the counter: exactly three served
   cocktails unless intoxication reaches 100, each built from one of four bases
   and 2–4 unique additions chosen from a deterministic seven-item shelf; its
@@ -69,8 +73,14 @@ The vertical slice contains:
   with a 15-point penalty for each incompatible addition;
 - a real 4x4 pixel-art ingredient atlas, animated pouring/filling/serving
   feedback, three-stage progress and a final rank;
-- session-persistent intoxication, last-alcohol context and served-cocktail
-  count, plus a deferred timed `Wasted` movement/presentation debuff.
+- a same-scene 2D beer-pong minigame at the second bar with six sprite cups,
+  ten aimed throws, deterministic 120 Hz 2.5D ball physics, real table/rim
+  bounces, clean/bank scoring and an early-clear bonus;
+- a dedicated pixel-art beer-pong backdrop and 4x4 gameplay atlas for the
+  ball, shadow, throwing hand, cups, hit reactions and opponent silhouettes;
+- session-persistent intoxication, last-alcohol context and consumed-drink
+  count; every beer-pong miss consumes a light beer and adds 8 intoxication,
+  while the cocktail path retains its deferred timed `Wasted` debuff.
 
 ## Deferred
 

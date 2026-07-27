@@ -405,6 +405,7 @@ namespace BarPromenade
             BarEntrance entrance = entranceObject.AddComponent<BarEntrance>();
             entrance.Configure(
                 lot.BarId,
+                lot.BarActivity,
                 lot.ReturnPosition + (Vector3.up * 0.12f));
             bars.Add(entrance);
         }

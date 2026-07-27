@@ -23,10 +23,13 @@ namespace BarPromenade.Tests.EditMode
             const string barId = "bar-contract-test";
 
             GameSessionState.SetCitySeed(seed);
-            GameSessionState.EnterBar(barId);
+            GameSessionState.EnterBar(barId, BarActivityKind.BeerPong);
 
             Assert.That(GameSessionState.CitySeed, Is.EqualTo(seed));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo(barId));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.BeerPong));
             Assert.That(GameSessionState.IsReturningToCity, Is.False);
             Assert.That(
                 GameSessionState.TryGetReturnBarId(out _),
@@ -45,19 +48,28 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.IsReturningToCity, Is.False);
             Assert.That(GameSessionState.TryGetReturnBarId(out _), Is.False);
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo(barId));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.BeerPong));
             Assert.That(GameSessionState.CitySeed, Is.EqualTo(seed));
         }
 
         [Test]
         public void EnteringAnotherBar_CancelsAnEarlierPendingReturn()
         {
-            GameSessionState.EnterBar("bar-first");
+            GameSessionState.EnterBar(
+                "bar-first",
+                BarActivityKind.BeerPong);
             GameSessionState.PrepareCityReturn();
             Assert.That(GameSessionState.IsReturningToCity, Is.True);
 
             GameSessionState.EnterBar("bar-second");
 
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo("bar-second"));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.Cocktail),
+                "The legacy overload must safely preserve cocktail behavior.");
             Assert.That(GameSessionState.IsReturningToCity, Is.False);
             Assert.That(GameSessionState.TryGetReturnBarId(out _), Is.False);
         }
@@ -70,9 +82,25 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.PrepareCityReturn();
 
             Assert.That(GameSessionState.ActiveBarId, Is.Empty);
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.None));
             Assert.That(GameSessionState.IsReturningToCity, Is.False);
             Assert.That(GameSessionState.TryGetReturnBarId(out string returnedBarId), Is.False);
             Assert.That(returnedBarId, Is.Empty);
+        }
+
+        [TestCase(BarActivityKind.None)]
+        [TestCase((BarActivityKind)999)]
+        public void EnterBar_UnsupportedActivityFallsBackToCocktail(
+            BarActivityKind activity)
+        {
+            GameSessionState.EnterBar("bar-fallback", activity);
+
+            Assert.That(GameSessionState.ActiveBarId, Is.EqualTo("bar-fallback"));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.Cocktail));
         }
 
         [TestCase(-25, 0, -4, 0)]
@@ -157,6 +185,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.IsWasted, Is.False);
             Assert.That(GameSessionState.CitySeed, Is.EqualTo(9876));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo("bar-reset-contract"));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.Cocktail));
         }
 
         [Test]
