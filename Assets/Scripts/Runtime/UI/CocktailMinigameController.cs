@@ -620,6 +620,7 @@ namespace BarPromenade
             lastSelection = null;
             if (session.IsFinished)
             {
+                GameSessionState.MarkBarVisited(session.BarId);
                 PresentationPhase =
                     CocktailPresentationPhase.FinalResult;
             }

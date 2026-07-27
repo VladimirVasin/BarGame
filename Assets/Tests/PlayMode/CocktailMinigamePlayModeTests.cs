@@ -11,13 +11,14 @@ namespace BarPromenade.Tests.PlayMode
     {
         private const string InteriorRootName =
             "[Bar Promenade] Bar Interior Runtime";
+        private const string ActiveBarId = "bar-cocktail-test";
         private const float TimeoutSeconds = 15f;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
             ResetSession();
-            GameSessionState.EnterBar("bar-cocktail-test");
+            GameSessionState.EnterBar(ActiveBarId);
             yield return null;
         }
 
@@ -60,6 +61,9 @@ namespace BarPromenade.Tests.PlayMode
                 Camera.main.GetComponent<PlayerCameraFollow>()
                     .OrbitInputEnabled,
                 Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(ActiveBarId),
+                Is.False);
 
             PlayerCameraFollow follow =
                 Camera.main.GetComponent<PlayerCameraFollow>();
@@ -85,7 +89,11 @@ namespace BarPromenade.Tests.PlayMode
             yield return LoadInterior(root => interior = root);
             CocktailMinigameController minigame =
                 interior.CocktailMinigame;
+            GameSessionState.TryAddRouteStop(ActiveBarId);
             Assert.That(minigame.Open(interior.Player.Interactor), Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(ActiveBarId),
+                Is.False);
 
             for (int round = 0;
                  round < CocktailMinigameSession.RoundLimit;
@@ -98,8 +106,17 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     minigame.LastRoundResult.Score,
                     Is.EqualTo(100));
+                Assert.That(
+                    GameSessionState.IsBarVisited(ActiveBarId),
+                    Is.False,
+                    "The visit is not complete before the result is accepted.");
                 minigame.AdvancePresentation(
                     CocktailMinigameController.RoundResultDuration);
+                Assert.That(
+                    GameSessionState.IsBarVisited(ActiveBarId),
+                    Is.EqualTo(
+                        round ==
+                        CocktailMinigameSession.RoundLimit - 1));
             }
 
             Assert.That(
@@ -113,6 +130,9 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.LightBeer));
             Assert.That(GameSessionState.IsWasted, Is.False);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Not.Contain(ActiveBarId));
         }
 
         [UnityTest]
@@ -159,6 +179,9 @@ namespace BarPromenade.Tests.PlayMode
 
             minigame.Cancel();
             Assert.That(GameSessionState.IsWasted, Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(ActiveBarId),
+                Is.False);
             Assert.That(
                 GameSessionState.WastedSecondsRemaining,
                 Is.EqualTo(
@@ -285,6 +308,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.SetCitySeed(
                 GameSessionState.DefaultCitySeed);
             GameSessionState.ClearRoute();
+            GameSessionState.ClearVisitedBars();
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();

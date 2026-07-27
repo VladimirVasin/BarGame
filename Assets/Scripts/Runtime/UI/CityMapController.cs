@@ -56,6 +56,22 @@ namespace BarPromenade
         public CityLayout Layout { get; private set; }
         public IReadOnlyList<BuildingLot> Bars => bars;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
+        public int VisitedBarCount
+        {
+            get
+            {
+                int count = 0;
+                for (int index = 0; index < bars.Count; index++)
+                {
+                    if (IsBarVisited(bars[index].BarId))
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
         public CityRoutePath CurrentPath { get; private set; }
         public int SelectedBarIndex { get; private set; }
         public CityMapView View { get; private set; }
@@ -250,6 +266,11 @@ namespace BarPromenade
             }
 
             return -1;
+        }
+
+        public bool IsBarVisited(string barId)
+        {
+            return GameSessionState.IsBarVisited(barId);
         }
 
         public int FindBarIndex(string barId)

@@ -237,6 +237,10 @@
       "value": "Clear route"
     },
     {
+      "key": "map.visited_count",
+      "value": "Visited: {0}/{1}"
+    },
+    {
       "key": "map.distance",
       "value": "Distance: {0:0} m"
     }

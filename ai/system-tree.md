@@ -67,6 +67,7 @@ player -> PlayerInteractor -> BarEntrance -> SceneTransitionService
        -> CounterStation -> CocktailMinigame
                             -> CocktailRules + deterministic 7-item shelf
                             -> served progress -> GameSessionState
+                            -> completed visit -> CityMap
                             -> pending Wasted -> intoxication effects
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme

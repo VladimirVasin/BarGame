@@ -90,6 +90,12 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(map, Is.Not.Null);
             Assert.That(map.Bars, Has.Count.EqualTo(3));
+            string visitedBarId = map.Bars[2].BarId;
+            Assert.That(
+                GameSessionState.MarkBarVisited(visitedBarId),
+                Is.True);
+            Assert.That(map.IsBarVisited(visitedBarId), Is.True);
+            Assert.That(map.VisitedBarCount, Is.EqualTo(1));
             Assert.That(
                 GameSessionState.TryAddRouteStop("bar-from-another-city"),
                 Is.True);
@@ -464,8 +470,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarMusicPlayer.TrackName));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo(expectedBarId));
             CollectionAssert.AreEqual(
-                new[] { remainingBarId },
+                new[] { expectedBarId, remainingBarId },
                 GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited(expectedBarId),
+                Is.False);
 
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
             Assert.That(exit, Is.Not.Null);
@@ -512,8 +521,12 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(expectedDrinkCount));
             CollectionAssert.AreEqual(
-                new[] { remainingBarId },
+                new[] { expectedBarId, remainingBarId },
                 GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited(expectedBarId),
+                Is.False);
+            Assert.That(returnedCity.Map.VisitedBarCount, Is.Zero);
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot<T>(
@@ -641,6 +654,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.SetCitySeed(GameSessionState.DefaultCitySeed);
             GameSessionState.ClearRoute();
+            GameSessionState.ClearVisitedBars();
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();

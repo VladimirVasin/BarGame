@@ -54,14 +54,17 @@ The vertical slice contains:
 - camera-relative road-constrained movement;
 - a perspective third-person chase camera with mouse/gamepad yaw and
   obstacle-aware distance;
-- a full-screen city map with player/bar markers, ordered route editing and
-  deterministic shortest paths constrained to the generated road graph;
+- a full-screen city map with player/bar markers, persistent green completed
+  visits, ordered route editing and deterministic shortest paths constrained
+  to the generated road graph;
 - localized interaction prompts from RU/EN JSON catalogs;
-- guarded asynchronous transitions and persistent seed/bar/route context;
+- guarded asynchronous transitions and persistent seed/bar/route/visited
+  context for the current city;
 - one generated shared bar interior with an exit;
 - a same-scene modal cocktail minigame at the counter: exactly three served
   cocktails unless intoxication reaches 100, each built from one of four bases
-  and 2–4 unique additions chosen from a deterministic seven-item shelf;
+  and 2–4 unique additions chosen from a deterministic seven-item shelf; its
+  accepted final result marks the active bar as visited;
 - explicit cocktail compatibility and scoring up to 100 per round/300 total,
   with a 15-point penalty for each incompatible addition;
 - a real 4x4 pixel-art ingredient atlas, animated pouring/filling/serving

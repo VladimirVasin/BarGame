@@ -216,42 +216,63 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void MarkBarVisited_RemovesMatchingStopFromAnywhereInRoute()
+        public void MarkBarVisited_PersistsVisitAndRemovesMatchingRouteStop()
         {
             GameSessionState.TryAddRouteStop("bar-a");
             GameSessionState.TryAddRouteStop("bar-b");
             GameSessionState.TryAddRouteStop("bar-c");
 
+            Assert.That(GameSessionState.IsBarVisited("bar-b"), Is.False);
             Assert.That(GameSessionState.MarkBarVisited("bar-b"), Is.True);
-            Assert.That(GameSessionState.MarkBarVisited("bar-missing"), Is.False);
+            Assert.That(GameSessionState.IsBarVisited("bar-b"), Is.True);
+            Assert.That(GameSessionState.VisitedBarCount, Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.MarkBarVisited("bar-b"),
+                Is.False,
+                "Repeated completion must remain idempotent.");
             CollectionAssert.AreEqual(
                 new[] { "bar-a", "bar-c" },
                 GameSessionState.PlannedBarRoute);
+
+            Assert.That(GameSessionState.MarkBarVisited(null), Is.False);
+            Assert.That(GameSessionState.MarkBarVisited(string.Empty), Is.False);
+            Assert.That(GameSessionState.MarkBarVisited("   "), Is.False);
+            Assert.That(GameSessionState.IsBarVisited("   "), Is.False);
+            Assert.That(GameSessionState.VisitedBarCount, Is.EqualTo(1));
         }
 
         [Test]
-        public void SetCitySeed_ClearsRouteOnlyWhenSeedChanges()
+        public void SetCitySeed_ClearsRouteAndVisitsOnlyWhenSeedChanges()
         {
             const int seed = 8877;
             GameSessionState.SetCitySeed(seed);
             GameSessionState.TryAddRouteStop("bar-a");
             GameSessionState.TryAddRouteStop("bar-b");
+            GameSessionState.MarkBarVisited("bar-visited");
 
             GameSessionState.SetCitySeed(seed);
 
             CollectionAssert.AreEqual(
                 new[] { "bar-a", "bar-b" },
                 GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-visited"),
+                Is.True);
 
             GameSessionState.SetCitySeed(seed + 1);
 
             Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
+            Assert.That(GameSessionState.VisitedBarCount, Is.Zero);
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-visited"),
+                Is.False);
         }
 
         private static void ResetPublicState()
         {
             GameSessionState.SetCitySeed(GameSessionState.DefaultCitySeed);
             GameSessionState.ClearRoute();
+            GameSessionState.ClearVisitedBars();
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();

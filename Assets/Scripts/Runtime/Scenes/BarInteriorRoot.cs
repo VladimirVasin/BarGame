@@ -60,7 +60,6 @@ namespace BarPromenade
                 return;
             }
 
-            GameSessionState.MarkBarVisited(GameSessionState.ActiveBarId);
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
             Audio = RetroAudioService.EnsureInstalled();
             BuildRoom();

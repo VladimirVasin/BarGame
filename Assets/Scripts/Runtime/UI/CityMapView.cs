@@ -65,8 +65,8 @@ namespace BarPromenade
             RetroUiTheme.Accent;
         private static readonly Color UnselectedBar =
             RetroUiTheme.MapBar;
-        private static readonly Color SelectedBar =
-            RetroUiTheme.Accent;
+        private static readonly Color VisitedBar =
+            RetroUiTheme.Good;
         private static readonly Color Player =
             RetroUiTheme.Cyan;
 
@@ -76,6 +76,7 @@ namespace BarPromenade
         private GUIStyle centeredStyle;
         private GUIStyle routeItemStyle;
         private GUIStyle markerButtonStyle;
+        private GUIStyle routeBadgeStyle;
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
 
@@ -310,6 +311,7 @@ namespace BarPromenade
                     projection.WorldToScreen(bar.ReturnPosition);
                 int routeOrder = controller.GetRouteOrder(bar.BarId);
                 bool selected = routeOrder >= 0;
+                bool visited = controller.IsBarVisited(bar.BarId);
                 bool focused = index == controller.SelectedBarIndex;
                 const float markerSize = 17f;
                 Rect marker = new Rect(
@@ -331,18 +333,37 @@ namespace BarPromenade
 
                 DrawSolidRect(
                     marker,
-                    selected ? SelectedBar : UnselectedBar);
+                    visited ? VisitedBar : UnselectedBar);
 
                 Color previousContentColor = GUI.contentColor;
-                GUI.contentColor = selected
+                GUI.contentColor = visited
                     ? RetroUiTheme.Ink
                     : RetroUiTheme.Text;
-                string markerLabel = selected
-                    ? (routeOrder + 1).ToString()
-                    : (index + 1).ToString();
+                string markerLabel = (index + 1).ToString();
                 if (GUI.Button(marker, markerLabel, markerButtonStyle))
                 {
                     controller.QueueToggleBar(index);
+                }
+
+                if (selected)
+                {
+                    Rect routeBadge = new Rect(
+                        marker.xMax - 5f,
+                        marker.y - 5f,
+                        10f,
+                        10f);
+                    RetroUiTheme.DrawPanel(
+                        routeBadge,
+                        RetroUiTheme.Accent,
+                        RetroUiTheme.Ink,
+                        false,
+                        1f,
+                        1f);
+                    GUI.contentColor = RetroUiTheme.Ink;
+                    GUI.Label(
+                        routeBadge,
+                        (routeOrder + 1).ToString(),
+                        routeBadgeStyle);
                 }
 
                 GUI.contentColor = previousContentColor;
@@ -426,6 +447,23 @@ namespace BarPromenade
 
             CityRoutePath path = controller.CurrentPath;
             float distance = path == null ? 0f : path.TotalLength;
+            Rect visitedSwatch = new Rect(
+                panel.x + 8f,
+                panel.yMax - 59f,
+                8f,
+                8f);
+            DrawSolidRect(visitedSwatch, VisitedBar);
+            GUI.Label(
+                new Rect(
+                    visitedSwatch.xMax + 5f,
+                    panel.yMax - 62f,
+                    panel.width - 27f,
+                    14f),
+                string.Format(
+                    LocalizationService.Get("map.visited_count"),
+                    controller.VisitedBarCount,
+                    controller.Bars.Count),
+                routeItemStyle);
             GUI.Label(
                 new Rect(
                     panel.x + 7f,
@@ -711,6 +749,11 @@ namespace BarPromenade
                 9,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
+                true);
+            routeBadgeStyle = RetroUiTheme.CreateLabelStyle(
+                7,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Ink,
                 true);
             hintStyle = RetroUiTheme.CreateButtonStyle(
                 9,

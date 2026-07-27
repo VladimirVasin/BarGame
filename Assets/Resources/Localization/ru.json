@@ -237,6 +237,10 @@
       "value": "Очистить маршрут"
     },
     {
+      "key": "map.visited_count",
+      "value": "\u041f\u043e\u0441\u0435\u0449\u0435\u043d\u043e: {0}/{1}"
+    },
+    {
       "key": "map.distance",
       "value": "Длина: {0:0} м"
     }

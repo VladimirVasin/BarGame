@@ -39,6 +39,8 @@
   surface instead of appearing as a glowing rectangular progress bar.
 - Added three-stage progress, a final rank and complete mouse, keyboard and
   gamepad controls.
+- Accepting the final minigame result now marks that bar as visited; entering
+  the interior or leaving an unfinished game does not.
 - Intoxication and served cocktails now persist after every stage. A bad served
   mixture triggers «В никакашку» when the game finishes or closes, while
   reaching 100 intoxication ends the session early.
@@ -76,7 +78,10 @@
 - Added a full-screen map showing the road network, player and every bar.
 - Bars can be added, removed and reordered into a numbered visit itinerary.
 - Each leg follows a deterministic shortest route over the generated roads.
-- The itinerary survives bar scene transitions and removes visited stops.
+- The itinerary survives bar scene transitions and removes a stop only after
+  its cocktail minigame is completed.
+- Completed bars persist as green numbered map markers with a visited counter;
+  amber corner badges keep route order readable independently.
 - Added mouse, keyboard and gamepad controls plus RU/EN map text.
 
 ### Project foundation

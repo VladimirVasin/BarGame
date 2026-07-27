@@ -16,11 +16,11 @@
 | Third-person camera | Perspective chase framing, yaw input and obstacle avoidance | `PlayerCameraFollow.cs`, Input System, physics | Implemented |
 | Sprite presentation | Billboard and procedural 13-part walk pose | `Runtime/Player` | Implemented |
 | Interaction/UI | Select nearby bars, exits and counter stations; show localized prompts through the crisp retro theme | `Runtime/Interaction`, `Runtime/UI`, `RetroUiTheme` | Implemented |
-| City map UI | Display roads/player/bars and edit a modal ordered itinerary on a logical `640x360` retro canvas | `CityMapController.cs`, `CityMapView.cs`, `RetroUiTheme`, Input System | Implemented |
+| City map UI | Display roads/player/bars, green completed visits with a count, and edit a separately badged ordered itinerary on a logical `640x360` retro canvas | `CityMapController.cs`, `CityMapView.cs`, `RetroUiTheme`, Input System | Implemented |
 | Scene transition | Guarded async city/interior loads | `SceneTransitionService.cs` | Implemented |
-| Session state | Preserve seed, active bar, ordered route, return contract, intoxication, last alcohol and served-cocktail count for the current run | `GameSessionState.cs` | Implemented |
+| Session state | Preserve seed, active bar, ordered route, visited-bar set, return contract, intoxication, last alcohol and served-cocktail count for the current run | `GameSessionState.cs` | Implemented |
 | Cocktail domain | Define four bases and ingredient compatibility; generate a deterministic seven-item shelf with four compatible additions and three traps; score and advance a three-round session | `Runtime/Cocktails`, persisted `DrinkId` values | Implemented |
-| Cocktail minigame | Run same-scene modal base/addition/serve input, commit state after every served cocktail and defer a pending `Wasted` effect until finish/close | `CocktailMinigameController.cs`, `CocktailMinigameView.cs` | Implemented |
+| Cocktail minigame | Run same-scene modal base/addition/serve input, commit drinking state after every serving, mark the bar visited only when the final result is accepted, and defer a pending `Wasted` effect until finish/close | `CocktailMinigameController.cs`, `CocktailMinigameView.cs` | Implemented |
 | Cocktail presentation | Slice a 4x4 pixel-art atlas into IMGUI UV cells and animate ingredient travel/tilt, pouring, glass fill, success sparks, bad bubbles, shake, stage results and final rank in a responsive retro layout | `CocktailSpriteLibrary.cs`, `CocktailMinigameView.cs`, `RetroUiTheme`, `Resources/Cocktails` | Implemented |
 | Intoxication effects | HUD, timed movement slowdown and sprite sway | `IntoxicationStatusController.cs`, `IntoxicationHudView.cs` | Implemented |
 | Bar interior | Generated room, player, camera, counter station and exit | `BarInteriorRoot.cs` | Implemented |
@@ -38,6 +38,7 @@ player + seed -> player-following local fog field
 player -> interaction -> scene transition <-> session state
                     -> cocktail minigame -> cocktail rules/offers
                                            -> served progress -> session state
+                                           -> completed visit -> city map
                                            -> deferred Wasted -> intoxication effects
 scene root -> matching scene-local music player -> Single transition stops it
            -> matching procedural ambience player

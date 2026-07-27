@@ -19,8 +19,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Explicit scene allow-list:** Only `City` and `BarInterior` install their matching roots.
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
 - **Accepted — Ordered session route:** The current itinerary is a unique
-  ordered list of stable `BarId` values. It survives scene loads, removes a
-  successfully entered bar, and resets when the city seed changes.
+  ordered list of stable `BarId` values. A separate visited-ID set survives
+  scene loads for the same city. Accepting a completed cocktail minigame marks
+  its bar visited and removes that stop; entering or leaving early does not.
+  Both route and visited progress reset when the city seed changes.
 - **Accepted — Road-graph route planning:** Each itinerary leg uses
   deterministic weighted Dijkstra over `CityLayout.RoadEdges`; player and bar
   endpoints are projected onto their road segments without NavMesh.

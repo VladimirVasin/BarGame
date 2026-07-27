@@ -63,6 +63,7 @@ namespace BarPromenade.Tests.EditMode
             "map.bar_name",
             "map.player",
             "map.clear",
+            "map.visited_count",
             "map.distance"
         };
 

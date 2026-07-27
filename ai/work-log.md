@@ -2,6 +2,25 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Completed-bar map progress
+
+- Added a current-city visited-bar set to `GameSessionState`, preserved across
+  scene transitions and reset together with the route when the seed changes.
+- Moved visit completion from bar-interior loading to the cocktail
+  minigame's accepted final result. Entering, cancelling or leaving early no
+  longer removes the bar from the route.
+- Added persistent green numbered markers and a visited counter to the city
+  map; amber corner badges now carry route order independently.
+- Added regression coverage for idempotent visit persistence, final-result
+  completion, cancellation and an unfinished bar round trip.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 141/141 passed.
+- Unity PlayMode: 20/20 passed.
+
 ## 2026-07-28 — PS1 tonal response correction
 
 - Moved RGB555 quantization from linear-light values to perceptual sRGB space,

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -12,6 +13,8 @@ namespace BarPromenade
             new List<string>();
         private static readonly ReadOnlyCollection<string> plannedBarRouteView =
             plannedBarRoute.AsReadOnly();
+        private static readonly HashSet<string> visitedBars =
+            new HashSet<string>(StringComparer.Ordinal);
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static string ActiveBarId { get; private set; } = string.Empty;
@@ -23,6 +26,7 @@ namespace BarPromenade
         public static bool IsWasted => WastedSecondsRemaining > 0f;
         public static IReadOnlyList<string> PlannedBarRoute =>
             plannedBarRouteView;
+        public static int VisitedBarCount => visitedBars.Count;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -32,6 +36,7 @@ namespace BarPromenade
             IsReturningToCity = false;
             ResetDrinkingState();
             ClearRoute();
+            ClearVisitedBars();
         }
 
         public static void SetCitySeed(int seed)
@@ -43,6 +48,7 @@ namespace BarPromenade
 
             CitySeed = seed;
             ClearRoute();
+            ClearVisitedBars();
         }
 
         public static bool TryAddRouteStop(string barId)
@@ -93,7 +99,25 @@ namespace BarPromenade
 
         public static bool MarkBarVisited(string barId)
         {
-            return RemoveRouteStop(barId);
+            if (string.IsNullOrWhiteSpace(barId))
+            {
+                return false;
+            }
+
+            bool firstVisit = visitedBars.Add(barId);
+            RemoveRouteStop(barId);
+            return firstVisit;
+        }
+
+        public static bool IsBarVisited(string barId)
+        {
+            return !string.IsNullOrWhiteSpace(barId) &&
+                   visitedBars.Contains(barId);
+        }
+
+        public static void ClearVisitedBars()
+        {
+            visitedBars.Clear();
         }
 
         public static void EnterBar(string barId)
