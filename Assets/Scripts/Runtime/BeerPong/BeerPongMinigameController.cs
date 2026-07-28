@@ -31,8 +31,6 @@ namespace BarPromenade
         public const float ThrowResultDuration = 1.15f;
         public const float AimDegreesPerSecond = 46f;
         public const float ImpactPulseDuration = 0.14f;
-        public const float WastedDurationSeconds = 45f;
-
         private static readonly Rect pointerAimRect =
             new Rect(24f, 58f, 592f, 264f);
 
@@ -55,7 +53,6 @@ namespace BarPromenade
         private int observedRimBounces;
         private int inputUnlockFrame;
         private bool completionRaised;
-        private bool wastedApplied;
         private bool persistSessionProgress = true;
 
         public bool IsOpen { get; private set; }
@@ -124,8 +121,9 @@ namespace BarPromenade
         public BeerPongSessionOutcome Outcome => session == null
             ? BeerPongSessionOutcome.InProgress
             : session.Outcome;
-        public bool FinishedWasted =>
-            Outcome == BeerPongSessionOutcome.Wasted;
+        public bool ReachedMaxIntoxication =>
+            Outcome ==
+                BeerPongSessionOutcome.MaxIntoxicationReached;
 
         public void Initialize(
             BeerPongMinigameView minigameView,
@@ -182,7 +180,6 @@ namespace BarPromenade
             observedRimBounces = 0;
             inputUnlockFrame = Time.frameCount + 1;
             completionRaised = false;
-            wastedApplied = false;
             ImpactKind = BeerPongImpactKind.None;
             ballTrail.Clear();
             PresentationPhase = session.IsFinished
@@ -498,16 +495,6 @@ namespace BarPromenade
                     session.Intoxication,
                     session.LastAlcoholicDrink,
                     session.DrinksConsumed);
-            }
-
-            if (throwResult.SessionOutcome ==
-                    BeerPongSessionOutcome.Wasted &&
-                !wastedApplied &&
-                persistSessionProgress)
-            {
-                GameSessionState.ApplyWasted(
-                    WastedDurationSeconds);
-                wastedApplied = true;
             }
 
             if (flightResult.WasSunk)

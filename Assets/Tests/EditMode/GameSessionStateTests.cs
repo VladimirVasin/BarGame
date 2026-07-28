@@ -133,7 +133,10 @@ namespace BarPromenade.Tests.EditMode
         {
             const DrinkId drink = DrinkId.CognacVs;
             GameSessionState.UpdateDrinkingProgress(63, drink, 4);
-            GameSessionState.ApplyWasted(18f);
+            GameSessionState.SetBalanceCheckDelay(18f);
+            Assert.That(
+                GameSessionState.ConsumeBalanceCheckSequence(),
+                Is.Zero);
 
             GameSessionState.EnterBar("bar-drinking-state");
             GameSessionState.PrepareCityReturn();
@@ -142,30 +145,47 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(63));
             Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(drink));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.EqualTo(18f));
-            Assert.That(GameSessionState.IsWasted, Is.True);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.EqualTo(18f));
+            Assert.That(GameSessionState.BalanceCheckSequence, Is.EqualTo(1));
         }
 
         [Test]
-        public void WastedTimer_ApplicationAdvanceAndExpiry_AreClamped()
+        public void BalanceCheckSchedule_DelayAndSequence_AreClamped()
         {
-            GameSessionState.ApplyWasted(-3f);
-            Assert.That(GameSessionState.IsWasted, Is.False);
+            GameSessionState.SetBalanceCheckDelay(-3f);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.Zero);
 
-            GameSessionState.ApplyWasted(12f);
-            GameSessionState.ApplyWasted(5f);
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.EqualTo(12f));
-            Assert.That(GameSessionState.IsWasted, Is.True);
+            GameSessionState.SetBalanceCheckDelay(12f);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.EqualTo(12f));
 
-            GameSessionState.AdvanceWasted(-2f);
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.EqualTo(12f));
+            GameSessionState.AdvanceBalanceCheckDelay(-2f);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.EqualTo(12f));
 
-            GameSessionState.AdvanceWasted(4.5f);
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.EqualTo(7.5f));
+            GameSessionState.AdvanceBalanceCheckDelay(4.5f);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.EqualTo(7.5f));
 
-            GameSessionState.AdvanceWasted(20f);
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.Zero);
-            Assert.That(GameSessionState.IsWasted, Is.False);
+            GameSessionState.AdvanceBalanceCheckDelay(20f);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.Zero);
+
+            Assert.That(
+                GameSessionState.ConsumeBalanceCheckSequence(),
+                Is.Zero);
+            Assert.That(
+                GameSessionState.ConsumeBalanceCheckSequence(),
+                Is.EqualTo(1));
+            Assert.That(GameSessionState.BalanceCheckSequence, Is.EqualTo(2));
         }
 
         [Test]
@@ -174,15 +194,18 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.SetCitySeed(9876);
             GameSessionState.EnterBar("bar-reset-contract");
             GameSessionState.UpdateDrinkingProgress(84, DrinkId.Vodka, 6);
-            GameSessionState.ApplyWasted(30f);
+            GameSessionState.SetBalanceCheckDelay(30f);
+            GameSessionState.ConsumeBalanceCheckSequence();
 
             GameSessionState.ResetDrinkingState();
 
             Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
             Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(DrinkId.None));
             Assert.That(GameSessionState.DrinksConsumed, Is.Zero);
-            Assert.That(GameSessionState.WastedSecondsRemaining, Is.Zero);
-            Assert.That(GameSessionState.IsWasted, Is.False);
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.Zero);
+            Assert.That(GameSessionState.BalanceCheckSequence, Is.Zero);
             Assert.That(GameSessionState.CitySeed, Is.EqualTo(9876));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo("bar-reset-contract"));
             Assert.That(

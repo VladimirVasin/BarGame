@@ -184,13 +184,13 @@ namespace BarPromenade.Tests
                 "Blinking must continue during locomotion.");
 
             rig.SetMotion(Vector3.zero);
-            rig.SetWasted(true);
-            float wastedDeadline =
+            rig.SetIntoxication(1f);
+            float intoxicatedDeadline =
                 Time.realtimeSinceStartup +
                 PlayerFacialAnimationState
                     .InitialWatchfulDelaySeconds +
                 0.2f;
-            while (Time.realtimeSinceStartup < wastedDeadline)
+            while (Time.realtimeSinceStartup < intoxicatedDeadline)
             {
                 yield return null;
                 Assert.That(

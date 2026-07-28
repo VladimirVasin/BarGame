@@ -6,11 +6,14 @@ namespace BarPromenade
     public sealed class IntoxicationHudView : MonoBehaviour
     {
         private GUIStyle labelStyle;
-        private GUIStyle debuffStyle;
+        private GUIStyle stageStyle;
 
         public bool Visible { get; set; } = true;
         public bool ShouldRender =>
             Visible && GameSessionState.IntoxicationLevel > 0;
+        public IntoxicationStage CurrentStage =>
+            IntoxicationStageRules.GetStage(
+                GameSessionState.IntoxicationLevel);
 
         private void OnGUI()
         {
@@ -30,8 +33,8 @@ namespace BarPromenade
             {
                 const float x = 10f;
                 const float y = 9f;
-                const float width = 140f;
-                const float height = 36f;
+                const float width = 164f;
+                const float height = 42f;
                 Rect panel = new Rect(x, y, width, height);
                 RetroUiTheme.DrawPanel(
                     panel,
@@ -45,59 +48,31 @@ namespace BarPromenade
                     LocalizationService.Get("drinking.intoxication"),
                     GameSessionState.IntoxicationLevel);
                 GUI.Label(
-                    new Rect(x + 6f, y + 3f, width - 12f, 12f),
+                    new Rect(x + 6f, y + 3f, 93f, 12f),
                     label,
                     labelStyle);
 
+                IntoxicationProfile profile =
+                    IntoxicationStageRules.Evaluate(
+                        GameSessionState.IntoxicationLevel);
+                GUI.Label(
+                    new Rect(
+                        x + 99f,
+                        y + 3f,
+                        width - 105f,
+                        12f),
+                    LocalizationService.Get(
+                        profile.StageNameKey),
+                    stageStyle);
+
                 Rect track = new Rect(
                     x + 6f,
-                    y + 19f,
+                    y + 20f,
                     width - 12f,
-                    9f);
-                RetroUiTheme.DrawPanel(
+                    12f);
+                DrawStageTrack(
                     track,
-                    RetroUiTheme.Ink,
-                    RetroUiTheme.BorderMuted,
-                    false,
-                    1f,
-                    1f);
-                float normalized =
-                    GameSessionState.IntoxicationLevel / 100f;
-                float fillWidth = Mathf.Floor(
-                    (track.width - 2f) * normalized);
-                RetroUiTheme.FillRect(
-                    new Rect(
-                        track.x + 1f,
-                        track.y + 1f,
-                        fillWidth,
-                        track.height - 2f),
-                    Color.Lerp(
-                        RetroUiTheme.Good,
-                        RetroUiTheme.Bad,
-                        normalized));
-
-                if (!GameSessionState.IsWasted)
-                {
-                    return;
-                }
-
-                string debuff = string.Format(
-                    LocalizationService.Get("drinking.wasted"),
-                    Mathf.CeilToInt(
-                        GameSessionState.WastedSecondsRemaining));
-                Rect debuffPanel = new Rect(
-                    x,
-                    y + height + 3f,
-                    width,
-                    18f);
-                RetroUiTheme.DrawPanel(
-                    debuffPanel,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.Bad,
-                    true,
-                    2f,
-                    1f);
-                GUI.Label(debuffPanel, debuff, debuffStyle);
+                    GameSessionState.IntoxicationLevel);
             }
             finally
             {
@@ -117,11 +92,55 @@ namespace BarPromenade
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
                 true);
-            debuffStyle = RetroUiTheme.CreateLabelStyle(
+            stageStyle = RetroUiTheme.CreateLabelStyle(
                 8,
-                TextAnchor.MiddleCenter,
+                TextAnchor.MiddleRight,
                 RetroUiTheme.AccentPale,
                 true);
+        }
+
+        private static void DrawStageTrack(
+            Rect track,
+            int intoxication)
+        {
+            const float gap = 2f;
+            float segmentWidth =
+                (track.width - gap * 4f) / 5f;
+            for (int index = 0; index < 5; index++)
+            {
+                Rect segment = new Rect(
+                    track.x + index * (segmentWidth + gap),
+                    track.y,
+                    segmentWidth,
+                    track.height);
+                RetroUiTheme.DrawPanel(
+                    segment,
+                    RetroUiTheme.Ink,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    1f,
+                    1f);
+                float fill = Mathf.Clamp01(
+                    (intoxication - index * 20f) / 20f);
+                if (fill <= 0f)
+                {
+                    continue;
+                }
+
+                float normalized =
+                    (index * 20f + fill * 20f) / 100f;
+                RetroUiTheme.FillRect(
+                    new Rect(
+                        segment.x + 1f,
+                        segment.y + 1f,
+                        Mathf.Floor(
+                            (segment.width - 2f) * fill),
+                        segment.height - 2f),
+                    Color.Lerp(
+                        RetroUiTheme.Good,
+                        RetroUiTheme.Bad,
+                        normalized));
+            }
         }
     }
 }

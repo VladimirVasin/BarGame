@@ -2,10 +2,26 @@
 
 ## Unreleased
 
-### Contextual intoxication HUD
+### Five-stage intoxication and balance
 
-- The intoxication panel now stays hidden while the value is `0` and appears
-  automatically as soon as the player gains intoxication.
+- Replaced the former temporary intoxication status with one persistent
+  percentage-driven system. The HUD stays hidden at `0`; positive values fill
+  five 20-point segments named Light Buzz / «Лёгкий хмель», Tipsy /
+  «Навеселе», Drunk / «Подшофе», Unsteady / «Шатает» and Very Drunk /
+  «В стельку».
+- Higher values continuously strengthen puppet sway, arm spread, bent knees,
+  camera roll, movement slowdown and world-image vignette, ghost/chromatic
+  doubling, warp, warmth and exposure pulse. The strongest level lowers
+  movement speed to `0.70x`; all presentation eases into a changed value.
+- Above `60`, periodic balance checks draw a crisp semicircular gauge over the
+  hero. Hold arrows or A/D, D-pad or left stick to keep its moving arrow in
+  the shrinking green center before the red risk meter fills.
+- Checks become longer and more frequent as intoxication rises, with stronger
+  disturbances and less player authority. Failing drops the visual puppet to
+  the arrow side, holds it down briefly and raises it again while the
+  physical player root remains safely stationary.
+- Balance checks pause around maps, minigames, F9 and scene transitions. They
+  resume only after a safety delay; reaching `60` or below cancels them.
 
 ### Classic fixed-camera door transitions
 
@@ -102,8 +118,8 @@
   and moonshine-burst sounds. Swaps, gravity and refills animate between
   immutable board snapshots with synchronized cascade effects.
 - Closing during the terminal cascade still completes the visit. Reaching
-  100 intoxication starts the full 45-second `Wasted` effect only when the
-  modal closes.
+  100 intoxication finishes after the cascade and leaves the player at the
+  permanent highest percentage-driven stage.
 
 ### Split the G minigame
 
@@ -136,8 +152,8 @@
   the map, minigames and F9 launcher.
 - Strengthened the procedural living idle with readable breathing, weight
   transfer and a short gesture that alternates between the left and right
-  arms; all motion still blends with walking and is suppressed during
-  `Wasted`.
+  arms; all motion still blends with walking and yields progressively to
+  strong intoxication, balance and fall poses.
 - Expanded facial animation to five deterministic states: stronger
   half/closed blinks plus watchful and tense idle expressions in all five
   visible-face directions. Rear views remain neutral, locomotion cancels the
@@ -186,8 +202,11 @@
   future game appears after its definition and factory are registered.
 - Opening the window closes a conflicting map or minigame and preserves the
   modal input/HUD state when the window or launched game closes.
-- Debug runs are isolated: they do not mark a bar visited or save
-  intoxication, consumed drinks or the `Wasted` effect.
+- The Left/Right arrow keys or clickable `-20/+20` controls change the real
+  session intoxication in clamped 20-point steps for rapid stage and balance
+  testing without changing its last-drink or consumed-drink context.
+- Debug minigame runs remain isolated: they do not mark a bar visited or save
+  their own intoxication and consumed-drink changes.
 
 ### Beer-pong minigame
 
@@ -246,9 +265,10 @@
   gamepad controls.
 - Accepting the final minigame result now marks that bar as visited; entering
   the interior or leaving an unfinished game does not.
-- Intoxication and served cocktails now persist after every stage. A bad served
-  mixture triggers «В никакашку» when the game finishes or closes, while
-  reaching 100 intoxication ends the session early.
+- Intoxication and served cocktails persist after every stage. A bad served
+  mixture keeps its score and intoxication penalties but creates no separate
+  timed status; reaching 100 ends the session with the explicit
+  maximum-intoxication result.
 
 ### Fog-forward city atmosphere
 

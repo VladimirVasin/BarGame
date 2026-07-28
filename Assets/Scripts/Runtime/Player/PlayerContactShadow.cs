@@ -136,10 +136,45 @@ namespace BarPromenade
             float width = BaseWidth * Mathf.Lerp(0.94f, 1f, plant);
             float depth = BaseDepth * Mathf.Lerp(0.9f, 1f, plant);
             float alpha = Mathf.Lerp(0.36f, 0.46f, plant);
+            float fall = Mathf.Clamp01(sourceVisual.FallAmount);
+            width = Mathf.Lerp(width, 1.35f, fall);
+            depth = Mathf.Lerp(depth, 0.42f, fall);
+            alpha = Mathf.Lerp(alpha, 0.5f, fall);
 
-            shadowRoot.localPosition =
-                new Vector3(0f, GroundOffset, 0f);
-            shadowRoot.localRotation = Quaternion.identity;
+            if (fall <= 0.001f)
+            {
+                shadowRoot.localPosition =
+                    new Vector3(0f, GroundOffset, 0f);
+                shadowRoot.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                Vector3 fallRight = sourceVisual.VisualRoot != null
+                    ? sourceVisual.VisualRoot.right
+                    : groundTransform.right;
+                fallRight = Vector3.ProjectOnPlane(
+                    fallRight,
+                    Vector3.up);
+                if (fallRight.sqrMagnitude <= 0.0001f)
+                {
+                    fallRight = groundTransform.right;
+                }
+
+                fallRight.Normalize();
+                Vector3 forward =
+                    Vector3.Cross(fallRight, Vector3.up);
+                shadowRoot.SetPositionAndRotation(
+                    groundTransform.position +
+                    Vector3.up * GroundOffset +
+                    fallRight *
+                    sourceVisual.FallDirection *
+                    fall *
+                    0.24f,
+                    Quaternion.LookRotation(
+                        forward,
+                        Vector3.up));
+            }
+
             shadowRoot.localScale = new Vector3(width, 1f, depth);
 
             if (properties == null)

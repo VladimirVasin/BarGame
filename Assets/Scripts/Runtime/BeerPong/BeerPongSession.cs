@@ -48,7 +48,7 @@ namespace BarPromenade
             DrinksConsumed = drinksConsumed;
             standingCupMask = BeerPongTableLayout.Default.AllCupsMask;
             Outcome = initialIntoxication >= MaximumIntoxication
-                ? BeerPongSessionOutcome.Wasted
+                ? BeerPongSessionOutcome.MaxIntoxicationReached
                 : BeerPongSessionOutcome.InProgress;
         }
 
@@ -141,7 +141,8 @@ namespace BarPromenade
             }
             else if (Intoxication >= MaximumIntoxication)
             {
-                Outcome = BeerPongSessionOutcome.Wasted;
+                Outcome =
+                    BeerPongSessionOutcome.MaxIntoxicationReached;
             }
             else if (ThrowsCompleted >= ThrowLimit)
             {

@@ -28,7 +28,13 @@ namespace BarPromenade.Tests.PlayMode
             BarInteriorRoot interior =
                 UnityEngine.Object.FindAnyObjectByType<BarInteriorRoot>();
             interior?.CocktailMinigame?.Cancel();
+            if (interior != null)
+            {
+                UnityEngine.Object.Destroy(interior.gameObject);
+            }
+
             ResetSession();
+            yield return null;
             yield return null;
         }
 
@@ -141,14 +147,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.LightBeer));
-            Assert.That(GameSessionState.IsWasted, Is.False);
             Assert.That(
                 GameSessionState.PlannedBarRoute,
                 Does.Not.Contain(ActiveBarId));
         }
 
         [UnityTest]
-        public IEnumerator BadServedMix_DefersWastedUntilSessionCloses()
+        public IEnumerator BadServedMix_PersistsPenaltyWithoutExtraStatus()
         {
             BarInteriorRoot interior = null;
             yield return LoadInterior(root => interior = root);
@@ -173,7 +178,6 @@ namespace BarPromenade.Tests.PlayMode
             minigame.AdvancePresentation(
                 CocktailMinigameController.IngredientPourDuration);
             Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
-            Assert.That(GameSessionState.IsWasted, Is.False);
 
             Assert.That(minigame.AddIngredient(goodIndex), Is.True);
             minigame.AdvancePresentation(
@@ -186,19 +190,13 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(18));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(1));
-            Assert.That(GameSessionState.IsWasted, Is.False);
             Assert.That(minigame.LastRoundResult.HasBadMix, Is.True);
 
             minigame.Cancel();
-            Assert.That(GameSessionState.IsWasted, Is.True);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(18));
             Assert.That(
                 GameSessionState.IsBarVisited(ActiveBarId),
                 Is.False);
-            Assert.That(
-                GameSessionState.WastedSecondsRemaining,
-                Is.EqualTo(
-                    CocktailMinigameController.WastedDurationSeconds)
-                    .Within(0.01f));
             Assert.That(interior.Player.Motor.InputEnabled, Is.True);
             Assert.That(interior.Player.Interactor.InputEnabled, Is.True);
         }

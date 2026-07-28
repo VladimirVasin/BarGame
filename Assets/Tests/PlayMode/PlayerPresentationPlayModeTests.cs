@@ -677,15 +677,15 @@ namespace BarPromenade.Tests
         }
 
         [UnityTest]
-        public IEnumerator SetWasted_SwaysVisualWithoutChangingHeadingAndReturnsToIdle()
+        public IEnumerator SetIntoxication_MaximumSwaysVisualWithoutChangingHeadingAndReturnsToIdle()
         {
             Camera camera = CreateCamera(Vector3.zero);
-            GameObject actor = CreateObject("Wasted Presentation Actor");
+            GameObject actor = CreateObject("Intoxicated Presentation Actor");
             actor.transform.position = new Vector3(-2f, 10f, 4f);
             actor.transform.rotation = Quaternion.Euler(0f, 123f, 0f);
             PlaceCameraAtRelativeYaw(camera, actor.transform, 0f);
 
-            GameObject rigObject = CreateObject("Wasted Presentation Rig");
+            GameObject rigObject = CreateObject("Intoxicated Presentation Rig");
             rigObject.transform.SetParent(actor.transform, false);
             PlayerSpriteRig rig =
                 rigObject.AddComponent<PlayerSpriteRig>();
@@ -700,12 +700,12 @@ namespace BarPromenade.Tests
             Sprite[] idleSprites = CaptureDisplayedSprites(rig);
             float maximumSway = 0f;
             float maximumRock = 0f;
-            float maximumWastedLeftArmAngle = 0f;
-            float maximumWastedRightArmAngle = 0f;
+            float maximumLeftArmAngle = 0f;
+            float maximumRightArmAngle = 0f;
 
             rig.SetMotion(Vector3.zero);
-            rig.SetWasted(true);
-            float settledWastedSampleTime =
+            rig.SetIntoxication(1f);
+            float settledIntoxicationSampleTime =
                 Time.realtimeSinceStartup + 0.35f;
             float swayDeadline = Time.realtimeSinceStartup + 1.5f;
             while (Time.realtimeSinceStartup < swayDeadline)
@@ -720,17 +720,17 @@ namespace BarPromenade.Tests
                         idleRotation,
                         poseRoot.localRotation));
                 if (Time.realtimeSinceStartup >=
-                    settledWastedSampleTime)
+                    settledIntoxicationSampleTime)
                 {
-                    maximumWastedLeftArmAngle = Mathf.Max(
-                        maximumWastedLeftArmAngle,
+                    maximumLeftArmAngle = Mathf.Max(
+                        maximumLeftArmAngle,
                         Quaternion.Angle(
                             Quaternion.identity,
                             rig.GetPartTransform(
                                 PlayerPuppetPart.LeftUpperArm)
                                 .localRotation));
-                    maximumWastedRightArmAngle = Mathf.Max(
-                        maximumWastedRightArmAngle,
+                    maximumRightArmAngle = Mathf.Max(
+                        maximumRightArmAngle,
                         Quaternion.Angle(
                             Quaternion.identity,
                             rig.GetPartTransform(
@@ -750,18 +750,19 @@ namespace BarPromenade.Tests
             Assert.That(maximumSway, Is.GreaterThan(0.004f));
             Assert.That(maximumRock, Is.GreaterThan(0.2f));
             Assert.That(
-                maximumWastedLeftArmAngle,
-                Is.LessThan(0.15f),
-                "Wasted must suppress the left idle gesture.");
+                maximumLeftArmAngle,
+                Is.GreaterThan(1f),
+                "Maximum intoxication must visibly spread the left arm.");
             Assert.That(
-                maximumWastedRightArmAngle,
-                Is.LessThan(0.15f),
-                "Wasted must suppress the right idle gesture.");
+                maximumRightArmAngle,
+                Is.GreaterThan(1f),
+                "Maximum intoxication must visibly spread the right arm.");
+            Assert.That(rig.IntoxicationAmount, Is.GreaterThan(0.95f));
             Assert.That(rig.CurrentDirection, Is.EqualTo(idleDirection));
             AssertDisplayedSprites(rig, idleSprites);
             AssertNoMirroring(rig);
 
-            rig.SetWasted(false);
+            rig.SetIntoxication(0f);
             float minimumSettleTime = Time.realtimeSinceStartup + 0.5f;
             float settleDeadline = Time.realtimeSinceStartup + 2f;
             bool returnedToLivingIdle = false;
@@ -789,7 +790,7 @@ namespace BarPromenade.Tests
             Assert.That(
                 returnedToLivingIdle,
                 Is.True,
-                "Disabling Wasted must settle back into living idle.");
+                "Clearing intoxication must settle back into living idle.");
 
             float minimumLivingIdleY = rig.UpperBodyOffset.y;
             float maximumLivingIdleY = rig.UpperBodyOffset.y;
@@ -809,7 +810,7 @@ namespace BarPromenade.Tests
             Assert.That(
                 maximumLivingIdleY - minimumLivingIdleY,
                 Is.GreaterThan(0.0004f),
-                "Living idle must resume after the Wasted sway.");
+                "Living idle must resume after the intoxication sway.");
             Assert.That(
                 Quaternion.Angle(actor.transform.rotation, playerHeading),
                 Is.LessThan(0.001f));

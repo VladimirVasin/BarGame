@@ -115,7 +115,7 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void MissAtNinetyTwo_EndsWastedBeforeThrowLimit()
+        public void MissAtNinetyTwo_EndsAtMaximumBeforeThrowLimit()
         {
             var session = CreateSession(92);
             session.BeginThrow();
@@ -127,18 +127,18 @@ namespace BarPromenade.Tests
             Assert.That(result.IntoxicationDelta, Is.EqualTo(8));
             Assert.That(result.CurrentIntoxication, Is.EqualTo(100));
             Assert.That(session.Outcome, Is.EqualTo(
-                BeerPongSessionOutcome.Wasted));
+                BeerPongSessionOutcome.MaxIntoxicationReached));
             Assert.That(session.ThrowsCompleted, Is.EqualTo(1));
         }
 
         [Test]
-        public void StartingAtMaximum_IsImmediatelyWasted()
+        public void StartingAtMaximum_IsImmediatelyFinished()
         {
             BeerPongSession session = CreateSession(100);
 
             Assert.That(session.IsFinished, Is.True);
             Assert.That(session.Outcome, Is.EqualTo(
-                BeerPongSessionOutcome.Wasted));
+                BeerPongSessionOutcome.MaxIntoxicationReached));
             Assert.That(session.CanBeginThrow, Is.False);
             Assert.Throws<InvalidOperationException>(
                 () => session.BeginThrow());

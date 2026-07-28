@@ -9,7 +9,6 @@ namespace BarPromenade
         MonoBehaviour,
         IBarMinigame
     {
-        public const float WastedDurationSeconds = 45f;
         public const float GulpRepeatSeconds = 0.34f;
 
         private static readonly Rect PointerDrinkRect =
@@ -40,7 +39,6 @@ namespace BarPromenade
         private float gulpElapsed;
         private bool persistSessionProgress = true;
         private bool completionRaised;
-        private bool wastedApplied;
         private bool completeAfterSettling;
         private bool awaitingFreshRelease;
 
@@ -146,7 +144,6 @@ namespace BarPromenade
             inputUnlockFrame = Time.frameCount + 1;
             gulpElapsed = 0f;
             completionRaised = false;
-            wastedApplied = false;
             completeAfterSettling = false;
             awaitingFreshRelease = false;
             activeInputSource = DrinkInputSource.None;
@@ -432,12 +429,6 @@ namespace BarPromenade
             }
 
             completeAfterSettling = true;
-            if (!wastedApplied && persistSessionProgress)
-            {
-                GameSessionState.ApplyWasted(
-                    WastedDurationSeconds);
-                wastedApplied = true;
-            }
         }
 
         private void ObservePhaseChange(

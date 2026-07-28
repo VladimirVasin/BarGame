@@ -250,7 +250,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator MoonshineAtEighty_CompletesWastedAfterCascade()
+        public IEnumerator MoonshineAtEighty_CompletesAtMaximumAfterCascade()
         {
             GameSessionState.UpdateDrinkingProgress(
                 80,
@@ -270,7 +270,6 @@ namespace BarPromenade.Tests.PlayMode
                     moonshine.Second.Column),
                 Is.True);
             Assert.That(controller.IntoxicationLevel, Is.EqualTo(100));
-            Assert.That(GameSessionState.IsWasted, Is.False);
             Assert.That(completionCount, Is.Zero);
 
             ResolvePresentation(controller);
@@ -280,15 +279,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     TinctureMatchPresentationPhase.FinalResult));
             Assert.That(completionCount, Is.EqualTo(1));
-            Assert.That(GameSessionState.IsWasted, Is.False);
             Assert.That(controller.CloseFinalResult(), Is.True);
-            Assert.That(GameSessionState.IsWasted, Is.True);
             Assert.That(
-                GameSessionState.WastedSecondsRemaining,
-                Is.EqualTo(
-                    TinctureMatchMinigameController
-                        .WastedDurationSeconds)
-                    .Within(0.01f));
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(100));
             yield return null;
         }
 
@@ -441,7 +435,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(7));
-            Assert.That(GameSessionState.IsWasted, Is.False);
 
             debugController.Cancel();
             yield return null;

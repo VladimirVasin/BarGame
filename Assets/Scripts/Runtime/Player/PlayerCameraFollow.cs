@@ -69,6 +69,11 @@ namespace BarPromenade
         private float movementSpeedVelocity;
         private float cinematicMotionWeight;
         private float cinematicBlendVelocity;
+        private float targetIntoxication;
+        private float currentIntoxication;
+        private float balanceLean;
+        private float fallDirection;
+        private float fallAmount;
 
         public bool OrbitInputEnabled { get; private set; } = true;
         public bool CinematicMotionEnabled { get; private set; } = true;
@@ -93,6 +98,25 @@ namespace BarPromenade
         public void SetCinematicMotionEnabled(bool enabled)
         {
             CinematicMotionEnabled = enabled;
+        }
+
+        public void SetIntoxication(float normalized)
+        {
+            targetIntoxication = Mathf.Clamp01(normalized);
+        }
+
+        public void SetBalanceReaction(
+            float signedLean,
+            float signedFallDirection,
+            float normalizedFallAmount)
+        {
+            balanceLean = Mathf.Clamp(signedLean, -1f, 1f);
+            if (!Mathf.Approximately(signedFallDirection, 0f))
+            {
+                fallDirection = Mathf.Sign(signedFallDirection);
+            }
+
+            fallAmount = Mathf.Clamp01(normalizedFallAmount);
         }
 
         public void RotateYaw(float degrees)
@@ -142,6 +166,10 @@ namespace BarPromenade
 
             UpdateMovementSpeed(deltaTime);
             UpdateFocusPoint(deltaTime);
+            currentIntoxication = Mathf.MoveTowards(
+                currentIntoxication,
+                targetIntoxication,
+                deltaTime / 0.7f);
             currentYaw = yawSmoothTime <= 0f
                 ? targetYaw
                 : Mathf.SmoothDampAngle(
@@ -344,6 +372,40 @@ namespace BarPromenade
                  walkRollAmplitude *
                  movementSpeedWeight) *
                 weight;
+
+            IntoxicationProfile intoxication =
+                IntoxicationStageRules.Evaluate(
+                    Mathf.RoundToInt(
+                        currentIntoxication *
+                        IntoxicationStageRules.MaximumLevel));
+            float intoxicationWeight =
+                weight *
+                currentIntoxication *
+                currentIntoxication;
+            float slowSway = Mathf.Sin(
+                cinematicTime * 1.17f + 0.4f);
+            float secondarySway = Mathf.Sin(
+                cinematicTime * 0.73f + 2.1f);
+            localFocusOffset.x +=
+                slowSway *
+                0.018f *
+                intoxicationWeight;
+            localFocusOffset.y +=
+                secondarySway *
+                0.008f *
+                intoxicationWeight -
+                fallAmount * 0.08f * weight;
+            pitchOffset +=
+                secondarySway *
+                intoxication.CameraRollDegrees *
+                0.22f *
+                weight;
+            rollOffset +=
+                slowSway *
+                intoxication.CameraRollDegrees *
+                weight +
+                balanceLean * 1.2f * weight +
+                fallDirection * fallAmount * 1.8f * weight;
         }
 
         private float GetCollisionAdjustedDistance(

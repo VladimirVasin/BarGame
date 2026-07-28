@@ -53,7 +53,13 @@ Procedural idle adds readable breathing, weight shift and a rare gesture that
 alternates between the left and right arms. A deterministic timer swaps the
 existing body renderer through stronger half/closed blinks in the five
 visible-face directions, plus watchful and tense expressions after sustained
-idle. Locomotion or `Wasted` cancels those two idle-only expressions.
+idle. Locomotion, intoxication above `0.35`, an active balance lean or a fall
+cancels those two idle-only expressions while ordinary blink timing continues.
+Percentage-driven intoxication reuses the same nine-part puppet: procedural
+body sway, arm spread and knee bend intensify continuously, the balance arrow
+adds signed lean, and failure lowers and rolls only the visual hierarchy toward
+the failed side. No extra sprite, renderer or authored fall frame is required;
+the physical player root remains upright.
 A future frame-animation pass should preserve the column/layer order and pivot
 positions while adding consistent idle/walk frames.
 

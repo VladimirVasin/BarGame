@@ -8,6 +8,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class MinigameDebugWindow : MonoBehaviour
     {
+        private const int IntoxicationStep = 20;
         private const int VisibleRowCount = 5;
         private const float RowHeight = 30f;
         private const float RowGap = 5f;
@@ -184,6 +185,13 @@ namespace BarPromenade
                 return;
             }
 
+            int intoxicationDelta = ReadIntoxicationDelta();
+            if (intoxicationDelta != 0)
+            {
+                TryAdjustIntoxication(intoxicationDelta);
+                return;
+            }
+
             int selectionDelta = ReadSelectionDelta();
             if (selectionDelta != 0)
             {
@@ -349,10 +357,11 @@ namespace BarPromenade
                     "debug.minigames.title"),
                 titleStyle);
             GUI.Label(
-                new Rect(132f, 66f, 376f, 31f),
+                new Rect(132f, 66f, 376f, 28f),
                 LocalizationService.Get(
                     "debug.minigames.hint"),
                 hintStyle);
+            DrawIntoxicationControls();
 
             IReadOnlyList<BarMinigameDefinition> definitions =
                 Definitions;
@@ -379,6 +388,60 @@ namespace BarPromenade
                 footerStyle);
         }
 
+        private void DrawIntoxicationControls()
+        {
+            int intoxication = GameSessionState.IntoxicationLevel;
+            Rect decreaseButton = new Rect(132f, 96f, 64f, 24f);
+            Rect valueLabel = new Rect(202f, 96f, 236f, 24f);
+            Rect increaseButton = new Rect(444f, 96f, 64f, 24f);
+
+            DrawIntoxicationButton(
+                decreaseButton,
+                "←  −20",
+                -IntoxicationStep,
+                intoxication > 0);
+            GUI.Label(
+                valueLabel,
+                string.Format(
+                    LocalizationService.Get(
+                        "drinking.intoxication"),
+                    intoxication),
+                hintStyle);
+            DrawIntoxicationButton(
+                increaseButton,
+                "+20  →",
+                IntoxicationStep,
+                intoxication < 100);
+        }
+
+        private void DrawIntoxicationButton(
+            Rect rect,
+            string label,
+            int delta,
+            bool enabled)
+        {
+            RetroUiTheme.DrawPanel(
+                rect,
+                enabled
+                    ? RetroUiTheme.PanelRaised
+                    : RetroUiTheme.PanelInset,
+                enabled
+                    ? RetroUiTheme.Accent
+                    : RetroUiTheme.BorderMuted,
+                enabled,
+                2f,
+                1f);
+
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && enabled;
+            if (GUI.Button(rect, label, rowStyle))
+            {
+                TryAdjustIntoxication(delta);
+            }
+
+            GUI.enabled = previousEnabled;
+        }
+
         private void DrawDefinitionRows(
             IReadOnlyList<BarMinigameDefinition> definitions)
         {
@@ -392,7 +455,7 @@ namespace BarPromenade
                 int visibleIndex = index - firstVisibleIndex;
                 Rect row = new Rect(
                     132f,
-                    105f + visibleIndex * (RowHeight + RowGap),
+                    125f + visibleIndex * (RowHeight + RowGap),
                     376f,
                     RowHeight);
                 bool selected = index == SelectedIndex;
@@ -417,6 +480,28 @@ namespace BarPromenade
                     pendingLaunchId = definitions[index].Id;
                 }
             }
+        }
+
+        private bool TryAdjustIntoxication(int delta)
+        {
+            if (!IsOpen || delta == 0)
+            {
+                return false;
+            }
+
+            int current = GameSessionState.IntoxicationLevel;
+            int adjusted = Mathf.Clamp(current + delta, 0, 100);
+            if (adjusted == current)
+            {
+                return false;
+            }
+
+            GameSessionState.UpdateDrinkingProgress(
+                adjusted,
+                GameSessionState.LastAlcoholicDrink,
+                GameSessionState.DrinksConsumed);
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
         }
 
         private void MoveSelection(int direction)
@@ -585,6 +670,27 @@ namespace BarPromenade
                 keyboard.sKey.wasPressedThisFrame)
             {
                 return 1;
+            }
+
+            return 0;
+        }
+
+        private static int ReadIntoxicationDelta()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return 0;
+            }
+
+            if (keyboard.leftArrowKey.wasPressedThisFrame)
+            {
+                return -IntoxicationStep;
+            }
+
+            if (keyboard.rightArrowKey.wasPressedThisFrame)
+            {
+                return IntoxicationStep;
             }
 
             return 0;

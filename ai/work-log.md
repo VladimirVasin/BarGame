@@ -2,6 +2,35 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Five-stage intoxication and balance
+
+- Replaced the independent timed intoxication status with a single persistent
+  `0–100` value evaluated through five named 20-point ranges. Added continuous
+  speed, jointed-puppet, chase-camera and PS1 world-composite parameters plus a
+  crisp five-segment localized HUD.
+- Added deterministic balance scheduling above `60`, a fixed-step inertial
+  arrow model, the overhead arc/safe-sector/risk presentation and a
+  balance-specific modal lock for arrows, A/D, D-pad and left stick.
+- Added visual fall/down/rise recovery, camera response and a fall-aware contact
+  shadow while keeping the physical player root upright and stationary.
+- Preserved the maximum-intoxication terminal behavior of all four minigames
+  without applying a separate expiring status after completion or cancellation.
+- Extended the shared F9 window with clickable and Left/Right-arrow `-20/+20`
+  controls that clamp session intoxication while preserving drink context.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Complete Unity EditMode suite: 332/332 passed.
+- Complete headless Unity PlayMode suite: all 71 runnable checks passed;
+  three RenderGraph/realtime-shadow pixel checks were ignored because the
+  null graphics device cannot execute them.
+- Focused intoxication status cycle: 3/3 passed, including threshold cancel
+  and failure/fall/recovery/cooldown.
+- Source inspection found no remaining timed-status identifier or localized
+  key under `Assets`; `git diff --check` passed.
+
 ## 2026-07-28 — Contextual intoxication HUD
 
 - Kept the intoxication HUD completely hidden at `0` while preserving its
@@ -129,7 +158,8 @@ Verification:
   `ShadowsOnly` body and limb renderers.
 - Kept the shadow view authored relative to the main light while remapping the
   live smoothed joint angles into that view. Walking, footfall compression,
-  idle gestures and `Wasted` motion now reshape the projected silhouette.
+  idle gestures and the then-current intoxication motion now reshape the
+  projected silhouette.
 - Added component lifecycle handling plus regressions for actor translation,
   opposite gait phases and the actual D3D receiver pixels.
 
@@ -229,9 +259,9 @@ Verification:
   in City and BarInterior. It reuses the existing eight-direction full-body
   atlas, selects a silhouette from the player/main-light angle and faces the
   main directional light instead of the orbiting camera.
-- Copied whole-puppet bob, weight shift and `Wasted` sway to the shadow proxy
-  while leaving the nine visible jointed renderers and their materials
-  unchanged.
+- Copied whole-puppet bob, weight shift and the then-current intoxication sway
+  to the shadow proxy while leaving the nine visible jointed renderers and
+  their materials unchanged.
 - Added one cached shared runtime material backed by an alpha-clipped URP
   `ShadowCaster` pass. Practical street/bar lights remain shadowless, and the
   caster adds no collider, texture atlas or per-frame allocation.
@@ -271,8 +301,8 @@ Verification:
   particles and reshuffle feedback. Match audio now starts with the matching
   clear animation.
 - Terminal moves remain completed if the player closes during their cascade;
-  a resulting 45-second `Wasted` effect starts only when the modal closes.
-  Reopening advances a deterministic per-controller board sequence.
+  the then-current 45-second intoxication effect started only when the modal
+  closed. Reopening advances a deterministic per-controller board sequence.
 
 Verification:
 
@@ -320,13 +350,13 @@ Verification:
 - Expanded the body-expression atlas from three to five rows: stronger
   half/closed blinks plus `Watchful` and `Tense`. The two new expressions use
   explicit direction-specific eye, brow and mouth edits, run only after
-  sustained idle and reset during locomotion or `Wasted`; blink timing
-  continues in either state.
+  sustained idle and reset during locomotion or the then-current strong
+  intoxication state; blink timing continues in either state.
 - Kept the nine-renderer hierarchy, authored asymmetry and non-mirrored views.
   All three rear directions remain byte-identical to neutral.
 - Extended regression coverage for exact atlas output, pairwise-distinct
-  facial states, blink-under-motion, `Wasted` suppression, sagittal depth
-  sorting and the left-then-right idle gesture sequence.
+  facial states, blink-under-motion, strong-intoxication suppression,
+  sagittal depth sorting and the left-then-right idle gesture sequence.
 
 Verification:
 
@@ -361,8 +391,8 @@ Verification:
   cinematic motion out and restores its captured state.
 - Added procedural breathing, weight transfer and a rare left-arm fidget to
   the existing direction-projected joint pose. Idle blends away during
-  locomotion and is suppressed under `Wasted` without changing scale, heading
-  or the nine-renderer hierarchy.
+  locomotion and was suppressed under the then-current strong intoxication
+  state without changing scale, heading or the nine-renderer hierarchy.
 - Extended the deterministic player builder with a `512x288` body-expression
   atlas. Neutral matches `Body`; half/closed blinks edit only explicit eye
   pixels in five visible-face directions, while three rear views remain
@@ -387,7 +417,7 @@ Verification:
 - Added phase-aware near/far sorting so depth-projected limbs pass behind or
   in front of the torso without changing sprites or mirroring.
 - Moved final pose application after direction selection in `LateUpdate` and
-  retained walk bob/rock, idle settling and `Wasted` sway.
+  retained walk bob/rock, idle settling and the then-current intoxication sway.
 - Added PlayMode regression coverage for cardinal/diagonal projection,
   contralateral phasing and depth sorting.
 
@@ -409,8 +439,8 @@ Verification:
   pixel-for-pixel to the reference frame.
 - Replaced the temporary single-renderer presentation with nine visual-only
   `SpriteRenderer` components in four parent/child joint chains. Walking now
-  rotates shoulders, elbows, hips and knees, while bob/rock and `Wasted` sway
-  affect the complete puppet.
+  rotates shoulders, elbows, hips and knees, while bob/rock and the
+  then-current intoxication sway affect the complete puppet.
 - Preserved camera-independent actor heading, 5-degree view hysteresis,
   non-mirrored asymmetry, PPU 48 and the shared four-pixel foot pivot.
 
@@ -435,8 +465,8 @@ Verification:
   and explicit front/side/back ordering.
 - Removed both camera-to-player yaw writes. The motor now faces actual planar
   movement, preserves heading while idle and remains camera-relative.
-- Preserved prototype walking bob/rock and the existing `Wasted` sway through
-  the single-renderer hierarchy in both runtime scenes.
+- Preserved prototype walking bob/rock and the then-current intoxication sway
+  through the single-renderer hierarchy in both runtime scenes.
 - Updated player/camera tests, import checks, architecture maps, player art
   specification and release notes. Full multi-frame idle/walk animation remains
   the next art pass after approval of the static vertical prototype.
@@ -447,7 +477,7 @@ Verification:
   0 errors, 0 warnings.
 - Unity EditMode: 211/211 passed.
 - Unity PlayMode with D3D11: 29/29 passed, including all eight view centers,
-  camera-independent heading, input movement, prototype motion, `Wasted`,
+  camera-independent heading, input movement, prototype intoxication motion,
   obstacle avoidance and the complete `City`/`BarInterior` flow.
 - Manual atlas contrast check: all eight silhouettes and the bandage/patch/strap
   asymmetry remained readable against gray-green fog and warm bar tones.
@@ -485,7 +515,8 @@ Verification:
   state-preserving modal lock, and closing restores the captured player,
   camera and HUD state.
 - Debug instances use fresh transient drinking state, do not mark a bar
-  visited and do not persist intoxication, drinks or `Wasted`.
+  visited and do not persist intoxication, drinks or the then-current
+  temporary status.
 
 Verification:
 
@@ -621,8 +652,9 @@ Verification:
 - Added per-round scoring up to 100, a 300-point session maximum and a
   15-point penalty for every incompatible addition.
 - Committed intoxication, last alcohol and the served-cocktail count through
-  `GameSessionState` after each serving; bad served mixtures defer the
-  45-second `Wasted` effect until finish/close, and 100 intoxication ends early.
+  `GameSessionState` after each serving; bad served mixtures then deferred a
+  45-second intoxication effect until finish/close, and 100 intoxication ended
+  early.
 - Added a 4x4 pixel-art glass/ingredient atlas plus animated glass fill,
   ingredient travel/tilt, pouring, sparks, bad bubbles, shaking, stage progress
   and final rank.
@@ -746,8 +778,8 @@ Verification:
   one-use water reset and completed/bad-mix outcomes.
 - Persisted intoxication, last alcohol and total drink count across city/bar
   scene loads for the current application run.
-- Added the 45-second `Wasted` debuff with `0.75` movement speed, sprite sway,
-  localized HUD and result feedback.
+- Added the then-current 45-second intoxication debuff with `0.75` movement
+  speed, sprite sway, localized HUD and result feedback.
 - Added RU/EN catalog entries plus EditMode and PlayMode regression coverage.
 
 Verification:

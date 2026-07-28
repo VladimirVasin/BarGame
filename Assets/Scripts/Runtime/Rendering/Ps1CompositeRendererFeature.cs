@@ -56,7 +56,8 @@ namespace BarPromenade.Rendering
             pass.Setup(
                 compositeMaterial,
                 resolution,
-                presentationSettings.QuantizationStrength);
+                presentationSettings.QuantizationStrength,
+                IntoxicationRenderState.Current);
             renderer.EnqueuePass(pass);
         }
 
@@ -111,6 +112,18 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_Ps1LowResolutionTexelSize");
             private static readonly int QuantizationStrengthId =
                 Shader.PropertyToID("_Ps1QuantizationStrength");
+            private static readonly int IntoxicationVignetteId =
+                Shader.PropertyToID("_IntoxicationVignette");
+            private static readonly int IntoxicationGhostPixelsId =
+                Shader.PropertyToID("_IntoxicationGhostPixels");
+            private static readonly int IntoxicationWarpId =
+                Shader.PropertyToID("_IntoxicationWarp");
+            private static readonly int IntoxicationWarmthId =
+                Shader.PropertyToID("_IntoxicationWarmth");
+            private static readonly int IntoxicationExposurePulseId =
+                Shader.PropertyToID("_IntoxicationExposurePulse");
+            private static readonly int IntoxicationTimeId =
+                Shader.PropertyToID("_IntoxicationTime");
 
             private Material material;
             private Vector2Int resolution;
@@ -123,7 +136,8 @@ namespace BarPromenade.Rendering
             public void Setup(
                 Material composite,
                 Vector2Int internalResolution,
-                float quantizationStrength)
+                float quantizationStrength,
+                IntoxicationRenderParameters intoxication)
             {
                 material = composite;
                 resolution = internalResolution;
@@ -137,6 +151,25 @@ namespace BarPromenade.Rendering
                 material.SetFloat(
                     QuantizationStrengthId,
                     Mathf.Clamp01(quantizationStrength));
+                material.SetFloat(
+                    IntoxicationVignetteId,
+                    Mathf.Clamp01(
+                        intoxication.VignetteStrength));
+                material.SetFloat(
+                    IntoxicationGhostPixelsId,
+                    Mathf.Max(0f, intoxication.GhostPixels));
+                material.SetFloat(
+                    IntoxicationWarpId,
+                    Mathf.Max(0f, intoxication.WarpStrength));
+                material.SetFloat(
+                    IntoxicationWarmthId,
+                    Mathf.Clamp01(intoxication.Warmth));
+                material.SetFloat(
+                    IntoxicationExposurePulseId,
+                    Mathf.Max(0f, intoxication.ExposurePulse));
+                material.SetFloat(
+                    IntoxicationTimeId,
+                    Mathf.Max(0f, intoxication.AnimationTime));
                 requiresIntermediateTexture = true;
             }
 

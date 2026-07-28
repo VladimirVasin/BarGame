@@ -204,11 +204,16 @@ namespace BarPromenade
         private float motionAmount;
         private float idlePhase;
         private float idleBlend;
-        private float wastedBlend;
-        private float wastedPhase;
+        private float intoxicationTarget;
+        private float intoxicationBlend;
+        private float intoxicationPhase;
+        private float balanceLeanTarget;
+        private float balanceLean;
+        private float fallAmountTarget;
+        private float fallAmount;
+        private float fallDirection = 1f;
         private float footPlantAmount = 1f;
         private Vector3 upperBodyOffset;
-        private bool isWasted;
 
         public PlayerViewDirection CurrentDirection =>
             directionSelector != null
@@ -225,6 +230,10 @@ namespace BarPromenade
         public Transform VisualRoot => visualRoot;
         public Transform PoseRoot => poseRoot;
         public float FootPlantAmount => footPlantAmount;
+        public float IntoxicationAmount => intoxicationBlend;
+        public float BalanceLean => balanceLean;
+        public float FallAmount => fallAmount;
+        public float FallDirection => fallDirection;
         public Vector3 UpperBodyOffset => upperBodyOffset;
         public Vector3 LeftFootContactWorldPosition =>
             GetFootContactWorldPosition(true);
@@ -254,9 +263,29 @@ namespace BarPromenade
                 speed / Mathf.Max(0.1f, fullAnimationSpeed));
         }
 
-        public void SetWasted(bool active)
+        public void SetIntoxication(float intensity)
         {
-            isWasted = active;
+            intoxicationTarget = Mathf.Clamp01(intensity);
+        }
+
+        public void SetBalancePose(float signedLean)
+        {
+            balanceLeanTarget = Mathf.Clamp(
+                signedLean,
+                -1f,
+                1f);
+        }
+
+        public void SetFallPose(
+            float signedDirection,
+            float amount)
+        {
+            if (!Mathf.Approximately(signedDirection, 0f))
+            {
+                fallDirection = Mathf.Sign(signedDirection);
+            }
+
+            fallAmountTarget = Mathf.Clamp01(amount);
         }
 
         public Sprite GetDirectionSprite(PlayerViewDirection direction)
@@ -370,8 +399,9 @@ namespace BarPromenade
             facialAnimationState.Advance(
                 Time.deltaTime,
                 motionAmount <= MovingThreshold &&
-                !isWasted &&
-                wastedBlend <= 0.01f);
+                intoxicationBlend <= 0.35f &&
+                Mathf.Abs(balanceLean) <= 0.05f &&
+                fallAmount <= 0.01f);
             ApplyFacialExpression(CurrentDirection);
         }
 
@@ -814,11 +844,29 @@ namespace BarPromenade
                 idleBlend,
                 motionAmount <= MovingThreshold ? 1f : 0f,
                 deltaTime * idleBlendSpeed);
-            wastedBlend = Mathf.MoveTowards(
-                wastedBlend,
-                isWasted ? 1f : 0f,
+            intoxicationBlend = Mathf.MoveTowards(
+                intoxicationBlend,
+                intoxicationTarget,
+                deltaTime / 0.7f);
+            balanceLean = Mathf.MoveTowards(
+                balanceLean,
+                balanceLeanTarget,
                 deltaTime * 4f);
-            wastedPhase += deltaTime * 4.5f;
+            fallAmount = Mathf.MoveTowards(
+                fallAmount,
+                fallAmountTarget,
+                deltaTime * 5f);
+            intoxicationPhase +=
+                deltaTime *
+                Mathf.Lerp(1.4f, 4.2f, intoxicationBlend);
+
+            PlayerIntoxicationPose intoxicationPose =
+                PlayerIntoxicationPoseEvaluator.Evaluate(
+                    intoxicationBlend,
+                    intoxicationPhase,
+                    balanceLean,
+                    fallDirection,
+                    fallAmount);
 
             PlayerPuppetPose activePose =
                 DirectionPoses[(int)CurrentDirection];
@@ -844,7 +892,8 @@ namespace BarPromenade
             float leftLegPhase = strideWave;
             float rightLegPhase = -strideWave;
             float effectiveIdleBlend =
-                idleBlend * Mathf.Lerp(1f, 0.08f, wastedBlend);
+                idleBlend *
+                Mathf.Lerp(1f, 0.08f, intoxicationBlend);
             float breathingWave = Mathf.Sin(
                 idlePhase * Mathf.PI * 2f /
                 Mathf.Max(1f, idleBreathingPeriod));
@@ -856,8 +905,8 @@ namespace BarPromenade
                 out bool fidgetLeftArm);
             float gestureIdleBlend =
                 idleBlend *
-                (1f - wastedBlend) *
-                (1f - wastedBlend);
+                (1f - intoxicationBlend) *
+                (1f - intoxicationBlend);
             float leftGestureWeight =
                 fidgetLeftArm ? 1f : 0.14f;
             float rightGestureWeight =
@@ -896,52 +945,60 @@ namespace BarPromenade
                 PlayerPuppetPart.LeftUpperArm,
                 walkRotationAxis,
                 leftArmPhase * armSwingDegrees +
-                idleLeftUpperArm,
+                idleLeftUpperArm -
+                intoxicationPose.ArmSpread,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightUpperArm,
                 walkRotationAxis,
                 rightArmPhase * armSwingDegrees +
-                idleRightUpperArm,
+                idleRightUpperArm +
+                intoxicationPose.ArmSpread,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.LeftLowerArm,
                 walkRotationAxis,
                 -leftArmPhase * elbowBendDegrees +
-                idleLeftLowerArm,
+                idleLeftLowerArm -
+                intoxicationPose.ArmSpread * 0.38f,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightLowerArm,
                 walkRotationAxis,
                 -rightArmPhase * elbowBendDegrees +
-                idleRightLowerArm,
+                idleRightLowerArm +
+                intoxicationPose.ArmSpread * 0.38f,
                 settle);
 
             SetJointRotation(
                 PlayerPuppetPart.LeftUpperLeg,
                 walkRotationAxis,
                 leftLegPhase * legSwingDegrees +
-                idleLegShift,
+                idleLegShift +
+                intoxicationPose.KneeBend * 0.18f,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightUpperLeg,
                 walkRotationAxis,
                 rightLegPhase * legSwingDegrees -
-                idleLegShift,
+                idleLegShift -
+                intoxicationPose.KneeBend * 0.18f,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.LeftLowerLeg,
                 walkRotationAxis,
                 -Mathf.Max(0f, leftLegPhase) *
                 kneeBendDegrees -
-                idleLegShift * 0.5f,
+                idleLegShift * 0.5f -
+                intoxicationPose.KneeBend,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightLowerLeg,
                 walkRotationAxis,
                 -Mathf.Max(0f, rightLegPhase) *
                 kneeBendDegrees +
-                idleLegShift * 0.5f,
+                idleLegShift * 0.5f -
+                intoxicationPose.KneeBend,
                 settle);
 
             ApplyLimbDepthSorting(
@@ -961,14 +1018,12 @@ namespace BarPromenade
                 weightShiftWave *
                 idleWeightShiftDistance *
                 effectiveIdleBlend +
-                Mathf.Sin(wastedPhase) * 0.055f * wastedBlend;
+                intoxicationPose.BodyOffsetX;
             float targetUpperBodyY =
                 (0.5f + breathingWave * 0.5f) *
                 idleBreathingHeight *
                 effectiveIdleBlend +
-                Mathf.Abs(Mathf.Sin(wastedPhase * 0.5f)) *
-                0.018f *
-                wastedBlend -
+                intoxicationPose.BodyLift -
                 walkingFootfall *
                 walkBodyCompressionHeight;
             float targetRoll =
@@ -976,9 +1031,7 @@ namespace BarPromenade
                 weightShiftWave *
                 idleWeightShiftDegrees *
                 effectiveIdleBlend +
-                Mathf.Sin(wastedPhase * 0.7f) *
-                3.5f *
-                wastedBlend;
+                intoxicationPose.BodyRoll;
 
             poseRoot.localRotation = Quaternion.Slerp(
                 poseRoot.localRotation,
@@ -1003,6 +1056,7 @@ namespace BarPromenade
                 new Vector3(0f, targetUpperBodyY, 0f),
                 settle);
             poseRoot.localScale = Vector3.one;
+            footPlantAmount *= 1f - fallAmount;
         }
 
         private float CalculateGroundedPoseY()

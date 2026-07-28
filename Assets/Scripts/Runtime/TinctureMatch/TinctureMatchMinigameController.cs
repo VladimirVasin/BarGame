@@ -36,7 +36,6 @@ namespace BarPromenade
         public const float FallDuration = 0.20f;
         public const float RefillDuration = 0.16f;
         public const float ReshuffleDuration = 0.48f;
-        public const float WastedDurationSeconds = 45f;
         public const float LogicalCellSize = 36f;
 
         public static readonly Rect BoardRect =
@@ -67,7 +66,6 @@ namespace BarPromenade
         private bool persistSessionProgress = true;
         private bool completionRaised;
         private bool finishAfterPresentation;
-        private bool wastedApplied;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -189,7 +187,6 @@ namespace BarPromenade
             stickRepeatRemaining = 0f;
             completionRaised = false;
             finishAfterPresentation = false;
-            wastedApplied = false;
             hasActiveMove = false;
             presentationPhase =
                 TinctureMatchPresentationPhase.AwaitingInput;
@@ -743,20 +740,6 @@ namespace BarPromenade
             finishAfterPresentation = true;
         }
 
-        private void ApplyPendingWastedIfNeeded()
-        {
-            if (!finishAfterPresentation ||
-                wastedApplied ||
-                !persistSessionProgress)
-            {
-                return;
-            }
-
-            GameSessionState.ApplyWasted(
-                WastedDurationSeconds);
-            wastedApplied = true;
-        }
-
         private TinctureMatchBoard GetPresentationBoard()
         {
             if (activeMove == null)
@@ -1135,7 +1118,6 @@ namespace BarPromenade
             if (finishAfterPresentation ||
                 (session != null && session.IsFinished))
             {
-                ApplyPendingWastedIfNeeded();
                 RaiseCompleted();
             }
 

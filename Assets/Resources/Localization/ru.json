@@ -29,8 +29,36 @@
       "value": "Опьянение: {0}/100"
     },
     {
-      "key": "drinking.wasted",
-      "value": "В никакашку — ещё {0} с"
+      "key": "intoxication.stage.sober",
+      "value": "Трезв"
+    },
+    {
+      "key": "intoxication.stage.light_buzz",
+      "value": "Лёгкий хмель"
+    },
+    {
+      "key": "intoxication.stage.tipsy",
+      "value": "Навеселе"
+    },
+    {
+      "key": "intoxication.stage.drunk",
+      "value": "Подшофе"
+    },
+    {
+      "key": "intoxication.stage.unsteady",
+      "value": "Шатает"
+    },
+    {
+      "key": "intoxication.stage.very_drunk",
+      "value": "В стельку"
+    },
+    {
+      "key": "balance.warning",
+      "value": "ДЕРЖИ РАВНОВЕСИЕ!"
+    },
+    {
+      "key": "balance.hold",
+      "value": "← / →  ДЕРЖИ БАЛАНС"
     },
     {
       "key": "drinking.none",
@@ -97,8 +125,8 @@
       "value": "Итог: {0}/300 — {1}"
     },
     {
-      "key": "cocktail.result.wasted_early",
-      "value": "Слишком крепко — В никакашку!"
+      "key": "cocktail.result.max_intoxication",
+      "value": "Опьянение достигло 100%!"
     },
     {
       "key": "cocktail.rank.slop",
@@ -249,8 +277,8 @@
       "value": "Мячи закончились"
     },
     {
-      "key": "beerpong.result.wasted",
-      "value": "В никакашку!"
+      "key": "beerpong.result.max_intoxication",
+      "value": "Опьянение достигло 100%!"
     },
     {
       "key": "beerpong.result.final",
@@ -558,11 +586,11 @@
     },
     {
       "key": "debug.minigames.hint",
-      "value": "Запуск из этого окна не меняет посещённые бары и прогресс опьянения"
+      "value": "Запуски мини-игр изолированы от прогресса"
     },
     {
       "key": "debug.minigames.controls",
-      "value": "↑/↓ — выбрать   •   Enter — запустить   •   Esc / F9 — закрыть"
+      "value": "←/→: опьянение −/+20  •  ↑/↓: выбор  •  Enter: запуск  •  Esc/F9: закрыть"
     },
     {
       "key": "debug.minigames.empty",

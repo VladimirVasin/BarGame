@@ -24,7 +24,7 @@ namespace BarPromenade
         InProgress = 0,
         Cleared,
         ThrowLimitReached,
-        Wasted
+        MaxIntoxicationReached
     }
 
     public readonly struct BeerPongCupDefinition

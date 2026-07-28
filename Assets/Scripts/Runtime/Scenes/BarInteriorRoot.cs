@@ -46,6 +46,11 @@ namespace BarPromenade
         public BarActivityKind ActiveActivity { get; private set; }
         public BarActivityStation ActivityStation { get; private set; }
         public IBarMinigame ActiveMinigame { get; private set; }
+        public IntoxicationStatusController IntoxicationStatus
+        {
+            get;
+            private set;
+        }
         public MinigameDebugWindow DebugWindow { get; private set; }
         public CocktailMinigameController CocktailMinigame
         {
@@ -120,9 +125,18 @@ namespace BarPromenade
             follow.Initialize(camera, Player.GameObject.transform, true);
             BuildMinigame(ui, intoxicationHud, follow);
 
-            IntoxicationStatusController intoxicationStatus =
+            BalanceCheckView balanceView =
+                ui.AddComponent<BalanceCheckView>();
+            balanceView.Initialize(
+                Player.GameObject.transform,
+                camera);
+            IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
-            intoxicationStatus.Initialize(Player.Motor, Player.Visual);
+            IntoxicationStatus.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                balanceView);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

@@ -586,9 +586,9 @@ namespace BarPromenade
                     outcomeKey =
                         "beerpong.result.cleared";
                     break;
-                case BeerPongSessionOutcome.Wasted:
+                case BeerPongSessionOutcome.MaxIntoxicationReached:
                     outcomeKey =
-                        "beerpong.result.wasted";
+                        "beerpong.result.max_intoxication";
                     break;
                 default:
                     outcomeKey =
@@ -608,7 +608,7 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 card,
                 RetroUiTheme.PanelRaised,
-                controller.FinishedWasted
+                controller.ReachedMaxIntoxication
                     ? RetroUiTheme.Bad
                     : RetroUiTheme.Accent,
                 true,

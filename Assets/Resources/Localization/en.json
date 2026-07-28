@@ -29,8 +29,36 @@
       "value": "Intoxication: {0}/100"
     },
     {
-      "key": "drinking.wasted",
-      "value": "Wasted — {0}s remaining"
+      "key": "intoxication.stage.sober",
+      "value": "Sober"
+    },
+    {
+      "key": "intoxication.stage.light_buzz",
+      "value": "Light buzz"
+    },
+    {
+      "key": "intoxication.stage.tipsy",
+      "value": "Tipsy"
+    },
+    {
+      "key": "intoxication.stage.drunk",
+      "value": "Drunk"
+    },
+    {
+      "key": "intoxication.stage.unsteady",
+      "value": "Unsteady"
+    },
+    {
+      "key": "intoxication.stage.very_drunk",
+      "value": "Very drunk"
+    },
+    {
+      "key": "balance.warning",
+      "value": "KEEP YOUR BALANCE!"
+    },
+    {
+      "key": "balance.hold",
+      "value": "← / →  HOLD THE CENTER"
     },
     {
       "key": "drinking.none",
@@ -97,8 +125,8 @@
       "value": "Final score: {0}/300 — {1}"
     },
     {
-      "key": "cocktail.result.wasted_early",
-      "value": "Too strong — Wasted!"
+      "key": "cocktail.result.max_intoxication",
+      "value": "Maximum intoxication reached!"
     },
     {
       "key": "cocktail.rank.slop",
@@ -249,8 +277,8 @@
       "value": "Out of balls"
     },
     {
-      "key": "beerpong.result.wasted",
-      "value": "Wasted!"
+      "key": "beerpong.result.max_intoxication",
+      "value": "Maximum intoxication reached!"
     },
     {
       "key": "beerpong.result.final",
@@ -558,11 +586,11 @@
     },
     {
       "key": "debug.minigames.hint",
-      "value": "Debug launches do not change visited bars or intoxication progress"
+      "value": "Minigame launches remain isolated from progress"
     },
     {
       "key": "debug.minigames.controls",
-      "value": "↑/↓ — select   •   Enter — launch   •   Esc / F9 — close"
+      "value": "←/→: intoxication −/+20  •  ↑/↓: select  •  Enter: launch  •  Esc/F9: close"
     },
     {
       "key": "debug.minigames.empty",

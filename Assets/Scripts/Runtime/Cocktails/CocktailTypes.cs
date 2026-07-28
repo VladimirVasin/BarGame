@@ -55,7 +55,7 @@ namespace BarPromenade
     {
         InProgress = 0,
         Completed,
-        Wasted
+        MaxIntoxicationReached
     }
 
     public readonly struct CocktailBaseDefinition
@@ -154,7 +154,6 @@ namespace BarPromenade
             int badMixIntoxicationPenalty,
             int currentIntoxication,
             DrinkId lastAlcoholicDrink,
-            bool requiresWastedDebuff,
             CocktailSessionOutcome sessionOutcome)
         {
             var ingredientCopy = new CocktailIngredientId[roundIngredients.Count];
@@ -171,7 +170,6 @@ namespace BarPromenade
             BadMixIntoxicationPenalty = badMixIntoxicationPenalty;
             CurrentIntoxication = currentIntoxication;
             LastAlcoholicDrink = lastAlcoholicDrink;
-            RequiresWastedDebuff = requiresWastedDebuff;
             SessionOutcome = sessionOutcome;
         }
 
@@ -189,7 +187,6 @@ namespace BarPromenade
         public int CurrentIntoxication { get; }
         public DrinkId LastAlcoholicDrink { get; }
         public bool HasBadMix => BadIngredientCount > 0;
-        public bool RequiresWastedDebuff { get; }
         public CocktailSessionOutcome SessionOutcome { get; }
     }
 }

@@ -1014,7 +1014,7 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 resultCard,
                 RetroUiTheme.PanelRaised,
-                controller.FinishedWasted ? Bad : Gold,
+                controller.ReachedMaxIntoxication ? Bad : Gold,
                 true,
                 7f,
                 5f);
@@ -1046,7 +1046,7 @@ namespace BarPromenade
                         : Muted);
             }
 
-            if (controller.FinishedWasted)
+            if (controller.ReachedMaxIntoxication)
             {
                 GUI.Label(
                     new Rect(
@@ -1055,7 +1055,7 @@ namespace BarPromenade
                         resultCard.width - 60f,
                         74f),
                     LocalizationService.Get(
-                        "cocktail.result.wasted_early"),
+                        "cocktail.result.max_intoxication"),
                     resultStyle);
             }
             else

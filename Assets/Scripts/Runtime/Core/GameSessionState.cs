@@ -24,8 +24,8 @@ namespace BarPromenade
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
-        public static float WastedSecondsRemaining { get; private set; }
-        public static bool IsWasted => WastedSecondsRemaining > 0f;
+        public static float BalanceCheckDelayRemaining { get; private set; }
+        public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
             plannedBarRouteView;
         public static int VisitedBarCount => visitedBars.Count;
@@ -163,20 +163,32 @@ namespace BarPromenade
             IntoxicationLevel = Mathf.Clamp(intoxication, 0, 100);
             LastAlcoholicDrink = lastDrink;
             DrinksConsumed = Mathf.Max(0, drinksConsumed);
+            if (IntoxicationLevel <=
+                IntoxicationStageRules.BalanceThreshold)
+            {
+                BalanceCheckDelayRemaining = 0f;
+            }
         }
 
-        public static void ApplyWasted(float seconds)
+        public static void SetBalanceCheckDelay(float seconds)
         {
-            WastedSecondsRemaining = Mathf.Max(
-                WastedSecondsRemaining,
-                Mathf.Max(0f, seconds));
+            BalanceCheckDelayRemaining = Mathf.Max(0f, seconds);
         }
 
-        public static void AdvanceWasted(float unscaledDeltaTime)
+        public static void AdvanceBalanceCheckDelay(
+            float unscaledDeltaTime)
         {
-            WastedSecondsRemaining = Mathf.Max(
+            BalanceCheckDelayRemaining = Mathf.Max(
                 0f,
-                WastedSecondsRemaining - Mathf.Max(0f, unscaledDeltaTime));
+                BalanceCheckDelayRemaining -
+                Mathf.Max(0f, unscaledDeltaTime));
+        }
+
+        public static int ConsumeBalanceCheckSequence()
+        {
+            int sequence = BalanceCheckSequence;
+            BalanceCheckSequence++;
+            return sequence;
         }
 
         public static void ResetDrinkingState()
@@ -184,7 +196,8 @@ namespace BarPromenade
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
-            WastedSecondsRemaining = 0f;
+            BalanceCheckDelayRemaining = 0f;
+            BalanceCheckSequence = 0;
         }
 
         private static BarActivityKind NormalizeBarActivity(

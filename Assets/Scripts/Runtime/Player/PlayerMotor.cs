@@ -22,6 +22,8 @@ namespace BarPromenade
         private float footstepDistance;
 
         public bool InputEnabled { get; private set; } = true;
+        public bool IsGrounded =>
+            controller != null && controller.isGrounded;
         public float SpeedMultiplier => speedMultiplier;
         public Vector3 PlanarVelocity { get; private set; }
 

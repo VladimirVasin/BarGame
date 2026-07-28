@@ -68,7 +68,6 @@ namespace BarPromenade.Tests
             Assert.That(second.CanServe, Is.True);
             Assert.That(second.CurrentScore, Is.EqualTo(45));
             Assert.That(session.Intoxication, Is.EqualTo(7));
-            Assert.That(session.HasPendingWastedDebuff, Is.False);
 
             CocktailRoundResult result = session.Serve();
 
@@ -126,7 +125,6 @@ namespace BarPromenade.Tests
 
             Assert.That(badSelection.WasCompatible, Is.False);
             Assert.That(goodSelection.WasCompatible, Is.True);
-            Assert.That(session.HasPendingWastedDebuff, Is.False);
             Assert.That(session.Intoxication, Is.Zero);
 
             CocktailRoundResult result = session.Serve();
@@ -143,8 +141,6 @@ namespace BarPromenade.Tests
             Assert.That(
                 result.CurrentIntoxication,
                 Is.EqualTo(expectedAlcohol + 10));
-            Assert.That(result.RequiresWastedDebuff, Is.True);
-            Assert.That(session.HasPendingWastedDebuff, Is.True);
             Assert.That(
                 session.Outcome,
                 Is.EqualTo(CocktailSessionOutcome.InProgress));
@@ -180,11 +176,10 @@ namespace BarPromenade.Tests
             Assert.That(
                 session.Phase,
                 Is.EqualTo(CocktailRoundPhase.Finished));
-            Assert.That(session.HasPendingWastedDebuff, Is.False);
         }
 
         [Test]
-        public void ReachingMaximumIntoxication_EndsEarlyAsWasted()
+        public void ReachingMaximumIntoxication_EndsEarlyAtMaximum()
         {
             CocktailMinigameSession session = CreateSession(90);
             CocktailIngredientId[] offer =
@@ -205,10 +200,10 @@ namespace BarPromenade.Tests
             Assert.That(result.CurrentIntoxication, Is.EqualTo(100));
             Assert.That(
                 result.SessionOutcome,
-                Is.EqualTo(CocktailSessionOutcome.Wasted));
+                Is.EqualTo(
+                    CocktailSessionOutcome.MaxIntoxicationReached));
             Assert.That(session.RoundsCompleted, Is.EqualTo(1));
             Assert.That(session.IsFinished, Is.True);
-            Assert.That(session.HasPendingWastedDebuff, Is.True);
         }
 
         [Test]
@@ -246,15 +241,15 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void StartingAtMaximum_IsImmediatelyWasted()
+        public void StartingAtMaximum_IsImmediatelyFinished()
         {
             CocktailMinigameSession session = CreateSession(100);
 
             Assert.That(session.IsFinished, Is.True);
             Assert.That(
                 session.Outcome,
-                Is.EqualTo(CocktailSessionOutcome.Wasted));
-            Assert.That(session.HasPendingWastedDebuff, Is.True);
+                Is.EqualTo(
+                    CocktailSessionOutcome.MaxIntoxicationReached));
             Assert.That(session.GetCurrentOffers(), Is.Empty);
             Assert.Throws<InvalidOperationException>(
                 () => session.BeginRound(CocktailBaseId.Beer));

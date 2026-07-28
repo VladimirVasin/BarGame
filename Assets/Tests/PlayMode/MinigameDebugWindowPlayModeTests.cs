@@ -137,6 +137,153 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ArrowKeys_AdjustIntoxicationByTwentyAndPreserveDrinkContext()
+        {
+            Assert.That(window.Open(), Is.True);
+            int selectedIndex = window.SelectedIndex;
+            yield return null;
+            yield return null;
+
+            inputFixture.Press(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+
+            AssertSessionUnchanged(44);
+            Assert.That(window.IsOpen, Is.True);
+            Assert.That(window.ActiveDebugMinigame, Is.Null);
+            Assert.That(window.SelectedIndex, Is.EqualTo(selectedIndex));
+
+            inputFixture.Release(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+
+            AssertSessionUnchanged();
+            Assert.That(window.IsOpen, Is.True);
+            Assert.That(window.ActiveDebugMinigame, Is.Null);
+            Assert.That(window.SelectedIndex, Is.EqualTo(selectedIndex));
+
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator ArrowKeys_ClampIntoxicationAtSessionBounds()
+        {
+            Assert.That(window.Open(), Is.True);
+            yield return null;
+            yield return null;
+
+            GameSessionState.UpdateDrinkingProgress(
+                5,
+                DrinkId.RedWine,
+                7);
+            inputFixture.Press(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(0);
+
+            inputFixture.Release(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(0);
+
+            inputFixture.Release(
+                keyboard.leftArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            GameSessionState.UpdateDrinkingProgress(
+                95,
+                DrinkId.RedWine,
+                7);
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(100);
+
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(100);
+
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Adjustment_DoesNotLaunchOrSeedDebugMinigame()
+        {
+            Assert.That(window.Open(), Is.True);
+            yield return null;
+            yield return null;
+
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(84);
+            Assert.That(window.IsOpen, Is.True);
+            Assert.That(window.ActiveDebugMinigame, Is.Null);
+            Assert.That(
+                window.Definitions[window.SelectedIndex].Id,
+                Is.EqualTo(BarMinigameCatalog.CocktailId));
+
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(
+                keyboard.enterKey,
+                queueEventOnly: true);
+            yield return null;
+
+            Assert.That(window.IsOpen, Is.False);
+            var cocktail = window.ActiveDebugMinigame as
+                CocktailMinigameController;
+            Assert.That(cocktail, Is.Not.Null);
+            Assert.That(cocktail.IsOpen, Is.True);
+            Assert.That(cocktail.IntoxicationLevel, Is.Zero);
+            AssertSessionUnchanged(84);
+
+            inputFixture.Release(
+                keyboard.enterKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+            AssertSessionUnchanged(84);
+
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            cocktail.Cancel();
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator Window_LaunchesEveryBuiltInWithFreshIsolatedState()
         {
             Assert.That(window.Open(), Is.True);
@@ -304,18 +451,18 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
-        private void AssertSessionUnchanged()
+        private void AssertSessionUnchanged(
+            int expectedIntoxication = 64)
         {
             Assert.That(
                 GameSessionState.IntoxicationLevel,
-                Is.EqualTo(64));
+                Is.EqualTo(expectedIntoxication));
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.RedWine));
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(7));
-            Assert.That(GameSessionState.IsWasted, Is.False);
         }
 
         private static int FindCocktailOffer(

@@ -74,14 +74,14 @@ namespace BarPromenade
             CocktailsConsumed = cocktailsConsumed;
             roundIngredientsView = roundIngredients.AsReadOnly();
 
-            bool startsWasted = initialIntoxication >= MaximumIntoxication;
-            Outcome = startsWasted
-                ? CocktailSessionOutcome.Wasted
+            bool startsAtMaxIntoxication =
+                initialIntoxication >= MaximumIntoxication;
+            Outcome = startsAtMaxIntoxication
+                ? CocktailSessionOutcome.MaxIntoxicationReached
                 : CocktailSessionOutcome.InProgress;
-            Phase = startsWasted
+            Phase = startsAtMaxIntoxication
                 ? CocktailRoundPhase.Finished
                 : CocktailRoundPhase.AwaitingBase;
-            HasPendingWastedDebuff = startsWasted;
         }
 
         public int CitySeed { get; }
@@ -94,7 +94,6 @@ namespace BarPromenade
         public CocktailBaseId CurrentBase { get; private set; }
         public CocktailRoundPhase Phase { get; private set; }
         public CocktailSessionOutcome Outcome { get; private set; }
-        public bool HasPendingWastedDebuff { get; private set; }
         public bool IsFinished =>
             Outcome != CocktailSessionOutcome.InProgress;
         public int CurrentRoundNumber =>
@@ -246,14 +245,10 @@ namespace BarPromenade
 
             int roundScore = CurrentRoundScore;
             TotalScore += roundScore;
-            bool roundRequiresDebuff =
-                badIngredientCount > 0 ||
-                Intoxication >= MaximumIntoxication;
-            HasPendingWastedDebuff |= roundRequiresDebuff;
-
             if (Intoxication >= MaximumIntoxication)
             {
-                Outcome = CocktailSessionOutcome.Wasted;
+                Outcome =
+                    CocktailSessionOutcome.MaxIntoxicationReached;
             }
             else if (RoundsCompleted >= RoundLimit)
             {
@@ -272,7 +267,6 @@ namespace BarPromenade
                 badMixPenalty,
                 Intoxication,
                 LastAlcoholicDrink,
-                roundRequiresDebuff,
                 Outcome);
 
             ResetRound(Outcome == CocktailSessionOutcome.InProgress);

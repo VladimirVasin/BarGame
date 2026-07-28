@@ -20,7 +20,6 @@ namespace BarPromenade
         MonoBehaviour,
         IBarMinigame
     {
-        public const float WastedDurationSeconds = 45f;
         public const float BasePourDuration = 0.85f;
         public const float IngredientPourDuration = 0.72f;
         public const float ServingDuration = 1.05f;
@@ -52,7 +51,6 @@ namespace BarPromenade
         private float phaseDuration;
         private int inputUnlockFrame;
         private bool serveAfterPour;
-        private bool wastedDebuffApplied;
         private bool completionRaised;
         private bool persistSessionProgress = true;
 
@@ -184,9 +182,10 @@ namespace BarPromenade
         }
 
         public string FinalRankKey => GetRankKey(TotalScore);
-        public bool FinishedWasted =>
+        public bool ReachedMaxIntoxication =>
             session != null &&
-            session.Outcome == CocktailSessionOutcome.Wasted;
+            session.Outcome ==
+                CocktailSessionOutcome.MaxIntoxicationReached;
 
         public void Initialize(
             CocktailMinigameView minigameView,
@@ -245,7 +244,6 @@ namespace BarPromenade
             FeedbackKey = string.Empty;
             FeedbackScore = 0;
             serveAfterPour = false;
-            wastedDebuffApplied = false;
             completionRaised = false;
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
@@ -596,7 +594,8 @@ namespace BarPromenade
             RetroAudio.Play(
                 lastRound.HasValue &&
                 (lastRound.Value.HasBadMix ||
-                 lastRound.Value.RequiresWastedDebuff)
+                 lastRound.Value.SessionOutcome ==
+                    CocktailSessionOutcome.MaxIntoxicationReached)
                     ? RetroSfxId.Bad
                     : RetroSfxId.Good);
             BeginPhase(
@@ -659,23 +658,6 @@ namespace BarPromenade
             inputUnlockFrame = Time.frameCount + 1;
         }
 
-        private void ApplyPendingWastedDebuff()
-        {
-            if (wastedDebuffApplied ||
-                session == null ||
-                !session.HasPendingWastedDebuff)
-            {
-                return;
-            }
-
-            if (persistSessionProgress)
-            {
-                GameSessionState.ApplyWasted(WastedDurationSeconds);
-            }
-
-            wastedDebuffApplied = true;
-        }
-
         private void Close()
         {
             if (!IsOpen)
@@ -683,7 +665,6 @@ namespace BarPromenade
                 return;
             }
 
-            ApplyPendingWastedDebuff();
             IsOpen = false;
             modalLock.Restore();
 

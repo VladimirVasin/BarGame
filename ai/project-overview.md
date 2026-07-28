@@ -31,8 +31,9 @@ The vertical slice contains:
   Bloom/ColorAdjustments/Vignette/FilmGrain profile;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
-  without a screen-space dither grid, and point upscaling; lower `426x240`
-  and `320x180` presets remain available;
+  without a screen-space dither grid, point upscaling and percentage-driven
+  intoxication vignette, ghost/chromatic image, warp, warmth and exposure
+  pulse; lower `426x240` and `320x180` presets remain available;
 - a crisp retro IMGUI layer after the world composite: prompts, HUD and city
   map use a logical `640x360` canvas, while the information-dense cocktail
   interface keeps responsive sizing;
@@ -88,7 +89,25 @@ The vertical slice contains:
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
   weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle
   deterministic idle/walk motion and smoothly recovering obstacle-aware
-  distance; cinematic motion fades out while a modal interface owns input;
+  distance; cinematic motion fades out for fullscreen modals, while the
+  balance-specific lock keeps its intoxication and fall reactions visible;
+- one percentage-driven intoxication profile shared by City and BarInterior:
+  `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
+  `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
+  Very Drunk / «В стельку»; `0` is Sober and hides the HUD;
+- continuously escalating movement slowdown, puppet sway, arm spread, knee
+  bend, camera roll and world-image distortion within those ranges, with the
+  HUD rendered as five independently filling 20-point segments; presentation
+  eases toward a changed level over about `0.7 s`;
+- deterministic balance checks only above `60`: a crisp `140°` arc appears
+  above the player with a green center sector, moving arrow and red risk
+  meter; arrows, A/D, D-pad or left stick counter the arrow, while higher
+  intoxication narrows the safe sector, strengthens disturbances and makes
+  checks longer and more frequent;
+- a failed balance check visually drops the jointed puppet to the arrow
+  side, keeps the upright player root stationary, expands and offsets the
+  contact shadow, then recovers through `0.45 s` falling, `1.2 s` down and
+  `1.0 s` rising states before restoring movement;
 - a full-screen city map with player/bar markers, persistent green completed
   visits, ordered route editing and deterministic shortest paths constrained
   to the generated road graph;
@@ -107,8 +126,10 @@ The vertical slice contains:
   registrations appear in the debug list;
 - an `F9` minigame debug window in both `City` and `BarInterior`; opening it
   closes a conflicting map or minigame before taking the modal lock, while
-  launched debug instances neither complete bar visits nor persist
-  intoxication, drinks or the `Wasted` effect;
+  launched debug instances neither complete bar visits nor persist drinking
+  progress; clickable controls or the Left/Right arrow keys change the session
+  intoxication by `-20/+20`, clamped to `0–100`, without changing the
+  last-drink or consumed-drink context;
 - a same-scene modal cocktail minigame at the counter: exactly three served
   cocktails unless intoxication reaches 100, each built from one of four bases
   and 2–4 unique additions chosen from a deterministic seven-item shelf; its
@@ -144,11 +165,12 @@ The vertical slice contains:
   backdrop, transparent 4x4 shot/effect atlas, interpolated swap/gravity/refill
   motion, RU/EN interface and generated swap, match and moonshine-burst cues;
 - session-persistent intoxication, last-alcohol context and consumed-drink
-  count; every beer-pong miss consumes a light beer, each Split the G attempt
-  records the actual dark-beer fraction, only an activated `XXX` in Tinctures
-  in a Row immediately consumes `Moonshine` for 24 intoxication, and the
-  cocktail and Tinctures in a Row paths defer their timed `Wasted` debuff
-  until the modal closes.
+  count plus the deterministic balance-check delay/sequence; every beer-pong
+  miss consumes a light beer, each Split the G attempt records the actual
+  dark-beer fraction, and only an activated `XXX` in Tinctures in a Row
+  immediately consumes `Moonshine` for 24 intoxication; reaching `100`
+  terminates the applicable minigame at maximum intoxication without creating
+  a separate timed status.
 
 ## Deferred
 

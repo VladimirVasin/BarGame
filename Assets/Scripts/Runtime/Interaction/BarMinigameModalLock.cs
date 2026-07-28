@@ -2,6 +2,26 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public readonly struct BarMinigameModalLockOptions
+    {
+        private BarMinigameModalLockOptions(
+            bool disableCinematicMotion,
+            bool hideHud)
+        {
+            DisableCinematicMotion = disableCinematicMotion;
+            HideHud = hideHud;
+        }
+
+        public bool DisableCinematicMotion { get; }
+        public bool HideHud { get; }
+
+        public static BarMinigameModalLockOptions Fullscreen =>
+            new BarMinigameModalLockOptions(true, true);
+
+        public static BarMinigameModalLockOptions BalanceCheck =>
+            new BarMinigameModalLockOptions(false, false);
+    }
+
     public sealed class BarMinigameModalLock
     {
         private static BarMinigameModalLock activeLock;
@@ -32,6 +52,19 @@ namespace BarPromenade
             PlayerCameraFollow fallbackCamera,
             IntoxicationHudView intoxicationHud)
         {
+            return TryCaptureAndDisable(
+                activeInteractor,
+                fallbackCamera,
+                intoxicationHud,
+                BarMinigameModalLockOptions.Fullscreen);
+        }
+
+        public bool TryCaptureAndDisable(
+            PlayerInteractor activeInteractor,
+            PlayerCameraFollow fallbackCamera,
+            IntoxicationHudView intoxicationHud,
+            BarMinigameModalLockOptions options)
+        {
             if (IsLocked ||
                 activeLock != null ||
                 activeInteractor == null)
@@ -61,8 +94,12 @@ namespace BarPromenade
             motor?.SetInputEnabled(false);
             interactor.SetInputEnabled(false);
             cameraFollow?.SetOrbitInputEnabled(false);
-            cameraFollow?.SetCinematicMotionEnabled(false);
-            if (hud != null)
+            if (options.DisableCinematicMotion)
+            {
+                cameraFollow?.SetCinematicMotionEnabled(false);
+            }
+
+            if (options.HideHud && hud != null)
             {
                 hud.Visible = false;
             }

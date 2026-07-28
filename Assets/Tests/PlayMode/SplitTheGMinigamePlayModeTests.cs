@@ -286,12 +286,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(7));
-            Assert.That(GameSessionState.IsWasted, Is.False);
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator PerfectSipAtNinetySix_CompletesWastedAfterSettling()
+        public IEnumerator PerfectSipAtNinetySix_CompletesAtMaximumAfterSettling()
         {
             GameSessionState.UpdateDrinkingProgress(
                 96,
@@ -314,7 +313,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.EqualTo(100));
-            Assert.That(GameSessionState.IsWasted, Is.True);
 
             AdvanceThroughSettling();
 
@@ -322,12 +320,6 @@ namespace BarPromenade.Tests.PlayMode
                 controller.Phase,
                 Is.EqualTo(SplitTheGPhase.FinalResult));
             Assert.That(completionCount, Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.WastedSecondsRemaining,
-                Is.EqualTo(
-                    SplitTheGMinigameController
-                        .WastedDurationSeconds)
-                    .Within(0.01f));
             Assert.That(
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.DarkBeer));

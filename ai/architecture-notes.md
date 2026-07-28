@@ -71,7 +71,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Deterministic low-frequency idle drift and speed-driven bob affect only
   focus, pitch and roll; requested yaw and FOV remain stable. Collision
   shortens the arm immediately, restores it with `0.32 s` damping and fades
-  cinematic motion during modal ownership.
+  cinematic motion during fullscreen modal ownership. Balance checks disable
+  orbit input but deliberately retain cinematic motion so intoxication lean
+  and fall reactions remain visible.
 - **Accepted — Eight-direction player presentation:** A corrected
   point-filtered `512x96` reference and a derived `512x864` layered atlas
   provide eight explicit `64x96` views at PPU 48. Each view has one body layer
@@ -90,8 +92,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `512x480` body-expression
   atlas provides neutral, half-blink, closed-blink, watchful and tense rows;
   the stronger blink remains available during locomotion, watchful/tense
-  states require sustained idle, runtime swaps only the existing body
-  renderer, and all rear variants remain neutral.
+  states require sustained idle below strong intoxication and outside a
+  balance/fall state, runtime swaps only the existing body renderer, and all
+  rear variants remain neutral. The same joint hierarchy accepts continuous
+  intoxication sway, arm spread, knee bend, balance lean and side-specific
+  visual fall poses without adding renderers or authored frames.
 - **Accepted — Camera-independent player shadow:** One collider-free
   nine-part `ShadowsOnly` puppet reuses the directional part sprites and a
   shared alpha-clipped URP shadow-caster material. It selects its authored view
@@ -115,13 +120,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Game camera. It footprint-averages the world to `640x360` by default, blends
   35% perceptual-space RGB555 into the original tone without a screen-space
   dither overlay, then point-upscales it, producing exact 2x/3x scaling at
-  720p/1080p. Lower `426x240` and `320x180` presets remain available; mobile
+  720p/1080p. Before quantization, the same pass consumes shared intoxication
+  state for animated UV warp, ghost/chromatic sampling, warmth, exposure pulse
+  and vignette. Lower `426x240` and `320x180` presets remain available; mobile
   renderer integration is deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
-  Prompts, HUD, map, beer pong, Split the G and Tinctures in a Row use a
-  logical `640x360` canvas; the denser cocktail view remains responsive while
-  sharing the same palette, stepped frames and point-filtered accents.
+  Prompts, segmented intoxication HUD, overhead balance gauge, map, beer pong,
+  Split the G and Tinctures in a Row use a logical `640x360` canvas; the
+  denser cocktail view remains responsive while sharing the same palette,
+  stepped frames and point-filtered accents.
 - **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or
@@ -187,9 +195,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   minigame debug window. Opening it closes a conflicting city map and cancels
   a scene minigame or prior debug game before capturing the modal state.
   Debug-created controllers start with fresh drinking state, do not write
-  intoxication, drinks or `Wasted` progress, and are not subscribed to
-  bar-visit completion; closing either window or game restores the previously
-  captured input/HUD state.
+  intoxication or drink progress, and are not subscribed to bar-visit
+  completion; closing either window or game restores the previously captured
+  input/HUD state. The window itself also owns deliberate test controls:
+  the Left/Right arrow keys or clickable buttons change the real session
+  intoxication by `-20/+20`, clamp at `0/100`, and preserve last-drink and
+  consumed-drink context.
 - **Accepted — Three served cocktails:** A complete session contains exactly
   three rounds unless intoxication reaches 100. Each round selects beer, wine,
   vodka or cognac as its base, then accepts 2–4 unique additions before serving.
@@ -249,16 +260,58 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moonshine-burst SFX. Normal matches are customer orders and do not alter
   drinking state; only `XXX` activation immediately commits one `Moonshine`,
   +24 intoxication and one consumed drink, so Cancel cannot refund it. A
-  terminal move remains completed when the modal closes during its cascade;
-  its pending `Wasted` effect begins only when the modal closes. F9
-  launches use the same factory with persistence disabled.
+  terminal move remains completed when the modal closes during its cascade.
+  Reaching 100 finishes after that cascade without adding a separate timed
+  state. F9 launches use the same factory with persistence disabled.
 - **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
   drink and total consumed-drink count are committed through
   `GameSessionState` after every cocktail serving, beer-pong miss and completed
   Split the G sip, plus every activated tincture `XXX`; they survive scene
-  loads and reset when the application subsystem restarts.
-- **Accepted — Deferred Wasted presentation:** Serving any bad mixture marks a
-  pending 45-second unscaled-time debuff, applied at the final result or when
-  the modal closes. Reaching 100 intoxication ends the session early. The
-  active effect uses `0.75` movement speed and sprite sway; it does not add
-  camera shake beyond the ordinary bounded cinematic motion.
+  loads and reset when the application subsystem restarts. The remaining
+  balance-check delay and consumed deterministic sequence share that
+  scene-persistent session lifetime.
+- **Accepted — Five percentage-driven intoxication ranges:** `0` is Sober.
+  Positive values map through `IntoxicationStageRules` as `1–20` Light Buzz /
+  «Лёгкий хмель», `21–40` Tipsy / «Навеселе», `41–60` Drunk / «Подшофе»,
+  `61–80` Unsteady / «Шатает» and `81–100` Very Drunk / «В стельку».
+  Parameters interpolate linearly between the 20-point boundaries instead of
+  jumping only when a name changes:
+
+  | Range and stage | Speed | Puppet sway | Camera roll | Vignette | Ghost | Warp |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+  | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` |
+  | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` |
+  | `41–60` Drunk | `0.92` | `4°` | `0.6°` | `0.12` | `1 px` | `0.0025` |
+  | `61–80` Unsteady | `0.82` | `7°` | `1.5°` | `0.20` | `2 px` | `0.009` |
+  | `81–100` Very Drunk | `0.70` | `10°` | `2.5°` | `0.28` | `3 px` | `0.015` |
+
+  Values shown are each range's upper-bound profile; the lower bound continues
+  from the preceding row. Warmth rises to `0.10` and exposure pulse to `0.08`
+  at 100. The puppet evaluator progressively suppresses ordinary idle gestures,
+  spreads the arms and adds wave-driven knee bend before balance lean or fall
+  offsets are considered. Runtime presentation eases a full-scale change over
+  about `0.7 s`. The HUD is hidden at zero and otherwise shows the localized
+  stage beside five separately filling 20-point segments. Percentage is the
+  only source of persistent slowdown and visual intoxication; there is no
+  independent expiring status.
+- **Accepted — Deterministic balance challenge above 60:** `60` never starts a
+  check; `61–100` does. A city-seed/sequence hash schedules checks from
+  `18–28 s` near the threshold down to `7–12 s` at 100 and seeds a fixed
+  `120 Hz` inertial arrow simulation. The crisp overhead gauge spans `140°`
+  with a centered green sector, arrow and red failure-risk track. Arrow
+  keys, A/D, D-pad and left stick provide signed acceleration. Difficulty
+  continuously shortens warning from `1.0` to `0.65 s`, lengthens the active
+  hold from `3.0` to `4.5 s`, narrows the safe sector from `48°` to `22°`,
+  increases arrow disturbance/frequency and risk gain, and reduces player
+  authority.
+- **Accepted — State-preserving balance modal and fall:** A balance-specific
+  modal lock stops motor, interaction and camera orbit but keeps the
+  intoxication HUD and cinematic camera motion visible. Scene transitions,
+  fullscreen modals, disabled controls or ungrounded movement prevent a check;
+  returning from an external block grants at least `3 s` before it can start.
+  Success schedules the next normal interval. Failure chooses the arrow side
+  and drives only the visual puppet through `0.45 s` falling, `1.2 s` down and
+  `1.0 s` rising while the upright `CharacterController` root remains fixed;
+  the contact shadow expands and offsets with the pose. Recovery adds `6 s`
+  to the next normal interval. Dropping intoxication to `60` or below safely
+  cancels the challenge and clears its delay.

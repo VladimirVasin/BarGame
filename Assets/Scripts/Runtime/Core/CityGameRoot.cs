@@ -12,6 +12,11 @@ namespace BarPromenade
         public CityMusicPlayer Music { get; private set; }
         public CityAmbiencePlayer Ambience { get; private set; }
         public PlayerRuntime Player { get; private set; }
+        public IntoxicationStatusController IntoxicationStatus
+        {
+            get;
+            private set;
+        }
         public CityMapController Map { get; private set; }
         public MinigameDebugWindow DebugWindow { get; private set; }
 
@@ -71,9 +76,6 @@ namespace BarPromenade
                 Layout.Seed);
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
-            IntoxicationStatusController intoxicationStatus =
-                ui.AddComponent<IntoxicationStatusController>();
-            intoxicationStatus.Initialize(Player.Motor, Player.Visual);
 
             PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
             if (follow == null)
@@ -82,6 +84,18 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            BalanceCheckView balanceView =
+                ui.AddComponent<BalanceCheckView>();
+            balanceView.Initialize(
+                Player.GameObject.transform,
+                camera);
+            IntoxicationStatus =
+                ui.AddComponent<IntoxicationStatusController>();
+            IntoxicationStatus.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                balanceView);
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(Layout, Player, follow, intoxicationHud);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
