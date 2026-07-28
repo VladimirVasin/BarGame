@@ -9,10 +9,12 @@ namespace BarPromenade
         private GUIStyle debuffStyle;
 
         public bool Visible { get; set; } = true;
+        public bool ShouldRender =>
+            Visible && GameSessionState.IntoxicationLevel > 0;
 
         private void OnGUI()
         {
-            if (!Visible)
+            if (!ShouldRender)
             {
                 return;
             }

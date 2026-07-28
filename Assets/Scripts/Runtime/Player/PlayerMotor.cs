@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     public sealed class PlayerMotor : MonoBehaviour
     {
-        private const float MoveSpeed = 5.2f;
+        private const float MoveSpeed = 2.6f;
         private const float Acceleration = 6.5f;
         private const float Deceleration = 11f;
         private const float Gravity = 24f;

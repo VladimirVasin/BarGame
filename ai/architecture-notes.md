@@ -58,7 +58,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.
 - **Accepted — Bounded inertial locomotion:** Camera-relative input targets
-  the existing `5.2 m/s` maximum through `6.5 m/s²` acceleration and
+  a `2.6 m/s` maximum through `6.5 m/s²` acceleration and
   `11 m/s²` braking. The motor feeds actual constrained displacement back
   into its next velocity step, so road edges and collisions cannot store a
   hidden impulse. Normal input release coasts, while modal ownership, scene

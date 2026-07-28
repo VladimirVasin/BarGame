@@ -79,7 +79,7 @@ The vertical slice contains:
   body sprite for stronger half/closed blinks plus watchful and tense idle
   expressions in the five visible-face directions without adding a tenth
   renderer or inventing faces in rear views;
-- camera-relative road-constrained movement with a `5.2 m/s` maximum,
+- camera-relative road-constrained movement with a `2.6 m/s` maximum,
   `6.5 m/s²` acceleration and `11 m/s²` braking; ordinary release coasts,
   hard modal/transition/teleport stops remain immediate, constrained
   displacement cannot store hidden momentum, and the last actual movement

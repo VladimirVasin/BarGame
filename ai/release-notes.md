@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Contextual intoxication HUD
+
+- The intoxication panel now stays hidden while the value is `0` and appears
+  automatically as soon as the player gains intoxication.
+
 ### Classic fixed-camera door transitions
 
 - Entering or leaving a bar now passes through a dedicated black-void scene
@@ -52,9 +57,9 @@
 
 ### Heavy inertial locomotion
 
-- The hero now accelerates into the existing maximum speed over roughly
-  `0.8 s` and takes about `0.47 s` to brake instead of starting and stopping
-  in one frame.
+- The hero's maximum movement speed is now `2.6 m/s`, half of its previous
+  value. Existing acceleration and braking remain intact, so movement still
+  ramps and settles instead of changing speed in one frame.
 - Reversing direction first bleeds the old momentum. Road boundaries and
   physical collisions discard blocked velocity, so they never release a
   stored push later.

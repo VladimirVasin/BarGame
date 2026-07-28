@@ -2,6 +2,35 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Contextual intoxication HUD
+
+- Kept the intoxication HUD completely hidden at `0` while preserving its
+  existing modal visibility state.
+- Made the panel appear immediately for any positive intoxication value and
+  disappear again if drinking progress resets to zero.
+- Added a focused state-transition regression check.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Focused intoxication-HUD EditMode check: 1/1 passed.
+
+## 2026-07-28 — Reduced player maximum speed
+
+- Halved the player motor's maximum planar speed from `5.2 m/s` to
+  `2.6 m/s`.
+- Kept the existing `6.5 m/s²` acceleration, `11 m/s²` braking, camera
+  response and procedural gait unchanged. No sprint state or run animation
+  was added.
+- Updated the inertial movement checks for the new cruising speed, stopping
+  distance and direction-reversal timing.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused player-motor PlayMode suite: 6/6 passed.
+
 ## 2026-07-28 — Classic fixed-camera door transition
 
 - Added `DoorTransition` as a dedicated third build scene and taught the

@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private const float MovementTimeoutSeconds = 2f;
         private const float MinimumMovingSpeed = 0.25f;
-        private const float MaximumMovingSpeed = 5.2f;
+        private const float MaximumMovingSpeed = 2.6f;
         private const float Deceleration = 11f;
 
         private GameObject playerObject;
@@ -178,13 +178,13 @@ namespace BarPromenade.Tests.PlayMode
             float earlySpeed = motor.PlanarVelocity.magnitude;
             Assert.That(
                 earlySpeed,
-                Is.GreaterThan(0.4f).And.LessThan(3f),
+                Is.GreaterThan(0.4f).And.LessThan(2.35f),
                 "The player must move promptly without reaching maximum " +
                 "speed during the first fraction of a second.");
 
             float accelerationDeadline =
                 Time.realtimeSinceStartup + MovementTimeoutSeconds;
-            while (motor.PlanarVelocity.magnitude < 5f &&
+            while (motor.PlanarVelocity.magnitude < 2.5f &&
                    Time.realtimeSinceStartup < accelerationDeadline)
             {
                 yield return null;
@@ -198,11 +198,11 @@ namespace BarPromenade.Tests.PlayMode
             float cruisingSpeed = motor.PlanarVelocity.magnitude;
             Assert.That(
                 cruisingSpeed,
-                Is.InRange(5f, MaximumMovingSpeed + 0.05f));
+                Is.InRange(2.5f, MaximumMovingSpeed + 0.05f));
             Assert.That(
                 playerObject.transform.position.z -
                 startingPosition.z,
-                Is.GreaterThan(1f));
+                Is.GreaterThan(0.3f));
 
             inputFixture.Release(
                 keyboard.wKey,
@@ -259,7 +259,7 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.up));
             Assert.That(
                 coastingDistance,
-                Is.InRange(0.45f, 1.55f),
+                Is.InRange(0.18f, 0.55f),
                 "The heavy stop needs a visible but controllable coasting " +
                 "distance.");
         }
@@ -271,7 +271,7 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture.Press(
                 keyboard.wKey,
                 queueEventOnly: true);
-            yield return WaitForSpeed(5f);
+            yield return WaitForSpeed(2.5f);
 
             Vector3 originalDirection =
                 motor.PlanarVelocity.normalized;
@@ -296,7 +296,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(
                 Time.time - reversalStartedAt,
-                Is.GreaterThan(0.25f),
+                Is.GreaterThan(0.12f),
                 "Opposite input must brake the existing momentum before " +
                 "reversing it.");
             Assert.That(

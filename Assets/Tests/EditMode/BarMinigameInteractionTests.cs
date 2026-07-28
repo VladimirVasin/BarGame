@@ -18,6 +18,34 @@ namespace BarPromenade.Tests.EditMode
             Destroy(hudObject);
             Destroy(cameraObject);
             Destroy(playerObject);
+            GameSessionState.ResetDrinkingState();
+        }
+
+        [Test]
+        public void IntoxicationHud_RendersOnlyForPositiveProgress()
+        {
+            hudObject = new GameObject("HUD");
+            IntoxicationHudView hud =
+                hudObject.AddComponent<IntoxicationHudView>();
+
+            GameSessionState.ResetDrinkingState();
+
+            Assert.That(hud.Visible, Is.True);
+            Assert.That(hud.ShouldRender, Is.False);
+
+            GameSessionState.UpdateDrinkingProgress(
+                1,
+                DrinkId.LightBeer,
+                1);
+
+            Assert.That(hud.ShouldRender, Is.True);
+
+            hud.Visible = false;
+            Assert.That(hud.ShouldRender, Is.False);
+
+            hud.Visible = true;
+            GameSessionState.ResetDrinkingState();
+            Assert.That(hud.ShouldRender, Is.False);
         }
 
         [Test]
