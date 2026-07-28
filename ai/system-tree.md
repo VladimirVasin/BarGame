@@ -34,6 +34,7 @@ Assets/
     Player/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
+      PlayerDirectionalBodyExpressionsAtlas.png  neutral/half/closed body rows
     Localization/
       ru.json
       en.json
@@ -59,7 +60,7 @@ ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
 tools/
-  build-player-puppet-atlas.py      deterministic face repair and 9-layer build
+  build-player-puppet-atlas.py      deterministic reference/layers/blink build
 Packages/
 ProjectSettings/
 ```

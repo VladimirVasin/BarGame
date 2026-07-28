@@ -2,6 +2,32 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Cinematic camera, living idle and facial blink
+
+- Tightened exterior/interior chase framing to `4.6 m / 53°` and
+  `3.3 m / 57°`, added bounded focus damping with teleport snapping, and
+  layered deterministic low-frequency idle drift with speed-driven walk bob.
+- Preserved immediate inward collision response, smooth outward recovery,
+  player-independent orbit yaw and stable FOV. The shared modal lock now fades
+  cinematic motion out and restores its captured state.
+- Added procedural breathing, weight transfer and a rare left-arm fidget to
+  the existing direction-projected joint pose. Idle blends away during
+  locomotion and is suppressed under `Wasted` without changing scale, heading
+  or the nine-renderer hierarchy.
+- Extended the deterministic player builder with a `512x288` body-expression
+  atlas. Neutral matches `Body`; half/closed blinks edit only explicit eye
+  pixels in five visible-face directions, while three rear views remain
+  unchanged. Runtime swaps the existing body sprite on a deterministic timer.
+
+Verification:
+
+- Unity EditMode: 218/218 passed.
+- Unity PlayMode in `-nographics`: 35/35 runnable tests passed; the existing
+  graphics-device-only RenderGraph test was ignored by design.
+- Runtime, EditModeTests, PlayModeTests and Assembly-CSharp .NET builds:
+  0 errors, 0 warnings.
+- Windows x64 Player build: succeeded, 0 warnings, 131,695,855 bytes.
+
 ## 2026-07-28 — View-correct projected player gait
 
 - Replaced the single screen-plane joint axis with a view-projected sagittal

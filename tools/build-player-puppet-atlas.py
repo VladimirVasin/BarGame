@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the layered eight-direction player atlas from the locked turntable.
+"""Build the layered eight-direction player atlases from the locked turntable.
 
 The script is intentionally deterministic:
 
@@ -7,6 +7,8 @@ The script is intentionally deterministic:
 * only the face pixels lost by the original chroma-key pass are restored;
 * every visible source pixel is assigned to a body or jointed limb layer;
 * the nine neutral layers composite back to the corrected reference frame.
+* facial variants preserve the complete body layer and only recolor an
+  explicit, direction-specific eye-pixel whitelist.
 
 Pillow is the only dependency.
 """
@@ -35,6 +37,10 @@ DEFAULT_PARTS = (
     ROOT / "Assets" / "Resources" / "Player" /
     "PlayerDirectionalPartsAtlas.png"
 )
+DEFAULT_EXPRESSIONS = (
+    ROOT / "Assets" / "Resources" / "Player" /
+    "PlayerDirectionalBodyExpressionsAtlas.png"
+)
 
 TURN_TABLE_SHA256 = (
     "EC51D909A4D950C39C9B2309AAAF3BCC8B19CDE171A6E0EE0F8D5EC31FB3F70F"
@@ -44,6 +50,7 @@ FRAME_WIDTH = 64
 FRAME_HEIGHT = 96
 DIRECTION_COUNT = 8
 PART_COUNT = 9
+EXPRESSION_COUNT = 3
 TRANSPARENT = (0, 0, 0, 0)
 
 BODY = 0
@@ -55,6 +62,10 @@ LEFT_UPPER_LEG = 5
 LEFT_LOWER_LEG = 6
 RIGHT_UPPER_LEG = 7
 RIGHT_LOWER_LEG = 8
+
+NEUTRAL_EXPRESSION = 0
+HALF_BLINK_EXPRESSION = 1
+CLOSED_BLINK_EXPRESSION = 2
 
 # Global source crop, target width and target x. All target images are 84 px
 # tall and are placed at y=8, keeping the shared four-pixel foot margin.
@@ -71,6 +82,53 @@ SOURCE_SPECS = (
 
 VISIBLE_FACE_DIRECTIONS = frozenset((0, 1, 2, 6, 7))
 EXPECTED_FACE_REPAIRS = (50, 53, 55, 0, 0, 0, 46, 55)
+
+# Coordinates use local frame PNG space (origin at the top-left). Each tuple
+# is destination x/y followed by an authored nearby skin sample x/y. The
+# lists are intentionally direction-specific: the source artwork is
+# asymmetric and no expression frame is ever mirrored.
+BLINK_PIXELS = (
+    (
+        (28, 18, 28, 19),
+        (29, 18, 29, 19),
+        (33, 18, 33, 19),
+        (34, 18, 34, 19),
+    ),
+    (
+        (28, 18, 28, 19),
+        (29, 18, 29, 19),
+        (33, 18, 33, 19),
+        (34, 18, 34, 19),
+    ),
+    (
+        (30, 17, 29, 18),
+        (30, 18, 29, 18),
+    ),
+    (),
+    (),
+    (),
+    (
+        (36, 17, 36, 18),
+        (37, 17, 37, 18),
+    ),
+    (
+        (30, 18, 31, 18),
+        (37, 18, 37, 19),
+    ),
+)
+
+# Half-open bounds around the only facial pixels the expression builder is
+# allowed to touch. Rear views deliberately have empty masks.
+FACE_EDIT_BOUNDS = (
+    (27, 17, 36, 20),
+    (27, 17, 36, 20),
+    (29, 16, 32, 20),
+    (0, 0, 0, 0),
+    (0, 0, 0, 0),
+    (0, 0, 0, 0),
+    (34, 16, 39, 20),
+    (29, 17, 39, 20),
+)
 
 # Coordinates use PNG space (origin at the top-left). Left/right are the two
 # stable image-space puppet slots. Authored pixels retain the character's
@@ -120,6 +178,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--turntable", type=Path, default=DEFAULT_TURNTABLE)
     parser.add_argument("--reference", type=Path, default=DEFAULT_REFERENCE)
     parser.add_argument("--parts", type=Path, default=DEFAULT_PARTS)
+    parser.add_argument(
+        "--expressions",
+        type=Path,
+        default=DEFAULT_EXPRESSIONS,
+    )
     return parser.parse_args()
 
 
@@ -637,6 +700,193 @@ def build_parts_atlas(
     return atlas, tuple(counts_by_direction)
 
 
+def blend_rgb_toward(
+    source: tuple[int, int, int, int],
+    target: tuple[int, int, int, int],
+    numerator: int,
+    denominator: int,
+) -> tuple[int, int, int, int]:
+    if source[3] != 255 or target[3] != 255:
+        raise RuntimeError(
+            "Blink pixels and their skin samples must be opaque."
+        )
+
+    return (
+        (
+            source[0] * (denominator - numerator)
+            + target[0] * numerator
+            + denominator // 2
+        ) // denominator,
+        (
+            source[1] * (denominator - numerator)
+            + target[1] * numerator
+            + denominator // 2
+        ) // denominator,
+        (
+            source[2] * (denominator - numerator)
+            + target[2] * numerator
+            + denominator // 2
+        ) // denominator,
+        255,
+    )
+
+
+def build_blink_variant(
+    neutral_body: Image.Image,
+    direction: int,
+    numerator: int,
+    denominator: int,
+) -> Image.Image:
+    variant = neutral_body.copy().convert("RGBA")
+    x_min, y_min, x_max, y_max = FACE_EDIT_BOUNDS[direction]
+
+    for x, y, skin_x, skin_y in BLINK_PIXELS[direction]:
+        if not (x_min <= x < x_max and y_min <= y < y_max):
+            raise RuntimeError(
+                f"Direction {direction} blink pixel {(x, y)} is outside "
+                "its explicit face edit mask."
+            )
+
+        source = neutral_body.getpixel((x, y))
+        skin = neutral_body.getpixel((skin_x, skin_y))
+        variant.putpixel(
+            (x, y),
+            blend_rgb_toward(
+                source,
+                skin,
+                numerator,
+                denominator,
+            ),
+        )
+
+    return variant
+
+
+def assert_expression_contract(
+    variants_by_direction: Sequence[Sequence[Image.Image]],
+) -> None:
+    for direction, variants in enumerate(variants_by_direction):
+        neutral = variants[NEUTRAL_EXPRESSION]
+        neutral_pixels = list(neutral.get_flattened_data())
+        expected_changes = {
+            (x, y)
+            for x, y, _, _ in BLINK_PIXELS[direction]
+        }
+
+        for expression in (
+            HALF_BLINK_EXPRESSION,
+            CLOSED_BLINK_EXPRESSION,
+        ):
+            variant = variants[expression]
+            changed = set()
+
+            for y in range(FRAME_HEIGHT):
+                for x in range(FRAME_WIDTH):
+                    original = neutral.getpixel((x, y))
+                    facial = variant.getpixel((x, y))
+                    if original[3] != facial[3]:
+                        raise RuntimeError(
+                            f"Expression {expression}, direction "
+                            f"{direction} changed alpha at {(x, y)}."
+                        )
+                    if original != facial:
+                        changed.add((x, y))
+
+            if changed != expected_changes:
+                raise RuntimeError(
+                    f"Expression {expression}, direction {direction} "
+                    f"changed {changed}; expected {expected_changes}."
+                )
+
+            if direction not in VISIBLE_FACE_DIRECTIONS:
+                if list(variant.get_flattened_data()) != neutral_pixels:
+                    raise RuntimeError(
+                        f"Rear expression direction {direction} differs "
+                        "from its neutral body."
+                    )
+            elif not changed:
+                raise RuntimeError(
+                    f"Visible direction {direction} has no blink pixels."
+                )
+
+        if (
+            list(
+                variants[HALF_BLINK_EXPRESSION].get_flattened_data()
+            )
+            == list(
+                variants[CLOSED_BLINK_EXPRESSION].get_flattened_data()
+            )
+        ):
+            if direction in VISIBLE_FACE_DIRECTIONS:
+                raise RuntimeError(
+                    f"Direction {direction} half and closed blink match."
+                )
+
+
+def build_body_expressions_atlas(
+    parts_atlas: Image.Image,
+) -> Image.Image:
+    if parts_atlas.size != (
+        FRAME_WIDTH * DIRECTION_COUNT,
+        FRAME_HEIGHT * PART_COUNT,
+    ):
+        raise RuntimeError(
+            "Parts atlas has an unexpected layout while building "
+            "expressions."
+        )
+
+    body_png_y = (PART_COUNT - 1 - BODY) * FRAME_HEIGHT
+    variants_by_direction = []
+    for direction in range(DIRECTION_COUNT):
+        neutral = parts_atlas.crop((
+            direction * FRAME_WIDTH,
+            body_png_y,
+            (direction + 1) * FRAME_WIDTH,
+            body_png_y + FRAME_HEIGHT,
+        )).convert("RGBA")
+        half_blink = build_blink_variant(
+            neutral,
+            direction,
+            1,
+            2,
+        )
+        closed_blink = build_blink_variant(
+            neutral,
+            direction,
+            7,
+            8,
+        )
+        variants_by_direction.append((
+            neutral,
+            half_blink,
+            closed_blink,
+        ))
+
+    assert_expression_contract(variants_by_direction)
+
+    atlas = Image.new(
+        "RGBA",
+        (
+            FRAME_WIDTH * DIRECTION_COUNT,
+            FRAME_HEIGHT * EXPRESSION_COUNT,
+        ),
+        TRANSPARENT,
+    )
+    for direction, variants in enumerate(variants_by_direction):
+        for expression, frame in enumerate(variants):
+            # Expression zero occupies texture y=0 in Unity, matching the
+            # existing part-index convention.
+            atlas_y = (
+                EXPRESSION_COUNT - 1 - expression
+            ) * FRAME_HEIGHT
+            atlas.alpha_composite(
+                frame,
+                (direction * FRAME_WIDTH, atlas_y),
+            )
+
+    return atlas
+
+
 def main() -> None:
     args = parse_args()
     if sha256(args.turntable) != TURN_TABLE_SHA256:
@@ -656,14 +906,17 @@ def main() -> None:
 
     corrected, repairs = restore_face_pixels(turntable, reference)
     parts, counts = build_parts_atlas(corrected)
+    expressions = build_body_expressions_atlas(parts)
     write_png_atomic(corrected, args.reference)
     write_png_atomic(parts, args.parts)
+    write_png_atomic(expressions, args.expressions)
 
     print(f"face repairs: {repairs} (total {sum(repairs)})")
     for direction, direction_counts in enumerate(counts):
         print(f"direction {direction}: {direction_counts}")
     print(f"reference: {args.reference}")
     print(f"parts: {args.parts}")
+    print(f"expressions: {args.expressions}")
 
 
 if __name__ == "__main__":

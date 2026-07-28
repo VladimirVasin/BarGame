@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Cinematic player presentation
+
+- Moved the chase camera closer with separate `4.6 m / 53°` exterior and
+  `3.3 m / 57°` interior profiles.
+- Added bounded target damping, teleport snapping and subtle deterministic
+  idle/walk camera motion while preserving immediate obstacle avoidance,
+  stable yaw/FOV and camera-independent player heading.
+- Camera motion now fades out and restores with the shared modal lock used by
+  the map, minigames and F9 launcher.
+- Added a procedural living idle: sub-pixel breathing, slow weight transfer
+  and a rare asymmetric arm fidget blend with walking and are strongly
+  suppressed during `Wasted`.
+- Added deterministic half/closed blinks for all five visible-face directions
+  through the existing body renderer. Rear views remain neutral, the puppet
+  still uses exactly nine renderers and no sprite is mirrored.
+
 ### Eight-direction player prototype
 
 - Added eight unique front/side/back views without replacing the character's

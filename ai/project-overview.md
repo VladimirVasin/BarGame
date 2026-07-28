@@ -59,11 +59,17 @@ The vertical slice contains:
 - one nine-layer billboard puppet with a body plus upper/lower segments for
   both arms and legs, eight unique 64x96 directional views, 5-degree sector
   hysteresis and contralateral joint-driven walking projected into screen
-  space for side views and depth for front/back views;
+  space for side views and depth for front/back views; procedural breathing,
+  weight shift and a rare arm fidget keep the same rig alive while idle;
+- one deterministic three-state body-expression atlas that swaps the existing
+  body sprite for half/closed blinks in the five visible-face directions
+  without adding a tenth renderer or inventing faces in rear views;
 - camera-relative road-constrained movement that preserves the last actual
   movement heading while idle;
-- a freely orbiting perspective third-person chase camera with mouse/gamepad
-  yaw and obstacle-aware distance;
+- a closer freely orbiting perspective third-person chase camera with
+  mouse/gamepad yaw, bounded focus damping, teleport snapping, subtle
+  deterministic idle/walk motion and obstacle-aware distance; cinematic
+  motion fades out while a modal interface owns input;
 - a full-screen city map with player/bar markers, persistent green completed
   visits, ordered route editing and deterministic shortest paths constrained
   to the generated road graph;
@@ -105,8 +111,8 @@ The vertical slice contains:
 - Mobile renderer parity for the PS1 composite; the current presentation
   feature targets the PC renderer.
 - Full multi-frame eight-direction player animation; the current vertical
-  prototype uses one authored idle view per direction plus runtime joint,
-  bob and rock animation.
+  prototype uses one authored view per direction plus runtime joint walking,
+  procedural living-idle motion and body-sprite blink variants.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, economy, dialogue, quests, combat,
   save slots, and online features.

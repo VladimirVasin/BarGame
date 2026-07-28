@@ -13,6 +13,7 @@ namespace BarPromenade
         private bool previousMotorInput;
         private bool previousInteractorInput;
         private bool previousOrbitInput;
+        private bool previousCinematicMotion;
         private bool previousHudVisibility;
 
         public bool IsLocked { get; private set; }
@@ -49,6 +50,9 @@ namespace BarPromenade
             previousOrbitInput =
                 cameraFollow != null &&
                 cameraFollow.OrbitInputEnabled;
+            previousCinematicMotion =
+                cameraFollow != null &&
+                cameraFollow.CinematicMotionEnabled;
             previousHudVisibility =
                 hud == null || hud.Visible;
             IsLocked = true;
@@ -57,6 +61,7 @@ namespace BarPromenade
             motor?.SetInputEnabled(false);
             interactor.SetInputEnabled(false);
             cameraFollow?.SetOrbitInputEnabled(false);
+            cameraFollow?.SetCinematicMotionEnabled(false);
             if (hud != null)
             {
                 hud.Visible = false;
@@ -75,6 +80,8 @@ namespace BarPromenade
             motor?.SetInputEnabled(previousMotorInput);
             interactor?.SetInputEnabled(previousInteractorInput);
             cameraFollow?.SetOrbitInputEnabled(previousOrbitInput);
+            cameraFollow?.SetCinematicMotionEnabled(
+                previousCinematicMotion);
             if (hud != null)
             {
                 hud.Visible = previousHudVisibility;

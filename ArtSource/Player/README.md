@@ -18,5 +18,7 @@ python tools/build-player-puppet-atlas.py
 ```
 
 The builder repairs only face pixels lost by the original chroma-key pass,
-then derives body plus eight jointed limb layers. It asserts that all nine
-neutral layers composite exactly to the corrected reference frame.
+then derives body plus eight jointed limb layers and the neutral/half/closed
+body-expression rows. It asserts that all nine neutral layers composite
+exactly to the corrected reference frame and that blink edits stay inside
+direction-specific eye masks while all rear views remain unchanged.

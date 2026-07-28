@@ -413,22 +413,13 @@ namespace BarPromenade.Tests
             rig.SetMotion(Vector3.zero);
             float minimumSettleTime = Time.realtimeSinceStartup + 0.4f;
             float settleDeadline = Time.realtimeSinceStartup + 2f;
-            bool returnedToIdle = false;
+            bool returnedToLivingIdle = false;
             while (Time.realtimeSinceStartup < settleDeadline)
             {
                 yield return null;
-                returnedToIdle =
-                    Vector3.Distance(
-                        poseRoot.localPosition,
-                        idlePosePosition) < 0.003f &&
-                    Quaternion.Angle(
-                        poseRoot.localRotation,
-                        idlePoseRotation) < 0.2f &&
-                    AllJointsWithin(
-                        rig,
-                        idleJointRotations,
-                        0.3f);
-                if (returnedToIdle &&
+                returnedToLivingIdle =
+                    IsLivingIdleWithinBounds(rig);
+                if (returnedToLivingIdle &&
                     Time.realtimeSinceStartup >= minimumSettleTime)
                 {
                     break;
@@ -436,11 +427,96 @@ namespace BarPromenade.Tests
             }
 
             Assert.That(
-                returnedToIdle,
+                returnedToLivingIdle,
                 Is.True,
-                "Stopping must settle every joint and the puppet root.");
+                "Stopping must settle into the bounded living idle.");
             AssertDisplayedSprites(rig, idleSprites);
             AssertNoMirroring(rig);
+        }
+
+        [UnityTest]
+        public IEnumerator Idle_BreathesShiftsWeightAndFidgetsInSagittalPlane()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject actor = CreateObject("Living Idle Actor");
+            actor.transform.position = new Vector3(0f, 30f, 0f);
+            actor.transform.rotation = Quaternion.Euler(0f, 37f, 0f);
+            PlaceCameraAtRelativeYaw(camera, actor.transform, 0f);
+
+            GameObject rigObject = CreateObject("Living Idle Rig");
+            rigObject.transform.SetParent(actor.transform, false);
+            PlayerSpriteRig rig =
+                rigObject.AddComponent<PlayerSpriteRig>();
+            rig.Initialize(camera, actor.transform);
+            rig.SetMotion(Vector3.zero);
+            yield return null;
+
+            Quaternion actorHeading = actor.transform.rotation;
+            PlayerViewDirection idleDirection = rig.CurrentDirection;
+            Sprite[] idleSprites = CaptureDisplayedSprites(rig);
+            float minimumY = float.PositiveInfinity;
+            float maximumY = float.NegativeInfinity;
+            float minimumX = float.PositiveInfinity;
+            float maximumX = float.NegativeInfinity;
+            float maximumLeftArmAngle = 0f;
+            Vector3 leftArmDirectionAtMaximum = Vector3.down;
+            float deadline = Time.realtimeSinceStartup + 2.4f;
+
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+
+                Vector3 posePosition = rig.PoseRoot.localPosition;
+                minimumX = Mathf.Min(minimumX, posePosition.x);
+                maximumX = Mathf.Max(maximumX, posePosition.x);
+                minimumY = Mathf.Min(minimumY, posePosition.y);
+                maximumY = Mathf.Max(maximumY, posePosition.y);
+
+                Transform leftArm = rig.GetPartTransform(
+                    PlayerPuppetPart.LeftUpperArm);
+                float leftArmAngle = Quaternion.Angle(
+                    Quaternion.identity,
+                    leftArm.localRotation);
+                if (leftArmAngle > maximumLeftArmAngle)
+                {
+                    maximumLeftArmAngle = leftArmAngle;
+                    leftArmDirectionAtMaximum =
+                        leftArm.localRotation * Vector3.down;
+                }
+
+                Assert.That(IsLivingIdleWithinBounds(rig), Is.True);
+                Assert.That(
+                    rig.GetPartRenderer(
+                        PlayerPuppetPart.LeftUpperArm).sortingOrder,
+                    Is.EqualTo(3),
+                    "A sub-pixel idle fidget must not flip limb depth.");
+                Assert.That(
+                    Quaternion.Angle(
+                        actor.transform.rotation,
+                        actorHeading),
+                    Is.LessThan(0.001f));
+                Assert.That(rig.CurrentDirection, Is.EqualTo(idleDirection));
+            }
+
+            Assert.That(
+                maximumY - minimumY,
+                Is.GreaterThan(0.0015f),
+                "Living idle must include visible sub-pixel breathing.");
+            Assert.That(
+                maximumX - minimumX,
+                Is.GreaterThan(0.001f),
+                "Living idle must include a slow weight shift.");
+            Assert.That(
+                maximumLeftArmAngle,
+                Is.GreaterThan(0.2f),
+                "Living idle must include the deterministic arm fidget.");
+            Assert.That(
+                Mathf.Abs(leftArmDirectionAtMaximum.x),
+                Is.LessThan(0.002f),
+                "Front-view idle motion must remain in the sagittal plane.");
+            AssertDisplayedSprites(rig, idleSprites);
+            AssertNoMirroring(rig);
+            AssertUnitScales(rig);
         }
 
         [UnityTest]
@@ -522,7 +598,7 @@ namespace BarPromenade.Tests
             rig.SetWasted(false);
             float minimumSettleTime = Time.realtimeSinceStartup + 0.5f;
             float settleDeadline = Time.realtimeSinceStartup + 2f;
-            bool returnedToIdle = false;
+            bool returnedToLivingIdle = false;
             while (Time.realtimeSinceStartup < settleDeadline)
             {
                 yield return null;
@@ -535,14 +611,9 @@ namespace BarPromenade.Tests
                     rig.CurrentDirection,
                     Is.EqualTo(idleDirection));
 
-                returnedToIdle =
-                    Vector3.Distance(
-                        poseRoot.localPosition,
-                        idlePosition) < 0.003f &&
-                    Quaternion.Angle(
-                        poseRoot.localRotation,
-                        idleRotation) < 0.2f;
-                if (returnedToIdle &&
+                returnedToLivingIdle =
+                    IsLivingIdleWithinBounds(rig);
+                if (returnedToLivingIdle &&
                     Time.realtimeSinceStartup >= minimumSettleTime)
                 {
                     break;
@@ -550,9 +621,29 @@ namespace BarPromenade.Tests
             }
 
             Assert.That(
-                returnedToIdle,
+                returnedToLivingIdle,
                 Is.True,
-                "Disabling Wasted must settle the visual back to idle.");
+                "Disabling Wasted must settle back into living idle.");
+
+            float minimumLivingIdleY = poseRoot.localPosition.y;
+            float maximumLivingIdleY = poseRoot.localPosition.y;
+            float livingIdleDeadline = Time.realtimeSinceStartup + 1.2f;
+            while (Time.realtimeSinceStartup < livingIdleDeadline)
+            {
+                yield return null;
+                minimumLivingIdleY = Mathf.Min(
+                    minimumLivingIdleY,
+                    poseRoot.localPosition.y);
+                maximumLivingIdleY = Mathf.Max(
+                    maximumLivingIdleY,
+                    poseRoot.localPosition.y);
+                Assert.That(IsLivingIdleWithinBounds(rig), Is.True);
+            }
+
+            Assert.That(
+                maximumLivingIdleY - minimumLivingIdleY,
+                Is.GreaterThan(0.0004f),
+                "Living idle must resume after the Wasted sway.");
             Assert.That(
                 Quaternion.Angle(actor.transform.rotation, playerHeading),
                 Is.LessThan(0.001f));
@@ -587,6 +678,7 @@ namespace BarPromenade.Tests
                     -player.transform.forward),
                 Is.LessThan(0.1f),
                 "The initial camera pose should follow the actor heading.");
+            Assert.That(camera.fieldOfView, Is.EqualTo(53f).Within(0.01f));
 
             follow.RotateYaw(135f);
             Assert.That(
@@ -648,7 +740,9 @@ namespace BarPromenade.Tests
             float actualDistance = Vector3.Distance(
                 focusPoint,
                 camera.transform.position);
-            Assert.That(unobstructedDistance, Is.GreaterThan(5f));
+            Assert.That(
+                unobstructedDistance,
+                Is.EqualTo(4.6f).Within(0.01f));
             Assert.That(
                 actualDistance,
                 Is.LessThan(1.5f),
@@ -659,6 +753,199 @@ namespace BarPromenade.Tests
                     (focusPoint - camera.transform.position).normalized),
                 Is.LessThan(0.1f),
                 "Collision handling must keep the player centered.");
+        }
+
+        [UnityTest]
+        public IEnumerator CameraProfiles_UseCloserExteriorAndInteriorFraming()
+        {
+            Camera exteriorCamera = CreateCamera(Vector3.zero);
+            GameObject exteriorPlayer =
+                CreateObject("Exterior Framing Target");
+            exteriorPlayer.transform.position =
+                new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow exteriorFollow =
+                exteriorCamera.gameObject.AddComponent<PlayerCameraFollow>();
+
+            exteriorFollow.Initialize(
+                exteriorCamera,
+                exteriorPlayer.transform,
+                false);
+
+            Vector3 exteriorFocus =
+                exteriorPlayer.transform.position + Vector3.up * 1.1f;
+            Assert.That(
+                Vector3.Distance(
+                    exteriorFocus,
+                    exteriorCamera.transform.position),
+                Is.EqualTo(4.6f).Within(0.001f));
+            Assert.That(
+                exteriorCamera.fieldOfView,
+                Is.EqualTo(53f).Within(0.01f));
+
+            Camera interiorCamera = CreateCamera(Vector3.zero);
+            GameObject interiorPlayer =
+                CreateObject("Interior Framing Target");
+            interiorPlayer.transform.position =
+                new Vector3(20f, 100f, 0f);
+            PlayerCameraFollow interiorFollow =
+                interiorCamera.gameObject.AddComponent<PlayerCameraFollow>();
+
+            interiorFollow.Initialize(
+                interiorCamera,
+                interiorPlayer.transform,
+                true);
+
+            Vector3 interiorFocus =
+                interiorPlayer.transform.position + Vector3.up * 1.05f;
+            Assert.That(
+                Vector3.Distance(
+                    interiorFocus,
+                    interiorCamera.transform.position),
+                Is.EqualTo(3.3f).Within(0.001f));
+            Assert.That(
+                interiorCamera.fieldOfView,
+                Is.EqualTo(57f).Within(0.01f));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CameraFollow_DampsFocusCapsLagAndSnapsTeleport()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Smoothed Camera Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.SetCinematicMotionEnabled(false);
+            follow.Snap();
+
+            Vector3 initialFocus = follow.CurrentFocusPoint;
+            player.transform.position += Vector3.right;
+            yield return null;
+
+            Vector3 targetFocus =
+                player.transform.position + Vector3.up * 1.1f;
+            float firstFrameProgress =
+                follow.CurrentFocusPoint.x - initialFocus.x;
+            Assert.That(
+                firstFrameProgress,
+                Is.GreaterThan(0f).And.LessThan(1f),
+                "Normal target motion must be damped.");
+            Assert.That(
+                Vector3.Distance(
+                    follow.CurrentFocusPoint,
+                    targetFocus),
+                Is.LessThanOrEqualTo(0.351f),
+                "Focus damping must never leave the player too far behind.");
+
+            float previousX = follow.CurrentFocusPoint.x;
+            float convergenceDeadline =
+                Time.realtimeSinceStartup + 1f;
+            while (Time.realtimeSinceStartup < convergenceDeadline &&
+                   Vector3.Distance(
+                       follow.CurrentFocusPoint,
+                       targetFocus) >= 0.01f)
+            {
+                yield return null;
+                Assert.That(
+                    follow.CurrentFocusPoint.x,
+                    Is.GreaterThanOrEqualTo(previousX - 0.0001f),
+                    "The damped focus must converge without overshooting.");
+                previousX = follow.CurrentFocusPoint.x;
+            }
+
+            Assert.That(
+                Vector3.Distance(
+                    follow.CurrentFocusPoint,
+                    targetFocus),
+                Is.LessThan(0.01f));
+
+            player.transform.position += Vector3.right * 2f;
+            yield return null;
+
+            Vector3 teleportedFocus =
+                player.transform.position + Vector3.up * 1.1f;
+            Assert.That(
+                Vector3.Distance(
+                    follow.CurrentFocusPoint,
+                    teleportedFocus),
+                Is.LessThan(0.0001f),
+                "Large target jumps must snap instead of dragging the camera.");
+            Assert.That(
+                Vector3.Distance(
+                    teleportedFocus,
+                    camera.transform.position),
+                Is.EqualTo(4.6f).Within(0.001f),
+                "Teleport snap must apply the exact collision-safe pose.");
+        }
+
+        [UnityTest]
+        public IEnumerator CinematicMotion_IsSubtleSpeedDrivenAndYawStable()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Cinematic Camera Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+
+            Quaternion baseRotation = Quaternion.Euler(14f, 0f, 0f);
+            float maximumIdleExcursion = 0f;
+            float idleDeadline = Time.realtimeSinceStartup + 0.5f;
+            while (Time.realtimeSinceStartup < idleDeadline)
+            {
+                yield return null;
+                maximumIdleExcursion = Mathf.Max(
+                    maximumIdleExcursion,
+                    CameraExcursionFromBase(
+                        camera,
+                        follow,
+                        baseRotation,
+                        4.6f));
+                AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
+            }
+
+            float maximumWalkExcursion = 0f;
+            float walkDeadline = Time.realtimeSinceStartup + 0.6f;
+            while (Time.realtimeSinceStartup < walkDeadline)
+            {
+                player.transform.position += Vector3.right * 0.08f;
+                yield return null;
+                maximumWalkExcursion = Mathf.Max(
+                    maximumWalkExcursion,
+                    CameraExcursionFromBase(
+                        camera,
+                        follow,
+                        baseRotation,
+                        4.6f));
+                AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
+            }
+
+            Assert.That(
+                maximumIdleExcursion,
+                Is.GreaterThan(0.0001f).And.LessThan(0.02f),
+                "Idle camera drift must be present but remain very subtle.");
+            Assert.That(
+                maximumWalkExcursion,
+                Is.GreaterThan(0.008f).And.LessThan(0.04f),
+                "Walking must add a bounded motion-driven bob.");
+
+            follow.SetCinematicMotionEnabled(false);
+            float fadeDeadline = Time.realtimeSinceStartup + 1f;
+            while (Time.realtimeSinceStartup < fadeDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                CameraExcursionFromBase(
+                    camera,
+                    follow,
+                    baseRotation,
+                    4.6f),
+                Is.LessThan(0.002f),
+                "Modal camera suppression must fade the sway to rest.");
         }
 
         [UnityTearDown]
@@ -675,6 +962,37 @@ namespace BarPromenade.Tests
             cleanupObjects.Clear();
             yield return null;
             yield return null;
+        }
+
+        private static float CameraExcursionFromBase(
+            Camera camera,
+            PlayerCameraFollow follow,
+            Quaternion baseRotation,
+            float distance)
+        {
+            Vector3 basePosition =
+                follow.CurrentFocusPoint -
+                baseRotation * Vector3.forward * distance;
+            return Vector3.Distance(
+                camera.transform.position,
+                basePosition);
+        }
+
+        private static void AssertCinematicCameraKeepsStableYawAndFov(
+            Camera camera,
+            float expectedFieldOfView)
+        {
+            Vector3 planarForward = Vector3.ProjectOnPlane(
+                camera.transform.forward,
+                Vector3.up).normalized;
+            Assert.That(
+                Vector3.Angle(planarForward, Vector3.forward),
+                Is.LessThan(0.05f),
+                "Cinematic motion must not introduce yaw sway.");
+            Assert.That(
+                camera.fieldOfView,
+                Is.EqualTo(expectedFieldOfView).Within(0.001f),
+                "Cinematic motion must not pulse the field of view.");
         }
 
         private IEnumerator AssertProjectedGait(
@@ -974,8 +1292,42 @@ namespace BarPromenade.Tests
             {
                 PlayerPuppetPart part =
                     (PlayerPuppetPart)partIndex;
+                Sprite displayed =
+                    rig.GetPartRenderer(part).sprite;
+                if (part == PlayerPuppetPart.Body)
+                {
+                    Assert.That(
+                        expectedSprites[partIndex],
+                        Is.SameAs(rig.GetPartSprite(
+                            part,
+                            rig.CurrentDirection)));
+                    bool faceVisible =
+                        rig.CurrentDirection ==
+                            PlayerViewDirection.Front ||
+                        rig.CurrentDirection ==
+                            PlayerViewDirection.FrontRight ||
+                        rig.CurrentDirection ==
+                            PlayerViewDirection.Right ||
+                        rig.CurrentDirection ==
+                            PlayerViewDirection.Left ||
+                        rig.CurrentDirection ==
+                            PlayerViewDirection.FrontLeft;
+                    Sprite expectedBody =
+                        rig.CurrentFacialExpression ==
+                            PlayerFacialExpression.Neutral ||
+                        !faceVisible
+                            ? expectedSprites[partIndex]
+                            : rig.GetFacialExpressionSprite(
+                                rig.CurrentFacialExpression,
+                                rig.CurrentDirection);
+                    Assert.That(
+                        displayed,
+                        Is.SameAs(expectedBody));
+                    continue;
+                }
+
                 Assert.That(
-                    rig.GetPartRenderer(part).sprite,
+                    displayed,
                     Is.SameAs(expectedSprites[partIndex]));
             }
         }
@@ -995,23 +1347,51 @@ namespace BarPromenade.Tests
             return true;
         }
 
-        private static bool AllJointsWithin(
-            PlayerSpriteRig rig,
-            Quaternion[] expectedRotations,
-            float toleranceDegrees)
+        private static bool IsLivingIdleWithinBounds(
+            PlayerSpriteRig rig)
         {
+            Vector3 posePosition = rig.PoseRoot.localPosition;
+            if (Mathf.Abs(posePosition.x) > 0.008f ||
+                posePosition.y < -0.001f ||
+                posePosition.y > 0.011f ||
+                Mathf.Abs(posePosition.z) > 0.001f ||
+                Quaternion.Angle(
+                    Quaternion.identity,
+                    rig.PoseRoot.localRotation) > 0.4f)
+            {
+                return false;
+            }
+
             for (int index = 0; index < JointParts.Length; index++)
             {
                 if (Quaternion.Angle(
+                        Quaternion.identity,
                         rig.GetPartTransform(
-                            JointParts[index]).localRotation,
-                        expectedRotations[index]) >= toleranceDegrees)
+                            JointParts[index]).localRotation) > 0.56f)
                 {
                     return false;
                 }
             }
 
             return true;
+        }
+
+        private static void AssertUnitScales(PlayerSpriteRig rig)
+        {
+            Assert.That(rig.VisualRoot.localScale, Is.EqualTo(Vector3.one));
+            Assert.That(rig.PoseRoot.localScale, Is.EqualTo(Vector3.one));
+
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                Transform part = rig.GetPartTransform(
+                    (PlayerPuppetPart)partIndex);
+                Assert.That(
+                    part.localScale,
+                    Is.EqualTo(Vector3.one),
+                    $"{part.name} must not use scale animation.");
+            }
         }
 
         private static void AssertNoMirroring(PlayerSpriteRig rig)

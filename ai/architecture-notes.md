@@ -38,10 +38,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   endpoints are projected onto their road segments without NavMesh.
 - **Accepted — Modal schematic city map:** A runtime IMGUI overlay fits the
   complete finite city in one view, exposes mouse/keyboard/gamepad editing,
-  and temporarily suspends motor, interaction, camera orbit and the HUD.
+  and temporarily suspends motor, interaction, camera orbit, cinematic camera
+  motion and the HUD.
 - **Accepted — Independent player heading:** The motor rotates the player root
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.
+- **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
+  `4.6 m / 53°` and `3.3 m / 57°` profiles. The target focus is critically
+  damped with at most `0.35 m` lag and snaps on jumps beyond `1.75 m`.
+  Deterministic low-frequency idle drift and speed-driven bob affect only
+  focus, pitch and roll; yaw and FOV remain stable. Collision still shortens
+  the arm immediately and cinematic motion fades during modal ownership.
 - **Accepted — Eight-direction player presentation:** A corrected
   point-filtered `512x96` reference and a derived `512x864` layered atlas
   provide eight explicit `64x96` views at PPU 48. Each view has one body layer
@@ -50,7 +57,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   are never mirrored and share one foot pivot. Jointed walking projects the
   actor's sagittal plane into the active billboard view: side views swing in
   screen space, front/back views swing in depth, diagonal views blend both,
-  and contralateral limbs remain in opposite gait phases.
+  and contralateral limbs remain in opposite gait phases. The same projected
+  joints add bounded breathing, weight transfer and one deterministic arm
+  fidget while idle. A separate `512x288` body-expression atlas provides
+  neutral, half-blink and closed-blink rows; runtime swaps only the existing
+  body renderer, and all rear variants remain neutral.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. Authored player, cocktail and
   beer-pong bitmaps load from `Resources` and are sliced or drawn at runtime.
@@ -161,5 +172,5 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Deferred Wasted presentation:** Serving any bad mixture marks a
   pending 45-second unscaled-time debuff, applied at the final result or when
   the modal closes. Reaching 100 intoxication ends the session early. The
-  active effect uses `0.75` movement speed and sprite sway; camera motion
-  remains stable.
+  active effect uses `0.75` movement speed and sprite sway; it does not add
+  camera shake beyond the ordinary bounded cinematic motion.

@@ -30,8 +30,11 @@ namespace BarPromenade
             "Player/PlayerDirectionalPartsAtlas";
         public const string ReferenceAtlasResourcePath =
             "Player/PlayerDirectionalAtlas";
+        public const string ExpressionAtlasResourcePath =
+            "Player/PlayerDirectionalBodyExpressionsAtlas";
         public const int DirectionCount = 8;
         public const int PartCount = 9;
+        public const int ExpressionCount = 3;
         public const int FrameWidth = 64;
         public const int FrameHeight = 96;
         public const float PixelsPerUnit = 48f;
@@ -40,6 +43,7 @@ namespace BarPromenade
 
         private const float MovingThreshold = 0.02f;
         private const float DepthSortingThreshold = 0.005f;
+        private const float IdleDepthSortingThreshold = 0.01f;
         private const int FarLimbSortingOffset = 5;
 
         private static readonly PlayerPuppetPose[] DirectionPoses =
@@ -141,10 +145,23 @@ namespace BarPromenade
         [SerializeField, Range(0f, 10f)] private float walkRockDegrees = 1.4f;
         [SerializeField, Min(0f)] private float settleSpeed = 12f;
 
+        [Header("Living idle")]
+        [SerializeField, Min(1f)] private float idleBreathingPeriod = 4.4f;
+        [SerializeField, Min(0f)] private float idleBreathingHeight = 0.0065f;
+        [SerializeField, Min(1f)] private float idleWeightShiftPeriod = 7.5f;
+        [SerializeField, Min(0f)] private float idleWeightShiftDistance = 0.0055f;
+        [SerializeField, Range(0f, 1f)]
+        private float idleWeightShiftDegrees = 0.24f;
+        [SerializeField, Min(2f)] private float idleFidgetPeriod = 8.5f;
+        [SerializeField, Range(0f, 1f)]
+        private float idleArmFidgetDegrees = 0.38f;
+        [SerializeField, Min(0f)] private float idleBlendSpeed = 2.5f;
+
         private readonly List<Sprite> directionSprites =
             new List<Sprite>(DirectionCount);
         private readonly List<Sprite> generatedSprites =
-            new List<Sprite>(DirectionCount * PartCount);
+            new List<Sprite>(
+                DirectionCount * (PartCount + ExpressionCount));
         private readonly List<SpriteRenderer> partRenderers =
             new List<SpriteRenderer>(PartCount);
 
@@ -152,6 +169,10 @@ namespace BarPromenade
             new Transform[PartCount];
         private readonly Sprite[,] partSprites =
             new Sprite[PartCount, DirectionCount];
+        private readonly Sprite[,] expressionSprites =
+            new Sprite[ExpressionCount, DirectionCount];
+        private readonly PlayerFacialAnimationState facialAnimationState =
+            new PlayerFacialAnimationState();
 
         private Camera targetCamera;
         private Transform facingTransform;
@@ -161,6 +182,8 @@ namespace BarPromenade
         private PlayerViewDirectionSelector directionSelector;
         private float animationPhase;
         private float motionAmount;
+        private float idlePhase;
+        private float idleBlend;
         private float wastedBlend;
         private float wastedPhase;
         private bool isWasted;
@@ -169,6 +192,8 @@ namespace BarPromenade
             directionSelector != null
                 ? directionSelector.CurrentDirection
                 : PlayerViewDirection.Front;
+        public PlayerFacialExpression CurrentFacialExpression =>
+            facialAnimationState.CurrentExpression;
 
         public IReadOnlyList<Sprite> DirectionSprites => directionSprites;
         public IReadOnlyList<SpriteRenderer> Renderers => partRenderers;
@@ -188,6 +213,7 @@ namespace BarPromenade
                 : ResolveDefaultFacingTransform();
             EnsurePresentationExists();
             billboard.Initialize(camera);
+            facialAnimationState.Reset();
             RefreshDirection();
         }
 
@@ -237,6 +263,23 @@ namespace BarPromenade
             return partRenderers[index];
         }
 
+        public Sprite GetFacialExpressionSprite(
+            PlayerFacialExpression expression,
+            PlayerViewDirection direction)
+        {
+            ValidateExpression(expression);
+            ValidateDirection(direction);
+            Sprite sprite =
+                expressionSprites[(int)expression, (int)direction];
+            if (sprite == null)
+            {
+                throw new InvalidOperationException(
+                    "Player facial sprites have not been initialized.");
+            }
+
+            return sprite;
+        }
+
         public Transform GetPartTransform(PlayerPuppetPart part)
         {
             ValidatePart(part);
@@ -258,6 +301,8 @@ namespace BarPromenade
         {
             RefreshDirection();
             AnimatePuppet(Time.deltaTime);
+            facialAnimationState.Advance(Time.deltaTime);
+            ApplyFacialExpression(CurrentDirection);
         }
 
         private void OnDestroy()
@@ -279,6 +324,10 @@ namespace BarPromenade
             partRenderers.Clear();
             Array.Clear(partTransforms, 0, partTransforms.Length);
             Array.Clear(partSprites, 0, partSprites.Length);
+            Array.Clear(
+                expressionSprites,
+                0,
+                expressionSprites.Length);
         }
 
         private Transform ResolveDefaultFacingTransform()
@@ -295,6 +344,9 @@ namespace BarPromenade
 
             Texture2D atlas = Resources.Load<Texture2D>(AtlasResourcePath);
             ValidateAtlas(atlas);
+            Texture2D expressionAtlas = Resources.Load<Texture2D>(
+                ExpressionAtlasResourcePath);
+            ValidateExpressionAtlas(expressionAtlas);
 
             GameObject rootObject =
                 new GameObject("GeneratedDirectionalPuppet");
@@ -308,6 +360,7 @@ namespace BarPromenade
 
             CreatePartHierarchy();
             CreatePartSprites(atlas);
+            CreateExpressionSprites(expressionAtlas);
 
             directionSelector = new PlayerViewDirectionSelector(
                 directionHysteresisDegrees,
@@ -401,6 +454,45 @@ namespace BarPromenade
             }
         }
 
+        private void CreateExpressionSprites(Texture2D atlas)
+        {
+            Vector2 normalizedPivot = new Vector2(
+                FeetPivotXPixels / FrameWidth,
+                FeetPivotPixels / FrameHeight);
+            for (int expressionIndex = 0;
+                 expressionIndex < ExpressionCount;
+                 expressionIndex++)
+            {
+                PlayerFacialExpression expression =
+                    (PlayerFacialExpression)expressionIndex;
+                for (int directionIndex = 0;
+                     directionIndex < DirectionCount;
+                     directionIndex++)
+                {
+                    PlayerViewDirection direction =
+                        (PlayerViewDirection)directionIndex;
+                    Sprite sprite = Sprite.Create(
+                        atlas,
+                        new Rect(
+                            directionIndex * FrameWidth,
+                            expressionIndex * FrameHeight,
+                            FrameWidth,
+                            FrameHeight),
+                        normalizedPivot,
+                        PixelsPerUnit,
+                        0,
+                        SpriteMeshType.FullRect);
+                    sprite.name =
+                        $"Player{direction}Body{expression}";
+                    sprite.hideFlags = HideFlags.DontSave;
+                    expressionSprites[
+                        expressionIndex,
+                        directionIndex] = sprite;
+                    generatedSprites.Add(sprite);
+                }
+            }
+        }
+
         private static void ValidateAtlas(Texture2D atlas)
         {
             if (atlas == null)
@@ -417,6 +509,27 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     $"Player puppet atlas must be {expectedWidth}x" +
+                    $"{expectedHeight}, but is {atlas.width}x" +
+                    $"{atlas.height}.");
+            }
+        }
+
+        private static void ValidateExpressionAtlas(Texture2D atlas)
+        {
+            if (atlas == null)
+            {
+                throw new InvalidOperationException(
+                    "Player facial atlas was not found at Resources/" +
+                    $"{ExpressionAtlasResourcePath}.");
+            }
+
+            int expectedWidth = FrameWidth * DirectionCount;
+            int expectedHeight = FrameHeight * ExpressionCount;
+            if (atlas.width != expectedWidth ||
+                atlas.height != expectedHeight)
+            {
+                throw new InvalidOperationException(
+                    $"Player facial atlas must be {expectedWidth}x" +
                     $"{expectedHeight}, but is {atlas.width}x" +
                     $"{atlas.height}.");
             }
@@ -479,6 +592,44 @@ namespace BarPromenade
             }
 
             SetRestPositions(pose);
+            ApplyFacialExpression(direction);
+        }
+
+        private void ApplyFacialExpression(
+            PlayerViewDirection direction)
+        {
+            Sprite bodySprite;
+            PlayerFacialExpression expression =
+                facialAnimationState.CurrentExpression;
+            if (expression == PlayerFacialExpression.Neutral ||
+                !HasVisibleFace(direction))
+            {
+                bodySprite = GetPartSprite(
+                    PlayerPuppetPart.Body,
+                    direction);
+            }
+            else
+            {
+                bodySprite = GetFacialExpressionSprite(
+                    expression,
+                    direction);
+            }
+
+            SpriteRenderer bodyRenderer = BodyRenderer;
+            if (bodyRenderer.sprite != bodySprite)
+            {
+                bodyRenderer.sprite = bodySprite;
+            }
+        }
+
+        private static bool HasVisibleFace(
+            PlayerViewDirection direction)
+        {
+            return direction == PlayerViewDirection.Front ||
+                   direction == PlayerViewDirection.FrontRight ||
+                   direction == PlayerViewDirection.Right ||
+                   direction == PlayerViewDirection.Left ||
+                   direction == PlayerViewDirection.FrontLeft;
         }
 
         private void SetRestPositions(PlayerPuppetPose pose)
@@ -548,6 +699,11 @@ namespace BarPromenade
                     deltaTime * walkCyclesPerSecond * Mathf.PI * 2f;
             }
 
+            idlePhase += deltaTime;
+            idleBlend = Mathf.MoveTowards(
+                idleBlend,
+                motionAmount <= MovingThreshold ? 1f : 0f,
+                deltaTime * idleBlendSpeed);
             wastedBlend = Mathf.MoveTowards(
                 wastedBlend,
                 isWasted ? 1f : 0f,
@@ -572,50 +728,80 @@ namespace BarPromenade
             float rightArmPhase = strideWave;
             float leftLegPhase = strideWave;
             float rightLegPhase = -strideWave;
+            float effectiveIdleBlend =
+                idleBlend * Mathf.Lerp(1f, 0.08f, wastedBlend);
+            float breathingWave = Mathf.Sin(
+                idlePhase * Mathf.PI * 2f /
+                Mathf.Max(1f, idleBreathingPeriod));
+            float weightShiftWave = Mathf.Sin(
+                idlePhase * Mathf.PI * 2f /
+                Mathf.Max(1f, idleWeightShiftPeriod));
+            float fidgetWave = GetIdleFidgetWave(idlePhase);
+            float idleLeftUpperArm =
+                (breathingWave * 0.08f +
+                 fidgetWave * idleArmFidgetDegrees) *
+                effectiveIdleBlend;
+            float idleLeftLowerArm =
+                -fidgetWave * idleArmFidgetDegrees * 0.4f *
+                effectiveIdleBlend;
+            float idleRightUpperArm =
+                -breathingWave * 0.06f * effectiveIdleBlend;
+            float idleRightLowerArm =
+                breathingWave * 0.04f * effectiveIdleBlend;
+            float idleLegShift =
+                weightShiftWave * 0.08f * effectiveIdleBlend;
             float settle = 1f - Mathf.Exp(-settleSpeed * deltaTime);
 
             SetJointRotation(
                 PlayerPuppetPart.LeftUpperArm,
                 walkRotationAxis,
-                leftArmPhase * armSwingDegrees,
+                leftArmPhase * armSwingDegrees +
+                idleLeftUpperArm,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightUpperArm,
                 walkRotationAxis,
-                rightArmPhase * armSwingDegrees,
+                rightArmPhase * armSwingDegrees +
+                idleRightUpperArm,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.LeftLowerArm,
                 walkRotationAxis,
-                -leftArmPhase * elbowBendDegrees,
+                -leftArmPhase * elbowBendDegrees +
+                idleLeftLowerArm,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightLowerArm,
                 walkRotationAxis,
-                -rightArmPhase * elbowBendDegrees,
+                -rightArmPhase * elbowBendDegrees +
+                idleRightLowerArm,
                 settle);
 
             SetJointRotation(
                 PlayerPuppetPart.LeftUpperLeg,
                 walkRotationAxis,
-                leftLegPhase * legSwingDegrees,
+                leftLegPhase * legSwingDegrees +
+                idleLegShift,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightUpperLeg,
                 walkRotationAxis,
-                rightLegPhase * legSwingDegrees,
+                rightLegPhase * legSwingDegrees -
+                idleLegShift,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.LeftLowerLeg,
                 walkRotationAxis,
                 -Mathf.Max(0f, leftLegPhase) *
-                kneeBendDegrees,
+                kneeBendDegrees -
+                idleLegShift * 0.5f,
                 settle);
             SetJointRotation(
                 PlayerPuppetPart.RightLowerLeg,
                 walkRotationAxis,
                 -Mathf.Max(0f, rightLegPhase) *
-                kneeBendDegrees,
+                kneeBendDegrees +
+                idleLegShift * 0.5f,
                 settle);
 
             ApplyLimbDepthSorting(
@@ -632,14 +818,23 @@ namespace BarPromenade
                 PlayerPuppetPart.RightLowerLeg);
 
             float targetX =
+                weightShiftWave *
+                idleWeightShiftDistance *
+                effectiveIdleBlend +
                 Mathf.Sin(wastedPhase) * 0.055f * wastedBlend;
             float targetY =
                 stepWave * walkBobHeight +
+                (0.5f + breathingWave * 0.5f) *
+                idleBreathingHeight *
+                effectiveIdleBlend +
                 Mathf.Abs(Mathf.Sin(wastedPhase * 0.5f)) *
                 0.018f *
                 wastedBlend;
             float targetRoll =
                 strideWave * walkRockDegrees +
+                weightShiftWave *
+                idleWeightShiftDegrees *
+                effectiveIdleBlend +
                 Mathf.Sin(wastedPhase * 0.7f) *
                 3.5f *
                 wastedBlend;
@@ -653,6 +848,24 @@ namespace BarPromenade
                 Quaternion.Euler(0f, 0f, targetRoll),
                 settle);
             poseRoot.localScale = Vector3.one;
+        }
+
+        private float GetIdleFidgetWave(float phase)
+        {
+            const float startDelay = 0.55f;
+            const float duration = 1.1f;
+            float period = Mathf.Max(duration + startDelay, idleFidgetPeriod);
+            float localPhase = Mathf.Repeat(
+                phase + period - startDelay,
+                period);
+            if (localPhase > duration)
+            {
+                return 0f;
+            }
+
+            float normalizedPhase = localPhase / duration;
+            float pulse = Mathf.Sin(normalizedPhase * Mathf.PI);
+            return pulse * pulse;
         }
 
         private void SetJointRotation(
@@ -681,7 +894,11 @@ namespace BarPromenade
             float depth =
                 (upperTransform.localRotation * Vector3.down).z;
             int sortingOrder = GetSortingOrder(upperPart);
-            if (depth < -DepthSortingThreshold)
+            float sortingThreshold =
+                motionAmount > MovingThreshold
+                    ? DepthSortingThreshold
+                    : IdleDepthSortingThreshold;
+            if (depth < -sortingThreshold)
             {
                 sortingOrder -= FarLimbSortingOffset;
             }
@@ -826,6 +1043,19 @@ namespace BarPromenade
                     nameof(direction),
                     direction,
                     "Direction must be one of the eight defined views.");
+            }
+        }
+
+        private static void ValidateExpression(
+            PlayerFacialExpression expression)
+        {
+            int index = (int)expression;
+            if (index < 0 || index >= ExpressionCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(expression),
+                    expression,
+                    "Expression must be one of the three blink states.");
             }
         }
 
