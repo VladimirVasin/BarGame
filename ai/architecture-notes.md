@@ -129,15 +129,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone.
 - **Accepted — Activity-specific same-scene minigame:** Every bar carries a
-  stable `BarActivityKind` through the transition. The second row-major bar
-  selects beer pong and the others select cocktails. `BarInterior` constructs
-  exactly one matching controller and `BarActivityStation`; both implement one
+  stable `BarActivityKind` through the transition. One pure ordinal resolver
+  assigns the first three row-major bars to cocktails, beer pong and Split the
+  G, then assigns later bars to cocktails. `BarInterior` constructs exactly one
+  matching controller and `BarActivityStation`; all implement one
   completion/cancellation contract and share a state-preserving modal lock.
 - **Accepted — Explicit shared minigame catalog:** `BarMinigameCatalog` owns
   the ordered definitions and factories used for both normal interiors and
-  debug instances. Cocktail mixing and beer pong are built-ins; registering a
-  unique future activity definition makes it available to the F9 window
-  without changing that window.
+  debug instances. Cocktail mixing, beer pong and Split the G are built-ins;
+  registering a unique future activity definition makes it available to the
+  F9 window without changing that window.
 - **Accepted — Isolated F9 debug launch:** Both runtime roots install the same
   minigame debug window. Opening it closes a conflicting city map and cancels
   a scene minigame or prior debug game before capturing the modal state.
@@ -168,10 +169,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clearing early awards 50 for each unused throw. Every miss immediately adds
   8 intoxication and one `LightBeer`; clearing the rack, spending all throws or
   reaching 100 intoxication ends the activity.
+- **Accepted — Frame-rate-independent Split the G:** The third bar uses a pure
+  normalized-level session with Normal settings: target `0.50`, drain speed
+  `0.22/s`, `4.8 s` maximum sip, `1.4 s` foam settling and at most three fresh
+  glasses. Level derives from total held time rather than repeated subtraction.
+  Releasing is irreversible; error bands are 1/3/6/10 percent and score falls
+  linearly from 100 to zero across the 10-percent scoring window.
+- **Accepted — Hidden-level one-sip presentation:** Space, an in-canvas LMB
+  press or gamepad South starts a tracked hold only after countdown and a fresh
+  press. The tilted pint, hand and foam obscure the exact liquid boundary
+  during Drinking and Settling. World-camera motion remains disabled by the
+  modal lock; the presentation animates only its logical `640x360` canvas.
+- **Accepted — Split the G drinking persistence:** Each non-empty attempt is a
+  new `DarkBeer` drinking event. Its actual consumed fraction is converted to
+  proportional intoxication and committed immediately on release, so Cancel
+  cannot refund it. Best score remains local to the open minigame because the
+  project has no long-term save/high-score subsystem.
 - **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
   drink and total consumed-drink count are committed through
-  `GameSessionState` after every cocktail serving and beer-pong miss, survive
-  scene loads, and reset when the application subsystem restarts.
+  `GameSessionState` after every cocktail serving, beer-pong miss and completed
+  Split the G sip, survive scene loads, and reset when the application
+  subsystem restarts.
 - **Accepted — Deferred Wasted presentation:** Serving any bad mixture marks a
   pending 45-second unscaled-time debuff, applied at the final result or when
   the modal closes. Reaching 100 intoxication ends the session early. The

@@ -2,6 +2,32 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Split the G minigame
+
+- Added a pure frame-rate-independent one-sip session with Normal timing,
+  irreversible release, foam settling, five accuracy bands, linear 0–100
+  scoring, three fresh glasses and a session-best result.
+- Assigned the third stable row-major bar to Split the G through one shared
+  ordinal resolver used by generation and validation. Registered the activity
+  in the common catalog, so normal interiors and isolated F9 launches use the
+  same factory.
+- Added Space, in-canvas LMB and gamepad South hold/release input with
+  post-countdown fresh-press protection. The exact level stays obscured while
+  drinking and settling; each non-empty sip immediately persists its actual
+  dark-beer fraction and Cancel cannot refund it.
+- Added the activity-specific interior station and pint display, RU/EN UI,
+  deterministic `640x360` pixel-art backdrop, transparent 4x4 gameplay atlas,
+  generated gulp SFX and focused domain/presentation/input/scene-flow tests.
+
+Verification:
+
+- Runtime, Editor, EditModeTests, PlayModeTests and Assembly-CSharp .NET
+  builds: 0 errors, 0 warnings.
+- Unity EditMode: 261/261 passed.
+- Unity PlayMode in `-nographics`: 43/43 runnable tests passed; the existing
+  graphics-device-only RenderGraph test was ignored by design.
+- Windows x64 Player build: succeeded, 0 warnings, 133,861,007 bytes.
+
 ## 2026-07-28 — Expressive living idle and facial states
 
 - Increased the readable breathing, weight-transfer and body-rock amplitudes

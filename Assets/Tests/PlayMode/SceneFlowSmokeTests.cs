@@ -57,7 +57,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarActivityKind.BeerPong));
             Assert.That(
                 cityRoot.World.Bars[2].BarActivity,
-                Is.EqualTo(BarActivityKind.Cocktail));
+                Is.EqualTo(BarActivityKind.SplitTheG));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
             Assert.That(cityRoot.DebugWindow, Is.Not.Null);
@@ -467,6 +467,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(interiorRoot.CocktailMinigame));
             Assert.That(interiorRoot.CocktailMinigame, Is.Not.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
+            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
             Assert.That(interiorRoot.DebugWindow, Is.Not.Null);
             Assert.That(
                 interiorRoot.DebugWindow.IsInitialized,
@@ -552,6 +553,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarActivityKind.BeerPong));
             Assert.That(interiorRoot.CocktailMinigame, Is.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Not.Null);
+            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
             Assert.That(
                 interiorRoot.ActiveMinigame,
                 Is.SameAs(interiorRoot.BeerPongMinigame));
@@ -684,6 +686,212 @@ namespace BarPromenade.Tests.PlayMode
             interiorRoot.BeerPongMinigame.Cancel();
             Assert.That(
                 interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator SplitTheGBarInterior_CompletesThreeAttempts()
+        {
+            const string barId = "bar-split-the-g-smoke-test";
+            GameSessionState.EnterBar(
+                barId,
+                BarActivityKind.SplitTheG);
+            GameSessionState.TryAddRouteStop(barId);
+
+            BarInteriorRoot interiorRoot = null;
+            yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
+                SceneIds.BarInterior,
+                InteriorRootName,
+                root => interiorRoot = root);
+            yield return WaitUntil(
+                () => interiorRoot.IsInitialized,
+                "Split-the-G interior did not finish initialization.");
+
+            Assert.That(
+                interiorRoot.ActiveActivity,
+                Is.EqualTo(BarActivityKind.SplitTheG));
+            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
+            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
+            Assert.That(interiorRoot.SplitTheGMinigame, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActiveMinigame,
+                Is.SameAs(interiorRoot.SplitTheGMinigame));
+            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActivityStation.PromptKey,
+                Is.EqualTo("interaction.play_split_the_g"));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
+                Is.Empty);
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<
+                    SplitTheGMinigameController>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.transform.Find(
+                    "Split the G Minigame Station"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find("Split the G Point"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find("Split the G Point Sign"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Split the G Coaster"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Split the G Pint"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Split the G Foam"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Split the G Target"),
+                Is.Not.Null);
+
+            Vector3 stationPosition =
+                interiorRoot.ActivityStation.transform.position;
+            stationPosition.y = 0.12f;
+            interiorRoot.Player.Motor.Teleport(stationPosition);
+            yield return null;
+            Assert.That(
+                interiorRoot.Player.Interactor.ActiveInteractable,
+                Is.EqualTo(interiorRoot.ActivityStation));
+
+            PlayerCameraFollow splitTheGFollow =
+                Camera.main.GetComponent<PlayerCameraFollow>();
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.True);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.False);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.False);
+            Assert.That(
+                splitTheGFollow.OrbitInputEnabled,
+                Is.False);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+
+            interiorRoot.SplitTheGMinigame.Cancel();
+            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.False);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(
+                splitTheGFollow.OrbitInputEnabled,
+                Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Contain(barId));
+
+            int completionCount = 0;
+            interiorRoot.SplitTheGMinigame.Completed +=
+                () => completionCount++;
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.True);
+
+            SplitTheGSettings settings =
+                interiorRoot.SplitTheGMinigame.Settings;
+            float countdownStep =
+                (float)settings.CountdownTime + 0.01f;
+            float drinkToTargetStep = (float)(
+                (1d - settings.TargetLevel) /
+                settings.DrinkSpeed);
+            float settlingStep =
+                (float)settings.SettlingTime + 0.01f;
+
+            for (int attempt = 0;
+                 attempt < settings.MaximumAttempts;
+                 attempt++)
+            {
+                interiorRoot.SplitTheGMinigame.AdvancePresentation(
+                    countdownStep);
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.Phase,
+                    Is.EqualTo(SplitTheGPhase.Armed));
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.BeginDrink(),
+                    Is.True);
+                interiorRoot.SplitTheGMinigame.AdvancePresentation(
+                    drinkToTargetStep);
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.Phase,
+                    Is.EqualTo(SplitTheGPhase.Drinking));
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.ReleaseDrink(),
+                    Is.True);
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.Phase,
+                    Is.EqualTo(SplitTheGPhase.Settling));
+                interiorRoot.SplitTheGMinigame.AdvancePresentation(
+                    settlingStep);
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.AttemptsCompleted,
+                    Is.EqualTo(attempt + 1));
+
+                bool isFinalAttempt =
+                    attempt == settings.MaximumAttempts - 1;
+                Assert.That(
+                    interiorRoot.SplitTheGMinigame.Phase,
+                    Is.EqualTo(
+                        isFinalAttempt
+                            ? SplitTheGPhase.FinalResult
+                            : SplitTheGPhase.AttemptResult));
+                Assert.That(
+                    GameSessionState.IsBarVisited(barId),
+                    Is.EqualTo(isFinalAttempt));
+
+                if (!isFinalAttempt)
+                {
+                    Assert.That(
+                        interiorRoot.SplitTheGMinigame.Retry(),
+                        Is.True);
+                }
+            }
+
+            Assert.That(completionCount, Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.True);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Not.Contain(barId));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(settings.MaximumAttempts));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.DarkBeer));
+
+            interiorRoot.SplitTheGMinigame.Cancel();
+            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.False);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(
+                splitTheGFollow.OrbitInputEnabled,
                 Is.True);
         }
 

@@ -17,6 +17,10 @@
       "value": "E — play beer pong"
     },
     {
+      "key": "interaction.play_split_the_g",
+      "value": "E - play Split the G"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Intoxication: {0}/100"
     },
@@ -251,6 +255,106 @@
     {
       "key": "beerpong.result.continue",
       "value": "LMB / Enter — finish"
+    },
+    {
+      "key": "splitg.title",
+      "value": "SPLIT THE G"
+    },
+    {
+      "key": "splitg.attempt",
+      "value": "Glass {0}/{1}"
+    },
+    {
+      "key": "splitg.best",
+      "value": "Best: {0}"
+    },
+    {
+      "key": "splitg.intoxication",
+      "value": "Intoxication: {0}/100"
+    },
+    {
+      "key": "splitg.target",
+      "value": "TARGET: CENTER OF THE G"
+    },
+    {
+      "key": "splitg.countdown",
+      "value": "{0}"
+    },
+    {
+      "key": "splitg.release_first",
+      "value": "RELEASE THE BUTTON FIRST"
+    },
+    {
+      "key": "splitg.ready",
+      "value": "HOLD TO DRINK"
+    },
+    {
+      "key": "splitg.drinking",
+      "value": "RELEASE WHEN IT FEELS RIGHT"
+    },
+    {
+      "key": "splitg.settling",
+      "value": "LET THE FOAM SETTLE..."
+    },
+    {
+      "key": "splitg.controls",
+      "value": "Space / LMB / A - hold and release   •   Enter / Y - continue   •   Esc / B - leave"
+    },
+    {
+      "key": "splitg.result.score",
+      "value": "Score: {0}"
+    },
+    {
+      "key": "splitg.result.error",
+      "value": "Error: {0:0.0}%"
+    },
+    {
+      "key": "splitg.retry",
+      "value": "ANOTHER GLASS"
+    },
+    {
+      "key": "splitg.continue",
+      "value": "CONTINUE"
+    },
+    {
+      "key": "splitg.final",
+      "value": "BEST RESULT"
+    },
+    {
+      "key": "splitg.rank.perfect",
+      "value": "PERFECT"
+    },
+    {
+      "key": "splitg.rank.excellent",
+      "value": "EXCELLENT"
+    },
+    {
+      "key": "splitg.rank.good",
+      "value": "GOOD"
+    },
+    {
+      "key": "splitg.rank.close",
+      "value": "CLOSE"
+    },
+    {
+      "key": "splitg.rank.miss",
+      "value": "MISS"
+    },
+    {
+      "key": "splitg.direction.under",
+      "value": "NOT ENOUGH - the level is above the target"
+    },
+    {
+      "key": "splitg.direction.over",
+      "value": "TOO MUCH - the level is below the target"
+    },
+    {
+      "key": "splitg.direction.target",
+      "value": "RIGHT ON THE TARGET"
+    },
+    {
+      "key": "debug.minigame.split_the_g",
+      "value": "Split the G"
     },
     {
       "key": "drink.light_beer",

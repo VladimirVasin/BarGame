@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -114,7 +115,7 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void Generate_AssignsBeerPongToSecondBarInRowMajorOrder()
+        public void Generate_AssignsActivitiesByRowMajorOrder()
         {
             CityGenerationSettings settings = CityGenerationSettings.Default;
             settings.BarCount = 5;
@@ -129,9 +130,8 @@ namespace BarPromenade.Tests
             Assert.That(orderedBars, Has.Length.EqualTo(settings.BarCount));
             for (int ordinal = 0; ordinal < orderedBars.Length; ordinal++)
             {
-                BarActivityKind expected = ordinal == 1
-                    ? BarActivityKind.BeerPong
-                    : BarActivityKind.Cocktail;
+                BarActivityKind expected =
+                    BarActivityAssignment.Resolve(ordinal);
                 Assert.That(
                     orderedBars[ordinal].BarActivity,
                     Is.EqualTo(expected),
@@ -144,6 +144,27 @@ namespace BarPromenade.Tests
                     .All(lot => lot.BarActivity == BarActivityKind.None),
                 Is.True);
             Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [TestCase(0, BarActivityKind.Cocktail)]
+        [TestCase(1, BarActivityKind.BeerPong)]
+        [TestCase(2, BarActivityKind.SplitTheG)]
+        [TestCase(3, BarActivityKind.Cocktail)]
+        [TestCase(17, BarActivityKind.Cocktail)]
+        public void BarActivityAssignment_ResolvesRowMajorOrdinal(
+            int ordinal,
+            BarActivityKind expected)
+        {
+            Assert.That(
+                BarActivityAssignment.Resolve(ordinal),
+                Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void BarActivityAssignment_RejectsNegativeOrdinal()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => BarActivityAssignment.Resolve(-1));
         }
 
         [Test]

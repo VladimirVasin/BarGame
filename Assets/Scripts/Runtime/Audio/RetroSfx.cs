@@ -30,6 +30,7 @@ namespace BarPromenade
         BeerPongBounce,
         BeerPongRim,
         BeerPongSink,
+        DrinkGulp,
         Count
     }
 
@@ -278,6 +279,19 @@ namespace BarPromenade
                 2048,
                 7600f,
                 0.02f,
+                42),
+            new RetroSfxDefinition(
+                RetroSfxId.DrinkGulp,
+                RetroSfxCategory.Bar,
+                0.32f,
+                0.35f,
+                0f,
+                1,
+                0.22f,
+                3,
+                1024,
+                4200f,
+                0.035f,
                 42)
         };
 
@@ -409,6 +423,11 @@ namespace BarPromenade
                     return GenerateBeerPongRim(time, duration);
                 case RetroSfxId.BeerPongSink:
                     return GenerateBeerPongSink(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.DrinkGulp:
+                    return GenerateDrinkGulp(
                         time,
                         duration,
                         ref noiseState);
@@ -655,6 +674,48 @@ namespace BarPromenade
                 Mathf.Sin(2f * Mathf.PI * tone * time) * 0.52f +
                 Triangle(tone * 0.5f, time) * 0.11f;
             return (splash + chime) * envelope;
+        }
+
+        private static float GenerateDrinkGulp(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(
+                time,
+                duration,
+                0.018f,
+                1.05f);
+            float throatPulse =
+                Mathf.Max(
+                    0f,
+                    Mathf.Sin(
+                        2f *
+                        Mathf.PI *
+                        (7.5f + normalized * 2f) *
+                        time));
+            float body = GlideSine(
+                time,
+                duration,
+                145f,
+                82f);
+            float liquid =
+                NextNoise(ref noiseState) *
+                (0.14f + throatPulse * 0.18f);
+            float bubble =
+                Mathf.Sin(
+                    2f *
+                    Mathf.PI *
+                    (310f + throatPulse * 130f) *
+                    time) *
+                throatPulse *
+                0.16f;
+            return (
+                       body * 0.28f +
+                       liquid +
+                       bubble) *
+                   envelope;
         }
 
         private static float GlideSine(

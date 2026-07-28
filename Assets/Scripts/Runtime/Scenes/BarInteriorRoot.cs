@@ -57,6 +57,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public SplitTheGMinigameController SplitTheGMinigame
+        {
+            get;
+            private set;
+        }
 
         private void Awake()
         {
@@ -196,6 +201,10 @@ namespace BarPromenade
                     new Vector3(2.4f, 0f, -2f),
                     furniture,
                     trim);
+                if (activity == BarActivityKind.SplitTheG)
+                {
+                    BuildSplitTheGDisplay(room, furniture, trim);
+                }
             }
         }
 
@@ -274,6 +283,44 @@ namespace BarPromenade
             }
         }
 
+        private static void BuildSplitTheGDisplay(
+            Transform parent,
+            Color baseColor,
+            Color trimColor)
+        {
+            Vector3 displayPosition =
+                new Vector3(2.15f, 1.42f, 3.34f);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Split the G Coaster",
+                parent,
+                displayPosition,
+                new Vector3(0.38f, 0.035f, 0.38f),
+                baseColor,
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Split the G Pint",
+                parent,
+                displayPosition + (Vector3.up * 0.30f),
+                new Vector3(0.25f, 0.30f, 0.25f),
+                new Color(0.36f, 0.16f, 0.055f),
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Split the G Foam",
+                parent,
+                displayPosition + (Vector3.up * 0.61f),
+                new Vector3(0.26f, 0.045f, 0.26f),
+                new Color(0.94f, 0.83f, 0.61f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Split the G Target",
+                parent,
+                displayPosition +
+                new Vector3(0f, 0.32f, -0.26f),
+                new Vector3(0.31f, 0.045f, 0.025f),
+                trimColor,
+                false);
+        }
+
         private void BuildMinigame(
             GameObject ui,
             IntoxicationHudView intoxicationHud,
@@ -298,6 +345,8 @@ namespace BarPromenade
                 ActiveMinigame as CocktailMinigameController;
             BeerPongMinigame =
                 ActiveMinigame as BeerPongMinigameController;
+            SplitTheGMinigame =
+                ActiveMinigame as SplitTheGMinigameController;
 
             ActiveMinigame.Completed += HandleMinigameCompleted;
         }
@@ -323,22 +372,52 @@ namespace BarPromenade
         {
             bool isBeerPong =
                 ActiveActivity == BarActivityKind.BeerPong;
-            Vector3 stationPosition = isBeerPong
-                ? new Vector3(0f, 0.9f, -1.95f)
-                : new Vector3(-3.85f, 0.9f, 3.35f);
-            Vector3 triggerSize = isBeerPong
-                ? new Vector3(1.8f, 1.8f, 0.9f)
-                : new Vector3(1.2f, 1.8f, 1.2f);
+            bool isSplitTheG =
+                ActiveActivity == BarActivityKind.SplitTheG;
+            Vector3 stationPosition;
+            Vector3 triggerSize;
+            string stationName;
+            string pointName;
+            string signName;
+            Vector3 signPosition;
+            if (isBeerPong)
+            {
+                stationPosition = new Vector3(0f, 0.9f, -1.95f);
+                triggerSize = new Vector3(1.8f, 1.8f, 0.9f);
+                stationName = "Beer Pong Minigame Station";
+                pointName = "Play Point";
+                signName = "Beer Pong Point Sign";
+                signPosition = new Vector3(
+                    stationPosition.x,
+                    1.38f,
+                    stationPosition.z + 0.35f);
+            }
+            else if (isSplitTheG)
+            {
+                stationPosition = new Vector3(3.85f, 0.9f, 3.35f);
+                triggerSize = new Vector3(1.2f, 1.8f, 1.2f);
+                stationName = "Split the G Minigame Station";
+                pointName = "Split the G Point";
+                signName = "Split the G Point Sign";
+                signPosition = new Vector3(3.85f, 1.75f, 3.72f);
+            }
+            else
+            {
+                stationPosition = new Vector3(-3.85f, 0.9f, 3.35f);
+                triggerSize = new Vector3(1.2f, 1.8f, 1.2f);
+                stationName = "Cocktail Minigame Station";
+                pointName = "Order Point";
+                signName = "Order Point Sign";
+                signPosition = new Vector3(-3.85f, 1.75f, 3.72f);
+            }
+
             string promptKey = BarMinigameCatalog.TryGet(
                 ActiveActivity,
                 out BarMinigameDefinition definition)
                 ? definition.PromptKey
                 : BarActivityStation.DefaultPromptKey;
 
-            GameObject station = new GameObject(
-                isBeerPong
-                    ? "Beer Pong Minigame Station"
-                    : "Cocktail Minigame Station");
+            GameObject station = new GameObject(stationName);
             station.transform.SetParent(transform, false);
             station.transform.localPosition = stationPosition;
             BoxCollider trigger = station.AddComponent<BoxCollider>();
@@ -350,7 +429,7 @@ namespace BarPromenade
 
             Color markerColor = new Color(0.96f, 0.67f, 0.18f);
             RuntimePrimitiveFactory.CreateBox(
-                isBeerPong ? "Play Point" : "Order Point",
+                pointName,
                 transform,
                 new Vector3(
                     stationPosition.x,
@@ -360,16 +439,9 @@ namespace BarPromenade
                 markerColor,
                 false);
             RuntimePrimitiveFactory.CreateBox(
-                isBeerPong
-                    ? "Beer Pong Point Sign"
-                    : "Order Point Sign",
+                signName,
                 transform,
-                isBeerPong
-                    ? new Vector3(
-                        stationPosition.x,
-                        1.38f,
-                        stationPosition.z + 0.35f)
-                    : new Vector3(-3.85f, 1.75f, 3.72f),
+                signPosition,
                 new Vector3(0.82f, 0.48f, 0.10f),
                 markerColor,
                 false);

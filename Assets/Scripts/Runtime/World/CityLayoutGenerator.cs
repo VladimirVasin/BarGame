@@ -223,9 +223,8 @@ namespace BarPromenade
                     BarActivityKind barActivity = BarActivityKind.None;
                     if (isBar)
                     {
-                        barActivity = barOrdinal == 1
-                            ? BarActivityKind.BeerPong
-                            : BarActivityKind.Cocktail;
+                        barActivity =
+                            BarActivityAssignment.Resolve(barOrdinal);
                         barOrdinal++;
                     }
 

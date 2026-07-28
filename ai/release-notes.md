@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Split the G minigame
+
+- The third stable city bar now hosts Split the G, giving the default three
+  bars one distinct activity each.
+- Hold Space, LMB or gamepad South for one irreversible virtual sip. The exact
+  liquid boundary disappears behind the tilted pint, hand and foam until the
+  `1.4 s` settling phase reveals the result.
+- Remaining level is derived from total unscaled hold time, so the same sip
+  scores identically at different frame rates. Perfect/Excellent/Good/Close/
+  Miss use 1/3/6/10-percent error bands.
+- A session allows up to three fresh dark-beer glasses and keeps its best
+  result. Continue can finish early; the third result finishes automatically.
+- Every non-empty sip immediately saves its actual consumed fraction as dark
+  beer progress, while F9 debug launches remain fully isolated.
+- Added a dedicated `640x360` pixel-art bar backdrop, transparent 4x4
+  pint/hand/foam/effect atlas, localized RU/EN interface and generated gulp
+  sound.
+
 ### Cinematic player presentation
 
 - Moved the centered chase camera closer with separate `3.6 m / 53°` exterior
@@ -57,7 +75,8 @@
 ### F9 minigame debug window
 
 - Press `F9` in the city or bar interior to open a direct launcher for every
-  registered minigame; cocktail mixing and beer pong are available now.
+  registered minigame; cocktail mixing, beer pong and Split the G are
+  available now.
 - Normal interiors and the debug list use the same explicit catalog, so a
   future game appears after its definition and factory are registered.
 - Opening the window closes a conflicting map or minigame and preserves the
@@ -67,8 +86,8 @@
 
 ### Beer-pong minigame
 
-- The second bar on the stable city map now opens beer pong, while the first
-  and third bars keep the cocktail mixer.
+- The second bar on the stable city map opens beer pong; the first keeps the
+  cocktail mixer and the third now hosts Split the G.
 - Aim with mouse, keyboard or gamepad, charge a throw and watch the ball use
   deterministic 2.5D physics with real table and cup-rim bounces.
 - Clear six cups in ten throws. Clean sinks score 100, bank shots add 50, and

@@ -17,6 +17,10 @@
       "value": "E — сыграть в бирпонг"
     },
     {
+      "key": "interaction.play_split_the_g",
+      "value": "E — сыграть в Split the G"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Опьянение: {0}/100"
     },
@@ -251,6 +255,106 @@
     {
       "key": "beerpong.result.continue",
       "value": "ЛКМ / Enter — закончить"
+    },
+    {
+      "key": "splitg.title",
+      "value": "SPLIT THE G"
+    },
+    {
+      "key": "splitg.attempt",
+      "value": "Бокал {0}/{1}"
+    },
+    {
+      "key": "splitg.best",
+      "value": "Лучший: {0}"
+    },
+    {
+      "key": "splitg.intoxication",
+      "value": "Опьянение: {0}/100"
+    },
+    {
+      "key": "splitg.target",
+      "value": "ЦЕЛЬ: ЦЕНТР БУКВЫ G"
+    },
+    {
+      "key": "splitg.countdown",
+      "value": "{0}"
+    },
+    {
+      "key": "splitg.release_first",
+      "value": "СНАЧАЛА ОТПУСТИ КНОПКУ"
+    },
+    {
+      "key": "splitg.ready",
+      "value": "ЗАЖМИ, ЧТОБЫ ПИТЬ"
+    },
+    {
+      "key": "splitg.drinking",
+      "value": "ОТПУСТИ, КОГДА БУДЕТ ДОСТАТОЧНО"
+    },
+    {
+      "key": "splitg.settling",
+      "value": "ПЕНА ОСЕДАЕТ..."
+    },
+    {
+      "key": "splitg.controls",
+      "value": "Пробел / ЛКМ / A — держать и отпустить   •   Enter / Y — продолжить   •   Esc / B — выйти"
+    },
+    {
+      "key": "splitg.result.score",
+      "value": "Очки: {0}"
+    },
+    {
+      "key": "splitg.result.error",
+      "value": "Ошибка: {0:0.0}%"
+    },
+    {
+      "key": "splitg.retry",
+      "value": "ЕЩЁ БОКАЛ"
+    },
+    {
+      "key": "splitg.continue",
+      "value": "ПРОДОЛЖИТЬ"
+    },
+    {
+      "key": "splitg.final",
+      "value": "ЛУЧШИЙ РЕЗУЛЬТАТ"
+    },
+    {
+      "key": "splitg.rank.perfect",
+      "value": "ИДЕАЛЬНО"
+    },
+    {
+      "key": "splitg.rank.excellent",
+      "value": "ОТЛИЧНО"
+    },
+    {
+      "key": "splitg.rank.good",
+      "value": "ХОРОШО"
+    },
+    {
+      "key": "splitg.rank.close",
+      "value": "БЛИЗКО"
+    },
+    {
+      "key": "splitg.rank.miss",
+      "value": "МИМО"
+    },
+    {
+      "key": "splitg.direction.under",
+      "value": "НЕДОПИЛ — уровень выше цели"
+    },
+    {
+      "key": "splitg.direction.over",
+      "value": "ПЕРЕПИЛ — уровень ниже цели"
+    },
+    {
+      "key": "splitg.direction.target",
+      "value": "ТОЧНО ПО ЦЕЛИ"
+    },
+    {
+      "key": "debug.minigame.split_the_g",
+      "value": "Split the G"
     },
     {
       "key": "drink.light_beer",

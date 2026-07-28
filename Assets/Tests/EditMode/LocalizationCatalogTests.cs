@@ -13,6 +13,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.exit_bar",
             "interaction.order_drinks",
             "interaction.play_beer_pong",
+            "interaction.play_split_the_g",
             "drinking.intoxication",
             "drinking.wasted",
             "cocktail.title",
@@ -71,6 +72,30 @@ namespace BarPromenade.Tests.EditMode
             "beerpong.result.wasted",
             "beerpong.result.final",
             "beerpong.result.continue",
+            "splitg.title",
+            "splitg.attempt",
+            "splitg.best",
+            "splitg.intoxication",
+            "splitg.target",
+            "splitg.countdown",
+            "splitg.release_first",
+            "splitg.ready",
+            "splitg.drinking",
+            "splitg.settling",
+            "splitg.controls",
+            "splitg.result.score",
+            "splitg.result.error",
+            "splitg.retry",
+            "splitg.continue",
+            "splitg.final",
+            "splitg.rank.perfect",
+            "splitg.rank.excellent",
+            "splitg.rank.good",
+            "splitg.rank.close",
+            "splitg.rank.miss",
+            "splitg.direction.under",
+            "splitg.direction.over",
+            "splitg.direction.target",
             "drink.light_beer",
             "drink.red_wine",
             "drink.vodka",
@@ -92,7 +117,8 @@ namespace BarPromenade.Tests.EditMode
             "debug.minigames.empty",
             "debug.minigames.unavailable",
             "debug.minigame.cocktail",
-            "debug.minigame.beer_pong"
+            "debug.minigame.beer_pong",
+            "debug.minigame.split_the_g"
         };
 
         [TestCase("Localization/ru")]
@@ -119,6 +145,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(valuesByKey["cocktail.result.final"], Does.Contain("{1}"));
             Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{0}"));
             Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{1}"));
+            Assert.That(valuesByKey["splitg.attempt"], Does.Contain("{0}"));
+            Assert.That(valuesByKey["splitg.attempt"], Does.Contain("{1}"));
+            Assert.That(valuesByKey["splitg.result.score"], Does.Contain("{0}"));
+            Assert.That(valuesByKey["splitg.result.error"], Does.Contain("{0"));
         }
 
         [Test]

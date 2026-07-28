@@ -223,7 +223,8 @@ namespace BarPromenade
                 }
 
                 if (lot.BarActivity != BarActivityKind.Cocktail &&
-                    lot.BarActivity != BarActivityKind.BeerPong)
+                    lot.BarActivity != BarActivityKind.BeerPong &&
+                    lot.BarActivity != BarActivityKind.SplitTheG)
                 {
                     throw new InvalidOperationException(
                         $"Bar {lot.BarId} must define a supported activity.");
@@ -254,9 +255,8 @@ namespace BarPromenade
             bars.Sort(CompareLotsRowMajor);
             for (int ordinal = 0; ordinal < bars.Count; ordinal++)
             {
-                BarActivityKind expected = ordinal == 1
-                    ? BarActivityKind.BeerPong
-                    : BarActivityKind.Cocktail;
+                BarActivityKind expected =
+                    BarActivityAssignment.Resolve(ordinal);
                 if (bars[ordinal].BarActivity != expected)
                 {
                     throw new InvalidOperationException(

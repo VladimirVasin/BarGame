@@ -31,6 +31,9 @@ Assets/
     BeerPong/
       BeerPongBackground.png  empty 640x360 pixel-art table backdrop
       BeerPongAtlas.png       4x4 ball/hand/cup/effect sprite atlas
+    SplitTheG/
+      SplitTheGBackground.png  640x360 pixel-art bar/counter backdrop
+      SplitTheGAtlas.png       4x4 pint/hand/foam/effect sprite atlas
     Player/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
@@ -51,6 +54,7 @@ Assets/
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
+      SplitTheG/     pure timing/scoring session, controller, view and sprites
       UI/            retro UI, prompts, HUD, map and F9 minigame debug window
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
@@ -61,6 +65,7 @@ ArtSource/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
+  build-split-the-g-art.py          deterministic minigame background/atlas build
 Packages/
 ProjectSettings/
 ```
@@ -83,6 +88,8 @@ player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
                                                   -> CocktailRules + deterministic 7-item shelf
                                                or -> BeerPongMinigame
                                                   -> 120 Hz ball physics + six-cup session
+                                               or -> SplitTheGMinigame
+                                                  -> one-sip timer + settling + scoring
                              -> drinking progress -> GameSessionState
                              -> completed visit -> CityMap
                              -> intoxication effects

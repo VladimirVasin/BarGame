@@ -4,6 +4,7 @@ namespace BarPromenade
     {
         None = 0,
         Cocktail = 1,
-        BeerPong = 2
+        BeerPong = 2,
+        SplitTheG = 3
     }
 }

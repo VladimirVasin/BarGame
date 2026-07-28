@@ -93,6 +93,7 @@ namespace BarPromenade
     {
         public const string CocktailId = "cocktail";
         public const string BeerPongId = "beer-pong";
+        public const string SplitTheGId = "split-the-g";
 
         private static readonly List<BarMinigameDefinition> definitions =
             new List<BarMinigameDefinition>();
@@ -245,6 +246,14 @@ namespace BarPromenade
                     "interaction.play_beer_pong",
                     20,
                     CreateBeerPong));
+            definitions.Add(
+                new BarMinigameDefinition(
+                    SplitTheGId,
+                    BarActivityKind.SplitTheG,
+                    "debug.minigame.split_the_g",
+                    "interaction.play_split_the_g",
+                    30,
+                    CreateSplitTheG));
             definitions.Sort(CompareDefinitions);
         }
 
@@ -271,6 +280,22 @@ namespace BarPromenade
                 context.Host.AddComponent<BeerPongMinigameView>();
             BeerPongMinigameController controller =
                 context.Host.AddComponent<BeerPongMinigameController>();
+            controller.Initialize(
+                view,
+                context.IntoxicationHud,
+                context.Player,
+                context.CameraFollow,
+                context.PersistSessionProgress);
+            return controller;
+        }
+
+        private static IBarMinigame CreateSplitTheG(
+            BarMinigameFactoryContext context)
+        {
+            SplitTheGMinigameView view =
+                context.Host.AddComponent<SplitTheGMinigameView>();
+            SplitTheGMinigameController controller =
+                context.Host.AddComponent<SplitTheGMinigameController>();
             controller.Initialize(
                 view,
                 context.IntoxicationHud,

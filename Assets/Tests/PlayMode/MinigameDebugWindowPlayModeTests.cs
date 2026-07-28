@@ -221,6 +221,29 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interactor.InputEnabled, Is.True);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
+
+            Assert.That(window.Open(), Is.True);
+            Assert.That(
+                window.TryLaunch(BarMinigameCatalog.SplitTheGId),
+                Is.True);
+            var splitTheG = window.ActiveDebugMinigame as
+                SplitTheGMinigameController;
+            Assert.That(splitTheG, Is.Not.Null);
+            Assert.That(splitTheG.IsOpen, Is.True);
+            Assert.That(splitTheG.IntoxicationLevel, Is.Zero);
+            splitTheG.AdvancePresentation(
+                (float)SplitTheGSettings.Normal.CountdownTime);
+            Assert.That(splitTheG.BeginDrink(), Is.True);
+            splitTheG.AdvancePresentation(1f);
+            Assert.That(splitTheG.ReleaseDrink(), Is.True);
+            Assert.That(splitTheG.IntoxicationLevel, Is.EqualTo(2));
+            AssertSessionUnchanged();
+
+            splitTheG.Cancel();
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            Assert.That(hud.Visible, Is.True);
             yield return null;
         }
 

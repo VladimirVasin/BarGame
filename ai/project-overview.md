@@ -51,9 +51,8 @@ The vertical slice contains:
 - deterministic collider-free ochre guard rails, batched into two meshes,
   that trace only the exposed boundary of the road union, close dead ends and
   leave a `3.30 m` opening around every generated bar approach;
-- 16 building lots by default, including exactly 3 reachable bars; the second
-  bar in stable row-major order hosts beer pong while the others host the
-  cocktail mixer;
+- 16 building lots by default, including exactly 3 reachable bars; stable
+  row-major order assigns cocktail mixing, beer pong and Split the G;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -81,8 +80,9 @@ The vertical slice contains:
 - one generated shared bar-interior scene whose furniture and interaction
   station adapt to the active bar activity, plus one exit;
 - one explicit `BarMinigameCatalog` whose ordered definitions and factories
-  create both normal and debug minigame instances; cocktail mixing and beer
-  pong are registered now, and future registrations appear in the debug list;
+  create both normal and debug minigame instances; cocktail mixing, beer pong
+  and Split the G are registered now, and future registrations appear in the
+  debug list;
 - an `F9` minigame debug window in both `City` and `BarInterior`; opening it
   closes a conflicting map or minigame before taking the modal lock, while
   launched debug instances neither complete bar visits nor persist
@@ -100,9 +100,18 @@ The vertical slice contains:
   bounces, clean/bank scoring and an early-clear bonus;
 - a dedicated pixel-art beer-pong backdrop and 4x4 gameplay atlas for the
   ball, shadow, throwing hand, cups, hit reactions and opponent silhouettes;
+- a same-scene Split the G timing minigame at the third bar: hold Space, LMB or
+  gamepad South for one irreversible sip, wait for the foam to settle, and
+  compare the frame-rate-independent remaining level with the center of the G;
+- three fresh dark-beer attempts with immediate proportional drinking
+  persistence, five accuracy bands, a session-best score, an early Continue
+  option and automatic completion after the third glass;
+- a dedicated point-filtered `640x360` Split the G backdrop, transparent 4x4
+  pint/hand/foam/effect atlas and generated retro gulp cue;
 - session-persistent intoxication, last-alcohol context and consumed-drink
-  count; every beer-pong miss consumes a light beer and adds 8 intoxication,
-  while the cocktail path retains its deferred timed `Wasted` debuff.
+  count; every beer-pong miss consumes a light beer, each Split the G attempt
+  records the actual dark-beer fraction, and the cocktail path retains its
+  deferred timed `Wasted` debuff.
 
 ## Deferred
 
@@ -120,5 +129,6 @@ The vertical slice contains:
   save slots, and online features.
 - Final bespoke art and audio masters, accessibility, localization coverage,
   and platform release work.
+- Split the G Easy/Hard profiles, persistent best scores and streaks.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

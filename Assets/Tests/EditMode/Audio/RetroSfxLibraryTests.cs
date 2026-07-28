@@ -65,6 +65,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.BeerPongBounce)]
         [TestCase(RetroSfxId.BeerPongRim)]
         [TestCase(RetroSfxId.BeerPongSink)]
+        [TestCase(RetroSfxId.DrinkGulp)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {
