@@ -18,6 +18,7 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
       Ps1Composite.shader         average, perceptual RGB555 blend, point upscale
     Audio/
       CityMusic/
@@ -51,7 +52,7 @@ Assets/
       Rendering/     PC RenderGraph PS1 world composite and settings
       Map/           ordered road-route model and deterministic pathfinding
       World/         layout, graph/fence plans, world/night, local fog and halos
-      Player/        motor heading, 8-view selector/rig, billboard, camera
+      Player/        motor, 8-view rig, light-facing shadow, billboard, camera
       Interaction/   contract, shared minigame catalog, selection and entrances
       Scenes/        generated bar interior
       Drinks/        stable drink IDs used by current-run persistence
@@ -87,6 +88,7 @@ seed -> CityLayoutGenerator -> CityLayout -> CityWorldBuilder
                                              -> CityNightWorldBuilder
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
+player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
        <- restored spawn <- GameSessionState <- BarExit
        -> BarActivityStation -> BarMinigameCatalog -> CocktailMinigame

@@ -2,6 +2,50 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Much closer, weightier chase camera
+
+- Reduced the centered exterior camera arm from `3.6 m` to `2.6 m` and the
+  interior arm from `2.7 m` to `2.2 m`, preserving the existing `53° / 57°`
+  FOV pair and complete full-body composition in both runtime scenes.
+- Increased orbit yaw, target focus, outward obstacle recovery, cinematic
+  blend and movement-response damping for a heavier, smoother feel. Focus lag
+  remains capped at `0.45 m`.
+- Preserved immediate inward obstacle avoidance, teleport snapping, stable
+  requested yaw/FOV and camera-independent player heading.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused Unity PlayMode player/camera presentation: 14/14 passed.
+- D3D11 City/BarInterior framing capture: 1/1 passed; the hero remains fully
+  visible in both review frames.
+- Windows x64 Player build: succeeded, 0 warnings, 135,663,015 bytes.
+
+## 2026-07-28 — Camera-independent dynamic player shadow
+
+- Added one collider-free `ShadowsOnly` sprite proxy to every runtime player
+  in City and BarInterior. It reuses the existing eight-direction full-body
+  atlas, selects a silhouette from the player/main-light angle and faces the
+  main directional light instead of the orbiting camera.
+- Copied whole-puppet bob, weight shift and `Wasted` sway to the shadow proxy
+  while leaving the nine visible jointed renderers and their materials
+  unchanged.
+- Added one cached shared runtime material backed by an alpha-clipped URP
+  `ShadowCaster` pass. Practical street/bar lights remain shadowless, and the
+  caster adds no collider, texture atlas or per-frame allocation.
+- Added resource, behavior, scene-integration and graphics-device render
+  checks. The render check compares the same receiver with the caster enabled
+  and disabled to verify actual shadow-map darkening.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused Unity EditMode: 1/1 passed.
+- Focused Unity PlayMode behavior: 1/1 passed.
+- City/BarInterior PlayMode integration: 2/2 passed.
+- D3D11 realtime shadow render check: 1/1 passed.
+- Windows x64 Player build: succeeded, 0 warnings, 135,663,015 bytes.
+
 ## 2026-07-28 — Tinctures in a Row minigame
 
 - Added a seeded `7x7` match-three domain with five normal infusion flavors,

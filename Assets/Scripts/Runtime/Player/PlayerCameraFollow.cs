@@ -12,30 +12,30 @@ namespace BarPromenade
     {
         [Header("Exterior")]
         [SerializeField, Range(1f, 40f)] private float exteriorPitch = 14f;
-        [SerializeField, Min(0.1f)] private float exteriorDistance = 3.6f;
+        [SerializeField, Min(0.1f)] private float exteriorDistance = 2.6f;
         [SerializeField, Range(20f, 100f)] private float exteriorFieldOfView = 53f;
         [SerializeField] private float exteriorFocusHeight = 1.1f;
 
         [Header("Interior")]
         [SerializeField, Range(1f, 40f)] private float interiorPitch = 13f;
-        [SerializeField, Min(0.1f)] private float interiorDistance = 2.7f;
+        [SerializeField, Min(0.1f)] private float interiorDistance = 2.2f;
         [SerializeField, Range(20f, 100f)] private float interiorFieldOfView = 57f;
         [SerializeField] private float interiorFocusHeight = 1.05f;
 
         [Header("Motion")]
-        [SerializeField, Min(0f)] private float yawSmoothTime = 0.12f;
-        [SerializeField, Min(0f)] private float focusSmoothTime = 0.1f;
-        [SerializeField, Min(0f)] private float maximumFocusLag = 0.35f;
+        [SerializeField, Min(0f)] private float yawSmoothTime = 0.2f;
+        [SerializeField, Min(0f)] private float focusSmoothTime = 0.18f;
+        [SerializeField, Min(0f)] private float maximumFocusLag = 0.45f;
         [SerializeField, Min(0f)] private float teleportSnapDistance = 1.75f;
-        [SerializeField, Min(0f)] private float distanceRecoverySmoothTime = 0.18f;
+        [SerializeField, Min(0f)] private float distanceRecoverySmoothTime = 0.32f;
         [SerializeField, Min(0f)] private float mouseYawSensitivity = 0.16f;
         [SerializeField, Min(0f)] private float gamepadYawSpeed = 150f;
 
         [Header("Cinematic Motion")]
         [SerializeField, Range(0f, 1f)] private float cinematicMotionAmount = 1f;
-        [SerializeField, Min(0f)] private float cinematicBlendTime = 0.2f;
+        [SerializeField, Min(0f)] private float cinematicBlendTime = 0.3f;
         [SerializeField, Min(0.1f)] private float fullMovementSpeed = 5.2f;
-        [SerializeField, Min(0f)] private float movementSpeedSmoothTime = 0.1f;
+        [SerializeField, Min(0f)] private float movementSpeedSmoothTime = 0.18f;
         [SerializeField, Min(0f)] private float walkCyclesPerSecond = 1.65f;
         [SerializeField, Min(0f)] private float idleVerticalAmplitude = 0.004f;
         [SerializeField, Min(0f)] private float idleLateralAmplitude = 0.002f;

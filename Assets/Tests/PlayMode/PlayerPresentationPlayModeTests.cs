@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -803,6 +804,90 @@ namespace BarPromenade.Tests
         }
 
         [UnityTest]
+        public IEnumerator ExteriorCamera_OrbitYawHasHeavySmoothConvergence()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Heavy Orbit Camera Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
+            follow.SetCinematicMotionEnabled(false);
+            follow.Snap();
+
+            Quaternion originalPlayerHeading = player.transform.rotation;
+            Vector3 initialArm = Vector3.ProjectOnPlane(
+                camera.transform.position - player.transform.position,
+                Vector3.up).normalized;
+            Vector3 targetArm =
+                Quaternion.AngleAxis(90f, Vector3.up) * initialArm;
+            FieldInfo smoothTimeField =
+                typeof(PlayerCameraFollow).GetField(
+                    "yawSmoothTime",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(smoothTimeField, Is.Not.Null);
+            float configuredSmoothTime =
+                (float)smoothTimeField.GetValue(follow);
+            Assert.That(configuredSmoothTime, Is.EqualTo(0.2f));
+
+            float sampleStartedAt = Time.unscaledTime;
+            follow.RotateYaw(90f);
+            yield return null;
+            yield return null;
+
+            float earlyProgress = Vector3.Angle(
+                initialArm,
+                Vector3.ProjectOnPlane(
+                    camera.transform.position -
+                    player.transform.position,
+                    Vector3.up).normalized);
+            Assert.That(
+                earlyProgress,
+                Is.GreaterThan(0f),
+                "Orbit yaw should begin responding immediately.");
+            float sampleElapsed = Time.unscaledTime - sampleStartedAt;
+            if (sampleElapsed <= configuredSmoothTime)
+            {
+                Assert.That(
+                    earlyProgress,
+                    Is.LessThan(80f),
+                    "A normal frame inside the smoothing window must " +
+                    "retain visible rotational weight.");
+            }
+
+            float convergenceDeadline =
+                Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < convergenceDeadline &&
+                   Vector3.Angle(
+                       targetArm,
+                       Vector3.ProjectOnPlane(
+                           camera.transform.position -
+                           player.transform.position,
+                           Vector3.up).normalized) >= 0.5f)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                Vector3.Angle(
+                    targetArm,
+                    Vector3.ProjectOnPlane(
+                        camera.transform.position -
+                        player.transform.position,
+                        Vector3.up).normalized),
+                Is.LessThan(1f),
+                "Heavy yaw smoothing must still settle on the requested " +
+                "orbit angle.");
+            Assert.That(
+                Quaternion.Angle(
+                    player.transform.rotation,
+                    originalPlayerHeading),
+                Is.LessThan(0.001f));
+        }
+
+        [UnityTest]
         public IEnumerator ExteriorCamera_ObstacleImmediatelyShortensCameraArm()
         {
             Camera camera = CreateCamera(Vector3.zero);
@@ -832,7 +917,7 @@ namespace BarPromenade.Tests
                 camera.transform.position);
             Assert.That(
                 unobstructedDistance,
-                Is.EqualTo(3.6f).Within(0.01f));
+                Is.EqualTo(2.6f).Within(0.01f));
             Assert.That(
                 actualDistance,
                 Is.LessThan(1.5f),
@@ -843,10 +928,40 @@ namespace BarPromenade.Tests
                     (focusPoint - camera.transform.position).normalized),
                 Is.LessThan(0.1f),
                 "Collision handling must keep the player centered.");
+
+            wallCollider.enabled = false;
+            yield return null;
+
+            float firstRecoveryDistance = Vector3.Distance(
+                focusPoint,
+                camera.transform.position);
+            Assert.That(
+                firstRecoveryDistance,
+                Is.GreaterThan(actualDistance)
+                    .And.LessThan(unobstructedDistance - 0.05f),
+                "Leaving an obstacle must recover the closer camera arm " +
+                "smoothly instead of popping outward.");
+
+            float recoveryDeadline =
+                Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < recoveryDeadline &&
+                   Vector3.Distance(
+                       focusPoint,
+                       camera.transform.position) <
+                   unobstructedDistance - 0.01f)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                Vector3.Distance(
+                    focusPoint,
+                    camera.transform.position),
+                Is.EqualTo(unobstructedDistance).Within(0.01f));
         }
 
         [UnityTest]
-        public IEnumerator CameraProfiles_UseCloserExteriorAndInteriorFraming()
+        public IEnumerator CameraProfiles_UseMuchCloserExteriorAndInteriorFraming()
         {
             Camera exteriorCamera = CreateCamera(Vector3.zero);
             GameObject exteriorPlayer =
@@ -867,7 +982,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     exteriorFocus,
                     exteriorCamera.transform.position),
-                Is.EqualTo(3.6f).Within(0.001f));
+                Is.EqualTo(2.6f).Within(0.001f));
             Assert.That(
                 exteriorCamera.fieldOfView,
                 Is.EqualTo(53f).Within(0.01f));
@@ -891,7 +1006,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     interiorFocus,
                     interiorCamera.transform.position),
-                Is.EqualTo(2.7f).Within(0.001f));
+                Is.EqualTo(2.2f).Within(0.001f));
             Assert.That(
                 interiorCamera.fieldOfView,
                 Is.EqualTo(57f).Within(0.01f));
@@ -920,18 +1035,18 @@ namespace BarPromenade.Tests
                 follow.CurrentFocusPoint.x - initialFocus.x;
             Assert.That(
                 firstFrameProgress,
-                Is.GreaterThan(0f).And.LessThan(1f),
+                Is.GreaterThan(0f).And.LessThan(0.65f),
                 "Normal target motion must be damped.");
             Assert.That(
                 Vector3.Distance(
                     follow.CurrentFocusPoint,
                     targetFocus),
-                Is.LessThanOrEqualTo(0.351f),
+                Is.LessThanOrEqualTo(0.451f),
                 "Focus damping must never leave the player too far behind.");
 
             float previousX = follow.CurrentFocusPoint.x;
             float convergenceDeadline =
-                Time.realtimeSinceStartup + 1f;
+                Time.realtimeSinceStartup + 1.5f;
             while (Time.realtimeSinceStartup < convergenceDeadline &&
                    Vector3.Distance(
                        follow.CurrentFocusPoint,
@@ -966,7 +1081,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     teleportedFocus,
                     camera.transform.position),
-                Is.EqualTo(3.6f).Within(0.001f),
+                Is.EqualTo(2.6f).Within(0.001f),
                 "Teleport snap must apply the exact collision-safe pose.");
         }
 
@@ -992,7 +1107,7 @@ namespace BarPromenade.Tests
                         camera,
                         follow,
                         baseRotation,
-                        3.6f));
+                        2.6f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -1000,7 +1115,10 @@ namespace BarPromenade.Tests
             float walkDeadline = Time.realtimeSinceStartup + 0.6f;
             while (Time.realtimeSinceStartup < walkDeadline)
             {
-                player.transform.position += Vector3.right * 0.08f;
+                float movementDeltaTime =
+                    Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+                player.transform.position +=
+                    Vector3.right * (4.8f * movementDeltaTime);
                 yield return null;
                 maximumWalkExcursion = Mathf.Max(
                     maximumWalkExcursion,
@@ -1008,7 +1126,7 @@ namespace BarPromenade.Tests
                         camera,
                         follow,
                         baseRotation,
-                        3.6f));
+                        2.6f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -1033,7 +1151,7 @@ namespace BarPromenade.Tests
                     camera,
                     follow,
                     baseRotation,
-                    3.6f),
+                    2.6f),
                 Is.LessThan(0.002f),
                 "Modal camera suppression must fade the sway to rest.");
         }

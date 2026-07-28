@@ -46,6 +46,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 RenderSettings.sun.shadows,
                 Is.EqualTo(LightShadows.Hard));
+            AssertPlayerShadow(city.Player);
 
             Volume volume =
                 UnityEngine.Object.FindAnyObjectByType<Volume>();
@@ -204,6 +205,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(interior.IsInitialized, Is.True);
             Assert.That(RenderSettings.fog, Is.False);
+            AssertPlayerShadow(interior.Player);
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<CityNightAtmosphere>(
                     FindObjectsInactive.Include),
@@ -250,6 +252,20 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.Fail(
                 $"Scene '{sceneName}' did not create {typeof(T).Name}.");
+        }
+
+        private static void AssertPlayerShadow(PlayerRuntime player)
+        {
+            Assert.That(player.Shadow, Is.Not.Null);
+            Assert.That(player.Shadow.IsInitialized, Is.True);
+            Assert.That(player.Shadow.MainLight, Is.SameAs(RenderSettings.sun));
+            Assert.That(
+                player.Shadow.Renderer.shadowCastingMode,
+                Is.EqualTo(ShadowCastingMode.ShadowsOnly));
+            Assert.That(player.Shadow.Renderer.receiveShadows, Is.False);
+            Assert.That(
+                player.Shadow.Renderer.sharedMaterial,
+                Is.SameAs(PlayerShadowResources.ShadowCasterMaterial));
         }
     }
 }

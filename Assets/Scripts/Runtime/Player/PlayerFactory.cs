@@ -8,18 +8,21 @@ namespace BarPromenade
             GameObject gameObject,
             PlayerMotor motor,
             PlayerInteractor interactor,
-            PlayerSpriteRig visual)
+            PlayerSpriteRig visual,
+            PlayerDynamicShadow shadow = null)
         {
             GameObject = gameObject;
             Motor = motor;
             Interactor = interactor;
             Visual = visual;
+            Shadow = shadow;
         }
 
         public GameObject GameObject { get; }
         public PlayerMotor Motor { get; }
         public PlayerInteractor Interactor { get; }
         public PlayerSpriteRig Visual { get; }
+        public PlayerDynamicShadow Shadow { get; }
     }
 
     public static class PlayerFactory
@@ -50,12 +53,21 @@ namespace BarPromenade
             PlayerSpriteRig visual = visualObject.AddComponent<PlayerSpriteRig>();
             visual.Initialize(camera, player.transform);
 
+            PlayerDynamicShadow shadow =
+                player.AddComponent<PlayerDynamicShadow>();
+            shadow.Initialize(player.transform, visual);
+
             PlayerMotor motor = player.AddComponent<PlayerMotor>();
             motor.Initialize(camera, walkableArea, visual);
 
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
             interactor.Initialize(promptView);
-            return new PlayerRuntime(player, motor, interactor, visual);
+            return new PlayerRuntime(
+                player,
+                motor,
+                interactor,
+                visual,
+                shadow);
         }
     }
 }

@@ -62,16 +62,21 @@ The vertical slice contains:
   space for side views and depth for front/back views; readable procedural
   breathing, weight shift and an alternating left/right arm gesture keep the
   same rig alive while idle;
+- one camera-independent realtime player shadow that selects an existing
+  eight-direction full silhouette relative to the main light, faces its
+  shadow-only card toward that light and follows whole-puppet bob/sway in both
+  City and BarInterior without changing the nine visible renderers;
 - one deterministic five-state body-expression atlas that swaps the existing
   body sprite for stronger half/closed blinks plus watchful and tense idle
   expressions in the five visible-face directions without adding a tenth
   renderer or inventing faces in rear views;
 - camera-relative road-constrained movement that preserves the last actual
   movement heading while idle;
-- a closer freely orbiting perspective third-person chase camera with
-  mouse/gamepad yaw, bounded focus damping, teleport snapping, subtle
-  deterministic idle/walk motion and obstacle-aware distance; cinematic
-  motion fades out while a modal interface owns input;
+- a very close freely orbiting perspective third-person chase camera with
+  `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
+  weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle
+  deterministic idle/walk motion and smoothly recovering obstacle-aware
+  distance; cinematic motion fades out while a modal interface owns input;
 - a full-screen city map with player/bar markers, persistent green completed
   visits, ordered route editing and deterministic shortest paths constrained
   to the generated road graph;

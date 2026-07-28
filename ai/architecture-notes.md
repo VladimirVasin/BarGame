@@ -44,12 +44,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
-  `3.6 m / 53°` and `2.7 m / 57°` centered profiles. The target focus is
-  critically damped with at most `0.35 m` lag and snaps on jumps beyond
-  `1.75 m`.
+  `2.6 m / 53°` and `2.2 m / 57°` centered profiles. Orbit yaw and target
+  focus use deliberately weighty `0.20 s` and `0.18 s` damping; focus stays
+  within `0.45 m` and snaps on jumps beyond `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only
-  focus, pitch and roll; yaw and FOV remain stable. Collision still shortens
-  the arm immediately and cinematic motion fades during modal ownership.
+  focus, pitch and roll; requested yaw and FOV remain stable. Collision
+  shortens the arm immediately, restores it with `0.32 s` damping and fades
+  cinematic motion during modal ownership.
 - **Accepted — Eight-direction player presentation:** A corrected
   point-filtered `512x96` reference and a derived `512x864` layered atlas
   provide eight explicit `64x96` views at PPU 48. Each view has one body layer
@@ -65,6 +66,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the stronger blink remains available during locomotion, watchful/tense
   states require sustained idle, runtime swaps only the existing body
   renderer, and all rear variants remain neutral.
+- **Accepted — Camera-independent player shadow:** One collider-free
+  `ShadowsOnly` sprite proxy reuses the full eight-direction reference atlas
+  and a shared alpha-clipped URP shadow-caster material. It selects its view
+  from the signed player-to-main-light angle, faces the directional light
+  rather than the camera and copies whole-puppet bob/sway, so City and
+  BarInterior receive a stable realtime silhouette without changing the nine
+  visible puppet renderers. Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. Authored player, cocktail, beer-pong,
   Split-the-G and tincture bitmaps load from `Resources` and are sliced or

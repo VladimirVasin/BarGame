@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Dynamic player shadow
+
+- The hero now casts a realtime alpha-clipped silhouette in both the city and
+  bar interior.
+- The hidden shadow-only sprite faces the main directional light and chooses
+  one of the existing eight full-body views from the player/light angle, so
+  orbiting the camera no longer rotates or flattens the shadow.
+- The shadow follows movement plus whole-puppet bob and sway while the visible
+  jointed rig remains exactly nine renderers. Street and bar practical lights
+  remain shadowless to preserve the existing realtime-light budget.
+
 ### Tinctures in a Row minigame
 
 - Added a fourth stable city bar with a `7x7` match-three board, five
@@ -45,11 +56,13 @@
 
 ### Cinematic player presentation
 
-- Moved the centered chase camera closer with separate `3.6 m / 53°` exterior
-  and `2.7 m / 57°` interior profiles.
-- Added bounded target damping, teleport snapping and subtle deterministic
-  idle/walk camera motion while preserving immediate obstacle avoidance,
-  stable yaw/FOV and camera-independent player heading.
+- Moved the centered chase camera much closer with separate `2.6 m / 53°`
+  exterior and `2.2 m / 57°` interior profiles while retaining a complete
+  full-body composition.
+- Increased orbit, focus, obstacle-recovery and cinematic blend inertia for a
+  heavier, smoother response. Focus lag remains bounded, teleport snapping
+  and immediate inward obstacle avoidance are preserved, and the arm now
+  eases back out instead of popping.
 - Camera motion now fades out and restores with the shared modal lock used by
   the map, minigames and F9 launcher.
 - Strengthened the procedural living idle with readable breathing, weight
@@ -59,8 +72,8 @@
 - Expanded facial animation to five deterministic states: stronger
   half/closed blinks plus watchful and tense idle expressions in all five
   visible-face directions. Rear views remain neutral, locomotion cancels the
-  idle-only expressions, the puppet still uses exactly nine renderers and no
-  sprite is mirrored.
+  idle-only expressions, the visible puppet still uses exactly nine renderers
+  and no sprite is mirrored.
 
 ### Eight-direction player prototype
 
