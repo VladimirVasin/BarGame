@@ -26,6 +26,8 @@
 /.vs/
 /.vscode/
 /.idea/
+__pycache__/
+*.pyc
 *.user
 *.userprefs
 *.suo
@@ -45,4 +47,3 @@ Desktop.ini
 # Test and coverage output
 /TestResults/
 /CodeCoverage/
-

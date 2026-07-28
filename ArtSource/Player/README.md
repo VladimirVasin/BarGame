@@ -1,0 +1,22 @@
+# Player turntable source
+
+`PlayerDirectionalTurntable.png` is the locked source image for the current
+eight-direction player prototype.
+
+- SHA256:
+  `EC51D909A4D950C39C9B2309AAAF3BCC8B19CDE171A6E0EE0F8D5EC31FB3F70F`
+- Layout: four views on the first row and four on the second:
+  `Front`, `FrontRight`, `Right`, `BackRight`, `Back`, `BackLeft`, `Left`,
+  `FrontLeft`.
+- Design lock: burgundy overshirt, navy trousers, black boots, left-forearm
+  bandage, right-shoulder ochre patch and diagonal strap.
+
+Generate the runtime reference and layered puppet atlases with:
+
+```powershell
+python tools/build-player-puppet-atlas.py
+```
+
+The builder repairs only face pixels lost by the original chroma-key pass,
+then derives body plus eight jointed limb layers. It asserts that all nine
+neutral layers composite exactly to the corrected reference frame.

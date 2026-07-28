@@ -31,6 +31,9 @@ Assets/
     BeerPong/
       BeerPongBackground.png  empty 640x360 pixel-art table backdrop
       BeerPongAtlas.png       4x4 ball/hand/cup/effect sprite atlas
+    Player/
+      PlayerDirectionalAtlas.png       corrected 8x1 visual reference
+      PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
     Localization/
       ru.json
       en.json
@@ -41,7 +44,7 @@ Assets/
       Rendering/     PC RenderGraph PS1 world composite and settings
       Map/           ordered road-route model and deterministic pathfinding
       World/         layout, graph/fence plans, world/night, local fog and halos
-      Player/        motor, factory, 13-part rig, billboard, camera
+      Player/        motor heading, 8-view selector/rig, billboard, camera
       Interaction/   contract, shared minigame catalog, selection and entrances
       Scenes/        generated bar interior
       Drinks/        stable drink IDs used by current-run persistence
@@ -52,6 +55,11 @@ Assets/
   Tests/
     EditMode/        layout, roads/fences, minigame catalog, sessions, UI/audio
     PlayMode/        PS1 GPU presentation, modals, F9 debug and complete flow
+ArtSource/
+  Player/
+    PlayerDirectionalTurntable.png  locked 4x2 source turntable
+tools/
+  build-player-puppet-atlas.py      deterministic face repair and 9-layer build
 Packages/
 ProjectSettings/
 ```

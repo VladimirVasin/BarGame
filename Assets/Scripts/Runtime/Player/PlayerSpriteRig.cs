@@ -1,79 +1,202 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum PlayerPuppetPart
+    {
+        Body = 0,
+        LeftUpperArm = 1,
+        LeftLowerArm = 2,
+        RightUpperArm = 3,
+        RightLowerArm = 4,
+        LeftUpperLeg = 5,
+        LeftLowerLeg = 6,
+        RightUpperLeg = 7,
+        RightLowerLeg = 8
+    }
+
     /// <summary>
-    /// Builds and animates a lightweight thirteen-part pixel character.
-    /// The generated presentation is visual-only and never receives physics components.
+    /// Presents the player as an eight-direction, nine-layer pixel puppet.
+    /// Every arm and leg has a parented upper/lower joint. The generated
+    /// hierarchy is visual-only and never receives physics components.
     /// </summary>
+    [DefaultExecutionOrder(210)]
     [DisallowMultipleComponent]
     public sealed class PlayerSpriteRig : MonoBehaviour
     {
-        private const float PixelsPerUnit = 32f;
-        private const float MovingThreshold = 0.02f;
+        public const string AtlasResourcePath =
+            "Player/PlayerDirectionalPartsAtlas";
+        public const string ReferenceAtlasResourcePath =
+            "Player/PlayerDirectionalAtlas";
+        public const int DirectionCount = 8;
+        public const int PartCount = 9;
+        public const int FrameWidth = 64;
+        public const int FrameHeight = 96;
+        public const float PixelsPerUnit = 48f;
+        public const float FeetPivotXPixels = 32f;
+        public const float FeetPivotPixels = 4f;
 
-        [Header("Animation")]
+        private const float MovingThreshold = 0.02f;
+        private const float DepthSortingThreshold = 0.005f;
+        private const int FarLimbSortingOffset = 5;
+
+        private static readonly PlayerPuppetPose[] DirectionPoses =
+        {
+            new PlayerPuppetPose(
+                new Vector2(22f, 30f),
+                new Vector2(19f, 46f),
+                new Vector2(42f, 30f),
+                new Vector2(44f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.55f),
+            new PlayerPuppetPose(
+                new Vector2(25f, 30f),
+                new Vector2(21f, 46f),
+                new Vector2(39f, 30f),
+                new Vector2(43f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.8f),
+            new PlayerPuppetPose(
+                new Vector2(32f, 30f),
+                new Vector2(32f, 46f),
+                new Vector2(35f, 30f),
+                new Vector2(36f, 46f),
+                new Vector2(30f, 56f),
+                new Vector2(30f, 75f),
+                new Vector2(34f, 56f),
+                new Vector2(35f, 75f),
+                1f),
+            new PlayerPuppetPose(
+                new Vector2(24f, 30f),
+                new Vector2(21f, 46f),
+                new Vector2(40f, 30f),
+                new Vector2(44f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.8f),
+            new PlayerPuppetPose(
+                new Vector2(23f, 30f),
+                new Vector2(20f, 46f),
+                new Vector2(41f, 30f),
+                new Vector2(44f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.55f),
+            new PlayerPuppetPose(
+                new Vector2(25f, 30f),
+                new Vector2(22f, 46f),
+                new Vector2(39f, 30f),
+                new Vector2(42f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.8f),
+            new PlayerPuppetPose(
+                new Vector2(29f, 30f),
+                new Vector2(29f, 46f),
+                new Vector2(32f, 30f),
+                new Vector2(32f, 46f),
+                new Vector2(30f, 56f),
+                new Vector2(29f, 75f),
+                new Vector2(34f, 56f),
+                new Vector2(34f, 75f),
+                1f),
+            new PlayerPuppetPose(
+                new Vector2(24f, 30f),
+                new Vector2(20f, 46f),
+                new Vector2(40f, 30f),
+                new Vector2(43f, 46f),
+                new Vector2(28f, 56f),
+                new Vector2(27f, 75f),
+                new Vector2(36f, 56f),
+                new Vector2(37f, 75f),
+                0.8f)
+        };
+
+        [Header("Direction")]
+        [SerializeField, Range(0f, 10f)]
+        private float directionHysteresisDegrees = 5f;
+
+        [Header("Jointed walk")]
         [SerializeField, Min(0.1f)] private float fullAnimationSpeed = 4f;
         [SerializeField, Min(0f)] private float walkCyclesPerSecond = 2.2f;
-        [SerializeField, Range(0f, 60f)] private float armSwingDegrees = 28f;
-        [SerializeField, Range(0f, 60f)] private float legSwingDegrees = 32f;
-        [SerializeField, Min(0f)] private float bobHeight = 0.035f;
+        [SerializeField, Range(0f, 60f)] private float armSwingDegrees = 24f;
+        [SerializeField, Range(0f, 60f)] private float elbowBendDegrees = 11f;
+        [SerializeField, Range(0f, 60f)] private float legSwingDegrees = 28f;
+        [SerializeField, Range(0f, 60f)] private float kneeBendDegrees = 17f;
+        [SerializeField, Min(0f)] private float walkBobHeight = 0.035f;
+        [SerializeField, Range(0f, 10f)] private float walkRockDegrees = 1.4f;
         [SerializeField, Min(0f)] private float settleSpeed = 12f;
 
-        private readonly List<Texture2D> generatedTextures = new List<Texture2D>(13);
-        private readonly List<Sprite> generatedSprites = new List<Sprite>(13);
+        private readonly List<Sprite> directionSprites =
+            new List<Sprite>(DirectionCount);
+        private readonly List<Sprite> generatedSprites =
+            new List<Sprite>(DirectionCount * PartCount);
+        private readonly List<SpriteRenderer> partRenderers =
+            new List<SpriteRenderer>(PartCount);
+
+        private readonly Transform[] partTransforms =
+            new Transform[PartCount];
+        private readonly Sprite[,] partSprites =
+            new Sprite[PartCount, DirectionCount];
 
         private Camera targetCamera;
+        private Transform facingTransform;
         private Transform visualRoot;
+        private Transform poseRoot;
         private BillboardSprite billboard;
-        private Transform head;
-        private Transform torso;
-        private Transform leftUpperArm;
-        private Transform leftForearm;
-        private Transform rightUpperArm;
-        private Transform rightForearm;
-        private Transform leftThigh;
-        private Transform leftLowerLeg;
-        private Transform rightThigh;
-        private Transform rightLowerLeg;
-
-        private Vector3 headRestPosition;
-        private Vector3 torsoRestPosition;
+        private PlayerViewDirectionSelector directionSelector;
         private float animationPhase;
         private float motionAmount;
-        private float facingSign = 1f;
         private float wastedBlend;
         private float wastedPhase;
         private bool isWasted;
 
-        public void Initialize(Camera camera)
+        public PlayerViewDirection CurrentDirection =>
+            directionSelector != null
+                ? directionSelector.CurrentDirection
+                : PlayerViewDirection.Front;
+
+        public IReadOnlyList<Sprite> DirectionSprites => directionSprites;
+        public IReadOnlyList<SpriteRenderer> Renderers => partRenderers;
+        public SpriteRenderer Renderer => GetPartRenderer(
+            PlayerPuppetPart.Body);
+        public SpriteRenderer BodyRenderer => Renderer;
+        public Transform VisualRoot => visualRoot;
+        public Transform PoseRoot => poseRoot;
+
+        public void Initialize(
+            Camera camera,
+            Transform playerFacingTransform = null)
         {
             targetCamera = camera;
-            EnsureRigExists();
+            facingTransform = playerFacingTransform != null
+                ? playerFacingTransform
+                : ResolveDefaultFacingTransform();
+            EnsurePresentationExists();
             billboard.Initialize(camera);
+            RefreshDirection();
         }
 
         public void SetMotion(Vector3 planarVelocity)
         {
             planarVelocity.y = 0f;
             float speed = planarVelocity.magnitude;
-            motionAmount = Mathf.Clamp01(speed / Mathf.Max(0.1f, fullAnimationSpeed));
-
-            if (speed <= MovingThreshold)
-            {
-                return;
-            }
-
-            Camera camera = targetCamera != null ? targetCamera : Camera.main;
-            float horizontalMotion = camera != null
-                ? Vector3.Dot(planarVelocity, camera.transform.right)
-                : planarVelocity.x;
-
-            if (Mathf.Abs(horizontalMotion) > MovingThreshold)
-            {
-                facingSign = Mathf.Sign(horizontalMotion);
-            }
+            motionAmount = Mathf.Clamp01(
+                speed / Mathf.Max(0.1f, fullAnimationSpeed));
         }
 
         public void SetWasted(bool active)
@@ -81,15 +204,60 @@ namespace BarPromenade
             isWasted = active;
         }
 
+        public Sprite GetDirectionSprite(PlayerViewDirection direction)
+        {
+            return GetPartSprite(PlayerPuppetPart.Body, direction);
+        }
+
+        public Sprite GetPartSprite(
+            PlayerPuppetPart part,
+            PlayerViewDirection direction)
+        {
+            ValidatePart(part);
+            ValidateDirection(direction);
+            Sprite sprite = partSprites[(int)part, (int)direction];
+            if (sprite == null)
+            {
+                throw new InvalidOperationException(
+                    "Player puppet sprites have not been initialized.");
+            }
+
+            return sprite;
+        }
+
+        public SpriteRenderer GetPartRenderer(PlayerPuppetPart part)
+        {
+            ValidatePart(part);
+            int index = (int)part;
+            if (index >= partRenderers.Count)
+            {
+                return null;
+            }
+
+            return partRenderers[index];
+        }
+
+        public Transform GetPartTransform(PlayerPuppetPart part)
+        {
+            ValidatePart(part);
+            return partTransforms[(int)part];
+        }
+
         private void Awake()
         {
-            EnsureRigExists();
+            facingTransform = ResolveDefaultFacingTransform();
+            EnsurePresentationExists();
         }
 
         private void Update()
         {
-            EnsureRigExists();
-            AnimateRig(Time.deltaTime);
+            EnsurePresentationExists();
+        }
+
+        private void LateUpdate()
+        {
+            RefreshDirection();
+            AnimatePuppet(Time.deltaTime);
         }
 
         private void OnDestroy()
@@ -98,268 +266,571 @@ namespace BarPromenade
             {
                 DestroyGeneratedObject(visualRoot.gameObject);
                 visualRoot = null;
+                poseRoot = null;
             }
 
-            for (int i = 0; i < generatedSprites.Count; i++)
+            for (int index = 0; index < generatedSprites.Count; index++)
             {
-                DestroyGeneratedObject(generatedSprites[i]);
-            }
-
-            for (int i = 0; i < generatedTextures.Count; i++)
-            {
-                DestroyGeneratedObject(generatedTextures[i]);
+                DestroyGeneratedObject(generatedSprites[index]);
             }
 
             generatedSprites.Clear();
-            generatedTextures.Clear();
+            directionSprites.Clear();
+            partRenderers.Clear();
+            Array.Clear(partTransforms, 0, partTransforms.Length);
+            Array.Clear(partSprites, 0, partSprites.Length);
         }
 
-        private void EnsureRigExists()
+        private Transform ResolveDefaultFacingTransform()
+        {
+            return transform.parent != null ? transform.parent : transform;
+        }
+
+        private void EnsurePresentationExists()
         {
             if (visualRoot != null)
             {
                 return;
             }
 
-            GameObject rootObject = new GameObject("GeneratedSpriteRig");
+            Texture2D atlas = Resources.Load<Texture2D>(AtlasResourcePath);
+            ValidateAtlas(atlas);
+
+            GameObject rootObject =
+                new GameObject("GeneratedDirectionalPuppet");
             visualRoot = rootObject.transform;
             visualRoot.SetParent(transform, false);
             billboard = rootObject.AddComponent<BillboardSprite>();
 
-            head = CreatePart(
-                "Head", visualRoot, new Vector3(0f, 1.68f, 0f),
-                14, 14, SkinColor, new Vector2(0.5f, 0.5f), 10);
-            torso = CreatePart(
-                "Torso", visualRoot, new Vector3(0f, 1.30f, 0f),
-                18, 20, ShirtColor, new Vector2(0.5f, 0.5f), 7);
-            CreatePart(
-                "Pelvis", visualRoot, new Vector3(0f, 0.94f, 0f),
-                16, 8, TrousersColor, new Vector2(0.5f, 0.5f), 8);
+            GameObject poseObject = new GameObject("PoseRoot");
+            poseRoot = poseObject.transform;
+            poseRoot.SetParent(visualRoot, false);
 
-            leftUpperArm = CreatePart(
-                "LeftUpperArm", visualRoot, new Vector3(-0.31f, 1.54f, 0f),
-                7, 12, ShirtShadowColor, new Vector2(0.5f, 0.92f), 4);
-            leftForearm = CreatePart(
-                "LeftForearm", leftUpperArm, new Vector3(0f, -0.34f, 0f),
-                6, 11, ShirtColor, new Vector2(0.5f, 0.92f), 4);
-            CreatePart(
-                "LeftHand", leftForearm, new Vector3(0f, -0.31f, 0f),
-                6, 6, SkinColor, new Vector2(0.5f, 0.85f), 5);
+            CreatePartHierarchy();
+            CreatePartSprites(atlas);
 
-            rightUpperArm = CreatePart(
-                "RightUpperArm", visualRoot, new Vector3(0.31f, 1.54f, 0f),
-                7, 12, ShirtColor, new Vector2(0.5f, 0.92f), 5);
-            rightForearm = CreatePart(
-                "RightForearm", rightUpperArm, new Vector3(0f, -0.34f, 0f),
-                6, 11, ShirtShadowColor, new Vector2(0.5f, 0.92f), 5);
-            CreatePart(
-                "RightHand", rightForearm, new Vector3(0f, -0.31f, 0f),
-                6, 6, SkinColor, new Vector2(0.5f, 0.85f), 6);
-
-            leftThigh = CreatePart(
-                "LeftThigh", visualRoot, new Vector3(-0.13f, 0.94f, 0f),
-                8, 13, TrousersShadowColor, new Vector2(0.5f, 0.92f), 2);
-            leftLowerLeg = CreatePart(
-                "LeftLowerLeg", leftThigh, new Vector3(0f, -0.37f, 0f),
-                7, 13, ShoeColor, new Vector2(0.5f, 0.92f), 2);
-            rightThigh = CreatePart(
-                "RightThigh", visualRoot, new Vector3(0.13f, 0.94f, 0f),
-                8, 13, TrousersColor, new Vector2(0.5f, 0.92f), 3);
-            rightLowerLeg = CreatePart(
-                "RightLowerLeg", rightThigh, new Vector3(0f, -0.37f, 0f),
-                7, 13, ShoeColor, new Vector2(0.5f, 0.92f), 3);
-
-            headRestPosition = head.localPosition;
-            torsoRestPosition = torso.localPosition;
+            directionSelector = new PlayerViewDirectionSelector(
+                directionHysteresisDegrees,
+                PlayerViewDirection.Front);
+            ApplyDirection(PlayerViewDirection.Front);
             billboard.Initialize(targetCamera);
         }
 
-        private Transform CreatePart(
-            string partName,
-            Transform parent,
-            Vector3 localPosition,
-            int pixelWidth,
-            int pixelHeight,
-            Color32 fillColor,
-            Vector2 pivot,
-            int sortingOrder)
+        private void CreatePartHierarchy()
         {
-            GameObject partObject = new GameObject(partName);
+            CreatePart(PlayerPuppetPart.Body, poseRoot);
+
+            CreatePart(PlayerPuppetPart.LeftUpperArm, poseRoot);
+            CreatePart(
+                PlayerPuppetPart.LeftLowerArm,
+                partTransforms[(int)PlayerPuppetPart.LeftUpperArm]);
+
+            CreatePart(PlayerPuppetPart.RightUpperArm, poseRoot);
+            CreatePart(
+                PlayerPuppetPart.RightLowerArm,
+                partTransforms[(int)PlayerPuppetPart.RightUpperArm]);
+
+            CreatePart(PlayerPuppetPart.LeftUpperLeg, poseRoot);
+            CreatePart(
+                PlayerPuppetPart.LeftLowerLeg,
+                partTransforms[(int)PlayerPuppetPart.LeftUpperLeg]);
+
+            CreatePart(PlayerPuppetPart.RightUpperLeg, poseRoot);
+            CreatePart(
+                PlayerPuppetPart.RightLowerLeg,
+                partTransforms[(int)PlayerPuppetPart.RightUpperLeg]);
+        }
+
+        private void CreatePart(
+            PlayerPuppetPart part,
+            Transform parent)
+        {
+            GameObject partObject = new GameObject(part.ToString());
             Transform partTransform = partObject.transform;
             partTransform.SetParent(parent, false);
-            partTransform.localPosition = localPosition;
+            partTransforms[(int)part] = partTransform;
 
-            SpriteRenderer renderer = partObject.AddComponent<SpriteRenderer>();
-            renderer.sprite = CreatePixelSprite(
-                partName + "Sprite",
-                pixelWidth,
-                pixelHeight,
-                fillColor,
-                pivot);
-            renderer.sortingOrder = sortingOrder;
-            return partTransform;
+            SpriteRenderer spriteRenderer =
+                partObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.color = Color.white;
+            spriteRenderer.flipX = false;
+            spriteRenderer.flipY = false;
+            partRenderers.Add(spriteRenderer);
         }
 
-        private Sprite CreatePixelSprite(
-            string spriteName,
-            int width,
-            int height,
-            Color32 fillColor,
-            Vector2 pivot)
+        private void CreatePartSprites(Texture2D atlas)
         {
-            Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            for (int partIndex = 0;
+                 partIndex < PartCount;
+                 partIndex++)
             {
-                name = spriteName + "Texture",
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.DontSave
-            };
-
-            Color32[] pixels = new Color32[width * height];
-            bool[] shape = BuildRoundedShape(width, height);
-            Color32 outline = new Color32(31, 32, 42, 255);
-            Color32 highlight = Lighten(fillColor, 24);
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
+                PlayerPuppetPart part = (PlayerPuppetPart)partIndex;
+                for (int directionIndex = 0;
+                     directionIndex < DirectionCount;
+                     directionIndex++)
                 {
-                    int index = y * width + x;
-                    if (!shape[index])
+                    PlayerViewDirection direction =
+                        (PlayerViewDirection)directionIndex;
+                    PlayerPuppetPose pose =
+                        DirectionPoses[directionIndex];
+                    Vector2 pivotPixels =
+                        GetPartPivotPixels(part, pose);
+                    Vector2 normalizedPivot = new Vector2(
+                        pivotPixels.x / FrameWidth,
+                        pivotPixels.y / FrameHeight);
+                    Sprite sprite = Sprite.Create(
+                        atlas,
+                        new Rect(
+                            directionIndex * FrameWidth,
+                            partIndex * FrameHeight,
+                            FrameWidth,
+                            FrameHeight),
+                        normalizedPivot,
+                        PixelsPerUnit,
+                        0,
+                        SpriteMeshType.FullRect);
+                    sprite.name = $"Player{direction}{part}";
+                    sprite.hideFlags = HideFlags.DontSave;
+                    partSprites[partIndex, directionIndex] = sprite;
+                    generatedSprites.Add(sprite);
+                    if (part == PlayerPuppetPart.Body)
                     {
-                        pixels[index] = new Color32(0, 0, 0, 0);
-                        continue;
+                        directionSprites.Add(sprite);
                     }
-
-                    bool edge = IsShapeEdge(shape, width, height, x, y);
-                    bool litPixel = !edge && x == 2 && y > height / 2;
-                    pixels[index] = edge ? outline : litPixel ? highlight : fillColor;
                 }
             }
-
-            texture.SetPixels32(pixels);
-            texture.Apply(false, true);
-
-            Sprite sprite = Sprite.Create(
-                texture,
-                new Rect(0f, 0f, width, height),
-                pivot,
-                PixelsPerUnit,
-                0,
-                SpriteMeshType.FullRect);
-            sprite.name = spriteName;
-            sprite.hideFlags = HideFlags.DontSave;
-            generatedTextures.Add(texture);
-            generatedSprites.Add(sprite);
-            return sprite;
         }
 
-        private void AnimateRig(float deltaTime)
+        private static void ValidateAtlas(Texture2D atlas)
         {
-            if (visualRoot == null)
+            if (atlas == null)
+            {
+                throw new InvalidOperationException(
+                    $"Player puppet atlas was not found at Resources/" +
+                    $"{AtlasResourcePath}.");
+            }
+
+            int expectedWidth = FrameWidth * DirectionCount;
+            int expectedHeight = FrameHeight * PartCount;
+            if (atlas.width != expectedWidth ||
+                atlas.height != expectedHeight)
+            {
+                throw new InvalidOperationException(
+                    $"Player puppet atlas must be {expectedWidth}x" +
+                    $"{expectedHeight}, but is {atlas.width}x" +
+                    $"{atlas.height}.");
+            }
+        }
+
+        private void RefreshDirection()
+        {
+            EnsurePresentationExists();
+            Camera camera = targetCamera != null
+                ? targetCamera
+                : Camera.main;
+            Transform actor = facingTransform != null
+                ? facingTransform
+                : ResolveDefaultFacingTransform();
+            if (camera == null || actor == null)
+            {
+                return;
+            }
+
+            Vector3 toCamera = camera.transform.position - actor.position;
+            toCamera = Vector3.ProjectOnPlane(toCamera, Vector3.up);
+            Vector3 actorForward =
+                Vector3.ProjectOnPlane(actor.forward, Vector3.up);
+            if (toCamera.sqrMagnitude < 0.0001f ||
+                actorForward.sqrMagnitude < 0.0001f)
+            {
+                return;
+            }
+
+            float signedAngle = Vector3.SignedAngle(
+                actorForward,
+                toCamera,
+                Vector3.up);
+            PlayerViewDirection direction =
+                directionSelector.Select(signedAngle);
+            ApplyDirection(direction);
+        }
+
+        private void ApplyDirection(PlayerViewDirection direction)
+        {
+            PlayerPuppetPose pose = DirectionPoses[(int)direction];
+            for (int partIndex = 0;
+                 partIndex < PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part = (PlayerPuppetPart)partIndex;
+                SpriteRenderer spriteRenderer =
+                    partRenderers[partIndex];
+                Sprite sprite = GetPartSprite(part, direction);
+                if (spriteRenderer.sprite != sprite)
+                {
+                    spriteRenderer.sprite = sprite;
+                }
+
+                spriteRenderer.sortingOrder =
+                    GetSortingOrder(part);
+                spriteRenderer.color = Color.white;
+                spriteRenderer.flipX = false;
+                spriteRenderer.flipY = false;
+            }
+
+            SetRestPositions(pose);
+        }
+
+        private void SetRestPositions(PlayerPuppetPose pose)
+        {
+            SetRootPartPosition(PlayerPuppetPart.Body, Vector2.zero);
+            SetRootPartPosition(
+                PlayerPuppetPart.LeftUpperArm,
+                RootOffsetFromTopLeft(pose.LeftShoulder));
+            SetChildPartPosition(
+                PlayerPuppetPart.LeftLowerArm,
+                ChildOffsetFromTopLeft(
+                    pose.LeftShoulder,
+                    pose.LeftElbow));
+            SetRootPartPosition(
+                PlayerPuppetPart.RightUpperArm,
+                RootOffsetFromTopLeft(pose.RightShoulder));
+            SetChildPartPosition(
+                PlayerPuppetPart.RightLowerArm,
+                ChildOffsetFromTopLeft(
+                    pose.RightShoulder,
+                    pose.RightElbow));
+            SetRootPartPosition(
+                PlayerPuppetPart.LeftUpperLeg,
+                RootOffsetFromTopLeft(pose.LeftHip));
+            SetChildPartPosition(
+                PlayerPuppetPart.LeftLowerLeg,
+                ChildOffsetFromTopLeft(
+                    pose.LeftHip,
+                    pose.LeftKnee));
+            SetRootPartPosition(
+                PlayerPuppetPart.RightUpperLeg,
+                RootOffsetFromTopLeft(pose.RightHip));
+            SetChildPartPosition(
+                PlayerPuppetPart.RightLowerLeg,
+                ChildOffsetFromTopLeft(
+                    pose.RightHip,
+                    pose.RightKnee));
+        }
+
+        private void SetRootPartPosition(
+            PlayerPuppetPart part,
+            Vector2 localPosition)
+        {
+            Transform partTransform = partTransforms[(int)part];
+            partTransform.localPosition =
+                new Vector3(localPosition.x, localPosition.y, 0f);
+            partTransform.localScale = Vector3.one;
+        }
+
+        private void SetChildPartPosition(
+            PlayerPuppetPart part,
+            Vector2 localPosition)
+        {
+            SetRootPartPosition(part, localPosition);
+        }
+
+        private void AnimatePuppet(float deltaTime)
+        {
+            if (poseRoot == null)
             {
                 return;
             }
 
             if (motionAmount > MovingThreshold)
             {
-                animationPhase += deltaTime * walkCyclesPerSecond * Mathf.PI * 2f;
+                animationPhase +=
+                    deltaTime * walkCyclesPerSecond * Mathf.PI * 2f;
             }
 
-            float settle = 1f - Mathf.Exp(-settleSpeed * deltaTime);
             wastedBlend = Mathf.MoveTowards(
                 wastedBlend,
                 isWasted ? 1f : 0f,
                 deltaTime * 4f);
             wastedPhase += deltaTime * 4.5f;
-            float wave = Mathf.Sin(animationPhase) * motionAmount;
-            float doubleWave = Mathf.Abs(Mathf.Sin(animationPhase * 2f)) * motionAmount;
-            float armAngle = wave * armSwingDegrees;
-            float legAngle = wave * legSwingDegrees;
 
-            SetLocalZRotation(leftUpperArm, Mathf.LerpAngle(GetLocalZ(leftUpperArm), -armAngle, settle));
-            SetLocalZRotation(rightUpperArm, Mathf.LerpAngle(GetLocalZ(rightUpperArm), armAngle, settle));
-            SetLocalZRotation(leftForearm, Mathf.LerpAngle(GetLocalZ(leftForearm), armAngle * 0.22f, settle));
-            SetLocalZRotation(rightForearm, Mathf.LerpAngle(GetLocalZ(rightForearm), -armAngle * 0.22f, settle));
-            SetLocalZRotation(leftThigh, Mathf.LerpAngle(GetLocalZ(leftThigh), legAngle, settle));
-            SetLocalZRotation(rightThigh, Mathf.LerpAngle(GetLocalZ(rightThigh), -legAngle, settle));
-            SetLocalZRotation(leftLowerLeg, Mathf.LerpAngle(GetLocalZ(leftLowerLeg), -Mathf.Max(0f, legAngle) * 0.35f, settle));
-            SetLocalZRotation(rightLowerLeg, Mathf.LerpAngle(GetLocalZ(rightLowerLeg), Mathf.Min(0f, legAngle) * 0.35f, settle));
+            Vector3 walkRotationAxis =
+                GetWalkRotationAxis(CurrentDirection);
+            float authoredMotionScale =
+                DirectionPoses[(int)CurrentDirection].MotionScale;
+            float depthWeight = Mathf.Abs(walkRotationAxis.x);
+            float motionScale = Mathf.Lerp(
+                authoredMotionScale,
+                1f,
+                depthWeight);
+            float strideWave =
+                Mathf.Sin(animationPhase) * motionAmount * motionScale;
+            float stepWave =
+                Mathf.Abs(Mathf.Sin(animationPhase * 2f)) *
+                motionAmount;
+            float leftArmPhase = -strideWave;
+            float rightArmPhase = strideWave;
+            float leftLegPhase = strideWave;
+            float rightLegPhase = -strideWave;
+            float settle = 1f - Mathf.Exp(-settleSpeed * deltaTime);
 
-            float bob = doubleWave * bobHeight;
-            head.localPosition = Vector3.Lerp(
-                head.localPosition,
-                headRestPosition + Vector3.up * bob * 0.6f,
+            SetJointRotation(
+                PlayerPuppetPart.LeftUpperArm,
+                walkRotationAxis,
+                leftArmPhase * armSwingDegrees,
                 settle);
-            torso.localPosition = Vector3.Lerp(
-                torso.localPosition,
-                torsoRestPosition + Vector3.up * bob,
+            SetJointRotation(
+                PlayerPuppetPart.RightUpperArm,
+                walkRotationAxis,
+                rightArmPhase * armSwingDegrees,
+                settle);
+            SetJointRotation(
+                PlayerPuppetPart.LeftLowerArm,
+                walkRotationAxis,
+                -leftArmPhase * elbowBendDegrees,
+                settle);
+            SetJointRotation(
+                PlayerPuppetPart.RightLowerArm,
+                walkRotationAxis,
+                -rightArmPhase * elbowBendDegrees,
                 settle);
 
-            Vector3 scale = visualRoot.localScale;
-            scale.x = Mathf.Abs(scale.x) * facingSign;
-            visualRoot.localScale = scale;
-            visualRoot.localPosition = new Vector3(
-                Mathf.Sin(wastedPhase) * 0.055f * wastedBlend,
-                Mathf.Abs(Mathf.Sin(wastedPhase * 0.5f)) * 0.018f * wastedBlend,
-                0f);
+            SetJointRotation(
+                PlayerPuppetPart.LeftUpperLeg,
+                walkRotationAxis,
+                leftLegPhase * legSwingDegrees,
+                settle);
+            SetJointRotation(
+                PlayerPuppetPart.RightUpperLeg,
+                walkRotationAxis,
+                rightLegPhase * legSwingDegrees,
+                settle);
+            SetJointRotation(
+                PlayerPuppetPart.LeftLowerLeg,
+                walkRotationAxis,
+                -Mathf.Max(0f, leftLegPhase) *
+                kneeBendDegrees,
+                settle);
+            SetJointRotation(
+                PlayerPuppetPart.RightLowerLeg,
+                walkRotationAxis,
+                -Mathf.Max(0f, rightLegPhase) *
+                kneeBendDegrees,
+                settle);
+
+            ApplyLimbDepthSorting(
+                PlayerPuppetPart.LeftUpperArm,
+                PlayerPuppetPart.LeftLowerArm);
+            ApplyLimbDepthSorting(
+                PlayerPuppetPart.RightUpperArm,
+                PlayerPuppetPart.RightLowerArm);
+            ApplyLimbDepthSorting(
+                PlayerPuppetPart.LeftUpperLeg,
+                PlayerPuppetPart.LeftLowerLeg);
+            ApplyLimbDepthSorting(
+                PlayerPuppetPart.RightUpperLeg,
+                PlayerPuppetPart.RightLowerLeg);
+
+            float targetX =
+                Mathf.Sin(wastedPhase) * 0.055f * wastedBlend;
+            float targetY =
+                stepWave * walkBobHeight +
+                Mathf.Abs(Mathf.Sin(wastedPhase * 0.5f)) *
+                0.018f *
+                wastedBlend;
+            float targetRoll =
+                strideWave * walkRockDegrees +
+                Mathf.Sin(wastedPhase * 0.7f) *
+                3.5f *
+                wastedBlend;
+
+            poseRoot.localPosition = Vector3.Lerp(
+                poseRoot.localPosition,
+                new Vector3(targetX, targetY, 0f),
+                settle);
+            poseRoot.localRotation = Quaternion.Slerp(
+                poseRoot.localRotation,
+                Quaternion.Euler(0f, 0f, targetRoll),
+                settle);
+            poseRoot.localScale = Vector3.one;
         }
 
-        private static bool[] BuildRoundedShape(int width, int height)
+        private void SetJointRotation(
+            PlayerPuppetPart part,
+            Vector3 rotationAxis,
+            float targetDegrees,
+            float interpolation)
         {
-            bool[] shape = new bool[width * height];
-            int corner = Mathf.Clamp(Mathf.Min(width, height) / 4, 1, 3);
+            Transform partTransform = partTransforms[(int)part];
+            Quaternion targetRotation = Quaternion.AngleAxis(
+                targetDegrees,
+                rotationAxis);
+            partTransform.localRotation = Quaternion.Slerp(
+                partTransform.localRotation,
+                targetRotation,
+                interpolation);
+            partTransform.localScale = Vector3.one;
+        }
 
-            for (int y = 0; y < height; y++)
+        private void ApplyLimbDepthSorting(
+            PlayerPuppetPart upperPart,
+            PlayerPuppetPart lowerPart)
+        {
+            Transform upperTransform =
+                partTransforms[(int)upperPart];
+            float depth =
+                (upperTransform.localRotation * Vector3.down).z;
+            int sortingOrder = GetSortingOrder(upperPart);
+            if (depth < -DepthSortingThreshold)
             {
-                for (int x = 0; x < width; x++)
-                {
-                    bool cutCorner =
-                        (x < corner && y < corner && x + y < corner - 1) ||
-                        (x < corner && y >= height - corner && x + (height - 1 - y) < corner - 1) ||
-                        (x >= width - corner && y < corner && (width - 1 - x) + y < corner - 1) ||
-                        (x >= width - corner && y >= height - corner &&
-                         (width - 1 - x) + (height - 1 - y) < corner - 1);
-                    shape[y * width + x] = !cutCorner;
-                }
+                sortingOrder -= FarLimbSortingOffset;
             }
 
-            return shape;
+            partRenderers[(int)upperPart].sortingOrder =
+                sortingOrder;
+            partRenderers[(int)lowerPart].sortingOrder =
+                sortingOrder;
         }
 
-        private static bool IsShapeEdge(bool[] shape, int width, int height, int x, int y)
+        private static Vector3 GetWalkRotationAxis(
+            PlayerViewDirection direction)
         {
-            if (x == 0 || y == 0 || x == width - 1 || y == height - 1)
+            float viewAngle =
+                (int)direction * 45f * Mathf.Deg2Rad;
+            return new Vector3(
+                Mathf.Cos(viewAngle),
+                0f,
+                Mathf.Sin(viewAngle)).normalized;
+        }
+
+        private static Vector2 GetPartPivotPixels(
+            PlayerPuppetPart part,
+            PlayerPuppetPose pose)
+        {
+            Vector2 topLeft;
+            switch (part)
             {
-                return true;
+                case PlayerPuppetPart.Body:
+                    return new Vector2(
+                        FeetPivotXPixels,
+                        FeetPivotPixels);
+                case PlayerPuppetPart.LeftUpperArm:
+                    topLeft = pose.LeftShoulder;
+                    break;
+                case PlayerPuppetPart.LeftLowerArm:
+                    topLeft = pose.LeftElbow;
+                    break;
+                case PlayerPuppetPart.RightUpperArm:
+                    topLeft = pose.RightShoulder;
+                    break;
+                case PlayerPuppetPart.RightLowerArm:
+                    topLeft = pose.RightElbow;
+                    break;
+                case PlayerPuppetPart.LeftUpperLeg:
+                    topLeft = pose.LeftHip;
+                    break;
+                case PlayerPuppetPart.LeftLowerLeg:
+                    topLeft = pose.LeftKnee;
+                    break;
+                case PlayerPuppetPart.RightUpperLeg:
+                    topLeft = pose.RightHip;
+                    break;
+                case PlayerPuppetPart.RightLowerLeg:
+                    topLeft = pose.RightKnee;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(part),
+                        part,
+                        "Unknown player puppet part.");
             }
 
-            return !shape[y * width + x - 1] ||
-                   !shape[y * width + x + 1] ||
-                   !shape[(y - 1) * width + x] ||
-                   !shape[(y + 1) * width + x];
+            return TopLeftToBottomPixels(topLeft);
         }
 
-        private static Color32 Lighten(Color32 color, byte amount)
+        private static Vector2 RootOffsetFromTopLeft(
+            Vector2 topLeft)
         {
-            return new Color32(
-                (byte)Mathf.Min(255, color.r + amount),
-                (byte)Mathf.Min(255, color.g + amount),
-                (byte)Mathf.Min(255, color.b + amount),
-                color.a);
+            Vector2 bottomPixels = TopLeftToBottomPixels(topLeft);
+            return new Vector2(
+                (bottomPixels.x - FeetPivotXPixels) /
+                PixelsPerUnit,
+                (bottomPixels.y - FeetPivotPixels) /
+                PixelsPerUnit);
         }
 
-        private static float GetLocalZ(Transform target)
+        private static Vector2 ChildOffsetFromTopLeft(
+            Vector2 parentTopLeft,
+            Vector2 childTopLeft)
         {
-            return target.localEulerAngles.z;
+            Vector2 parentBottom =
+                TopLeftToBottomPixels(parentTopLeft);
+            Vector2 childBottom =
+                TopLeftToBottomPixels(childTopLeft);
+            return (childBottom - parentBottom) / PixelsPerUnit;
         }
 
-        private static void SetLocalZRotation(Transform target, float degrees)
+        private static Vector2 TopLeftToBottomPixels(
+            Vector2 topLeft)
         {
-            target.localRotation = Quaternion.Euler(0f, 0f, degrees);
+            return new Vector2(
+                topLeft.x,
+                FrameHeight - topLeft.y);
         }
 
-        private static void DestroyGeneratedObject(Object generatedObject)
+        private static int GetSortingOrder(PlayerPuppetPart part)
+        {
+            switch (part)
+            {
+                case PlayerPuppetPart.Body:
+                    return 0;
+                case PlayerPuppetPart.LeftUpperLeg:
+                case PlayerPuppetPart.LeftLowerLeg:
+                    return 1;
+                case PlayerPuppetPart.RightUpperLeg:
+                case PlayerPuppetPart.RightLowerLeg:
+                    return 2;
+                case PlayerPuppetPart.LeftUpperArm:
+                case PlayerPuppetPart.LeftLowerArm:
+                    return 3;
+                case PlayerPuppetPart.RightUpperArm:
+                case PlayerPuppetPart.RightLowerArm:
+                    return 4;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(part),
+                        part,
+                        "Unknown player puppet part.");
+            }
+        }
+
+        private static void ValidatePart(PlayerPuppetPart part)
+        {
+            int index = (int)part;
+            if (index < 0 || index >= PartCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(part),
+                    part,
+                    "Part must be one of the nine puppet layers.");
+            }
+        }
+
+        private static void ValidateDirection(
+            PlayerViewDirection direction)
+        {
+            int index = (int)direction;
+            if (index < 0 || index >= DirectionCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(direction),
+                    direction,
+                    "Direction must be one of the eight defined views.");
+            }
+        }
+
+        private static void DestroyGeneratedObject(
+            UnityEngine.Object generatedObject)
         {
             if (generatedObject == null)
             {
@@ -376,11 +847,39 @@ namespace BarPromenade
             }
         }
 
-        private static readonly Color32 SkinColor = new Color32(238, 178, 133, 255);
-        private static readonly Color32 ShirtColor = new Color32(214, 68, 72, 255);
-        private static readonly Color32 ShirtShadowColor = new Color32(164, 43, 63, 255);
-        private static readonly Color32 TrousersColor = new Color32(54, 73, 112, 255);
-        private static readonly Color32 TrousersShadowColor = new Color32(38, 51, 83, 255);
-        private static readonly Color32 ShoeColor = new Color32(34, 35, 43, 255);
+        private readonly struct PlayerPuppetPose
+        {
+            public PlayerPuppetPose(
+                Vector2 leftShoulder,
+                Vector2 leftElbow,
+                Vector2 rightShoulder,
+                Vector2 rightElbow,
+                Vector2 leftHip,
+                Vector2 leftKnee,
+                Vector2 rightHip,
+                Vector2 rightKnee,
+                float motionScale)
+            {
+                LeftShoulder = leftShoulder;
+                LeftElbow = leftElbow;
+                RightShoulder = rightShoulder;
+                RightElbow = rightElbow;
+                LeftHip = leftHip;
+                LeftKnee = leftKnee;
+                RightHip = rightHip;
+                RightKnee = rightKnee;
+                MotionScale = motionScale;
+            }
+
+            public Vector2 LeftShoulder { get; }
+            public Vector2 LeftElbow { get; }
+            public Vector2 RightShoulder { get; }
+            public Vector2 RightElbow { get; }
+            public Vector2 LeftHip { get; }
+            public Vector2 LeftKnee { get; }
+            public Vector2 RightHip { get; }
+            public Vector2 RightKnee { get; }
+            public float MotionScale { get; }
+        }
     }
 }

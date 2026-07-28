@@ -21,7 +21,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   fences are collider-free so `RoadWalkableArea` remains the sole movement
   authority and camera collision does not react to decorative posts; rails
   and posts are combined into two owned runtime meshes.
-- **Accepted — Physical/visual split:** CharacterController stays on the root; 13 SpriteRenderers stay on a collider-free child.
+- **Accepted — Physical/visual split:** `CharacterController` stays on the
+  player root; a collider-free camera-facing child owns nine visual-only
+  `SpriteRenderer` components: body plus upper/lower segments for both arms
+  and legs.
 - **Accepted — Explicit scene allow-list:** Only `City` and `BarInterior` install their matching roots.
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
 - **Accepted — Ordered session route:** The current itinerary is a unique
@@ -36,7 +39,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Modal schematic city map:** A runtime IMGUI overlay fits the
   complete finite city in one view, exposes mouse/keyboard/gamepad editing,
   and temporarily suspends motor, interaction, camera orbit and the HUD.
-- **Accepted — Runtime presentation:** City geometry, primitive colors, sprite bitmaps and the shared interior are built at runtime.
+- **Accepted — Independent player heading:** The motor rotates the player root
+  only toward non-zero actual planar movement and preserves that heading while
+  idle. The chase camera orbits independently and never writes player yaw.
+- **Accepted — Eight-direction player presentation:** A corrected
+  point-filtered `512x96` reference and a derived `512x864` layered atlas
+  provide eight explicit `64x96` views at PPU 48. Each view has one body layer
+  and upper/lower segments for both arms and legs. A signed player-camera
+  angle selects the view in 45-degree sectors with 5-degree hysteresis; views
+  are never mirrored and share one foot pivot. Jointed walking projects the
+  actor's sagittal plane into the active billboard view: side views swing in
+  screen space, front/back views swing in depth, diagonal views blend both,
+  and contralateral limbs remain in opposite gait phases.
+- **Accepted — Runtime presentation:** City geometry, primitive colors and the
+  shared interior are built at runtime. Authored player, cocktail and
+  beer-pong bitmaps load from `Resources` and are sliced or drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; emissive and atmosphere effects reuse cached shared
   resources, with no per-instance materials or runtime `Shader.Find`.

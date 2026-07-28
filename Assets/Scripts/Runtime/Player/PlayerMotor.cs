@@ -9,6 +9,7 @@ namespace BarPromenade
         private const float Gravity = 24f;
         private const float FootstepStride = 1.35f;
         private const float FootstepMinimumSpeedSquared = 0.36f;
+        private const float FacingThresholdSquared = 0.0004f;
 
         private CharacterController controller;
         private Camera movementCamera;
@@ -73,7 +74,6 @@ namespace BarPromenade
                 return;
             }
 
-            FaceCameraHeading();
             Vector2 input = InputEnabled && !SceneTransitionService.IsTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
@@ -104,6 +104,7 @@ namespace BarPromenade
             Vector3 planarVelocity = transform.position - before;
             planarVelocity.y = 0f;
             PlanarVelocity = planarVelocity * inverseDelta;
+            FaceMovementDirection(PlanarVelocity);
             spriteRig?.SetMotion(PlanarVelocity);
             UpdateFootsteps(planarVelocity);
         }
@@ -133,20 +134,17 @@ namespace BarPromenade
                 transform.position);
         }
 
-        private void FaceCameraHeading()
+        private void FaceMovementDirection(Vector3 planarVelocity)
         {
-            Camera cameraToUse = movementCamera != null ? movementCamera : Camera.main;
-            if (cameraToUse == null)
+            planarVelocity.y = 0f;
+            if (planarVelocity.sqrMagnitude <= FacingThresholdSquared)
             {
                 return;
             }
 
-            Vector3 forward = cameraToUse.transform.forward;
-            forward.y = 0f;
-            if (forward.sqrMagnitude > 0.001f)
-            {
-                transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
-            }
+            transform.rotation = Quaternion.LookRotation(
+                planarVelocity.normalized,
+                Vector3.up);
         }
 
         private Vector3 CameraRelativeDirection(Vector2 input)

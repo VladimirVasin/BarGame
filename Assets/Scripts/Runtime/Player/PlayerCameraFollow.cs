@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 namespace BarPromenade
 {
     /// <summary>
-    /// Drives a perspective chase camera directly behind the player's heading.
+    /// Drives a freely orbiting perspective chase camera around the player.
     /// </summary>
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
@@ -132,22 +132,9 @@ namespace BarPromenade
 
         private void ApplyPose(Vector3 focusPoint, Quaternion rotation)
         {
-            AlignTargetHeading(rotation);
             controlledCamera.transform.SetPositionAndRotation(
                 focusPoint - rotation * Vector3.forward * currentDistance,
                 rotation);
-        }
-
-        private void AlignTargetHeading(Quaternion rotation)
-        {
-            Vector3 heading = rotation * Vector3.forward;
-            heading.y = 0f;
-            if (heading.sqrMagnitude > 0.001f)
-            {
-                followTarget.rotation = Quaternion.LookRotation(
-                    heading,
-                    Vector3.up);
-            }
         }
 
         private Quaternion GetDesiredRotation()

@@ -43,11 +43,12 @@ namespace BarPromenade
             controller.slopeLimit = 45f;
             controller.skinWidth = 0.04f;
 
-            GameObject visualObject = new GameObject("13-Part Sprite Visual");
+            GameObject visualObject =
+                new GameObject("8-Direction Jointed Sprite Visual");
             visualObject.transform.SetParent(player.transform, false);
             visualObject.transform.localPosition = new Vector3(0f, 0.04f, 0f);
             PlayerSpriteRig visual = visualObject.AddComponent<PlayerSpriteRig>();
-            visual.Initialize(camera);
+            visual.Initialize(camera, player.transform);
 
             PlayerMotor motor = player.AddComponent<PlayerMotor>();
             motor.Initialize(camera, walkableArea, visual);

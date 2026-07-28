@@ -9,6 +9,7 @@ This directory is the concise, versioned memory for Bar Promenade.
 | `system-tree.md` | Current and target repository/system structure |
 | `systems-map.md` | System ownership, dependencies, and implementation status |
 | `architecture-notes.md` | Accepted and proposed technical decisions |
+| `player-art-spec.md` | Locked player design and layered puppet-atlas contract |
 | `work-log.md` | Reverse-chronological implementation record |
 | `tutorial-scenario.md` | Planned vertical-slice walkthrough and acceptance path |
 | `release-notes.md` | Player-visible milestone notes |
@@ -18,4 +19,3 @@ Status terms:
 - `Current`: verified in the repository.
 - `Planned`: intended but not implemented.
 - `Deferred`: explicitly outside the present milestone.
-

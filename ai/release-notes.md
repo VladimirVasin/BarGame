@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Eight-direction player prototype
+
+- Added eight unique front/side/back views without replacing the character's
+  modular animation principle: the current rig uses one body layer and
+  separate upper/lower segments for both arms and legs.
+- Camera orbit no longer turns the hero. Movement stays camera-relative, while
+  the hero keeps the last actual movement heading when stopping.
+- Added 5-degree directional hysteresis, a shared foot pivot and explicit
+  non-mirrored views to prevent boundary flicker, size jumps and asymmetric
+  detail errors.
+- Restored 259 face pixels accidentally removed by chroma-key processing; all
+  visible facial pixels are opaque while the existing silhouette, clothing and
+  palette remain unchanged.
+- Walking now rotates shoulders, elbows, hips and knees in every direction,
+  alongside lightweight bob/rock and the existing whole-puppet intoxication
+  sway. Full multi-frame idle/walk animation remains a future art pass.
+- Corrected front/back walking so limbs swing in depth instead of fanning
+  sideways. Left/right limbs now alternate explicitly, arms oppose the
+  same-side legs, diagonals blend screen/depth motion and far limbs pass behind
+  the torso.
+
 ### Visible road-edge fences
 
 - Added low ochre two-rail barriers along every exposed road edge and across
@@ -132,8 +153,8 @@
 ### Playable MVP
 
 - Deterministic connected city with roads, 16 building lots and 3 bars.
-- Road-constrained 13-part sprite character and perspective third-person
-  chase camera with obstacle avoidance.
+- Road-constrained eight-direction sprite character and free-orbit perspective
+  third-person chase camera with obstacle avoidance.
 - Localized interaction prompts and a separate generated bar interior.
 - Guarded scene transitions and return to the same bar/city layout.
 - EditMode, PlayMode and Windows Player verification.

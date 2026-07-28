@@ -56,10 +56,14 @@ The vertical slice contains:
   cocktail mixer;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
-- a 13-part procedural billboard sprite with walking motion;
-- camera-relative road-constrained movement;
-- a perspective third-person chase camera with mouse/gamepad yaw and
-  obstacle-aware distance;
+- one nine-layer billboard puppet with a body plus upper/lower segments for
+  both arms and legs, eight unique 64x96 directional views, 5-degree sector
+  hysteresis and contralateral joint-driven walking projected into screen
+  space for side views and depth for front/back views;
+- camera-relative road-constrained movement that preserves the last actual
+  movement heading while idle;
+- a freely orbiting perspective third-person chase camera with mouse/gamepad
+  yaw and obstacle-aware distance;
 - a full-screen city map with player/bar markers, persistent green completed
   visits, ordered route editing and deterministic shortest paths constrained
   to the generated road graph;
@@ -100,6 +104,9 @@ The vertical slice contains:
 - Multiple bespoke bar interiors.
 - Mobile renderer parity for the PS1 composite; the current presentation
   feature targets the PC renderer.
+- Full multi-frame eight-direction player animation; the current vertical
+  prototype uses one authored idle view per direction plus runtime joint,
+  bob and rock animation.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, economy, dialogue, quests, combat,
   save slots, and online features.

@@ -2,6 +2,82 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — View-correct projected player gait
+
+- Replaced the single screen-plane joint axis with a view-projected sagittal
+  axis: side views retain their lateral swing, front/back views rotate in
+  depth, and diagonal views combine both components.
+- Made the gait phases explicit: left/right legs oppose one another and each
+  arm opposes the leg on the same side.
+- Added phase-aware near/far sorting so depth-projected limbs pass behind or
+  in front of the torso without changing sprites or mirroring.
+- Moved final pose application after direction selection in `LateUpdate` and
+  retained walk bob/rock, idle settling and `Wasted` sway.
+- Added PlayMode regression coverage for cardinal/diagonal projection,
+  contralateral phasing and depth sorting.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused Unity PlayMode player presentation: 9/9 passed.
+- Full Unity PlayMode with D3D11: 31/31 passed, including complete
+  `City`/`BarInterior` scene flow.
+
+## 2026-07-28 — Jointed eight-direction player correction
+
+- Kept the locked eight-view character design and restored exactly 259 facial
+  pixels that the original chroma-key pass had incorrectly made transparent;
+  every pre-existing atlas pixel outside that repair mask remains unchanged.
+- Derived a `512x864` puppet atlas from the corrected reference: body plus
+  upper/lower layers for both arms and legs in all eight directions. The
+  deterministic builder verifies that the nine neutral layers composite
+  pixel-for-pixel to the reference frame.
+- Replaced the temporary single-renderer presentation with nine visual-only
+  `SpriteRenderer` components in four parent/child joint chains. Walking now
+  rotates shoulders, elbows, hips and knees, while bob/rock and `Wasted` sway
+  affect the complete puppet.
+- Preserved camera-independent actor heading, 5-degree view hysteresis,
+  non-mirrored asymmetry, PPU 48 and the shared four-pixel foot pivot.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 213/213 passed.
+- Unity PlayMode with D3D11: 29/29 passed, including all nine puppet layers,
+  joint animation, eight camera sectors and the complete
+  `City`/`BarInterior` scene flow.
+- Windows x64 Player build: succeeded, 0 warnings, 131,098,367 bytes.
+
+## 2026-07-28 — Eight-direction player prototype
+
+- Replaced the procedural 13-part player rig with one point-filtered
+  `SpriteRenderer` backed by eight explicit `64x96` atlas views at PPU 48.
+- Locked a grim burgundy/navy character design with persistent left-arm
+  bandage, right-shoulder patch and diagonal strap details; every view has the
+  same scale and 4-pixel foot pivot and is used without mirroring.
+- Added a pure eight-sector selector with 5-degree hysteresis, full wraparound
+  and explicit front/side/back ordering.
+- Removed both camera-to-player yaw writes. The motor now faces actual planar
+  movement, preserves heading while idle and remains camera-relative.
+- Preserved prototype walking bob/rock and the existing `Wasted` sway through
+  the single-renderer hierarchy in both runtime scenes.
+- Updated player/camera tests, import checks, architecture maps, player art
+  specification and release notes. Full multi-frame idle/walk animation remains
+  the next art pass after approval of the static vertical prototype.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 211/211 passed.
+- Unity PlayMode with D3D11: 29/29 passed, including all eight view centers,
+  camera-independent heading, input movement, prototype motion, `Wasted`,
+  obstacle avoidance and the complete `City`/`BarInterior` flow.
+- Manual atlas contrast check: all eight silhouettes and the bandage/patch/strap
+  asymmetry remained readable against gray-green fog and warm bar tones.
+- Windows x64 Player build: succeeded, 0 warnings, 129,322,495 bytes.
+
 ## 2026-07-28 — Entrance-aware road-edge fences
 
 - Added a deterministic pure-data fence plan over the exposed perimeter of
