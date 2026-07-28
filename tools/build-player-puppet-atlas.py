@@ -7,8 +7,8 @@ The script is intentionally deterministic:
 * only the face pixels lost by the original chroma-key pass are restored;
 * every visible source pixel is assigned to a body or jointed limb layer;
 * the nine neutral layers composite back to the corrected reference frame.
-* facial variants preserve the complete body layer and only recolor an
-  explicit, direction-specific eye-pixel whitelist.
+* facial variants preserve the complete body layer and only recolor explicit,
+  direction-specific eye, brow and mouth pixel whitelists.
 
 Pillow is the only dependency.
 """
@@ -50,7 +50,7 @@ FRAME_WIDTH = 64
 FRAME_HEIGHT = 96
 DIRECTION_COUNT = 8
 PART_COUNT = 9
-EXPRESSION_COUNT = 3
+EXPRESSION_COUNT = 5
 TRANSPARENT = (0, 0, 0, 0)
 
 BODY = 0
@@ -66,6 +66,8 @@ RIGHT_LOWER_LEG = 8
 NEUTRAL_EXPRESSION = 0
 HALF_BLINK_EXPRESSION = 1
 CLOSED_BLINK_EXPRESSION = 2
+WATCHFUL_EXPRESSION = 3
+TENSE_EXPRESSION = 4
 
 # Global source crop, target width and target x. All target images are 84 px
 # tall and are placed at y=8, keeping the shared four-pixel foot margin.
@@ -91,6 +93,83 @@ BLINK_PIXELS = (
     (
         (28, 18, 28, 19),
         (29, 18, 29, 19),
+        (30, 18, 30, 19),
+        (33, 18, 33, 19),
+        (34, 18, 34, 19),
+        (35, 18, 35, 19),
+    ),
+    (
+        (28, 18, 28, 19),
+        (29, 18, 29, 19),
+        (30, 18, 30, 19),
+        (33, 18, 33, 19),
+        (34, 18, 34, 19),
+        (35, 18, 35, 19),
+    ),
+    (
+        (29, 17, 29, 18),
+        (30, 17, 29, 18),
+        (30, 18, 29, 18),
+        (31, 18, 31, 19),
+    ),
+    (),
+    (),
+    (),
+    (
+        (35, 17, 35, 18),
+        (36, 17, 36, 18),
+        (37, 17, 37, 18),
+        (36, 18, 36, 19),
+    ),
+    (
+        (29, 18, 29, 19),
+        (30, 18, 31, 18),
+        (36, 18, 36, 19),
+        (37, 18, 37, 19),
+    ),
+)
+
+# A fully closed eye retains a short, high-contrast lower lid crease.
+CLOSED_LID_PIXELS = (
+    ((29, 19, 29, 18), (34, 19, 34, 18)),
+    ((29, 19, 29, 18), (34, 19, 34, 18)),
+    ((30, 19, 30, 17),),
+    (),
+    (),
+    (),
+    ((36, 18, 36, 17),),
+    ((30, 19, 30, 18), (37, 19, 37, 18)),
+)
+
+# Watchful darkens the pupils and lifts two authored brow pixels.
+WATCHFUL_EYE_DARKEN_PIXELS = (
+    ((28, 18), (29, 18), (33, 18), (34, 18)),
+    ((28, 18), (29, 18), (33, 18), (34, 18)),
+    ((30, 17), (30, 18)),
+    (),
+    (),
+    (),
+    ((36, 17), (37, 17)),
+    ((30, 18), (37, 18)),
+)
+
+WATCHFUL_BROW_LIFT_PIXELS = (
+    ((28, 17, 28, 19), (34, 17, 34, 19)),
+    ((28, 17, 28, 19), (34, 17, 34, 19)),
+    ((29, 16, 29, 18), (31, 16, 31, 18)),
+    (),
+    (),
+    (),
+    ((35, 16, 35, 18), (37, 16, 37, 18)),
+    ((30, 17, 30, 19), (37, 17, 37, 19)),
+)
+
+# Tense narrows the eyes and adds compact brow/mouth contrast without
+# changing the head silhouette.
+TENSE_EYE_SOFTEN_PIXELS = (
+    (
+        (28, 18, 28, 19),
+        (29, 18, 29, 19),
         (33, 18, 33, 19),
         (34, 18, 34, 19),
     ),
@@ -100,34 +179,47 @@ BLINK_PIXELS = (
         (33, 18, 33, 19),
         (34, 18, 34, 19),
     ),
-    (
-        (30, 17, 29, 18),
-        (30, 18, 29, 18),
-    ),
+    ((30, 17, 29, 18), (30, 18, 29, 18)),
     (),
     (),
     (),
-    (
-        (36, 17, 36, 18),
-        (37, 17, 37, 18),
-    ),
-    (
-        (30, 18, 31, 18),
-        (37, 18, 37, 19),
-    ),
+    ((36, 17, 36, 18), (37, 17, 37, 18)),
+    ((30, 18, 31, 18), (37, 18, 37, 19)),
 )
 
-# Half-open bounds around the only facial pixels the expression builder is
+TENSE_BROW_DARKEN_PIXELS = (
+    ((28, 17), (29, 17), (33, 17), (34, 17)),
+    ((27, 17), (28, 17), (33, 17), (34, 17)),
+    ((29, 16), (30, 16)),
+    (),
+    (),
+    (),
+    ((36, 16), (37, 16)),
+    ((30, 17), (31, 17), (36, 17), (37, 17)),
+)
+
+TENSE_MOUTH_DARKEN_PIXELS = (
+    ((30, 22), (31, 22), (32, 22)),
+    ((29, 22), (30, 22), (31, 22)),
+    ((29, 22), (30, 22)),
+    (),
+    (),
+    (),
+    ((34, 22), (35, 22)),
+    ((32, 22), (33, 22), (34, 22)),
+)
+
+# Half-open bounds around all facial pixels the expression builder is
 # allowed to touch. Rear views deliberately have empty masks.
 FACE_EDIT_BOUNDS = (
-    (27, 17, 36, 20),
-    (27, 17, 36, 20),
-    (29, 16, 32, 20),
+    (27, 16, 36, 24),
+    (26, 16, 36, 24),
+    (27, 15, 33, 24),
     (0, 0, 0, 0),
     (0, 0, 0, 0),
     (0, 0, 0, 0),
-    (34, 16, 39, 20),
-    (29, 17, 39, 20),
+    (31, 15, 39, 24),
+    (28, 16, 40, 24),
 )
 
 # Coordinates use PNG space (origin at the top-left). Left/right are the two
@@ -762,20 +854,172 @@ def build_blink_variant(
     return variant
 
 
+def darken_rgb_half(
+    source: tuple[int, int, int, int],
+) -> tuple[int, int, int, int]:
+    if source[3] != 255:
+        raise RuntimeError(
+            "Facial contrast pixels must be opaque."
+        )
+
+    return (
+        (source[0] + 1) // 2,
+        (source[1] + 1) // 2,
+        (source[2] + 1) // 2,
+        255,
+    )
+
+
+def validate_face_edit(
+    direction: int,
+    x: int,
+    y: int,
+    label: str,
+) -> None:
+    x_min, y_min, x_max, y_max = FACE_EDIT_BOUNDS[direction]
+    if not (x_min <= x < x_max and y_min <= y < y_max):
+        raise RuntimeError(
+            f"Direction {direction} {label} pixel {(x, y)} is outside "
+            "its explicit face edit mask."
+        )
+
+
+def build_closed_blink_variant(
+    neutral_body: Image.Image,
+    direction: int,
+) -> Image.Image:
+    variant = build_blink_variant(
+        neutral_body,
+        direction,
+        1,
+        1,
+    )
+    for x, y, dark_x, dark_y in CLOSED_LID_PIXELS[direction]:
+        validate_face_edit(direction, x, y, "closed-lid")
+        dark = neutral_body.getpixel((dark_x, dark_y))
+        if dark[3] != 255:
+            raise RuntimeError(
+                "Closed-lid source pixels must be opaque."
+            )
+
+        variant.putpixel((x, y), dark)
+
+    return variant
+
+
+def build_watchful_variant(
+    neutral_body: Image.Image,
+    direction: int,
+) -> Image.Image:
+    variant = neutral_body.copy().convert("RGBA")
+
+    for x, y in WATCHFUL_EYE_DARKEN_PIXELS[direction]:
+        validate_face_edit(direction, x, y, "watchful-eye")
+        variant.putpixel(
+            (x, y),
+            darken_rgb_half(neutral_body.getpixel((x, y))),
+        )
+
+    for x, y, skin_x, skin_y in (
+        WATCHFUL_BROW_LIFT_PIXELS[direction]
+    ):
+        validate_face_edit(direction, x, y, "watchful-brow")
+        variant.putpixel(
+            (x, y),
+            blend_rgb_toward(
+                neutral_body.getpixel((x, y)),
+                neutral_body.getpixel((skin_x, skin_y)),
+                1,
+                2,
+            ),
+        )
+
+    return variant
+
+
+def build_tense_variant(
+    neutral_body: Image.Image,
+    direction: int,
+) -> Image.Image:
+    variant = neutral_body.copy().convert("RGBA")
+
+    for x, y, skin_x, skin_y in (
+        TENSE_EYE_SOFTEN_PIXELS[direction]
+    ):
+        validate_face_edit(direction, x, y, "tense-eye")
+        variant.putpixel(
+            (x, y),
+            blend_rgb_toward(
+                neutral_body.getpixel((x, y)),
+                neutral_body.getpixel((skin_x, skin_y)),
+                3,
+                4,
+            ),
+        )
+
+    contrast_pixels = (
+        TENSE_BROW_DARKEN_PIXELS[direction] +
+        TENSE_MOUTH_DARKEN_PIXELS[direction]
+    )
+    for x, y in contrast_pixels:
+        validate_face_edit(direction, x, y, "tense-contrast")
+        variant.putpixel(
+            (x, y),
+            darken_rgb_half(neutral_body.getpixel((x, y))),
+        )
+
+    return variant
+
+
+def get_expected_expression_changes(
+    direction: int,
+    expression: int,
+) -> set[tuple[int, int]]:
+    if expression == HALF_BLINK_EXPRESSION:
+        return {
+            (x, y)
+            for x, y, _, _ in BLINK_PIXELS[direction]
+        }
+    if expression == CLOSED_BLINK_EXPRESSION:
+        return {
+            (x, y)
+            for x, y, _, _ in (
+                BLINK_PIXELS[direction] +
+                CLOSED_LID_PIXELS[direction]
+            )
+        }
+    if expression == WATCHFUL_EXPRESSION:
+        return set(WATCHFUL_EYE_DARKEN_PIXELS[direction]) | {
+            (x, y)
+            for x, y, _, _ in (
+                WATCHFUL_BROW_LIFT_PIXELS[direction]
+            )
+        }
+    if expression == TENSE_EXPRESSION:
+        return {
+            (x, y)
+            for x, y, _, _ in (
+                TENSE_EYE_SOFTEN_PIXELS[direction]
+            )
+        } | set(TENSE_BROW_DARKEN_PIXELS[direction]) | set(
+            TENSE_MOUTH_DARKEN_PIXELS[direction]
+        )
+
+    return set()
+
+
 def assert_expression_contract(
     variants_by_direction: Sequence[Sequence[Image.Image]],
 ) -> None:
     for direction, variants in enumerate(variants_by_direction):
         neutral = variants[NEUTRAL_EXPRESSION]
         neutral_pixels = list(neutral.get_flattened_data())
-        expected_changes = {
-            (x, y)
-            for x, y, _, _ in BLINK_PIXELS[direction]
-        }
 
         for expression in (
             HALF_BLINK_EXPRESSION,
             CLOSED_BLINK_EXPRESSION,
+            WATCHFUL_EXPRESSION,
+            TENSE_EXPRESSION,
         ):
             variant = variants[expression]
             changed = set()
@@ -792,6 +1036,10 @@ def assert_expression_contract(
                     if original != facial:
                         changed.add((x, y))
 
+            expected_changes = get_expected_expression_changes(
+                direction,
+                expression,
+            )
             if changed != expected_changes:
                 raise RuntimeError(
                     f"Expression {expression}, direction {direction} "
@@ -806,20 +1054,19 @@ def assert_expression_contract(
                     )
             elif not changed:
                 raise RuntimeError(
-                    f"Visible direction {direction} has no blink pixels."
+                    f"Visible direction {direction}, expression "
+                    f"{expression} has no facial changes."
                 )
 
-        if (
-            list(
-                variants[HALF_BLINK_EXPRESSION].get_flattened_data()
-            )
-            == list(
-                variants[CLOSED_BLINK_EXPRESSION].get_flattened_data()
-            )
-        ):
-            if direction in VISIBLE_FACE_DIRECTIONS:
+        if direction in VISIBLE_FACE_DIRECTIONS:
+            flattened_variants = {
+                variant.tobytes()
+                for variant in variants
+            }
+            if len(flattened_variants) != EXPRESSION_COUNT:
                 raise RuntimeError(
-                    f"Direction {direction} half and closed blink match."
+                    f"Direction {direction} facial states are not "
+                    "pairwise distinct."
                 )
 
 
@@ -847,19 +1094,21 @@ def build_body_expressions_atlas(
         half_blink = build_blink_variant(
             neutral,
             direction,
-            1,
-            2,
+            3,
+            4,
         )
-        closed_blink = build_blink_variant(
+        closed_blink = build_closed_blink_variant(
             neutral,
             direction,
-            7,
-            8,
         )
+        watchful = build_watchful_variant(neutral, direction)
+        tense = build_tense_variant(neutral, direction)
         variants_by_direction.append((
             neutral,
             half_blink,
             closed_blink,
+            watchful,
+            tense,
         ))
 
     assert_expression_contract(variants_by_direction)

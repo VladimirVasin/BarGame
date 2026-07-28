@@ -59,11 +59,13 @@ The vertical slice contains:
 - one nine-layer billboard puppet with a body plus upper/lower segments for
   both arms and legs, eight unique 64x96 directional views, 5-degree sector
   hysteresis and contralateral joint-driven walking projected into screen
-  space for side views and depth for front/back views; procedural breathing,
-  weight shift and a rare arm fidget keep the same rig alive while idle;
-- one deterministic three-state body-expression atlas that swaps the existing
-  body sprite for half/closed blinks in the five visible-face directions
-  without adding a tenth renderer or inventing faces in rear views;
+  space for side views and depth for front/back views; readable procedural
+  breathing, weight shift and an alternating left/right arm gesture keep the
+  same rig alive while idle;
+- one deterministic five-state body-expression atlas that swaps the existing
+  body sprite for stronger half/closed blinks plus watchful and tense idle
+  expressions in the five visible-face directions without adding a tenth
+  renderer or inventing faces in rear views;
 - camera-relative road-constrained movement that preserves the last actual
   movement heading while idle;
 - a closer freely orbiting perspective third-person chase camera with

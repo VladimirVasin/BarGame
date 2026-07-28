@@ -2,6 +2,34 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Expressive living idle and facial states
+
+- Increased the readable breathing, weight-transfer and body-rock amplitudes
+  at the closer camera distance. The short cuff/strap gesture now alternates
+  deterministically between the left and right arms while keeping the
+  direction-projected sagittal plane and depth sorting.
+- Expanded the body-expression atlas from three to five rows: stronger
+  half/closed blinks plus `Watchful` and `Tense`. The two new expressions use
+  explicit direction-specific eye, brow and mouth edits, run only after
+  sustained idle and reset during locomotion or `Wasted`; blink timing
+  continues in either state.
+- Kept the nine-renderer hierarchy, authored asymmetry and non-mirrored views.
+  All three rear directions remain byte-identical to neutral.
+- Extended regression coverage for exact atlas output, pairwise-distinct
+  facial states, blink-under-motion, `Wasted` suppression, sagittal depth
+  sorting and the left-then-right idle gesture sequence.
+
+Verification:
+
+- Deterministic expression atlas rebuild:
+  SHA256 `6FDFB6744B9F74F0EFE67BC30C528B8C654ABEC3444EA815FA5F94DD034A7688`.
+- Unity EditMode: 222/222 passed.
+- Unity PlayMode in `-nographics`: 35/35 runnable tests passed; the existing
+  graphics-device-only RenderGraph test was ignored by design.
+- Runtime, EditModeTests, PlayModeTests and Assembly-CSharp .NET builds:
+  0 errors, 0 warnings.
+- Windows x64 Player build: succeeded, 0 warnings, 132,090,607 bytes.
+
 ## 2026-07-28 — Tighter centered chase framing
 
 - Reduced the centered exterior camera arm from `4.6 m` to `3.6 m` and the

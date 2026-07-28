@@ -459,8 +459,14 @@ namespace BarPromenade.Tests
             float minimumX = float.PositiveInfinity;
             float maximumX = float.NegativeInfinity;
             float maximumLeftArmAngle = 0f;
+            float maximumRightArmAngle = 0f;
             Vector3 leftArmDirectionAtMaximum = Vector3.down;
-            float deadline = Time.realtimeSinceStartup + 2.4f;
+            Vector3 rightArmDirectionAtMaximum = Vector3.down;
+            float firstLeftGestureTime = float.PositiveInfinity;
+            float firstRightGestureTime = float.PositiveInfinity;
+            bool sawFarLeftArmLayer = false;
+            float observationStart = Time.realtimeSinceStartup;
+            float deadline = observationStart + 8.45f;
 
             while (Time.realtimeSinceStartup < deadline)
             {
@@ -483,13 +489,52 @@ namespace BarPromenade.Tests
                     leftArmDirectionAtMaximum =
                         leftArm.localRotation * Vector3.down;
                 }
+                if (leftArmAngle > 1.2f &&
+                    float.IsPositiveInfinity(firstLeftGestureTime))
+                {
+                    firstLeftGestureTime =
+                        Time.realtimeSinceStartup - observationStart;
+                }
+
+                Transform rightArm = rig.GetPartTransform(
+                    PlayerPuppetPart.RightUpperArm);
+                float rightArmAngle = Quaternion.Angle(
+                    Quaternion.identity,
+                    rightArm.localRotation);
+                if (rightArmAngle > maximumRightArmAngle)
+                {
+                    maximumRightArmAngle = rightArmAngle;
+                    rightArmDirectionAtMaximum =
+                        rightArm.localRotation * Vector3.down;
+                }
+                if (rightArmAngle > 1.2f &&
+                    float.IsPositiveInfinity(firstRightGestureTime))
+                {
+                    firstRightGestureTime =
+                        Time.realtimeSinceStartup - observationStart;
+                }
 
                 Assert.That(IsLivingIdleWithinBounds(rig), Is.True);
+                float leftArmDepth =
+                    (leftArm.localRotation * Vector3.down).z;
+                int expectedLeftArmOrder =
+                    leftArmDepth < -0.01f ? -2 : 3;
+                int leftArmOrder = rig.GetPartRenderer(
+                    PlayerPuppetPart.LeftUpperArm).sortingOrder;
+                Assert.That(
+                    leftArmOrder,
+                    Is.EqualTo(expectedLeftArmOrder),
+                    "The readable idle gesture must preserve limb depth.");
+                sawFarLeftArmLayer |= leftArmOrder == -2;
+                float rightArmDepth =
+                    (rightArm.localRotation * Vector3.down).z;
+                int expectedRightArmOrder =
+                    rightArmDepth < -0.01f ? -1 : 4;
                 Assert.That(
                     rig.GetPartRenderer(
-                        PlayerPuppetPart.LeftUpperArm).sortingOrder,
-                    Is.EqualTo(3),
-                    "A sub-pixel idle fidget must not flip limb depth.");
+                        PlayerPuppetPart.RightUpperArm).sortingOrder,
+                    Is.EqualTo(expectedRightArmOrder),
+                    "The alternating idle gesture must preserve depth.");
                 Assert.That(
                     Quaternion.Angle(
                         actor.transform.rotation,
@@ -500,20 +545,36 @@ namespace BarPromenade.Tests
 
             Assert.That(
                 maximumY - minimumY,
-                Is.GreaterThan(0.0015f),
-                "Living idle must include visible sub-pixel breathing.");
+                Is.GreaterThan(0.0035f),
+                "Living idle must include readable breathing.");
             Assert.That(
                 maximumX - minimumX,
-                Is.GreaterThan(0.001f),
+                Is.GreaterThan(0.0025f),
                 "Living idle must include a slow weight shift.");
             Assert.That(
                 maximumLeftArmAngle,
-                Is.GreaterThan(0.2f),
-                "Living idle must include the deterministic arm fidget.");
+                Is.GreaterThan(1.2f),
+                "Living idle must include the first left-arm gesture.");
+            Assert.That(
+                maximumRightArmAngle,
+                Is.GreaterThan(1.2f),
+                "Living idle must include the following right-arm gesture.");
+            Assert.That(
+                firstLeftGestureTime,
+                Is.LessThan(firstRightGestureTime),
+                "The readable idle gesture must alternate left then right.");
+            Assert.That(
+                sawFarLeftArmLayer,
+                Is.True,
+                "The expressive cuff gesture must enter its far layer.");
             Assert.That(
                 Mathf.Abs(leftArmDirectionAtMaximum.x),
                 Is.LessThan(0.002f),
                 "Front-view idle motion must remain in the sagittal plane.");
+            Assert.That(
+                Mathf.Abs(rightArmDirectionAtMaximum.x),
+                Is.LessThan(0.002f),
+                "The second arm gesture must remain sagittal too.");
             AssertDisplayedSprites(rig, idleSprites);
             AssertNoMirroring(rig);
             AssertUnitScales(rig);
@@ -563,12 +624,15 @@ namespace BarPromenade.Tests
             Sprite[] idleSprites = CaptureDisplayedSprites(rig);
             float maximumSway = 0f;
             float maximumRock = 0f;
+            float maximumWastedLeftArmAngle = 0f;
+            float maximumWastedRightArmAngle = 0f;
 
             rig.SetMotion(Vector3.zero);
             rig.SetWasted(true);
+            float settledWastedSampleTime =
+                Time.realtimeSinceStartup + 0.35f;
             float swayDeadline = Time.realtimeSinceStartup + 1.5f;
-            while ((maximumSway <= 0.004f || maximumRock <= 0.2f) &&
-                   Time.realtimeSinceStartup < swayDeadline)
+            while (Time.realtimeSinceStartup < swayDeadline)
             {
                 yield return null;
                 maximumSway = Mathf.Max(
@@ -579,6 +643,24 @@ namespace BarPromenade.Tests
                     Quaternion.Angle(
                         idleRotation,
                         poseRoot.localRotation));
+                if (Time.realtimeSinceStartup >=
+                    settledWastedSampleTime)
+                {
+                    maximumWastedLeftArmAngle = Mathf.Max(
+                        maximumWastedLeftArmAngle,
+                        Quaternion.Angle(
+                            Quaternion.identity,
+                            rig.GetPartTransform(
+                                PlayerPuppetPart.LeftUpperArm)
+                                .localRotation));
+                    maximumWastedRightArmAngle = Mathf.Max(
+                        maximumWastedRightArmAngle,
+                        Quaternion.Angle(
+                            Quaternion.identity,
+                            rig.GetPartTransform(
+                                PlayerPuppetPart.RightUpperArm)
+                                .localRotation));
+                }
                 Assert.That(
                     Quaternion.Angle(
                         actor.transform.rotation,
@@ -591,6 +673,14 @@ namespace BarPromenade.Tests
 
             Assert.That(maximumSway, Is.GreaterThan(0.004f));
             Assert.That(maximumRock, Is.GreaterThan(0.2f));
+            Assert.That(
+                maximumWastedLeftArmAngle,
+                Is.LessThan(0.15f),
+                "Wasted must suppress the left idle gesture.");
+            Assert.That(
+                maximumWastedRightArmAngle,
+                Is.LessThan(0.15f),
+                "Wasted must suppress the right idle gesture.");
             Assert.That(rig.CurrentDirection, Is.EqualTo(idleDirection));
             AssertDisplayedSprites(rig, idleSprites);
             AssertNoMirroring(rig);
@@ -1351,13 +1441,13 @@ namespace BarPromenade.Tests
             PlayerSpriteRig rig)
         {
             Vector3 posePosition = rig.PoseRoot.localPosition;
-            if (Mathf.Abs(posePosition.x) > 0.008f ||
+            if (Mathf.Abs(posePosition.x) > 0.01f ||
                 posePosition.y < -0.001f ||
-                posePosition.y > 0.011f ||
+                posePosition.y > 0.015f ||
                 Mathf.Abs(posePosition.z) > 0.001f ||
                 Quaternion.Angle(
                     Quaternion.identity,
-                    rig.PoseRoot.localRotation) > 0.4f)
+                    rig.PoseRoot.localRotation) > 0.95f)
             {
                 return false;
             }
@@ -1367,7 +1457,7 @@ namespace BarPromenade.Tests
                 if (Quaternion.Angle(
                         Quaternion.identity,
                         rig.GetPartTransform(
-                            JointParts[index]).localRotation) > 0.56f)
+                            JointParts[index]).localRotation) > 2.2f)
                 {
                     return false;
                 }

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -7,12 +8,10 @@ namespace BarPromenade.Tests
 {
     public sealed class PlayerPresentationAssetTests
     {
+        private const string ExpressionAtlasSha256 =
+            "6FDFB6744B9F74F0EFE67BC30C528B8C654ABEC3444EA815FA5F94DD034A7688";
         private const int NeutralExpression =
             (int)PlayerFacialExpression.Neutral;
-        private const int HalfBlinkExpression =
-            (int)PlayerFacialExpression.HalfBlink;
-        private const int ClosedBlinkExpression =
-            (int)PlayerFacialExpression.ClosedBlink;
 
         private static readonly PlayerViewDirection[] VisibleFaceDirections =
         {
@@ -46,26 +45,70 @@ namespace BarPromenade.Tests
         // each 64x96 frame. Rear views intentionally have empty masks.
         private static readonly RectInt[] ExpressionFaceEditRegions =
         {
-            new RectInt(27, 17, 9, 3),
-            new RectInt(27, 17, 9, 3),
-            new RectInt(29, 16, 3, 4),
+            new RectInt(27, 16, 9, 8),
+            new RectInt(26, 16, 10, 8),
+            new RectInt(27, 15, 6, 9),
             new RectInt(0, 0, 0, 0),
             new RectInt(0, 0, 0, 0),
             new RectInt(0, 0, 0, 0),
-            new RectInt(34, 16, 5, 4),
-            new RectInt(29, 17, 10, 3)
+            new RectInt(31, 15, 8, 9),
+            new RectInt(28, 16, 12, 8)
         };
 
-        private static readonly int[] ExpectedBlinkChangedPixelCounts =
+        private static readonly int[] ExpectedHalfBlinkChangedPixelCounts =
         {
+            6,
+            6,
             4,
+            0,
+            0,
+            0,
             4,
-            2,
+            4
+        };
+
+        private static readonly int[] ExpectedClosedBlinkChangedPixelCounts =
+        {
+            8,
+            8,
+            5,
             0,
             0,
             0,
-            2,
-            2
+            4,
+            6
+        };
+
+        private static readonly int[] ExpectedWatchfulChangedPixelCounts =
+        {
+            6,
+            6,
+            4,
+            0,
+            0,
+            0,
+            4,
+            4
+        };
+
+        private static readonly int[] ExpectedTenseChangedPixelCounts =
+        {
+            11,
+            11,
+            6,
+            0,
+            0,
+            0,
+            6,
+            9
+        };
+
+        private static readonly int[][] ExpectedExpressionChangedPixelCounts =
+        {
+            ExpectedHalfBlinkChangedPixelCounts,
+            ExpectedClosedBlinkChangedPixelCounts,
+            ExpectedWatchfulChangedPixelCounts,
+            ExpectedTenseChangedPixelCounts
         };
 
         [Test]
@@ -263,6 +306,27 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void BodyExpressionsAtlas_MatchesDeterministicBuilderOutput()
+        {
+            string atlasPath = Path.Combine(
+                Application.dataPath,
+                "Resources",
+                "Player",
+                "PlayerDirectionalBodyExpressionsAtlas.png");
+            byte[] bytes = File.ReadAllBytes(atlasPath);
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(bytes);
+            }
+
+            string actualHash = System.BitConverter
+                .ToString(hash)
+                .Replace("-", string.Empty);
+            Assert.That(actualHash, Is.EqualTo(ExpressionAtlasSha256));
+        }
+
+        [Test]
         public void BodyExpressionsAtlas_PreservesBodyAndOnlyEditsFaceMasks()
         {
             Texture2D importedParts = Resources.Load<Texture2D>(
@@ -284,9 +348,11 @@ namespace BarPromenade.Tests
                 {
                     RectInt faceMask =
                         ExpressionFaceEditRegions[directionIndex];
-                    int halfBlinkChanges = 0;
-                    int closedBlinkChanges = 0;
-                    int halfVsClosedDifferences = 0;
+                    int[] expressionChanges =
+                        new int[PlayerSpriteRig.ExpressionCount];
+                    int[,] pairDifferences = new int[
+                        PlayerSpriteRig.ExpressionCount,
+                        PlayerSpriteRig.ExpressionCount];
 
                     for (int localY = 0;
                          localY < PlayerSpriteRig.FrameHeight;
@@ -319,89 +385,112 @@ namespace BarPromenade.Tests
                                     $"({localX}, {localY}).");
                             }
 
-                            Color32 halfBlink = GetAtlasCellPixel(
-                                expressionPixels,
-                                expressions.width,
-                                HalfBlinkExpression,
-                                directionIndex,
-                                localX,
-                                localY);
-                            Color32 closedBlink = GetAtlasCellPixel(
-                                expressionPixels,
-                                expressions.width,
-                                ClosedBlinkExpression,
-                                directionIndex,
-                                localX,
-                                localY);
-
-                            if (halfBlink.a != neutral.a)
+                            Color32[] facialPixels =
+                                new Color32[
+                                    PlayerSpriteRig.ExpressionCount];
+                            facialPixels[NeutralExpression] = neutral;
+                            for (int expressionIndex = 1;
+                                 expressionIndex <
+                                 PlayerSpriteRig.ExpressionCount;
+                                 expressionIndex++)
                             {
-                                Assert.Fail(
-                                    $"Half blink changed alpha at direction " +
-                                    $"{directionIndex}, pixel " +
-                                    $"({localX}, {localY}).");
+                                Color32 facial = GetAtlasCellPixel(
+                                    expressionPixels,
+                                    expressions.width,
+                                    expressionIndex,
+                                    directionIndex,
+                                    localX,
+                                    localY);
+                                facialPixels[expressionIndex] = facial;
+
+                                if (facial.a != neutral.a)
+                                {
+                                    Assert.Fail(
+                                        $"Expression {expressionIndex} " +
+                                        $"changed alpha at direction " +
+                                        $"{directionIndex}, pixel " +
+                                        $"({localX}, {localY}).");
+                                }
+
+                                AssertFacialChangeIsInsideMask(
+                                    neutral,
+                                    facial,
+                                    faceMask,
+                                    directionIndex,
+                                    expressionIndex,
+                                    localX,
+                                    localY);
+
+                                if (!ColorsEqual(neutral, facial))
+                                {
+                                    expressionChanges[expressionIndex]++;
+                                }
                             }
 
-                            if (closedBlink.a != neutral.a)
+                            for (int leftExpression = 0;
+                                 leftExpression <
+                                 PlayerSpriteRig.ExpressionCount;
+                                 leftExpression++)
                             {
-                                Assert.Fail(
-                                    $"Closed blink changed alpha at " +
-                                    $"direction {directionIndex}, pixel " +
-                                    $"({localX}, {localY}).");
-                            }
-
-                            AssertFacialChangeIsInsideMask(
-                                neutral,
-                                halfBlink,
-                                faceMask,
-                                directionIndex,
-                                HalfBlinkExpression,
-                                localX,
-                                localY);
-                            AssertFacialChangeIsInsideMask(
-                                neutral,
-                                closedBlink,
-                                faceMask,
-                                directionIndex,
-                                ClosedBlinkExpression,
-                                localX,
-                                localY);
-
-                            if (!ColorsEqual(neutral, halfBlink))
-                            {
-                                halfBlinkChanges++;
-                            }
-
-                            if (!ColorsEqual(neutral, closedBlink))
-                            {
-                                closedBlinkChanges++;
-                            }
-
-                            if (!ColorsEqual(halfBlink, closedBlink))
-                            {
-                                halfVsClosedDifferences++;
+                                for (int rightExpression =
+                                         leftExpression + 1;
+                                     rightExpression <
+                                     PlayerSpriteRig.ExpressionCount;
+                                     rightExpression++)
+                                {
+                                    if (!ColorsEqual(
+                                            facialPixels[leftExpression],
+                                            facialPixels[rightExpression]))
+                                    {
+                                        pairDifferences[
+                                            leftExpression,
+                                            rightExpression]++;
+                                    }
+                                }
                             }
                         }
                     }
 
-                    int expectedChanges =
-                        ExpectedBlinkChangedPixelCounts[directionIndex];
-                    Assert.That(
-                        halfBlinkChanges,
-                        Is.EqualTo(expectedChanges),
-                        $"Half blink, direction {directionIndex} changed " +
-                        "an unexpected pixel count.");
-                    Assert.That(
-                        closedBlinkChanges,
-                        Is.EqualTo(expectedChanges),
-                        $"Closed blink, direction {directionIndex} changed " +
-                        "an unexpected pixel count.");
-                    Assert.That(
-                        halfVsClosedDifferences,
-                        Is.EqualTo(expectedChanges),
-                        $"Half and closed blink should differ at every " +
-                        $"authored eye pixel for direction " +
-                        $"{directionIndex}.");
+                    for (int expressionIndex = 1;
+                         expressionIndex <
+                         PlayerSpriteRig.ExpressionCount;
+                         expressionIndex++)
+                    {
+                        int expectedChanges =
+                            ExpectedExpressionChangedPixelCounts[
+                                expressionIndex - 1][directionIndex];
+                        Assert.That(
+                            expressionChanges[expressionIndex],
+                            Is.EqualTo(expectedChanges),
+                            $"Expression {expressionIndex}, direction " +
+                            $"{directionIndex} changed an unexpected " +
+                            "pixel count.");
+                    }
+
+                    bool visibleFace = faceMask.width > 0;
+                    for (int leftExpression = 0;
+                         leftExpression <
+                         PlayerSpriteRig.ExpressionCount;
+                         leftExpression++)
+                    {
+                        for (int rightExpression = leftExpression + 1;
+                             rightExpression <
+                             PlayerSpriteRig.ExpressionCount;
+                             rightExpression++)
+                        {
+                            Assert.That(
+                                pairDifferences[
+                                    leftExpression,
+                                    rightExpression],
+                                visibleFace
+                                    ? Is.GreaterThan(0)
+                                    : Is.EqualTo(0),
+                                $"Expressions {leftExpression} and " +
+                                $"{rightExpression}, direction " +
+                                $"{directionIndex} violate the facial " +
+                                "visibility contract.");
+                        }
+                    }
                 }
             }
             finally

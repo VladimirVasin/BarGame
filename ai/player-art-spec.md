@@ -23,8 +23,8 @@
   It is `512x864`: the same eight columns and nine `64x96` layer rows.
 - Body expressions:
   `Assets/Resources/Player/PlayerDirectionalBodyExpressionsAtlas.png`.
-  It is `512x288`: the same eight columns and three full-body rows in Unity
-  order: `Neutral`, `HalfBlink`, `ClosedBlink`.
+  It is `512x480`: the same eight columns and five full-body rows in Unity
+  order: `Neutral`, `HalfBlink`, `ClosedBlink`, `Watchful`, `Tense`.
 - Layer order:
   `Body`, `LeftUpperArm`, `LeftLowerArm`, `RightUpperArm`,
   `RightLowerArm`, `LeftUpperLeg`, `LeftLowerLeg`, `RightUpperLeg`,
@@ -37,9 +37,10 @@
 - Body/limb pixels at rest must composite exactly to the visual reference.
   Arms are parented at shoulder/elbow pivots and legs at hip/knee pivots.
 - The neutral expression row must match the puppet `Body` layer exactly.
-  Blink variants may change only explicit opaque eye pixels. Alpha, silhouette,
-  clothing and asymmetry stay unchanged; `BackRight`, `Back` and `BackLeft`
-  must remain byte-identical to neutral.
+  Expression variants may change only their explicit opaque eye, lid, brow and
+  mouth pixel whitelists. Alpha, silhouette, clothing and asymmetry stay
+  unchanged; `BackRight`, `Back` and `BackLeft` must remain byte-identical to
+  neutral.
 - Visible face pixels are fully opaque. Chroma-key conversion must not infer
   magenta spill from the red channel alone because that removes skin tones.
 
@@ -47,9 +48,11 @@ The current puppet contains one static authored pose per direction and uses
 runtime sagittal joint rotation, bob and rock for walking. The sagittal axis is
 projected into screen space for side views, depth for front/back views and both
 for diagonals; left/right limbs alternate and arms oppose the same-side legs.
-Procedural idle adds sub-pixel breathing, weight shift and a rare asymmetric
-arm fidget. A deterministic timer swaps the existing body renderer through
-half/closed blink variants in the five visible-face directions.
+Procedural idle adds readable breathing, weight shift and a rare gesture that
+alternates between the left and right arms. A deterministic timer swaps the
+existing body renderer through stronger half/closed blinks in the five
+visible-face directions, plus watchful and tense expressions after sustained
+idle. Locomotion or `Wasted` cancels those two idle-only expressions.
 A future frame-animation pass should preserve the column/layer order and pivot
 positions while adding consistent idle/walk frames.
 
@@ -58,5 +61,6 @@ positions while adding consistent idle/walk frames.
 - Locked source: `ArtSource/Player/PlayerDirectionalTurntable.png`.
 - Deterministic builder: `python tools/build-player-puppet-atlas.py`.
 - The builder restores only pixels lost from the face, derives the nine layers
-  and three body-expression rows, and fails unless the neutral composites,
-  face edit masks, rear views, alpha and asymmetry contracts all hold.
+  and five body-expression rows, and fails unless the neutral composites,
+  exact facial edit whitelists, rear views, alpha and asymmetry contracts all
+  hold.

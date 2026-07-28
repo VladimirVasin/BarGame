@@ -11,12 +11,15 @@
   stable yaw/FOV and camera-independent player heading.
 - Camera motion now fades out and restores with the shared modal lock used by
   the map, minigames and F9 launcher.
-- Added a procedural living idle: sub-pixel breathing, slow weight transfer
-  and a rare asymmetric arm fidget blend with walking and are strongly
-  suppressed during `Wasted`.
-- Added deterministic half/closed blinks for all five visible-face directions
-  through the existing body renderer. Rear views remain neutral, the puppet
-  still uses exactly nine renderers and no sprite is mirrored.
+- Strengthened the procedural living idle with readable breathing, weight
+  transfer and a short gesture that alternates between the left and right
+  arms; all motion still blends with walking and is suppressed during
+  `Wasted`.
+- Expanded facial animation to five deterministic states: stronger
+  half/closed blinks plus watchful and tense idle expressions in all five
+  visible-face directions. Rear views remain neutral, locomotion cancels the
+  idle-only expressions, the puppet still uses exactly nine renderers and no
+  sprite is mirrored.
 
 ### Eight-direction player prototype
 

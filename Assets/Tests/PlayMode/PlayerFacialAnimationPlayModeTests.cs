@@ -12,7 +12,7 @@ namespace BarPromenade.Tests
             new List<GameObject>();
 
         [UnityTest]
-        public IEnumerator Rig_BlinksBySwappingBodyWithoutAddingRenderers()
+        public IEnumerator Rig_AnimatesFaceBySwappingBodyWithoutNewRenderers()
         {
             Camera camera = CreateCamera();
             GameObject actor = CreateObject("Facial Animation Actor");
@@ -78,6 +78,24 @@ namespace BarPromenade.Tests
                     PlayerSpriteRig.DirectionCount *
                     PlayerSpriteRig.ExpressionCount));
 
+            float watchfulDeadline = Time.realtimeSinceStartup + 2.5f;
+            while (rig.CurrentFacialExpression !=
+                   PlayerFacialExpression.Watchful &&
+                   Time.realtimeSinceStartup < watchfulDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                rig.CurrentFacialExpression,
+                Is.EqualTo(PlayerFacialExpression.Watchful));
+            Assert.That(
+                rig.BodyRenderer.sprite,
+                Is.SameAs(rig.GetFacialExpressionSprite(
+                    PlayerFacialExpression.Watchful,
+                    PlayerViewDirection.Front)));
+            AssertNeutralLimbSprites(rig, PlayerViewDirection.Front);
+
             float deadline = Time.realtimeSinceStartup + 6.5f;
             while (rig.CurrentFacialExpression !=
                    PlayerFacialExpression.ClosedBlink &&
@@ -112,6 +130,76 @@ namespace BarPromenade.Tests
                     PlayerViewDirection.Back)),
                 "Rear views must not display an invented face.");
             AssertNeutralLimbSprites(rig, PlayerViewDirection.Back);
+
+            PlaceCameraAtRelativeYaw(camera, actor.transform, 0f);
+            float tenseDeadline = Time.realtimeSinceStartup + 3f;
+            while (rig.CurrentFacialExpression !=
+                   PlayerFacialExpression.Tense &&
+                   Time.realtimeSinceStartup < tenseDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                rig.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.Front));
+            Assert.That(
+                rig.CurrentFacialExpression,
+                Is.EqualTo(PlayerFacialExpression.Tense));
+            Assert.That(
+                rig.BodyRenderer.sprite,
+                Is.SameAs(rig.GetFacialExpressionSprite(
+                    PlayerFacialExpression.Tense,
+                    PlayerViewDirection.Front)));
+            AssertNeutralLimbSprites(rig, PlayerViewDirection.Front);
+            Assert.That(
+                rigObject.GetComponentsInChildren<SpriteRenderer>(true),
+                Has.Length.EqualTo(PlayerSpriteRig.PartCount));
+
+            rig.SetMotion(Vector3.forward * 4f);
+            yield return null;
+
+            Assert.That(
+                rig.CurrentFacialExpression,
+                Is.EqualTo(PlayerFacialExpression.Neutral));
+            Assert.That(
+                rig.BodyRenderer.sprite,
+                Is.SameAs(rig.GetPartSprite(
+                    PlayerPuppetPart.Body,
+                    PlayerViewDirection.Front)),
+                "Locomotion must cancel an in-progress idle expression.");
+
+            float movingBlinkDeadline =
+                Time.realtimeSinceStartup + 3f;
+            while (rig.CurrentFacialExpression !=
+                   PlayerFacialExpression.ClosedBlink &&
+                   Time.realtimeSinceStartup < movingBlinkDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                rig.CurrentFacialExpression,
+                Is.EqualTo(PlayerFacialExpression.ClosedBlink),
+                "Blinking must continue during locomotion.");
+
+            rig.SetMotion(Vector3.zero);
+            rig.SetWasted(true);
+            float wastedDeadline =
+                Time.realtimeSinceStartup +
+                PlayerFacialAnimationState
+                    .InitialWatchfulDelaySeconds +
+                0.2f;
+            while (Time.realtimeSinceStartup < wastedDeadline)
+            {
+                yield return null;
+                Assert.That(
+                    rig.CurrentFacialExpression,
+                    Is.Not.EqualTo(PlayerFacialExpression.Watchful));
+                Assert.That(
+                    rig.CurrentFacialExpression,
+                    Is.Not.EqualTo(PlayerFacialExpression.Tense));
+            }
         }
 
         [UnityTearDown]

@@ -34,7 +34,7 @@ namespace BarPromenade
             "Player/PlayerDirectionalBodyExpressionsAtlas";
         public const int DirectionCount = 8;
         public const int PartCount = 9;
-        public const int ExpressionCount = 3;
+        public const int ExpressionCount = 5;
         public const int FrameWidth = 64;
         public const int FrameHeight = 96;
         public const float PixelsPerUnit = 48f;
@@ -146,15 +146,15 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float settleSpeed = 12f;
 
         [Header("Living idle")]
-        [SerializeField, Min(1f)] private float idleBreathingPeriod = 4.4f;
-        [SerializeField, Min(0f)] private float idleBreathingHeight = 0.0065f;
-        [SerializeField, Min(1f)] private float idleWeightShiftPeriod = 7.5f;
-        [SerializeField, Min(0f)] private float idleWeightShiftDistance = 0.0055f;
-        [SerializeField, Range(0f, 1f)]
-        private float idleWeightShiftDegrees = 0.24f;
-        [SerializeField, Min(2f)] private float idleFidgetPeriod = 8.5f;
-        [SerializeField, Range(0f, 1f)]
-        private float idleArmFidgetDegrees = 0.38f;
+        [SerializeField, Min(1f)] private float idleBreathingPeriod = 3.6f;
+        [SerializeField, Min(0f)] private float idleBreathingHeight = 0.01f;
+        [SerializeField, Min(1f)] private float idleWeightShiftPeriod = 5.8f;
+        [SerializeField, Min(0f)] private float idleWeightShiftDistance = 0.0075f;
+        [SerializeField, Range(0f, 2f)]
+        private float idleWeightShiftDegrees = 0.6f;
+        [SerializeField, Min(2f)] private float idleFidgetPeriod = 6.8f;
+        [SerializeField, Range(0f, 5f)]
+        private float idleArmFidgetDegrees = 1.8f;
         [SerializeField, Min(0f)] private float idleBlendSpeed = 2.5f;
 
         private readonly List<Sprite> directionSprites =
@@ -301,7 +301,11 @@ namespace BarPromenade
         {
             RefreshDirection();
             AnimatePuppet(Time.deltaTime);
-            facialAnimationState.Advance(Time.deltaTime);
+            facialAnimationState.Advance(
+                Time.deltaTime,
+                motionAmount <= MovingThreshold &&
+                !isWasted &&
+                wastedBlend <= 0.01f);
             ApplyFacialExpression(CurrentDirection);
         }
 
@@ -736,20 +740,45 @@ namespace BarPromenade
             float weightShiftWave = Mathf.Sin(
                 idlePhase * Mathf.PI * 2f /
                 Mathf.Max(1f, idleWeightShiftPeriod));
-            float fidgetWave = GetIdleFidgetWave(idlePhase);
+            float fidgetWave = GetIdleFidgetWave(
+                idlePhase,
+                out bool fidgetLeftArm);
+            float gestureIdleBlend =
+                idleBlend *
+                (1f - wastedBlend) *
+                (1f - wastedBlend);
+            float leftGestureWeight =
+                fidgetLeftArm ? 1f : 0.14f;
+            float rightGestureWeight =
+                fidgetLeftArm ? 0.14f : 1f;
             float idleLeftUpperArm =
-                (breathingWave * 0.08f +
-                 fidgetWave * idleArmFidgetDegrees) *
-                effectiveIdleBlend;
+                breathingWave * 0.2f * effectiveIdleBlend +
+                fidgetWave *
+                idleArmFidgetDegrees *
+                leftGestureWeight *
+                gestureIdleBlend;
             float idleLeftLowerArm =
-                -fidgetWave * idleArmFidgetDegrees * 0.4f *
-                effectiveIdleBlend;
+                -breathingWave * 0.1f * effectiveIdleBlend -
+                fidgetWave *
+                idleArmFidgetDegrees *
+                0.5f *
+                leftGestureWeight *
+                gestureIdleBlend;
             float idleRightUpperArm =
-                -breathingWave * 0.06f * effectiveIdleBlend;
+                -breathingWave * 0.16f * effectiveIdleBlend -
+                fidgetWave *
+                idleArmFidgetDegrees *
+                rightGestureWeight *
+                gestureIdleBlend;
             float idleRightLowerArm =
-                breathingWave * 0.04f * effectiveIdleBlend;
+                breathingWave * 0.08f * effectiveIdleBlend +
+                fidgetWave *
+                idleArmFidgetDegrees *
+                0.5f *
+                rightGestureWeight *
+                gestureIdleBlend;
             float idleLegShift =
-                weightShiftWave * 0.08f * effectiveIdleBlend;
+                weightShiftWave * 0.22f * effectiveIdleBlend;
             float settle = 1f - Mathf.Exp(-settleSpeed * deltaTime);
 
             SetJointRotation(
@@ -850,13 +879,19 @@ namespace BarPromenade
             poseRoot.localScale = Vector3.one;
         }
 
-        private float GetIdleFidgetWave(float phase)
+        private float GetIdleFidgetWave(
+            float phase,
+            out bool useLeftArm)
         {
             const float startDelay = 0.55f;
-            const float duration = 1.1f;
+            const float duration = 1.35f;
             float period = Mathf.Max(duration + startDelay, idleFidgetPeriod);
+            float shiftedPhase = phase + period - startDelay;
+            int cycleIndex = Mathf.FloorToInt(
+                (phase - startDelay) / period);
+            useLeftArm = cycleIndex % 2 == 0;
             float localPhase = Mathf.Repeat(
-                phase + period - startDelay,
+                shiftedPhase,
                 period);
             if (localPhase > duration)
             {

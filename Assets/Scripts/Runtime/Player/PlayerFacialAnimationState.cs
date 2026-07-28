@@ -6,35 +6,62 @@ namespace BarPromenade
     {
         Neutral = 0,
         HalfBlink = 1,
-        ClosedBlink = 2
+        ClosedBlink = 2,
+        Watchful = 3,
+        Tense = 4
     }
 
     /// <summary>
-    /// Advances a deterministic, frame-rate independent blink schedule.
-    /// The state owns timing only; the sprite rig chooses the matching
-    /// direction-specific body frame.
+    /// Advances deterministic, frame-rate independent blink and idle
+    /// expression schedules. The state owns timing only; the sprite rig
+    /// chooses the matching direction-specific body frame.
     /// </summary>
     public sealed class PlayerFacialAnimationState
     {
-        public const float InitialBlinkDelaySeconds = 4.2f;
-        public const float HalfBlinkDurationSeconds = 0.04f;
-        public const float ClosedBlinkDurationSeconds = 0.07f;
+        public const float InitialBlinkDelaySeconds = 2.8f;
+        public const float HalfBlinkDurationSeconds = 0.055f;
+        public const float ClosedBlinkDurationSeconds = 0.12f;
         public const float BlinkDurationSeconds =
             (HalfBlinkDurationSeconds * 2f) +
             ClosedBlinkDurationSeconds;
+        public const float InitialWatchfulDelaySeconds = 1.6f;
+        public const float WatchfulDurationSeconds = 0.75f;
+        public const float InitialTenseDelaySeconds = 4.7f;
+        public const float TenseDurationSeconds = 0.95f;
 
         private static readonly float[] BlinkIntervalsSeconds =
         {
-            4.8f,
-            5.7f,
-            3.9f,
-            6.2f,
-            4.4f
+            3.6f,
+            4.9f,
+            0.3f,
+            5.4f,
+            4.1f
         };
 
-        private float elapsedSeconds;
+        private static readonly float[] WatchfulIntervalsSeconds =
+        {
+            4.6f,
+            5.5f,
+            4.2f,
+            6.1f
+        };
+
+        private static readonly float[] TenseIntervalsSeconds =
+        {
+            7.8f,
+            9.2f,
+            8.4f,
+            10.1f
+        };
+
+        private float blinkElapsedSeconds;
         private float nextBlinkStartSeconds;
         private int completedBlinkCount;
+        private float idleElapsedSeconds;
+        private float nextWatchfulStartSeconds;
+        private int completedWatchfulCount;
+        private float nextTenseStartSeconds;
+        private int completedTenseCount;
 
         public PlayerFacialExpression CurrentExpression
         {
@@ -47,13 +74,69 @@ namespace BarPromenade
             Reset();
         }
 
-        public PlayerFacialExpression Advance(float deltaTime)
+        public PlayerFacialExpression Advance(
+            float deltaTime,
+            bool allowIdleExpressions = true)
         {
-            elapsedSeconds += Mathf.Max(0f, deltaTime);
+            float safeDeltaTime = Mathf.Max(0f, deltaTime);
+            blinkElapsedSeconds += safeDeltaTime;
+            PlayerFacialExpression blinkExpression =
+                GetBlinkExpression();
+
+            if (!allowIdleExpressions)
+            {
+                ResetIdleExpressionSchedule();
+                CurrentExpression = blinkExpression;
+                return CurrentExpression;
+            }
+
+            idleElapsedSeconds += safeDeltaTime;
+            bool tenseActive = IsIdleExpressionActive(
+                ref nextTenseStartSeconds,
+                ref completedTenseCount,
+                TenseDurationSeconds,
+                TenseIntervalsSeconds);
+            bool watchfulActive = IsIdleExpressionActive(
+                ref nextWatchfulStartSeconds,
+                ref completedWatchfulCount,
+                WatchfulDurationSeconds,
+                WatchfulIntervalsSeconds);
+
+            if (blinkExpression != PlayerFacialExpression.Neutral)
+            {
+                CurrentExpression = blinkExpression;
+            }
+            else if (tenseActive)
+            {
+                CurrentExpression = PlayerFacialExpression.Tense;
+            }
+            else if (watchfulActive)
+            {
+                CurrentExpression = PlayerFacialExpression.Watchful;
+            }
+            else
+            {
+                CurrentExpression = PlayerFacialExpression.Neutral;
+            }
+
+            return CurrentExpression;
+        }
+
+        public void Reset()
+        {
+            blinkElapsedSeconds = 0f;
+            nextBlinkStartSeconds = InitialBlinkDelaySeconds;
+            completedBlinkCount = 0;
+            ResetIdleExpressionSchedule();
+            CurrentExpression = PlayerFacialExpression.Neutral;
+        }
+
+        private PlayerFacialExpression GetBlinkExpression()
+        {
             float blinkEnd =
                 nextBlinkStartSeconds + BlinkDurationSeconds;
 
-            while (elapsedSeconds >= blinkEnd)
+            while (blinkElapsedSeconds >= blinkEnd)
             {
                 float interval = BlinkIntervalsSeconds[
                     completedBlinkCount %
@@ -65,39 +148,53 @@ namespace BarPromenade
             }
 
             float blinkTime =
-                elapsedSeconds - nextBlinkStartSeconds;
+                blinkElapsedSeconds - nextBlinkStartSeconds;
             if (blinkTime < 0f)
             {
-                CurrentExpression =
-                    PlayerFacialExpression.Neutral;
-            }
-            else if (blinkTime < HalfBlinkDurationSeconds)
-            {
-                CurrentExpression =
-                    PlayerFacialExpression.HalfBlink;
-            }
-            else if (blinkTime <
-                     HalfBlinkDurationSeconds +
-                     ClosedBlinkDurationSeconds)
-            {
-                CurrentExpression =
-                    PlayerFacialExpression.ClosedBlink;
-            }
-            else
-            {
-                CurrentExpression =
-                    PlayerFacialExpression.HalfBlink;
+                return PlayerFacialExpression.Neutral;
             }
 
-            return CurrentExpression;
+            if (blinkTime < HalfBlinkDurationSeconds)
+            {
+                return PlayerFacialExpression.HalfBlink;
+            }
+
+            if (blinkTime <
+                HalfBlinkDurationSeconds +
+                ClosedBlinkDurationSeconds)
+            {
+                return PlayerFacialExpression.ClosedBlink;
+            }
+
+            return PlayerFacialExpression.HalfBlink;
         }
 
-        public void Reset()
+        private bool IsIdleExpressionActive(
+            ref float nextStartSeconds,
+            ref int completedCount,
+            float durationSeconds,
+            float[] intervalsSeconds)
         {
-            elapsedSeconds = 0f;
-            nextBlinkStartSeconds = InitialBlinkDelaySeconds;
-            completedBlinkCount = 0;
-            CurrentExpression = PlayerFacialExpression.Neutral;
+            float endSeconds = nextStartSeconds + durationSeconds;
+            while (idleElapsedSeconds >= endSeconds)
+            {
+                float interval = intervalsSeconds[
+                    completedCount % intervalsSeconds.Length];
+                completedCount++;
+                nextStartSeconds = endSeconds + interval;
+                endSeconds = nextStartSeconds + durationSeconds;
+            }
+
+            return idleElapsedSeconds >= nextStartSeconds;
+        }
+
+        private void ResetIdleExpressionSchedule()
+        {
+            idleElapsedSeconds = 0f;
+            nextWatchfulStartSeconds = InitialWatchfulDelaySeconds;
+            completedWatchfulCount = 0;
+            nextTenseStartSeconds = InitialTenseDelaySeconds;
+            completedTenseCount = 0;
         }
     }
 }

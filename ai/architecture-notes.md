@@ -59,10 +59,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   actor's sagittal plane into the active billboard view: side views swing in
   screen space, front/back views swing in depth, diagonal views blend both,
   and contralateral limbs remain in opposite gait phases. The same projected
-  joints add bounded breathing, weight transfer and one deterministic arm
-  fidget while idle. A separate `512x288` body-expression atlas provides
-  neutral, half-blink and closed-blink rows; runtime swaps only the existing
-  body renderer, and all rear variants remain neutral.
+  joints add readable breathing, weight transfer and deterministic alternating
+  left/right arm gestures while idle. A separate `512x480` body-expression
+  atlas provides neutral, half-blink, closed-blink, watchful and tense rows;
+  the stronger blink remains available during locomotion, watchful/tense
+  states require sustained idle, runtime swaps only the existing body
+  renderer, and all rear variants remain neutral.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. Authored player, cocktail and
   beer-pong bitmaps load from `Resources` and are sliced or drawn at runtime.

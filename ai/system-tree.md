@@ -34,7 +34,7 @@ Assets/
     Player/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
-      PlayerDirectionalBodyExpressionsAtlas.png  neutral/half/closed body rows
+      PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
     Localization/
       ru.json
       en.json
