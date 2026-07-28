@@ -4,8 +4,8 @@
 
 ### Cinematic player presentation
 
-- Moved the chase camera closer with separate `4.6 m / 53°` exterior and
-  `3.3 m / 57°` interior profiles.
+- Moved the centered chase camera closer with separate `3.6 m / 53°` exterior
+  and `2.7 m / 57°` interior profiles.
 - Added bounded target damping, teleport snapping and subtle deterministic
   idle/walk camera motion while preserving immediate obstacle avoidance,
   stable yaw/FOV and camera-independent player heading.

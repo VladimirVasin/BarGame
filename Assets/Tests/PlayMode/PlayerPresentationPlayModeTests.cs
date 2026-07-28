@@ -742,7 +742,7 @@ namespace BarPromenade.Tests
                 camera.transform.position);
             Assert.That(
                 unobstructedDistance,
-                Is.EqualTo(4.6f).Within(0.01f));
+                Is.EqualTo(3.6f).Within(0.01f));
             Assert.That(
                 actualDistance,
                 Is.LessThan(1.5f),
@@ -777,7 +777,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     exteriorFocus,
                     exteriorCamera.transform.position),
-                Is.EqualTo(4.6f).Within(0.001f));
+                Is.EqualTo(3.6f).Within(0.001f));
             Assert.That(
                 exteriorCamera.fieldOfView,
                 Is.EqualTo(53f).Within(0.01f));
@@ -801,7 +801,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     interiorFocus,
                     interiorCamera.transform.position),
-                Is.EqualTo(3.3f).Within(0.001f));
+                Is.EqualTo(2.7f).Within(0.001f));
             Assert.That(
                 interiorCamera.fieldOfView,
                 Is.EqualTo(57f).Within(0.01f));
@@ -876,7 +876,7 @@ namespace BarPromenade.Tests
                 Vector3.Distance(
                     teleportedFocus,
                     camera.transform.position),
-                Is.EqualTo(4.6f).Within(0.001f),
+                Is.EqualTo(3.6f).Within(0.001f),
                 "Teleport snap must apply the exact collision-safe pose.");
         }
 
@@ -902,7 +902,7 @@ namespace BarPromenade.Tests
                         camera,
                         follow,
                         baseRotation,
-                        4.6f));
+                        3.6f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -918,7 +918,7 @@ namespace BarPromenade.Tests
                         camera,
                         follow,
                         baseRotation,
-                        4.6f));
+                        3.6f));
                 AssertCinematicCameraKeepsStableYawAndFov(camera, 53f);
             }
 
@@ -943,7 +943,7 @@ namespace BarPromenade.Tests
                     camera,
                     follow,
                     baseRotation,
-                    4.6f),
+                    3.6f),
                 Is.LessThan(0.002f),
                 "Modal camera suppression must fade the sway to rest.");
         }

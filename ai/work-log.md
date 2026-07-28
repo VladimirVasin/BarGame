@@ -2,6 +2,18 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Tighter centered chase framing
+
+- Reduced the centered exterior camera arm from `4.6 m` to `3.6 m` and the
+  interior arm from `3.3 m` to `2.7 m`.
+- Kept the existing FOV, focus heights, orbit, damping, cinematic motion and
+  obstacle handling unchanged; no shoulder offset was introduced.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused Unity PlayMode player/camera presentation: 13/13 passed.
+
 ## 2026-07-28 — Cinematic camera, living idle and facial blink
 
 - Tightened exterior/interior chase framing to `4.6 m / 53°` and

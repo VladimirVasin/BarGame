@@ -44,8 +44,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
-  `4.6 m / 53°` and `3.3 m / 57°` profiles. The target focus is critically
-  damped with at most `0.35 m` lag and snaps on jumps beyond `1.75 m`.
+  `3.6 m / 53°` and `2.7 m / 57°` centered profiles. The target focus is
+  critically damped with at most `0.35 m` lag and snaps on jumps beyond
+  `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only
   focus, pitch and roll; yaw and FOV remain stable. Collision still shortens
   the arm immediately and cinematic motion fades during modal ownership.
