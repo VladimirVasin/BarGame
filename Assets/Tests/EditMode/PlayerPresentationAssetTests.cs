@@ -9,7 +9,7 @@ namespace BarPromenade.Tests
     public sealed class PlayerPresentationAssetTests
     {
         private const string ExpressionAtlasSha256 =
-            "6FDFB6744B9F74F0EFE67BC30C528B8C654ABEC3444EA815FA5F94DD034A7688";
+            "AA3D280504D08E44782DD5166A5657D6AA789522F9EA5667E23D1114C3027E5C";
         private const int NeutralExpression =
             (int)PlayerFacialExpression.Neutral;
 
@@ -39,6 +39,82 @@ namespace BarPromenade.Tests
             new Vector2Int(28, 18),
             new Vector2Int(35, 18),
             new Vector2Int(35, 18)
+        };
+
+        private static readonly PlayerViewDirection[]
+            TurnedHeadDirections =
+            {
+                PlayerViewDirection.FrontRight,
+                PlayerViewDirection.BackRight,
+                PlayerViewDirection.BackLeft,
+                PlayerViewDirection.FrontLeft
+            };
+
+        private static readonly Vector2Int[][] TurnedHeadRepairPixels =
+        {
+            new[]
+            {
+                new Vector2Int(31, 25),
+                new Vector2Int(32, 25),
+                new Vector2Int(33, 25),
+                new Vector2Int(30, 26),
+                new Vector2Int(31, 26),
+                new Vector2Int(32, 26),
+                new Vector2Int(30, 27),
+                new Vector2Int(31, 27),
+                new Vector2Int(28, 28),
+                new Vector2Int(29, 28),
+                new Vector2Int(30, 28),
+                new Vector2Int(31, 28)
+            },
+            new[]
+            {
+                new Vector2Int(25, 16),
+                new Vector2Int(25, 17),
+                new Vector2Int(28, 17),
+                new Vector2Int(25, 18),
+                new Vector2Int(28, 18),
+                new Vector2Int(25, 19),
+                new Vector2Int(27, 19),
+                new Vector2Int(25, 20),
+                new Vector2Int(27, 20),
+                new Vector2Int(27, 21),
+                new Vector2Int(28, 21),
+                new Vector2Int(28, 22),
+                new Vector2Int(29, 22)
+            },
+            new[]
+            {
+                new Vector2Int(38, 15),
+                new Vector2Int(35, 16),
+                new Vector2Int(38, 16),
+                new Vector2Int(34, 16),
+                new Vector2Int(34, 17),
+                new Vector2Int(37, 17),
+                new Vector2Int(34, 18),
+                new Vector2Int(35, 18),
+                new Vector2Int(37, 18),
+                new Vector2Int(35, 19),
+                new Vector2Int(37, 19),
+                new Vector2Int(35, 20),
+                new Vector2Int(37, 20),
+                new Vector2Int(31, 21)
+            },
+            new[]
+            {
+                new Vector2Int(27, 16),
+                new Vector2Int(27, 17),
+                new Vector2Int(30, 25),
+                new Vector2Int(31, 25),
+                new Vector2Int(31, 26),
+                new Vector2Int(32, 26),
+                new Vector2Int(31, 27),
+                new Vector2Int(32, 27),
+                new Vector2Int(33, 27),
+                new Vector2Int(34, 27),
+                new Vector2Int(33, 28),
+                new Vector2Int(34, 28)
+            }
         };
 
         // Indexed by PlayerViewDirection and measured from the top-left of
@@ -225,6 +301,98 @@ namespace BarPromenade.Tests
             finally
             {
                 Object.DestroyImmediate(readable);
+            }
+        }
+
+        [Test]
+        public void TurnedHeadRepairs_AreOpaqueInEveryRuntimeBodyVariant()
+        {
+            Texture2D reference = LoadReadableCopy(
+                Resources.Load<Texture2D>(
+                    PlayerSpriteRig.ReferenceAtlasResourcePath));
+            Texture2D parts = LoadReadableCopy(
+                Resources.Load<Texture2D>(
+                    PlayerSpriteRig.AtlasResourcePath));
+            Texture2D expressions = LoadReadableCopy(
+                Resources.Load<Texture2D>(
+                    PlayerSpriteRig.ExpressionAtlasResourcePath));
+
+            try
+            {
+                Color32[] referencePixels =
+                    reference.GetPixels32();
+                Color32[] partPixels = parts.GetPixels32();
+                Color32[] expressionPixels =
+                    expressions.GetPixels32();
+
+                for (int directionIndex = 0;
+                     directionIndex < TurnedHeadDirections.Length;
+                     directionIndex++)
+                {
+                    PlayerViewDirection direction =
+                        TurnedHeadDirections[directionIndex];
+                    Vector2Int[] repairPixels =
+                        TurnedHeadRepairPixels[directionIndex];
+                    for (int pixelIndex = 0;
+                         pixelIndex < repairPixels.Length;
+                         pixelIndex++)
+                    {
+                        Vector2Int sample =
+                            repairPixels[pixelIndex];
+                        Assert.That(
+                            GetTopLeftPixel(
+                                referencePixels,
+                                reference.width,
+                                reference.height,
+                                direction,
+                                sample.x,
+                                sample.y).a,
+                            Is.EqualTo(byte.MaxValue),
+                            $"{direction} reference head is transparent " +
+                            $"at ({sample.x}, {sample.y}).");
+
+                        int localY =
+                            PlayerSpriteRig.FrameHeight -
+                            1 -
+                            sample.y;
+                        Assert.That(
+                            GetAtlasCellPixel(
+                                partPixels,
+                                parts.width,
+                                (int)PlayerPuppetPart.Body,
+                                (int)direction,
+                                sample.x,
+                                localY).a,
+                            Is.EqualTo(byte.MaxValue),
+                            $"{direction} body head is transparent at " +
+                            $"({sample.x}, {sample.y}).");
+
+                        for (int expressionIndex = 0;
+                             expressionIndex <
+                             PlayerSpriteRig.ExpressionCount;
+                             expressionIndex++)
+                        {
+                            Assert.That(
+                                GetAtlasCellPixel(
+                                    expressionPixels,
+                                    expressions.width,
+                                    expressionIndex,
+                                    (int)direction,
+                                    sample.x,
+                                    localY).a,
+                                Is.EqualTo(byte.MaxValue),
+                                $"{direction} expression " +
+                                $"{expressionIndex} head is transparent " +
+                                $"at ({sample.x}, {sample.y}).");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(reference);
+                Object.DestroyImmediate(parts);
+                Object.DestroyImmediate(expressions);
             }
         }
 

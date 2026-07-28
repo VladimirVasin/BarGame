@@ -436,6 +436,77 @@ namespace BarPromenade.Tests
         }
 
         [UnityTest]
+        public IEnumerator WalkCadence_ScalesWithActualTravelSpeed()
+        {
+            Camera camera = CreateCamera(new Vector3(0f, 7f, -10f));
+            GameObject rigObject =
+                CreateObject("Distance Driven Gait Test Rig");
+            PlayerSpriteRig rig =
+                rigObject.AddComponent<PlayerSpriteRig>();
+            rig.Initialize(camera);
+            yield return null;
+
+            FieldInfo phaseField = typeof(PlayerSpriteRig).GetField(
+                "animationPhase",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(phaseField, Is.Not.Null);
+            MethodInfo animateMethod =
+                typeof(PlayerSpriteRig).GetMethod(
+                    "AnimatePuppet",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(animateMethod, Is.Not.Null);
+            AssertPrivateFloat(rig, "fullAnimationSpeed", 5.2f);
+            AssertPrivateFloat(rig, "walkCycleDistance", 2.7f);
+            AssertPrivateFloat(rig, "settleSpeed", 8f);
+            AssertPrivateFloat(rig, "walkRockDegrees", 1.8f);
+            AssertPrivateFloat(
+                rig,
+                "walkBodyCompressionHeight",
+                0.012f);
+            AssertPrivateFloat(
+                rig,
+                "footPlantCompressionHeight",
+                0.005f);
+            rig.enabled = false;
+
+            const float slowSpeed = 1.3f;
+            const float sampleDuration = 0.35f;
+            rig.SetMotion(Vector3.forward * slowSpeed);
+            float slowPhaseStart = (float)phaseField.GetValue(rig);
+            animateMethod.Invoke(
+                rig,
+                new object[] { sampleDuration });
+
+            float slowPhaseDelta =
+                (float)phaseField.GetValue(rig) - slowPhaseStart;
+            float slowPhaseRate =
+                slowPhaseDelta / sampleDuration;
+
+            const float fastSpeed = 5.2f;
+            rig.SetMotion(Vector3.forward * fastSpeed);
+            float fastPhaseStart = (float)phaseField.GetValue(rig);
+            animateMethod.Invoke(
+                rig,
+                new object[] { sampleDuration });
+
+            float fastPhaseDelta =
+                (float)phaseField.GetValue(rig) - fastPhaseStart;
+            float fastPhaseRate =
+                fastPhaseDelta / sampleDuration;
+
+            Assert.That(
+                slowPhaseRate,
+                Is.EqualTo(
+                    slowSpeed / 2.7f * Mathf.PI * 2f)
+                    .Within(0.001f));
+            Assert.That(
+                fastPhaseRate / slowPhaseRate,
+                Is.InRange(3.7f, 4.3f),
+                "Walking cadence must follow distance travelled instead " +
+                "of playing at one fixed rate.");
+        }
+
+        [UnityTest]
         public IEnumerator Idle_BreathesShiftsWeightAndFidgetsInSagittalPlane()
         {
             Camera camera = CreateCamera(Vector3.zero);
@@ -476,8 +547,12 @@ namespace BarPromenade.Tests
                 Vector3 posePosition = rig.PoseRoot.localPosition;
                 minimumX = Mathf.Min(minimumX, posePosition.x);
                 maximumX = Mathf.Max(maximumX, posePosition.x);
-                minimumY = Mathf.Min(minimumY, posePosition.y);
-                maximumY = Mathf.Max(maximumY, posePosition.y);
+                minimumY = Mathf.Min(
+                    minimumY,
+                    rig.UpperBodyOffset.y);
+                maximumY = Mathf.Max(
+                    maximumY,
+                    rig.UpperBodyOffset.y);
 
                 Transform leftArm = rig.GetPartTransform(
                     PlayerPuppetPart.LeftUpperArm);
@@ -716,18 +791,18 @@ namespace BarPromenade.Tests
                 Is.True,
                 "Disabling Wasted must settle back into living idle.");
 
-            float minimumLivingIdleY = poseRoot.localPosition.y;
-            float maximumLivingIdleY = poseRoot.localPosition.y;
+            float minimumLivingIdleY = rig.UpperBodyOffset.y;
+            float maximumLivingIdleY = rig.UpperBodyOffset.y;
             float livingIdleDeadline = Time.realtimeSinceStartup + 1.2f;
             while (Time.realtimeSinceStartup < livingIdleDeadline)
             {
                 yield return null;
                 minimumLivingIdleY = Mathf.Min(
                     minimumLivingIdleY,
-                    poseRoot.localPosition.y);
+                    rig.UpperBodyOffset.y);
                 maximumLivingIdleY = Mathf.Max(
                     maximumLivingIdleY,
-                    poseRoot.localPosition.y);
+                    rig.UpperBodyOffset.y);
                 Assert.That(IsLivingIdleWithinBounds(rig), Is.True);
             }
 
@@ -1393,6 +1468,20 @@ namespace BarPromenade.Tests
             Assert.That(lower.childCount, Is.EqualTo(0));
         }
 
+        private static void AssertPrivateFloat(
+            object target,
+            string fieldName,
+            float expected)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            Assert.That(
+                (float)field.GetValue(target),
+                Is.EqualTo(expected).Within(0.0001f));
+        }
+
         private static float GetProjectedSwing(
             PlayerSpriteRig rig,
             PlayerPuppetPart part,
@@ -1560,12 +1649,21 @@ namespace BarPromenade.Tests
         {
             Vector3 posePosition = rig.PoseRoot.localPosition;
             if (Mathf.Abs(posePosition.x) > 0.01f ||
-                posePosition.y < -0.001f ||
-                posePosition.y > 0.015f ||
+                posePosition.y < -0.006f ||
+                posePosition.y > 0.012f ||
                 Mathf.Abs(posePosition.z) > 0.001f ||
                 Quaternion.Angle(
                     Quaternion.identity,
                     rig.PoseRoot.localRotation) > 0.95f)
+            {
+                return false;
+            }
+
+            Vector3 upperBodyOffset = rig.UpperBodyOffset;
+            if (Mathf.Abs(upperBodyOffset.x) > 0.001f ||
+                upperBodyOffset.y < -0.001f ||
+                upperBodyOffset.y > 0.012f ||
+                Mathf.Abs(upperBodyOffset.z) > 0.001f)
             {
                 return false;
             }

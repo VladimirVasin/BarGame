@@ -9,13 +9,15 @@ namespace BarPromenade
             PlayerMotor motor,
             PlayerInteractor interactor,
             PlayerSpriteRig visual,
-            PlayerDynamicShadow shadow = null)
+            PlayerDynamicShadow shadow = null,
+            PlayerContactShadow contactShadow = null)
         {
             GameObject = gameObject;
             Motor = motor;
             Interactor = interactor;
             Visual = visual;
             Shadow = shadow;
+            ContactShadow = contactShadow;
         }
 
         public GameObject GameObject { get; }
@@ -23,6 +25,7 @@ namespace BarPromenade
         public PlayerInteractor Interactor { get; }
         public PlayerSpriteRig Visual { get; }
         public PlayerDynamicShadow Shadow { get; }
+        public PlayerContactShadow ContactShadow { get; }
     }
 
     public static class PlayerFactory
@@ -49,9 +52,14 @@ namespace BarPromenade
             GameObject visualObject =
                 new GameObject("8-Direction Jointed Sprite Visual");
             visualObject.transform.SetParent(player.transform, false);
-            visualObject.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            visualObject.transform.localPosition =
+                new Vector3(0f, 0.005f, 0f);
             PlayerSpriteRig visual = visualObject.AddComponent<PlayerSpriteRig>();
             visual.Initialize(camera, player.transform);
+
+            PlayerContactShadow contactShadow =
+                player.AddComponent<PlayerContactShadow>();
+            contactShadow.Initialize(player.transform, visual);
 
             PlayerDynamicShadow shadow =
                 player.AddComponent<PlayerDynamicShadow>();
@@ -67,7 +75,8 @@ namespace BarPromenade
                 motor,
                 interactor,
                 visual,
-                shadow);
+                shadow,
+                contactShadow);
         }
     }
 }

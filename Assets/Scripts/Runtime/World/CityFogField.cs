@@ -223,8 +223,8 @@ namespace BarPromenade
                 new[]
                 {
                     new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(0.060f, 0.18f),
-                    new GradientAlphaKey(0.082f, 0.62f),
+                    new GradientAlphaKey(0.080f, 0.18f),
+                    new GradientAlphaKey(0.120f, 0.62f),
                     new GradientAlphaKey(0f, 1f)
                 });
             return gradient;

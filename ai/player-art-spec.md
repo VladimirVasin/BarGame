@@ -41,7 +41,8 @@
   mouth pixel whitelists. Alpha, silhouette, clothing and asymmetry stay
   unchanged; `BackRight`, `Back` and `BackLeft` must remain byte-identical to
   neutral.
-- Visible face pixels are fully opaque. Chroma-key conversion must not infer
+- Every turntable-authored head, face and neck pixel is fully opaque,
+  including all four diagonal views. Chroma-key conversion must not infer
   magenta spill from the red channel alone because that removes skin tones.
 
 The current puppet contains one static authored pose per direction and uses

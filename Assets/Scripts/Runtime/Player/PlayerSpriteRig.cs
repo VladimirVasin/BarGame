@@ -55,8 +55,10 @@ namespace BarPromenade
                 new Vector2(44f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(21.5f, 92f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(41f, 92f),
                 0.55f),
             new PlayerPuppetPose(
                 new Vector2(25f, 30f),
@@ -65,8 +67,10 @@ namespace BarPromenade
                 new Vector2(43f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(23f, 91f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(37f, 92f),
                 0.8f),
             new PlayerPuppetPose(
                 new Vector2(32f, 30f),
@@ -75,8 +79,10 @@ namespace BarPromenade
                 new Vector2(36f, 46f),
                 new Vector2(30f, 56f),
                 new Vector2(30f, 75f),
+                new Vector2(30.5f, 92f),
                 new Vector2(34f, 56f),
                 new Vector2(35f, 75f),
+                new Vector2(30.5f, 92f),
                 1f),
             new PlayerPuppetPose(
                 new Vector2(24f, 30f),
@@ -85,8 +91,10 @@ namespace BarPromenade
                 new Vector2(44f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(23f, 92f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(38.5f, 92f),
                 0.8f),
             new PlayerPuppetPose(
                 new Vector2(23f, 30f),
@@ -95,8 +103,10 @@ namespace BarPromenade
                 new Vector2(44f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(23f, 92f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(40f, 92f),
                 0.55f),
             new PlayerPuppetPose(
                 new Vector2(25f, 30f),
@@ -105,8 +115,10 @@ namespace BarPromenade
                 new Vector2(42f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(25f, 92f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(36.5f, 92f),
                 0.8f),
             new PlayerPuppetPose(
                 new Vector2(29f, 30f),
@@ -115,8 +127,10 @@ namespace BarPromenade
                 new Vector2(32f, 46f),
                 new Vector2(30f, 56f),
                 new Vector2(29f, 75f),
+                new Vector2(31f, 92f),
                 new Vector2(34f, 56f),
                 new Vector2(34f, 75f),
+                new Vector2(31f, 92f),
                 1f),
             new PlayerPuppetPose(
                 new Vector2(24f, 30f),
@@ -125,8 +139,10 @@ namespace BarPromenade
                 new Vector2(43f, 46f),
                 new Vector2(28f, 56f),
                 new Vector2(27f, 75f),
+                new Vector2(26f, 92f),
                 new Vector2(36f, 56f),
                 new Vector2(37f, 75f),
+                new Vector2(39.5f, 91f),
                 0.8f)
         };
 
@@ -135,15 +151,18 @@ namespace BarPromenade
         private float directionHysteresisDegrees = 5f;
 
         [Header("Jointed walk")]
-        [SerializeField, Min(0.1f)] private float fullAnimationSpeed = 4f;
-        [SerializeField, Min(0f)] private float walkCyclesPerSecond = 2.2f;
+        [SerializeField, Min(0.1f)] private float fullAnimationSpeed = 5.2f;
+        [SerializeField, Min(0.1f)] private float walkCycleDistance = 2.7f;
         [SerializeField, Range(0f, 60f)] private float armSwingDegrees = 24f;
         [SerializeField, Range(0f, 60f)] private float elbowBendDegrees = 11f;
         [SerializeField, Range(0f, 60f)] private float legSwingDegrees = 28f;
         [SerializeField, Range(0f, 60f)] private float kneeBendDegrees = 17f;
-        [SerializeField, Min(0f)] private float walkBobHeight = 0.035f;
-        [SerializeField, Range(0f, 10f)] private float walkRockDegrees = 1.4f;
-        [SerializeField, Min(0f)] private float settleSpeed = 12f;
+        [SerializeField, Min(0f)]
+        private float walkBodyCompressionHeight = 0.012f;
+        [SerializeField, Min(0f)]
+        private float footPlantCompressionHeight = 0.005f;
+        [SerializeField, Range(0f, 10f)] private float walkRockDegrees = 1.8f;
+        [SerializeField, Min(0f)] private float settleSpeed = 8f;
 
         [Header("Living idle")]
         [SerializeField, Min(1f)] private float idleBreathingPeriod = 3.6f;
@@ -181,11 +200,14 @@ namespace BarPromenade
         private BillboardSprite billboard;
         private PlayerViewDirectionSelector directionSelector;
         private float animationPhase;
+        private float motionSpeed;
         private float motionAmount;
         private float idlePhase;
         private float idleBlend;
         private float wastedBlend;
         private float wastedPhase;
+        private float footPlantAmount = 1f;
+        private Vector3 upperBodyOffset;
         private bool isWasted;
 
         public PlayerViewDirection CurrentDirection =>
@@ -202,6 +224,12 @@ namespace BarPromenade
         public SpriteRenderer BodyRenderer => Renderer;
         public Transform VisualRoot => visualRoot;
         public Transform PoseRoot => poseRoot;
+        public float FootPlantAmount => footPlantAmount;
+        public Vector3 UpperBodyOffset => upperBodyOffset;
+        public Vector3 LeftFootContactWorldPosition =>
+            GetFootContactWorldPosition(true);
+        public Vector3 RightFootContactWorldPosition =>
+            GetFootContactWorldPosition(false);
 
         public void Initialize(
             Camera camera,
@@ -221,6 +249,7 @@ namespace BarPromenade
         {
             planarVelocity.y = 0f;
             float speed = planarVelocity.magnitude;
+            motionSpeed = speed;
             motionAmount = Mathf.Clamp01(
                 speed / Mathf.Max(0.1f, fullAnimationSpeed));
         }
@@ -284,6 +313,43 @@ namespace BarPromenade
         {
             ValidatePart(part);
             return partTransforms[(int)part];
+        }
+
+        internal Vector3 GetPartPoseLocalPosition(
+            PlayerPuppetPart part,
+            PlayerViewDirection direction)
+        {
+            ValidatePart(part);
+            ValidateDirection(direction);
+            return GetPartPoseLocalPosition(
+                part,
+                DirectionPoses[(int)direction]);
+        }
+
+        internal Quaternion GetPartPoseLocalRotation(
+            PlayerPuppetPart part,
+            PlayerViewDirection direction)
+        {
+            ValidatePart(part);
+            ValidateDirection(direction);
+            Quaternion sourceRotation =
+                partTransforms[(int)part].localRotation;
+            Vector3 sourceAxis =
+                GetWalkRotationAxis(CurrentDirection);
+            float sinHalfAngle = Vector3.Dot(
+                new Vector3(
+                    sourceRotation.x,
+                    sourceRotation.y,
+                    sourceRotation.z),
+                sourceAxis);
+            float signedAngle = Mathf.DeltaAngle(
+                0f,
+                2f *
+                Mathf.Atan2(sinHalfAngle, sourceRotation.w) *
+                Mathf.Rad2Deg);
+            return Quaternion.AngleAxis(
+                signedAngle,
+                GetWalkRotationAxis(direction));
         }
 
         private void Awake()
@@ -638,39 +704,18 @@ namespace BarPromenade
 
         private void SetRestPositions(PlayerPuppetPose pose)
         {
-            SetRootPartPosition(PlayerPuppetPart.Body, Vector2.zero);
-            SetRootPartPosition(
-                PlayerPuppetPart.LeftUpperArm,
-                RootOffsetFromTopLeft(pose.LeftShoulder));
-            SetChildPartPosition(
-                PlayerPuppetPart.LeftLowerArm,
-                ChildOffsetFromTopLeft(
-                    pose.LeftShoulder,
-                    pose.LeftElbow));
-            SetRootPartPosition(
-                PlayerPuppetPart.RightUpperArm,
-                RootOffsetFromTopLeft(pose.RightShoulder));
-            SetChildPartPosition(
-                PlayerPuppetPart.RightLowerArm,
-                ChildOffsetFromTopLeft(
-                    pose.RightShoulder,
-                    pose.RightElbow));
-            SetRootPartPosition(
-                PlayerPuppetPart.LeftUpperLeg,
-                RootOffsetFromTopLeft(pose.LeftHip));
-            SetChildPartPosition(
-                PlayerPuppetPart.LeftLowerLeg,
-                ChildOffsetFromTopLeft(
-                    pose.LeftHip,
-                    pose.LeftKnee));
-            SetRootPartPosition(
-                PlayerPuppetPart.RightUpperLeg,
-                RootOffsetFromTopLeft(pose.RightHip));
-            SetChildPartPosition(
-                PlayerPuppetPart.RightLowerLeg,
-                ChildOffsetFromTopLeft(
-                    pose.RightHip,
-                    pose.RightKnee));
+            for (int partIndex = 0;
+                 partIndex < PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part =
+                    (PlayerPuppetPart)partIndex;
+                Transform partTransform =
+                    partTransforms[partIndex];
+                partTransform.localPosition =
+                    GetPartPoseLocalPosition(part, pose);
+                partTransform.localScale = Vector3.one;
+            }
         }
 
         private void SetRootPartPosition(
@@ -683,11 +728,68 @@ namespace BarPromenade
             partTransform.localScale = Vector3.one;
         }
 
-        private void SetChildPartPosition(
+        private Vector3 GetPartPoseLocalPosition(
             PlayerPuppetPart part,
-            Vector2 localPosition)
+            PlayerPuppetPose pose)
         {
-            SetRootPartPosition(part, localPosition);
+            Vector2 bodyOffset = new Vector2(
+                upperBodyOffset.x,
+                upperBodyOffset.y);
+            Vector2 localPosition;
+            switch (part)
+            {
+                case PlayerPuppetPart.Body:
+                    localPosition = bodyOffset;
+                    break;
+                case PlayerPuppetPart.LeftUpperArm:
+                    localPosition =
+                        RootOffsetFromTopLeft(pose.LeftShoulder) +
+                        bodyOffset;
+                    break;
+                case PlayerPuppetPart.LeftLowerArm:
+                    localPosition = ChildOffsetFromTopLeft(
+                        pose.LeftShoulder,
+                        pose.LeftElbow);
+                    break;
+                case PlayerPuppetPart.RightUpperArm:
+                    localPosition =
+                        RootOffsetFromTopLeft(pose.RightShoulder) +
+                        bodyOffset;
+                    break;
+                case PlayerPuppetPart.RightLowerArm:
+                    localPosition = ChildOffsetFromTopLeft(
+                        pose.RightShoulder,
+                        pose.RightElbow);
+                    break;
+                case PlayerPuppetPart.LeftUpperLeg:
+                    localPosition =
+                        RootOffsetFromTopLeft(pose.LeftHip);
+                    break;
+                case PlayerPuppetPart.LeftLowerLeg:
+                    localPosition = ChildOffsetFromTopLeft(
+                        pose.LeftHip,
+                        pose.LeftKnee);
+                    break;
+                case PlayerPuppetPart.RightUpperLeg:
+                    localPosition =
+                        RootOffsetFromTopLeft(pose.RightHip);
+                    break;
+                case PlayerPuppetPart.RightLowerLeg:
+                    localPosition = ChildOffsetFromTopLeft(
+                        pose.RightHip,
+                        pose.RightKnee);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(part),
+                        part,
+                        "Unknown player puppet part.");
+            }
+
+            return new Vector3(
+                localPosition.x,
+                localPosition.y,
+                0f);
         }
 
         private void AnimatePuppet(float deltaTime)
@@ -700,7 +802,11 @@ namespace BarPromenade
             if (motionAmount > MovingThreshold)
             {
                 animationPhase +=
-                    deltaTime * walkCyclesPerSecond * Mathf.PI * 2f;
+                    deltaTime *
+                    motionSpeed /
+                    Mathf.Max(0.1f, walkCycleDistance) *
+                    Mathf.PI *
+                    2f;
             }
 
             idlePhase += deltaTime;
@@ -714,10 +820,11 @@ namespace BarPromenade
                 deltaTime * 4f);
             wastedPhase += deltaTime * 4.5f;
 
+            PlayerPuppetPose activePose =
+                DirectionPoses[(int)CurrentDirection];
             Vector3 walkRotationAxis =
                 GetWalkRotationAxis(CurrentDirection);
-            float authoredMotionScale =
-                DirectionPoses[(int)CurrentDirection].MotionScale;
+            float authoredMotionScale = activePose.MotionScale;
             float depthWeight = Mathf.Abs(walkRotationAxis.x);
             float motionScale = Mathf.Lerp(
                 authoredMotionScale,
@@ -725,9 +832,13 @@ namespace BarPromenade
                 depthWeight);
             float strideWave =
                 Mathf.Sin(animationPhase) * motionAmount * motionScale;
-            float stepWave =
-                Mathf.Abs(Mathf.Sin(animationPhase * 2f)) *
-                motionAmount;
+            float normalizedFootfall = Mathf.Pow(
+                1f - Mathf.Abs(Mathf.Sin(animationPhase)),
+                3f);
+            float walkingFootfall = normalizedFootfall * motionAmount;
+            footPlantAmount = motionAmount > MovingThreshold
+                ? normalizedFootfall
+                : 1f;
             float leftArmPhase = -strideWave;
             float rightArmPhase = strideWave;
             float leftLegPhase = strideWave;
@@ -851,14 +962,15 @@ namespace BarPromenade
                 idleWeightShiftDistance *
                 effectiveIdleBlend +
                 Mathf.Sin(wastedPhase) * 0.055f * wastedBlend;
-            float targetY =
-                stepWave * walkBobHeight +
+            float targetUpperBodyY =
                 (0.5f + breathingWave * 0.5f) *
                 idleBreathingHeight *
                 effectiveIdleBlend +
                 Mathf.Abs(Mathf.Sin(wastedPhase * 0.5f)) *
                 0.018f *
-                wastedBlend;
+                wastedBlend -
+                walkingFootfall *
+                walkBodyCompressionHeight;
             float targetRoll =
                 strideWave * walkRockDegrees +
                 weightShiftWave *
@@ -868,15 +980,87 @@ namespace BarPromenade
                 3.5f *
                 wastedBlend;
 
-            poseRoot.localPosition = Vector3.Lerp(
-                poseRoot.localPosition,
-                new Vector3(targetX, targetY, 0f),
-                settle);
             poseRoot.localRotation = Quaternion.Slerp(
                 poseRoot.localRotation,
                 Quaternion.Euler(0f, 0f, targetRoll),
                 settle);
+            Vector3 posePosition = poseRoot.localPosition;
+            posePosition.x = Mathf.Lerp(
+                posePosition.x,
+                targetX,
+                settle);
+            posePosition.z = 0f;
+            poseRoot.localPosition = posePosition;
+
+            float groundedPoseY = CalculateGroundedPoseY();
+            posePosition.y =
+                groundedPoseY -
+                walkingFootfall *
+                footPlantCompressionHeight;
+            poseRoot.localPosition = posePosition;
+            ApplyUpperBodyOffset(
+                activePose,
+                new Vector3(0f, targetUpperBodyY, 0f),
+                settle);
             poseRoot.localScale = Vector3.one;
+        }
+
+        private float CalculateGroundedPoseY()
+        {
+            float leftFootY = visualRoot.InverseTransformPoint(
+                GetFootContactWorldPosition(true)).y;
+            float rightFootY = visualRoot.InverseTransformPoint(
+                GetFootContactWorldPosition(false)).y;
+            return poseRoot.localPosition.y -
+                   Mathf.Min(leftFootY, rightFootY);
+        }
+
+        private Vector3 GetFootContactWorldPosition(bool left)
+        {
+            if (poseRoot == null)
+            {
+                return transform.position;
+            }
+
+            PlayerPuppetPose pose =
+                DirectionPoses[(int)CurrentDirection];
+            PlayerPuppetPart lowerLeg = left
+                ? PlayerPuppetPart.LeftLowerLeg
+                : PlayerPuppetPart.RightLowerLeg;
+            Vector2 knee = left ? pose.LeftKnee : pose.RightKnee;
+            Vector2 foot = left ? pose.LeftFoot : pose.RightFoot;
+            Vector2 localContact =
+                (TopLeftToBottomPixels(foot) -
+                 TopLeftToBottomPixels(knee)) /
+                PixelsPerUnit;
+            return partTransforms[(int)lowerLeg].TransformPoint(
+                new Vector3(
+                    localContact.x,
+                    localContact.y,
+                    0f));
+        }
+
+        private void ApplyUpperBodyOffset(
+            PlayerPuppetPose pose,
+            Vector3 targetOffset,
+            float interpolation)
+        {
+            upperBodyOffset = Vector3.Lerp(
+                upperBodyOffset,
+                targetOffset,
+                interpolation);
+            Vector2 offset = new Vector2(
+                upperBodyOffset.x,
+                upperBodyOffset.y);
+            SetRootPartPosition(PlayerPuppetPart.Body, offset);
+            SetRootPartPosition(
+                PlayerPuppetPart.LeftUpperArm,
+                RootOffsetFromTopLeft(pose.LeftShoulder) +
+                offset);
+            SetRootPartPosition(
+                PlayerPuppetPart.RightUpperArm,
+                RootOffsetFromTopLeft(pose.RightShoulder) +
+                offset);
         }
 
         private float GetIdleFidgetWave(
@@ -1121,8 +1305,10 @@ namespace BarPromenade
                 Vector2 rightElbow,
                 Vector2 leftHip,
                 Vector2 leftKnee,
+                Vector2 leftFoot,
                 Vector2 rightHip,
                 Vector2 rightKnee,
+                Vector2 rightFoot,
                 float motionScale)
             {
                 LeftShoulder = leftShoulder;
@@ -1131,8 +1317,10 @@ namespace BarPromenade
                 RightElbow = rightElbow;
                 LeftHip = leftHip;
                 LeftKnee = leftKnee;
+                LeftFoot = leftFoot;
                 RightHip = rightHip;
                 RightKnee = rightKnee;
+                RightFoot = rightFoot;
                 MotionScale = motionScale;
             }
 
@@ -1142,8 +1330,10 @@ namespace BarPromenade
             public Vector2 RightElbow { get; }
             public Vector2 LeftHip { get; }
             public Vector2 LeftKnee { get; }
+            public Vector2 LeftFoot { get; }
             public Vector2 RightHip { get; }
             public Vector2 RightKnee { get; }
+            public Vector2 RightFoot { get; }
             public float MotionScale { get; }
         }
     }

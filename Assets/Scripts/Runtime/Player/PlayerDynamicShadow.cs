@@ -6,9 +6,9 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// Casts a stable, alpha-clipped player silhouette toward the main light.
-    /// The shadow-only card faces the light instead of the camera, so camera
-    /// orbit cannot flatten or rotate the projected shadow.
+    /// Casts a light-facing articulated copy of the player puppet.
+    /// The copy follows the actor and the live joint pose without depending
+    /// on the camera-facing presentation hierarchy.
     /// </summary>
     [DefaultExecutionOrder(220)]
     [DisallowMultipleComponent]
@@ -16,10 +16,27 @@ namespace BarPromenade
     {
         private const float DirectionHysteresisDegrees = 2f;
         private const float DirectionEpsilon = 0.0001f;
-        private const float DefaultVisualHeightOffset = 0.04f;
+        private const float DefaultVisualHeightOffset = 0.005f;
+
+        private static readonly int[] ParentPartIndices =
+        {
+            -1,
+            -1,
+            (int)PlayerPuppetPart.LeftUpperArm,
+            -1,
+            (int)PlayerPuppetPart.RightUpperArm,
+            -1,
+            (int)PlayerPuppetPart.LeftUpperLeg,
+            -1,
+            (int)PlayerPuppetPart.RightUpperLeg
+        };
 
         private readonly List<Sprite> directionSprites =
             new List<Sprite>(PlayerSpriteRig.DirectionCount);
+        private readonly List<SpriteRenderer> partRenderers =
+            new List<SpriteRenderer>(PlayerSpriteRig.PartCount);
+        private readonly Transform[] partTransforms =
+            new Transform[PlayerSpriteRig.PartCount];
 
         private Transform facingTransform;
         private PlayerSpriteRig sourceVisual;
@@ -33,7 +50,10 @@ namespace BarPromenade
             directionSelector != null
                 ? directionSelector.CurrentDirection
                 : PlayerViewDirection.Front;
-        public IReadOnlyList<Sprite> DirectionSprites => directionSprites;
+        public IReadOnlyList<Sprite> DirectionSprites =>
+            directionSprites;
+        public IReadOnlyList<SpriteRenderer> Renderers =>
+            partRenderers;
         public Transform ShadowRoot => shadowRoot;
         public SpriteRenderer Renderer => shadowRenderer;
         public Light MainLight => mainLight;
@@ -57,7 +77,42 @@ namespace BarPromenade
                 DirectionHysteresisDegrees,
                 PlayerViewDirection.Front);
             IsInitialized = true;
-            RefreshShadow();
+            if (isActiveAndEnabled)
+            {
+                RefreshShadow();
+            }
+            else
+            {
+                SetRenderersEnabled(false);
+            }
+        }
+
+        public Transform GetPartTransform(PlayerPuppetPart part)
+        {
+            ValidatePart(part);
+            return partTransforms[(int)part];
+        }
+
+        public SpriteRenderer GetPartRenderer(PlayerPuppetPart part)
+        {
+            ValidatePart(part);
+            int index = (int)part;
+            return index < partRenderers.Count
+                ? partRenderers[index]
+                : null;
+        }
+
+        private void OnEnable()
+        {
+            if (IsInitialized)
+            {
+                RefreshShadow();
+            }
+        }
+
+        private void OnDisable()
+        {
+            SetRenderersEnabled(false);
         }
 
         private void LateUpdate()
@@ -77,12 +132,12 @@ namespace BarPromenade
                 shadowRenderer = null;
             }
 
-            for (int index = 0; index < directionSprites.Count; index++)
-            {
-                DestroyGeneratedObject(directionSprites[index]);
-            }
-
             directionSprites.Clear();
+            partRenderers.Clear();
+            Array.Clear(
+                partTransforms,
+                0,
+                partTransforms.Length);
         }
 
         private void EnsureShadowExists()
@@ -92,56 +147,66 @@ namespace BarPromenade
                 return;
             }
 
-            Texture2D atlas = Resources.Load<Texture2D>(
-                PlayerSpriteRig.ReferenceAtlasResourcePath);
-            ValidateAtlas(atlas);
-            CreateDirectionSprites(atlas);
+            CacheBodyDirectionSprites();
 
             GameObject shadowObject =
                 new GameObject("Dynamic Player Shadow Caster");
             shadowRoot = shadowObject.transform;
             shadowRoot.SetParent(transform, false);
-            shadowRenderer = shadowObject.AddComponent<SpriteRenderer>();
-            shadowRenderer.sharedMaterial =
-                PlayerShadowResources.ShadowCasterMaterial;
-            shadowRenderer.shadowCastingMode =
-                ShadowCastingMode.ShadowsOnly;
-            shadowRenderer.receiveShadows = false;
-            shadowRenderer.lightProbeUsage = LightProbeUsage.Off;
-            shadowRenderer.reflectionProbeUsage =
-                ReflectionProbeUsage.Off;
-            shadowRenderer.motionVectorGenerationMode =
-                MotionVectorGenerationMode.ForceNoMotion;
-            shadowRenderer.sprite = directionSprites[0];
+
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part =
+                    (PlayerPuppetPart)partIndex;
+                GameObject partObject =
+                    new GameObject($"Shadow {part}");
+                Transform partTransform = partObject.transform;
+                int parentIndex = ParentPartIndices[partIndex];
+                Transform parent = parentIndex >= 0
+                    ? partTransforms[parentIndex]
+                    : shadowRoot;
+                partTransform.SetParent(parent, false);
+                partTransforms[partIndex] = partTransform;
+
+                SpriteRenderer renderer =
+                    partObject.AddComponent<SpriteRenderer>();
+                ConfigureRenderer(renderer);
+                partRenderers.Add(renderer);
+            }
+
+            shadowRenderer =
+                partRenderers[(int)PlayerPuppetPart.Body];
         }
 
-        private void CreateDirectionSprites(Texture2D atlas)
+        private void CacheBodyDirectionSprites()
         {
-            Vector2 pivot = new Vector2(
-                PlayerSpriteRig.FeetPivotXPixels /
-                PlayerSpriteRig.FrameWidth,
-                PlayerSpriteRig.FeetPivotPixels /
-                PlayerSpriteRig.FrameHeight);
-            for (int index = 0;
-                 index < PlayerSpriteRig.DirectionCount;
-                 index++)
+            directionSprites.Clear();
+            for (int directionIndex = 0;
+                 directionIndex < PlayerSpriteRig.DirectionCount;
+                 directionIndex++)
             {
-                Sprite sprite = Sprite.Create(
-                    atlas,
-                    new Rect(
-                        index * PlayerSpriteRig.FrameWidth,
-                        0f,
-                        PlayerSpriteRig.FrameWidth,
-                        PlayerSpriteRig.FrameHeight),
-                    pivot,
-                    PlayerSpriteRig.PixelsPerUnit,
-                    0,
-                    SpriteMeshType.FullRect);
-                sprite.name =
-                    $"PlayerShadow{(PlayerViewDirection)index}";
-                sprite.hideFlags = HideFlags.DontSave;
-                directionSprites.Add(sprite);
+                directionSprites.Add(
+                    sourceVisual.GetPartSprite(
+                        PlayerPuppetPart.Body,
+                        (PlayerViewDirection)directionIndex));
             }
+        }
+
+        private static void ConfigureRenderer(
+            SpriteRenderer renderer)
+        {
+            renderer.sharedMaterial =
+                PlayerShadowResources.ShadowCasterMaterial;
+            renderer.shadowCastingMode =
+                ShadowCastingMode.ShadowsOnly;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage =
+                ReflectionProbeUsage.Off;
+            renderer.motionVectorGenerationMode =
+                MotionVectorGenerationMode.Object;
         }
 
         private void RefreshShadow()
@@ -149,7 +214,7 @@ namespace BarPromenade
             Light directional = ResolveMainLight();
             if (!CanCastShadow(directional))
             {
-                shadowRenderer.enabled = false;
+                SetRenderersEnabled(false);
                 return;
             }
 
@@ -158,7 +223,7 @@ namespace BarPromenade
                 Vector3.up);
             if (towardLight.sqrMagnitude < DirectionEpsilon)
             {
-                shadowRenderer.enabled = false;
+                SetRenderersEnabled(false);
                 return;
             }
 
@@ -177,17 +242,15 @@ namespace BarPromenade
                 Vector3.up);
             PlayerViewDirection direction =
                 directionSelector.Select(signedAngle);
-            shadowRenderer.sprite = directionSprites[(int)direction];
-            shadowRenderer.enabled = true;
-
             Quaternion lightFacingRotation =
                 Quaternion.LookRotation(towardLight, Vector3.up);
             Vector3 poseOffset = sourceVisual.PoseRoot != null
                 ? sourceVisual.PoseRoot.localPosition
                 : Vector3.zero;
-            Quaternion poseRotation = sourceVisual.PoseRoot != null
-                ? sourceVisual.PoseRoot.localRotation
-                : Quaternion.identity;
+            Quaternion poseRotation =
+                sourceVisual.PoseRoot != null
+                    ? sourceVisual.PoseRoot.localRotation
+                    : Quaternion.identity;
             Vector3 basePosition = sourceVisual.transform != null
                 ? sourceVisual.transform.position
                 : facingTransform.position +
@@ -195,11 +258,63 @@ namespace BarPromenade
 
             shadowRoot.SetPositionAndRotation(
                 basePosition +
-                (lightFacingRotation * new Vector3(
-                    poseOffset.x,
-                    poseOffset.y,
-                    poseOffset.z)),
+                (lightFacingRotation * poseOffset),
                 lightFacingRotation * poseRotation);
+            shadowRoot.localScale = Vector3.one;
+            SynchronizeParts(direction);
+        }
+
+        private void SynchronizeParts(
+            PlayerViewDirection direction)
+        {
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part =
+                    (PlayerPuppetPart)partIndex;
+                Transform sourceTransform =
+                    sourceVisual.GetPartTransform(part);
+                Transform shadowTransform =
+                    partTransforms[partIndex];
+                shadowTransform.localPosition =
+                    sourceVisual.GetPartPoseLocalPosition(
+                        part,
+                        direction);
+                shadowTransform.localRotation =
+                    sourceVisual.GetPartPoseLocalRotation(
+                        part,
+                        direction);
+                shadowTransform.localScale =
+                    sourceTransform != null
+                        ? sourceTransform.localScale
+                        : Vector3.one;
+
+                SpriteRenderer renderer =
+                    partRenderers[partIndex];
+                if (renderer.sharedMaterial == null)
+                {
+                    renderer.sharedMaterial =
+                        PlayerShadowResources.ShadowCasterMaterial;
+                }
+
+                renderer.sprite =
+                    sourceVisual.GetPartSprite(part, direction);
+                renderer.enabled = true;
+            }
+        }
+
+        private void SetRenderersEnabled(bool value)
+        {
+            for (int index = 0;
+                 index < partRenderers.Count;
+                 index++)
+            {
+                if (partRenderers[index] != null)
+                {
+                    partRenderers[index].enabled = value;
+                }
+            }
         }
 
         private Light ResolveMainLight()
@@ -221,29 +336,21 @@ namespace BarPromenade
                    light.shadows != LightShadows.None;
         }
 
-        private static void ValidateAtlas(Texture2D atlas)
+        private static void ValidatePart(PlayerPuppetPart part)
         {
-            int expectedWidth =
-                PlayerSpriteRig.FrameWidth *
-                PlayerSpriteRig.DirectionCount;
-            if (atlas == null)
+            int index = (int)part;
+            if (index < 0 ||
+                index >= PlayerSpriteRig.PartCount)
             {
-                throw new InvalidOperationException(
-                    $"Player shadow atlas was not found at Resources/" +
-                    $"{PlayerSpriteRig.ReferenceAtlasResourcePath}.");
-            }
-
-            if (atlas.width != expectedWidth ||
-                atlas.height != PlayerSpriteRig.FrameHeight)
-            {
-                throw new InvalidOperationException(
-                    $"Player shadow atlas must be {expectedWidth}x" +
-                    $"{PlayerSpriteRig.FrameHeight}, but was " +
-                    $"{atlas.width}x{atlas.height}.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(part),
+                    part,
+                    "Part must be one of the nine puppet layers.");
             }
         }
 
-        private static void DestroyGeneratedObject(UnityEngine.Object value)
+        private static void DestroyGeneratedObject(
+            UnityEngine.Object value)
         {
             if (value == null)
             {

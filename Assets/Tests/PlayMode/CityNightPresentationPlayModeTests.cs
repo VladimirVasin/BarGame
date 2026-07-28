@@ -30,14 +30,27 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 RenderSettings.fogDensity,
                 Is.EqualTo(RuntimeSceneSetup.CityFogDensity).Within(0.0001f));
+            Assert.That(RenderSettings.fogDensity, Is.InRange(0.065f, 0.075f));
             Assert.That(
                 RenderSettings.fogColor.maxColorComponent,
                 Is.GreaterThan(0.20f));
             Assert.That(Camera.main, Is.Not.Null);
+            Assert.That(
+                Camera.main.clearFlags,
+                Is.EqualTo(CameraClearFlags.SolidColor));
             Assert.That(Camera.main.allowMSAA, Is.False);
             Assert.That(
+                Camera.main.farClipPlane,
+                Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane).Within(0.01f));
+            Assert.That(Camera.main.farClipPlane, Is.LessThanOrEqualTo(50f));
+            Assert.That(
+                Camera.main.backgroundColor,
+                Is.EqualTo(RenderSettings.fogColor),
+                "Empty pixels beyond the finite city must resolve to " +
+                "terminal fog instead of exposing a dark world edge.");
+            Assert.That(
                 Camera.main.backgroundColor.maxColorComponent,
-                Is.InRange(0.15f, 0.25f));
+                Is.InRange(0.35f, 0.40f));
             Assert.That(RenderSettings.sun, Is.Not.Null);
             Assert.That(
                 RenderSettings.sun.shadowStrength,
@@ -101,6 +114,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 night.FogField.Particles.main.maxParticles,
                 Is.EqualTo(CityFogField.MaximumParticles));
+            Gradient fogVisibility = night.FogField.Particles
+                .colorOverLifetime.color.gradient;
+            Assert.That(
+                fogVisibility.Evaluate(0.62f).a,
+                Is.InRange(0.11f, 0.13f));
             Assert.That(
                 night.FogField.FogRenderer.sharedMaterial,
                 Is.SameAs(CityNightResources.AtmosphereMaterial));
@@ -205,6 +223,11 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(interior.IsInitialized, Is.True);
             Assert.That(RenderSettings.fog, Is.False);
+            Assert.That(Camera.main, Is.Not.Null);
+            Assert.That(
+                Camera.main.farClipPlane,
+                Is.EqualTo(RuntimeSceneSetup.DefaultFarClipPlane)
+                    .Within(0.01f));
             AssertPlayerShadow(interior.Player);
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<CityNightAtmosphere>(

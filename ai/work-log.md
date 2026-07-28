@@ -2,6 +2,146 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Restricted city fog visibility
+
+- Increased the City-only exponential-squared fog density from `0.048` to
+  `0.070` and limited the exterior camera far plane from `220 m` to `48 m`.
+  The fog reaches near-total opacity before the clip plane.
+- Matched the solid City camera background exactly to the terminal fog color.
+  Empty pixels beyond finite or clipped geometry now continue the gray-green
+  haze instead of exposing the former dark sky as a world boundary.
+- Raised the existing local fog gradient from `0.060 / 0.082` to
+  `0.080 / 0.120` alpha without increasing its 36-particle budget, emission
+  rate or footprint.
+- Kept `BarInterior` fog-free and made its return to the default `220 m`
+  camera range an explicit regression contract.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Focused City/BarInterior atmosphere PlayMode: 2/2 passed.
+- The initial D3D11 density capture kept the player and current junction
+  readable, while a follow-up live `1920x1080` Game-view check exposed the
+  darker clear color between distant buildings and drove the terminal
+  backdrop correction.
+- Complete Unity EditMode suite: 304/304 passed.
+- Complete headless Unity PlayMode retry: 64 passed, 0 failed and 3
+  graphics-device checks skipped as expected; one pre-existing inertial motor
+  test was transient on the first run, then passed both isolated and in the
+  complete retry.
+
+## 2026-07-28 — Opaque diagonal player heads
+
+- Compared the four diagonal atlas frames with the locked turntable and
+  restored exactly 51 genuine subject pixels left transparent by the original
+  chroma-key pass: 12 `FrontRight`, 13 `BackRight`, 14 `BackLeft` and 12
+  `FrontLeft`.
+- Rebuilt the reference, nine-part and five-expression atlases
+  deterministically. All 51 reference changes are binary `0 -> 255` alpha;
+  the body layer receives the same pixels and every expression row preserves
+  them.
+- Split heuristic face-scan and explicit edge-repair validation in the atlas
+  builder, retaining both migration from the previous atlas and idempotent
+  zero-change rebuilds.
+
+Verification:
+
+- EditModeTests .NET build: 0 errors, 0 warnings.
+- Deterministic builder rerun: 0 repairs; output SHA-256 remained stable.
+- Legacy-atlas migration reproduced the committed expression-atlas SHA-256.
+- Visual check of all four diagonal frames against a contrasting background:
+  no internal head/neck transparency remains.
+- Turned-head alpha regression: 1/1 passed; complete player asset suite: 8/8
+  passed.
+- Complete Unity EditMode suite: 304/304 passed.
+- Facial runtime and full player presentation PlayMode: 1/1 and 15/15 passed.
+- Complete headless Unity PlayMode suite: 64 passed, 0 failed and 3
+  graphics-device checks skipped as expected.
+- D3D graphics shadow render checks: 2/2 passed.
+- Windows x64 Player build: succeeded, 0 warnings, 135,673,543 bytes.
+
+## 2026-07-28 — Articulated directional player shadow
+
+- Replaced the single static full-body shadow card with nine collider-free
+  `ShadowsOnly` body and limb renderers.
+- Kept the shadow view authored relative to the main light while remapping the
+  live smoothed joint angles into that view. Walking, footfall compression,
+  idle gestures and `Wasted` motion now reshape the projected silhouette.
+- Added component lifecycle handling plus regressions for actor translation,
+  opposite gait phases and the actual D3D receiver pixels.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Complete Unity EditMode suite: 303/303 passed.
+- Complete headless Unity PlayMode suite: 64 passed, 0 failed and 3
+  graphics-device checks skipped as expected.
+- Player shadow behavior PlayMode: 3/3 passed.
+- Full player presentation PlayMode: 15/15 passed.
+- D3D graphics shadow render checks: 2/2 passed, including a pixel-level
+  animated-silhouette comparison.
+- Windows x64 Player build: succeeded, 0 warnings, 135,673,543 bytes.
+
+## 2026-07-28 — Grounded player foot contact
+
+- Lowered the runtime visual baseline from `0.04 m` to `0.005 m`, matching the
+  atlas foot pivot instead of leaving a permanent visible gap above the
+  controller ground origin.
+- Added explicit left/right sole contacts derived from the eight directional
+  atlas poses. Each frame grounds the lower support contact; the other foot
+  remains free to swing and the support alternates across half-cycles.
+- Replaced the always-positive `0.035 m` whole-puppet bob with a `0.012 m`
+  upper-body impact compression and `0.005 m` sole compression. Idle
+  breathing now offsets only the body and arm roots.
+- Added one collider-free shared four-vertex contact quad with a dedicated
+  transparent URP shader. It follows the player root, not `PoseRoot`, and
+  remains available independently of the realtime directional shadow.
+- Hardened the generated shadow lifecycle: disabling the contact component
+  hides its renderer, while subsystem resets dispose and lazily rebuild shared
+  generated materials and mesh resources.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Complete Unity EditMode suite: 303/303 passed.
+- Complete headless Unity PlayMode suite: 63 passed, 0 failed and 3
+  graphics-device checks skipped as expected.
+- Deterministic grounded gait PlayMode: 1/1 passed.
+- Player shadow behavior PlayMode: 2/2 passed.
+- Full player presentation PlayMode: 15/15 passed.
+- D3D graphics shadow render checks: 2/2 passed.
+- City footfall/opposite-support visual capture: 1/1 passed.
+- Windows x64 Player build: succeeded, 0 warnings, 135,672,519 bytes.
+
+## 2026-07-28 — Heavy inertial locomotion
+
+- Replaced one-frame planar speed changes with `6.5 m/s²` acceleration toward
+  the existing `5.2 m/s` maximum and `11 m/s²` braking. A normal release now
+  produces about `1.23 m` of controllable coasting from full speed.
+- Fed actual `CharacterController` displacement back into the velocity state
+  and removed its minimum movement threshold, preserving frame-independent
+  low-speed acceleration without storing pressure at road edges or
+  collisions.
+- Kept input disable, modal ownership, scene transitions and teleport as hard
+  planar stops. Direction reversal brakes old momentum before accelerating in
+  the opposite direction.
+- Replaced the fixed `2.2 cycles/s` gait with one cycle per `2.7 m` travelled,
+  matched full animation amplitude to `5.2 m/s`, softened joint settling from
+  `12` to `8` and increased body rock from `1.4°` to `1.8°`.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Focused inertial motor PlayMode: 6/6 passed.
+- Full player presentation PlayMode: 15/15 passed.
+- Facial-state locomotion regression: 1/1 passed.
+- Complete City/BarInterior scene flow: 9/9 passed.
+- D3D11 acceleration/braking visual sequence: 1/1 passed; sampled speeds were
+  `0.00 → 2.17 → 4.12 → 5.20 → 3.21 → 0.00 m/s`.
+- Windows x64 Player build: succeeded, 0 warnings, 135,663,527 bytes.
+
 ## 2026-07-28 — Much closer, weightier chase camera
 
 - Reduced the centered exterior camera arm from `3.6 m` to `2.6 m` and the

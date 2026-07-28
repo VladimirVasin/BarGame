@@ -2,16 +2,67 @@
 
 ## Unreleased
 
+### Restricted fog visibility
+
+- Thickened the city's luminous gray-green distance fog and capped its camera
+  range at `48 m`, so the next blocks dissolve into haze instead of remaining
+  clearly readable across the map.
+- Replaced the separate dark camera backdrop with the terminal fog color, so
+  gaps between distant buildings no longer expose a black edge of the world.
+- Made the existing local drifting fog more visible without increasing its
+  36-particle budget.
+- Bar interiors remain fog-free and retain their `220 m` camera range.
+
+### Opaque diagonal head silhouettes
+
+- Restored 51 turntable-authored head, cheek, ear, hair and neck pixels that
+  the original chroma-key pass had left transparent across `FrontRight`,
+  `BackRight`, `BackLeft` and `FrontLeft`.
+- Regenerated the reference, jointed-parts and all five body-expression atlas
+  rows. Rear diagonal expressions remain neutral; only their missing alpha
+  coverage changed.
+
+### Grounded player foot contact
+
+- Lowered the visual foot baseline from `4 cm` to `5 mm`; the previous
+  always-positive walk bob could place both soles as much as `7.5 cm` above
+  the road.
+- Added atlas-derived left/right foot contacts. The lower stance foot now
+  remains pinned through the gait cycle while the opposite foot swings, and a
+  short `12 mm` upper-body compression plus `5 mm` sole compression marks
+  each footfall.
+- Breathing and impact motion now affect the body and arms without lifting
+  both legs during idle or walking.
+- Added a small procedural contact shadow fixed to the grounded actor root.
+  It stays beneath the feet independently of puppet bob, camera orbit,
+  directional-light state and the existing realtime silhouette shadow.
+
+### Heavy inertial locomotion
+
+- The hero now accelerates into the existing maximum speed over roughly
+  `0.8 s` and takes about `0.47 s` to brake instead of starting and stopping
+  in one frame.
+- Reversing direction first bleeds the old momentum. Road boundaries and
+  physical collisions discard blocked velocity, so they never release a
+  stored push later.
+- Modal interfaces, scene transitions, input disable and teleport retain an
+  immediate safe stop.
+- Walking cadence now follows actual distance travelled rather than playing
+  at one fixed rate. Joint settling is softer and body rock is slightly
+  stronger, keeping the gait alive through braking before it returns to idle.
+
 ### Dynamic player shadow
 
 - The hero now casts a realtime alpha-clipped silhouette in both the city and
   bar interior.
-- The hidden shadow-only sprite faces the main directional light and chooses
-  one of the existing eight full-body views from the player/light angle, so
-  orbiting the camera no longer rotates or flattens the shadow.
-- The shadow follows movement plus whole-puppet bob and sway while the visible
-  jointed rig remains exactly nine renderers. Street and bar practical lights
-  remain shadowless to preserve the existing realtime-light budget.
+- The hidden shadow puppet faces the main directional light and chooses one of
+  the existing eight authored views from the player/light angle, so orbiting
+  the camera no longer rotates or flattens the shadow.
+- All nine shadow-only body and limb parts now mirror the live joint angles.
+  The projected silhouette visibly walks, compresses at footfall and sways
+  instead of sliding as one frozen full-body card.
+- Street and bar practical lights remain shadowless to preserve the existing
+  realtime-light budget.
 
 ### Tinctures in a Row minigame
 

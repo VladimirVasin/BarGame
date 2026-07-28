@@ -43,6 +43,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Independent player heading:** The motor rotates the player root
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.
+- **Accepted — Bounded inertial locomotion:** Camera-relative input targets
+  the existing `5.2 m/s` maximum through `6.5 m/s²` acceleration and
+  `11 m/s²` braking. The motor feeds actual constrained displacement back
+  into its next velocity step, so road edges and collisions cannot store a
+  hidden impulse. Normal input release coasts, while modal ownership, scene
+  transitions, input disable and teleport still stop planar motion
+  immediately.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
   `2.6 m / 53°` and `2.2 m / 57°` centered profiles. Orbit yaw and target
   focus use deliberately weighty `0.20 s` and `0.18 s` damping; focus stays
@@ -59,20 +66,29 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   are never mirrored and share one foot pivot. Jointed walking projects the
   actor's sagittal plane into the active billboard view: side views swing in
   screen space, front/back views swing in depth, diagonal views blend both,
-  and contralateral limbs remain in opposite gait phases. The same projected
-  joints add readable breathing, weight transfer and deterministic alternating
-  left/right arm gestures while idle. A separate `512x480` body-expression
+  and contralateral limbs remain in opposite gait phases. Explicit
+  atlas-derived contact points keep whichever foot is lower pinned to the
+  visual ground plane; a `5 mm` base clearance is consumed by the footfall
+  compression instead of adding an always-positive whole-puppet bob.
+  Breathing and impact compression offset only the body and arm roots, while
+  the projected joints retain grounded feet plus readable weight transfer and
+  deterministic alternating left/right arm gestures while idle. A separate
+  `512x480` body-expression
   atlas provides neutral, half-blink, closed-blink, watchful and tense rows;
   the stronger blink remains available during locomotion, watchful/tense
   states require sustained idle, runtime swaps only the existing body
   renderer, and all rear variants remain neutral.
 - **Accepted — Camera-independent player shadow:** One collider-free
-  `ShadowsOnly` sprite proxy reuses the full eight-direction reference atlas
-  and a shared alpha-clipped URP shadow-caster material. It selects its view
+  nine-part `ShadowsOnly` puppet reuses the directional part sprites and a
+  shared alpha-clipped URP shadow-caster material. It selects its authored view
   from the signed player-to-main-light angle, faces the directional light
-  rather than the camera and copies whole-puppet bob/sway, so City and
-  BarInterior receive a stable realtime silhouette without changing the nine
-  visible puppet renderers. Practical street/bar lights remain shadowless.
+  rather than the camera and remaps the live joint angles into that view, so
+  City and BarInterior receive the animated gait, upper-body compression and
+  whole-puppet sway without changing the nine visible puppet renderers. A
+  separate shared four-vertex analytic contact quad stays on the player root
+  instead of following `PoseRoot`, remains visible when realtime shadows are
+  unavailable and supplies the stable ambient-occlusion cue beneath the feet.
+  Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. Authored player, cocktail, beer-pong,
   Split-the-G and tincture bitmaps load from `Resources` and are sliced or
@@ -97,14 +113,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   preserving the primitive collider contract. No per-instance mesh or
   material is created.
 - **Accepted — Fixed noir exterior:** `City` applies a lifted blue-green camera,
-  dense luminous gray-green exponential-squared fog, hard directional shadows,
-  disabled camera MSAA, cold moon/ambient lighting and a dedicated
-  Bloom/ColorAdjustments/Vignette/FilmGrain `CityNoirVolumeProfile`;
-  `BarInterior` explicitly disables exterior fog and presentation objects.
+  `0.070` luminous gray-green exponential-squared fog, a `48 m` far clip, hard
+  directional shadows, disabled camera MSAA, cold moon/ambient lighting and a
+  dedicated Bloom/ColorAdjustments/Vignette/FilmGrain
+  `CityNoirVolumeProfile`. Its solid camera clear color exactly matches the fog
+  color, so empty pixels beyond the finite geometry resolve to terminal haze
+  instead of a dark world edge. `BarInterior` explicitly disables exterior
+  fog and restores the default `220 m` camera range.
 - **Accepted — Bounded local fog:** One seeded, player-following
-  `CityFogField` adds slowly drifting world-space fog with at most 36 particles.
-  It reuses the shared atmosphere material and has no collision, trails or
-  particle lights.
+  `CityFogField` adds slowly drifting world-space fog with at most 36 particles
+  and a bounded `0.120` peak alpha. It reuses the shared atmosphere material
+  and has no collision, trails or particle lights.
 - **Accepted — Depth-tested light bloom:** Each active street/bar light and
   amber signal lens can own a two-particle `CityLightHalo`. The shared
   `Resources` shader softens depth intersections, so glow diffuses in fog

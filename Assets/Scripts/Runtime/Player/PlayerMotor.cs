@@ -6,6 +6,8 @@ namespace BarPromenade
     public sealed class PlayerMotor : MonoBehaviour
     {
         private const float MoveSpeed = 5.2f;
+        private const float Acceleration = 6.5f;
+        private const float Deceleration = 11f;
         private const float Gravity = 24f;
         private const float FootstepStride = 1.35f;
         private const float FootstepMinimumSpeedSquared = 0.36f;
@@ -29,6 +31,11 @@ namespace BarPromenade
             PlayerSpriteRig visual)
         {
             controller = GetComponent<CharacterController>();
+            if (controller != null)
+            {
+                controller.minMoveDistance = 0f;
+            }
+
             movementCamera = cameraToUse;
             walkableArea = area;
             spriteRig = visual;
@@ -39,9 +46,7 @@ namespace BarPromenade
             InputEnabled = enabled;
             if (!enabled)
             {
-                PlanarVelocity = Vector3.zero;
-                footstepDistance = 0f;
-                spriteRig?.SetMotion(Vector3.zero);
+                StopPlanarMotion();
             }
         }
 
@@ -60,6 +65,7 @@ namespace BarPromenade
 
             transform.position = position;
             verticalSpeed = 0f;
+            StopPlanarMotion();
 
             if (controller != null)
             {
@@ -74,14 +80,29 @@ namespace BarPromenade
                 return;
             }
 
-            Vector2 input = InputEnabled && !SceneTransitionService.IsTransitioning
+            bool isTransitioning =
+                SceneTransitionService.IsTransitioning;
+            if (isTransitioning)
+            {
+                StopPlanarMotion();
+            }
+
+            Vector2 input = InputEnabled && !isTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
             Vector3 desiredDirection = CameraRelativeDirection(input);
             Vector3 desiredPlanarVelocity =
                 desiredDirection * MoveSpeed * speedMultiplier;
+            float velocityChangeRate = GetVelocityChangeRate(
+                PlanarVelocity,
+                desiredPlanarVelocity);
+            Vector3 inertialPlanarVelocity = Vector3.MoveTowards(
+                PlanarVelocity,
+                desiredPlanarVelocity,
+                velocityChangeRate * Time.deltaTime);
             Vector3 current = transform.position;
-            Vector3 desired = current + (desiredPlanarVelocity * Time.deltaTime);
+            Vector3 desired =
+                current + (inertialPlanarVelocity * Time.deltaTime);
             Vector3 constrained = walkableArea == null
                 ? desired
                 : walkableArea.Constrain(current, desired, controller.radius);
@@ -107,6 +128,36 @@ namespace BarPromenade
             FaceMovementDirection(PlanarVelocity);
             spriteRig?.SetMotion(PlanarVelocity);
             UpdateFootsteps(planarVelocity);
+        }
+
+        private static float GetVelocityChangeRate(
+            Vector3 currentVelocity,
+            Vector3 desiredVelocity)
+        {
+            if (desiredVelocity.sqrMagnitude <=
+                FacingThresholdSquared)
+            {
+                return Deceleration;
+            }
+
+            if (currentVelocity.sqrMagnitude >
+                    FacingThresholdSquared &&
+                Vector3.Dot(currentVelocity, desiredVelocity) <= 0f)
+            {
+                return Deceleration;
+            }
+
+            return desiredVelocity.sqrMagnitude <
+                   currentVelocity.sqrMagnitude
+                ? Deceleration
+                : Acceleration;
+        }
+
+        private void StopPlanarMotion()
+        {
+            PlanarVelocity = Vector3.zero;
+            footstepDistance = 0f;
+            spriteRig?.SetMotion(Vector3.zero);
         }
 
         private void UpdateFootsteps(Vector3 planarDisplacement)

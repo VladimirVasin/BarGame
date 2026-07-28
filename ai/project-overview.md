@@ -23,8 +23,10 @@ same place.
 The vertical slice contains:
 
 - a finite, seed-reproducible connected city;
-- a fixed atmospheric noir night with dense luminous gray-green fog, lifted
-  geometry values, cold moonlight and a retuned City-only
+- a fixed atmospheric noir night with `0.070` exponential-squared luminous
+  gray-green fog, a fog-matched terminal camera backdrop and a City-only
+  `48 m` camera visibility cap, plus lifted geometry values, cold moonlight
+  and a retuned
   Bloom/ColorAdjustments/Vignette/FilmGrain profile;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
@@ -35,8 +37,9 @@ The vertical slice contains:
   interface keeps responsive sizing;
 - shared 8-sided cylinder geometry, hard directional shadows and disabled
   camera MSAA for a deliberate low-poly silhouette;
-- one player-following `CityFogField`, capped at 36 slowly drifting particles,
-  plus depth-tested soft halos around lamps, bar lights and active signals;
+- one player-following `CityFogField`, capped at 36 more visible slowly
+  drifting particles, plus depth-tested soft halos around lamps, bar lights
+  and active signals;
 - deterministic collider-free street lamps with shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
@@ -59,19 +62,26 @@ The vertical slice contains:
 - one nine-layer billboard puppet with a body plus upper/lower segments for
   both arms and legs, eight unique 64x96 directional views, 5-degree sector
   hysteresis and contralateral joint-driven walking projected into screen
-  space for side views and depth for front/back views; readable procedural
+  space for side views and depth for front/back views; atlas-derived foot
+  contacts keep the lower stance foot pinned while the upper body compresses
+  at each footfall instead of lifting the whole puppet; readable procedural
   breathing, weight shift and an alternating left/right arm gesture keep the
-  same rig alive while idle;
-- one camera-independent realtime player shadow that selects an existing
-  eight-direction full silhouette relative to the main light, faces its
-  shadow-only card toward that light and follows whole-puppet bob/sway in both
-  City and BarInterior without changing the nine visible renderers;
+  same rig alive while idle without lifting the feet;
+- one camera-independent realtime player shadow that mirrors all nine
+  articulated puppet parts in the authored view relative to the main light,
+  faces them toward that light and reproduces live gait, compression and
+  whole-puppet sway in both City and BarInterior, plus one small
+  light-independent analytic contact patch fixed to the grounded player root;
+  neither changes the nine visible renderers;
 - one deterministic five-state body-expression atlas that swaps the existing
   body sprite for stronger half/closed blinks plus watchful and tense idle
   expressions in the five visible-face directions without adding a tenth
   renderer or inventing faces in rear views;
-- camera-relative road-constrained movement that preserves the last actual
-  movement heading while idle;
+- camera-relative road-constrained movement with a `5.2 m/s` maximum,
+  `6.5 m/s²` acceleration and `11 m/s²` braking; ordinary release coasts,
+  hard modal/transition/teleport stops remain immediate, constrained
+  displacement cannot store hidden momentum, and the last actual movement
+  heading is preserved while idle;
 - a very close freely orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
   weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle

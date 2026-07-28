@@ -4,7 +4,7 @@
 The script is intentionally deterministic:
 
 * existing non-transparent pixels in PlayerDirectionalAtlas.png are preserved;
-* only the face pixels lost by the original chroma-key pass are restored;
+* only the head/face pixels lost by the original chroma-key pass are restored;
 * every visible source pixel is assigned to a body or jointed limb layer;
 * the nine neutral layers composite back to the corrected reference frame.
 * facial variants preserve the complete body layer and only recolor explicit,
@@ -82,8 +82,36 @@ SOURCE_SPECS = (
     ((1191, 523, 1356, 987), 30, 17),
 )
 
-VISIBLE_FACE_DIRECTIONS = frozenset((0, 1, 2, 6, 7))
-EXPECTED_FACE_REPAIRS = (50, 53, 55, 0, 0, 0, 46, 55)
+HEAD_REPAIR_DIRECTIONS = frozenset((0, 1, 2, 3, 5, 6, 7))
+EXPRESSION_FACE_DIRECTIONS = frozenset((0, 1, 2, 6, 7))
+EXPECTED_SCAN_REPAIRS = (50, 53, 55, 13, 0, 13, 46, 55)
+EXPECTED_EXPLICIT_REPAIRS = (0, 12, 0, 0, 0, 1, 0, 12)
+
+# Extra turntable-authored head pixels outside the original y=12..24 facial
+# scan. The front diagonals need their neck/jaw pixels, FrontLeft needs two
+# hair pixels and BackLeft needs one dark inner-head pixel outside the
+# skin-row span.
+TURNED_HEAD_REPAIR_PIXELS = (
+    (),
+    (
+        (31, 25), (32, 25), (33, 25),
+        (30, 26), (31, 26), (32, 26),
+        (30, 27), (31, 27),
+        (28, 28), (29, 28), (30, 28), (31, 28),
+    ),
+    (),
+    (),
+    (),
+    ((34, 16),),
+    (),
+    (
+        (27, 16), (27, 17),
+        (30, 25), (31, 25),
+        (31, 26), (32, 26),
+        (31, 27), (32, 27), (33, 27), (34, 27),
+        (33, 28), (34, 28),
+    ),
+)
 
 # Coordinates use local frame PNG space (origin at the top-left). Each tuple
 # is destination x/y followed by an authored nearby skin sample x/y. The
@@ -297,6 +325,8 @@ def restore_face_pixels(
     before = list(corrected.get_flattened_data())
     changed_indices: set[int] = set()
     counts: list[int] = []
+    scan_counts: list[int] = []
+    explicit_counts: list[int] = []
 
     for direction, (source_box, target_width, target_x) in enumerate(
         SOURCE_SPECS
@@ -306,8 +336,10 @@ def restore_face_pixels(
             Image.Resampling.NEAREST,
         ).convert("RGB")
 
-        if direction not in VISIBLE_FACE_DIRECTIONS:
+        if direction not in HEAD_REPAIR_DIRECTIONS:
             counts.append(0)
+            scan_counts.append(0)
+            explicit_counts.append(0)
             continue
 
         tile_pixels = tile.load()
@@ -374,18 +406,65 @@ def restore_face_pixels(
                 )
                 repaired += 1
 
-        counts.append(repaired)
+        scan_counts.append(repaired)
+        explicit_repaired = 0
+        for local_x, atlas_y in TURNED_HEAD_REPAIR_PIXELS[direction]:
+            tile_x = local_x - target_x
+            tile_y = atlas_y - 8
+            if (
+                tile_x < 0
+                or tile_x >= target_width
+                or tile_y < 0
+                or tile_y >= 84
+            ):
+                raise RuntimeError(
+                    f"Turned-head repair {(local_x, atlas_y)} is "
+                    f"outside direction {direction}'s source tile."
+                )
+
+            atlas_x = direction * FRAME_WIDTH + local_x
+            if corrected.getpixel((atlas_x, atlas_y))[3] != 0:
+                continue
+
+            red, green, blue = tile_pixels[tile_x, tile_y]
+            distance_from_key = max(
+                abs(red - 255),
+                abs(green),
+                abs(blue - 255),
+            )
+            if distance_from_key <= 32:
+                raise RuntimeError(
+                    f"Turned-head repair {(local_x, atlas_y)} in "
+                    f"direction {direction} points at the chroma key."
+                )
+
+            corrected.putpixel(
+                (atlas_x, atlas_y),
+                (red, green, blue, 255),
+            )
+            changed_indices.add(
+                atlas_y * corrected.width + atlas_x
+            )
+            explicit_repaired += 1
+
+        explicit_counts.append(explicit_repaired)
+        counts.append(repaired + explicit_repaired)
 
     counts_tuple = tuple(counts)
-    if counts_tuple not in (
-        EXPECTED_FACE_REPAIRS,
-        (0,) * DIRECTION_COUNT,
+    for label, actual_counts, expected_counts in (
+        ("scan", scan_counts, EXPECTED_SCAN_REPAIRS),
+        ("explicit", explicit_counts, EXPECTED_EXPLICIT_REPAIRS),
     ):
-        raise RuntimeError(
-            "Unexpected face repair counts: "
-            f"{counts_tuple}; expected {EXPECTED_FACE_REPAIRS} or an "
-            "already-corrected atlas."
-        )
+        for direction, (actual, expected) in enumerate(zip(
+            actual_counts,
+            expected_counts,
+        )):
+            if actual not in (0, expected):
+                raise RuntimeError(
+                    f"Unexpected {label} head repair count for direction "
+                    f"{direction}: {actual}; expected {expected} or 0 "
+                    "for an already-corrected frame."
+                )
 
     after = list(corrected.get_flattened_data())
     for index, (old_pixel, new_pixel) in enumerate(zip(before, after)):
@@ -1046,7 +1125,7 @@ def assert_expression_contract(
                     f"changed {changed}; expected {expected_changes}."
                 )
 
-            if direction not in VISIBLE_FACE_DIRECTIONS:
+            if direction not in EXPRESSION_FACE_DIRECTIONS:
                 if list(variant.get_flattened_data()) != neutral_pixels:
                     raise RuntimeError(
                         f"Rear expression direction {direction} differs "
@@ -1058,7 +1137,7 @@ def assert_expression_contract(
                     f"{expression} has no facial changes."
                 )
 
-        if direction in VISIBLE_FACE_DIRECTIONS:
+        if direction in EXPRESSION_FACE_DIRECTIONS:
             flattened_variants = {
                 variant.tobytes()
                 for variant in variants

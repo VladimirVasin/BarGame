@@ -5,8 +5,6 @@ namespace BarPromenade
 {
     public static class RuntimeSceneSetup
     {
-        private static readonly Color CitySkyColor =
-            new Color(0.155f, 0.180f, 0.170f);
         private static readonly Color CityFogColor =
             new Color(0.330f, 0.380f, 0.355f);
         private static readonly Color CityAmbientColor =
@@ -14,12 +12,15 @@ namespace BarPromenade
         private static readonly Color MoonlightColor =
             new Color(0.72f, 0.79f, 0.77f);
 
-        public const float CityFogDensity = 0.048f;
+        public const float CityFogDensity = 0.070f;
+        public const float CityFarClipPlane = 48f;
+        public const float DefaultFarClipPlane = 220f;
         public const float CityShadowStrength = 0.38f;
 
         public static Camera EnsureCityNight()
         {
-            Camera camera = EnsureCamera(CitySkyColor);
+            Camera camera = EnsureCamera(CityFogColor);
+            camera.farClipPlane = CityFarClipPlane;
             ConfigureDirectionalLighting(
                 MoonlightColor,
                 0.72f,
@@ -71,7 +72,7 @@ namespace BarPromenade
             camera.allowHDR = true;
             camera.allowMSAA = false;
             camera.nearClipPlane = 0.1f;
-            camera.farClipPlane = 220f;
+            camera.farClipPlane = DefaultFarClipPlane;
             return camera;
         }
 
