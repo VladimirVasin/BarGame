@@ -15,6 +15,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Finite connected graph:** Kruskal-style spanning tree plus deterministic optional loops.
 - **Accepted — Accessible bars:** Every lot gets frontage; bar return points are validated against a frontage road.
 - **Accepted — Data-driven walkable mask:** Player motion is constrained to a union of XZ road and entrance-apron rectangles.
+- **Accepted — Entrance-aware visual road boundary:** A pure planner derives
+  the exposed perimeter of the road-rectangle union, including dead-end caps,
+  and subtracts a wider opening around every bar frontage. Runtime two-rail
+  fences are collider-free so `RoadWalkableArea` remains the sole movement
+  authority and camera collision does not react to decorative posts; rails
+  and posts are combined into two owned runtime meshes.
 - **Accepted — Physical/visual split:** CharacterController stays on the root; 13 SpriteRenderers stay on a collider-free child.
 - **Accepted — Explicit scene allow-list:** Only `City` and `BarInterior` install their matching roots.
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.

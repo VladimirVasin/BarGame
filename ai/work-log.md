@@ -2,6 +2,28 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Entrance-aware road-edge fences
+
+- Added a deterministic pure-data fence plan over the exposed perimeter of
+  the complete road-rectangle union. It closes outer edges and dead ends
+  without placing barriers inside turns, T-junctions or intersections.
+- Added a `3.30 m` opening on the facing road side of every bar, driven from
+  the same frontage and shared walkway geometry used by the generated facade.
+- Added low ochre two-rail visuals with dark inset posts. They remain
+  collider-free so the road/apron mask is authoritative and are combined into
+  two generated meshes instead of hundreds of individual renderers.
+- Added deterministic, sparse-topology, perimeter-completeness, opening,
+  batching, collider and entrance-walkability regression coverage.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Unity EditMode: 189/189 passed.
+- Unity PlayMode with graphics: 25/25 passed, including the generated fence
+  hierarchy and every bar's clear walkable approach.
+- Windows x64 Player build: succeeded, 0 warnings, 129,125,439 bytes.
+
 ## 2026-07-28 — F9 minigame debug launcher
 
 - Added one localized retro debug window to `City` and `BarInterior`; `F9`

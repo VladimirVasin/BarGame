@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
@@ -100,6 +104,89 @@ namespace BarPromenade
             properties.SetColor(BaseColorId, color);
             properties.SetColor(ColorId, color);
             renderer.SetPropertyBlock(properties);
+        }
+
+        public static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color)
+        {
+            if (boxes == null)
+            {
+                throw new ArgumentNullException(nameof(boxes));
+            }
+
+            if (boxes.Count == 0)
+            {
+                throw new ArgumentException(
+                    "At least one box is required.",
+                    nameof(boxes));
+            }
+
+            GameObject result = CreatePrimitive(
+                PrimitiveType.Cube,
+                name,
+                parent,
+                Vector3.zero,
+                Vector3.one,
+                color,
+                false,
+                null);
+            MeshFilter meshFilter =
+                result.GetComponent<MeshFilter>();
+            Mesh sourceMesh = meshFilter.sharedMesh;
+            var combine = new CombineInstance[boxes.Count];
+            for (int index = 0; index < boxes.Count; index++)
+            {
+                Bounds box = boxes[index];
+                Vector3 size = box.size;
+                if (!IsPositiveFinite(size))
+                {
+                    if (Application.isPlaying)
+                    {
+                        Object.Destroy(result);
+                    }
+                    else
+                    {
+                        Object.DestroyImmediate(result);
+                    }
+
+                    throw new ArgumentException(
+                        "Combined boxes require finite positive dimensions.",
+                        nameof(boxes));
+                }
+
+                combine[index] = new CombineInstance
+                {
+                    mesh = sourceMesh,
+                    transform = Matrix4x4.TRS(
+                        box.center,
+                        Quaternion.identity,
+                        size)
+                };
+            }
+
+            var combinedMesh = new Mesh
+            {
+                name = $"{name} Combined Mesh",
+                hideFlags = HideFlags.HideAndDontSave,
+                indexFormat = boxes.Count * sourceMesh.vertexCount >
+                              ushort.MaxValue
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            combinedMesh.CombineMeshes(
+                combine,
+                true,
+                true,
+                false);
+            combinedMesh.RecalculateBounds();
+            combinedMesh.UploadMeshData(true);
+            meshFilter.sharedMesh = combinedMesh;
+            result.AddComponent<RuntimeGeneratedMeshOwner>()
+                .Initialize(combinedMesh);
+            return result;
         }
 
         private static GameObject CreatePrimitive(
@@ -258,6 +345,49 @@ namespace BarPromenade
             lowPolyCylinderMesh.RecalculateBounds();
             lowPolyCylinderMesh.UploadMeshData(true);
             return lowPolyCylinderMesh;
+        }
+
+        private static bool IsPositiveFinite(Vector3 size)
+        {
+            return IsPositiveFinite(size.x) &&
+                   IsPositiveFinite(size.y) &&
+                   IsPositiveFinite(size.z);
+        }
+
+        private static bool IsPositiveFinite(float value)
+        {
+            return value > 0f &&
+                   !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
+        }
+    }
+
+    internal sealed class RuntimeGeneratedMeshOwner : MonoBehaviour
+    {
+        private Mesh ownedMesh;
+
+        public void Initialize(Mesh mesh)
+        {
+            ownedMesh = mesh;
+        }
+
+        private void OnDestroy()
+        {
+            if (ownedMesh == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Object.Destroy(ownedMesh);
+            }
+            else
+            {
+                Object.DestroyImmediate(ownedMesh);
+            }
+
+            ownedMesh = null;
         }
     }
 }

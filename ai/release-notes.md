@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Visible road-edge fences
+
+- Added low ochre two-rail barriers along every exposed road edge and across
+  dead ends, making the road-only movement boundary visible in the city.
+- Intersections and connected road mouths stay open because fences follow the
+  exact perimeter of the combined road surface rather than individual edges.
+- Every generated bar automatically receives a `3.30 m` fence opening around
+  its entrance walkway; future bar lots use the same data-driven rule.
+- The barriers are visual-only, so the existing road/apron movement mask
+  remains authoritative and the chase camera is unaffected by the new posts.
+  All rails and posts are combined into two render meshes.
+
 ### F9 minigame debug window
 
 - Press `F9` in the city or bar interior to open a direct launcher for every

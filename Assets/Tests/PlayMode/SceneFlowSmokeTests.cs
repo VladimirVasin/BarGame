@@ -82,6 +82,82 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator CityScene_RoadFencesLeaveBarEntrancesClear()
+        {
+            CityGameRoot cityRoot = null;
+            yield return LoadSceneAndWaitForRoot<CityGameRoot>(
+                SceneIds.City,
+                CityRootName,
+                root => cityRoot = root);
+            yield return WaitUntil(
+                () => cityRoot.IsInitialized,
+                "City runtime root did not finish initialization.");
+            yield return null;
+
+            Transform fenceRoot = cityRoot.World.Root.transform.Find(
+                "Road Edge Fences");
+            Assert.That(fenceRoot, Is.Not.Null);
+            Assert.That(cityRoot.World.FencePlan, Is.Not.Null);
+            Assert.That(
+                fenceRoot.childCount,
+                Is.EqualTo(2));
+            Renderer[] fenceRenderers =
+                fenceRoot.GetComponentsInChildren<Renderer>(true);
+            Assert.That(fenceRenderers, Has.Length.EqualTo(2));
+            Assert.That(
+                fenceRoot.Find("Safety Rails"),
+                Is.Not.Null);
+            Assert.That(
+                fenceRoot.Find("Fence Posts"),
+                Is.Not.Null);
+            Assert.That(
+                fenceRoot.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+
+            CharacterController playerController =
+                cityRoot.Player.GameObject.GetComponent<
+                    CharacterController>();
+            foreach (BuildingLot lot in cityRoot.Layout.BuildingLots)
+            {
+                if (!lot.IsBar)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    TryFindOpening(
+                        cityRoot.World.FencePlan,
+                        lot.BarId,
+                        out RoadFenceOpeningDescriptor opening),
+                    Is.True,
+                    lot.BarId);
+                Assert.That(
+                    opening.Width,
+                    Is.GreaterThan(
+                        BarEntranceGeometry.WalkwayWidth));
+
+                Assert.That(
+                    cityRoot.World.TryGetBar(
+                        lot.BarId,
+                        out BarEntrance entrance),
+                    Is.True);
+                for (int sample = 0; sample <= 8; sample++)
+                {
+                    Vector3 point = Vector3.Lerp(
+                        lot.ReturnPosition,
+                        entrance.transform.position,
+                        sample / 8f);
+                    Assert.That(
+                        cityRoot.World.WalkableArea.Contains(
+                            point,
+                            playerController.radius),
+                        Is.True,
+                        $"Entrance path is not walkable for {lot.BarId}.");
+                }
+            }
+        }
+
+        [UnityTest]
         public IEnumerator CityMap_IsModalAndBuildsAnOrderedRoadRoute()
         {
             CityGameRoot cityRoot = null;
@@ -855,6 +931,28 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             return count;
+        }
+
+        private static bool TryFindOpening(
+            RoadFencePlan plan,
+            string barId,
+            out RoadFenceOpeningDescriptor opening)
+        {
+            for (int index = 0;
+                 index < plan.EntranceOpenings.Count;
+                 index++)
+            {
+                RoadFenceOpeningDescriptor candidate =
+                    plan.EntranceOpenings[index];
+                if (candidate.BarId == barId)
+                {
+                    opening = candidate;
+                    return true;
+                }
+            }
+
+            opening = default;
+            return false;
         }
 
         private static void ResetSessionState()

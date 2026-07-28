@@ -43,8 +43,11 @@ namespace BarPromenade
             world.SetParent(parent, false);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadWalkableArea walkableArea = RoadWalkableArea.FromLayout(layout);
+            RoadFencePlan fencePlan =
+                RoadFencePlanner.CreatePlan(layout);
             Bounds bounds = BuildGround(world, layout, settings);
             BuildRoads(world, layout, settings);
+            RoadFenceWorldBuilder.Build(world, fencePlan);
 
             var bars = new List<BarEntrance>(settings.BarCount);
             for (int i = 0; i < layout.BuildingLots.Count; i++)
@@ -62,6 +65,7 @@ namespace BarPromenade
                 world.gameObject,
                 walkableArea,
                 bars,
+                fencePlan,
                 bounds);
         }
 
@@ -385,8 +389,14 @@ namespace BarPromenade
             Vector3 apronCenter = (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
             float apronLength = Vector3.Distance(lot.DoorPosition, lot.ReturnPosition);
             Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(apronLength, 0.08f, 2.25f)
-                : new Vector3(2.25f, 0.08f, apronLength);
+                ? new Vector3(
+                    apronLength,
+                    0.08f,
+                    BarEntranceGeometry.WalkwayWidth)
+                : new Vector3(
+                    BarEntranceGeometry.WalkwayWidth,
+                    0.08f,
+                    apronLength);
             RuntimePrimitiveFactory.CreateBox(
                 "Bar Entrance Walkway",
                 parent,
@@ -423,8 +433,14 @@ namespace BarPromenade
                 ? new Vector3(0.18f, 0.22f, 2.05f)
                 : new Vector3(2.05f, 0.22f, 0.18f);
             Vector3 canopySize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(0.82f, 0.18f, 2.85f)
-                : new Vector3(2.85f, 0.18f, 0.82f);
+                ? new Vector3(
+                    0.82f,
+                    0.18f,
+                    BarEntranceGeometry.CanopyWidth)
+                : new Vector3(
+                    BarEntranceGeometry.CanopyWidth,
+                    0.18f,
+                    0.82f);
 
             for (int side = -1; side <= 1; side += 2)
             {

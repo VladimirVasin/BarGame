@@ -40,7 +40,7 @@ Assets/
       Audio/         filtered scene themes, generated retro SFX and ambience
       Rendering/     PC RenderGraph PS1 world composite and settings
       Map/           ordered road-route model and deterministic pathfinding
-      World/         layout, graph generation, world/night, local fog and halos
+      World/         layout, graph/fence plans, world/night, local fog and halos
       Player/        motor, factory, 13-part rig, billboard, camera
       Interaction/   contract, shared minigame catalog, selection and entrances
       Scenes/        generated bar interior
@@ -50,7 +50,7 @@ Assets/
       UI/            retro UI, prompts, HUD, map and F9 minigame debug window
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout, roads, minigame catalog, sessions, retro UI/audio
+    EditMode/        layout, roads/fences, minigame catalog, sessions, UI/audio
     PlayMode/        PS1 GPU presentation, modals, F9 debug and complete flow
 Packages/
 ProjectSettings/
@@ -62,6 +62,8 @@ Cross-system flow:
 seed -> CityLayoutGenerator -> CityLayout -> CityWorldBuilder
                                           -> RoadWalkableArea -> PlayerMotor
                                           -> CityRoutePathfinder -> CityMap
+                                          -> RoadFencePlanner
+                                             -> RoadFenceWorldBuilder
                                           -> CityNightFixturePlanner
                                              -> CityNightWorldBuilder
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo

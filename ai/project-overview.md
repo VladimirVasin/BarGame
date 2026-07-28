@@ -48,6 +48,9 @@ The vertical slice contains:
   per-effect cooldowns and voice limits, plus separate scene-local procedural
   city and bar ambience;
 - a spanning-tree road graph with deterministic loops;
+- deterministic collider-free ochre guard rails, batched into two meshes,
+  that trace only the exposed boundary of the road union, close dead ends and
+  leave a `3.30 m` opening around every generated bar approach;
 - 16 building lots by default, including exactly 3 reachable bars; the second
   bar in stable row-major order hosts beer pong while the others host the
   cocktail mixer;

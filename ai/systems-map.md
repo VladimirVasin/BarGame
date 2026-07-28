@@ -7,6 +7,7 @@
 | City composition | Exact-scene bootstrap and runtime roots | `Runtime/Core`, scene IDs | Implemented |
 | City layout model | Seeded roads, lots, buildings and bar descriptors | `Runtime/World/CityLayout*.cs` | Implemented |
 | City world builder | Construct night-toned roads, buildings, varied windows, bar approaches and distinct bar facade markers; reuse one flat-shaded 8-sided cylinder mesh for cylindrical props | `CityWorldBuilder.cs`, `BarBuildingMarker.cs`, primitive factory | Implemented |
+| Road-edge fences | Derive the exposed perimeter of the road-rectangle union, remove every bar's `3.30 m` entrance interval, then batch collider-free rails and inset posts into two generated meshes | `RoadFencePlanner`, `RoadFencePlan`, `RoadFenceWorldBuilder`, `BarEntranceGeometry`, primitive factory | Implemented |
 | Noir city presentation | Apply readable dense City-only fog and post-processing with hard directional shadows and camera MSAA disabled; follow the player with a 36-particle fog field; build depth-tested halos; plan lamps/signals; pool at most 12 shadowless spot/point lights | `RuntimeSceneSetup`, `CityNightFixture*`, `CityNightWorld*`, `CityNightAtmosphere`, `CityFogField`, `CityLightHalo`, shared emissive/atmosphere resources | Implemented |
 | Scene music | Loop `city_theme` only in City and `bar_theme` only in BarInterior through a mild low-pass filter; stop each scene-local player on Single-mode transition | `SceneMusicPlayer`, `CityMusicPlayer`, `BarMusicPlayer`, `Resources/Audio/{CityMusic,BarMusic}` | Implemented |
 | Retro SFX and ambience | Generate deterministic mono `22050 Hz` UI/world/bar effects, enforce category pools, cooldowns and voice limits, and run a quiet procedural ambience local to each scene | `RetroSfx`, `RetroAudioService`, `RetroAmbience`, scene roots and gameplay callers | Implemented |
@@ -38,6 +39,7 @@ Primary intended flow:
 seed -> layout data -> validation -> world builder
                                -> road navigation -> player
                                -> route planner -> city map
+                               -> road-union perimeter -> entrance-aware fences
                                -> night fixture plan -> lamps/signals
 player + lamp anchors -> bounded light pool -> light halos
 player + seed -> player-following local fog field
