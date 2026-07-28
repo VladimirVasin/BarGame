@@ -8,7 +8,8 @@
   PS1 composite after URP post-processing.
 - Input: Input System `1.19.0`; keyboard, mouse and gamepad are supported
   across movement, interaction and modal interfaces.
-- Build scenes: `Assets/Scenes/City.unity` and
+- Build scenes: `Assets/Scenes/City.unity`,
+  `Assets/Scenes/DoorTransition.unity` and
   `Assets/Scenes/BarInterior.unity`.
 - Runtime assembly: `BarPromenade.Runtime`.
 - Test assemblies: `BarPromenade.EditModeTests` and
@@ -46,9 +47,10 @@ The vertical slice contains:
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
   treatment and each player is destroyed by the next Single-mode scene load;
-- deterministic generated mono retro SFX at `22050 Hz`, including distinct
-  beer-pong throw/bounce/rim/sink and tincture swap/match/moonshine cues, with
-  bounded category pools, per-effect cooldowns and voice limits, plus separate
+- deterministic generated mono retro SFX at `22050 Hz`, including a separate
+  door latch and sustained hinge creak, distinct beer-pong
+  throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
+  category pools, per-effect cooldowns and voice limits, plus separate
   scene-local procedural city and bar ambience;
 - a spanning-tree road graph with deterministic loops;
 - deterministic collider-free ochre guard rails, batched into two meshes,
@@ -93,6 +95,10 @@ The vertical slice contains:
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
   context for the current city;
+- a dedicated `3.15 s` `DoorTransition` scene between the city and bar:
+  an unscaled fixed-camera handle/door sequence opens the leaf outward toward
+  the camera against a solid black doorway while the destination preloads,
+  then activates only after the final blackout;
 - one generated shared bar-interior scene whose furniture and interaction
   station adapt to the active bar activity, plus one exit;
 - one explicit `BarMinigameCatalog` whose ordered definitions and factories

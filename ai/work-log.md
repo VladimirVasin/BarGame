@@ -2,6 +2,39 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Classic fixed-camera door transition
+
+- Added `DoorTransition` as a dedicated third build scene and taught the
+  runtime bootstrap and editor scene setup to install its matching root.
+- Routed both bar entry and exit through one guarded
+  `source -> DoorTransition -> destination` chain. The destination preloads
+  while activation remains blocked until the complete `3.15 s` sequence
+  returns to black.
+- Added a deterministic unscaled timeline for reveal, handle turn, low-poly
+  door opening, camera push and final fade. The doorway remains a solid black
+  sprite while the leaf swings outward toward the player instead of receding
+  into the opening. Entering uses warm door lighting; exiting uses a colder
+  gray-green treatment.
+- Split the existing door sound into the short latch cue plus a generated
+  sustained hinge creak, played from the animated door.
+- Extended the scene-flow contract to observe both transition directions and
+  reject a second request while the first chain owns the transition guard.
+
+Verification:
+
+- Runtime, Editor, EditModeTests, PlayModeTests and Assembly-CSharp .NET
+  builds: 0 errors, 0 warnings.
+- Complete Unity EditMode suite: 310/310 passed.
+- Focused door-scene and full round-trip PlayMode checks: 2/2 passed; the
+  deterministic door timeline passed 4/4 EditMode checks.
+- Complete headless Unity PlayMode suite: 65 passed, 0 failed and 3
+  graphics-only tests skipped. All three skipped GPU tests passed in the D3D
+  run; its only failure was the pre-existing real-time-sensitive opposite
+  input motor check, which passed on a focused retry.
+- D3D visual capture inspected the open outward pose and confirmed that the
+  black doorway sprite fully covers the aperture beneath the frame.
+- Windows Player build: succeeded, `135687344` bytes, 0 warnings.
+
 ## 2026-07-28 — Restricted city fog visibility
 
 - Increased the City-only exponential-squared fog density from `0.048` to

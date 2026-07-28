@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/City.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
+    path: Assets/Scenes/DoorTransition.unity
+    guid: 66c9c9b6bcd445c7b1f6c5d9810a5c43
+  - enabled: 1
     path: Assets/Scenes/BarInterior.unity
     guid: 3cbcaf0a033876d489552a2da0a8aaab
   m_configObjects:

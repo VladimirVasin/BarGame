@@ -6,6 +6,7 @@
 Assets/
   Scenes/
     City.unity
+    DoorTransition.unity
     BarInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
@@ -54,7 +55,7 @@ Assets/
       World/         layout, graph/fence plans, world/night, local fog and halos
       Player/        motor, 8-view rig, light-facing shadow, billboard, camera
       Interaction/   contract, shared minigame catalog, selection and entrances
-      Scenes/        generated bar interior
+      Scenes/        generated bar interior and fixed-camera door transition
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -89,8 +90,10 @@ seed -> CityLayoutGenerator -> CityLayout -> CityWorldBuilder
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
-player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
-       <- restored spawn <- GameSessionState <- BarExit
+player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
+                                                  -> DoorTransitionRoot
+                                                     -> preloaded destination
+       <- restored spawn/context <- GameSessionState
        -> BarActivityStation -> BarMinigameCatalog -> CocktailMinigame
                                                   -> CocktailRules + deterministic 7-item shelf
                                                or -> BeerPongMinigame

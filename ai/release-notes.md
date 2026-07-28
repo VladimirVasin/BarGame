@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Classic fixed-camera door transitions
+
+- Entering or leaving a bar now passes through a dedicated black-void scene
+  instead of cutting directly between locations.
+- A close fixed camera watches the handle turn and the low-poly door open,
+  eases toward the threshold, then fades fully to black over `3.15 s`.
+- The door swings outward toward the player, while the revealed doorway stays
+  completely black instead of exposing a flat destination-colored panel.
+  Warm/cold door lighting, a short latch and two hinge-creak beats reinforce
+  the movement.
+- The destination preloads behind the animation and cannot activate until
+  both loading and the final blackout are complete.
+
 ### Restricted fog visibility
 
 - Thickened the city's luminous gray-green distance fog and capped its camera

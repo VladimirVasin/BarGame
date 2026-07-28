@@ -22,7 +22,8 @@
 | F9 minigame debug window | List every registered game in `City` and `BarInterior`, close a conflicting map or minigame before taking the modal lock, and launch an isolated instance that does not persist drinking state or complete a bar visit | `MinigameDebugWindow`, `BarMinigameCatalog`, `BarMinigameModalLock`, scene roots | Implemented |
 | Bar activity routing | Assign the first four stable row-major bars to cocktail mixing, beer pong, Split the G and Tinctures in a Row through one pure resolver, fall back to cocktails for later bars, preserve the activity through transition, then resolve its registered factory | `BarActivityKind`, `BarActivityAssignment`, `BarMinigameCatalog`, `BuildingLot`, `BarEntrance`, `GameSessionState` | Implemented |
 | City map UI | Display roads/player/bars, green completed visits with a count, and edit a separately badged ordered itinerary on a logical `640x360` retro canvas | `CityMapController.cs`, `CityMapView.cs`, `RetroUiTheme`, Input System | Implemented |
-| Scene transition | Guarded async city/interior loads | `SceneTransitionService.cs` | Implemented |
+| Scene transition | Keep one guard across the full city/interior transfer, load `DoorTransition` in Single mode, preload the requested destination with activation blocked, and activate it only after the door sequence reaches its final blackout | `SceneTransitionService`, `SceneIds`, `GameSessionState`, Unity async scene loading | Implemented |
+| Door transition presentation | Run a deterministic `3.15 s` unscaled fixed-camera sequence in a black void: reveal, turn the handle, swing the low-poly door outward toward the player over a solid black doorway sprite, push the camera and fade fully to black; tint the door lighting warm when entering and cold when exiting, with generated latch and hinge-creak cues | `DoorTransitionRoot`, `DoorTransitionTimeline`, `DoorTransitionDirection`, `RuntimeSceneSetup`, `RetroSfx` | Implemented |
 | Session state | Preserve seed, active bar/activity, ordered route, visited-bar set, return contract, intoxication, last alcohol and consumed-drink count for the current run | `GameSessionState.cs` | Implemented |
 | Cocktail domain | Define four bases and ingredient compatibility; generate a deterministic seven-item shelf with four compatible additions and three traps; score and advance a three-round session | `Runtime/Cocktails`, persisted `DrinkId` values | Implemented |
 | Cocktail minigame | Run same-scene modal base/addition/serve input, commit drinking state after every serving, report completion through the shared minigame contract, and defer a pending `Wasted` effect until finish/close | `CocktailMinigameController.cs`, `CocktailMinigameView.cs`, `IBarMinigame` | Implemented |
@@ -51,6 +52,7 @@ seed -> layout data -> validation -> world builder
 player + lamp anchors -> bounded light pool -> light halos
 player + seed -> player-following local fog field
 player -> interaction -> activity-aware scene transition <-> session state
+                    -> DoorTransition scene -> preloaded destination
                     -> generic bar station -> minigame catalog
                                            -> cocktail rules/offers
                                            or beer-pong physics/session

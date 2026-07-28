@@ -11,6 +11,8 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class SceneFlowSmokeTests
     {
         private const string CityRootName = "[Bar Promenade] City Runtime";
+        private const string DoorTransitionRootName =
+            "[Bar Promenade] Door Transition Runtime";
         private const string InteriorRootName = "[Bar Promenade] Bar Interior Runtime";
         private const float TimeoutSeconds = 15f;
 
@@ -1120,6 +1122,30 @@ namespace BarPromenade.Tests.PlayMode
             entrance.Interact(firstCity.Player.Interactor);
             Assert.That(SceneTransitionService.IsTransitioning, Is.True);
 
+            DoorTransitionRoot enteringDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => enteringDoor = root);
+            yield return WaitUntil(
+                () => enteringDoor.IsInitialized,
+                "Entering door presentation did not initialize.");
+            Assert.That(
+                enteringDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.EnterBar));
+            Assert.That(enteringDoor.Camera, Is.Not.Null);
+            Assert.That(SceneTransitionService.IsTransitioning, Is.True);
+            Assert.That(
+                SceneTransitionService.RequestDoorLoad(
+                    SceneIds.City,
+                    DoorTransitionDirection.ExitBar),
+                Is.False,
+                "A second request must not interrupt the door sequence.");
+            Assert.That(GameSessionState.ActiveBarId, Is.EqualTo(expectedBarId));
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(expectedBarActivity));
+
             BarInteriorRoot interior = null;
             yield return WaitForLoadedRoot<BarInteriorRoot>(
                 SceneIds.BarInterior,
@@ -1151,6 +1177,21 @@ namespace BarPromenade.Tests.PlayMode
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
             Assert.That(exit, Is.Not.Null);
             exit.Interact(interior.Player.Interactor);
+
+            DoorTransitionRoot exitingDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => exitingDoor = root);
+            yield return WaitUntil(
+                () => exitingDoor.IsInitialized,
+                "Exiting door presentation did not initialize.");
+            Assert.That(
+                exitingDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.ExitBar));
+            Assert.That(exitingDoor.Camera, Is.Not.Null);
+            Assert.That(SceneTransitionService.IsTransitioning, Is.True);
+            Assert.That(GameSessionState.IsReturningToCity, Is.True);
 
             CityGameRoot returnedCity = null;
             yield return WaitForLoadedRoot<CityGameRoot>(

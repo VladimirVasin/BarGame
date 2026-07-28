@@ -44,6 +44,10 @@ namespace BarPromenade
             {
                 EnsureInteriorInstalled();
             }
+            else if (scene.name == SceneIds.DoorTransition)
+            {
+                EnsureDoorTransitionInstalled();
+            }
         }
 
         public static CityGameRoot EnsureCityInstalled()
@@ -79,6 +83,28 @@ namespace BarPromenade
             {
                 GameObject root = new GameObject("[Bar Promenade] Bar Interior Runtime");
                 return root.AddComponent<BarInteriorRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static DoorTransitionRoot EnsureDoorTransitionInstalled()
+        {
+            DoorTransitionRoot existing =
+                Object.FindAnyObjectByType<DoorTransitionRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Door Transition Runtime");
+                return root.AddComponent<DoorTransitionRoot>();
             }
             finally
             {

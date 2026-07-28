@@ -56,6 +56,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.MapOpen)]
         [TestCase(RetroSfxId.Footstep)]
         [TestCase(RetroSfxId.Door)]
+        [TestCase(RetroSfxId.DoorCreak)]
         [TestCase(RetroSfxId.Pour)]
         [TestCase(RetroSfxId.Clink)]
         [TestCase(RetroSfxId.Shake)]
@@ -99,6 +100,25 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(peak, Is.GreaterThan(0.04f));
             Assert.That(peak, Is.LessThanOrEqualTo(0.981f));
             Assert.That(energy, Is.GreaterThan(0.01d));
+        }
+
+        [Test]
+        public void DoorCreak_IsDistinctWorldCueForOpeningMotion()
+        {
+            RetroSfxDefinition latch =
+                RetroSfxLibrary.GetDefinition(RetroSfxId.Door);
+            RetroSfxDefinition creak =
+                RetroSfxLibrary.GetDefinition(RetroSfxId.DoorCreak);
+
+            Assert.That(
+                creak.Category,
+                Is.EqualTo(RetroSfxCategory.World));
+            Assert.That(creak.Duration, Is.GreaterThan(latch.Duration));
+            Assert.That(creak.Duration, Is.LessThanOrEqualTo(0.5f));
+            Assert.That(
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.DoorCreak),
+                Is.Not.EqualTo(
+                    RetroSfxLibrary.GenerateSamples(RetroSfxId.Door)));
         }
 
         [Test]

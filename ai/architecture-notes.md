@@ -6,7 +6,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 - **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
-- **Accepted:** Gameplay is composed at runtime in two explicit build scenes.
+- **Accepted:** Gameplay and transition presentation are composed at runtime
+  in three explicit build scenes.
 
 ## MVP decisions
 
@@ -25,8 +26,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms
   and legs.
-- **Accepted — Explicit scene allow-list:** Only `City` and `BarInterior` install their matching roots.
+- **Accepted — Explicit scene allow-list:** Only `City`, `DoorTransition` and
+  `BarInterior` install their matching roots. Directly opening
+  `DoorTransition` installs an idle presentation root; only the transition
+  service initializes and plays it.
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
+- **Accepted — Separate classic door transition:** Bar entrances and exits
+  reserve one transition guard for the complete
+  `source -> DoorTransition -> destination` chain. The intermediate scene
+  runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
+  black void while the destination loads asynchronously with activation held
+  at the preload boundary. Activation is released only after the sequence is
+  complete and fully black; a missing presentation root falls back to the
+  requested destination. The door opens outward toward the fixed camera and a
+  black sprite keeps the revealed doorway opaque; direction changes only the
+  warm/cold lighting treatment and does not own persistent gameplay state.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
   scene loads for the same city. A terminal bar activity reports completion
@@ -145,10 +159,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Single-mode scene load destroys the old player and stops its theme
   automatically.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
-  the mono `22050 Hz` UI, footstep, door, cocktail, beer-pong, Split-the-G and
-  tincture clips in memory. `RetroAudioService` persists across scene loads,
-  reuses bounded UI/world/bar source pools, and applies per-effect cooldown
-  and concurrent-voice limits.
+  the mono `22050 Hz` UI, footstep, door latch, sustained hinge creak,
+  cocktail, beer-pong, Split-the-G and tincture clips in memory.
+  `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
+  source pools, and applies per-effect cooldown and concurrent-voice limits.
 - **Accepted — Scene-local procedural ambience:** City and bar roots each own a
   quiet deterministic `22050 Hz` ambience loop and tone filter. Single-mode
   transitions destroy the old scene ambience, while the persistent SFX

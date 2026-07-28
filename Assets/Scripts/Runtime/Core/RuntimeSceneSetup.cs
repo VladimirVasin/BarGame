@@ -14,6 +14,7 @@ namespace BarPromenade
 
         public const float CityFogDensity = 0.070f;
         public const float CityFarClipPlane = 48f;
+        public const float DoorTransitionFarClipPlane = 18f;
         public const float DefaultFarClipPlane = 220f;
         public const float CityShadowStrength = 0.38f;
 
@@ -32,6 +33,20 @@ namespace BarPromenade
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = CityFogDensity;
             RenderSettings.reflectionIntensity = 0.50f;
+            DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
+        public static Camera EnsureDoorTransition()
+        {
+            Camera camera = EnsureCamera(Color.black);
+            camera.farClipPlane = DoorTransitionFarClipPlane;
+
+            RenderSettings.fog = false;
+            RenderSettings.sun = null;
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.012f, 0.010f, 0.009f);
+            RenderSettings.reflectionIntensity = 0f;
             DynamicGI.UpdateEnvironment();
             return camera;
         }

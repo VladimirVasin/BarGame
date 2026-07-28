@@ -34,6 +34,7 @@ namespace BarPromenade
         ShotSwap,
         ShotMatch,
         MoonshineBurst,
+        DoorCreak,
         Count
     }
 
@@ -334,7 +335,20 @@ namespace BarPromenade
                 2048,
                 7600f,
                 0.02f,
-                36)
+                36),
+            new RetroSfxDefinition(
+                RetroSfxId.DoorCreak,
+                RetroSfxCategory.World,
+                0.48f,
+                0.52f,
+                0.72f,
+                1,
+                0.24f,
+                3,
+                1024,
+                4800f,
+                0.018f,
+                78)
         };
 
         public static int Count => definitions.Length - 1;
@@ -435,6 +449,11 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.Door:
                     return GenerateDoor(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.DoorCreak:
+                    return GenerateDoorCreak(
                         time,
                         duration,
                         ref noiseState);
@@ -582,6 +601,39 @@ namespace BarPromenade
                   0.38f
                 : 0f;
             return (creak * 0.43f + grain + latch) * envelope;
+        }
+
+        private static float GenerateDoorCreak(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.012f, 0.92f);
+            float stickSlip =
+                0.52f +
+                Mathf.Pow(
+                    Mathf.Abs(
+                        Mathf.Sin(
+                            2f *
+                            Mathf.PI *
+                            (5.2f + normalized * 1.4f) *
+                            time)),
+                    3f) *
+                0.48f;
+            float hinge =
+                GlideSine(time, duration, 118f, 63f) * 0.42f +
+                GlideSine(time, duration, 196f, 112f) * 0.19f;
+            float wood =
+                Triangle(72f + normalized * 18f, time) *
+                Mathf.Sin(Mathf.PI * normalized) *
+                0.13f;
+            float grain =
+                NextNoise(ref noiseState) *
+                (0.10f + stickSlip * 0.17f);
+            return (hinge + wood + grain) *
+                   stickSlip *
+                   envelope;
         }
 
         private static float GeneratePour(
