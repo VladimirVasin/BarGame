@@ -14,6 +14,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.order_drinks",
             "interaction.play_beer_pong",
             "interaction.play_split_the_g",
+            "interaction.play_tincture_match",
             "drinking.intoxication",
             "drinking.wasted",
             "cocktail.title",
@@ -96,6 +97,34 @@ namespace BarPromenade.Tests.EditMode
             "splitg.direction.under",
             "splitg.direction.over",
             "splitg.direction.target",
+            "tincture.title",
+            "tincture.moves",
+            "tincture.score",
+            "tincture.combo",
+            "tincture.intoxication",
+            "tincture.selected",
+            "tincture.selected.none",
+            "tincture.controls",
+            "tincture.invalid_swap",
+            "tincture.reshuffling",
+            "tincture.final",
+            "tincture.result.score",
+            "tincture.result.moves",
+            "tincture.result.combo",
+            "tincture.result.moonshine",
+            "tincture.continue",
+            "tincture.xxx.warning",
+            "tincture.flavor.cherry",
+            "tincture.flavor.seabuckthorn",
+            "tincture.flavor.blueberry",
+            "tincture.flavor.mint",
+            "tincture.flavor.horseradish",
+            "tincture.flavor.moonshine",
+            "tincture.rank.miss",
+            "tincture.rank.close",
+            "tincture.rank.good",
+            "tincture.rank.excellent",
+            "tincture.rank.perfect",
             "drink.light_beer",
             "drink.red_wine",
             "drink.vodka",
@@ -118,7 +147,8 @@ namespace BarPromenade.Tests.EditMode
             "debug.minigames.unavailable",
             "debug.minigame.cocktail",
             "debug.minigame.beer_pong",
-            "debug.minigame.split_the_g"
+            "debug.minigame.split_the_g",
+            "debug.minigame.tincture_match"
         };
 
         [TestCase("Localization/ru")]
@@ -149,6 +179,25 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(valuesByKey["splitg.attempt"], Does.Contain("{1}"));
             Assert.That(valuesByKey["splitg.result.score"], Does.Contain("{0}"));
             Assert.That(valuesByKey["splitg.result.error"], Does.Contain("{0"));
+            Assert.That(valuesByKey["tincture.moves"], Does.Contain("{0}"));
+            Assert.That(valuesByKey["tincture.score"], Does.Contain("{0}"));
+            Assert.That(valuesByKey["tincture.combo"], Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["tincture.intoxication"],
+                Does.Contain("{0}"));
+            Assert.That(valuesByKey["tincture.selected"], Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["tincture.result.score"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["tincture.result.moves"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["tincture.result.combo"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["tincture.result.moonshine"],
+                Does.Contain("{0}"));
         }
 
         [Test]

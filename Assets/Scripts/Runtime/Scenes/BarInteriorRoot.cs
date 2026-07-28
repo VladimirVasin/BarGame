@@ -62,6 +62,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public TinctureMatchMinigameController TinctureMatchMinigame
+        {
+            get;
+            private set;
+        }
 
         private void Awake()
         {
@@ -205,6 +210,10 @@ namespace BarPromenade
                 {
                     BuildSplitTheGDisplay(room, furniture, trim);
                 }
+                else if (activity == BarActivityKind.TinctureMatch)
+                {
+                    BuildTinctureMatchDisplay(room, furniture, trim);
+                }
             }
         }
 
@@ -321,6 +330,85 @@ namespace BarPromenade
                 false);
         }
 
+        private static void BuildTinctureMatchDisplay(
+            Transform parent,
+            Color baseColor,
+            Color trimColor)
+        {
+            Vector3 trayPosition = new Vector3(0f, 1.43f, 3.34f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Tincture Match Tray",
+                parent,
+                trayPosition,
+                new Vector3(2.15f, 0.08f, 0.62f),
+                baseColor,
+                false);
+
+            Color[] tinctureColors =
+            {
+                new Color(0.66f, 0.08f, 0.10f),
+                new Color(0.94f, 0.44f, 0.08f),
+                new Color(0.20f, 0.12f, 0.48f),
+                new Color(0.13f, 0.48f, 0.24f),
+                new Color(0.74f, 0.57f, 0.20f)
+            };
+            for (int index = 0; index < tinctureColors.Length; index++)
+            {
+                float x = -0.76f + (index * 0.38f);
+                RuntimePrimitiveFactory.CreateCylinder(
+                    $"Tincture Shot {index + 1}",
+                    parent,
+                    trayPosition + new Vector3(x, 0.18f, 0f),
+                    new Vector3(0.22f, 0.16f, 0.22f),
+                    tinctureColors[index],
+                    false);
+            }
+
+            Vector3 bottlePosition = new Vector3(1.55f, 1.72f, 3.34f);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Tincture XXX Bottle",
+                parent,
+                bottlePosition,
+                new Vector3(0.34f, 0.34f, 0.34f),
+                new Color(0.70f, 0.82f, 0.78f),
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Tincture XXX Bottle Neck",
+                parent,
+                bottlePosition + (Vector3.up * 0.42f),
+                new Vector3(0.16f, 0.12f, 0.16f),
+                new Color(0.70f, 0.82f, 0.78f),
+                false);
+
+            Vector3 signPosition = new Vector3(1.55f, 1.74f, 3.13f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Tincture XXX Sign",
+                parent,
+                signPosition,
+                new Vector3(0.74f, 0.38f, 0.035f),
+                trimColor,
+                false);
+            Color ink = new Color(0.16f, 0.08f, 0.04f);
+            for (int xIndex = 0; xIndex < 3; xIndex++)
+            {
+                float x = signPosition.x - 0.22f + (xIndex * 0.22f);
+                for (int stroke = 0; stroke < 2; stroke++)
+                {
+                    GameObject mark = RuntimePrimitiveFactory.CreateBox(
+                        $"Tincture XXX Mark {xIndex + 1}-{stroke + 1}",
+                        parent,
+                        new Vector3(x, signPosition.y, 3.105f),
+                        new Vector3(0.055f, 0.29f, 0.025f),
+                        ink,
+                        false);
+                    mark.transform.localRotation = Quaternion.Euler(
+                        0f,
+                        0f,
+                        stroke == 0 ? 38f : -38f);
+                }
+            }
+        }
+
         private void BuildMinigame(
             GameObject ui,
             IntoxicationHudView intoxicationHud,
@@ -347,6 +435,8 @@ namespace BarPromenade
                 ActiveMinigame as BeerPongMinigameController;
             SplitTheGMinigame =
                 ActiveMinigame as SplitTheGMinigameController;
+            TinctureMatchMinigame =
+                ActiveMinigame as TinctureMatchMinigameController;
 
             ActiveMinigame.Completed += HandleMinigameCompleted;
         }
@@ -374,6 +464,8 @@ namespace BarPromenade
                 ActiveActivity == BarActivityKind.BeerPong;
             bool isSplitTheG =
                 ActiveActivity == BarActivityKind.SplitTheG;
+            bool isTinctureMatch =
+                ActiveActivity == BarActivityKind.TinctureMatch;
             Vector3 stationPosition;
             Vector3 triggerSize;
             string stationName;
@@ -400,6 +492,15 @@ namespace BarPromenade
                 pointName = "Split the G Point";
                 signName = "Split the G Point Sign";
                 signPosition = new Vector3(3.85f, 1.75f, 3.72f);
+            }
+            else if (isTinctureMatch)
+            {
+                stationPosition = new Vector3(0f, 0.9f, 3.35f);
+                triggerSize = new Vector3(1.4f, 1.8f, 1.2f);
+                stationName = "Tincture Match Minigame Station";
+                pointName = "Tincture Match Point";
+                signName = "Tincture Match Point Sign";
+                signPosition = new Vector3(0f, 1.75f, 3.72f);
             }
             else
             {

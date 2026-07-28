@@ -244,6 +244,38 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interactor.InputEnabled, Is.True);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
+
+            Assert.That(window.Open(), Is.True);
+            Assert.That(
+                window.TryLaunch(
+                    BarMinigameCatalog.TinctureMatchId),
+                Is.True);
+            var tinctureMatch = window.ActiveDebugMinigame as
+                TinctureMatchMinigameController;
+            Assert.That(tinctureMatch, Is.Not.Null);
+            Assert.That(tinctureMatch.IsOpen, Is.True);
+            Assert.That(tinctureMatch.IntoxicationLevel, Is.Zero);
+            TinctureMatchSwap moonshine =
+                FindMoonshineSwap(tinctureMatch.Board);
+            Assert.That(
+                tinctureMatch.TrySwap(
+                    moonshine.First.Row,
+                    moonshine.First.Column,
+                    moonshine.Second.Row,
+                    moonshine.Second.Column),
+                Is.True);
+            Assert.That(
+                tinctureMatch.IntoxicationLevel,
+                Is.EqualTo(
+                    DrinkRules.GetIntoxicationGain(
+                        DrinkId.Moonshine)));
+            AssertSessionUnchanged();
+
+            tinctureMatch.Cancel();
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            Assert.That(hud.Visible, Is.True);
             yield return null;
         }
 
@@ -301,6 +333,50 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             return -1;
+        }
+
+        private static TinctureMatchSwap FindMoonshineSwap(
+            TinctureMatchBoard board)
+        {
+            for (int row = 0; row < board.Rows; row++)
+            {
+                for (int column = 0;
+                     column < board.Columns;
+                     column++)
+                {
+                    if (board[row, column] !=
+                        TinctureTileKind.Moonshine)
+                    {
+                        continue;
+                    }
+
+                    var moonshine =
+                        new TinctureMatchCell(row, column);
+                    TinctureMatchCell[] neighbors =
+                    {
+                        new TinctureMatchCell(row - 1, column),
+                        new TinctureMatchCell(row, column + 1),
+                        new TinctureMatchCell(row + 1, column),
+                        new TinctureMatchCell(row, column - 1)
+                    };
+                    foreach (TinctureMatchCell neighbor in neighbors)
+                    {
+                        if (board.Contains(neighbor) &&
+                            TinctureMatchResolver.IsNormalTile(
+                                board[
+                                    neighbor.Row,
+                                    neighbor.Column]))
+                        {
+                            return new TinctureMatchSwap(
+                                moonshine,
+                                neighbor);
+                        }
+                    }
+                }
+            }
+
+            Assert.Fail("Debug board has no usable Moonshine tile.");
+            return default;
         }
 
         private static void ResetSession()

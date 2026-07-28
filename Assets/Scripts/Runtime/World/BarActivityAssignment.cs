@@ -18,6 +18,8 @@ namespace BarPromenade
                     return BarActivityKind.BeerPong;
                 case 2:
                     return BarActivityKind.SplitTheG;
+                case 3:
+                    return BarActivityKind.TinctureMatch;
                 default:
                     return BarActivityKind.Cocktail;
             }

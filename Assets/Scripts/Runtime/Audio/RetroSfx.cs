@@ -31,6 +31,9 @@ namespace BarPromenade
         BeerPongRim,
         BeerPongSink,
         DrinkGulp,
+        ShotSwap,
+        ShotMatch,
+        MoonshineBurst,
         Count
     }
 
@@ -292,7 +295,46 @@ namespace BarPromenade
                 1024,
                 4200f,
                 0.035f,
-                42)
+                42),
+            new RetroSfxDefinition(
+                RetroSfxId.ShotSwap,
+                RetroSfxCategory.Bar,
+                0.18f,
+                0.38f,
+                0f,
+                2,
+                0.045f,
+                2,
+                2048,
+                8200f,
+                0.035f,
+                58),
+            new RetroSfxDefinition(
+                RetroSfxId.ShotMatch,
+                RetroSfxCategory.Bar,
+                0.30f,
+                0.44f,
+                0f,
+                3,
+                0.060f,
+                2,
+                2048,
+                8400f,
+                0.025f,
+                48),
+            new RetroSfxDefinition(
+                RetroSfxId.MoonshineBurst,
+                RetroSfxCategory.Bar,
+                0.46f,
+                0.50f,
+                0f,
+                2,
+                0.18f,
+                2,
+                2048,
+                7600f,
+                0.02f,
+                36)
         };
 
         public static int Count => definitions.Length - 1;
@@ -428,6 +470,21 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.DrinkGulp:
                     return GenerateDrinkGulp(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.ShotSwap:
+                    return GenerateShotSwap(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.ShotMatch:
+                    return GenerateShotMatch(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.MoonshineBurst:
+                    return GenerateMoonshineBurst(
                         time,
                         duration,
                         ref noiseState);
@@ -715,6 +772,108 @@ namespace BarPromenade
                        body * 0.28f +
                        liquid +
                        bubble) *
+                   envelope;
+        }
+
+        private static float GenerateShotSwap(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.002f, 2.3f);
+            float glide = GlideSine(
+                time,
+                duration,
+                510f,
+                980f);
+            float glass =
+                Mathf.Sin(2f * Mathf.PI * 2420f * time) *
+                Mathf.Max(0f, 1f - normalized * 3.6f);
+            float slide =
+                NextNoise(ref noiseState) *
+                Mathf.Sin(Mathf.PI * normalized) *
+                0.12f;
+            return (
+                       glide * 0.36f +
+                       glass * 0.38f +
+                       slide) *
+                   envelope;
+        }
+
+        private static float GenerateShotMatch(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float segmentDuration = duration / 3f;
+            int segment = Mathf.Min(
+                2,
+                Mathf.FloorToInt(time / segmentDuration));
+            float localTime = time - segment * segmentDuration;
+            float frequency = segment == 0
+                ? 784f
+                : segment == 1
+                    ? 988f
+                    : 1175f;
+            float localEnvelope = Envelope(
+                localTime,
+                segmentDuration,
+                0.001f,
+                2.8f);
+            float sparkle =
+                Mathf.Sin(
+                    2f *
+                    Mathf.PI *
+                    frequency *
+                    localTime) *
+                0.52f;
+            float glass =
+                Mathf.Sin(
+                    2f *
+                    Mathf.PI *
+                    frequency *
+                    2.46f *
+                    localTime) *
+                0.23f;
+            float crackle =
+                NextNoise(ref noiseState) *
+                localEnvelope *
+                0.07f;
+            return (sparkle + glass) * localEnvelope + crackle;
+        }
+
+        private static float GenerateMoonshineBurst(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.003f, 1.25f);
+            float lowBody = GlideSine(
+                time,
+                duration,
+                128f,
+                54f);
+            float icyRise = GlideSine(
+                time,
+                duration,
+                420f,
+                1320f);
+            float triplePulse =
+                0.42f +
+                Mathf.Max(
+                    0f,
+                    Mathf.Sin(2f * Mathf.PI * 7.4f * time)) *
+                0.58f;
+            float burstNoise =
+                NextNoise(ref noiseState) *
+                Mathf.Max(0f, 1f - normalized * 2.7f) *
+                0.28f;
+            return (
+                       lowBody * 0.34f +
+                       icyRise * triplePulse * 0.32f +
+                       burstNoise) *
                    envelope;
         }
 

@@ -8,7 +8,7 @@ namespace BarPromenade
     {
         [Min(1)] public int BlocksX = 4;
         [Min(1)] public int BlocksZ = 4;
-        [Min(0)] public int BarCount = 3;
+        [Min(0)] public int BarCount = 4;
         [Min(1f)] public float BlockWidth = 18f;
         [Min(1f)] public float BlockDepth = 18f;
         [Min(0.1f)] public float RoadWidth = 6f;

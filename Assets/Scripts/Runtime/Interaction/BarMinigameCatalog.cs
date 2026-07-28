@@ -94,6 +94,7 @@ namespace BarPromenade
         public const string CocktailId = "cocktail";
         public const string BeerPongId = "beer-pong";
         public const string SplitTheGId = "split-the-g";
+        public const string TinctureMatchId = "tincture-match";
 
         private static readonly List<BarMinigameDefinition> definitions =
             new List<BarMinigameDefinition>();
@@ -254,6 +255,14 @@ namespace BarPromenade
                     "interaction.play_split_the_g",
                     30,
                     CreateSplitTheG));
+            definitions.Add(
+                new BarMinigameDefinition(
+                    TinctureMatchId,
+                    BarActivityKind.TinctureMatch,
+                    "debug.minigame.tincture_match",
+                    "interaction.play_tincture_match",
+                    40,
+                    CreateTinctureMatch));
             definitions.Sort(CompareDefinitions);
         }
 
@@ -296,6 +305,22 @@ namespace BarPromenade
                 context.Host.AddComponent<SplitTheGMinigameView>();
             SplitTheGMinigameController controller =
                 context.Host.AddComponent<SplitTheGMinigameController>();
+            controller.Initialize(
+                view,
+                context.IntoxicationHud,
+                context.Player,
+                context.CameraFollow,
+                context.PersistSessionProgress);
+            return controller;
+        }
+
+        private static IBarMinigame CreateTinctureMatch(
+            BarMinigameFactoryContext context)
+        {
+            TinctureMatchMinigameView view =
+                context.Host.AddComponent<TinctureMatchMinigameView>();
+            TinctureMatchMinigameController controller =
+                context.Host.AddComponent<TinctureMatchMinigameController>();
             controller.Initialize(
                 view,
                 context.IntoxicationHud,

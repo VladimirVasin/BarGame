@@ -224,7 +224,8 @@ namespace BarPromenade
 
                 if (lot.BarActivity != BarActivityKind.Cocktail &&
                     lot.BarActivity != BarActivityKind.BeerPong &&
-                    lot.BarActivity != BarActivityKind.SplitTheG)
+                    lot.BarActivity != BarActivityKind.SplitTheG &&
+                    lot.BarActivity != BarActivityKind.TinctureMatch)
                 {
                     throw new InvalidOperationException(
                         $"Bar {lot.BarId} must define a supported activity.");

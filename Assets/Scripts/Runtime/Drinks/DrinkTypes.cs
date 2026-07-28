@@ -11,7 +11,8 @@ namespace BarPromenade
         PepperVodka,
         CognacVs,
         CognacVsop,
-        Water
+        Water,
+        Moonshine
     }
 
     public enum DrinkFamily

@@ -2,10 +2,33 @@
 
 ## Unreleased
 
+### Tinctures in a Row minigame
+
+- Added a fourth stable city bar with a `7x7` match-three board, five
+  symbol-coded infusion flavors, exactly one starting `XXX` moonshine shot and
+  15 accepted moves.
+- Invalid swaps return without spending a move. Accepted swaps resolve unique
+  matches, gravity, seeded refills and deterministic cascades with a multiplier
+  capped at `x5`; boards with no normal move reshuffle automatically.
+- Runs of four or more and intersecting matches can create `XXX`, but the board
+  never contains more than one. Swapping it with a flavor clears every shot of
+  that flavor.
+- Normal matches are customer orders and do not increase intoxication. Only
+  activating `XXX` immediately saves one `Moonshine`, one consumed drink and
+  +24 intoxication; cancelling cannot refund it, while F9 runs remain isolated.
+- Added mouse click/drag, keyboard and gamepad controls, RU/EN UI, an
+  activity-specific tray/shot/`XXX` interior display, a point-filtered
+  `640x360` backdrop, transparent 4x4 sprite atlas and generated swap, match
+  and moonshine-burst sounds. Swaps, gravity and refills animate between
+  immutable board snapshots with synchronized cascade effects.
+- Closing during the terminal cascade still completes the visit. Reaching
+  100 intoxication starts the full 45-second `Wasted` effect only when the
+  modal closes.
+
 ### Split the G minigame
 
-- The third stable city bar now hosts Split the G, giving the default three
-  bars one distinct activity each.
+- The third stable city bar hosts Split the G; together with Tinctures in a
+  Row, the default four bars now have one distinct activity each.
 - Hold Space, LMB or gamepad South for one irreversible virtual sip. The exact
   liquid boundary disappears behind the tilted pint, hand and foam until the
   `1.4 s` settling phase reveals the result.
@@ -75,8 +98,8 @@
 ### F9 minigame debug window
 
 - Press `F9` in the city or bar interior to open a direct launcher for every
-  registered minigame; cocktail mixing, beer pong and Split the G are
-  available now.
+  registered minigame; cocktail mixing, beer pong, Split the G and Tinctures
+  in a Row are available now.
 - Normal interiors and the debug list use the same explicit catalog, so a
   future game appears after its definition and factory are registered.
 - Opening the window closes a conflicting map or minigame and preserves the
@@ -87,7 +110,8 @@
 ### Beer-pong minigame
 
 - The second bar on the stable city map opens beer pong; the first keeps the
-  cocktail mixer and the third now hosts Split the G.
+  cocktail mixer, the third hosts Split the G and the fourth hosts Tinctures
+  in a Row.
 - Aim with mouse, keyboard or gamepad, charge a throw and watch the ball use
   deterministic 2.5D physics with real table and cup-rim bounces.
 - Clear six cups in ten throws. Clean sinks score 100, bank shots add 50, and
@@ -190,7 +214,8 @@
 
 ### Playable MVP
 
-- Deterministic connected city with roads, 16 building lots and 3 bars.
+- The initial vertical slice used a deterministic connected city with roads,
+  16 building lots and 3 bars; the current default has since expanded to 4.
 - Road-constrained eight-direction sprite character and free-orbit perspective
   third-person chase camera with obstacle avoidance.
 - Localized interaction prompts and a separate generated bar interior.

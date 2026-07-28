@@ -44,15 +44,16 @@ The vertical slice contains:
   `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
   treatment and each player is destroyed by the next Single-mode scene load;
 - deterministic generated mono retro SFX at `22050 Hz`, including distinct
-  beer-pong throw, bounce, rim and sink cues, with bounded category pools,
-  per-effect cooldowns and voice limits, plus separate scene-local procedural
-  city and bar ambience;
+  beer-pong throw/bounce/rim/sink and tincture swap/match/moonshine cues, with
+  bounded category pools, per-effect cooldowns and voice limits, plus separate
+  scene-local procedural city and bar ambience;
 - a spanning-tree road graph with deterministic loops;
 - deterministic collider-free ochre guard rails, batched into two meshes,
   that trace only the exposed boundary of the road union, close dead ends and
   leave a `3.30 m` opening around every generated bar approach;
-- 16 building lots by default, including exactly 3 reachable bars; stable
-  row-major order assigns cocktail mixing, beer pong and Split the G;
+- 16 building lots by default, including exactly 4 reachable bars; stable
+  row-major order assigns cocktail mixing, beer pong, Split the G and
+  Tinctures in a Row;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -81,8 +82,8 @@ The vertical slice contains:
   station adapt to the active bar activity, plus one exit;
 - one explicit `BarMinigameCatalog` whose ordered definitions and factories
   create both normal and debug minigame instances; cocktail mixing, beer pong
-  and Split the G are registered now, and future registrations appear in the
-  debug list;
+  Split the G and Tinctures in a Row are registered now, and future
+  registrations appear in the debug list;
 - an `F9` minigame debug window in both `City` and `BarInterior`; opening it
   closes a conflicting map or minigame before taking the modal lock, while
   launched debug instances neither complete bar visits nor persist
@@ -108,10 +109,25 @@ The vertical slice contains:
   option and automatic completion after the third glass;
 - a dedicated point-filtered `640x360` Split the G backdrop, transparent 4x4
   pint/hand/foam/effect atlas and generated retro gulp cue;
+- a same-scene fourth-bar Tinctures in a Row minigame with a `7x7` board, five
+  visually distinct infusion flavors, 15 accepted swaps and at most one
+  `XXX` moonshine shot;
+- deterministic seeded board generation without starting matches and with at
+  least three legal normal swaps, frame-independent match/cascade resolution,
+  invalid-swap rollback and automatic deterministic reshuffling when no
+  normal move remains;
+- long runs and T/L intersections create `XXX` only when none is present;
+  swapping `XXX` with a normal flavor clears every shot of that flavor, while
+  ordinary matches remain customer orders and do not count as drinking;
+- mouse click/drag, keyboard and gamepad controls, a point-filtered `640x360`
+  backdrop, transparent 4x4 shot/effect atlas, interpolated swap/gravity/refill
+  motion, RU/EN interface and generated swap, match and moonshine-burst cues;
 - session-persistent intoxication, last-alcohol context and consumed-drink
   count; every beer-pong miss consumes a light beer, each Split the G attempt
-  records the actual dark-beer fraction, and the cocktail path retains its
-  deferred timed `Wasted` debuff.
+  records the actual dark-beer fraction, only an activated `XXX` in Tinctures
+  in a Row immediately consumes `Moonshine` for 24 intoxication, and the
+  cocktail and Tinctures in a Row paths defer their timed `Wasted` debuff
+  until the modal closes.
 
 ## Deferred
 

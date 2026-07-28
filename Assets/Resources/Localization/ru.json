@@ -21,6 +21,10 @@
       "value": "E — сыграть в Split the G"
     },
     {
+      "key": "interaction.play_tincture_match",
+      "value": "E — сыграть в «Настойки в ряд»"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Опьянение: {0}/100"
     },
@@ -353,8 +357,124 @@
       "value": "ТОЧНО ПО ЦЕЛИ"
     },
     {
+      "key": "tincture.title",
+      "value": "НАСТОЙКИ В РЯД"
+    },
+    {
+      "key": "tincture.moves",
+      "value": "Ходов осталось: {0}"
+    },
+    {
+      "key": "tincture.score",
+      "value": "Очки: {0}"
+    },
+    {
+      "key": "tincture.combo",
+      "value": "Цепочка: ×{0}"
+    },
+    {
+      "key": "tincture.intoxication",
+      "value": "Опьянение: {0}/100"
+    },
+    {
+      "key": "tincture.selected",
+      "value": "Выбрано: {0}"
+    },
+    {
+      "key": "tincture.selected.none",
+      "value": "ничего"
+    },
+    {
+      "key": "tincture.controls",
+      "value": "ЛКМ / перетаскивание или стрелки + Enter — обмен   •   Esc / B — выйти"
+    },
+    {
+      "key": "tincture.invalid_swap",
+      "value": "НЕТ ЛИНИИ — ХОД ВОЗВРАЩЁН"
+    },
+    {
+      "key": "tincture.reshuffling",
+      "value": "НЕТ ХОДОВ — ПЕРЕМЕШИВАЕМ..."
+    },
+    {
+      "key": "tincture.final",
+      "value": "ПОСЛЕДНИЙ ЗАКАЗ"
+    },
+    {
+      "key": "tincture.result.score",
+      "value": "Итоговые очки: {0}"
+    },
+    {
+      "key": "tincture.result.moves",
+      "value": "Принятых ходов: {0}"
+    },
+    {
+      "key": "tincture.result.combo",
+      "value": "Лучшая цепочка: ×{0}"
+    },
+    {
+      "key": "tincture.result.moonshine",
+      "value": "Самогон XXX использован: {0}"
+    },
+    {
+      "key": "tincture.continue",
+      "value": "ЛКМ / Enter — продолжить"
+    },
+    {
+      "key": "tincture.xxx.warning",
+      "value": "XXX уберёт все рюмки выбранного вкуса и добавит 24 опьянения"
+    },
+    {
+      "key": "tincture.flavor.cherry",
+      "value": "Вишнёвая"
+    },
+    {
+      "key": "tincture.flavor.seabuckthorn",
+      "value": "Облепиховая"
+    },
+    {
+      "key": "tincture.flavor.blueberry",
+      "value": "Черничная"
+    },
+    {
+      "key": "tincture.flavor.mint",
+      "value": "Мятная"
+    },
+    {
+      "key": "tincture.flavor.horseradish",
+      "value": "Хреновуха"
+    },
+    {
+      "key": "tincture.flavor.moonshine",
+      "value": "Самогон XXX"
+    },
+    {
+      "key": "tincture.rank.miss",
+      "value": "ПРОЛИЛ МИМО"
+    },
+    {
+      "key": "tincture.rank.close",
+      "value": "БЛИЗКО"
+    },
+    {
+      "key": "tincture.rank.good",
+      "value": "ХОРОШО"
+    },
+    {
+      "key": "tincture.rank.excellent",
+      "value": "ОТЛИЧНО"
+    },
+    {
+      "key": "tincture.rank.perfect",
+      "value": "ИДЕАЛЬНО"
+    },
+    {
       "key": "debug.minigame.split_the_g",
       "value": "Split the G"
+    },
+    {
+      "key": "debug.minigame.tincture_match",
+      "value": "Настойки в ряд"
     },
     {
       "key": "drink.light_beer",

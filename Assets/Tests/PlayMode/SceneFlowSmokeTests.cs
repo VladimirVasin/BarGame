@@ -29,7 +29,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityScene_BootstrapsGeneratedWorldPlayerAndThreeBars()
+        public IEnumerator CityScene_BootstrapsGeneratedWorldPlayerAndFourBars()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -48,7 +48,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 cityRoot.GetComponentsInChildren<BarEntrance>(true),
-                Has.Length.EqualTo(3));
+                Has.Length.EqualTo(4));
             Assert.That(
                 cityRoot.World.Bars[0].BarActivity,
                 Is.EqualTo(BarActivityKind.Cocktail));
@@ -58,6 +58,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.World.Bars[2].BarActivity,
                 Is.EqualTo(BarActivityKind.SplitTheG));
+            Assert.That(
+                cityRoot.World.Bars[3].BarActivity,
+                Is.EqualTo(BarActivityKind.TinctureMatch));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
             Assert.That(cityRoot.DebugWindow, Is.Not.Null);
@@ -176,7 +179,7 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.GetComponentInChildren<IntoxicationHudView>(true);
 
             Assert.That(map, Is.Not.Null);
-            Assert.That(map.Bars, Has.Count.EqualTo(3));
+            Assert.That(map.Bars, Has.Count.EqualTo(4));
             string visitedBarId = map.Bars[2].BarId;
             Assert.That(
                 GameSessionState.MarkBarVisited(visitedBarId),
@@ -468,6 +471,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CocktailMinigame, Is.Not.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
             Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
+            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
             Assert.That(interiorRoot.DebugWindow, Is.Not.Null);
             Assert.That(
                 interiorRoot.DebugWindow.IsInitialized,
@@ -554,6 +558,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CocktailMinigame, Is.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Not.Null);
             Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
+            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
             Assert.That(
                 interiorRoot.ActiveMinigame,
                 Is.SameAs(interiorRoot.BeerPongMinigame));
@@ -713,6 +718,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CocktailMinigame, Is.Null);
             Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
             Assert.That(interiorRoot.SplitTheGMinigame, Is.Not.Null);
+            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
             Assert.That(
                 interiorRoot.ActiveMinigame,
                 Is.SameAs(interiorRoot.SplitTheGMinigame));
@@ -893,6 +899,184 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 splitTheGFollow.OrbitInputEnabled,
                 Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator TinctureMatchBarInterior_CompletesFifteenMoves()
+        {
+            const string barId = "bar-tincture-match-smoke-test";
+            GameSessionState.EnterBar(
+                barId,
+                BarActivityKind.TinctureMatch);
+            GameSessionState.TryAddRouteStop(barId);
+
+            BarInteriorRoot interiorRoot = null;
+            yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
+                SceneIds.BarInterior,
+                InteriorRootName,
+                root => interiorRoot = root);
+            yield return WaitUntil(
+                () => interiorRoot.IsInitialized,
+                "Tincture-match interior did not finish initialization.");
+
+            Assert.That(
+                interiorRoot.ActiveActivity,
+                Is.EqualTo(BarActivityKind.TinctureMatch));
+            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
+            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
+            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
+            Assert.That(
+                interiorRoot.TinctureMatchMinigame,
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActiveMinigame,
+                Is.SameAs(interiorRoot.TinctureMatchMinigame));
+            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
+            Assert.That(
+                interiorRoot.ActivityStation.PromptKey,
+                Is.EqualTo("interaction.play_tincture_match"));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<
+                    BarActivityStation>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<
+                    TinctureMatchMinigameController>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.transform.Find(
+                    "Tincture Match Minigame Station"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    "Tincture Match Point"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    "Tincture Match Point Sign"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Tincture Match Tray"),
+                Is.Not.Null);
+            for (int shot = 1; shot <= 5; shot++)
+            {
+                Assert.That(
+                    interiorRoot.transform.Find(
+                        $"Interior {barId}/Tincture Shot {shot}"),
+                    Is.Not.Null);
+            }
+
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Tincture XXX Bottle"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Tincture XXX Sign"),
+                Is.Not.Null);
+
+            Vector3 stationPosition =
+                interiorRoot.ActivityStation.transform.position;
+            stationPosition.y = 0.12f;
+            interiorRoot.Player.Motor.Teleport(stationPosition);
+            yield return null;
+            Assert.That(
+                interiorRoot.Player.Interactor.ActiveInteractable,
+                Is.EqualTo(interiorRoot.ActivityStation));
+
+            PlayerCameraFollow follow =
+                Camera.main.GetComponent<PlayerCameraFollow>();
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(
+                interiorRoot.TinctureMatchMinigame.IsOpen,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.False);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.False);
+            Assert.That(follow.OrbitInputEnabled, Is.False);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+
+            interiorRoot.TinctureMatchMinigame.Cancel();
+            Assert.That(
+                interiorRoot.TinctureMatchMinigame.IsOpen,
+                Is.False);
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(follow.OrbitInputEnabled, Is.True);
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.False);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Contain(barId));
+
+            int completionCount = 0;
+            interiorRoot.TinctureMatchMinigame.Completed +=
+                () => completionCount++;
+            interiorRoot.ActivityStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(
+                interiorRoot.TinctureMatchMinigame.IsOpen,
+                Is.True);
+
+            for (int move = 1;
+                 move <=
+                 interiorRoot.TinctureMatchMinigame.Settings.MoveLimit;
+                 move++)
+            {
+                var swaps =
+                    TinctureMatchResolver.GetLegalNormalSwaps(
+                        interiorRoot.TinctureMatchMinigame.Board);
+                Assert.That(swaps, Is.Not.Empty);
+                TinctureMatchSwap swap = swaps[0];
+                Assert.That(
+                    interiorRoot.TinctureMatchMinigame.TrySwap(
+                        swap.First.Row,
+                        swap.First.Column,
+                        swap.Second.Row,
+                        swap.Second.Column),
+                    Is.True,
+                    $"Move {move}");
+                interiorRoot.TinctureMatchMinigame
+                    .AdvancePresentation(100f);
+            }
+
+            Assert.That(
+                interiorRoot.TinctureMatchMinigame.PresentationPhase,
+                Is.EqualTo(
+                    TinctureMatchPresentationPhase.FinalResult));
+            Assert.That(completionCount, Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.IsBarVisited(barId),
+                Is.True);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Not.Contain(barId));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.None));
+            Assert.That(GameSessionState.DrinksConsumed, Is.Zero);
+
+            interiorRoot.TinctureMatchMinigame.Cancel();
+            Assert.That(
+                interiorRoot.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(follow.OrbitInputEnabled, Is.True);
         }
 
         [UnityTest]

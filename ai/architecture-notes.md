@@ -66,8 +66,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   states require sustained idle, runtime swaps only the existing body
   renderer, and all rear variants remain neutral.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
-  shared interior are built at runtime. Authored player, cocktail and
-  beer-pong bitmaps load from `Resources` and are sliced or drawn at runtime.
+  shared interior are built at runtime. Authored player, cocktail, beer-pong,
+  Split-the-G and tincture bitmaps load from `Resources` and are sliced or
+  drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; emissive and atmosphere effects reuse cached shared
   resources, with no per-instance materials or runtime `Shader.Find`.
@@ -80,9 +81,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   renderer integration is deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
-  Prompts, HUD, map and beer pong use a logical `640x360` canvas; the denser
-  cocktail view remains responsive while sharing the same palette, stepped
-  frames and point-filtered accents.
+  Prompts, HUD, map, beer pong, Split the G and Tinctures in a Row use a
+  logical `640x360` canvas; the denser cocktail view remains responsive while
+  sharing the same palette, stepped frames and point-filtered accents.
 - **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or
@@ -117,9 +118,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Single-mode scene load destroys the old player and stops its theme
   automatically.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
-  the mono `22050 Hz` UI, footstep, door, cocktail and beer-pong clips in memory.
-  `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
-  source pools, and applies per-effect cooldown and concurrent-voice limits.
+  the mono `22050 Hz` UI, footstep, door, cocktail, beer-pong, Split-the-G and
+  tincture clips in memory. `RetroAudioService` persists across scene loads,
+  reuses bounded UI/world/bar source pools, and applies per-effect cooldown
+  and concurrent-voice limits.
 - **Accepted — Scene-local procedural ambience:** City and bar roots each own a
   quiet deterministic `22050 Hz` ambience loop and tone filter. Single-mode
   transitions destroy the old scene ambience, while the persistent SFX
@@ -130,15 +132,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   billboard behavior, so recognition does not depend on color alone.
 - **Accepted — Activity-specific same-scene minigame:** Every bar carries a
   stable `BarActivityKind` through the transition. One pure ordinal resolver
-  assigns the first three row-major bars to cocktails, beer pong and Split the
-  G, then assigns later bars to cocktails. `BarInterior` constructs exactly one
-  matching controller and `BarActivityStation`; all implement one
-  completion/cancellation contract and share a state-preserving modal lock.
+  assigns the first four row-major bars to cocktails, beer pong, Split the G
+  and Tinctures in a Row, then assigns later bars to cocktails. `BarInterior`
+  constructs exactly one matching controller and `BarActivityStation`; all
+  implement one completion/cancellation contract and share a state-preserving
+  modal lock.
 - **Accepted — Explicit shared minigame catalog:** `BarMinigameCatalog` owns
   the ordered definitions and factories used for both normal interiors and
-  debug instances. Cocktail mixing, beer pong and Split the G are built-ins;
-  registering a unique future activity definition makes it available to the
-  F9 window without changing that window.
+  debug instances. Cocktail mixing, beer pong, Split the G and Tinctures in a
+  Row are built-ins; registering a unique future activity definition makes it
+  available to the F9 window without changing that window.
 - **Accepted — Isolated F9 debug launch:** Both runtime roots install the same
   minigame debug window. Opening it closes a conflicting city map and cancels
   a scene minigame or prior debug game before capturing the modal state.
@@ -185,11 +188,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   proportional intoxication and committed immediately on release, so Cancel
   cannot refund it. Best score remains local to the open minigame because the
   project has no long-term save/high-score subsystem.
+- **Accepted — Deterministic tincture board:** The fourth bar starts from a
+  seeded `7x7` board containing five normal flavors, no existing matches,
+  exactly one `XXX` and at least three legal normal swaps. Only accepted swaps
+  spend one of 15 moves. Unique matched cells clear once, then gravity, seeded
+  refill and subsequent waves resolve completely before new input; cascade
+  score multipliers cap at `x5`, and a stable dead board is deterministically
+  reshuffled while preserving the zero-or-one-`XXX` invariant.
+- **Accepted — Single `XXX` special:** A first-wave run of four or more or an
+  intersecting horizontal/vertical match creates `XXX` only when none remains;
+  the same pattern awards a bonus instead of creating a second special.
+  Swapping `XXX` with a normal flavor is always an accepted move and clears
+  every shot of that flavor plus the special.
+- **Accepted — Tincture input, presentation and persistence:** Mouse click/drag,
+  keyboard navigation/selection and gamepad stick/D-pad/South share one modal
+  controller. The logical `640x360` view uses a deterministic point-filtered
+  backdrop and 4x4 shot/effect atlas, interpolates swap/gravity/refill from
+  immutable domain snapshots, and synchronizes generated swap, match and
+  moonshine-burst SFX. Normal matches are customer orders and do not alter
+  drinking state; only `XXX` activation immediately commits one `Moonshine`,
+  +24 intoxication and one consumed drink, so Cancel cannot refund it. A
+  terminal move remains completed when the modal closes during its cascade;
+  its pending `Wasted` effect begins only when the modal closes. F9
+  launches use the same factory with persistence disabled.
 - **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
   drink and total consumed-drink count are committed through
   `GameSessionState` after every cocktail serving, beer-pong miss and completed
-  Split the G sip, survive scene loads, and reset when the application
-  subsystem restarts.
+  Split the G sip, plus every activated tincture `XXX`; they survive scene
+  loads and reset when the application subsystem restarts.
 - **Accepted — Deferred Wasted presentation:** Serving any bad mixture marks a
   pending 45-second unscaled-time debuff, applied at the final result or when
   the modal closes. Reaching 100 intoxication ends the session early. The

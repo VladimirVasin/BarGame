@@ -2,6 +2,43 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-28 — Tinctures in a Row minigame
+
+- Added a seeded `7x7` match-three domain with five normal infusion flavors,
+  exactly one starting `XXX`, no initial matches, at least three legal normal
+  swaps and 15 accepted moves. Invalid swaps preserve the board, score and
+  move count.
+- Added unique-cell match resolution, gravity, seeded refill, deterministic
+  cascades with a multiplier capped at `x5`, long-run/intersection special
+  creation and deterministic dead-board reshuffling while enforcing at most
+  one `XXX`.
+- Added the modal fourth-bar controller with mouse click/drag,
+  keyboard and gamepad input. Normal matches represent customer orders; only
+  activating `XXX` immediately commits one `Moonshine`, +24 intoxication and
+  one consumed drink. Cancel cannot refund it, and F9 runs stay isolated.
+- Registered `tincture-match` in the shared catalog and assigned the fourth
+  stable row-major bar through the common resolver. Added the dedicated
+  station, tray/shot/`XXX` decor, RU/EN UI, deterministic point-filtered
+  `640x360` backdrop and 4x4 atlas, plus generated swap, match and
+  moonshine-burst SFX.
+- Added eased swap, gravity and refill motion, clipped board entry, cascade
+  particles and reshuffle feedback. Match audio now starts with the matching
+  clear animation.
+- Terminal moves remain completed if the player closes during their cascade;
+  a resulting 45-second `Wasted` effect starts only when the modal closes.
+  Reopening advances a deterministic per-controller board sequence.
+
+Verification:
+
+- Focused Unity EditMode integration suite: 70/70 passed, with 0 compile
+  errors or warnings.
+- Runtime, Editor, EditModeTests, PlayModeTests and Assembly-CSharp .NET
+  builds: 0 errors, 0 warnings.
+- Unity EditMode: 302/302 passed.
+- Unity PlayMode in `-nographics`: 54/54 runnable tests passed; the existing
+  graphics-device-only RenderGraph test was ignored by design.
+- Windows x64 Player build: succeeded, 0 warnings, 135,654,019 bytes.
+
 ## 2026-07-28 — Split the G minigame
 
 - Added a pure frame-rate-independent one-sip session with Normal timing,

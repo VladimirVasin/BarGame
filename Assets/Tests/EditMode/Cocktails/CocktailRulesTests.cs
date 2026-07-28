@@ -14,6 +14,7 @@ namespace BarPromenade.Tests
             new object[] { DrinkId.RedWine, CocktailBaseId.Wine },
             new object[] { DrinkId.Vodka, CocktailBaseId.Vodka },
             new object[] { DrinkId.PepperVodka, CocktailBaseId.Vodka },
+            new object[] { DrinkId.Moonshine, CocktailBaseId.Vodka },
             new object[] { DrinkId.CognacVs, CocktailBaseId.Cognac },
             new object[] { DrinkId.CognacVsop, CocktailBaseId.Cognac }
         };

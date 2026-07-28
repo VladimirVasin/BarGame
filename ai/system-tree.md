@@ -34,6 +34,9 @@ Assets/
     SplitTheG/
       SplitTheGBackground.png  640x360 pixel-art bar/counter backdrop
       SplitTheGAtlas.png       4x4 pint/hand/foam/effect sprite atlas
+    TinctureMatch/
+      TinctureMatchBackground.png  640x360 pixel-art bar backdrop
+      TinctureMatchAtlas.png       4x4 shot/effect sprite atlas
     Player/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
@@ -55,6 +58,7 @@ Assets/
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
+      TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, prompts, HUD, map and F9 minigame debug window
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
@@ -66,6 +70,7 @@ ArtSource/
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
   build-split-the-g-art.py          deterministic minigame background/atlas build
+  build-tincture-match-art.py       deterministic shot background/atlas build
 Packages/
 ProjectSettings/
 ```
@@ -90,6 +95,8 @@ player -> PlayerInteractor -> BarEntrance(activity) -> SceneTransitionService
                                                   -> 120 Hz ball physics + six-cup session
                                                or -> SplitTheGMinigame
                                                   -> one-sip timer + settling + scoring
+                                               or -> TinctureMatchMinigame
+                                                  -> 7x7 swaps + cascades + XXX
                              -> drinking progress -> GameSessionState
                              -> completed visit -> CityMap
                              -> intoxication effects

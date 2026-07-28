@@ -16,7 +16,8 @@ namespace BarPromenade.Tests
             new object[] { DrinkId.PepperVodka, DrinkFamily.Vodka, 20 },
             new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 16 },
             new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 18 },
-            new object[] { DrinkId.Water, DrinkFamily.Water, 0 }
+            new object[] { DrinkId.Water, DrinkFamily.Water, 0 },
+            new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24 }
         };
 
         [TestCaseSource(nameof(definitions))]
@@ -44,12 +45,13 @@ namespace BarPromenade.Tests
                 Assert.That(definition.Id, Is.Not.EqualTo(DrinkId.None));
             }
 
-            Assert.That(actual.Count, Is.EqualTo(9));
+            Assert.That(actual.Count, Is.EqualTo(10));
         }
 
         [TestCase(DrinkId.LightBeer, DrinkId.DarkBeer)]
         [TestCase(DrinkId.WhiteWine, DrinkId.RedWine)]
         [TestCase(DrinkId.Vodka, DrinkId.PepperVodka)]
+        [TestCase(DrinkId.Vodka, DrinkId.Moonshine)]
         [TestCase(DrinkId.CognacVs, DrinkId.CognacVsop)]
         [TestCase(DrinkId.WhiteWine, DrinkId.CognacVs)]
         [TestCase(DrinkId.RedWine, DrinkId.CognacVsop)]

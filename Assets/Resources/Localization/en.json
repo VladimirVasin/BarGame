@@ -21,6 +21,10 @@
       "value": "E - play Split the G"
     },
     {
+      "key": "interaction.play_tincture_match",
+      "value": "E - play Tinctures in a Row"
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Intoxication: {0}/100"
     },
@@ -353,8 +357,124 @@
       "value": "RIGHT ON THE TARGET"
     },
     {
+      "key": "tincture.title",
+      "value": "TINCTURES IN A ROW"
+    },
+    {
+      "key": "tincture.moves",
+      "value": "Moves left: {0}"
+    },
+    {
+      "key": "tincture.score",
+      "value": "Score: {0}"
+    },
+    {
+      "key": "tincture.combo",
+      "value": "Combo: x{0}"
+    },
+    {
+      "key": "tincture.intoxication",
+      "value": "Intoxication: {0}/100"
+    },
+    {
+      "key": "tincture.selected",
+      "value": "Selected: {0}"
+    },
+    {
+      "key": "tincture.selected.none",
+      "value": "none"
+    },
+    {
+      "key": "tincture.controls",
+      "value": "LMB / drag or arrows + Enter - swap   •   Esc / B - leave"
+    },
+    {
+      "key": "tincture.invalid_swap",
+      "value": "NO MATCH - MOVE RETURNED"
+    },
+    {
+      "key": "tincture.reshuffling",
+      "value": "NO MOVES - SHUFFLING..."
+    },
+    {
+      "key": "tincture.final",
+      "value": "LAST CALL"
+    },
+    {
+      "key": "tincture.result.score",
+      "value": "Final score: {0}"
+    },
+    {
+      "key": "tincture.result.moves",
+      "value": "Accepted moves: {0}"
+    },
+    {
+      "key": "tincture.result.combo",
+      "value": "Best combo: x{0}"
+    },
+    {
+      "key": "tincture.result.moonshine",
+      "value": "XXX moonshine used: {0}"
+    },
+    {
+      "key": "tincture.continue",
+      "value": "LMB / Enter - continue"
+    },
+    {
+      "key": "tincture.xxx.warning",
+      "value": "XXX clears every shot of the swapped flavor - and adds 24 intoxication"
+    },
+    {
+      "key": "tincture.flavor.cherry",
+      "value": "Cherry"
+    },
+    {
+      "key": "tincture.flavor.seabuckthorn",
+      "value": "Sea buckthorn"
+    },
+    {
+      "key": "tincture.flavor.blueberry",
+      "value": "Blueberry"
+    },
+    {
+      "key": "tincture.flavor.mint",
+      "value": "Mint"
+    },
+    {
+      "key": "tincture.flavor.horseradish",
+      "value": "Horseradish"
+    },
+    {
+      "key": "tincture.flavor.moonshine",
+      "value": "XXX Moonshine"
+    },
+    {
+      "key": "tincture.rank.miss",
+      "value": "BAR SPILL"
+    },
+    {
+      "key": "tincture.rank.close",
+      "value": "CLOSE"
+    },
+    {
+      "key": "tincture.rank.good",
+      "value": "GOOD"
+    },
+    {
+      "key": "tincture.rank.excellent",
+      "value": "EXCELLENT"
+    },
+    {
+      "key": "tincture.rank.perfect",
+      "value": "PERFECT"
+    },
+    {
       "key": "debug.minigame.split_the_g",
       "value": "Split the G"
+    },
+    {
+      "key": "debug.minigame.tincture_match",
+      "value": "Tinctures in a Row"
     },
     {
       "key": "drink.light_beer",

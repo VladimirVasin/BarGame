@@ -153,6 +153,7 @@ namespace BarPromenade
                     return true;
                 case DrinkId.Vodka:
                 case DrinkId.PepperVodka:
+                case DrinkId.Moonshine:
                     baseId = CocktailBaseId.Vodka;
                     return true;
                 case DrinkId.CognacVs:

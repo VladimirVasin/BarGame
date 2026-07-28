@@ -115,6 +115,30 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void DefaultSettings_CreateFourActivityBars()
+        {
+            CityGenerationSettings settings = CityGenerationSettings.Default;
+
+            Assert.That(settings.BarCount, Is.EqualTo(4));
+
+            CityLayout layout = CityLayoutGenerator.Generate(settings, 48125);
+            Assert.That(
+                layout.BuildingLots.Count(lot => lot.IsBar),
+                Is.EqualTo(4));
+            Assert.That(
+                layout.BuildingLots
+                    .Where(lot => lot.IsBar)
+                    .Select(lot => lot.BarActivity),
+                Is.EquivalentTo(new[]
+                {
+                    BarActivityKind.Cocktail,
+                    BarActivityKind.BeerPong,
+                    BarActivityKind.SplitTheG,
+                    BarActivityKind.TinctureMatch
+                }));
+        }
+
+        [Test]
         public void Generate_AssignsActivitiesByRowMajorOrder()
         {
             CityGenerationSettings settings = CityGenerationSettings.Default;
@@ -149,7 +173,8 @@ namespace BarPromenade.Tests
         [TestCase(0, BarActivityKind.Cocktail)]
         [TestCase(1, BarActivityKind.BeerPong)]
         [TestCase(2, BarActivityKind.SplitTheG)]
-        [TestCase(3, BarActivityKind.Cocktail)]
+        [TestCase(3, BarActivityKind.TinctureMatch)]
+        [TestCase(4, BarActivityKind.Cocktail)]
         [TestCase(17, BarActivityKind.Cocktail)]
         public void BarActivityAssignment_ResolvesRowMajorOrdinal(
             int ordinal,

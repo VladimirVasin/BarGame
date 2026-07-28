@@ -23,7 +23,7 @@ namespace BarPromenade.Tests.EditMode
         {
             IReadOnlyList<BarMinigameDefinition> definitions =
                 BarMinigameCatalog.Definitions;
-            Assert.That(definitions.Count, Is.GreaterThanOrEqualTo(3));
+            Assert.That(definitions.Count, Is.GreaterThanOrEqualTo(4));
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var activities = new HashSet<BarActivityKind>();
@@ -65,11 +65,22 @@ namespace BarPromenade.Tests.EditMode
                 splitTheG.Activity,
                 Is.EqualTo(BarActivityKind.SplitTheG));
             Assert.That(
+                BarMinigameCatalog.TryGet(
+                    BarMinigameCatalog.TinctureMatchId,
+                    out BarMinigameDefinition tinctureMatch),
+                Is.True);
+            Assert.That(
+                tinctureMatch.Activity,
+                Is.EqualTo(BarActivityKind.TinctureMatch));
+            Assert.That(
                 cocktail.SortOrder,
                 Is.LessThan(beerPong.SortOrder));
             Assert.That(
                 beerPong.SortOrder,
                 Is.LessThan(splitTheG.SortOrder));
+            Assert.That(
+                splitTheG.SortOrder,
+                Is.LessThan(tinctureMatch.SortOrder));
         }
 
         [TestCase(
@@ -81,6 +92,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             BarMinigameCatalog.SplitTheGId,
             typeof(SplitTheGMinigameController))]
+        [TestCase(
+            BarMinigameCatalog.TinctureMatchId,
+            typeof(TinctureMatchMinigameController))]
         public void BuiltInFactory_CreatesExpectedController(
             string id,
             Type expectedType)

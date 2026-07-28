@@ -15,7 +15,8 @@ namespace BarPromenade
             new DrinkDefinition(DrinkId.PepperVodka, DrinkFamily.Vodka, 20),
             new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 16),
             new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 18),
-            new DrinkDefinition(DrinkId.Water, DrinkFamily.Water, 0)
+            new DrinkDefinition(DrinkId.Water, DrinkFamily.Water, 0),
+            new DrinkDefinition(DrinkId.Moonshine, DrinkFamily.Vodka, 24)
         };
 
         private static readonly IReadOnlyList<DrinkDefinition> readOnlyDefinitions =
@@ -51,6 +52,8 @@ namespace BarPromenade
                     return definitions[7];
                 case DrinkId.Water:
                     return definitions[8];
+                case DrinkId.Moonshine:
+                    return definitions[9];
                 default:
                     throw new ArgumentOutOfRangeException(nameof(id), id, null);
             }
