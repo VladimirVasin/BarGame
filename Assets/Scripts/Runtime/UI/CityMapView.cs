@@ -69,6 +69,8 @@ namespace BarPromenade
             new Color32(54, 83, 60, 255);
         private static readonly Color BarBuilding =
             RetroUiTheme.MapBar;
+        private static readonly Color HomeBuilding =
+            new Color32(70, 116, 124, 255);
         private static readonly Color Road =
             RetroUiTheme.MapRoad;
         private static readonly Color ParkPath =
@@ -83,6 +85,8 @@ namespace BarPromenade
             RetroUiTheme.Good;
         private static readonly Color Player =
             RetroUiTheme.Cyan;
+        private static readonly Color PlayerHome =
+            RetroUiTheme.AccentPale;
 
         private CityMapController controller;
         private GUIStyle titleStyle;
@@ -239,6 +243,7 @@ namespace BarPromenade
             DrawDistrictLabels(projection);
             DrawRoute(projection);
             DrawBars(projection);
+            DrawPlayerHome(projection);
             DrawPlayer(projection);
         }
 
@@ -456,6 +461,57 @@ namespace BarPromenade
             GUI.Label(
                 new Rect(position.x + 5f, position.y - 7f, 55f, 13f),
                 LocalizationService.Get("map.player"),
+                routeItemStyle);
+        }
+
+        private void DrawPlayerHome(MapProjection projection)
+        {
+            BuildingLot home = controller.PlayerHome;
+            if (home == null)
+            {
+                return;
+            }
+
+            Vector2 position =
+                projection.WorldToScreen(home.Center);
+            const float bodyWidth = 13f;
+            const float bodyHeight = 10f;
+            Rect body = new Rect(
+                position.x - bodyWidth * 0.5f,
+                position.y - 2f,
+                bodyWidth,
+                bodyHeight);
+            DrawSolidRect(body, PlayerHome);
+            Vector2 roofLeft =
+                new Vector2(body.x - 2f, body.y + 1f);
+            Vector2 roofPeak =
+                new Vector2(position.x, body.y - 6f);
+            Vector2 roofRight =
+                new Vector2(body.xMax + 2f, body.y + 1f);
+            DrawLine(
+                roofLeft,
+                roofPeak,
+                3f,
+                PlayerHome);
+            DrawLine(
+                roofPeak,
+                roofRight,
+                3f,
+                PlayerHome);
+            DrawSolidRect(
+                new Rect(
+                    position.x - 1.5f,
+                    body.yMax - 5f,
+                    3f,
+                    5f),
+                RetroUiTheme.Ink);
+            GUI.Label(
+                new Rect(
+                    body.xMax + 4f,
+                    body.y - 2f,
+                    58f,
+                    14f),
+                LocalizationService.Get("map.home"),
                 routeItemStyle);
         }
 
@@ -776,6 +832,11 @@ namespace BarPromenade
             if (lot.IsBar)
             {
                 return BarBuilding;
+            }
+
+            if (lot.IsPlayerHome)
+            {
+                return HomeBuilding;
             }
 
             return GetDistrictColor(lot.District);

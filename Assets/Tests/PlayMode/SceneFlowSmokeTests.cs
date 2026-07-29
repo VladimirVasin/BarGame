@@ -15,6 +15,8 @@ namespace BarPromenade.Tests.PlayMode
         private const string DoorTransitionRootName =
             "[Bar Promenade] Door Transition Runtime";
         private const string InteriorRootName = "[Bar Promenade] Bar Interior Runtime";
+        private const string HomeRootName =
+            "[Bar Promenade] Home Interior Runtime";
         private const float TimeoutSeconds = 15f;
 
         [UnitySetUp]
@@ -69,6 +71,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<BarEntrance>(true),
                 Has.Length.EqualTo(4));
+            Assert.That(cityRoot.Layout.PlayerHome, Is.Not.Null);
+            Assert.That(cityRoot.World.PlayerHome, Is.Not.Null);
+            Assert.That(
+                cityRoot.GetComponentsInChildren<HomeEntrance>(true),
+                Has.Length.EqualTo(1));
             var barDistricts = new HashSet<CityDistrictKind>();
             var barLots = new List<BuildingLot>();
             for (int index = 0;
@@ -157,6 +164,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarActivityKind.TinctureMatch));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
+            Assert.That(
+                cityRoot.Map.PlayerHome,
+                Is.SameAs(cityRoot.Layout.PlayerHome));
             Assert.That(cityRoot.DebugWindow, Is.Not.Null);
             Assert.That(cityRoot.DebugWindow.IsInitialized, Is.True);
             Assert.That(cityRoot.Music, Is.Not.Null);
@@ -233,6 +243,9 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.World.FencePlan.ParkGateOpenings,
                 Has.Count.EqualTo(
                     cityRoot.Layout.Park.Gates.Count));
+            Assert.That(
+                cityRoot.World.FencePlan.PlayerHomeOpenings,
+                Has.Count.EqualTo(1));
 
             CharacterController playerController =
                 cityRoot.Player.GameObject.GetComponent<
@@ -274,6 +287,23 @@ namespace BarPromenade.Tests.PlayMode
                         Is.True,
                         $"Entrance path is not walkable for {lot.BarId}.");
                 }
+            }
+
+            BuildingLot home = cityRoot.Layout.PlayerHome;
+            HomeEntrance homeEntrance =
+                cityRoot.World.PlayerHome;
+            for (int sample = 0; sample <= 8; sample++)
+            {
+                Vector3 point = Vector3.Lerp(
+                    home.ReturnPosition,
+                    homeEntrance.transform.position,
+                    sample / 8f);
+                Assert.That(
+                    cityRoot.World.WalkableArea.Contains(
+                        point,
+                        playerController.radius),
+                    Is.True,
+                    "The player home entrance path is not walkable.");
             }
 
             for (int gateIndex = 0;
@@ -527,7 +557,9 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < cityRoot.Layout.BuildingLots.Count; index++)
             {
                 BuildingLot lot = cityRoot.Layout.BuildingLots[index];
-                if (lot.IsBar || !lot.HasBuilding)
+                if (lot.IsBar ||
+                    lot.IsPlayerHome ||
+                    !lot.HasBuilding)
                 {
                     continue;
                 }
@@ -547,6 +579,18 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(ordinaryBuildingCount, Is.GreaterThan(0));
+            Transform playerHome =
+                cityRoot.World.Root.transform.Find("Player Home");
+            Assert.That(playerHome, Is.Not.Null);
+            Assert.That(
+                playerHome.Find("Home Door"),
+                Is.Not.Null);
+            Assert.That(
+                playerHome.Find("Home Mailbox"),
+                Is.Not.Null);
+            Assert.That(
+                playerHome.GetComponentInChildren<HomeEntrance>(true),
+                Is.Not.Null);
             Assert.That(cityRoot.World.ParkRoot, Is.Not.Null);
             Assert.That(
                 cityRoot.World.ParkRoot.transform.Find("Park Lawn"),
@@ -1563,6 +1607,157 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.IsBarVisited(expectedBarId),
                 Is.False);
             Assert.That(returnedCity.Map.VisitedBarCount, Is.Zero);
+        }
+
+        [UnityTest]
+        public IEnumerator EnterAndExitHome_ReturnsToHomeInSameCity()
+        {
+            CityGameRoot firstCity = null;
+            yield return LoadSceneAndWaitForRoot<CityGameRoot>(
+                SceneIds.City,
+                CityRootName,
+                root => firstCity = root);
+            yield return WaitUntil(
+                () => firstCity.IsInitialized,
+                "Initial city did not finish initialization.");
+
+            HomeEntrance entrance = firstCity.World.PlayerHome;
+            Assert.That(entrance, Is.Not.Null);
+            Vector3 expectedReturn = entrance.ReturnPosition;
+            int expectedSeed = firstCity.Layout.Seed;
+            string routeBarId =
+                firstCity.World.Bars[0].BarId;
+            string visitedBarId =
+                firstCity.World.Bars[1].BarId;
+            RoadEdge[] expectedRoads =
+                new RoadEdge[firstCity.Layout.RoadEdges.Count];
+            for (int index = 0;
+                 index < expectedRoads.Length;
+                 index++)
+            {
+                expectedRoads[index] =
+                    firstCity.Layout.RoadEdges[index];
+            }
+
+            GameSessionState.UpdateDrinkingProgress(
+                37,
+                DrinkId.RedWine,
+                2);
+            Assert.That(
+                GameSessionState.TryAddRouteStop(routeBarId),
+                Is.True);
+            Assert.That(
+                GameSessionState.MarkBarVisited(visitedBarId),
+                Is.True);
+            entrance.Interact(firstCity.Player.Interactor);
+
+            DoorTransitionRoot enteringDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => enteringDoor = root);
+            yield return WaitUntil(
+                () => enteringDoor.IsInitialized,
+                "Home entry door did not initialize.");
+            Assert.That(
+                enteringDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.EnterHome));
+
+            HomeInteriorRoot home = null;
+            yield return WaitForLoadedRoot<HomeInteriorRoot>(
+                SceneIds.HomeInterior,
+                HomeRootName,
+                root => home = root);
+            yield return WaitUntil(
+                () =>
+                    home.IsInitialized &&
+                    !SceneTransitionService.IsTransitioning,
+                "Home transition did not settle.");
+
+            Assert.That(home.Room, Is.Not.Null);
+            Assert.That(home.Player.GameObject, Is.Not.Null);
+            Assert.That(home.Exit, Is.Not.Null);
+            Assert.That(home.Layout.Furniture, Has.Count.EqualTo(5));
+            Assert.That(home.Ambience, Is.Not.Null);
+            Assert.That(home.Ambience.Source.loop, Is.True);
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<
+                    BarInteriorRoot>(
+                    FindObjectsInactive.Include),
+                Is.Empty);
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<
+                    CityMusicPlayer>(
+                    FindObjectsInactive.Include),
+                Is.Empty);
+            Assert.That(GameSessionState.ActiveBarId, Is.Empty);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(37));
+            CollectionAssert.AreEqual(
+                new[] { routeBarId },
+                GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited(visitedBarId),
+                Is.True);
+
+            home.Exit.Interact(home.Player.Interactor);
+
+            DoorTransitionRoot exitingDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => exitingDoor = root);
+            yield return WaitUntil(
+                () => exitingDoor.IsInitialized,
+                "Home exit door did not initialize.");
+            Assert.That(
+                exitingDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.ExitHome));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.PlayerHome));
+
+            CityGameRoot returnedCity = null;
+            yield return WaitForLoadedRoot<CityGameRoot>(
+                SceneIds.City,
+                CityRootName,
+                root => returnedCity = root);
+            yield return WaitUntil(
+                () =>
+                    returnedCity.IsInitialized &&
+                    !SceneTransitionService.IsTransitioning,
+                "Home return transition did not settle.");
+
+            Assert.That(
+                returnedCity.Layout.Seed,
+                Is.EqualTo(expectedSeed));
+            CollectionAssert.AreEqual(
+                expectedRoads,
+                returnedCity.Layout.RoadEdges);
+            Vector3 actualPosition =
+                returnedCity.Player.GameObject.transform.position;
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(
+                        actualPosition.x,
+                        actualPosition.z),
+                    new Vector2(
+                        expectedReturn.x,
+                        expectedReturn.z)),
+                Is.LessThan(0.05f));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(37));
+            CollectionAssert.AreEqual(
+                new[] { routeBarId },
+                GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited(visitedBarId),
+                Is.True);
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot<T>(

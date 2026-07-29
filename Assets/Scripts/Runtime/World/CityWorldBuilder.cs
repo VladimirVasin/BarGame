@@ -30,9 +30,13 @@ namespace BarPromenade
         private static readonly Color ColdWindow = new Color(0.24f, 0.43f, 0.56f);
         private static readonly Color WarmWindow = new Color(0.88f, 0.48f, 0.20f);
         private static readonly Color BarWindow = new Color(1.35f, 0.72f, 0.28f);
+        private static readonly Color HomeWindow = new Color(0.82f, 1.10f, 1.22f);
         private static readonly Color BarTrim = new Color(0.84f, 0.55f, 0.18f);
         private static readonly Color BarAwning = new Color(0.24f, 0.018f, 0.045f);
         private static readonly Color DoorColor = new Color(0.055f, 0.025f, 0.022f);
+        private static readonly Color HomeTrim = new Color(0.66f, 0.82f, 0.80f);
+        private static readonly Color HomeDoor =
+            new Color(0.08f, 0.20f, 0.22f);
 
         public static CityWorldResult Build(
             Transform parent,
@@ -67,6 +71,7 @@ namespace BarPromenade
             GameObject parkRoot = BuildPark(world, layout.Park);
 
             var bars = new List<BarEntrance>(settings.BarCount);
+            HomeEntrance playerHome = null;
             for (int i = 0; i < layout.BuildingLots.Count; i++)
             {
                 BuildBuilding(
@@ -75,13 +80,15 @@ namespace BarPromenade
                     layout.Seed,
                     emissiveMaterial,
                     walkableArea,
-                    bars);
+                    bars,
+                    ref playerHome);
             }
 
             return new CityWorldResult(
                 world.gameObject,
                 walkableArea,
                 bars,
+                playerHome,
                 fencePlan,
                 parkRoot,
                 bounds);
@@ -433,7 +440,8 @@ namespace BarPromenade
             int citySeed,
             Material emissiveMaterial,
             RoadWalkableArea walkableArea,
-            IList<BarEntrance> bars)
+            IList<BarEntrance> bars,
+            ref HomeEntrance playerHome)
         {
             if (!lot.HasBuilding)
             {
@@ -441,7 +449,11 @@ namespace BarPromenade
             }
 
             Transform building = new GameObject(
-                lot.IsBar ? $"Bar {lot.BarId}" : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
+                lot.IsBar
+                    ? $"Bar {lot.BarId}"
+                    : lot.IsPlayerHome
+                        ? "Player Home"
+                        : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
             building.SetParent(parent, false);
 
             Color facadeColor = CreateNightFacadeColor(lot);
@@ -459,6 +471,16 @@ namespace BarPromenade
                 Darken(facadeColor, 0.055f),
                 false);
             BuildWindowBands(building, lot, citySeed, emissiveMaterial);
+
+            if (lot.IsPlayerHome)
+            {
+                BuildHomeFront(
+                    building,
+                    lot,
+                    walkableArea,
+                    ref playerHome);
+                return;
+            }
 
             if (!lot.IsBar)
             {
@@ -599,7 +621,7 @@ namespace BarPromenade
                 Vector3 frontPosition;
                 Vector3 backPosition;
                 Vector3 windowSize;
-                if (lot.IsBar)
+                if (lot.IsBar || lot.IsPlayerHome)
                 {
                     Vector3 frontage = new Vector3(
                         lot.FrontageDirection.x,
@@ -684,7 +706,10 @@ namespace BarPromenade
             const float gap = 0.28f;
             float paneLength =
                 (rowLength - ((paneCount - 1) * gap)) / paneCount;
-            float paneHeight = lot.IsBar ? 0.60f : 0.48f;
+            float paneHeight =
+                lot.IsBar || lot.IsPlayerHome
+                    ? 0.60f
+                    : 0.48f;
 
             for (int pane = 0; pane < paneCount; pane++)
             {
@@ -742,6 +767,12 @@ namespace BarPromenade
             {
                 emissive = true;
                 return BarWindow;
+            }
+
+            if (lot.IsPlayerHome)
+            {
+                emissive = true;
+                return HomeWindow;
             }
 
             uint hash = StableHash(
@@ -819,6 +850,175 @@ namespace BarPromenade
                 lot.BarActivity,
                 lot.ReturnPosition + (Vector3.up * 0.12f));
             bars.Add(entrance);
+        }
+
+        private static void BuildHomeFront(
+            Transform parent,
+            BuildingLot lot,
+            RoadWalkableArea walkableArea,
+            ref HomeEntrance playerHome)
+        {
+            Vector3 direction = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y);
+            Vector3 tangent =
+                new Vector3(-direction.z, 0f, direction.x);
+            bool frontageIsX =
+                Mathf.Abs(direction.x) > 0.5f;
+            Vector3 doorSize = frontageIsX
+                ? new Vector3(0.12f, 2.15f, 1.35f)
+                : new Vector3(1.35f, 2.15f, 0.12f);
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Door",
+                parent,
+                lot.DoorPosition +
+                (direction * 0.045f) +
+                (Vector3.up * 1.075f),
+                doorSize,
+                HomeDoor,
+                false);
+            BuildHomeDoorFrame(
+                parent,
+                lot.DoorPosition,
+                direction,
+                tangent);
+
+            Vector3 apronCenter =
+                (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
+            float apronLength = Vector3.Distance(
+                lot.DoorPosition,
+                lot.ReturnPosition);
+            Vector3 apronSize = frontageIsX
+                ? new Vector3(
+                    apronLength,
+                    0.08f,
+                    PlayerHomeEntranceGeometry.WalkwayWidth)
+                : new Vector3(
+                    PlayerHomeEntranceGeometry.WalkwayWidth,
+                    0.08f,
+                    apronLength);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entrance Walkway",
+                parent,
+                apronCenter + (Vector3.up * 0.10f),
+                apronSize,
+                Sidewalk);
+            walkableArea.Add(
+                RectFromCenter(
+                    apronCenter,
+                    apronSize.x,
+                    apronSize.z));
+
+            Vector3 mailboxBase =
+                lot.DoorPosition +
+                (direction * 1.05f) +
+                (tangent * 1.35f);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Mailbox Post",
+                parent,
+                mailboxBase + (Vector3.up * 0.46f),
+                new Vector3(0.09f, 0.46f, 0.09f),
+                HomeTrim,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Mailbox",
+                parent,
+                mailboxBase + (Vector3.up * 1.02f),
+                frontageIsX
+                    ? new Vector3(0.52f, 0.34f, 0.78f)
+                    : new Vector3(0.78f, 0.34f, 0.52f),
+                HomeDoor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Roof Accent",
+                parent,
+                lot.Center +
+                (Vector3.up * (lot.Height + 0.48f)),
+                new Vector3(
+                    lot.Size.x + 0.75f,
+                    0.38f,
+                    lot.Size.y + 0.75f),
+                HomeDoor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Chimney",
+                parent,
+                lot.Center +
+                new Vector3(
+                    -lot.Size.x * 0.28f,
+                    lot.Height + 1.05f,
+                    lot.Size.y * 0.20f),
+                new Vector3(0.68f, 1.55f, 0.68f),
+                new Color(0.24f, 0.19f, 0.17f),
+                false);
+
+            GameObject entranceObject =
+                new GameObject("Interactive Home Entrance");
+            entranceObject.transform.SetParent(parent, false);
+            entranceObject.transform.position =
+                lot.DoorPosition +
+                (direction * 0.72f) +
+                (Vector3.up * 0.82f);
+            SphereCollider trigger =
+                entranceObject.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = 0.78f;
+            playerHome =
+                entranceObject.AddComponent<HomeEntrance>();
+            playerHome.Configure(
+                lot.ReturnPosition + (Vector3.up * 0.12f));
+        }
+
+        private static void BuildHomeDoorFrame(
+            Transform parent,
+            Vector3 doorPosition,
+            Vector3 direction,
+            Vector3 tangent)
+        {
+            bool frontageIsX =
+                Mathf.Abs(direction.x) > 0.5f;
+            Vector3 verticalSize = frontageIsX
+                ? new Vector3(0.18f, 2.38f, 0.16f)
+                : new Vector3(0.16f, 2.38f, 0.18f);
+            Vector3 headerSize = frontageIsX
+                ? new Vector3(0.18f, 0.20f, 1.85f)
+                : new Vector3(1.85f, 0.20f, 0.18f);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    "Home Door Frame",
+                    parent,
+                    doorPosition +
+                    (direction * 0.10f) +
+                    (tangent * side * 0.78f) +
+                    (Vector3.up * 1.16f),
+                    verticalSize,
+                    HomeTrim,
+                    false);
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Door Header",
+                parent,
+                doorPosition +
+                (direction * 0.10f) +
+                (Vector3.up * 2.32f),
+                headerSize,
+                HomeTrim,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Porch Light",
+                parent,
+                doorPosition +
+                (direction * 0.18f) +
+                (tangent * 1.16f) +
+                (Vector3.up * 2.18f),
+                new Vector3(0.28f, 0.38f, 0.28f),
+                HomeWindow * 1.35f,
+                CityNightResources.EmissiveMaterial,
+                false);
         }
 
         private static void BuildBarEntranceFrame(
@@ -929,6 +1129,15 @@ namespace BarPromenade
                     lot.Color.r * 0.70f,
                     lot.Color.g * 0.65f,
                     lot.Color.b * 0.68f,
+                    1f);
+            }
+
+            if (lot.IsPlayerHome)
+            {
+                return new Color(
+                    lot.Color.r * 0.72f,
+                    lot.Color.g * 0.78f,
+                    lot.Color.b * 0.80f,
                     1f);
             }
 

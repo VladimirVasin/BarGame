@@ -3,6 +3,8 @@ namespace BarPromenade
     public enum DoorTransitionDirection
     {
         EnterBar,
-        ExitBar
+        ExitBar,
+        EnterHome,
+        ExitHome
     }
 }

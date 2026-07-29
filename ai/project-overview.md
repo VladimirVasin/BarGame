@@ -9,8 +9,9 @@
 - Input: Input System `1.19.0`; keyboard, mouse and gamepad are supported
   across movement, interaction and modal interfaces.
 - Build scenes: `Assets/Scenes/City.unity`,
-  `Assets/Scenes/DoorTransition.unity` and
-  `Assets/Scenes/BarInterior.unity`.
+  `Assets/Scenes/DoorTransition.unity`,
+  `Assets/Scenes/BarInterior.unity` and
+  `Assets/Scenes/HomeInterior.unity`.
 - Runtime assembly: `BarPromenade.Runtime`.
 - Test assemblies: `BarPromenade.EditModeTests` and
   `BarPromenade.PlayModeTests`.
@@ -18,8 +19,8 @@
 ## Implemented MVP
 
 A runtime-composed 3D city in which a sprite-based player walks along roads,
-approaches interactive bars, enters a separate interior, and returns to the
-same place.
+approaches interactive bars and their nearby home, enters separate interiors,
+and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
@@ -66,14 +67,16 @@ The vertical slice contains:
 - deterministic collider-free ochre guard rails, batched into `48 m` spatial
   chunks, that trace only street boundaries, close dead ends and leave clear
   openings around every bar approach and park gate;
-- 144 land-use lots by default, including 16 park cells and exactly 4
-  reachable bars in four different urban districts; every bar pair is at
+- 144 land-use lots by default, including 16 park cells, exactly 4 reachable
+  bars in four different urban districts and one non-bar player home beside
+  one bar street; every bar pair is at
   least `120 m` apart by traversable graph distance, while stable row-major
   order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
   Row;
-- a fresh city session starts on the road node beside one deterministically
-  selected generated bar, `12 m` from its approach under default spacing;
-  returning from an interior still restores the active bar's own return point;
+- a fresh city session starts on the road node beside the deterministic player
+  home and its neighboring bar, `12 m` from their shared street approach under
+  default spacing; returning from either interior restores that entrance's own
+  return point;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -124,12 +127,12 @@ The vertical slice contains:
   contact shadow, then recovers through `0.45 s` falling, `1.2 s` down and
   `1.0 s` rising states before restoring movement;
 - a full-screen city map with district colors and labels, distinct park land
-  and paths, player/bar markers, persistent green completed visits, ordered
-  route editing and deterministic shortest paths constrained to the generated
-  road graph;
+  and paths, player/bar markers, a dedicated labeled home icon, persistent
+  green completed visits, ordered route editing and deterministic shortest
+  paths constrained to the generated road graph;
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
-  context for the current city;
+  context for the current city, with an explicit bar-or-home return kind;
 - a dedicated `3.15 s` `DoorTransition` scene between the city and bar:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
@@ -143,6 +146,9 @@ The vertical slice contains:
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
   contract or the fog-free `220 m` bar range;
+- one compact validated `10 x 8 x 3.4 m` home interior composed at runtime with
+  a bed, kitchen, sofa, table and bookcase, a clear entrance corridor, two warm
+  practical lights, quiet room ambience and the shared player/HUD systems;
 - a deterministic 12-person bar crowd with bartender, booth patrons,
   performer, standing groups and one bounded walker; six shared point-filtered
   pixel characters use lightweight billboards, centralized `8 Hz` decisions,

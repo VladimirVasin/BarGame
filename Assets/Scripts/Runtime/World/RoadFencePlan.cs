@@ -8,7 +8,8 @@ namespace BarPromenade
     public enum RoadFenceOpeningKind
     {
         BarEntrance = 0,
-        ParkGate = 1
+        ParkGate = 1,
+        PlayerHomeEntrance = 2
     }
 
     public readonly struct RoadFenceSegmentDescriptor :
@@ -115,6 +116,10 @@ namespace BarPromenade
             Kind == RoadFenceOpeningKind.ParkGate
                 ? Id
                 : string.Empty;
+        public string PlayerHomeId =>
+            Kind == RoadFenceOpeningKind.PlayerHomeEntrance
+                ? Id
+                : string.Empty;
         public Vector3 Center { get; }
         public Vector3 OutwardNormal { get; }
         public float Width { get; }
@@ -190,6 +195,8 @@ namespace BarPromenade
                 new List<RoadFenceOpeningDescriptor>();
             var parkGateOpenings =
                 new List<RoadFenceOpeningDescriptor>();
+            var playerHomeOpenings =
+                new List<RoadFenceOpeningDescriptor>();
             for (int index = 0; index < allOpenings.Count; index++)
             {
                 RoadFenceOpeningDescriptor opening =
@@ -204,6 +211,11 @@ namespace BarPromenade
                 {
                     parkGateOpenings.Add(opening);
                 }
+                else if (opening.Kind ==
+                         RoadFenceOpeningKind.PlayerHomeEntrance)
+                {
+                    playerHomeOpenings.Add(opening);
+                }
             }
 
             Openings =
@@ -215,6 +227,9 @@ namespace BarPromenade
             ParkGateOpenings =
                 new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
                     parkGateOpenings);
+            PlayerHomeOpenings =
+                new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
+                    playerHomeOpenings);
         }
 
         public IReadOnlyList<RoadFenceSegmentDescriptor> Segments { get; }
@@ -224,6 +239,10 @@ namespace BarPromenade
             get;
         }
         public IReadOnlyList<RoadFenceOpeningDescriptor> ParkGateOpenings
+        {
+            get;
+        }
+        public IReadOnlyList<RoadFenceOpeningDescriptor> PlayerHomeOpenings
         {
             get;
         }

@@ -55,6 +55,7 @@ namespace BarPromenade
         public bool IsOpen { get; private set; }
         public CityLayout Layout { get; private set; }
         public IReadOnlyList<BuildingLot> Bars => bars;
+        public BuildingLot PlayerHome => Layout?.PlayerHome;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
         public int VisitedBarCount
         {

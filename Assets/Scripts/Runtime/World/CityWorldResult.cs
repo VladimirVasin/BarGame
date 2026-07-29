@@ -13,6 +13,7 @@ namespace BarPromenade
             GameObject root,
             RoadWalkableArea walkableArea,
             IList<BarEntrance> bars,
+            HomeEntrance playerHome,
             RoadFencePlan fencePlan,
             GameObject parkRoot,
             Bounds bounds)
@@ -21,6 +22,7 @@ namespace BarPromenade
             WalkableArea = walkableArea;
             Bars = new ReadOnlyCollection<BarEntrance>(
                 new List<BarEntrance>(bars));
+            PlayerHome = playerHome;
             FencePlan = fencePlan ??
                 throw new ArgumentNullException(nameof(fencePlan));
             ParkRoot = parkRoot;
@@ -38,6 +40,7 @@ namespace BarPromenade
         public GameObject Root { get; }
         public RoadWalkableArea WalkableArea { get; }
         public IReadOnlyList<BarEntrance> Bars { get; }
+        public HomeEntrance PlayerHome { get; }
         public RoadFencePlan FencePlan { get; }
         public GameObject ParkRoot { get; }
         public Bounds Bounds { get; }

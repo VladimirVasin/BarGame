@@ -46,6 +46,9 @@ namespace BarPromenade
                     "is_returning",
                     GameSessionState.IsReturningToCity),
                 GameLog.Field(
+                    "return_kind",
+                    GameSessionState.ReturnKind.ToString()),
+                GameLog.Field(
                     "return_bar_id",
                     GameSessionState.ActiveBarId),
                 GameLog.Field(
@@ -129,6 +132,25 @@ namespace BarPromenade
                         "city",
                         "return_bar_missing",
                         GameLog.Field("bar_id", barId));
+                }
+            }
+            else if (
+                GameSessionState.TryGetCityReturnKind(
+                    out CityReturnKind returnKind) &&
+                returnKind == CityReturnKind.PlayerHome)
+            {
+                if (World.PlayerHome != null)
+                {
+                    spawnPosition =
+                        World.PlayerHome.ReturnPosition;
+                    spawnSource = "home_return";
+                }
+                else
+                {
+                    spawnSource = "missing_home_return";
+                    GameLog.Warning(
+                        "city",
+                        "return_home_missing");
                 }
             }
 
@@ -230,6 +252,28 @@ namespace BarPromenade
                     "required_bar_route_distance",
                     layout.MinimumBarRouteDistance));
 
+            if (layout.PlayerHome != null)
+            {
+                GameLog.Info(
+                    "city",
+                    "player_home_placed",
+                    GameLog.Field(
+                        "district",
+                        layout.PlayerHome.District.ToString()),
+                    GameLog.Field(
+                        "cell_x",
+                        layout.PlayerHome.Cell.x),
+                    GameLog.Field(
+                        "cell_z",
+                        layout.PlayerHome.Cell.y),
+                    GameLog.Field(
+                        "return_x",
+                        layout.PlayerHome.ReturnPosition.x),
+                    GameLog.Field(
+                        "return_z",
+                        layout.PlayerHome.ReturnPosition.z));
+            }
+
             var bars = new List<BuildingLot>();
             for (int index = 0;
                  index < layout.BuildingLots.Count;
@@ -298,6 +342,9 @@ namespace BarPromenade
                 "city",
                 "world_built",
                 GameLog.Field("bar_count", world.Bars.Count),
+                GameLog.Field(
+                    "player_home_present",
+                    world.PlayerHome != null),
                 GameLog.Field(
                     "fence_segment_count",
                     world.FencePlan.Segments.Count),

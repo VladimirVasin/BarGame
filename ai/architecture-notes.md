@@ -7,7 +7,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in three explicit build scenes.
+  in four explicit build scenes.
 
 ## MVP decisions
 
@@ -23,20 +23,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bars occupy different urban districts and every pair is separated by at
   least `120 m` of weighted street/park-path travel rather than straight-line
   distance.
-- **Accepted — Bar-adjacent fresh spawn:** With at least one generated bar, a
-  fresh city starts on a node of the first stable row-major bar's frontage
-  edge, preserving the node/world-position layout contract and placing the
-  player `12 m` from that approach under default spacing. A bar-free custom
-  layout falls back to the central road node. Returning from an interior
-  remains a separate session-state path that restores the active bar's exact
-  return position.
+- **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
+  generated bar, one non-bar building lot becomes the player home. Selection
+  prefers a residential lot facing the same street as a bar and validates a
+  maximum traversable approach distance of `48 m`; stable hashes keep the
+  result deterministic. A fresh city starts on that home's frontage node.
+  Bar-free custom layouts retain the central-road fallback and no home.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
   park-lawn rectangles. The park connects to surrounding streets through four
   explicit gates.
 - **Accepted — Entrance-aware visual road boundary:** A pure planner derives
   the exposed perimeter of street rectangles only, including dead-end caps,
-  and subtracts wider openings around every bar frontage and park gate.
+  and subtracts wider openings around every bar frontage, player-home frontage
+  and park gate.
   Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
   sole movement authority and camera collision does not react to decorative
   posts; rails and posts are combined into owned `48 m` spatial chunks.
@@ -44,11 +44,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms
   and legs.
-- **Accepted — Explicit scene allow-list:** Only `City`, `DoorTransition` and
-  `BarInterior` install their matching roots. Directly opening
+- **Accepted — Explicit scene allow-list:** Only `City`, `DoorTransition`,
+  `BarInterior` and `HomeInterior` install their matching roots. Directly opening
   `DoorTransition` installs an idle presentation root; only the transition
   service initializes and plays it.
-- **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
+- **Accepted — Persistent transition context:** Static subsystem-reset session
+  state carries the seed, active bar context and explicit bar-or-home city
+  return kind between Single-mode scene loads.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
   sequence, session/scene/seed context and explicit transition/minigame
@@ -57,7 +59,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and development runs default to verbose, release players to basic, and
   batch/command-line tests to off. Files rotate at 5 MiB with three retained
   archives, while `F8` writes and flushes a manual state snapshot.
-- **Accepted — Separate classic door transition:** Bar entrances and exits
+- **Accepted — Separate classic door transition:** Bar and home entrances/exits
   reserve one transition guard for the complete
   `source -> DoorTransition -> destination` chain. The intermediate scene
   runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
@@ -67,6 +69,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   requested destination. The door opens outward toward the fixed camera and a
   black sprite keeps the revealed doorway opaque; direction changes only the
   warm/cold lighting treatment and does not own persistent gameplay state.
+- **Accepted — Compact separate home interior:** `HomeInterior` owns a
+  validated `10 x 8 x 3.4 m` runtime-composed room with five non-overlapping
+  furniture footprints and a clear entry corridor. It reuses the common
+  player, camera, intoxication HUD, interaction and door-transition contracts;
+  exiting sets the home return kind and restores the matching city approach
+  without altering route, visit, cash or drinking progress.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
   scene loads for the same city. A terminal bar activity reports completion

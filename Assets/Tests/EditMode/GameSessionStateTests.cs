@@ -74,6 +74,64 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.TryGetReturnBarId(out _), Is.False);
         }
 
+        [Test]
+        public void HomeReturn_PreservesRunStateAndUsesHomeDestination()
+        {
+            GameSessionState.EnterBar(
+                "bar-before-home",
+                BarActivityKind.BeerPong);
+            GameSessionState.TryAddRouteStop("bar-route");
+            GameSessionState.MarkBarVisited("bar-visited");
+            GameSessionState.UpdateDrinkingProgress(
+                37,
+                DrinkId.RedWine,
+                2);
+
+            GameSessionState.EnterHome();
+
+            Assert.That(GameSessionState.ActiveBarId, Is.Empty);
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.None));
+            Assert.That(GameSessionState.IsReturningToCity, Is.False);
+            CollectionAssert.AreEqual(
+                new[] { "bar-route" },
+                GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-visited"),
+                Is.True);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(37));
+
+            GameSessionState.PrepareHomeReturn();
+
+            Assert.That(GameSessionState.IsReturningToCity, Is.True);
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.PlayerHome));
+            Assert.That(
+                GameSessionState.TryGetReturnBarId(out _),
+                Is.False);
+            Assert.That(
+                GameSessionState.TryGetCityReturnKind(
+                    out CityReturnKind returnKind),
+                Is.True);
+            Assert.That(
+                returnKind,
+                Is.EqualTo(CityReturnKind.PlayerHome));
+
+            GameSessionState.CompleteCityReturn();
+
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+            Assert.That(GameSessionState.IsReturningToCity, Is.False);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(37));
+        }
+
         [TestCase(null)]
         [TestCase("")]
         public void MissingBarId_CannotCreateReturnDestination(string barId)

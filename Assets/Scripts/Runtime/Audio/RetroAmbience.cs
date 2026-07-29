@@ -161,4 +161,12 @@ namespace BarPromenade
         protected override float OutputVolume => 0.065f;
         protected override float CutoffFrequency => 4300f;
     }
+
+    public sealed class HomeAmbiencePlayer : SceneAmbiencePlayer
+    {
+        protected override RetroAmbienceKind AmbienceKind =>
+            RetroAmbienceKind.Bar;
+        protected override float OutputVolume => 0.025f;
+        protected override float CutoffFrequency => 3600f;
+    }
 }

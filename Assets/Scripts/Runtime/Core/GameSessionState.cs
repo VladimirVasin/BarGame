@@ -21,7 +21,9 @@ namespace BarPromenade
         public static string ActiveBarId { get; private set; } = string.Empty;
         public static BarActivityKind ActiveBarActivity { get; private set; } =
             BarActivityKind.None;
-        public static bool IsReturningToCity { get; private set; }
+        public static CityReturnKind ReturnKind { get; private set; }
+        public static bool IsReturningToCity =>
+            ReturnKind != CityReturnKind.None;
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
@@ -38,7 +40,7 @@ namespace BarPromenade
             CitySeed = DefaultCitySeed;
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
-            IsReturningToCity = false;
+            ReturnKind = CityReturnKind.None;
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -236,14 +238,14 @@ namespace BarPromenade
                     nextBarId,
                     StringComparison.Ordinal) &&
                 ActiveBarActivity == nextActivity &&
-                !IsReturningToCity)
+                ReturnKind == CityReturnKind.None)
             {
                 return;
             }
 
             ActiveBarId = nextBarId;
             ActiveBarActivity = nextActivity;
-            IsReturningToCity = false;
+            ReturnKind = CityReturnKind.None;
             GameLog.Info(
                 "session",
                 "bar_entered",
@@ -255,13 +257,16 @@ namespace BarPromenade
 
         public static void PrepareCityReturn()
         {
-            bool nextValue = !string.IsNullOrEmpty(ActiveBarId);
-            if (IsReturningToCity == nextValue)
+            CityReturnKind nextKind =
+                string.IsNullOrEmpty(ActiveBarId)
+                    ? CityReturnKind.None
+                    : CityReturnKind.Bar;
+            if (ReturnKind == nextKind)
             {
                 return;
             }
 
-            IsReturningToCity = nextValue;
+            ReturnKind = nextKind;
             GameLog.Info(
                 "session",
                 "city_return_prepared",
@@ -269,13 +274,53 @@ namespace BarPromenade
                 GameLog.Field(
                     "activity",
                     ActiveBarActivity.ToString()),
-                GameLog.Field("is_returning", IsReturningToCity));
+                GameLog.Field(
+                    "return_kind",
+                    ReturnKind.ToString()),
+                GameLog.Field(
+                    "is_returning",
+                    IsReturningToCity));
+        }
+
+        public static void EnterHome()
+        {
+            ActiveBarId = string.Empty;
+            ActiveBarActivity = BarActivityKind.None;
+            ReturnKind = CityReturnKind.None;
+            GameLog.Info(
+                "session",
+                "home_entered");
+        }
+
+        public static void PrepareHomeReturn()
+        {
+            if (ReturnKind == CityReturnKind.PlayerHome)
+            {
+                return;
+            }
+
+            ReturnKind = CityReturnKind.PlayerHome;
+            GameLog.Info(
+                "session",
+                "city_return_prepared",
+                GameLog.Field(
+                    "return_kind",
+                    ReturnKind.ToString()),
+                GameLog.Field("is_returning", true));
         }
 
         public static bool TryGetReturnBarId(out string barId)
         {
             barId = ActiveBarId;
-            return IsReturningToCity && !string.IsNullOrEmpty(barId);
+            return ReturnKind == CityReturnKind.Bar &&
+                   !string.IsNullOrEmpty(barId);
+        }
+
+        public static bool TryGetCityReturnKind(
+            out CityReturnKind returnKind)
+        {
+            returnKind = ReturnKind;
+            return returnKind != CityReturnKind.None;
         }
 
         public static void CompleteCityReturn()
@@ -285,14 +330,18 @@ namespace BarPromenade
                 return;
             }
 
-            IsReturningToCity = false;
+            CityReturnKind completedKind = ReturnKind;
+            ReturnKind = CityReturnKind.None;
             GameLog.Info(
                 "session",
                 "city_return_completed",
                 GameLog.Field("bar_id", ActiveBarId),
                 GameLog.Field(
                     "activity",
-                    ActiveBarActivity.ToString()));
+                    ActiveBarActivity.ToString()),
+                GameLog.Field(
+                    "return_kind",
+                    completedKind.ToString()));
         }
 
         public static void UpdateDrinkingProgress(

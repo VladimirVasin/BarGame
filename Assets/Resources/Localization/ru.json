@@ -9,6 +9,14 @@
       "value": "E — выйти в город"
     },
     {
+      "key": "interaction.enter_home",
+      "value": "E \u2014 \u0432\u043e\u0439\u0442\u0438 \u0434\u043e\u043c\u043e\u0439"
+    },
+    {
+      "key": "interaction.exit_home",
+      "value": "E \u2014 \u0432\u044b\u0439\u0442\u0438 \u0432 \u0433\u043e\u0440\u043e\u0434"
+    },
+    {
       "key": "interaction.order_drinks",
       "value": "E — смешать коктейли"
     },
@@ -615,6 +623,10 @@
     {
       "key": "map.player",
       "value": "Вы здесь"
+    },
+    {
+      "key": "map.home",
+      "value": "\u0414\u043e\u043c"
     },
     {
       "key": "map.clear",

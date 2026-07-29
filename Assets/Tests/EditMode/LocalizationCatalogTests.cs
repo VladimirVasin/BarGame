@@ -11,6 +11,8 @@ namespace BarPromenade.Tests.EditMode
         {
             "interaction.enter_bar",
             "interaction.exit_bar",
+            "interaction.enter_home",
+            "interaction.exit_home",
             "interaction.order_drinks",
             "interaction.buy_drink",
             "interaction.play_beer_pong",
@@ -160,6 +162,7 @@ namespace BarPromenade.Tests.EditMode
             "map.route_empty",
             "map.bar_name",
             "map.player",
+            "map.home",
             "map.clear",
             "map.visited_count",
             "map.distance",

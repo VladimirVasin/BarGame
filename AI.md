@@ -6,9 +6,10 @@ Read this file first, then use [`ai/README.md`](ai/README.md) as the documentati
 
 The Unity 6 URP vertical slice is implemented. It generates a finite connected
 `12 x 12`-block city with four urban districts, a traversable central park and
-four graph-separated bars, creates an atlas-backed eight-direction jointed
-sprite player, loads the shared bar interior, and restores the same seed and
-bar return point.
+four graph-separated bars, places one visually distinct player home beside a
+bar street, creates an atlas-backed eight-direction jointed sprite player,
+loads separate bar and home interiors, and restores the same seed and matching
+exterior return point.
 
 The source of truth starts at `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
 `Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`.

@@ -2,10 +2,19 @@
 
 ## Unreleased
 
+### Player home
+
+- Every generated city now contains one recognizable player home beside a bar
+  street. Its teal facade, cool windows, porch light and mailbox distinguish
+  it in the world, while the city map gives it a separate labeled house icon.
+- The home has its own warm furnished interior scene. Entering and leaving use
+  the same door transition as bars and return the hero to the matching exterior
+  approach without losing route, visit, wallet or intoxication progress.
+
 ### Bar-adjacent city start
 
-- A fresh run now places the hero on a safe street node beside one of the
-  generated bars instead of at the distant city center.
+- A fresh run now places the hero on a safe street node beside their home and
+  its neighboring generated bar instead of at the distant city center.
 - Returning from a bar remains unchanged and still restores that specific
   bar's entrance position.
 

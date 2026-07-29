@@ -42,6 +42,15 @@ namespace BarPromenade
                 new List<RoadEdge>(roadEdges));
             BuildingLots = new ReadOnlyCollection<BuildingLot>(
                 new List<BuildingLot>(buildingLots));
+            for (int index = 0; index < BuildingLots.Count; index++)
+            {
+                if (BuildingLots[index]?.IsPlayerHome == true)
+                {
+                    PlayerHome = BuildingLots[index];
+                    break;
+                }
+            }
+
             Districts = new ReadOnlyCollection<CityDistrictDescriptor>(
                 new List<CityDistrictDescriptor>(districts));
             Park = park ?? throw new ArgumentNullException(nameof(park));
@@ -79,6 +88,7 @@ namespace BarPromenade
             readOnlyPathKinds;
         public IReadOnlyList<BuildingLot> BuildingLots { get; }
         public IReadOnlyList<BuildingLot> Lots => BuildingLots;
+        public BuildingLot PlayerHome { get; }
         public IReadOnlyList<CityDistrictDescriptor> Districts { get; }
         public CityParkPlan Park { get; }
         public Vector2Int SpawnNode { get; }
@@ -332,6 +342,7 @@ namespace BarPromenade
             var cells = new HashSet<Vector2Int>();
             var barIds = new HashSet<string>(StringComparer.Ordinal);
             var bars = new List<BuildingLot>();
+            BuildingLot playerHome = null;
             for (int index = 0; index < BuildingLots.Count; index++)
             {
                 BuildingLot lot = BuildingLots[index];
@@ -367,7 +378,50 @@ namespace BarPromenade
                             $"Non-bar lot {lot.Cell} cannot define a bar activity.");
                     }
 
+                    if (!lot.IsPlayerHome)
+                    {
+                        continue;
+                    }
+
+                    if (playerHome != null ||
+                        !lot.HasBuilding ||
+                        lot.District ==
+                        CityDistrictKind.CentralPark)
+                    {
+                        throw new InvalidOperationException(
+                            "The city can contain at most one player home " +
+                            "on buildable urban land.");
+                    }
+
+                    if (!TryGetFrontageEdge(
+                            lot,
+                            out RoadEdge homeFrontage) ||
+                        GetPathKind(homeFrontage) !=
+                        CityPathKind.Street)
+                    {
+                        throw new InvalidOperationException(
+                            "The player home must face a city street.");
+                    }
+
+                    Rect homeRoad = GetRoadRect(homeFrontage);
+                    if (!ContainsInclusive(
+                            homeRoad,
+                            lot.ReturnPosition))
+                    {
+                        throw new InvalidOperationException(
+                            "The player home return point must lie on " +
+                            "its frontage road.");
+                    }
+
+                    playerHome = lot;
                     continue;
+                }
+
+                if (lot.IsPlayerHome)
+                {
+                    throw new InvalidOperationException(
+                        "A building lot cannot be both a bar and " +
+                        "the player home.");
                 }
 
                 if (!lot.HasBuilding ||
@@ -412,6 +466,60 @@ namespace BarPromenade
                 }
 
                 bars.Add(lot);
+            }
+
+            if (!ReferenceEquals(PlayerHome, playerHome))
+            {
+                throw new InvalidOperationException(
+                    "The player home descriptor is inconsistent.");
+            }
+
+            if (playerHome != null)
+            {
+                if (bars.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        "The player home requires at least one bar.");
+                }
+
+                TryGetFrontageEdge(
+                    playerHome,
+                    out RoadEdge homeFrontage);
+                if (!homeFrontage.Contains(SpawnNode))
+                {
+                    throw new InvalidOperationException(
+                        "A fresh session must spawn on the road beside " +
+                        "the player home.");
+                }
+
+                float nearestBarDistance = float.PositiveInfinity;
+                for (int index = 0; index < bars.Count; index++)
+                {
+                    TryGetFrontageEdge(
+                        bars[index],
+                        out RoadEdge barFrontage);
+                    nearestBarDistance = Mathf.Min(
+                        nearestBarDistance,
+                        CityTravelDistance.BetweenAnchors(
+                            Nodes,
+                            RoadEdges,
+                            GetNodeWorldPosition,
+                            homeFrontage,
+                            playerHome.ReturnPosition,
+                            barFrontage,
+                            bars[index].ReturnPosition));
+                }
+
+                if (nearestBarDistance >
+                    CityLayoutGenerator
+                        .MaximumHomeBarRouteDistance +
+                    0.001f)
+                {
+                    throw new InvalidOperationException(
+                        "The player home must be within " +
+                        $"{CityLayoutGenerator.MaximumHomeBarRouteDistance:0.##} m " +
+                        "of a bar by traversable street distance.");
+                }
             }
 
             bars.Sort(CompareLotsRowMajor);

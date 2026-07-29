@@ -279,6 +279,25 @@ namespace BarPromenade
                     BarEntranceGeometry.FenceOpeningWidth));
             }
 
+            BuildingLot playerHome = layout.PlayerHome;
+            if (playerHome != null)
+            {
+                Vector3 frontage = new Vector3(
+                    playerHome.FrontageDirection.x,
+                    0f,
+                    playerHome.FrontageDirection.y);
+                Vector3 outward = -frontage;
+                Vector3 center =
+                    playerHome.ReturnPosition +
+                    (outward * (layout.RoadWidth * 0.5f));
+                openings.Add(new RoadFenceOpeningDescriptor(
+                    RoadFenceOpeningKind.PlayerHomeEntrance,
+                    "player-home",
+                    center,
+                    outward,
+                    PlayerHomeEntranceGeometry.FenceOpeningWidth));
+            }
+
             for (int index = 0;
                  index < layout.Park.Gates.Count;
                  index++)

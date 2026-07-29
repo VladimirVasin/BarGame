@@ -138,7 +138,7 @@ namespace BarPromenade
             RenderSettings.fog = false;
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight =
-                direction == DoorTransitionDirection.EnterBar
+                IsEnteringInterior(direction)
                     ? new Color(0.055f, 0.035f, 0.028f)
                     : new Color(0.030f, 0.050f, 0.047f);
             RenderSettings.reflectionIntensity = 0f;
@@ -187,11 +187,11 @@ namespace BarPromenade
             DoorTransitionDirection direction)
         {
             Color keyColor =
-                direction == DoorTransitionDirection.EnterBar
+                IsEnteringInterior(direction)
                     ? new Color(0.62f, 0.43f, 0.31f)
                     : new Color(0.36f, 0.49f, 0.47f);
             Color beyondColor =
-                direction == DoorTransitionDirection.EnterBar
+                IsEnteringInterior(direction)
                     ? new Color(1f, 0.45f, 0.12f)
                     : new Color(0.28f, 0.54f, 0.48f);
 
@@ -221,7 +221,7 @@ namespace BarPromenade
             thresholdLight.spotAngle = 82f;
             thresholdLight.innerSpotAngle = 50f;
             thresholdLightIntensity =
-                direction == DoorTransitionDirection.EnterBar
+                IsEnteringInterior(direction)
                     ? 2.25f
                     : 1.65f;
             thresholdLight.shadows = LightShadows.Hard;
@@ -429,6 +429,13 @@ namespace BarPromenade
                     false);
             DisableCollider(result);
             return result;
+        }
+
+        private static bool IsEnteringInterior(
+            DoorTransitionDirection direction)
+        {
+            return direction == DoorTransitionDirection.EnterBar ||
+                   direction == DoorTransitionDirection.EnterHome;
         }
 
         private static void DisableCollider(GameObject target)

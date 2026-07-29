@@ -9,6 +9,14 @@
       "value": "E — return to the city"
     },
     {
+      "key": "interaction.enter_home",
+      "value": "E \u2014 enter home"
+    },
+    {
+      "key": "interaction.exit_home",
+      "value": "E \u2014 return to the city"
+    },
+    {
       "key": "interaction.order_drinks",
       "value": "E — mix cocktails"
     },
@@ -615,6 +623,10 @@
     {
       "key": "map.player",
       "value": "You are here"
+    },
+    {
+      "key": "map.home",
+      "value": "Home"
     },
     {
       "key": "map.clear",

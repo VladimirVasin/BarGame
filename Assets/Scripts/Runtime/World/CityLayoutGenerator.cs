@@ -6,6 +6,8 @@ namespace BarPromenade
 {
     public static class CityLayoutGenerator
     {
+        public const float MaximumHomeBarRouteDistance = 48f;
+
         private static readonly Vector2Int[] CardinalDirections =
         {
             Vector2Int.down,
@@ -82,6 +84,20 @@ namespace BarPromenade
             var fallback = new Vector2Int(
                 settings.BlocksX / 2,
                 settings.BlocksZ / 2);
+
+            for (int index = 0; index < lots.Count; index++)
+            {
+                BuildingLot lot = lots[index];
+                if (!lot.IsPlayerHome)
+                {
+                    continue;
+                }
+
+                RoadEdge frontage = RoadEdge.ForCellFrontage(
+                    lot.Cell,
+                    lot.FrontageDirection);
+                return frontage.A;
+            }
 
             for (int index = 0; index < lots.Count; index++)
             {
@@ -416,6 +432,22 @@ namespace BarPromenade
                 nodes,
                 roads,
                 barCandidates);
+            int homeLotIndex = SelectHomeLot(
+                settings,
+                seed,
+                origin,
+                nodes,
+                roads,
+                pathKinds,
+                roadSet,
+                frontages,
+                barCandidates,
+                barLots,
+                out Vector2Int homeFrontage);
+            if (homeLotIndex >= 0)
+            {
+                frontages[homeLotIndex] = homeFrontage;
+            }
 
             var lots = new List<BuildingLot>(lotCount);
             int barOrdinal = 0;
@@ -425,6 +457,7 @@ namespace BarPromenade
                 {
                     int lotIndex = ToLotIndex(x, z, settings.BlocksX);
                     bool isBar = barLots.Contains(lotIndex);
+                    bool isPlayerHome = lotIndex == homeLotIndex;
                     BarActivityKind barActivity = BarActivityKind.None;
                     if (isBar)
                     {
@@ -440,11 +473,183 @@ namespace BarPromenade
                         new Vector2Int(x, z),
                         frontages[lotIndex],
                         isBar,
+                        isPlayerHome,
                         barActivity));
                 }
             }
 
             return lots;
+        }
+
+        private static int SelectHomeLot(
+            CityGenerationSettings settings,
+            int seed,
+            Vector3 origin,
+            IReadOnlyList<Vector2Int> nodes,
+            IReadOnlyList<RoadEdge> roads,
+            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
+            ISet<RoadEdge> roadSet,
+            IReadOnlyList<Vector2Int> frontages,
+            IReadOnlyList<BarCandidate> barCandidates,
+            ISet<int> barLots,
+            out Vector2Int homeFrontage)
+        {
+            homeFrontage = Vector2Int.zero;
+            if (barLots.Count == 0)
+            {
+                return -1;
+            }
+
+            bool found = false;
+            int bestLotIndex = -1;
+            int bestDistrictPenalty = int.MaxValue;
+            uint bestRank = uint.MaxValue;
+            Vector2Int bestFrontage = Vector2Int.zero;
+
+            for (int barIndex = 0;
+                 barIndex < barCandidates.Count;
+                 barIndex++)
+            {
+                BarCandidate bar = barCandidates[barIndex];
+                if (!barLots.Contains(bar.LotIndex))
+                {
+                    continue;
+                }
+
+                for (int directionIndex = 0;
+                     directionIndex < CardinalDirections.Length;
+                     directionIndex++)
+                {
+                    Vector2Int direction =
+                        CardinalDirections[directionIndex];
+                    RoadEdge sharedRoad =
+                        RoadEdge.ForCellFrontage(
+                            bar.Cell,
+                            direction);
+                    Vector2Int homeCell = bar.Cell + direction;
+                    if (!roadSet.Contains(sharedRoad) ||
+                        pathKinds[sharedRoad] !=
+                        CityPathKind.Street ||
+                        !IsCellInsideGrid(settings, homeCell) ||
+                        settings.IsParkCell(homeCell))
+                    {
+                        continue;
+                    }
+
+                    int lotIndex = ToLotIndex(
+                        homeCell.x,
+                        homeCell.y,
+                        settings.BlocksX);
+                    if (barLots.Contains(lotIndex))
+                    {
+                        continue;
+                    }
+
+                    int districtPenalty =
+                        ResolveDistrict(settings, homeCell) ==
+                        CityDistrictKind.Residential
+                            ? 0
+                            : 1;
+                    uint rank = StableHash(
+                        seed,
+                        homeCell.x,
+                        homeCell.y,
+                        0x484F4D45u);
+                    if (!found ||
+                        districtPenalty < bestDistrictPenalty ||
+                        (districtPenalty == bestDistrictPenalty &&
+                         rank < bestRank))
+                    {
+                        found = true;
+                        bestLotIndex = lotIndex;
+                        bestDistrictPenalty = districtPenalty;
+                        bestRank = rank;
+                        bestFrontage = -direction;
+                    }
+                }
+            }
+
+            if (found)
+            {
+                homeFrontage = bestFrontage;
+                return bestLotIndex;
+            }
+
+            float bestDistance = float.PositiveInfinity;
+            for (int lotIndex = 0;
+                 lotIndex < frontages.Count;
+                 lotIndex++)
+            {
+                Vector2Int frontage = frontages[lotIndex];
+                if (frontage == Vector2Int.zero ||
+                    barLots.Contains(lotIndex))
+                {
+                    continue;
+                }
+
+                Vector2Int cell = new Vector2Int(
+                    lotIndex % settings.BlocksX,
+                    lotIndex / settings.BlocksX);
+                if (settings.IsParkCell(cell))
+                {
+                    continue;
+                }
+
+                RoadEdge homeRoad =
+                    RoadEdge.ForCellFrontage(cell, frontage);
+                Vector3 homeReturn = GetReturnPosition(
+                    settings,
+                    origin,
+                    cell,
+                    frontage);
+                for (int barIndex = 0;
+                     barIndex < barCandidates.Count;
+                     barIndex++)
+                {
+                    BarCandidate bar = barCandidates[barIndex];
+                    if (!barLots.Contains(bar.LotIndex))
+                    {
+                        continue;
+                    }
+
+                    float distance =
+                        CityTravelDistance.BetweenAnchors(
+                            nodes,
+                            roads,
+                            node => GetNodeWorldPosition(
+                                settings,
+                                origin,
+                                node),
+                            homeRoad,
+                            homeReturn,
+                            bar.Frontage,
+                            bar.ReturnPosition);
+                    uint rank = StableHash(
+                        seed,
+                        cell.x,
+                        cell.y,
+                        0x484F4D45u);
+                    if (distance < bestDistance - 0.001f ||
+                        (Mathf.Abs(distance - bestDistance) <=
+                         0.001f &&
+                         rank < bestRank))
+                    {
+                        bestDistance = distance;
+                        bestLotIndex = lotIndex;
+                        bestRank = rank;
+                        bestFrontage = frontage;
+                    }
+                }
+            }
+
+            if (bestDistance >
+                MaximumHomeBarRouteDistance + 0.001f)
+            {
+                return -1;
+            }
+
+            homeFrontage = bestFrontage;
+            return bestLotIndex;
         }
 
         private static BarCandidate CreateBarCandidate(
@@ -621,6 +826,7 @@ namespace BarPromenade
             Vector2Int cell,
             Vector2Int frontage,
             bool isBar,
+            bool isPlayerHome,
             BarActivityKind barActivity)
         {
             var random = new DeterministicRandom(
@@ -633,6 +839,10 @@ namespace BarPromenade
             float maximumDepth = settings.BlockDepth - (settings.BuildingInset * 2f);
             Vector2 size = landUse == CityLandUseKind.Park
                 ? new Vector2(settings.BlockWidth, settings.BlockDepth)
+                : isPlayerHome
+                    ? new Vector2(
+                        Mathf.Min(13f, maximumWidth),
+                        Mathf.Min(12f, maximumDepth))
                 : CreateBuildingSize(
                     district,
                     maximumWidth,
@@ -640,6 +850,8 @@ namespace BarPromenade
                     ref random);
             float height = landUse == CityLandUseKind.Park
                 ? 0.1f
+                : isPlayerHome
+                    ? Mathf.Min(5.8f, settings.MaximumBuildingHeight)
                 : CreateBuildingHeight(settings, district, ref random);
             Vector3 center = GetLotCenter(settings, origin, cell);
 
@@ -655,6 +867,7 @@ namespace BarPromenade
             Color color = CreateBuildingColor(
                 ref random,
                 isBar,
+                isPlayerHome,
                 district);
             string barId = isBar
                 ? $"bar-{unchecked((uint)seed):x8}-{cell.x:D2}-{cell.y:D2}"
@@ -669,6 +882,7 @@ namespace BarPromenade
                 district,
                 landUse,
                 isBar,
+                isPlayerHome,
                 barId,
                 barActivity,
                 frontage,
@@ -679,6 +893,7 @@ namespace BarPromenade
         private static Color CreateBuildingColor(
             ref DeterministicRandom random,
             bool isBar,
+            bool isPlayerHome,
             CityDistrictKind district)
         {
             if (isBar)
@@ -687,6 +902,15 @@ namespace BarPromenade
                     random.Range(0.62f, 0.88f),
                     random.Range(0.18f, 0.34f),
                     random.Range(0.12f, 0.26f),
+                    1f);
+            }
+
+            if (isPlayerHome)
+            {
+                return new Color(
+                    random.Range(0.28f, 0.36f),
+                    random.Range(0.48f, 0.58f),
+                    random.Range(0.52f, 0.64f),
                     1f);
             }
 
@@ -719,6 +943,32 @@ namespace BarPromenade
                 default:
                     return new Color(0.20f, 0.34f, 0.22f, 1f);
             }
+        }
+
+        private static Vector3 GetReturnPosition(
+            CityGenerationSettings settings,
+            Vector3 origin,
+            Vector2Int cell,
+            Vector2Int frontage)
+        {
+            Vector3 center = GetLotCenter(settings, origin, cell);
+            Vector3 direction =
+                new Vector3(frontage.x, 0f, frontage.y);
+            float roadDistance =
+                frontage.x != 0
+                    ? settings.NodeSpacing.x * 0.5f
+                    : settings.NodeSpacing.y * 0.5f;
+            return center + (direction * roadDistance);
+        }
+
+        private static bool IsCellInsideGrid(
+            CityGenerationSettings settings,
+            Vector2Int cell)
+        {
+            return cell.x >= 0 &&
+                   cell.x < settings.BlocksX &&
+                   cell.y >= 0 &&
+                   cell.y < settings.BlocksZ;
         }
 
         private static Vector2 CreateBuildingSize(

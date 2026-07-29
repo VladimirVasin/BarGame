@@ -2,6 +2,32 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-29 — Player home MVP
+
+- Added one deterministic non-bar player home beside a generated bar street,
+  validated within `48 m` of a bar by traversable route distance, and moved the
+  fresh-session spawn to its frontage node.
+- Gave the exterior a distinct teal/cool-lit facade, porch, mailbox, chimney,
+  walkable approach, fence opening, localized interaction and labeled house
+  marker on the full-screen map.
+- Added the separate runtime-composed `HomeInterior` scene with a validated
+  `10 x 8 x 3.4 m` layout, five furniture groups, warm practical lighting,
+  quiet ambience, shared player/intoxication systems and one exit.
+- Extended the shared door transition and session contract with explicit
+  bar/home return kinds, preserving the city seed, route, visits, cash and
+  drinking progress while returning to the matching exterior entrance.
+- Updated editor scene setup, build settings, diagnostics, localization,
+  EditMode coverage and the full `City -> HomeInterior -> City` PlayMode smoke
+  path.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- RU/EN localization catalogs parse successfully.
+- Unity EditMode and PlayMode suites: pending while the project is open in an
+  interactive Unity Editor instance.
+- `git diff --check` passed.
+
 ## 2026-07-29 — Bar-adjacent fresh city spawn
 
 - Replaced the fresh session's central-city spawn with a deterministic node on

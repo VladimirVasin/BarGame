@@ -14,12 +14,15 @@ namespace BarPromenade.Editor
         private const string DoorTransitionScenePath =
             "Assets/Scenes/DoorTransition.unity";
         private const string BarInteriorScenePath = "Assets/Scenes/BarInterior.unity";
+        private const string HomeInteriorScenePath =
+            "Assets/Scenes/HomeInterior.unity";
 
         public static void Run()
         {
             EnsureCityScene();
             EnsureDoorTransitionScene();
             EnsureInteriorScene();
+            EnsureHomeInteriorScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -36,7 +39,8 @@ namespace BarPromenade.Editor
                 {
                     CityScenePath,
                     DoorTransitionScenePath,
-                    BarInteriorScenePath
+                    BarInteriorScenePath,
+                    HomeInteriorScenePath
                 },
                 locationPathName = "Build/Windows/BarPromenade.exe",
                 target = BuildTarget.StandaloneWindows64,
@@ -109,13 +113,34 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void EnsureHomeInteriorScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                    HomeInteriorScenePath) != null)
+            {
+                return;
+            }
+
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                NewSceneMode.Single);
+            if (!EditorSceneManager.SaveScene(
+                    scene,
+                    HomeInteriorScenePath))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create '{HomeInteriorScenePath}'.");
+            }
+        }
+
         private static void ConfigureBuildScenes()
         {
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(CityScenePath, true),
                 new EditorBuildSettingsScene(DoorTransitionScenePath, true),
-                new EditorBuildSettingsScene(BarInteriorScenePath, true)
+                new EditorBuildSettingsScene(BarInteriorScenePath, true),
+                new EditorBuildSettingsScene(HomeInteriorScenePath, true)
             };
         }
     }

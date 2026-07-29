@@ -41,6 +41,9 @@ namespace BarPromenade.Tests
                     actual.LandUse,
                     Is.EqualTo(expected.LandUse));
                 Assert.That(actual.IsBar, Is.EqualTo(expected.IsBar));
+                Assert.That(
+                    actual.IsPlayerHome,
+                    Is.EqualTo(expected.IsPlayerHome));
                 Assert.That(actual.BarId, Is.EqualTo(expected.BarId));
                 Assert.That(
                     actual.BarActivity,
@@ -250,7 +253,8 @@ namespace BarPromenade.Tests
                     (left, right) =>
                         left.Height == right.Height &&
                         left.Color == right.Color &&
-                        left.IsBar == right.IsBar)
+                        left.IsBar == right.IsBar &&
+                        left.IsPlayerHome == right.IsPlayerHome)
                 .All(value => value);
             Assert.That(sameRoads && sameLots, Is.False);
         }

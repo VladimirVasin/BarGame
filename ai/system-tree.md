@@ -8,6 +8,7 @@ Assets/
     City.unity
     DoorTransition.unity
     BarInterior.unity
+    HomeInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
     PC_Renderer.asset             active PC PS1 renderer feature
@@ -57,7 +58,7 @@ Assets/
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model, heap pathfinding and district map
-      World/         city plus validated bar layout/zone/path plans and builders
+      World/         city plus validated bar/home layout plans and builders
         CityDistrict.cs          district, land-use, park and gate data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         RoadWalkableArea.cs      XZ union; surface colliders own walkable height
@@ -66,8 +67,8 @@ Assets/
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
-      Interaction/   contract, shared minigame catalog, selection and entrances
-      Scenes/        bar world/atmosphere/sound/reveal and door transition
+      Interaction/   contract, shared minigame catalog, bar/home entrances/exits
+      Scenes/        bar/home roots, bar atmosphere/reveal and door transition
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -94,10 +95,11 @@ Cross-system flow:
 
 ```text
 seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
-                                          -> four urban districts + central park
-                                          -> distant bars via CityTravelDistance
-                                          -> fresh road-node spawn beside one bar
-                                          -> indexed RoadWalkableArea -> PlayerMotor
+                                           -> four urban districts + central park
+                                           -> distant bars via CityTravelDistance
+                                           -> player home beside one bar street
+                                           -> fresh road-node spawn beside the home
+                                           -> indexed RoadWalkableArea -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
                                           -> RoadFencePlanner
@@ -108,6 +110,7 @@ player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
+                         or HomeEntrance/HomeExit
                                                   -> DoorTransitionRoot
                                                      -> preloaded destination
        <- active-bar return spawn/context <- GameSessionState

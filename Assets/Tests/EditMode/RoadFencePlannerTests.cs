@@ -277,7 +277,8 @@ namespace BarPromenade.Tests.EditMode
                 plan.Openings.Count,
                 Is.EqualTo(
                     plan.EntranceOpenings.Count +
-                    plan.ParkGateOpenings.Count));
+                    plan.ParkGateOpenings.Count +
+                    plan.PlayerHomeOpenings.Count));
             foreach (CityParkGateDescriptor gate
                      in layout.Park.Gates)
             {
@@ -297,6 +298,46 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(opening.Width, Is.EqualTo(gate.Width));
                 AssertOpeningHasNoFence(plan, opening);
             }
+        }
+
+        [Test]
+        public void CreatePlan_LeavesClearOpeningForPlayerHome()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                71923);
+            RoadFencePlan plan =
+                RoadFencePlanner.CreatePlan(layout);
+
+            Assert.That(layout.PlayerHome, Is.Not.Null);
+            Assert.That(
+                plan.PlayerHomeOpenings,
+                Has.Count.EqualTo(1));
+            RoadFenceOpeningDescriptor opening =
+                plan.PlayerHomeOpenings[0];
+            Vector3 frontage = new Vector3(
+                layout.PlayerHome.FrontageDirection.x,
+                0f,
+                layout.PlayerHome.FrontageDirection.y);
+            Vector3 expectedOutward = -frontage;
+            Vector3 expectedCenter =
+                layout.PlayerHome.ReturnPosition +
+                (expectedOutward *
+                 (layout.RoadWidth * 0.5f));
+
+            Assert.That(
+                opening.Kind,
+                Is.EqualTo(
+                    RoadFenceOpeningKind.PlayerHomeEntrance));
+            Assert.That(
+                opening.PlayerHomeId,
+                Is.EqualTo("player-home"));
+            Assert.That(opening.Center, Is.EqualTo(expectedCenter));
+            Assert.That(
+                opening.Width,
+                Is.GreaterThanOrEqualTo(
+                    PlayerHomeEntranceGeometry.WalkwayWidth));
+            AssertOpeningHasNoFence(plan, opening);
         }
 
         [Test]

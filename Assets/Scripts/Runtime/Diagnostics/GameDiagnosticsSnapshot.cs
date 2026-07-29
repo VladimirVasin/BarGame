@@ -83,6 +83,9 @@ namespace BarPromenade
                     "returning_to_city",
                     GameSessionState.IsReturningToCity),
                 GameLog.Field(
+                    "return_kind",
+                    GameSessionState.ReturnKind.ToString()),
+                GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
@@ -114,6 +117,8 @@ namespace BarPromenade
                 UnityEngine.Object.FindAnyObjectByType<CityGameRoot>();
             BarInteriorRoot bar =
                 UnityEngine.Object.FindAnyObjectByType<BarInteriorRoot>();
+            HomeInteriorRoot home =
+                UnityEngine.Object.FindAnyObjectByType<HomeInteriorRoot>();
             if (city != null)
             {
                 AddCityFields(fields, city);
@@ -125,6 +130,14 @@ namespace BarPromenade
                 AddBarFields(fields, bar);
                 AddBalanceFields(fields, bar.IntoxicationStatus);
                 AddPlayerFields(fields, bar.Player);
+            }
+            else if (home != null)
+            {
+                AddHomeFields(fields, home);
+                AddBalanceFields(
+                    fields,
+                    home.IntoxicationStatus);
+                AddPlayerFields(fields, home.Player);
             }
             else
             {
@@ -177,6 +190,10 @@ namespace BarPromenade
                     city.World?.Bars.Count ?? 0));
             fields.Add(
                 GameLog.Field(
+                    "player_home_present",
+                    city.World?.PlayerHome != null));
+            fields.Add(
+                GameLog.Field(
                     "map_open",
                     city.Map != null && city.Map.IsOpen));
             fields.Add(
@@ -224,6 +241,25 @@ namespace BarPromenade
                     bar.DebugWindow != null &&
                     bar.DebugWindow.IsOpen));
             AddDebugMinigameFields(fields, bar.DebugWindow);
+        }
+
+        private static void AddHomeFields(
+            ICollection<GameLogField> fields,
+            HomeInteriorRoot home)
+        {
+            fields.Add(GameLog.Field("root_kind", "home"));
+            fields.Add(
+                GameLog.Field(
+                    "root_initialized",
+                    home.IsInitialized));
+            fields.Add(
+                GameLog.Field(
+                    "furniture_count",
+                    home.Layout?.Furniture.Count ?? 0));
+            fields.Add(
+                GameLog.Field(
+                    "home_exit_present",
+                    home.Exit != null));
         }
 
         private static void AddDebugMinigameFields(
