@@ -124,17 +124,30 @@ namespace BarPromenade.Tests.PlayMode
                 new GameObject("Bar Ambience Test");
             BarAmbiencePlayer bar =
                 barObject.AddComponent<BarAmbiencePlayer>();
+            GameObject homeObject =
+                new GameObject("Home Ambience Test");
+            HomeAmbiencePlayer home =
+                homeObject.AddComponent<HomeAmbiencePlayer>();
             yield return null;
 
             AssertAmbience(city, "RetroAmbience_City", 5200f);
             AssertAmbience(bar, "RetroAmbience_Bar", 4300f);
+            AssertAmbience(home, "RetroAmbience_Home", 3200f);
             Assert.That(
                 city.gameObject.scene,
                 Is.EqualTo(bar.gameObject.scene),
                 "Both ambience players must stay in their active scene.");
+            Assert.That(
+                home.gameObject.scene,
+                Is.EqualTo(bar.gameObject.scene),
+                "Home ambience must remain scene-local.");
+            Assert.That(
+                home.ActiveClip,
+                Is.Not.SameAs(bar.ActiveClip));
 
             Object.Destroy(cityObject);
             Object.Destroy(barObject);
+            Object.Destroy(homeObject);
             yield return null;
         }
 

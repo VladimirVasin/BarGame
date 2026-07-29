@@ -54,7 +54,7 @@ Assets/
     Runtime/
       Core/          bootstrap, city root, session, transitions
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
-      Audio/         filtered scene themes, generated retro SFX and ambience
+      Audio/         filtered themes, generated retro SFX and City/Bar/Home ambience
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model, heap pathfinding and district map
@@ -62,13 +62,18 @@ Assets/
         CityDistrict.cs          district, land-use, park and gate data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         RoadWalkableArea.cs      XZ union; surface colliders own walkable height
+        HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
+        HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
+        HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
-      Player/        motor, 8-view rig, camera and shadows
+      Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
       Interaction/   contract, shared minigame catalog, bar/home entrances/exits
-      Scenes/        bar/home roots, bar atmosphere/reveal and door transition
+      Scenes/        bar/home roots, atmosphere/reveal and door transition
+        HomeFixedCameraController.cs  authored shots and opt-in sprite-plane alignment
+        HomeInteriorAtmosphere.cs     two aligned lights/HDR emitters, grade and dust
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -78,8 +83,8 @@ Assets/
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout, roads/fences, intoxication/balance rules, sessions
-    PlayMode/        PS1 GPU, player poses, modals, F9 debug and complete flow
+    EditMode/        layout/bathroom, roads/fences, audio and gameplay rules
+    PlayMode/        PS1 GPU, player poses, Home shots/atmosphere and complete flow
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -114,6 +119,17 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                                   -> DoorTransitionRoot
                                                      -> preloaded destination
        <- active-bar return spawn/context <- GameSessionState
+       -> HomeInteriorLayoutPlanner -> HomeInteriorLayoutValidator
+                                    -> HomeInteriorWorldBuilder
+                                       -> HomeBathroomBuilder
+                                       -> HomeInteriorDressingBuilder
+       -> HomeInteriorAtmosphere -> two aligned Light/HDR-emitter/halo pairs
+                                 -> runtime grade + sparse dust
+       -> HomeAmbiencePlayer -> refrigerator + mains + pipes + drips
+       -> HomeFixedCameraController -> main/bath activation + hold bounds
+                                    -> PlayerCameraFollow fixed pose
+                                    -> BillboardSprite camera-plane opt-in
+                                       -> reset when fixed control ends
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths
@@ -148,7 +164,7 @@ state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
-scene root -> matching procedural ambience
+scene root -> matching City/Bar/Home procedural ambience
 input/gameplay events -> RetroAudioService -> pooled generated SFX
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
 world composite -> crisp retro IMGUI overlay

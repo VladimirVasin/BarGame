@@ -77,8 +77,8 @@ namespace BarPromenade
             SetPostProcessing(camera, true);
             ConfigureDirectionalLighting(
                 new Color(0.88f, 0.82f, 0.72f),
-                0.58f,
-                new Color(0.12f, 0.09f, 0.075f),
+                0.38f,
+                new Color(0.065f, 0.053f, 0.047f),
                 0.62f);
 
             RenderSettings.fog = false;

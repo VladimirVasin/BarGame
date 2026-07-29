@@ -70,11 +70,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   black sprite keeps the revealed doorway opaque; direction changes only the
   warm/cold lighting treatment and does not own persistent gameplay state.
 - **Accepted — Compact separate home interior:** `HomeInterior` owns a
-  validated `10 x 8 x 3.4 m` runtime-composed room with five non-overlapping
-  furniture footprints and a clear entry corridor. It reuses the common
-  player, camera, intoxication HUD, interaction and door-transition contracts;
-  exiting sets the home return kind and restores the matching city approach
-  without altering route, visit, cash or drinking progress.
+  validated `10 x 8 x 3.4 m` runtime-composed main room and bathroom with six
+  main-room furniture footprints plus toilet, shower and sink, protected
+  entry/main/bathroom-access paths and a solid ajar bathroom door. Dedicated
+  blocking junk owns the otherwise reachable camera corner; the toilet keeps
+  its cistern against the right wall and its bowl facing into the room. It
+  reuses the common player, intoxication HUD, interaction and door-transition
+  contracts while putting the single Main Camera into two authored fixed
+  poses with doorway hysteresis and a main-room fallback. Exiting sets the
+  home return kind and restores the matching city approach without altering
+  route, visit, cash or drinking progress.
+- **Accepted — Diegetic Home practicals and fixed sprite plane:** The Home
+  atmosphere owns exactly two shadowless realtime lights. A visible HDR
+  emitter and depth-tested halo are physically co-located with each light so
+  the warm hanging lamp and cold bathroom tube read as actual sources. During
+  Home fixed-camera ownership only, `BillboardSprite` aligns to
+  `-camera.forward` and `camera.up` instead of a yaw-only billboard, preserving
+  the authored `64 x 96` aspect at steep FOVs; disabling or destroying the
+  controller restores the shared default billboard behavior.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
   scene loads for the same city. A terminal bar activity reports completion

@@ -145,6 +145,7 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase(RetroAmbienceKind.City)]
         [TestCase(RetroAmbienceKind.Bar)]
+        [TestCase(RetroAmbienceKind.Home)]
         public void Ambience_IsDeterministicQuietAndLoopSafe(
             RetroAmbienceKind kind)
         {
@@ -179,6 +180,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Mathf.Abs(first[0] - first[first.Length - 1]),
                 Is.LessThan(0.04f));
+        }
+
+        [Test]
+        public void HomeAmbience_IsDistinctFromBar()
+        {
+            float[] home =
+                RetroAmbienceSynthesis.GenerateSamples(
+                    RetroAmbienceKind.Home);
+            float[] bar =
+                RetroAmbienceSynthesis.GenerateSamples(
+                    RetroAmbienceKind.Bar);
+
+            Assert.That(home.Length, Is.EqualTo(bar.Length));
+            double squaredDifference = 0d;
+            for (int index = 0; index < home.Length; index++)
+            {
+                float difference = home[index] - bar[index];
+                squaredDifference += difference * difference;
+            }
+
+            float differenceRms = Mathf.Sqrt(
+                (float)(squaredDifference / home.Length));
+            Assert.That(
+                differenceRms,
+                Is.GreaterThan(0.01f),
+                "The home loop must not reuse the bar ambience.");
         }
     }
 }

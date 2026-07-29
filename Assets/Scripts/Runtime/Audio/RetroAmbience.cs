@@ -6,7 +6,8 @@ namespace BarPromenade
     public enum RetroAmbienceKind
     {
         City = 0,
-        Bar
+        Bar,
+        Home
     }
 
     public static class RetroAmbienceSynthesis
@@ -17,7 +18,8 @@ namespace BarPromenade
         public static float[] GenerateSamples(RetroAmbienceKind kind)
         {
             if (kind != RetroAmbienceKind.City &&
-                kind != RetroAmbienceKind.Bar)
+                kind != RetroAmbienceKind.Bar &&
+                kind != RetroAmbienceKind.Home)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -31,9 +33,20 @@ namespace BarPromenade
             {
                 float loopPhase =
                     index * inverseCount * Mathf.PI * 2f;
-                float sample = kind == RetroAmbienceKind.City
-                    ? GenerateCitySample(loopPhase)
-                    : GenerateBarSample(loopPhase);
+                float sample;
+                switch (kind)
+                {
+                    case RetroAmbienceKind.City:
+                        sample = GenerateCitySample(loopPhase);
+                        break;
+                    case RetroAmbienceKind.Bar:
+                        sample = GenerateBarSample(loopPhase);
+                        break;
+                    default:
+                        sample = GenerateHomeSample(loopPhase);
+                        break;
+                }
+
                 samples[index] = Mathf.Clamp(sample, -0.72f, 0.72f);
             }
 
@@ -88,6 +101,43 @@ namespace BarPromenade
             float refrigerator =
                 Mathf.Sin(phase * 288f + 1.1f) * 0.026f;
             return ventilation * roomBreath + mains + refrigerator;
+        }
+
+        private static float GenerateHomeSample(float phase)
+        {
+            float compressorCycle =
+                0.64f +
+                Mathf.Sin(phase * 2f + 0.35f) * 0.18f;
+            float refrigerator =
+                Mathf.Sin(phase * 192f + 0.7f) * 0.040f +
+                Mathf.Sin(phase * 384f + 1.4f) * 0.016f;
+            float mains =
+                Mathf.Sin(phase * 200f) * 0.030f +
+                Mathf.Sin(phase * 400f + 0.18f) * 0.012f;
+            float pipes =
+                Mathf.Sin(phase * 17f + 2.1f) * 0.014f +
+                Mathf.Sin(phase * 43f + 0.4f) * 0.008f;
+
+            float primaryDripEnvelope = Mathf.Pow(
+                0.5f +
+                0.5f * Mathf.Cos(phase * 3f - 0.9f),
+                28f);
+            float secondaryDripEnvelope = Mathf.Pow(
+                0.5f +
+                0.5f * Mathf.Cos(phase * 5f + 1.8f),
+                36f);
+            float dripTone =
+                Mathf.Sin(phase * 367f + 0.3f) * 0.065f +
+                Mathf.Sin(phase * 521f + 1.2f) * 0.032f;
+            float drips =
+                dripTone *
+                (primaryDripEnvelope +
+                 secondaryDripEnvelope * 0.52f);
+
+            return refrigerator * compressorCycle +
+                   mains +
+                   pipes +
+                   drips;
         }
     }
 
@@ -165,8 +215,8 @@ namespace BarPromenade
     public sealed class HomeAmbiencePlayer : SceneAmbiencePlayer
     {
         protected override RetroAmbienceKind AmbienceKind =>
-            RetroAmbienceKind.Bar;
+            RetroAmbienceKind.Home;
         protected override float OutputVolume => 0.025f;
-        protected override float CutoffFrequency => 3600f;
+        protected override float CutoffFrequency => 3200f;
     }
 }

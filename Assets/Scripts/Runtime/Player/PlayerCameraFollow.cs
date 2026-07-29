@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -51,10 +52,16 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float collisionPadding = 0.12f;
         [SerializeField] private LayerMask collisionMask = ~0;
 
+        private const float FixedReactionScale = 0.25f;
+
         private readonly RaycastHit[] collisionHits = new RaycastHit[12];
         private Camera controlledCamera;
         private Transform followTarget;
         private bool isInterior;
+        private bool fixedPoseActive;
+        private Vector3 fixedBasePosition;
+        private Quaternion fixedBaseRotation = Quaternion.identity;
+        private float fixedBaseFieldOfView = 57f;
         private float targetYaw;
         private float currentYaw;
         private float yawVelocity;
@@ -78,12 +85,21 @@ namespace BarPromenade
         public bool OrbitInputEnabled { get; private set; } = true;
         public bool CinematicMotionEnabled { get; private set; } = true;
         public Vector3 CurrentFocusPoint => currentFocusPoint;
+        public bool FixedPoseActive => fixedPoseActive;
+        public Pose FixedBasePose =>
+            new Pose(
+                fixedBasePosition,
+                fixedBaseRotation);
+        public Vector3 FixedBasePosition => fixedBasePosition;
+        public Quaternion FixedBaseRotation => fixedBaseRotation;
+        public float FixedBaseFieldOfView => fixedBaseFieldOfView;
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
             isInterior = interior;
+            fixedPoseActive = false;
             targetYaw = target != null ? target.eulerAngles.y : 0f;
             currentYaw = targetYaw;
             ConfigureCamera();
@@ -119,14 +135,81 @@ namespace BarPromenade
             fallAmount = Mathf.Clamp01(normalizedFallAmount);
         }
 
+        public void SetFixedPose(
+            Vector3 position,
+            Quaternion rotation,
+            float fieldOfView)
+        {
+            if (!IsFinite(position))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(position),
+                    "Fixed camera position must be finite.");
+            }
+
+            if (!IsValidRotation(rotation))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(rotation),
+                    "Fixed camera rotation must be finite and non-zero.");
+            }
+
+            if (!IsFinite(fieldOfView) ||
+                fieldOfView < 20f ||
+                fieldOfView > 100f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(fieldOfView),
+                    "Fixed camera field of view must be between 20 and 100 degrees.");
+            }
+
+            fixedBasePosition = position;
+            fixedBaseRotation = Normalize(rotation);
+            fixedBaseFieldOfView = fieldOfView;
+            fixedPoseActive = true;
+            currentFocusPoint =
+                fixedBasePosition +
+                fixedBaseRotation * Vector3.forward;
+            ApplyFixedPose(fixedBaseRotation);
+            ConfigureCamera();
+        }
+
+        public void ClearFixedPose()
+        {
+            if (!fixedPoseActive)
+            {
+                return;
+            }
+
+            fixedPoseActive = false;
+            Snap();
+        }
+
         public void RotateYaw(float degrees)
         {
+            if (fixedPoseActive)
+            {
+                return;
+            }
+
             targetYaw = Mathf.Repeat(targetYaw + degrees, 360f);
         }
 
         public void Snap()
         {
-            if (controlledCamera == null || followTarget == null)
+            if (controlledCamera == null)
+            {
+                return;
+            }
+
+            if (fixedPoseActive)
+            {
+                ApplyFixedPose(fixedBaseRotation);
+                ConfigureCamera();
+                return;
+            }
+
+            if (followTarget == null)
             {
                 return;
             }
@@ -157,6 +240,12 @@ namespace BarPromenade
             }
 
             float deltaTime = Time.unscaledDeltaTime;
+            if (fixedPoseActive)
+            {
+                UpdateFixedPose(deltaTime);
+                return;
+            }
+
             ReadYawInput(deltaTime);
             if (ShouldSnapForTeleport())
             {
@@ -217,10 +306,63 @@ namespace BarPromenade
             ConfigureCamera();
         }
 
+        private void UpdateFixedPose(float deltaTime)
+        {
+            currentIntoxication = Mathf.MoveTowards(
+                currentIntoxication,
+                targetIntoxication,
+                deltaTime / 0.7f);
+            UpdateCinematicMotionWeight(deltaTime);
+            cinematicTime += deltaTime;
+
+            IntoxicationProfile intoxication =
+                IntoxicationStageRules.Evaluate(
+                    Mathf.RoundToInt(
+                        currentIntoxication *
+                        IntoxicationStageRules.MaximumLevel));
+            float slowSway = Mathf.Sin(
+                cinematicTime * 1.17f + 0.4f);
+            float secondarySway = Mathf.Sin(
+                cinematicTime * 0.73f + 2.1f);
+            float reactionWeight =
+                cinematicMotionWeight *
+                FixedReactionScale;
+            float pitchOffset =
+                secondarySway *
+                intoxication.CameraRollDegrees *
+                0.22f *
+                reactionWeight;
+            float rollOffset =
+                (slowSway *
+                 intoxication.CameraRollDegrees +
+                 balanceLean * 1.2f +
+                 fallDirection * fallAmount * 1.8f) *
+                reactionWeight;
+            Quaternion reaction =
+                Quaternion.Euler(
+                    pitchOffset,
+                    0f,
+                    rollOffset);
+            ApplyFixedPose(fixedBaseRotation * reaction);
+            ConfigureCamera();
+        }
+
         private void ApplyPose(Vector3 focusPoint, Quaternion rotation)
         {
             controlledCamera.transform.SetPositionAndRotation(
                 focusPoint - rotation * Vector3.forward * currentDistance,
+                rotation);
+        }
+
+        private void ApplyFixedPose(Quaternion rotation)
+        {
+            if (controlledCamera == null)
+            {
+                return;
+            }
+
+            controlledCamera.transform.SetPositionAndRotation(
+                fixedBasePosition,
                 rotation);
         }
 
@@ -477,9 +619,68 @@ namespace BarPromenade
             }
 
             controlledCamera.orthographic = false;
-            controlledCamera.fieldOfView = isInterior
-                ? interiorFieldOfView
-                : exteriorFieldOfView;
+            controlledCamera.fieldOfView = fixedPoseActive
+                ? fixedBaseFieldOfView
+                : isInterior
+                    ? interiorFieldOfView
+                    : exteriorFieldOfView;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z) &&
+                   IsFinite(value.w);
+        }
+
+        private static bool IsValidRotation(
+            Quaternion value)
+        {
+            if (!IsFinite(value))
+            {
+                return false;
+            }
+
+            float magnitudeSquared =
+                QuaternionMagnitudeSquared(value);
+            return IsFinite(magnitudeSquared) &&
+                   magnitudeSquared > 0.000001f;
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
+        }
+
+        private static float QuaternionMagnitudeSquared(
+            Quaternion value)
+        {
+            return value.x * value.x +
+                   value.y * value.y +
+                   value.z * value.z +
+                   value.w * value.w;
+        }
+
+        private static Quaternion Normalize(Quaternion value)
+        {
+            float inverseMagnitude =
+                1f /
+                Mathf.Sqrt(
+                    QuaternionMagnitudeSquared(value));
+            return new Quaternion(
+                value.x * inverseMagnitude,
+                value.y * inverseMagnitude,
+                value.z * inverseMagnitude,
+                value.w * inverseMagnitude);
         }
     }
 }

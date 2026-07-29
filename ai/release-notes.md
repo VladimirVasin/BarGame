@@ -2,14 +2,47 @@
 
 ## Unreleased
 
+### 2026-07-30 — Approved Home framing and practical lights
+
+- Moved the main-room fixed camera into the approved bed-side corner at
+  `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)`, with a `64°` FOV. The
+  bathroom now uses `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)`, with a
+  `92°` FOV.
+- The warm hanging bulb and cold bathroom tube are now visible HDR emitters
+  with halos physically aligned to the light they cast, so illumination has a
+  readable source in both shots.
+- Blocking junk closes the camera corner without obstructing the authored
+  walking routes, and the bathroom toilet now faces naturally into the room
+  with its cistern at the right wall.
+- The hero now aligns to the complete fixed-camera plane instead of only its
+  horizontal direction. This preserves the original `64 x 96` sprite
+  proportions in steep views and automatically returns to normal billboard
+  behavior after leaving the fixed-camera controller.
+
 ### Player home
 
 - Every generated city now contains one recognizable player home beside a bar
   street. Its teal facade, cool windows, porch light and mailbox distinguish
   it in the world, while the city map gives it a separate labeled house icon.
-- The home has its own warm furnished interior scene. Entering and leaving use
-  the same door transition as bars and return the hero to the matching exterior
-  approach without losing route, visit, wallet or intoxication progress.
+- The interior is now a dim, neglected old alcoholic's bachelor flat: stained
+  walls, a boarded dead window, six main-room furniture groups, worn bedding,
+  dirty dishes, bottles, cans, an ashtray, old papers, a radio and sparse
+  personal remnants sell long-term poverty and drinking without blocking the
+  walking routes.
+- Added a complete separate bathroom with tiled surfaces, an ajar doorway,
+  toilet, shower and curtain, sink, cracked mirror, rusty exposed pipes, leak
+  damage and a floor drain.
+- A visible dirty-yellow hanging lamp and cold bathroom tube sit over a
+  subdued home-only color grade, sparse dust and a dedicated refrigerator,
+  mains, pipe and drip ambience.
+- The single Main Camera now hard-cuts between fixed main-room and bathroom
+  corner shots. Wider hold areas add hysteresis at the doorway, so hovering at
+  the threshold cannot flicker the view; orbit input does not move either
+  fixed pose. Home temporarily aligns the player's billboard to the complete
+  camera plane, preventing both edge-on and vertically compressed sprites.
+- Entering and leaving still use the same door transition as bars and return
+  the hero to the matching exterior approach without losing route, visit,
+  wallet or intoxication progress.
 
 ### Bar-adjacent city start
 
@@ -56,9 +89,10 @@
 ### Support diagnostics
 
 - Added a bounded structured `debug.log` for reproducible support reports. It
-  records build/scene/seed context, generated city and bar summaries, route and
-  visit changes, correlated transitions, minigame results, drinking/balance
-  outcomes and Unity warnings or exceptions without per-frame telemetry.
+  records build/scene/seed context, generated city, bar and home summaries,
+  route and visit changes, correlated transitions, minigame results,
+  drinking/balance outcomes and Unity warnings or exceptions without
+  per-frame telemetry.
 - Press `F8` in the city or bar to capture the current player/session/world
   state immediately. `Shift+F8` opens the directory containing the active log.
 - Logs rotate automatically at 5 MiB and retain three archives; release builds
@@ -186,8 +220,8 @@
 
 ### Dynamic player shadow
 
-- The hero now casts a realtime alpha-clipped silhouette in both the city and
-  bar interior.
+- The hero now casts a realtime alpha-clipped silhouette in the city, bar
+  interior and home interior.
 - The hidden shadow puppet faces the main directional light and chooses one of
   the existing eight authored views from the player/light angle, so orbiting
   the camera no longer rotates or flattens the shadow.
@@ -340,9 +374,10 @@
   MSAA for sharper low-poly silhouettes.
 - Added deterministic `22050 Hz` retro UI, movement, door and cocktail SFX with
   pooled playback, cooldowns and voice limits.
-- Added separate procedural ambience for the city and bar, while preserving
-  the correct `city_theme`/`bar_theme` split and applying a mild low-pass tone
-  to both music players.
+- Added separate procedural ambience for the city, bar and home. The Home loop
+  adds refrigerator, mains, pipe and drip layers while preserving the correct
+  `city_theme`/`bar_theme` split and mild low-pass treatment on both music
+  players.
 - Kept runtime IMGUI intentionally crisp after the pixelated world composite.
   The current renderer integration targets PC; mobile parity is deferred.
 - Fixed city-map road/route/player-heading lines being displaced by nested

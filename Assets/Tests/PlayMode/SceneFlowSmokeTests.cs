@@ -1677,9 +1677,50 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Room, Is.Not.Null);
             Assert.That(home.Player.GameObject, Is.Not.Null);
             Assert.That(home.Exit, Is.Not.Null);
-            Assert.That(home.Layout.Furniture, Has.Count.EqualTo(5));
+            Assert.That(home.Layout.Furniture, Has.Count.EqualTo(9));
+            Assert.That(
+                home.Layout.TryGetFurniture(
+                    HomeFurnitureKind.Toilet,
+                    out _),
+                Is.True);
+            Assert.That(
+                home.Layout.TryGetFurniture(
+                    HomeFurnitureKind.Shower,
+                    out _),
+                Is.True);
+            Assert.That(
+                home.Layout.TryGetFurniture(
+                    HomeFurnitureKind.Sink,
+                    out _),
+                Is.True);
             Assert.That(home.Ambience, Is.Not.Null);
             Assert.That(home.Ambience.Source.loop, Is.True);
+            Assert.That(
+                home.Atmosphere,
+                Is.Not.Null);
+            Assert.That(
+                home.Atmosphere.IsInitialized,
+                Is.True);
+            Assert.That(
+                home.Atmosphere.PracticalLights,
+                Has.Count.EqualTo(2));
+            Assert.That(
+                home.FixedCamera,
+                Is.Not.Null);
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            Assert.That(
+                home.CameraFollow.FixedPoseActive,
+                Is.True);
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<Camera>(
+                    FindObjectsInactive.Exclude),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<AudioListener>(
+                    FindObjectsInactive.Exclude),
+                Has.Length.EqualTo(1));
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<
                     BarInteriorRoot>(
@@ -1758,6 +1799,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.IsBarVisited(visitedBarId),
                 Is.True);
+            PlayerCameraFollow returnedFollow =
+                Camera.main.GetComponent<PlayerCameraFollow>();
+            Assert.That(returnedFollow, Is.Not.Null);
+            Assert.That(
+                returnedFollow.FixedPoseActive,
+                Is.False);
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot<T>(

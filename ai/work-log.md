@@ -2,6 +2,100 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Approved Home framing and visible practicals
+
+- Finalized the runtime-composed interior as an impoverished, cluttered old
+  alcoholic's flat with six main-room furniture groups and three bathroom
+  fixtures. Dedicated blocking camera-corner junk now makes the authored
+  bed-side camera pocket physically unreachable.
+- Locked the user-approved main-room shot to
+  `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)`, `64°` FOV and the
+  bathroom shot to `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)`, `92°` FOV.
+- Made both practical sources explicit in the image: the warm hanging bulb and
+  cold bathroom tube use visible HDR emitters and depth-tested halos physically
+  aligned with their two shadowless `Light` components.
+- Reoriented the toilet with its cistern against the right wall and its bowl
+  facing into the bathroom.
+- Added an opt-in fixed-camera plane mode to `BillboardSprite`. Home enables
+  exact `-camera.forward`/`camera.up` alignment so the `64 x 96` hero does not
+  compress in either steep shot, and resets the mode when fixed control ends.
+- Extended the focused regressions to cover exact camera poses, the blocking
+  corner footprint, practical emitter/light/halo alignment and visibility,
+  toilet orientation and projected sprite aspect. The corner junk was widened
+  after the final nearest-reachable-point review so the complete player frame
+  stays on screen without changing the approved camera pose.
+
+Verification:
+
+- `BarPromenade.Runtime`, `BarPromenade.Editor` and
+  `BarPromenade.EditModeTests` .NET builds completed with 0 errors and
+  0 warnings; Unity compiled the PlayMode assembly during the test runs.
+- Focused `PlayerHomeLayoutTests` passed 21/21 and focused Home PlayMode
+  coverage passed 8/8, including the camera-plane aspect, full-frame visibility
+  at the nearest reachable main-room point and corrected toilet orientation.
+- Complete PlayMode passed 96/96.
+- Complete EditMode repeated at 481/485; the same four pre-existing
+  `CityLayoutGeneratorTests` remain red, while all 21 Home layout tests pass.
+- Reviewed the final `960 x 540` main-room and bathroom renders; both visible
+  practical sources read in-frame and the bathroom character is neither
+  compressed nor cropped.
+- Windows build succeeded at `142280031` bytes with one package-owned URP
+  `DebugOccluder.shader` vector-truncation warning and no project-code warning.
+- `git diff --check` passed.
+
+## 2026-07-29 — Neglected home, bathroom and fixed cameras
+
+- Expanded the deterministic `10 x 8 x 3.4 m` home plan with explicit
+  main-room/bathroom zones, protected entry/main/bathroom-access paths and
+  validated toilet, shower and sink footprints.
+- Rebuilt the runtime interior as a dim impoverished bachelor flat with worn
+  furniture, stained and peeling surfaces, a boarded dead window, bottles,
+  cans, ashtray, dirty dishes, clothes, papers, an old radio and restrained
+  personal remnants. Small narrative clutter is collider-free so it does not
+  invalidate the authored circulation.
+- Added a complete tiled bathroom with an ajar opening, toilet, shower tray
+  and curtain, pedestal sink, cracked mirror, exposed rusty pipes, leak damage
+  and a floor drain.
+- Added a bounded Home-only atmosphere: a weaker hard-shadow
+  directional/ambient base, two shadowless dirty-yellow/cold practical lights,
+  a cleaned-up runtime Bloom/color/exposure/vignette/grain profile and at most
+  12 shared-material dust motes.
+- Split Home ambience from the bar loop with deterministic refrigerator,
+  mains, pipe and drip layers.
+- Added two authored fixed camera poses for the main room and bathroom. The
+  controller applies immediate hard cuts, keeps each shot through a wider
+  hold area for doorway hysteresis, ignores orbit/follow movement and retains
+  reduced intoxication, balance and fall rotation around the fixed position.
+- Refreshes the player's billboard plane in the same hard cut, preventing the
+  nine-layer sprite from briefly rendering edge-on to a newly active shot.
+- Blocks the otherwise reachable pocket beneath the main camera with the sofa,
+  falls back to the main shot for all legitimate non-bathroom floor, keeps the
+  ajar bathroom door solid with capsule-width clearance and aligns narrative
+  clutter to the actual furniture surfaces.
+- Added focused EditMode/PlayMode coverage for bathroom layout and scene
+  construction, Home ambience/atmosphere bounds and cleanup, fixed-pose
+  behavior, shot hysteresis and the existing home round trip.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests .NET builds: 0 errors,
+  0 warnings.
+- Focused home-layout and retro-SFX EditMode checks: 20/20 and 28/28 passed.
+- Focused Home fixed-camera, atmosphere, presentation and round-trip PlayMode
+  checks: 9/9 passed; the shared billboard check passed 1/1.
+- Reviewed final `960 x 540` renders from both authored shots and the nearest
+  reachable point to the main anchor. This caught and drove corrections to
+  the initial underexposure, bathroom angle/door occlusion, stale
+  player-sprite plane and the original camera blind pocket.
+- Windows build succeeded at `142277983` bytes with 0 warnings.
+- Complete EditMode repeated at 480/484: four unchanged
+  `CityLayoutGeneratorTests` fail on the pre-existing bar-distance contract
+  (the isolated class repeats 17/21).
+- Complete PlayMode passed 96/96 after the Home presentation fixture was made
+  to unload its Single-mode scene during teardown; the previously affected
+  legacy intoxication/debug-window/motor classes also pass 16/16 in isolation.
+- `git diff --check` passed.
+
 ## 2026-07-29 — Player home MVP
 
 - Added one deterministic non-bar player home beside a generated bar street,

@@ -55,7 +55,8 @@ The vertical slice contains:
   door latch and sustained hinge creak, distinct beer-pong
   throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
   category pools, per-effect cooldowns and voice limits, plus separate
-  scene-local procedural city and bar ambience;
+  scene-local procedural city, bar and home ambience; the home loop layers a
+  refrigerator compressor, mains hum, pipes and periodic drips;
 - a spanning-tree road graph with deterministic loops, cross-city arterials
   and a connected park-path cross;
 - five readable districts: Old Town, Residential, Industrial, Nightlife and
@@ -90,7 +91,7 @@ The vertical slice contains:
 - one camera-independent realtime player shadow that mirrors all nine
   articulated puppet parts in the authored view relative to the main light,
   faces them toward that light and reproduces live gait, compression and
-  whole-puppet sway in both City and BarInterior, plus one small
+  whole-puppet sway in City, BarInterior and HomeInterior, plus one small
   light-independent analytic contact patch fixed to the grounded player root;
   neither changes the nine visible renderers;
 - one deterministic five-state body-expression atlas that swaps the existing
@@ -102,14 +103,16 @@ The vertical slice contains:
   hard modal/transition/teleport stops remain immediate, constrained
   displacement cannot store hidden momentum, and the last actual movement
   heading is preserved while idle;
-- a very close freely orbiting perspective third-person chase camera with
+- in City and BarInterior, a very close freely orbiting perspective
+  third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
   raised `1.4 m / 1.3 m` focus points that keep the hero in the lower frame,
   weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle
   deterministic idle/walk motion and smoothly recovering obstacle-aware
   distance; cinematic motion fades out for fullscreen modals, while the
   balance-specific lock keeps its intoxication and fall reactions visible;
-- one percentage-driven intoxication profile shared by City and BarInterior:
+- one percentage-driven intoxication profile shared by City, BarInterior and
+  HomeInterior:
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
   `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
   Very Drunk / «В стельку»; `0` is Sober and hides the HUD;
@@ -133,7 +136,8 @@ The vertical slice contains:
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
   context for the current city, with an explicit bar-or-home return kind;
-- a dedicated `3.15 s` `DoorTransition` scene between the city and bar:
+- a dedicated `3.15 s` `DoorTransition` scene between the city and either
+  interior:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
@@ -146,9 +150,34 @@ The vertical slice contains:
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
   contract or the fog-free `220 m` bar range;
-- one compact validated `10 x 8 x 3.4 m` home interior composed at runtime with
-  a bed, kitchen, sofa, table and bookcase, a clear entrance corridor, two warm
-  practical lights, quiet room ambience and the shared player/HUD systems;
+- one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
+  and bathroom zones, clear entry/main/bathroom paths, six main-room furniture
+  groups and separate toilet, shower and sink footprints; its runtime-built
+  shell, stained surfaces, boarded window, dirty dishes, bottles, cans,
+  ashtray, worn clothes, newspapers, old radio and personal remnants establish
+  a neglected impoverished old alcoholic's bachelor flat, while the dedicated
+  blocking camera-corner junk keeps the authored camera pocket unreachable;
+- one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
+  shower tray and curtain, pedestal sink, cracked mirror, exposed rusty pipes,
+  leak stains and floor drain; the toilet cistern sits against the right wall
+  and its bowl faces into the room;
+- one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
+  exactly two shadowless practical pools whose visible HDR emitters and halos
+  are physically aligned with their lights—a dirty-yellow hanging lamp and a
+  cold bathroom tube—a restrained Bloom/color/exposure/vignette/film-grain
+  runtime volume, at most 12 sparse dust motes and the dedicated procedural
+  refrigerator/mains/pipe/drip ambience;
+- one Main Camera that hard-cuts between the user-approved main-room pose at
+  `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)` and `64°` FOV and the
+  bathroom pose at `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°`
+  FOV; separate activation and wider hold bounds provide threshold hysteresis,
+  while each fixed position ignores orbit/follow input and retains only
+  quarter-strength intoxication, balance and fall rotation;
+- while the Home fixed-camera controller is active, the nine-layer
+  `BillboardSprite` opts into exact camera-plane alignment using
+  `-camera.forward` and `camera.up`; this preserves the authored `64 x 96`
+  aspect instead of compressing the sprite in steep views, and the mode is
+  reset when the controller releases the camera;
 - a deterministic 12-person bar crowd with bartender, booth patrons,
   performer, standing groups and one bounded walker; six shared point-filtered
   pixel characters use lightweight billboards, centralized `8 Hz` decisions,
@@ -171,7 +200,7 @@ The vertical slice contains:
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
   last-drink or consumed-drink context;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
-  envelopes correlate scene transitions, generated-city/bar initialization,
+  envelopes correlate scene transitions, generated-city/bar/home initialization,
   route and visit state, minigame runs, drinking and balance outcomes, plus
   Unity warnings/errors; `F8` writes an immediate state snapshot and
   `Shift+F8` opens the log directory;

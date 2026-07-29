@@ -3,8 +3,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Keeps a sprite presentation facing the active camera without tilting it
-    /// away from the world's up axis.
+    /// Faces a sprite toward the active camera. The shared default preserves
+    /// world up, while authored fixed views can opt into the exact camera
+    /// plane to avoid perspective compression.
     /// </summary>
     [DefaultExecutionOrder(200)]
     [DisallowMultipleComponent]
@@ -12,10 +13,27 @@ namespace BarPromenade
     {
         [SerializeField] private Camera targetCamera;
         [SerializeField] private bool useMainCameraFallback = true;
+        [SerializeField]
+        private bool alignToCameraPlane;
+
+        public bool CameraPlaneAlignmentEnabled =>
+            alignToCameraPlane;
 
         public void Initialize(Camera camera)
         {
             targetCamera = camera;
+            FaceCamera();
+        }
+
+        public void SetCameraPlaneAlignment(
+            bool enabled)
+        {
+            alignToCameraPlane = enabled;
+            FaceCamera();
+        }
+
+        public void FaceCameraNow()
+        {
             FaceCamera();
         }
 
@@ -41,6 +59,15 @@ namespace BarPromenade
 
             if (flatDirection.sqrMagnitude < 0.0001f)
             {
+                return;
+            }
+
+            if (alignToCameraPlane &&
+                camera.transform.forward.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.LookRotation(
+                    -camera.transform.forward,
+                    camera.transform.up);
                 return;
             }
 

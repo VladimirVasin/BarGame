@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -47,6 +48,9 @@ namespace BarPromenade
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public HomeAmbiencePlayer Ambience { get; private set; }
+        public HomeInteriorAtmosphere Atmosphere { get; private set; }
+        public PlayerCameraFollow CameraFollow { get; private set; }
+        public HomeFixedCameraController FixedCamera { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -76,6 +80,12 @@ namespace BarPromenade
             Room = HomeInteriorWorldBuilder.Build(
                 transform,
                 Layout);
+            GameObject atmosphereObject =
+                new GameObject("Home Atmosphere");
+            atmosphereObject.transform.SetParent(transform, false);
+            Atmosphere =
+                atmosphereObject.AddComponent<HomeInteriorAtmosphere>();
+            Atmosphere.Initialize();
 
             GameObject ambienceObject =
                 new GameObject("Home Ambience");
@@ -97,19 +107,29 @@ namespace BarPromenade
                     Layout.WalkableBounds),
                 prompt);
 
-            PlayerCameraFollow follow =
+            CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();
-            if (follow == null)
+            if (CameraFollow == null)
             {
-                follow =
+                CameraFollow =
                     camera.gameObject
                         .AddComponent<PlayerCameraFollow>();
             }
 
-            follow.Initialize(
+            CameraFollow.Initialize(
                 camera,
                 Player.GameObject.transform,
                 true);
+            GameObject fixedCameraObject =
+                new GameObject("Home Fixed Camera");
+            fixedCameraObject.transform.SetParent(transform, false);
+            FixedCamera =
+                fixedCameraObject.AddComponent<
+                    HomeFixedCameraController>();
+            FixedCamera.Initialize(
+                CameraFollow,
+                Player.GameObject.transform,
+                CreateCameraShots(Layout));
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -119,7 +139,7 @@ namespace BarPromenade
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
-                follow,
+                CameraFollow,
                 intoxicationHud,
                 balanceView);
             BuildExit();
@@ -133,11 +153,64 @@ namespace BarPromenade
                     "furniture_count",
                     Layout.Furniture.Count),
                 GameLog.Field(
+                    "camera_shot",
+                    FixedCamera.ActiveShotKind.ToString()),
+                GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        private static IReadOnlyList<HomeCameraShot>
+            CreateCameraShots(
+                HomeInteriorLayoutPlan plan)
+        {
+            Rect walkable = plan.WalkableBounds;
+            Rect bathroom = plan.BathroomBounds;
+            var mainActivation = new Rect(
+                walkable.xMin,
+                walkable.yMin,
+                walkable.width,
+                bathroom.yMin -
+                walkable.yMin +
+                0.10f);
+            var mainHold = new Rect(
+                walkable.xMin,
+                walkable.yMin,
+                walkable.width,
+                bathroom.yMin -
+                walkable.yMin +
+                0.18f);
+            var bathroomActivation = new Rect(
+                bathroom.xMin + 0.14f,
+                bathroom.yMin + 0.24f,
+                bathroom.width - 0.28f,
+                bathroom.height - 0.36f);
+            var bathroomHold = new Rect(
+                bathroom.xMin + 0.06f,
+                bathroom.yMin + 0.08f,
+                bathroom.width - 0.12f,
+                bathroom.height - 0.14f);
+
+            return new[]
+            {
+                new HomeCameraShot(
+                    HomeCameraShotKind.MainRoom,
+                    mainActivation,
+                    mainHold,
+                    new Vector3(-4.48f, 3.00f, -3.25f),
+                    new Vector3(28f, 55f, 0f),
+                    64f),
+                new HomeCameraShot(
+                    HomeCameraShotKind.Bathroom,
+                    bathroomActivation,
+                    bathroomHold,
+                    new Vector3(1.82f, 2.20f, 0.86f),
+                    new Vector3(30f, 38f, 0f),
+                    92f)
+            };
         }
 
         private void BuildExit()
@@ -161,7 +234,7 @@ namespace BarPromenade
                     Layout.RoomHeight - 0.46f,
                     -Layout.RoomSize.y * 0.5f + 0.16f),
                 new Vector3(2.35f, 0.18f, 0.14f),
-                new Color(1.45f, 0.76f, 0.32f),
+                new Color(0.72f, 0.36f, 0.16f),
                 CityNightResources.EmissiveMaterial,
                 false);
         }

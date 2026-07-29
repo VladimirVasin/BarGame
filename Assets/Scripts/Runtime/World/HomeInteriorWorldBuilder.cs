@@ -5,18 +5,23 @@ namespace BarPromenade
 {
     public static class HomeInteriorWorldBuilder
     {
+        internal const float BedDressingSurfaceHeight = 0.67f;
+        internal const float KitchenDressingSurfaceHeight = 1.03f;
+        internal const float TableDressingSurfaceHeight = 0.88f;
+        internal const float BookcaseDressingSurfaceHeight = 2.25f;
+
         private static readonly Color Floor =
-            new Color(0.21f, 0.14f, 0.10f);
+            new Color(0.115f, 0.085f, 0.065f);
         private static readonly Color Wall =
-            new Color(0.34f, 0.27f, 0.23f);
+            new Color(0.255f, 0.225f, 0.175f);
         private static readonly Color Trim =
-            new Color(0.62f, 0.48f, 0.31f);
+            new Color(0.37f, 0.27f, 0.16f);
         private static readonly Color DarkWood =
-            new Color(0.18f, 0.085f, 0.055f);
+            new Color(0.115f, 0.055f, 0.036f);
         private static readonly Color Fabric =
-            new Color(0.14f, 0.34f, 0.36f);
-        private static readonly Color WarmLight =
-            new Color(1.55f, 0.78f, 0.34f);
+            new Color(0.14f, 0.20f, 0.18f);
+        private static readonly Color DirtyLinen =
+            new Color(0.43f, 0.39f, 0.29f);
 
         public static Transform Build(
             Transform parent,
@@ -32,16 +37,27 @@ namespace BarPromenade
                 new GameObject("Home Interior").transform;
             room.SetParent(parent, false);
             BuildShell(room, plan);
+            BuildPracticalFixtures(room);
             for (int index = 0;
                  index < plan.Furniture.Count;
                  index++)
             {
+                HomeFurnitureKind kind =
+                    plan.Furniture[index].Kind;
+                if (kind == HomeFurnitureKind.Toilet ||
+                    kind == HomeFurnitureKind.Shower ||
+                    kind == HomeFurnitureKind.Sink)
+                {
+                    continue;
+                }
+
                 BuildFurniture(
                     room,
                     plan.Furniture[index]);
             }
 
-            BuildLighting(room, plan);
+            HomeBathroomBuilder.Build(room, plan);
+            HomeInteriorDressingBuilder.Build(room, plan);
             return room;
         }
 
@@ -138,7 +154,14 @@ namespace BarPromenade
                 room,
                 new Vector3(0f, 0.015f, -2.65f),
                 new Vector3(1.55f, 0.03f, 1.35f),
-                new Color(0.36f, 0.08f, 0.09f),
+                new Color(0.22f, 0.075f, 0.065f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Rug Stain",
+                room,
+                new Vector3(0.28f, 0.033f, -2.48f),
+                new Vector3(0.62f, 0.012f, 0.42f),
+                new Color(0.085f, 0.055f, 0.042f),
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Exit Door",
@@ -147,6 +170,115 @@ namespace BarPromenade
                 new Vector3(1.55f, 2.30f, 0.12f),
                 DarkWood,
                 false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Exit Door Patch",
+                room,
+                new Vector3(-0.26f, 1.22f, -3.785f),
+                new Vector3(0.54f, 0.72f, 0.025f),
+                new Color(0.21f, 0.125f, 0.072f),
+                false);
+        }
+
+        private static void BuildPracticalFixtures(
+            Transform room)
+        {
+            Vector3 mainBulb =
+                HomeInteriorAtmosphere.MainEmitterPosition;
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Main Lamp Shade",
+                room,
+                mainBulb + Vector3.up * 0.31f,
+                new Vector3(0.58f, 0.11f, 0.58f),
+                new Color(0.105f, 0.07f, 0.045f),
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Main Lamp Socket",
+                room,
+                mainBulb + Vector3.up * 0.17f,
+                new Vector3(0.11f, 0.07f, 0.11f),
+                new Color(0.075f, 0.055f, 0.040f),
+                false);
+            GameObject bulb = RuntimePrimitiveFactory.CreateCylinder(
+                "Home Main Dirty Bulb",
+                room,
+                mainBulb,
+                new Vector3(0.22f, 0.12f, 0.22f),
+                new Color(3.20f, 1.45f, 0.38f),
+                CityNightResources.EmissiveMaterial,
+                false);
+            AddPracticalHalo(
+                bulb.transform,
+                "Home Main Bulb Halo",
+                0.32f,
+                0.74f,
+                new Color(1f, 0.58f, 0.24f, 0.12f),
+                new Color(0.78f, 0.30f, 0.08f, 0.035f));
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Main Lamp Wire",
+                room,
+                new Vector3(
+                    mainBulb.x,
+                    2.78f,
+                    mainBulb.z),
+                new Vector3(0.028f, 0.31f, 0.028f),
+                new Color(0.045f, 0.038f, 0.032f),
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Main Lamp Ceiling Rose",
+                room,
+                new Vector3(
+                    mainBulb.x,
+                    3.16f,
+                    mainBulb.z),
+                new Vector3(0.22f, 0.055f, 0.22f),
+                new Color(0.075f, 0.055f, 0.040f),
+                false);
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Bathroom Cold Fixture",
+                room,
+                HomeInteriorAtmosphere.BathroomEmitterPosition +
+                new Vector3(0f, 0.04f, 0.065f),
+                new Vector3(1.00f, 0.18f, 0.10f),
+                new Color(0.14f, 0.17f, 0.16f),
+                false);
+            GameObject coldTube = RuntimePrimitiveFactory.CreateBox(
+                "Home Bathroom Cold Tube",
+                room,
+                HomeInteriorAtmosphere.BathroomEmitterPosition,
+                new Vector3(0.80f, 0.09f, 0.035f),
+                new Color(1.35f, 2.40f, 2.20f),
+                CityNightResources.EmissiveMaterial,
+                false);
+            AddPracticalHalo(
+                coldTube.transform,
+                "Home Bathroom Tube Halo",
+                0.38f,
+                0.82f,
+                new Color(0.55f, 0.82f, 0.80f, 0.10f),
+                new Color(0.20f, 0.52f, 0.52f, 0.028f));
+        }
+
+        private static void AddPracticalHalo(
+            Transform emitter,
+            string haloName,
+            float innerSize,
+            float outerSize,
+            Color innerColor,
+            Color outerColor)
+        {
+            GameObject haloObject = new GameObject(haloName);
+            haloObject.transform.SetParent(emitter.parent, false);
+            haloObject.transform.localPosition =
+                emitter.localPosition;
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                innerSize,
+                outerSize,
+                innerColor,
+                outerColor);
         }
 
         private static void BuildFurniture(
@@ -175,6 +307,9 @@ namespace BarPromenade
                 case HomeFurnitureKind.Bookcase:
                     BuildBookcase(room, center, bounds);
                     break;
+                case HomeFurnitureKind.CameraCornerJunk:
+                    BuildCameraCornerJunk(room, center, bounds);
+                    break;
             }
         }
 
@@ -186,32 +321,45 @@ namespace BarPromenade
             RuntimePrimitiveFactory.CreateBox(
                 "Home Bed Frame",
                 room,
-                center + (Vector3.up * 0.28f),
+                center + (Vector3.up * 0.22f),
                 new Vector3(
                     bounds.width,
-                    0.48f,
+                    0.38f,
                     bounds.height),
                 DarkWood);
             RuntimePrimitiveFactory.CreateBox(
-                "Home Bed Blanket",
+                "Home Bed Mattress",
                 room,
-                center + (Vector3.up * 0.57f),
+                center + (Vector3.up * 0.47f),
                 new Vector3(
                     bounds.width - 0.16f,
-                    0.16f,
+                    0.18f,
                     bounds.height - 0.18f),
-                Fabric,
+                DirtyLinen,
                 false);
+            GameObject blanket = RuntimePrimitiveFactory.CreateBox(
+                "Home Bed Crooked Blanket",
+                room,
+                center +
+                new Vector3(0.24f, 0.61f, 0.10f),
+                new Vector3(
+                    bounds.width * 0.62f,
+                    0.10f,
+                    bounds.height * 0.82f),
+                new Color(0.17f, 0.255f, 0.23f),
+                false);
+            blanket.transform.localRotation =
+                Quaternion.Euler(0f, 5f, -2f);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Pillow",
                 room,
                 center +
                 new Vector3(
                     -bounds.width * 0.28f,
-                    0.71f,
+                    0.64f,
                     0f),
                 new Vector3(0.62f, 0.18f, 1.05f),
-                new Color(0.72f, 0.68f, 0.58f),
+                new Color(0.47f, 0.43f, 0.34f),
                 false);
         }
 
@@ -228,7 +376,7 @@ namespace BarPromenade
                     bounds.width,
                     0.92f,
                     bounds.height),
-                new Color(0.25f, 0.28f, 0.27f));
+                new Color(0.16f, 0.18f, 0.16f));
             RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Top",
                 room,
@@ -248,7 +396,46 @@ namespace BarPromenade
                     1.05f,
                     0f),
                 new Vector3(0.85f, 0.06f, 0.55f),
-                new Color(0.50f, 0.57f, 0.56f),
+                new Color(0.32f, 0.38f, 0.36f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Kitchen Broken Door",
+                room,
+                center +
+                new Vector3(
+                    -bounds.width * 0.30f,
+                    0.43f,
+                    -bounds.height * 0.51f),
+                new Vector3(
+                    bounds.width * 0.24f,
+                    0.70f,
+                    0.055f),
+                new Color(0.12f, 0.14f, 0.12f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Old Refrigerator",
+                room,
+                center +
+                new Vector3(
+                    -bounds.width * 0.38f,
+                    0.93f,
+                    0.02f),
+                new Vector3(
+                    bounds.width * 0.22f,
+                    1.82f,
+                    bounds.height * 0.88f),
+                new Color(0.30f, 0.31f, 0.25f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Refrigerator Handle",
+                room,
+                center +
+                new Vector3(
+                    -bounds.width * 0.29f,
+                    1.12f,
+                    -bounds.height * 0.47f),
+                new Vector3(0.055f, 0.52f, 0.055f),
+                new Color(0.12f, 0.12f, 0.105f),
                 false);
         }
 
@@ -258,12 +445,12 @@ namespace BarPromenade
             Rect bounds)
         {
             RuntimePrimitiveFactory.CreateBox(
-                "Home Sofa",
+                "Home Sofa Base",
                 room,
-                center + (Vector3.up * 0.48f),
+                center + (Vector3.up * 0.35f),
                 new Vector3(
                     bounds.width,
-                    0.74f,
+                    0.56f,
                     bounds.height),
                 Fabric);
             RuntimePrimitiveFactory.CreateBox(
@@ -272,13 +459,38 @@ namespace BarPromenade
                 center +
                 new Vector3(
                     bounds.width * 0.38f,
-                    1.02f,
+                    0.94f,
                     0f),
                 new Vector3(
                     0.25f,
-                    1.18f,
+                    1.08f,
                     bounds.height),
                 Fabric);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Sofa Sunken Cushion",
+                room,
+                center +
+                new Vector3(
+                    -bounds.width * 0.08f,
+                    0.67f,
+                    0f),
+                new Vector3(
+                    bounds.width * 0.70f,
+                    0.16f,
+                    bounds.height * 0.78f),
+                new Color(0.18f, 0.235f, 0.20f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Sofa Tear",
+                room,
+                center +
+                new Vector3(
+                    -bounds.width * 0.43f,
+                    0.75f,
+                    bounds.height * 0.18f),
+                new Vector3(0.025f, 0.36f, 0.48f),
+                new Color(0.33f, 0.25f, 0.16f),
+                false);
         }
 
         private static void BuildTable(
@@ -287,7 +499,7 @@ namespace BarPromenade
             Rect bounds)
         {
             RuntimePrimitiveFactory.CreateBox(
-                "Home Table",
+                "Home Scarred Table",
                 room,
                 center + (Vector3.up * 0.82f),
                 new Vector3(
@@ -296,10 +508,14 @@ namespace BarPromenade
                     bounds.height),
                 Trim);
             RuntimePrimitiveFactory.CreateBox(
-                "Home Table Base",
+                "Home Table Base Crooked",
                 room,
-                center + (Vector3.up * 0.40f),
-                new Vector3(0.24f, 0.80f, 0.24f),
+                center +
+                new Vector3(
+                    -bounds.width * 0.10f,
+                    0.40f,
+                    bounds.height * 0.08f),
+                new Vector3(0.28f, 0.80f, 0.28f),
                 DarkWood);
         }
 
@@ -309,75 +525,76 @@ namespace BarPromenade
             Rect bounds)
         {
             RuntimePrimitiveFactory.CreateBox(
-                "Home Bookcase",
+                "Home Battered Cabinet",
                 room,
-                center + (Vector3.up * 1.20f),
+                center +
+                Vector3.up *
+                (BookcaseDressingSurfaceHeight * 0.5f),
                 new Vector3(
                     bounds.width,
-                    2.35f,
+                    BookcaseDressingSurfaceHeight,
                     bounds.height),
                 DarkWood);
-            for (int shelf = 0; shelf < 3; shelf++)
+            for (int shelf = 0; shelf < 2; shelf++)
             {
                 RuntimePrimitiveFactory.CreateBox(
-                    $"Home Books {shelf + 1}",
+                    $"Home Cabinet Shelf {shelf + 1}",
                     room,
                     center +
                     new Vector3(
                         -0.05f,
-                        0.46f + shelf * 0.64f,
+                        0.46f + shelf * 0.62f,
                         -bounds.height * 0.43f),
                     new Vector3(
                         bounds.width * 0.72f,
-                        0.34f,
+                        0.10f,
                         0.08f),
-                    shelf % 2 == 0
-                        ? new Color(0.58f, 0.20f, 0.14f)
-                        : new Color(0.20f, 0.46f, 0.42f),
+                    Trim,
                     false);
             }
         }
 
-        private static void BuildLighting(
+        private static void BuildCameraCornerJunk(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            Vector3 center,
+            Rect bounds)
         {
-            Vector3[] positions =
-            {
-                new Vector3(-2.40f, plan.RoomHeight - 0.38f, 0.75f),
-                new Vector3(2.20f, plan.RoomHeight - 0.38f, -0.45f)
-            };
-            for (int index = 0; index < positions.Length; index++)
-            {
-                RuntimePrimitiveFactory.CreateCylinder(
-                    $"Home Lamp Shade {index + 1}",
-                    room,
-                    positions[index],
-                    new Vector3(0.52f, 0.13f, 0.52f),
-                    DarkWood,
-                    false);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    $"Home Lamp Bulb {index + 1}",
-                    room,
-                    positions[index] - (Vector3.up * 0.18f),
-                    new Vector3(0.18f, 0.16f, 0.18f),
-                    WarmLight,
-                    CityNightResources.EmissiveMaterial,
-                    false);
-
-                GameObject lightObject =
-                    new GameObject($"Home Practical Light {index + 1}");
-                lightObject.transform.SetParent(room, false);
-                lightObject.transform.localPosition =
-                    positions[index] - (Vector3.up * 0.20f);
-                Light light = lightObject.AddComponent<Light>();
-                light.type = LightType.Point;
-                light.color =
-                    new Color(1f, 0.57f, 0.30f);
-                light.intensity = 1.55f;
-                light.range = 5.4f;
-                light.shadows = LightShadows.None;
-            }
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Camera Corner Junk Base",
+                room,
+                center + Vector3.up * 0.22f,
+                new Vector3(
+                    bounds.width,
+                    0.44f,
+                    bounds.height),
+                new Color(0.10f, 0.055f, 0.035f));
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Camera Corner Broken Wardrobe Door",
+                room,
+                center +
+                new Vector3(0.10f, 0.50f, 0.18f),
+                new Vector3(
+                    bounds.width * 0.78f,
+                    0.12f,
+                    bounds.height * 0.68f),
+                new Color(0.19f, 0.105f, 0.060f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Camera Corner Suitcase",
+                room,
+                center +
+                new Vector3(0.22f, 0.69f, -0.36f),
+                new Vector3(0.72f, 0.24f, 0.62f),
+                new Color(0.16f, 0.12f, 0.075f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Camera Corner Old Coat",
+                room,
+                center +
+                new Vector3(-0.24f, 0.86f, 0.38f),
+                new Vector3(0.78f, 0.10f, 0.72f),
+                new Color(0.105f, 0.14f, 0.13f),
+                false);
         }
     }
 }
