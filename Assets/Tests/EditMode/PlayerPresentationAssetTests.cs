@@ -9,7 +9,7 @@ namespace BarPromenade.Tests
     public sealed class PlayerPresentationAssetTests
     {
         private const string ExpressionAtlasSha256 =
-            "AA3D280504D08E44782DD5166A5657D6AA789522F9EA5667E23D1114C3027E5C";
+            "34199698E134047C35E935BEF415925D1BFCBAB9672DF07B200BA8E4159C80A0";
         private const int NeutralExpression =
             (int)PlayerFacialExpression.Neutral;
 
@@ -114,6 +114,50 @@ namespace BarPromenade.Tests
                 new Vector2Int(34, 27),
                 new Vector2Int(33, 28),
                 new Vector2Int(34, 28)
+            }
+        };
+
+        // These authored skin/bandage pixels were transparent before the
+        // lower-arm chroma-key repair. Coordinates use top-left PNG space.
+        private static readonly Vector2Int[][] LowerArmRepairSamples =
+        {
+            new[]
+            {
+                new Vector2Int(18, 55),
+                new Vector2Int(44, 56)
+            },
+            new[]
+            {
+                new Vector2Int(20, 54),
+                new Vector2Int(40, 56)
+            },
+            new[]
+            {
+                new Vector2Int(32, 56)
+            },
+            new[]
+            {
+                new Vector2Int(19, 57),
+                new Vector2Int(42, 56)
+            },
+            new[]
+            {
+                new Vector2Int(18, 56),
+                new Vector2Int(45, 55)
+            },
+            new[]
+            {
+                new Vector2Int(21, 55),
+                new Vector2Int(41, 56)
+            },
+            new[]
+            {
+                new Vector2Int(29, 56)
+            },
+            new[]
+            {
+                new Vector2Int(22, 56),
+                new Vector2Int(44, 56)
             }
         };
 
@@ -393,6 +437,83 @@ namespace BarPromenade.Tests
                 Object.DestroyImmediate(reference);
                 Object.DestroyImmediate(parts);
                 Object.DestroyImmediate(expressions);
+            }
+        }
+
+        [Test]
+        public void LowerArmRepairs_AreOpaqueInEveryDirectionalFrame()
+        {
+            Texture2D reference = LoadReadableCopy(
+                Resources.Load<Texture2D>(
+                    PlayerSpriteRig.ReferenceAtlasResourcePath));
+            Texture2D parts = LoadReadableCopy(
+                Resources.Load<Texture2D>(
+                    PlayerSpriteRig.AtlasResourcePath));
+
+            try
+            {
+                Color32[] referencePixels = reference.GetPixels32();
+                Color32[] partPixels = parts.GetPixels32();
+
+                for (int directionIndex = 0;
+                     directionIndex < PlayerSpriteRig.DirectionCount;
+                     directionIndex++)
+                {
+                    Vector2Int[] samples =
+                        LowerArmRepairSamples[directionIndex];
+                    for (int sampleIndex = 0;
+                         sampleIndex < samples.Length;
+                         sampleIndex++)
+                    {
+                        Vector2Int sample = samples[sampleIndex];
+                        Color32 expected = GetTopLeftPixel(
+                            referencePixels,
+                            reference.width,
+                            reference.height,
+                            (PlayerViewDirection)directionIndex,
+                            sample.x,
+                            sample.y);
+                        Assert.That(
+                            expected.a,
+                            Is.EqualTo(byte.MaxValue),
+                            $"Direction {directionIndex} lower arm is " +
+                            $"transparent at ({sample.x}, {sample.y}).");
+
+                        int localY =
+                            PlayerSpriteRig.FrameHeight - 1 - sample.y;
+                        Color32 left = GetAtlasCellPixel(
+                            partPixels,
+                            parts.width,
+                            (int)PlayerPuppetPart.LeftLowerArm,
+                            directionIndex,
+                            sample.x,
+                            localY);
+                        Color32 right = GetAtlasCellPixel(
+                            partPixels,
+                            parts.width,
+                            (int)PlayerPuppetPart.RightLowerArm,
+                            directionIndex,
+                            sample.x,
+                            localY);
+                        Color32 actual = left.a != 0 ? left : right;
+
+                        Assert.That(
+                            actual.a,
+                            Is.EqualTo(byte.MaxValue),
+                            $"Direction {directionIndex} runtime lower-arm " +
+                            $"layers omit ({sample.x}, {sample.y}).");
+                        Assert.That(
+                            ColorsEqual(actual, expected),
+                            Is.True,
+                            $"Direction {directionIndex} runtime lower-arm " +
+                            $"pixel differs at ({sample.x}, {sample.y}).");
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(reference);
+                Object.DestroyImmediate(parts);
             }
         }
 

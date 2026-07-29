@@ -85,5 +85,50 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(combined);
             }
         }
+
+        [Test]
+        public void CombinedBoxesCanShareTheirMeshWithAStaticCollider()
+        {
+            Bounds[] boxes =
+            {
+                new Bounds(
+                    new Vector3(-1f, 0.08f, 0f),
+                    new Vector3(2f, 0.16f, 1f)),
+                new Bounds(
+                    new Vector3(1f, 0.08f, 0f),
+                    new Vector3(2f, 0.16f, 1f))
+            };
+            GameObject combined =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Walkable Combined",
+                    null,
+                    boxes,
+                    Color.gray,
+                    true);
+
+            try
+            {
+                Mesh renderMesh =
+                    combined.GetComponent<MeshFilter>().sharedMesh;
+                MeshCollider meshCollider =
+                    combined.GetComponent<MeshCollider>();
+
+                Assert.That(meshCollider, Is.Not.Null);
+                Assert.That(
+                    combined.GetComponents<Collider>(),
+                    Has.Length.EqualTo(1));
+                Assert.That(
+                    meshCollider.sharedMesh,
+                    Is.SameAs(renderMesh));
+                Assert.That(meshCollider.convex, Is.False);
+                Assert.That(
+                    meshCollider.bounds.max.y,
+                    Is.EqualTo(0.16f).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(combined);
+            }
+        }
     }
 }

@@ -856,7 +856,7 @@ namespace BarPromenade.Tests
             follow.Snap();
             yield return null;
 
-            Vector3 focusPoint = player.transform.position + Vector3.up * 1.1f;
+            Vector3 focusPoint = player.transform.position + Vector3.up * 1.4f;
             Vector3 playerToCamera = Vector3.ProjectOnPlane(
                 camera.transform.position - player.transform.position,
                 Vector3.up).normalized;
@@ -975,7 +975,7 @@ namespace BarPromenade.Tests
             follow.Initialize(camera, player.transform, false);
             yield return null;
 
-            Vector3 focusPoint = player.transform.position + Vector3.up * 1.1f;
+            Vector3 focusPoint = player.transform.position + Vector3.up * 1.4f;
             float unobstructedDistance = Vector3.Distance(
                 focusPoint,
                 camera.transform.position);
@@ -1037,7 +1037,7 @@ namespace BarPromenade.Tests
         }
 
         [UnityTest]
-        public IEnumerator CameraProfiles_UseMuchCloserExteriorAndInteriorFraming()
+        public IEnumerator CameraProfiles_KeepPlayerLowInExteriorAndInteriorFraming()
         {
             Camera exteriorCamera = CreateCamera(Vector3.zero);
             GameObject exteriorPlayer =
@@ -1053,7 +1053,7 @@ namespace BarPromenade.Tests
                 false);
 
             Vector3 exteriorFocus =
-                exteriorPlayer.transform.position + Vector3.up * 1.1f;
+                exteriorPlayer.transform.position + Vector3.up * 1.4f;
             Assert.That(
                 Vector3.Distance(
                     exteriorFocus,
@@ -1062,6 +1062,12 @@ namespace BarPromenade.Tests
             Assert.That(
                 exteriorCamera.fieldOfView,
                 Is.EqualTo(53f).Within(0.01f));
+            Assert.That(
+                exteriorCamera.WorldToViewportPoint(
+                    exteriorPlayer.transform.position + Vector3.up).y,
+                Is.InRange(0.3f, 0.42f),
+                "The exterior profile must compose the player's center " +
+                "below the middle of the frame.");
 
             Camera interiorCamera = CreateCamera(Vector3.zero);
             GameObject interiorPlayer =
@@ -1077,7 +1083,7 @@ namespace BarPromenade.Tests
                 true);
 
             Vector3 interiorFocus =
-                interiorPlayer.transform.position + Vector3.up * 1.05f;
+                interiorPlayer.transform.position + Vector3.up * 1.3f;
             Assert.That(
                 Vector3.Distance(
                     interiorFocus,
@@ -1086,6 +1092,12 @@ namespace BarPromenade.Tests
             Assert.That(
                 interiorCamera.fieldOfView,
                 Is.EqualTo(57f).Within(0.01f));
+            Assert.That(
+                interiorCamera.WorldToViewportPoint(
+                    interiorPlayer.transform.position + Vector3.up).y,
+                Is.InRange(0.3f, 0.42f),
+                "The interior profile must compose the player's center " +
+                "below the middle of the frame.");
             yield return null;
         }
 
@@ -1106,7 +1118,7 @@ namespace BarPromenade.Tests
             yield return null;
 
             Vector3 targetFocus =
-                player.transform.position + Vector3.up * 1.1f;
+                player.transform.position + Vector3.up * 1.4f;
             float firstFrameProgress =
                 follow.CurrentFocusPoint.x - initialFocus.x;
             Assert.That(
@@ -1146,7 +1158,7 @@ namespace BarPromenade.Tests
             yield return null;
 
             Vector3 teleportedFocus =
-                player.transform.position + Vector3.up * 1.1f;
+                player.transform.position + Vector3.up * 1.4f;
             Assert.That(
                 Vector3.Distance(
                     follow.CurrentFocusPoint,

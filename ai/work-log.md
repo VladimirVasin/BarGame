@@ -2,6 +2,82 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-29 — Opaque player hands
+
+- Compared all eight runtime directions against the locked player turntable
+  and restored 439 lower-arm skin/bandage pixels that the original chroma-key
+  pass had made transparent.
+- Extended the deterministic atlas builder with a lower-arm capsule repair
+  constrained to skin-colored source pixels, then rebuilt the reference and
+  nine-part/body-expression atlases without changing facial artwork.
+- Added EditMode regression samples covering the repaired lower arms in every
+  direction and verifying that the runtime lower-arm layers retain the exact
+  reference colors.
+
+Verification:
+
+- Deterministic atlas builder migration: 439 lower-arm repairs; immediate
+  rerun: 0 repairs with stable output.
+- Runtime/EditModeTests .NET build: 0 errors, 0 warnings.
+- Focused player-atlas EditMode checks: 9/9 passed.
+- Focused player-rig PlayMode checks: 15/15 passed.
+- Visual comparison of all eight corrected frames against the locked source:
+  hands and bandage are opaque without magenta-background spill.
+
+## 2026-07-29 — Bar dust particle error cleanup
+
+- Configured all three BarInterior dust velocity axes as
+  `TwoConstants` before enabling Velocity over Lifetime. The zero Z range now
+  matches the randomized X/Y modes instead of leaving Unity's default
+  `Constant` curve and emitting a native validation error continuously.
+- Added a focused PlayMode regression that runs the real dust system for a
+  frame, checks the three curve modes and rejects unexpected Unity logs.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused dust-velocity PlayMode check: 1/1 passed.
+- BarInterior scene bootstrap PlayMode check: 1/1 passed.
+- Both Unity logs contained zero instances of
+  `Particle Velocity curves must all be in the same mode`.
+
+## 2026-07-29 — Lower third-person camera framing
+
+- Raised the exterior/interior chase-camera focus heights from `1.1 m / 1.05 m`
+  to `1.4 m / 1.3 m`, placing the player below frame center without changing
+  distance, FOV, orbit damping or collision handling.
+- Extended both camera-profile PlayMode regressions with explicit viewport
+  composition bounds and updated nearby focus, collision and teleport checks.
+
+Verification:
+
+- Runtime and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused camera-framing PlayMode check: 1/1 passed.
+- Full player/camera presentation PlayMode checks: 15/15 passed.
+- `git diff --check` passed.
+
+## 2026-07-29 — Physically raised city walking surfaces
+
+- Kept the authored height differences and added static mesh colliders to the
+  same chunked street and park-path geometry used for rendering.
+- Made the park lawn a box-collider surface and the central octagonal plaza a
+  shared-mesh collider surface. The existing `0.28 m` controller step now
+  climbs the `0.04 m` lawn-to-path rise instead of passing through the path.
+- Reverted the provisional whole-puppet pixel lift; the correction now belongs
+  to world collision, preserving the grounded atlas and shadow contracts.
+- Added factory coverage for optional collidable combined meshes and a City
+  PlayMode regression that settles on the lawn, crosses the path edge and
+  verifies the controller rises to its physical top.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Focused primitive-factory EditMode checks: 3/3 passed.
+- City presentation and walkable-surface PlayMode checks: 3/3 passed.
+- Nearby city park/marker presentation check: 1/1 passed.
+- `git diff --check` passed.
+
 ## 2026-07-29 — Structured session diagnostics
 
 - Added a fail-safe NDJSON session logger with stable envelopes, typed fields,

@@ -117,7 +117,24 @@ namespace BarPromenade
                 parent,
                 boxes,
                 color,
-                null);
+                null,
+                false);
+        }
+
+        public static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            bool collider)
+        {
+            return CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                null,
+                collider);
         }
 
         public static GameObject CreateCombinedBoxes(
@@ -126,6 +143,23 @@ namespace BarPromenade
             IReadOnlyList<Bounds> boxes,
             Color color,
             Material sharedMaterial)
+        {
+            return CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                sharedMaterial,
+                false);
+        }
+
+        public static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            Material sharedMaterial,
+            bool collider)
         {
             if (boxes == null)
             {
@@ -197,10 +231,17 @@ namespace BarPromenade
                 true,
                 false);
             combinedMesh.RecalculateBounds();
-            combinedMesh.UploadMeshData(true);
             meshFilter.sharedMesh = combinedMesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(combinedMesh);
+            if (collider)
+            {
+                MeshCollider surfaceCollider =
+                    result.AddComponent<MeshCollider>();
+                surfaceCollider.sharedMesh = combinedMesh;
+            }
+
+            combinedMesh.UploadMeshData(!collider);
             return result;
         }
 
@@ -243,6 +284,7 @@ namespace BarPromenade
                 {
                     if (Application.isPlaying)
                     {
+                        primitiveCollider.enabled = false;
                         Object.Destroy(primitiveCollider);
                     }
                     else
@@ -358,7 +400,7 @@ namespace BarPromenade
                 triangles = triangles
             };
             lowPolyCylinderMesh.RecalculateBounds();
-            lowPolyCylinderMesh.UploadMeshData(true);
+            lowPolyCylinderMesh.UploadMeshData(false);
             return lowPolyCylinderMesh;
         }
 

@@ -4,7 +4,8 @@
 The script is intentionally deterministic:
 
 * existing non-transparent pixels in PlayerDirectionalAtlas.png are preserved;
-* only the head/face pixels lost by the original chroma-key pass are restored;
+* only head/face and lower-arm pixels lost by the original chroma-key pass
+  are restored;
 * every visible source pixel is assigned to a body or jointed limb layer;
 * the nine neutral layers composite back to the corrected reference frame.
 * facial variants preserve the complete body layer and only recolor explicit,
@@ -86,6 +87,8 @@ HEAD_REPAIR_DIRECTIONS = frozenset((0, 1, 2, 3, 5, 6, 7))
 EXPRESSION_FACE_DIRECTIONS = frozenset((0, 1, 2, 6, 7))
 EXPECTED_SCAN_REPAIRS = (50, 53, 55, 13, 0, 13, 46, 55)
 EXPECTED_EXPLICIT_REPAIRS = (0, 12, 0, 0, 0, 1, 0, 12)
+EXPECTED_LOWER_ARM_REPAIRS = (62, 54, 48, 51, 59, 48, 53, 64)
+LOWER_ARM_REPAIR_RADIUS = 5.8
 
 # Extra turntable-authored head pixels outside the original y=12..24 facial
 # scan. The front diagonals need their neck/jaw pixels, FrontLeft needs two
@@ -317,6 +320,21 @@ def write_png_atomic(image: Image.Image, destination: Path) -> None:
     os.replace(temporary, destination)
 
 
+def is_skin_colored_source_pixel(
+    red: int,
+    green: int,
+    blue: int,
+) -> bool:
+    return (
+        red >= 50
+        and green >= 25
+        and blue >= 20
+        and red >= green + 5
+        and green >= blue - 12
+        and red >= blue + 8
+    )
+
+
 def restore_face_pixels(
     turntable: Image.Image,
     reference: Image.Image,
@@ -351,14 +369,7 @@ def restore_face_pixels(
 
             for x in range(target_width):
                 red, green, blue = tile_pixels[x, y]
-                if (
-                    red >= 50
-                    and green >= 25
-                    and blue >= 20
-                    and red >= green + 5
-                    and green >= blue - 12
-                    and red >= blue + 8
-                ):
+                if is_skin_colored_source_pixel(red, green, blue):
                     skin_rows[y].append(x)
 
         repaired = 0
@@ -501,6 +512,90 @@ def distance_to_segment(
     nearest_x = ax + t * delta_x
     nearest_y = ay + t * delta_y
     return math.hypot(px - nearest_x, py - nearest_y)
+
+
+def restore_lower_arm_pixels(
+    turntable: Image.Image,
+    reference: Image.Image,
+) -> tuple[Image.Image, tuple[int, ...]]:
+    corrected = reference.copy().convert("RGBA")
+    before = list(corrected.get_flattened_data())
+    changed_indices: set[int] = set()
+    counts: list[int] = []
+
+    for direction, (source_box, target_width, target_x) in enumerate(
+        SOURCE_SPECS
+    ):
+        tile = turntable.crop(source_box).resize(
+            (target_width, 84),
+            Image.Resampling.NEAREST,
+        ).convert("RGB")
+        repair_coordinates: set[tuple[int, int]] = set()
+        left_arm, right_arm, _, _ = POSES[direction]
+
+        for arm in (left_arm, right_arm):
+            elbow = arm[1]
+            hand = arm[2]
+            for y in range(FRAME_HEIGHT):
+                for x in range(FRAME_WIDTH):
+                    if distance_to_segment(
+                        (x, y),
+                        elbow,
+                        hand,
+                    ) > LOWER_ARM_REPAIR_RADIUS:
+                        continue
+
+                    atlas_x = direction * FRAME_WIDTH + x
+                    if corrected.getpixel((atlas_x, y))[3] != 0:
+                        continue
+
+                    tile_x = x - target_x
+                    tile_y = y - 8
+                    if (
+                        tile_x < 0
+                        or tile_x >= target_width
+                        or tile_y < 0
+                        or tile_y >= 84
+                    ):
+                        continue
+
+                    pixel = tile.getpixel((tile_x, tile_y))
+                    if is_skin_colored_source_pixel(*pixel):
+                        repair_coordinates.add((x, y))
+
+        for x, y in sorted(repair_coordinates):
+            atlas_x = direction * FRAME_WIDTH + x
+            red, green, blue = tile.getpixel((x - target_x, y - 8))
+            corrected.putpixel(
+                (atlas_x, y),
+                (red, green, blue, 255),
+            )
+            changed_indices.add(y * corrected.width + atlas_x)
+
+        repaired = len(repair_coordinates)
+        expected = EXPECTED_LOWER_ARM_REPAIRS[direction]
+        if repaired not in (0, expected):
+            raise RuntimeError(
+                "Unexpected lower-arm repair count for direction "
+                f"{direction}: {repaired}; expected {expected} or 0 "
+                "for an already-corrected frame."
+            )
+        counts.append(repaired)
+
+    after = list(corrected.get_flattened_data())
+    for index, (old_pixel, new_pixel) in enumerate(zip(before, after)):
+        if index in changed_indices:
+            if old_pixel[3] != 0 or new_pixel[3] != 255:
+                raise RuntimeError(
+                    "Lower-arm repair changed an invalid pixel."
+                )
+            continue
+        if old_pixel != new_pixel:
+            raise RuntimeError(
+                "Lower-arm repair modified a pixel outside its mask."
+            )
+
+    return corrected, tuple(counts)
 
 
 def body_score(
@@ -1232,14 +1327,25 @@ def main() -> None:
             f"Reference atlas must be 512x96, got {reference.size}."
         )
 
-    corrected, repairs = restore_face_pixels(turntable, reference)
+    corrected, face_repairs = restore_face_pixels(turntable, reference)
+    corrected, lower_arm_repairs = restore_lower_arm_pixels(
+        turntable,
+        corrected,
+    )
     parts, counts = build_parts_atlas(corrected)
     expressions = build_body_expressions_atlas(parts)
     write_png_atomic(corrected, args.reference)
     write_png_atomic(parts, args.parts)
     write_png_atomic(expressions, args.expressions)
 
-    print(f"face repairs: {repairs} (total {sum(repairs)})")
+    print(
+        f"face repairs: {face_repairs} "
+        f"(total {sum(face_repairs)})"
+    )
+    print(
+        f"lower-arm repairs: {lower_arm_repairs} "
+        f"(total {sum(lower_arm_repairs)})"
+    )
     for direction, direction_counts in enumerate(counts):
         print(f"direction {direction}: {direction_counts}")
     print(f"reference: {args.reference}")

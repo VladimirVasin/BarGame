@@ -60,7 +60,7 @@ Assets/
       World/         city plus validated bar layout/zone/path plans and builders
         CityDistrict.cs          district, land-use, park and gate data
         CityTravelDistance.cs    weighted road/park-path distance between bars
-        RoadWalkableArea.cs      indexed union of streets, aprons and park lawn
+        RoadWalkableArea.cs      XZ union; surface colliders own walkable height
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles

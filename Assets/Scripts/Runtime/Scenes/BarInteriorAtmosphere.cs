@@ -219,9 +219,11 @@ namespace BarPromenade
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 Dust.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.y = new ParticleSystem.MinMaxCurve(0.015f, 0.045f);
+            velocity.enabled = false;
             velocity.x = new ParticleSystem.MinMaxCurve(-0.02f, 0.02f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0.015f, 0.045f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.enabled = true;
 
             ParticleSystemRenderer renderer =
                 Dust.GetComponent<ParticleSystemRenderer>();

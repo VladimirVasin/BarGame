@@ -269,6 +269,218 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator City_PlayerStepsFromParkLawnOntoRaisedPath()
+        {
+            CityGameRoot city = null;
+            yield return LoadSceneAndWaitForRoot<CityGameRoot>(
+                SceneIds.City,
+                root => city = root);
+            yield return null;
+
+            Assert.That(city.IsInitialized, Is.True);
+            Transform roadNetwork =
+                city.World.Root.transform.Find("Road Network");
+            Assert.That(roadNetwork, Is.Not.Null);
+            MeshCollider[] roadColliders =
+                roadNetwork.GetComponentsInChildren<MeshCollider>(true);
+            int streetColliderCount = 0;
+            int parkPathColliderCount = 0;
+            for (int index = 0;
+                 index < roadColliders.Length;
+                 index++)
+            {
+                MeshCollider roadCollider = roadColliders[index];
+                if (roadCollider.name == "Street Surfaces")
+                {
+                    streetColliderCount++;
+                }
+                else if (roadCollider.name == "Park Paths")
+                {
+                    parkPathColliderCount++;
+                }
+                else
+                {
+                    continue;
+                }
+
+                Renderer renderer =
+                    roadCollider.GetComponent<Renderer>();
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(
+                    roadCollider.sharedMesh,
+                    Is.SameAs(
+                        roadCollider.GetComponent<MeshFilter>()
+                            .sharedMesh));
+                Assert.That(
+                    roadCollider.bounds.max.y,
+                    Is.EqualTo(renderer.bounds.max.y)
+                        .Within(0.001f));
+            }
+
+            Assert.That(streetColliderCount, Is.GreaterThan(0));
+            Assert.That(parkPathColliderCount, Is.GreaterThan(0));
+
+            Transform lawn =
+                city.World.ParkRoot.transform.Find("Park Lawn");
+            Transform plaza = city.World.ParkRoot.transform.Find(
+                "Park Central Plaza");
+            Assert.That(lawn, Is.Not.Null);
+            Assert.That(plaza, Is.Not.Null);
+            BoxCollider lawnCollider =
+                lawn.GetComponent<BoxCollider>();
+            MeshCollider plazaCollider =
+                plaza.GetComponent<MeshCollider>();
+            Assert.That(lawnCollider, Is.Not.Null);
+            Assert.That(plazaCollider, Is.Not.Null);
+            Assert.That(
+                plazaCollider.sharedMesh,
+                Is.SameAs(
+                    plaza.GetComponent<MeshFilter>().sharedMesh));
+
+            CharacterController controller =
+                city.Player.GameObject.GetComponent<
+                    CharacterController>();
+            Assert.That(controller, Is.Not.Null);
+
+            bool foundSample = false;
+            RoadEdge sampleEdge = default;
+            Vector3 sampleCenter = Vector3.zero;
+            for (int index = 0;
+                 index < city.Layout.RoadEdges.Count;
+                 index++)
+            {
+                RoadEdge edge = city.Layout.RoadEdges[index];
+                if (city.Layout.GetPathKind(edge) !=
+                    CityPathKind.ParkPath)
+                {
+                    continue;
+                }
+
+                Vector3 center =
+                    (city.Layout.GetNodeWorldPosition(edge.A) +
+                     city.Layout.GetNodeWorldPosition(edge.B)) *
+                    0.5f;
+                bool liesOnCentralCross =
+                    Mathf.Abs(
+                        center.x -
+                        city.Layout.Park.Center.x) < 0.01f ||
+                    Mathf.Abs(
+                        center.z -
+                        city.Layout.Park.Center.z) < 0.01f;
+                Vector3 centerOffset =
+                    center - city.Layout.Park.Center;
+                if (!liesOnCentralCross ||
+                    centerOffset.sqrMagnitude < 11f * 11f ||
+                    !city.Layout.Park.WalkableBounds.Contains(
+                        new Vector2(center.x, center.z)))
+                {
+                    continue;
+                }
+
+                foundSample = true;
+                sampleEdge = edge;
+                sampleCenter = center;
+                break;
+            }
+
+            Assert.That(
+                foundSample,
+                Is.True,
+                "The park needs a raised path sample away from its plaza.");
+
+            Vector3 perpendicular = sampleEdge.IsHorizontal
+                ? Vector3.forward
+                : Vector3.right;
+            float startOffset =
+                CityGenerationSettings.Default.RoadWidth * 0.5f +
+                controller.radius +
+                1.25f;
+            Vector3 lawnStart =
+                sampleCenter + perpendicular * startOffset;
+            Rect walkableBounds =
+                city.Layout.Park.WalkableBounds;
+            if (!walkableBounds.Contains(
+                    new Vector2(lawnStart.x, lawnStart.z)))
+            {
+                perpendicular = -perpendicular;
+                lawnStart =
+                    sampleCenter + perpendicular * startOffset;
+            }
+
+            Assert.That(
+                walkableBounds.Contains(
+                    new Vector2(lawnStart.x, lawnStart.z)),
+                Is.True);
+            Assert.That(
+                city.World.WalkableArea.Contains(
+                    lawnStart,
+                    controller.radius),
+                Is.True);
+            Assert.That(
+                0.08f - lawnCollider.bounds.max.y,
+                Is.LessThan(controller.stepOffset));
+
+            Physics.SyncTransforms();
+            RaycastHit[] lawnHits = Physics.RaycastAll(
+                lawnStart + Vector3.up * 3f,
+                Vector3.down,
+                6f);
+            Collider topSurface = null;
+            float topSurfaceY = float.NegativeInfinity;
+            for (int index = 0;
+                 index < lawnHits.Length;
+                 index++)
+            {
+                Collider hitCollider = lawnHits[index].collider;
+                if (hitCollider == null ||
+                    hitCollider.isTrigger ||
+                    hitCollider == controller ||
+                    hitCollider.bounds.max.y <= topSurfaceY)
+                {
+                    continue;
+                }
+
+                topSurface = hitCollider;
+                topSurfaceY = hitCollider.bounds.max.y;
+            }
+
+            Assert.That(
+                topSurface,
+                Is.SameAs(lawnCollider),
+                $"Expected a lawn start, but the highest surface was " +
+                $"'{topSurface?.name}' at y={topSurfaceY:0.###}.");
+
+            city.Player.Motor.enabled = false;
+            city.Player.Motor.Teleport(
+                lawnStart + Vector3.up);
+            Physics.SyncTransforms();
+            controller.Move(Vector3.down * 2f);
+            Physics.SyncTransforms();
+            Assert.That(
+                controller.transform.position.y,
+                Is.EqualTo(
+                    lawnCollider.bounds.max.y +
+                    controller.skinWidth)
+                    .Within(0.02f),
+                "The controller must first settle on the park lawn.");
+
+            for (int step = 0; step < 24; step++)
+            {
+                controller.Move(
+                    -perpendicular * 0.08f +
+                    Vector3.down * 0.02f);
+            }
+
+            Physics.SyncTransforms();
+            Assert.That(
+                controller.transform.position.y,
+                Is.EqualTo(0.08f + controller.skinWidth)
+                    .Within(0.02f),
+                "The controller must climb onto the raised park path " +
+                "instead of passing through it.");
+        }
+
+        [UnityTest]
         public IEnumerator BarInterior_DisablesExteriorFog()
         {
             GameSessionState.EnterBar("bar-night-smoke-test");

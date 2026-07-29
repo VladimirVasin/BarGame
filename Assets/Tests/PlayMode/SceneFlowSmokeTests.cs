@@ -526,7 +526,7 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.World.ParkRoot.GetComponentsInChildren<
                     Collider>(true),
                 Has.Length.EqualTo(
-                    cityRoot.Layout.Park.TreePositions.Count));
+                    cityRoot.Layout.Park.TreePositions.Count + 2));
 
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);

@@ -86,7 +86,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   transitions, input disable and teleport still stop planar motion
   immediately.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
-  `2.6 m / 53°` and `2.2 m / 57°` centered profiles. Orbit yaw and target
+  `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
+  points that compose the hero below frame center. Orbit yaw and target
   focus use deliberately weighty `0.20 s` and `0.18 s` damping; focus stays
   within `0.45 m` and snaps on jumps beyond `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only

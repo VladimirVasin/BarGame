@@ -44,6 +44,8 @@
 - Every turntable-authored head, face and neck pixel is fully opaque,
   including all four diagonal views. Chroma-key conversion must not infer
   magenta spill from the red channel alone because that removes skin tones.
+- Every turntable-authored lower-arm, bandage and hand pixel is fully opaque
+  in all eight views; the same skin-aware chroma-key rule applies there.
 
 The current puppet contains one static authored pose per direction and uses
 runtime sagittal joint rotation, bob and rock for walking. The sagittal axis is
@@ -67,7 +69,7 @@ positions while adding consistent idle/walk frames.
 
 - Locked source: `ArtSource/Player/PlayerDirectionalTurntable.png`.
 - Deterministic builder: `python tools/build-player-puppet-atlas.py`.
-- The builder restores only pixels lost from the face, derives the nine layers
-  and five body-expression rows, and fails unless the neutral composites,
-  exact facial edit whitelists, rear views, alpha and asymmetry contracts all
-  hold.
+- The builder restores only pixels lost from the head and lower arms, derives
+  the nine layers and five body-expression rows, and fails unless the neutral
+  composites, exact facial edit whitelists, rear views, alpha and asymmetry
+  contracts all hold.

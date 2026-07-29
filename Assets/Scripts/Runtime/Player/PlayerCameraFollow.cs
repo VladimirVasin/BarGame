@@ -14,13 +14,13 @@ namespace BarPromenade
         [SerializeField, Range(1f, 40f)] private float exteriorPitch = 14f;
         [SerializeField, Min(0.1f)] private float exteriorDistance = 2.6f;
         [SerializeField, Range(20f, 100f)] private float exteriorFieldOfView = 53f;
-        [SerializeField] private float exteriorFocusHeight = 1.1f;
+        [SerializeField] private float exteriorFocusHeight = 1.4f;
 
         [Header("Interior")]
         [SerializeField, Range(1f, 40f)] private float interiorPitch = 13f;
         [SerializeField, Min(0.1f)] private float interiorDistance = 2.2f;
         [SerializeField, Range(20f, 100f)] private float interiorFieldOfView = 57f;
-        [SerializeField] private float interiorFocusHeight = 1.05f;
+        [SerializeField] private float interiorFocusHeight = 1.3f;
 
         [Header("Motion")]
         [SerializeField, Min(0f)] private float yawSmoothTime = 0.2f;

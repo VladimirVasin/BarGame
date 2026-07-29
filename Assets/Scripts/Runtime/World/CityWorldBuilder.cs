@@ -166,12 +166,14 @@ namespace BarPromenade
                     "Street Surfaces",
                     chunk,
                     geometry.Streets,
-                    Asphalt);
+                    Asphalt,
+                    true);
                 BuildCombinedBoxesIfAny(
                     "Park Paths",
                     chunk,
                     geometry.ParkPaths,
-                    ParkPath);
+                    ParkPath,
+                    true);
                 BuildCombinedBoxesIfAny(
                     "Road Dashes",
                     chunk,
@@ -223,15 +225,18 @@ namespace BarPromenade
                 park,
                 center,
                 new Vector3(bounds.width, 0.08f, bounds.height),
-                ParkGrass,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
+                ParkGrass);
+            GameObject plaza = RuntimePrimitiveFactory.CreateCylinder(
                 "Park Central Plaza",
                 park,
                 plan.Center + (Vector3.up * 0.065f),
                 new Vector3(8.5f, 0.035f, 8.5f),
                 ParkPlaza,
                 false);
+            MeshCollider plazaCollider =
+                plaza.AddComponent<MeshCollider>();
+            plazaCollider.sharedMesh =
+                plaza.GetComponent<MeshFilter>().sharedMesh;
 
             var trunks = new List<Bounds>(plan.TreePositions.Count);
             var canopies = new List<Bounds>(plan.TreePositions.Count);
@@ -968,7 +973,8 @@ namespace BarPromenade
             string name,
             Transform parent,
             IReadOnlyList<Bounds> boxes,
-            Color color)
+            Color color,
+            bool collider = false)
         {
             if (boxes.Count == 0)
             {
@@ -979,7 +985,8 @@ namespace BarPromenade
                 name,
                 parent,
                 boxes,
-                color);
+                color,
+                collider);
         }
 
         private static Color Darken(Color color, float amount)

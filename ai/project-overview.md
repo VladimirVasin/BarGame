@@ -60,6 +60,9 @@ The vertical slice contains:
 - five readable districts: Old Town, Residential, Industrial, Nightlife and
   a central `4 x 4`-block park with lawn, plaza, trees, benches, hedges and
   four continuously walkable gates;
+- rendered streets, park paths, lawn and plaza own matching static colliders,
+  so the existing `0.28 m` controller step climbs their real height changes
+  instead of letting the puppet intersect raised surfaces;
 - deterministic collider-free ochre guard rails, batched into `48 m` spatial
   chunks, that trace only street boundaries, close dead ends and leave clear
   openings around every bar approach and park gate;
@@ -95,6 +98,7 @@ The vertical slice contains:
   heading is preserved while idle;
 - a very close freely orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
+  raised `1.4 m / 1.3 m` focus points that keep the hero in the lower frame,
   weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle
   deterministic idle/walk motion and smoothly recovering obstacle-aware
   distance; cinematic motion fades out for fullscreen modals, while the

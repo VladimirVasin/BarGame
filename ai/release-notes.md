@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Opaque player hands
+
+- Restored the missing skin and bandage pixels in both lower arms across all
+  eight player directions, so the character's hands no longer show the world
+  through transparent gaps.
+- Rebuilt the jointed puppet atlas without changing the character design,
+  facial artwork, directional silhouettes or animation hierarchy.
+
+### Lower third-person framing
+
+- Raised the exterior and interior camera aim points so the hero now occupies
+  the lower part of the screen and leaves more view ahead while walking.
+- Kept the existing camera distance, field of view, orbit and obstacle
+  behavior unchanged.
+
+### Physically raised city surfaces
+
+- Streets and park paths now use their rendered height as a real walkable
+  surface. The player steps onto them instead of sinking through to the city
+  ground beneath.
+- The park lawn and central plaza also have matching surface colliders. Small
+  height changes use the existing character step behavior, leaving room for
+  authored stairs in later city geometry.
+
 ### Support diagnostics
 
 - Added a bounded structured `debug.log` for reproducible support reports. It

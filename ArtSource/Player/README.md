@@ -17,9 +17,9 @@ Generate the runtime reference and layered puppet atlases with:
 python tools/build-player-puppet-atlas.py
 ```
 
-The builder repairs only face pixels lost by the original chroma-key pass,
-then derives body plus eight jointed limb layers and five body-expression rows:
-neutral, half blink, closed blink, watchful and tense. It asserts that all nine
-neutral layers composite exactly to the corrected reference frame and that
-every facial edit stays on its direction-specific pixel whitelist while all
-rear views remain unchanged.
+The builder repairs only head and lower-arm pixels lost by the original
+chroma-key pass, then derives body plus eight jointed limb layers and five
+body-expression rows: neutral, half blink, closed blink, watchful and tense.
+It asserts that all nine neutral layers composite exactly to the corrected
+reference frame and that every facial edit stays on its direction-specific
+pixel whitelist while all rear views remain unchanged.
