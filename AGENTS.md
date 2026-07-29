@@ -12,8 +12,10 @@ These instructions apply to the entire repository.
 
 - Unity `6000.5.5f1`, Universal Render Pipeline `17.5.0`.
 - The playable MVP is implemented through runtime composition.
-- Build scenes are `Assets/Scenes/City.unity` and
-  `Assets/Scenes/BarInterior.unity`.
+- Build scenes are `Assets/Scenes/City.unity`,
+  `Assets/Scenes/DoorTransition.unity`,
+  `Assets/Scenes/BarInterior.unity`, and
+  `Assets/Scenes/HomeInterior.unity`.
 - `Assets/Scripts/Runtime/` owns gameplay and
   `Assets/Tests/{EditMode,PlayMode}/` owns verification.
 
