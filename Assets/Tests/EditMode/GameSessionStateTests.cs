@@ -133,6 +133,8 @@ namespace BarPromenade.Tests.EditMode
         {
             const DrinkId drink = DrinkId.CognacVs;
             GameSessionState.UpdateDrinkingProgress(63, drink, 4);
+            DrinkPurchaseResult purchase =
+                GameSessionState.TryPurchaseDrink(DrinkId.Water);
             GameSessionState.SetBalanceCheckDelay(18f);
             Assert.That(
                 GameSessionState.ConsumeBalanceCheckSequence(),
@@ -144,7 +146,11 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(63));
             Assert.That(GameSessionState.LastAlcoholicDrink, Is.EqualTo(drink));
-            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(5));
+            Assert.That(purchase.Succeeded, Is.True);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(GameSessionState.DefaultCash - 2));
             Assert.That(
                 GameSessionState.BalanceCheckDelayRemaining,
                 Is.EqualTo(18f));
@@ -194,6 +200,10 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.SetCitySeed(9876);
             GameSessionState.EnterBar("bar-reset-contract");
             GameSessionState.UpdateDrinkingProgress(84, DrinkId.Vodka, 6);
+            Assert.That(
+                GameSessionState.TryPurchaseDrink(DrinkId.Water).Succeeded,
+                Is.True);
+            int cashBeforeReset = GameSessionState.CashBalance;
             GameSessionState.SetBalanceCheckDelay(30f);
             GameSessionState.ConsumeBalanceCheckSequence();
 
@@ -206,11 +216,154 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.BalanceCheckDelayRemaining,
                 Is.Zero);
             Assert.That(GameSessionState.BalanceCheckSequence, Is.Zero);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(cashBeforeReset));
             Assert.That(GameSessionState.CitySeed, Is.EqualTo(9876));
             Assert.That(GameSessionState.ActiveBarId, Is.EqualTo("bar-reset-contract"));
             Assert.That(
                 GameSessionState.ActiveBarActivity,
                 Is.EqualTo(BarActivityKind.Cocktail));
+        }
+
+        [Test]
+        public void TryPurchaseDrink_CommitsSuccessfulResultAtomically()
+        {
+            GameSessionState.UpdateDrinkingProgress(
+                91,
+                DrinkId.RedWine,
+                2);
+
+            DrinkPurchaseResult result =
+                GameSessionState.TryPurchaseDrink(
+                    DrinkId.LightBeer);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.CashBefore, Is.EqualTo(999));
+            Assert.That(result.CashAfter, Is.EqualTo(991));
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(result.CashAfter));
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(99));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
+
+            DrinkPurchaseResult clamped =
+                GameSessionState.TryPurchaseDrink(
+                    DrinkId.DarkBeer);
+
+            Assert.That(clamped.Succeeded, Is.True);
+            Assert.That(clamped.ActualIntoxicationDelta, Is.EqualTo(1));
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(981));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.DarkBeer));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void TryPurchaseDrink_FailureDoesNotMutateSession()
+        {
+            GameSessionState.UpdateDrinkingProgress(
+                100,
+                DrinkId.Vodka,
+                5);
+            int cashBefore = GameSessionState.CashBalance;
+
+            DrinkPurchaseResult result =
+                GameSessionState.TryPurchaseDrink(
+                    DrinkId.LightBeer);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(
+                result.Status,
+                Is.EqualTo(
+                    DrinkPurchaseStatus.MaximumIntoxication));
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(cashBefore));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.Vodka));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void WaterAtMaximum_ChargesAndPreservesAlcoholContext()
+        {
+            GameSessionState.UpdateDrinkingProgress(
+                100,
+                DrinkId.CognacVsop,
+                7);
+
+            DrinkPurchaseResult result =
+                GameSessionState.TryPurchaseDrink(DrinkId.Water);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(GameSessionState.DefaultCash - 2));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.CognacVsop));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void EconomyState_SurvivesSeedTransitionsAndDrinkingReset()
+        {
+            Assert.That(
+                GameSessionState.TryPurchaseDrink(DrinkId.Water).Succeeded,
+                Is.True);
+            int expectedCash = GameSessionState.DefaultCash - 2;
+
+            GameSessionState.SetCitySeed(776655);
+            GameSessionState.EnterBar("bar-economy-contract");
+            GameSessionState.PrepareCityReturn();
+            GameSessionState.CompleteCityReturn();
+            GameSessionState.ResetDrinkingState();
+
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(expectedCash));
+        }
+
+        [Test]
+        public void ResetEconomyState_RestoresOnlyDefaultCash()
+        {
+            GameSessionState.SetCitySeed(9988);
+            GameSessionState.EnterBar("bar-economy-reset");
+            GameSessionState.TryAddRouteStop("bar-economy-reset");
+            GameSessionState.UpdateDrinkingProgress(
+                42,
+                DrinkId.RedWine,
+                3);
+            Assert.That(
+                GameSessionState.TryPurchaseDrink(DrinkId.Water).Succeeded,
+                Is.True);
+
+            GameSessionState.ResetEconomyState();
+
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(GameSessionState.DefaultCash));
+            Assert.That(GameSessionState.CitySeed, Is.EqualTo(9988));
+            Assert.That(
+                GameSessionState.ActiveBarId,
+                Is.EqualTo("bar-economy-reset"));
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Does.Contain("bar-economy-reset"));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(42));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.RedWine));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
         }
 
         [Test]
@@ -330,6 +483,7 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();
+            GameSessionState.ResetEconomyState();
         }
     }
 }

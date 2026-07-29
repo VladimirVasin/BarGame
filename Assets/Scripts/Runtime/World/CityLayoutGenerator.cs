@@ -54,9 +54,8 @@ namespace BarPromenade
                 pathKinds);
             List<CityDistrictDescriptor> districts =
                 CreateDistricts(snapshot, lots);
-            Vector2Int spawnNode = new Vector2Int(
-                snapshot.BlocksX / 2,
-                snapshot.BlocksZ / 2);
+            Vector2Int spawnNode =
+                ResolveInitialSpawnNode(snapshot, lots);
 
             var layout = new CityLayout(
                 seed,
@@ -74,6 +73,31 @@ namespace BarPromenade
                 spawnNode);
             layout.ValidateOrThrow();
             return layout;
+        }
+
+        private static Vector2Int ResolveInitialSpawnNode(
+            CityGenerationSettings settings,
+            IReadOnlyList<BuildingLot> lots)
+        {
+            var fallback = new Vector2Int(
+                settings.BlocksX / 2,
+                settings.BlocksZ / 2);
+
+            for (int index = 0; index < lots.Count; index++)
+            {
+                BuildingLot lot = lots[index];
+                if (!lot.IsBar)
+                {
+                    continue;
+                }
+
+                RoadEdge frontage = RoadEdge.ForCellFrontage(
+                    lot.Cell,
+                    lot.FrontageDirection);
+                return frontage.A;
+            }
+
+            return fallback;
         }
 
         private static List<Vector2Int> CreateNodes(CityGenerationSettings settings)

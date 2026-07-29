@@ -21,6 +21,10 @@ namespace BarPromenade
                 NormalizeActivity(activity);
             uint stableSeed = ComputeStableSeed(citySeed, barId);
             var zones = CreateZones();
+            Vector3 counterStation =
+                new Vector3(-1.15f, 0.9f, 4.75f);
+            Vector3 counterStationTriggerSize =
+                new Vector3(1.1f, 1.8f, 0.85f);
             Vector3 activityStation =
                 new Vector3(5.1f, 0.9f, -1.55f);
             var paths = CreatePaths();
@@ -48,6 +52,8 @@ namespace BarPromenade
                 new Vector3(2f, 1.8f, 1.35f),
                 new Vector3(0f, 0.7f, 5.75f),
                 new Vector3(11.2f, 1.4f, 1f),
+                counterStation,
+                counterStationTriggerSize,
                 activityStation,
                 activityTriggerSize,
                 zones,

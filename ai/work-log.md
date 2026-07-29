@@ -2,6 +2,60 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-29 — Bar-adjacent fresh city spawn
+
+- Replaced the fresh session's central-city spawn with a deterministic node on
+  one generated bar's frontage road, placing the player `12 m` from that bar
+  under default spacing.
+- Preserved the existing `SpawnNode`/`SpawnWorldPosition` contract, full
+  player-radius walkability and the central-node fallback for custom layouts
+  with no bars.
+- Kept the separate return path unchanged, so leaving an interior still
+  restores the active bar's exact return position.
+- Added seed-varied pure generation coverage and a real City bootstrap
+  assertion for spawn position, road travel distance and controller clearance.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds: 0 errors, 0 warnings.
+- Focused city-layout EditMode checks: 21/21 passed.
+- Focused generated-City PlayMode bootstrap: 1/1 passed.
+- Complete Unity EditMode suite: 460/460 passed.
+- Complete headless Unity PlayMode suite: all 84 runnable checks passed; the
+  three graphics-only checks were skipped as expected.
+- `git diff --check` passed.
+
+## 2026-07-29 — Bar drink purchases and session wallet
+
+- Added a session-only integer cash wallet starting at `$999`, a fixed
+  nine-item retail catalog and pure purchase results that reject unsupported,
+  unaffordable or maximum-intoxication alcohol without mutating state.
+- Added one atomic `GameSessionState` purchase boundary: successful orders
+  deduct cash and immediately commit drinking progress; water costs `$2`,
+  counts as consumed, does not sober the player and preserves the last
+  alcoholic drink.
+- Added a localized retro shop modal and a separate counter interaction point
+  in all four bar variants. The data-first layout reserves its trigger, removes
+  one nearby stool for access and validates it against furniture, the activity
+  station and exit.
+- Integrated shop ownership with the shared modal lock and F9 window without
+  adding the shop to the minigame catalog or bar-visit completion flow.
+- Added cash and purchase outcomes to structured diagnostics and updated the
+  current architecture, system maps and player-facing notes.
+
+Verification:
+
+- Complete generated .NET solution build: 0 errors, 0 warnings.
+- Focused economy/layout/localization EditMode checks: 50/50 passed.
+- Focused shop/F9/four-bar scene PlayMode checks: 9/9 passed.
+- Complete Unity EditMode suite: 456/456 passed.
+- Complete headless PlayMode suite ran twice: all changed-path checks and all
+  non-motor checks passed, with three expected graphics-only skips. The first
+  run passed 83/84 runnable checks and the second 82/84; the unchanged
+  `PlayerMotorHeadingPlayModeTests` release-timing assertion remained flaky.
+  Its isolated failing method passed 1/1; the complete motor class passed 5/6.
+- `git diff --check` passed.
+
 ## 2026-07-29 — Opaque player hands
 
 - Compared all eight runtime directions against the locked player turntable

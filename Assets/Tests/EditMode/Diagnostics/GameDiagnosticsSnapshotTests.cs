@@ -13,6 +13,8 @@ namespace BarPromenade.Tests.EditMode
         public void SetUp()
         {
             GameLog.Shutdown("snapshot_test_setup", false);
+            GameSessionState.ResetDrinkingState();
+            GameSessionState.ResetEconomyState();
             directory = Path.Combine(
                 Path.GetTempPath(),
                 "BarPromenade-SnapshotTests-" +
@@ -25,6 +27,8 @@ namespace BarPromenade.Tests.EditMode
         public void TearDown()
         {
             GameLog.Shutdown("snapshot_test_teardown", false);
+            GameSessionState.ResetDrinkingState();
+            GameSessionState.ResetEconomyState();
             if (Directory.Exists(directory))
             {
                 Directory.Delete(directory, true);
@@ -34,6 +38,10 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Capture_WritesAndFlushesOneStructuredSnapshot()
         {
+            Assert.That(
+                GameSessionState.TryPurchaseDrink(
+                    DrinkId.Water).Succeeded,
+                Is.True);
             GameLog.Initialize(
                 new GameLogSettings(
                     GameLogProfile.Basic,
@@ -67,7 +75,56 @@ namespace BarPromenade.Tests.EditMode
                 Does.Contain("\"city_seed\":2468"));
             Assert.That(
                 lines[0],
+                Does.Contain("\"cash_balance\":997"));
+            Assert.That(
+                lines[0],
                 Does.Contain("\"root_kind\":\"none\""));
+        }
+
+        [Test]
+        public void Purchases_WriteBoundedSuccessAndFailureEvents()
+        {
+            GameLog.Initialize(
+                new GameLogSettings(
+                    GameLogProfile.Basic,
+                    logPath),
+                new SystemGameLogClock(),
+                "purchase-session",
+                false);
+
+            GameSessionState.TryPurchaseDrink(DrinkId.Water);
+            GameSessionState.TryPurchaseDrink(DrinkId.Moonshine);
+            GameLog.Flush();
+
+            string[] purchaseLines = Array.FindAll(
+                ReadLiveLines(logPath),
+                line => line.Contains(
+                    "\"event\":\"drink_purchase_resolved\""));
+            Assert.That(purchaseLines, Has.Length.EqualTo(2));
+            Assert.That(
+                purchaseLines[0],
+                Does.Contain("\"accepted\":true"));
+            Assert.That(
+                purchaseLines[0],
+                Does.Contain("\"status\":\"Success\""));
+            Assert.That(
+                purchaseLines[0],
+                Does.Contain("\"cash_before\":999"));
+            Assert.That(
+                purchaseLines[0],
+                Does.Contain("\"cash_after\":997"));
+            Assert.That(
+                purchaseLines[1],
+                Does.Contain("\"accepted\":false"));
+            Assert.That(
+                purchaseLines[1],
+                Does.Contain("\"status\":\"NotOffered\""));
+            Assert.That(
+                purchaseLines[1],
+                Does.Contain("\"cash_before\":997"));
+            Assert.That(
+                purchaseLines[1],
+                Does.Contain("\"cash_after\":997"));
         }
 
         [Test]

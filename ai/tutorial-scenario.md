@@ -4,7 +4,8 @@ Status: **Implemented and covered by PlayMode smoke tests.**
 
 This is the first manual acceptance path for the vertical slice.
 
-1. Launch the build into the generated city.
+1. Launch the build into the generated city and confirm that the player starts
+   on a street near one of the generated bars.
 2. Observe a large connected city with Old Town, Residential, Industrial and
    Nightlife districts surrounding a central park.
 3. Open the map and confirm that district labels, green park land, sand-colored
@@ -20,7 +21,7 @@ This is the first manual acceptance path for the vertical slice.
    placement are reproduced.
 
 The automated checks verify the same seed, road-edge/path sequence, districts,
-park, bar IDs and return position after step 8.
+park, bar IDs, nearby fresh spawn and return position after step 8.
 
 For a support capture during this path, press `F8` after the state to diagnose
 is visible. The snapshot is flushed into `debug.log`; `Shift+F8` opens its

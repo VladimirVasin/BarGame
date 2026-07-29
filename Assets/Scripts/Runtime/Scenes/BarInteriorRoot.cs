@@ -58,6 +58,8 @@ namespace BarPromenade
         }
         public BarActivityKind ActiveActivity { get; private set; }
         public BarActivityStation ActivityStation { get; private set; }
+        public BarCounterStation CounterStation { get; private set; }
+        public BarDrinkShopController DrinkShop { get; private set; }
         public IBarMinigame ActiveMinigame { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
@@ -120,7 +122,10 @@ namespace BarPromenade
                     GameSessionState.LastAlcoholicDrink.ToString()),
                 GameLog.Field(
                     "drinks_consumed",
-                    GameSessionState.DrinksConsumed));
+                    GameSessionState.DrinksConsumed),
+                GameLog.Field(
+                    "cash_balance",
+                    GameSessionState.CashBalance));
 
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
             Audio = RetroAudioService.EnsureInstalled();
@@ -194,6 +199,7 @@ namespace BarPromenade
 
             follow.Initialize(camera, Player.GameObject.transform, true);
             BuildMinigame(ui, intoxicationHud, follow);
+            BuildDrinkShop(ui, intoxicationHud, follow);
 
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
@@ -213,11 +219,13 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 null,
-                ActiveMinigame);
+                ActiveMinigame,
+                DrinkShop);
             ReportPhase("player_and_ui", phaseTimer);
 
             phaseTimer.Restart();
             BuildActivityStation();
+            BuildCounterStation();
             BuildExit();
             BuildNpcCrowd(camera);
             IsInitialized = true;
@@ -246,6 +254,9 @@ namespace BarPromenade
                 GameLog.Field(
                     "audio_anchor_count",
                     Layout.AudioAnchors.Count),
+                GameLog.Field(
+                    "cash_balance",
+                    GameSessionState.CashBalance),
                 GameLog.Field(
                     "duration_ms",
                     totalTimer.ElapsedMilliseconds));
@@ -412,6 +423,62 @@ namespace BarPromenade
                 GameLog.Field(
                     "controller",
                     ActiveMinigame.GetType().Name));
+        }
+
+        private void BuildDrinkShop(
+            GameObject ui,
+            IntoxicationHudView intoxicationHud,
+            PlayerCameraFollow follow)
+        {
+            BarDrinkShopView view =
+                ui.AddComponent<BarDrinkShopView>();
+            DrinkShop =
+                ui.AddComponent<BarDrinkShopController>();
+            DrinkShop.Initialize(
+                view,
+                intoxicationHud,
+                follow);
+        }
+
+        private void BuildCounterStation()
+        {
+            GameObject station =
+                new GameObject("Bar Drink Counter Station");
+            station.transform.SetParent(transform, false);
+            station.transform.localPosition =
+                Layout.CounterStationPosition;
+            BoxCollider trigger = station.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = Layout.CounterStationTriggerSize;
+            CounterStation =
+                station.AddComponent<BarCounterStation>();
+            CounterStation.Configure(DrinkShop);
+
+            Vector3 stationPosition =
+                Layout.CounterStationPosition;
+            Color markerColor =
+                new Color(0.30f, 0.74f, 0.57f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Drink Order Point",
+                transform,
+                new Vector3(
+                    stationPosition.x,
+                    0.06f,
+                    stationPosition.z),
+                new Vector3(0.74f, 0.08f, 0.56f),
+                markerColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Drink Order Sign",
+                transform,
+                new Vector3(
+                    stationPosition.x,
+                    1.57f,
+                    Layout.CounterPosition.z - 0.58f),
+                new Vector3(0.82f, 0.38f, 0.09f),
+                markerColor,
+                CityNightResources.EmissiveMaterial,
+                false);
         }
 
         private void BuildExit()
@@ -595,7 +662,13 @@ namespace BarPromenade
                     layout.PlayerSpawn.x),
                 GameLog.Field(
                     "spawn_z",
-                    layout.PlayerSpawn.z));
+                    layout.PlayerSpawn.z),
+                GameLog.Field(
+                    "counter_station_x",
+                    layout.CounterStationPosition.x),
+                GameLog.Field(
+                    "counter_station_z",
+                    layout.CounterStationPosition.z));
         }
 
         private string GetMinigameId()

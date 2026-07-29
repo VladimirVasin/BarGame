@@ -178,6 +178,63 @@ namespace BarPromenade.Tests
             }
         }
 
+        [TestCase(GameSessionState.DefaultCitySeed)]
+        [TestCase(73119)]
+        [TestCase(-99123)]
+        public void Generate_WithBars_SpawnsWalkablyNearABar(int seed)
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                seed);
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+            float nearestBarDistance = layout.BuildingLots
+                .Where(lot => lot.IsBar)
+                .Min(lot =>
+                    CityRoutePathfinder.Build(
+                        layout,
+                        layout.SpawnWorldPosition,
+                        new[] { lot })
+                    .TotalLength);
+
+            Assert.That(
+                layout.SpawnWorldPosition,
+                Is.EqualTo(
+                    layout.GetNodeWorldPosition(layout.SpawnNode)));
+            Assert.That(
+                walkable.Contains(layout.SpawnWorldPosition, 0.32f),
+                Is.True);
+            Assert.That(
+                nearestBarDistance,
+                Is.LessThanOrEqualTo(
+                    Mathf.Max(
+                        layout.NodeSpacing.x,
+                        layout.NodeSpacing.y) *
+                    0.5f +
+                    0.001f));
+        }
+
+        [Test]
+        public void Generate_WithoutBars_FallsBackToCentralRoadNode()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BarCount = 0;
+            settings.MinimumBarRouteDistance = 0f;
+
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                17029);
+            var expectedNode = new Vector2Int(
+                settings.BlocksX / 2,
+                settings.BlocksZ / 2);
+
+            Assert.That(layout.SpawnNode, Is.EqualTo(expectedNode));
+            Assert.That(
+                layout.SpawnWorldPosition,
+                Is.EqualTo(layout.GetNodeWorldPosition(expectedNode)));
+        }
+
         [Test]
         public void Generate_WithDifferentSeed_ChangesRoadsOrLots()
         {

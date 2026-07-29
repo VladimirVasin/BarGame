@@ -13,6 +13,10 @@
       "value": "E — mix cocktails"
     },
     {
+      "key": "interaction.buy_drink",
+      "value": "E — buy a drink"
+    },
+    {
       "key": "interaction.play_beer_pong",
       "value": "E — play beer pong"
     },
@@ -539,6 +543,50 @@
     {
       "key": "drink.water",
       "value": "Water"
+    },
+    {
+      "key": "drink_shop.title",
+      "value": "DRINKS"
+    },
+    {
+      "key": "drink_shop.balance",
+      "value": "Balance: ${0}"
+    },
+    {
+      "key": "drink_shop.price",
+      "value": "${0}"
+    },
+    {
+      "key": "drink_shop.intoxication_gain",
+      "value": "+{0} intox."
+    },
+    {
+      "key": "drink_shop.preview",
+      "value": "Balance: ${0} → ${1}   Intoxication: {2} → {3}/100"
+    },
+    {
+      "key": "drink_shop.buy",
+      "value": "BUY"
+    },
+    {
+      "key": "drink_shop.cancel",
+      "value": "BACK"
+    },
+    {
+      "key": "drink_shop.controls",
+      "value": "↑↓ / WASD — select   Enter / E / A — buy   Esc / B — back"
+    },
+    {
+      "key": "drink_shop.failure.insufficient_funds",
+      "value": "Not enough money."
+    },
+    {
+      "key": "drink_shop.failure.maximum_intoxication",
+      "value": "Intoxication is already at maximum."
+    },
+    {
+      "key": "drink_shop.failure.not_offered",
+      "value": "This drink is not available."
     },
     {
       "key": "map.open_hint",

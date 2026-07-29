@@ -31,6 +31,12 @@ namespace BarPromenade.Tests
             Assert.That(
                 plan.CounterSize,
                 Is.EqualTo(new Vector3(11.2f, 1.4f, 1f)));
+            Assert.That(
+                plan.CounterStationPosition,
+                Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
+            Assert.That(
+                plan.CounterStationTriggerSize,
+                Is.EqualTo(new Vector3(1.1f, 1.8f, 0.85f)));
             Assert.That(plan.Zones, Has.Count.EqualTo(7));
             Assert.That(plan.Paths, Has.Count.EqualTo(4));
             Assert.That(
@@ -109,6 +115,19 @@ namespace BarPromenade.Tests
                             path.Bounds,
                             plan.ActivityStationPosition)),
                 Is.True);
+            Assert.That(
+                plan.CounterStationPosition,
+                Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
+            Assert.That(
+                plan.CounterStationTriggerSize,
+                Is.EqualTo(new Vector3(1.1f, 1.8f, 0.85f)));
+            Assert.That(
+                plan.Paths.Any(
+                    path =>
+                        Contains(
+                            path.Bounds,
+                            plan.CounterStationPosition)),
+                Is.True);
             Assert.DoesNotThrow(
                 () => BarInteriorLayoutValidator.ValidateOrThrow(plan));
         }
@@ -146,6 +165,12 @@ namespace BarPromenade.Tests
             Assert.That(
                 second.WalkableBounds,
                 Is.EqualTo(first.WalkableBounds));
+            Assert.That(
+                second.CounterStationPosition,
+                Is.EqualTo(first.CounterStationPosition));
+            Assert.That(
+                second.CounterStationTriggerSize,
+                Is.EqualTo(first.CounterStationTriggerSize));
             CollectionAssert.AreEqual(first.Zones, second.Zones);
             CollectionAssert.AreEqual(first.Paths, second.Paths);
             CollectionAssert.AreEqual(
@@ -306,6 +331,105 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void Validator_RejectsInvalidCounterStationGeometry()
+        {
+            BarInteriorLayoutPlan valid =
+                BarInteriorLayoutPlanner.Generate(
+                    102,
+                    "bar-invalid-counter-station",
+                    BarActivityKind.Cocktail);
+
+            Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(
+                        valid,
+                        counterStationPosition:
+                            new Vector3(float.NaN, 0.9f, 4.75f))));
+            Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(
+                        valid,
+                        counterStationTriggerSize:
+                            new Vector3(0f, 1.8f, 0.85f))));
+            Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(
+                        valid,
+                        counterStationPosition:
+                            new Vector3(3f, 0.9f, 4.75f))));
+        }
+
+        [Test]
+        public void Validator_RejectsCounterStationIntersections()
+        {
+            BarInteriorLayoutPlan valid =
+                BarInteriorLayoutPlanner.Generate(
+                    103,
+                    "bar-counter-station-overlap",
+                    BarActivityKind.BeerPong);
+
+            Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(
+                        valid,
+                        counterStationTriggerSize:
+                            new Vector3(1.1f, 1.8f, 2f))));
+            Assert.Throws<InvalidOperationException>(
+                () => BarInteriorLayoutValidator.ValidateOrThrow(
+                    Copy(
+                        valid,
+                        activityStationPosition:
+                            valid.CounterStationPosition)));
+        }
+
+        [Test]
+        public void WorldBuilder_LeavesCounterStationApproachFreeOfStools()
+        {
+            GameObject host = new GameObject("Bar Layout Test Host");
+            try
+            {
+                BarInteriorLayoutPlan plan =
+                    BarInteriorLayoutPlanner.Generate(
+                        104,
+                        "bar-counter-station-stools",
+                        BarActivityKind.TinctureMatch);
+                Transform room = BarInteriorWorldBuilder.Build(
+                    host.transform,
+                    plan);
+                Transform[] stools = room
+                    .GetComponentsInChildren<Transform>(true)
+                    .Where(
+                        child =>
+                            child.name.StartsWith(
+                                "Bar Stool ",
+                                StringComparison.Ordinal) &&
+                            !child.name.EndsWith(
+                                " Leg",
+                                StringComparison.Ordinal))
+                    .ToArray();
+
+                Assert.That(stools, Has.Length.EqualTo(5));
+                for (int index = 0; index < stools.Length; index++)
+                {
+                    Vector3 stoolPosition = stools[index].localPosition;
+                    float distance = Vector2.Distance(
+                        new Vector2(stoolPosition.x, stoolPosition.z),
+                        new Vector2(
+                            plan.CounterStationPosition.x,
+                            plan.CounterStationPosition.z));
+                    Assert.That(
+                        distance,
+                        Is.GreaterThanOrEqualTo(1.349f),
+                        stools[index].name);
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
         public void Validator_RejectsPracticalLightBudgetOverflow()
         {
             BarInteriorLayoutPlan valid =
@@ -370,7 +494,10 @@ namespace BarPromenade.Tests
             IReadOnlyList<BarInteriorFurnitureFootprint>
                 furnitureFootprints = null,
             IReadOnlyList<BarInteriorLightAnchor> lightAnchors = null,
-            IReadOnlyList<BarNpcAnchor> npcAnchors = null)
+            IReadOnlyList<BarNpcAnchor> npcAnchors = null,
+            Vector3? counterStationPosition = null,
+            Vector3? counterStationTriggerSize = null,
+            Vector3? activityStationPosition = null)
         {
             return new BarInteriorLayoutPlan(
                 source.CitySeed,
@@ -387,7 +514,12 @@ namespace BarPromenade.Tests
                 source.ExitTriggerSize,
                 source.CounterPosition,
                 source.CounterSize,
-                source.ActivityStationPosition,
+                counterStationPosition ??
+                    source.CounterStationPosition,
+                counterStationTriggerSize ??
+                    source.CounterStationTriggerSize,
+                activityStationPosition ??
+                    source.ActivityStationPosition,
                 source.ActivityStationTriggerSize,
                 source.Zones,
                 source.Paths,

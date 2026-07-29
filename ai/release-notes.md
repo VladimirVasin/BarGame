@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Bar-adjacent city start
+
+- A fresh run now places the hero on a safe street node beside one of the
+  generated bars instead of at the distant city center.
+- Returning from a bar remains unchanged and still restores that specific
+  bar's entrance position.
+
+### Bar drinks and session wallet
+
+- Every bar now has a separate counter point where the player can buy one of
+  nine ordinary drinks without starting or completing the bar's minigame.
+- A fresh session starts with `$999`. The shop shows each price, the current
+  balance and the resulting intoxication before confirmation; successful
+  purchases deduct cash and consume the drink immediately.
+- Water remains available at maximum intoxication, costs `$2` and does not
+  sober the player. Unavailable or unaffordable purchases leave both cash and
+  drinking progress unchanged.
+
 ### Opaque player hands
 
 - Restored the missing skin and bandage pixels in both lower arms across all

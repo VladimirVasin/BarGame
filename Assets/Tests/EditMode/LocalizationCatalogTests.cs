@@ -12,6 +12,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.enter_bar",
             "interaction.exit_bar",
             "interaction.order_drinks",
+            "interaction.buy_drink",
             "interaction.play_beer_pong",
             "interaction.play_split_the_g",
             "interaction.play_tincture_match",
@@ -133,10 +134,25 @@ namespace BarPromenade.Tests.EditMode
             "tincture.rank.excellent",
             "tincture.rank.perfect",
             "drink.light_beer",
+            "drink.dark_beer",
+            "drink.white_wine",
             "drink.red_wine",
             "drink.vodka",
+            "drink.pepper_vodka",
             "drink.cognac_vs",
+            "drink.cognac_vsop",
             "drink.water",
+            "drink_shop.title",
+            "drink_shop.balance",
+            "drink_shop.price",
+            "drink_shop.intoxication_gain",
+            "drink_shop.preview",
+            "drink_shop.buy",
+            "drink_shop.cancel",
+            "drink_shop.controls",
+            "drink_shop.failure.insufficient_funds",
+            "drink_shop.failure.maximum_intoxication",
+            "drink_shop.failure.not_offered",
             "map.open_hint",
             "map.title",
             "map.instructions",
@@ -205,6 +221,27 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 valuesByKey["tincture.result.moonshine"],
                 Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["drink_shop.balance"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["drink_shop.price"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["drink_shop.intoxication_gain"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["drink_shop.preview"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["drink_shop.preview"],
+                Does.Contain("{1}"));
+            Assert.That(
+                valuesByKey["drink_shop.preview"],
+                Does.Contain("{2}"));
+            Assert.That(
+                valuesByKey["drink_shop.preview"],
+                Does.Contain("{3}"));
         }
 
         [Test]

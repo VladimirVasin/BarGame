@@ -276,8 +276,8 @@ namespace BarPromenade
                     0f,
                     counter.z - size.z * 0.5f - 0.72f);
                 Vector2 stationDelta = new Vector2(
-                    stoolPosition.x - plan.ActivityStationPosition.x,
-                    stoolPosition.z - plan.ActivityStationPosition.z);
+                    stoolPosition.x - plan.CounterStationPosition.x,
+                    stoolPosition.z - plan.CounterStationPosition.z);
                 if (stationDelta.sqrMagnitude < 1.35f * 1.35f)
                 {
                     continue;

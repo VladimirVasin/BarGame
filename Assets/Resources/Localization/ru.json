@@ -13,6 +13,10 @@
       "value": "E — смешать коктейли"
     },
     {
+      "key": "interaction.buy_drink",
+      "value": "E — купить напиток"
+    },
+    {
       "key": "interaction.play_beer_pong",
       "value": "E — сыграть в бирпонг"
     },
@@ -539,6 +543,50 @@
     {
       "key": "drink.water",
       "value": "Вода"
+    },
+    {
+      "key": "drink_shop.title",
+      "value": "НАПИТКИ"
+    },
+    {
+      "key": "drink_shop.balance",
+      "value": "Баланс: {0} $"
+    },
+    {
+      "key": "drink_shop.price",
+      "value": "{0} $"
+    },
+    {
+      "key": "drink_shop.intoxication_gain",
+      "value": "+{0} опьян."
+    },
+    {
+      "key": "drink_shop.preview",
+      "value": "Баланс: {0} → {1} $   Опьянение: {2} → {3}/100"
+    },
+    {
+      "key": "drink_shop.buy",
+      "value": "КУПИТЬ"
+    },
+    {
+      "key": "drink_shop.cancel",
+      "value": "НАЗАД"
+    },
+    {
+      "key": "drink_shop.controls",
+      "value": "↑↓ / WASD — выбор   Enter / E / A — купить   Esc / B — назад"
+    },
+    {
+      "key": "drink_shop.failure.insufficient_funds",
+      "value": "Недостаточно денег."
+    },
+    {
+      "key": "drink_shop.failure.maximum_intoxication",
+      "value": "Опьянение уже на максимуме."
+    },
+    {
+      "key": "drink_shop.failure.not_offered",
+      "value": "Этот напиток сейчас недоступен."
     },
     {
       "key": "map.open_hint",

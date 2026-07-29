@@ -232,6 +232,8 @@ namespace BarPromenade
             Vector3 exitTriggerSize,
             Vector3 counterPosition,
             Vector3 counterSize,
+            Vector3 counterStationPosition,
+            Vector3 counterStationTriggerSize,
             Vector3 activityStationPosition,
             Vector3 activityStationTriggerSize,
             IReadOnlyList<BarInteriorZone> zones,
@@ -260,6 +262,8 @@ namespace BarPromenade
             ExitTriggerSize = exitTriggerSize;
             CounterPosition = counterPosition;
             CounterSize = counterSize;
+            CounterStationPosition = counterStationPosition;
+            CounterStationTriggerSize = counterStationTriggerSize;
             ActivityStationPosition = activityStationPosition;
             ActivityStationTriggerSize = activityStationTriggerSize;
             Zones = Copy(zones, nameof(zones));
@@ -287,6 +291,8 @@ namespace BarPromenade
         public Vector3 ExitTriggerSize { get; }
         public Vector3 CounterPosition { get; }
         public Vector3 CounterSize { get; }
+        public Vector3 CounterStationPosition { get; }
+        public Vector3 CounterStationTriggerSize { get; }
         public Vector3 ActivityStationPosition { get; }
         public Vector3 ActivityStationTriggerSize { get; }
         public IReadOnlyList<BarInteriorZone> Zones { get; }

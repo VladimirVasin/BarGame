@@ -24,6 +24,7 @@ namespace BarPromenade
         private IntoxicationHudView intoxicationHud;
         private CityMapController cityMap;
         private IBarMinigame sceneMinigame;
+        private BarDrinkShopController drinkShop;
         private GUIStyle titleStyle;
         private GUIStyle hintStyle;
         private GUIStyle rowStyle;
@@ -46,13 +47,15 @@ namespace BarPromenade
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
             CityMapController map = null,
-            IBarMinigame activeSceneMinigame = null)
+            IBarMinigame activeSceneMinigame = null,
+            BarDrinkShopController activeDrinkShop = null)
         {
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
             cityMap = map;
             sceneMinigame = activeSceneMinigame;
+            drinkShop = activeDrinkShop;
             ClampSelection();
             IsInitialized = player.Interactor != null;
         }
@@ -296,6 +299,11 @@ namespace BarPromenade
             if (sceneMinigame != null && sceneMinigame.IsOpen)
             {
                 sceneMinigame.Cancel();
+            }
+
+            if (drinkShop != null && drinkShop.IsOpen)
+            {
+                drinkShop.Cancel();
             }
 
             foreach (IBarMinigame minigame in debugMinigames.Values)

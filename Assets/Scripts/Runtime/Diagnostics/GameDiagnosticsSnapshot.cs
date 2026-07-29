@@ -92,6 +92,9 @@ namespace BarPromenade
                     "drinks_consumed",
                     GameSessionState.DrinksConsumed),
                 GameLog.Field(
+                    "cash_balance",
+                    GameSessionState.CashBalance),
+                GameLog.Field(
                     "balance_delay_seconds",
                     GameSessionState.BalanceCheckDelayRemaining),
                 GameLog.Field(
@@ -210,6 +213,11 @@ namespace BarPromenade
                     "minigame_open",
                     bar.ActiveMinigame != null &&
                     bar.ActiveMinigame.IsOpen));
+            fields.Add(
+                GameLog.Field(
+                    "drink_shop_open",
+                    bar.DrinkShop != null &&
+                    bar.DrinkShop.IsOpen));
             fields.Add(
                 GameLog.Field(
                     "debug_window_open",

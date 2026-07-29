@@ -17,6 +17,7 @@ namespace BarPromenade.Tests.PlayMode
         private PlayerInteractor interactor;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
+        private BarDrinkShopController drinkShop;
         private MinigameDebugWindow window;
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
@@ -65,13 +66,27 @@ namespace BarPromenade.Tests.PlayMode
 
             uiObject = new GameObject("Debug Runtime UI");
             hud = uiObject.AddComponent<IntoxicationHudView>();
+            BarDrinkShopView drinkShopView =
+                uiObject.AddComponent<BarDrinkShopView>();
+            drinkShop =
+                uiObject.AddComponent<BarDrinkShopController>();
+            drinkShop.Initialize(
+                drinkShopView,
+                hud,
+                cameraFollow);
             window = uiObject.AddComponent<MinigameDebugWindow>();
             var player = new PlayerRuntime(
                 playerObject,
                 motor,
                 interactor,
                 null);
-            window.Initialize(player, cameraFollow, hud);
+            window.Initialize(
+                player,
+                cameraFollow,
+                hud,
+                null,
+                null,
+                drinkShop);
             keyboard = InputSystem.AddDevice<Keyboard>();
             yield return null;
         }
@@ -80,6 +95,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator TearDown()
         {
             window?.ActiveDebugMinigame?.Cancel();
+            drinkShop?.Close();
             if (keyboard != null && keyboard.added)
             {
                 InputSystem.RemoveDevice(keyboard);
@@ -134,6 +150,27 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interactor.InputEnabled, Is.True);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator OpeningWindow_ClosesDrinkShopFirst()
+        {
+            Assert.That(drinkShop.Open(interactor), Is.True);
+            Assert.That(drinkShop.IsOpen, Is.True);
+            Assert.That(motor.InputEnabled, Is.False);
+
+            Assert.That(window.Open(), Is.True);
+
+            Assert.That(drinkShop.IsOpen, Is.False);
+            Assert.That(window.IsOpen, Is.True);
+            Assert.That(motor.InputEnabled, Is.False);
+            Assert.That(interactor.InputEnabled, Is.False);
+
+            Assert.That(window.Close(), Is.True);
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            yield return null;
         }
 
         [UnityTest]
@@ -531,6 +568,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();
+            GameSessionState.ResetEconomyState();
             GameSessionState.ClearRoute();
             GameSessionState.ClearVisitedBars();
         }

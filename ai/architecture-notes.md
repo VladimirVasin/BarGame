@@ -23,6 +23,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bars occupy different urban districts and every pair is separated by at
   least `120 m` of weighted street/park-path travel rather than straight-line
   distance.
+- **Accepted — Bar-adjacent fresh spawn:** With at least one generated bar, a
+  fresh city starts on a node of the first stable row-major bar's frontage
+  edge, preserving the node/world-position layout contract and placing the
+  player `12 m` from that approach under default spacing. A bar-free custom
+  layout falls back to the central road node. Returning from an interior
+  remains a separate session-state path that restores the active bar's exact
+  return position.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
   park-lawn rectangles. The park connects to surrounding streets through four
@@ -294,6 +301,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   loads and reset when the application subsystem restarts. The remaining
   balance-check delay and consumed deterministic sequence share that
   scene-persistent session lifetime.
+- **Accepted — Session wallet and immediate bar purchases:** A fresh runtime
+  session starts with `$999` in integer cash and preserves that balance across
+  city/bar scene loads and city-seed changes. Every bar owns one separate
+  counter station and localized nine-item retail modal. Pure purchase rules
+  validate the offer, affordability and maximum intoxication before one
+  `GameSessionState` transaction deducts cash and immediately records the
+  drink; failures mutate nothing and cash cannot become negative. Water costs
+  `$2`, increments consumed drinks, does not sober the player and preserves
+  the last alcoholic drink. `None` and the Tinctures-only `Moonshine` are not
+  sold. Inventory, earnings and long-term wallet persistence remain deferred,
+  and a purchase never completes a bar visit or changes its route.
 - **Accepted — Five percentage-driven intoxication ranges:** `0` is Sober.
   Positive values map through `IntoxicationStageRules` as `1–20` Light Buzz /
   «Лёгкий хмель», `21–40` Tipsy / «Навеселе», `41–60` Drunk / «Подшофе»,

@@ -88,6 +88,43 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(barLots, Has.Count.EqualTo(4));
             Assert.That(barDistricts, Has.Count.EqualTo(4));
+            Vector3 playerSpawn =
+                cityRoot.Player.GameObject.transform.position;
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(playerSpawn.x, playerSpawn.z),
+                    new Vector2(
+                        cityRoot.Layout.SpawnWorldPosition.x,
+                        cityRoot.Layout.SpawnWorldPosition.z)),
+                Is.LessThan(0.001f));
+            CharacterController playerController =
+                cityRoot.Player.GameObject.GetComponent<
+                    CharacterController>();
+            Assert.That(
+                cityRoot.World.WalkableArea.Contains(
+                    playerSpawn,
+                    playerController.radius),
+                Is.True);
+            float nearestBarDistance = float.PositiveInfinity;
+            for (int index = 0; index < barLots.Count; index++)
+            {
+                CityRoutePath route = CityRoutePathfinder.Build(
+                    cityRoot.Layout,
+                    playerSpawn,
+                    new[] { barLots[index] });
+                nearestBarDistance = Mathf.Min(
+                    nearestBarDistance,
+                    route.TotalLength);
+            }
+
+            Assert.That(
+                nearestBarDistance,
+                Is.LessThanOrEqualTo(
+                    Mathf.Max(
+                        cityRoot.Layout.NodeSpacing.x,
+                        cityRoot.Layout.NodeSpacing.y) *
+                    0.5f +
+                    0.001f));
             for (int first = 0; first < barLots.Count; first++)
             {
                 for (int second = first + 1;
@@ -698,12 +735,28 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.Music.transform.IsChildOf(interiorRoot.transform),
                 Is.True);
+            Assert.That(interiorRoot.CounterStation, Is.Not.Null);
+            Assert.That(interiorRoot.DrinkShop, Is.Not.Null);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Is.Empty);
+                Has.Length.EqualTo(1));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
                 Has.Length.EqualTo(1));
+            Assert.That(
+                interiorRoot.transform.Find("Drink Order Point"),
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.transform.Find("Drink Order Sign"),
+                Is.Not.Null);
+            BoxCollider counterStationTrigger =
+                interiorRoot.CounterStation.GetComponent<BoxCollider>();
+            Assert.That(counterStationTrigger, Is.Not.Null);
+            Physics.SyncTransforms();
+            Assert.That(
+                counterStationTrigger.bounds.Intersects(
+                    counterCollider.bounds),
+                Is.False);
             Assert.That(CountExactRoots(SceneIds.BarInterior, InteriorRootName), Is.EqualTo(1));
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<CityGameRoot>(
@@ -742,6 +795,49 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.True);
             Assert.That(interiorRoot.Player.Interactor.InputEnabled, Is.True);
             Assert.That(follow.OrbitInputEnabled, Is.True);
+
+            Vector3 counterStationPosition =
+                interiorRoot.CounterStation.transform.position;
+            counterStationPosition.y = 0.12f;
+            interiorRoot.Player.Motor.Teleport(
+                counterStationPosition);
+            yield return null;
+            Assert.That(
+                interiorRoot.Player.Interactor.ActiveInteractable,
+                Is.EqualTo(interiorRoot.CounterStation));
+            Assert.That(
+                interiorRoot.CounterStation.PromptKey,
+                Is.EqualTo("interaction.buy_drink"));
+
+            int cashBefore = GameSessionState.CashBalance;
+            int drinksBefore = GameSessionState.DrinksConsumed;
+            interiorRoot.CounterStation.Interact(
+                interiorRoot.Player.Interactor);
+            Assert.That(interiorRoot.DrinkShop.IsOpen, Is.True);
+            Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.False);
+            BarDrinkOffer selectedOffer =
+                interiorRoot.DrinkShop.SelectedOffer;
+            Assert.That(
+                interiorRoot.DrinkShop.ConfirmSelection(),
+                Is.True);
+            Assert.That(interiorRoot.DrinkShop.IsOpen, Is.False);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(cashBefore - selectedOffer.Price));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBefore + 1));
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-smoke-test"),
+                Is.False);
+            Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.True);
+            Assert.That(
+                interiorRoot.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(follow.OrbitInputEnabled, Is.True);
         }
 
         [UnityTest]
@@ -778,7 +874,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo("interaction.play_beer_pong"));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Is.Empty);
+                Has.Length.EqualTo(1));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
                 Has.Length.EqualTo(1));
@@ -950,7 +1046,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo("interaction.play_split_the_g"));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Is.Empty);
+                Has.Length.EqualTo(1));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
                 Has.Length.EqualTo(1));
@@ -1157,6 +1253,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.ActivityStation.PromptKey,
                 Is.EqualTo("interaction.play_tincture_match"));
+            Assert.That(
+                interiorRoot.GetComponentsInChildren<
+                    BarCounterStation>(true),
+                Has.Length.EqualTo(1));
             Assert.That(
                 interiorRoot.GetComponentsInChildren<
                     BarActivityStation>(true),
@@ -1638,6 +1738,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();
+            GameSessionState.ResetEconomyState();
         }
     }
 }

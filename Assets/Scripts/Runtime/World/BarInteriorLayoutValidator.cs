@@ -14,6 +14,7 @@ namespace BarPromenade
 
         private const float Tolerance = 0.001f;
         private const float PathConnectionTolerance = 0.01f;
+        private const float MaximumCounterStationGap = 0.5f;
 
         public static void ValidateOrThrow(BarInteriorLayoutPlan plan)
         {
@@ -59,12 +60,18 @@ namespace BarPromenade
             RequireFinite(
                 plan.ActivityStationPosition,
                 "Activity station");
+            RequireFinite(
+                plan.CounterStationPosition,
+                "Counter station");
             RequirePositiveFinite(
                 plan.ExitTriggerSize,
                 "Exit trigger size");
             RequirePositiveFinite(
                 plan.ActivityStationTriggerSize,
                 "Activity station trigger size");
+            RequirePositiveFinite(
+                plan.CounterStationTriggerSize,
+                "Counter station trigger size");
             RequirePositiveFinite(plan.CounterSize, "Counter size");
 
             RequireInsideWithRadius(
@@ -82,6 +89,21 @@ namespace BarPromenade
                 plan.ActivityStationPosition,
                 PlayerRadius,
                 "Activity station");
+            RequireInsideWithRadius(
+                plan.WalkableBounds,
+                plan.CounterStationPosition,
+                PlayerRadius,
+                "Counter station");
+            Rect counterStationBounds = CreatePlanarBounds(
+                plan.CounterStationPosition,
+                plan.CounterStationTriggerSize);
+            if (!Contains(plan.WalkableBounds, counterStationBounds))
+            {
+                throw new InvalidOperationException(
+                    "Counter station trigger must stay inside the " +
+                    "walkable bounds.");
+            }
+
             RequireInsideRoom(plan, plan.ExitPosition, "Exit position");
             RequireInsideRoom(
                 plan,
@@ -193,6 +215,10 @@ namespace BarPromenade
                 plan.Paths,
                 plan.ActivityStationPosition,
                 "Activity station");
+            RequirePointOnPath(
+                plan.Paths,
+                plan.CounterStationPosition,
+                "Counter station");
         }
 
         private static void EnsureEveryPathConnected(
@@ -309,6 +335,7 @@ namespace BarPromenade
             }
 
             ValidateCounterContract(plan, counter);
+            ValidateCounterStationContract(plan, counter);
             ValidateFurnitureSeparation(plan.FurnitureFootprints);
         }
 
@@ -335,6 +362,60 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "Counter position/size must match its footprint.");
+            }
+        }
+
+        private static void ValidateCounterStationContract(
+            BarInteriorLayoutPlan plan,
+            BarInteriorFurnitureFootprint counter)
+        {
+            Rect stationBounds = CreatePlanarBounds(
+                plan.CounterStationPosition,
+                plan.CounterStationTriggerSize);
+            if (stationBounds.xMin < counter.Bounds.xMin - Tolerance ||
+                stationBounds.xMax > counter.Bounds.xMax + Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "Counter station must stay horizontally in front of " +
+                    "the counter.");
+            }
+
+            float counterGap = counter.Bounds.yMin - stationBounds.yMax;
+            if (counterGap < -Tolerance ||
+                counterGap > MaximumCounterStationGap + Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "Counter station must stay directly in front of the " +
+                    "counter without intersecting it.");
+            }
+
+            for (int index = 0;
+                 index < plan.FurnitureFootprints.Count;
+                 index++)
+            {
+                BarInteriorFurnitureFootprint footprint =
+                    plan.FurnitureFootprints[index];
+                if (footprint.BlocksMovement &&
+                    stationBounds.Overlaps(footprint.Bounds))
+                {
+                    throw new InvalidOperationException(
+                        "Counter station trigger intersects furniture " +
+                        $"'{footprint.Id}'.");
+                }
+            }
+
+            Rect activityBounds = CreatePlanarBounds(
+                plan.ActivityStationPosition,
+                plan.ActivityStationTriggerSize);
+            Rect exitBounds = CreatePlanarBounds(
+                plan.ExitPosition,
+                plan.ExitTriggerSize);
+            if (stationBounds.Overlaps(activityBounds) ||
+                stationBounds.Overlaps(exitBounds))
+            {
+                throw new InvalidOperationException(
+                    "Counter station trigger intersects another " +
+                    "interaction trigger.");
             }
         }
 
@@ -604,6 +685,17 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     $"{label} must be a finite positive rectangle.");
             }
+        }
+
+        private static Rect CreatePlanarBounds(
+            Vector3 position,
+            Vector3 size)
+        {
+            return new Rect(
+                position.x - size.x * 0.5f,
+                position.z - size.z * 0.5f,
+                size.x,
+                size.z);
         }
 
         private static void RequirePositiveFinite(

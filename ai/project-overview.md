@@ -71,6 +71,9 @@ The vertical slice contains:
   least `120 m` apart by traversable graph distance, while stable row-major
   order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
   Row;
+- a fresh city session starts on the road node beside one deterministically
+  selected generated bar, `12 m` from its approach under default spacing;
+  returning from an interior still restores the active bar's own return point;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -147,9 +150,10 @@ The vertical slice contains:
 - a scene-local spatial crowd bed plus rare glass/chair cues consume their
   layout radius/gain data and coexist with the existing bar music and
   procedural ambience inside a four-source budget;
-- one exit and one interaction station remain authoritative, while the
-  activity fixture adapts to cocktail mixing, beer pong, Split the G or
-  Tinctures in a Row without blocking the validated approach;
+- one exit, one activity station and one ordinary-drink counter station remain
+  authoritative; the activity fixture adapts to cocktail mixing, beer pong,
+  Split the G or Tinctures in a Row, while the separate counter point keeps a
+  validated approach in every variant;
 - one explicit `BarMinigameCatalog` whose ordered definitions and factories
   create both normal and debug minigame instances; cocktail mixing, beer pong
   Split the G and Tinctures in a Row are registered now, and future
@@ -205,7 +209,12 @@ The vertical slice contains:
   dark-beer fraction, and only an activated `XXX` in Tinctures in a Row
   immediately consumes `Moonshine` for 24 intoxication; reaching `100`
   terminates the applicable minigame at maximum intoxication without creating
-  a separate timed status.
+  a separate timed status;
+- a session-only cash wallet starting at `$999` and a localized nine-item
+  counter menu in every bar; purchases atomically deduct a fixed integer price
+  and immediately consume the selected drink, while water costs `$2`, counts
+  as consumed, does not sober the player and preserves the last-alcohol
+  context.
 
 ## Deferred
 
@@ -219,8 +228,8 @@ The vertical slice contains:
   prototype uses one authored view per direction plus runtime joint walking,
   procedural living-idle motion and body-sprite blink variants.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
-- Sobering mechanics, long-term save data, economy, dialogue, quests, combat,
-  save slots, and online features.
+- Sobering mechanics, long-term save data, income/jobs, inventory, a broader
+  economy, dialogue, quests, combat, save slots, and online features.
 - Final bespoke art and audio masters, accessibility, localization coverage,
   and platform release work.
 - Split the G Easy/Hard profiles, persistent best scores and streaks.

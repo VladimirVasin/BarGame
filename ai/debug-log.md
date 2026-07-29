@@ -52,7 +52,7 @@ The important correlation fields are:
 
 | Category | Recorded events |
 | --- | --- |
-| `session` | start/end, seed, route, visited bars, active bar, return state and drinking mutations |
+| `session` | start/end, seed, route, visited bars, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed |
 | `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings |
 | `interaction`, `map` | entrance/exit results and map lifecycle; path rebuilds are verbose-only |

@@ -5,20 +5,22 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarCounterStation : MonoBehaviour, IInteractable
     {
-        private CocktailMinigameController minigame;
+        private BarDrinkShopController controller;
 
-        public string PromptKey => "interaction.order_drinks";
+        public string PromptKey => "interaction.buy_drink";
         public Vector3 InteractionPosition => transform.position;
 
-        public void Configure(CocktailMinigameController controller)
+        public void Configure(BarDrinkShopController shopController)
         {
-            minigame = controller;
+            controller = shopController;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            return minigame != null &&
-                   !minigame.IsOpen &&
+            return interactor != null &&
+                   controller != null &&
+                   !controller.IsOpen &&
+                   !BarMinigameModalLock.IsAnyLocked &&
                    !SceneTransitionService.IsTransitioning;
         }
 
@@ -26,7 +28,7 @@ namespace BarPromenade
         {
             if (CanInteract(interactor))
             {
-                minigame.Open(interactor);
+                controller.Open(interactor);
             }
         }
     }

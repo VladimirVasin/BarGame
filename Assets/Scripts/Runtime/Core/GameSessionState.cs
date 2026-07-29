@@ -8,6 +8,7 @@ namespace BarPromenade
     public static class GameSessionState
     {
         public const int DefaultCitySeed = 20260727;
+        public const int DefaultCash = 999;
 
         private static readonly List<string> plannedBarRoute =
             new List<string>();
@@ -24,6 +25,7 @@ namespace BarPromenade
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
+        public static int CashBalance { get; private set; } = DefaultCash;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
@@ -40,6 +42,7 @@ namespace BarPromenade
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
+            CashBalance = DefaultCash;
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
             plannedBarRoute.Clear();
@@ -349,6 +352,29 @@ namespace BarPromenade
                     resetBalanceDelay));
         }
 
+        public static DrinkPurchaseResult TryPurchaseDrink(
+            DrinkId drinkId)
+        {
+            DrinkPurchaseResult result =
+                DrinkPurchaseRules.Evaluate(
+                    drinkId,
+                    CashBalance,
+                    IntoxicationLevel,
+                    LastAlcoholicDrink,
+                    DrinksConsumed);
+            if (result.Succeeded)
+            {
+                CashBalance = result.CashAfter;
+                UpdateDrinkingProgress(
+                    result.IntoxicationAfter,
+                    result.LastAlcoholicDrinkAfter,
+                    result.DrinksConsumedAfter);
+            }
+
+            LogDrinkPurchase(result);
+            return result;
+        }
+
         public static void SetBalanceCheckDelay(float seconds)
         {
             float nextValue = Mathf.Max(0f, seconds);
@@ -420,10 +446,57 @@ namespace BarPromenade
                     previousDrinksConsumed));
         }
 
+        public static void ResetEconomyState()
+        {
+            if (CashBalance == DefaultCash)
+            {
+                return;
+            }
+
+            int previousCash = CashBalance;
+            CashBalance = DefaultCash;
+            GameLog.Info(
+                "session",
+                "economy_reset",
+                GameLog.Field("previous_cash", previousCash),
+                GameLog.Field("cash_balance", CashBalance));
+        }
+
         private static BarActivityKind NormalizeBarActivity(
             BarActivityKind barActivity)
         {
             return BarMinigameCatalog.NormalizeActivity(barActivity);
+        }
+
+        private static void LogDrinkPurchase(
+            DrinkPurchaseResult result)
+        {
+            GameLog.Info(
+                "session",
+                "drink_purchase_resolved",
+                GameLog.Field("accepted", result.Succeeded),
+                GameLog.Field("status", result.Status.ToString()),
+                GameLog.Field(
+                    "drink",
+                    result.RequestedDrink.ToString()),
+                GameLog.Field("price", result.Offer.Price),
+                GameLog.Field("cash_before", result.CashBefore),
+                GameLog.Field("cash_after", result.CashAfter),
+                GameLog.Field(
+                    "intoxication_before",
+                    result.IntoxicationBefore),
+                GameLog.Field(
+                    "intoxication_after",
+                    result.IntoxicationAfter),
+                GameLog.Field(
+                    "actual_intoxication_delta",
+                    result.ActualIntoxicationDelta),
+                GameLog.Field(
+                    "drinks_before",
+                    result.DrinksConsumedBefore),
+                GameLog.Field(
+                    "drinks_after",
+                    result.DrinksConsumedAfter));
         }
 
         private static string FormatRoute()

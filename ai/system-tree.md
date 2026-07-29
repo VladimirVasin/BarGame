@@ -68,7 +68,7 @@ Assets/
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
       Interaction/   contract, shared minigame catalog, selection and entrances
       Scenes/        bar world/atmosphere/sound/reveal and door transition
-      Drinks/        stable drink IDs used by current-run persistence
+      Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
@@ -96,6 +96,7 @@ Cross-system flow:
 seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                           -> four urban districts + central park
                                           -> distant bars via CityTravelDistance
+                                          -> fresh road-node spawn beside one bar
                                           -> indexed RoadWalkableArea -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
@@ -109,7 +110,7 @@ player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                                   -> DoorTransitionRoot
                                                      -> preloaded destination
-       <- restored spawn/context <- GameSessionState
+       <- active-bar return spawn/context <- GameSessionState
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths
@@ -128,6 +129,9 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                                   -> 7x7 swaps + cascades + XXX
                              -> drinking progress -> GameSessionState
                              -> completed visit -> CityMap
+       -> BarCounterStation -> BarDrinkShop
+                            -> retail catalog + atomic cash/drink transaction
+                            -> GameSessionState wallet + drinking progress
 GameSessionState intoxication -> IntoxicationStageRules
                               -> motor + puppet + camera
                               -> IntoxicationRenderState -> PS1 world composite
