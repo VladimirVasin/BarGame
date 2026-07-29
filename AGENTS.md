@@ -34,3 +34,26 @@ These instructions apply to the entire repository.
 - Update `ai/project-overview.md`, `ai/system-tree.md`, or `ai/systems-map.md` when their facts change.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
+
+## Risk-based verification
+
+Classify each coherent change by its blast radius and use the highest applicable
+risk level. If the impact is unclear, raise the classification by one level.
+
+- **Low risk:** documentation, comments, test-only edits, or isolated visual/data
+  changes with no runtime contract change. Review the diff and run only the
+  directly relevant checks; documentation-only changes do not require Unity
+  tests.
+- **Medium risk:** behavior changes contained within one system, including its
+  public methods or data. Verify compilation and run the affected system's
+  EditMode and/or PlayMode tests.
+- **High risk:** shared contracts or services; scenes, prefabs, ScriptableObjects,
+  or serialization; save/load; assembly, package, project, or build settings;
+  Unity lifecycle behavior; cross-system or cross-scene changes. Verify
+  compilation, run the full EditMode and PlayMode suites, and perform a relevant
+  build or manual smoke check when the changed path requires it.
+
+Run checks after a coherent batch rather than after every edited line. Always run
+targeted tests for changed behavior, reserve the full suite for high-risk changes
+and release or milestone validation, and report exactly which checks ran and
+which could not be completed.
