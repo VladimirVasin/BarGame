@@ -54,6 +54,7 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private bool completionRaised;
         private bool persistSessionProgress = true;
+        private string minigameRunId = string.Empty;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -186,6 +187,8 @@ namespace BarPromenade
                 ? BeerPongPresentationPhase.FinalResult
                 : BeerPongPresentationPhase.Aiming;
             IsOpen = true;
+            minigameRunId = Guid.NewGuid().ToString("N");
+            LogOpened();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -258,6 +261,27 @@ namespace BarPromenade
             lastThrow = null;
             ballTrail.Clear();
             ballTrail.Add(physics.Layout.ThrowOrigin);
+            GameLog.Info(
+                "beer_pong",
+                "throw_started",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "throw",
+                    session.ThrowsCompleted + 1),
+                GameLog.Field(
+                    "aim_yaw_degrees",
+                    AimYawDegrees),
+                GameLog.Field(
+                    "aim_pitch_degrees",
+                    AimPitchDegrees),
+                GameLog.Field(
+                    "charge_power",
+                    ChargePower),
+                GameLog.Field(
+                    "standing_cup_mask",
+                    standingCupMask));
             RetroAudio.Play(RetroSfxId.BeerPongThrow);
             return true;
         }
@@ -390,6 +414,11 @@ namespace BarPromenade
                 return;
             }
 
+            if (!completionRaised)
+            {
+                LogCancelled("user");
+            }
+
             RetroAudio.Play(RetroSfxId.UiCancel);
             Close();
         }
@@ -475,11 +504,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            LogInterruptedClose("disabled");
             Close();
         }
 
         private void OnDestroy()
         {
+            LogInterruptedClose("destroyed");
             Close();
         }
 
@@ -497,6 +528,7 @@ namespace BarPromenade
                     session.DrinksConsumed);
             }
 
+            LogThrowResolved(flightResult, throwResult);
             if (flightResult.WasSunk)
             {
                 RetroAudio.Play(RetroSfxId.BeerPongSink);
@@ -609,6 +641,7 @@ namespace BarPromenade
             chargeElapsed = 0f;
             impactPulseRemaining = 0f;
             ImpactKind = BeerPongImpactKind.None;
+            minigameRunId = string.Empty;
         }
 
         private void RaiseCompleted()
@@ -619,7 +652,171 @@ namespace BarPromenade
             }
 
             completionRaised = true;
+            LogCompleted();
             Completed?.Invoke();
+        }
+
+        private void LogOpened()
+        {
+            GameLog.Info(
+                "beer_pong",
+                "opened",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "bar_id",
+                    GameSessionState.ActiveBarId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "initial_intoxication",
+                    session.Intoxication),
+                GameLog.Field(
+                    "last_drink",
+                    session.LastAlcoholicDrink.ToString()),
+                GameLog.Field(
+                    "drinks_consumed",
+                    session.DrinksConsumed),
+                GameLog.Field(
+                    "cups_remaining",
+                    session.CupsRemaining),
+                GameLog.Field(
+                    "throws_remaining",
+                    session.ThrowsRemaining));
+        }
+
+        private void LogThrowResolved(
+            BeerPongFlightResult flight,
+            BeerPongThrowResult result)
+        {
+            GameLog.Info(
+                "beer_pong",
+                "throw_resolved",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field("throw", result.ThrowNumber),
+                GameLog.Field(
+                    "status",
+                    flight.Status.ToString()),
+                GameLog.Field("cup_index", result.CupIndex),
+                GameLog.Field(
+                    "miss_reason",
+                    result.MissReason.ToString()),
+                GameLog.Field(
+                    "bank_shot",
+                    result.WasBankShot),
+                GameLog.Field(
+                    "flight_seconds",
+                    flight.FlightTime),
+                GameLog.Field(
+                    "table_bounces",
+                    flight.TableBounceCount),
+                GameLog.Field(
+                    "rim_bounces",
+                    flight.RimBounceCount),
+                GameLog.Field(
+                    "score_awarded",
+                    result.ScoreAwarded),
+                GameLog.Field(
+                    "early_clear_bonus",
+                    result.EarlyClearBonus),
+                GameLog.Field(
+                    "total_score",
+                    result.TotalScore),
+                GameLog.Field(
+                    "intoxication_delta",
+                    result.IntoxicationDelta),
+                GameLog.Field(
+                    "intoxication",
+                    result.CurrentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    result.DrinksConsumed),
+                GameLog.Field(
+                    "cups_remaining",
+                    result.CupsRemaining),
+                GameLog.Field(
+                    "throws_remaining",
+                    result.ThrowsRemaining),
+                GameLog.Field(
+                    "outcome",
+                    result.SessionOutcome.ToString()));
+        }
+
+        private void LogCompleted()
+        {
+            GameLog.Info(
+                "beer_pong",
+                "completed",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "outcome",
+                    session.Outcome.ToString()),
+                GameLog.Field(
+                    "throws_completed",
+                    session.ThrowsCompleted),
+                GameLog.Field(
+                    "cups_remaining",
+                    session.CupsRemaining),
+                GameLog.Field(
+                    "total_score",
+                    session.TotalScore),
+                GameLog.Field(
+                    "intoxication",
+                    session.Intoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    session.DrinksConsumed));
+        }
+
+        private void LogInterruptedClose(string reason)
+        {
+            if (IsOpen && !completionRaised)
+            {
+                LogCancelled(reason);
+            }
+        }
+
+        private void LogCancelled(string reason)
+        {
+            GameLog.Info(
+                "beer_pong",
+                "cancelled",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field("close_reason", reason),
+                GameLog.Field(
+                    "phase",
+                    PresentationPhase.ToString()),
+                GameLog.Field(
+                    "throw_in_flight",
+                    physics != null && physics.IsInFlight),
+                GameLog.Field(
+                    "throws_completed",
+                    session?.ThrowsCompleted ?? 0),
+                GameLog.Field(
+                    "cups_remaining",
+                    session?.CupsRemaining ??
+                    BeerPongTableLayout.CupCount),
+                GameLog.Field(
+                    "total_score",
+                    session?.TotalScore ?? 0),
+                GameLog.Field(
+                    "intoxication",
+                    session?.Intoxication ??
+                    GameSessionState.IntoxicationLevel));
         }
 
         private static Vector2 ReadAimInput()

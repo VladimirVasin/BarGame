@@ -43,23 +43,31 @@ Assets/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
+    Bar/
+      Npc/
+        BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
     Localization/
       ru.json
       en.json
   Scripts/
     Runtime/
       Core/          bootstrap, city root, session, transitions
+      Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         filtered scene themes, generated retro SFX and ambience
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
-      Map/           ordered road-route model and deterministic pathfinding
-      World/         layout, graph/fence plans, world/night, local fog and halos
+      Map/           ordered road-route model, heap pathfinding and district map
+      World/         city plus validated bar layout/zone/path plans and builders
+        CityDistrict.cs          district, land-use, park and gate data
+        CityTravelDistance.cs    weighted road/park-path distance between bars
+        RoadWalkableArea.cs      indexed union of streets, aprons and park lawn
+      Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
       Interaction/   contract, shared minigame catalog, selection and entrances
-      Scenes/        generated bar interior and fixed-camera door transition
+      Scenes/        bar world/atmosphere/sound/reveal and door transition
       Drinks/        stable drink IDs used by current-run persistence
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -85,13 +93,16 @@ ProjectSettings/
 Cross-system flow:
 
 ```text
-seed -> CityLayoutGenerator -> CityLayout -> CityWorldBuilder
-                                          -> RoadWalkableArea -> PlayerMotor
-                                          -> CityRoutePathfinder -> CityMap
+seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
+                                          -> four urban districts + central park
+                                          -> distant bars via CityTravelDistance
+                                          -> indexed RoadWalkableArea -> PlayerMotor
+                                          -> CityRoutePathfinder
+                                             -> district-aware CityMap
                                           -> RoadFencePlanner
-                                             -> RoadFenceWorldBuilder
+                                             -> chunked fences + park gates
                                           -> CityNightFixturePlanner
-                                             -> CityNightWorldBuilder
+                                             -> chunked lamps + signals
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
@@ -99,6 +110,14 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                                   -> DoorTransitionRoot
                                                      -> preloaded destination
        <- restored spawn/context <- GameSessionState
+       -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
+                                   -> BarInteriorWorldBuilder
+                                   -> seven zones + four clear paths
+                                   -> practical light/audio/NPC anchors
+       -> BarInteriorAtmosphere -> six shadowless lights + grade + dust
+       -> BarNpcPlanner -> BarNpcDirector -> 12 shared-sprite actors
+       -> BarSoundscape -> spatial crowd bed + rare bar cues
+       -> BarArrivalPresentation -> skippable Bezier camera reveal
        -> BarActivityStation -> BarMinigameCatalog -> CocktailMinigame
                                                   -> CocktailRules + deterministic 7-item shelf
                                                or -> BeerPongMinigame
@@ -117,6 +136,9 @@ GameSessionState intoxication -> IntoxicationStageRules
                                  -> success or visual fall/recovery
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
+F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
+state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
+Unity warning/error/exception ----------------------------^
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
 scene root -> matching procedural ambience

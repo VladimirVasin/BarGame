@@ -41,6 +41,7 @@ namespace BarPromenade
         {
             if (CanInteract(interactor))
             {
+                GetComponentInParent<BarArrivalPresentation>()?.Skip();
                 minigame.Open(interactor);
             }
         }

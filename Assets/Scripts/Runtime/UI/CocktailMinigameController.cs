@@ -53,6 +53,7 @@ namespace BarPromenade
         private bool serveAfterPour;
         private bool completionRaised;
         private bool persistSessionProgress = true;
+        private string minigameRunId = string.Empty;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -259,8 +260,10 @@ namespace BarPromenade
                     CocktailPresentationPhase.ChoosingBase;
             }
 
+            minigameRunId = Guid.NewGuid().ToString("N");
             phaseElapsed = 0f;
             phaseDuration = 0f;
+            LogOpened();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -288,6 +291,19 @@ namespace BarPromenade
             BeginPhase(
                 CocktailPresentationPhase.Pouring,
                 BasePourDuration);
+            GameLog.Info(
+                "cocktail",
+                "round_started",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "round",
+                    session.CurrentRoundNumber),
+                GameLog.Field("base", baseId.ToString()),
+                GameLog.Field(
+                    "offers",
+                    string.Join(",", offers)));
             RetroAudio.Play(RetroSfxId.Pour);
             return true;
         }
@@ -326,6 +342,39 @@ namespace BarPromenade
             BeginPhase(
                 CocktailPresentationPhase.Pouring,
                 IngredientPourDuration);
+            GameLog.Info(
+                "cocktail",
+                "ingredient_added",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "round",
+                    session.CurrentRoundNumber),
+                GameLog.Field(
+                    "ingredient",
+                    selection.IngredientId.ToString()),
+                GameLog.Field(
+                    "compatible",
+                    selection.WasCompatible),
+                GameLog.Field(
+                    "good_count",
+                    selection.GoodIngredientCount),
+                GameLog.Field(
+                    "bad_count",
+                    selection.BadIngredientCount),
+                GameLog.Field(
+                    "addition_count",
+                    selection.AdditionCount),
+                GameLog.Field(
+                    "score",
+                    selection.CurrentScore),
+                GameLog.Field(
+                    "score_delta",
+                    selection.ScoreDelta),
+                GameLog.Field(
+                    "must_serve",
+                    selection.MustServe));
             RetroAudio.Play(RetroSfxId.Pour);
             return true;
         }
@@ -487,6 +536,11 @@ namespace BarPromenade
                 return;
             }
 
+            if (!completionRaised)
+            {
+                LogCancelled("user");
+            }
+
             RetroAudio.Play(RetroSfxId.UiCancel);
             Close();
         }
@@ -560,11 +614,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            LogInterruptedClose("disabled");
             Close();
         }
 
         private void OnDestroy()
         {
+            LogInterruptedClose("destroyed");
             Close();
         }
 
@@ -616,6 +672,7 @@ namespace BarPromenade
                     session.CocktailsConsumed);
             }
 
+            LogRoundServed(lastRound.Value);
             RetroAudio.Play(RetroSfxId.Shake);
 
             BeginPhase(
@@ -678,6 +735,7 @@ namespace BarPromenade
             phaseElapsed = 0f;
             phaseDuration = 0f;
             serveAfterPour = false;
+            minigameRunId = string.Empty;
         }
 
         private void RaiseCompleted()
@@ -688,7 +746,140 @@ namespace BarPromenade
             }
 
             completionRaised = true;
+            LogCompleted();
             Completed?.Invoke();
+        }
+
+        private void LogOpened()
+        {
+            GameLog.Info(
+                "cocktail",
+                "opened",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field("bar_id", session.BarId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "initial_intoxication",
+                    session.Intoxication),
+                GameLog.Field(
+                    "last_drink",
+                    session.LastAlcoholicDrink.ToString()),
+                GameLog.Field(
+                    "drinks_consumed",
+                    session.CocktailsConsumed),
+                GameLog.Field(
+                    "phase",
+                    PresentationPhase.ToString()),
+                GameLog.Field(
+                    "outcome",
+                    session.Outcome.ToString()));
+        }
+
+        private void LogRoundServed(CocktailRoundResult result)
+        {
+            GameLog.Info(
+                "cocktail",
+                "round_served",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field("round", result.RoundNumber),
+                GameLog.Field("base", result.BaseId.ToString()),
+                GameLog.Field(
+                    "ingredients",
+                    string.Join(",", result.Ingredients)),
+                GameLog.Field(
+                    "good_count",
+                    result.GoodIngredientCount),
+                GameLog.Field(
+                    "bad_count",
+                    result.BadIngredientCount),
+                GameLog.Field("score", result.Score),
+                GameLog.Field(
+                    "previous_intoxication",
+                    result.PreviousIntoxication),
+                GameLog.Field(
+                    "alcohol_gain",
+                    result.AlcoholIntoxicationGain),
+                GameLog.Field(
+                    "bad_mix_penalty",
+                    result.BadMixIntoxicationPenalty),
+                GameLog.Field(
+                    "intoxication",
+                    result.CurrentIntoxication),
+                GameLog.Field(
+                    "last_drink",
+                    result.LastAlcoholicDrink.ToString()),
+                GameLog.Field(
+                    "outcome",
+                    result.SessionOutcome.ToString()));
+        }
+
+        private void LogCompleted()
+        {
+            GameLog.Info(
+                "cocktail",
+                "completed",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "outcome",
+                    session.Outcome.ToString()),
+                GameLog.Field(
+                    "rounds_completed",
+                    session.RoundsCompleted),
+                GameLog.Field(
+                    "total_score",
+                    session.TotalScore),
+                GameLog.Field(
+                    "intoxication",
+                    session.Intoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    session.CocktailsConsumed));
+        }
+
+        private void LogInterruptedClose(string reason)
+        {
+            if (IsOpen && !completionRaised)
+            {
+                LogCancelled(reason);
+            }
+        }
+
+        private void LogCancelled(string reason)
+        {
+            GameLog.Info(
+                "cocktail",
+                "cancelled",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field("close_reason", reason),
+                GameLog.Field(
+                    "phase",
+                    PresentationPhase.ToString()),
+                GameLog.Field(
+                    "rounds_completed",
+                    session?.RoundsCompleted ?? 0),
+                GameLog.Field(
+                    "total_score",
+                    session?.TotalScore ?? 0),
+                GameLog.Field(
+                    "intoxication",
+                    session?.Intoxication ??
+                    GameSessionState.IntoxicationLevel));
         }
 
         private int FindNextAvailableOffer(int startIndex, int direction)

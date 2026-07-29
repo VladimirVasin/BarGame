@@ -48,6 +48,51 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Build_OnLargeLayout_ProducesStableRouteAcrossRepeatedRuns()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BlocksX = 32;
+            settings.BlocksZ = 32;
+            settings.BarCount = 4;
+            settings.LoopChance = 0.42f;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                GameSessionState.DefaultCitySeed + 1701);
+            BuildingLot[] stops = GetBars(layout).ToArray();
+            Vector3 start = layout.SpawnWorldPosition +
+                            new Vector3(1.35f, 0.4f, -1.1f);
+
+            CityRoutePath expected = CityRoutePathfinder.Build(
+                layout,
+                start,
+                stops);
+
+            Assert.That(expected.IsEmpty, Is.False);
+            Assert.That(
+                CalculateLength(expected.Points),
+                Is.EqualTo(expected.TotalLength).Within(PositionTolerance));
+            Assert.That(
+                Vector3.Distance(
+                    expected.Points[expected.Points.Count - 1],
+                    Flatten(stops[stops.Length - 1].ReturnPosition)),
+                Is.LessThan(PositionTolerance));
+
+            for (int iteration = 0; iteration < 3; iteration++)
+            {
+                CityRoutePath actual = CityRoutePathfinder.Build(
+                    layout,
+                    start,
+                    stops);
+
+                CollectionAssert.AreEqual(expected.Points, actual.Points);
+                Assert.That(
+                    actual.TotalLength,
+                    Is.EqualTo(expected.TotalLength));
+            }
+        }
+
+        [Test]
         public void Build_VisitsStopsInOrderAndEndsAtLastReturnPosition()
         {
             CityLayout layout = CreateLayout();

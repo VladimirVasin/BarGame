@@ -14,14 +14,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Data-first generation:** A pure `CityLayout` is validated before GameObjects are created.
 - **Accepted — Stable local randomness:** Road stages and lot coordinates use stable hashes; Unity global random state is not used.
 - **Accepted — Finite connected graph:** Kruskal-style spanning tree plus deterministic optional loops.
-- **Accepted — Accessible bars:** Every lot gets frontage; bar return points are validated against a frontage road.
-- **Accepted — Data-driven walkable mask:** Player motion is constrained to a union of XZ road and entrance-apron rectangles.
+- **Accepted — District-scale finite city:** The default layout is a
+  `12 x 12`-block, roughly `288 x 288 m` city. Four quadrant-based urban
+  districts surround a central `4 x 4`-block park; cross-city arterials and a
+  park-path cross are mandatory before optional seeded roads are added.
+- **Accepted — Graph-separated accessible bars:** Buildable lots get street
+  frontage and bar return points are validated against it. The default four
+  bars occupy different urban districts and every pair is separated by at
+  least `120 m` of weighted street/park-path travel rather than straight-line
+  distance.
+- **Accepted — Data-driven indexed walkable mask:** Player motion is
+  constrained to a spatially indexed union of XZ street, entrance-apron and
+  park-lawn rectangles. The park connects to surrounding streets through four
+  explicit gates.
 - **Accepted — Entrance-aware visual road boundary:** A pure planner derives
-  the exposed perimeter of the road-rectangle union, including dead-end caps,
-  and subtracts a wider opening around every bar frontage. Runtime two-rail
-  fences are collider-free so `RoadWalkableArea` remains the sole movement
-  authority and camera collision does not react to decorative posts; rails
-  and posts are combined into two owned runtime meshes.
+  the exposed perimeter of street rectangles only, including dead-end caps,
+  and subtracts wider openings around every bar frontage and park gate.
+  Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
+  sole movement authority and camera collision does not react to decorative
+  posts; rails and posts are combined into owned `48 m` spatial chunks.
 - **Accepted — Physical/visual split:** `CharacterController` stays on the
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms
@@ -31,6 +42,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `DoorTransition` installs an idle presentation root; only the transition
   service initializes and plays it.
 - **Accepted — Persistent transition context:** Static subsystem-reset session state carries seed and bar ID between Single-mode scene loads.
+- **Accepted — Bounded structured diagnostics:** Runtime support logging uses
+  one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
+  sequence, session/scene/seed context and explicit transition/minigame
+  correlation IDs. Only state boundaries and results are instrumented;
+  per-frame simulation and ordinary Unity log messages are excluded. Editor
+  and development runs default to verbose, release players to basic, and
+  batch/command-line tests to off. Files rotate at 5 MiB with three retained
+  archives, while `F8` writes and flushes a manual state snapshot.
 - **Accepted — Separate classic door transition:** Bar entrances and exits
   reserve one transition guard for the complete
   `source -> DoorTransition -> destination` chain. The intermediate scene
@@ -48,10 +67,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the stop, while entering, cancelling or leaving early does not.
   Both route and visited progress reset when the city seed changes.
 - **Accepted — Road-graph route planning:** Each itinerary leg uses
-  deterministic weighted Dijkstra over `CityLayout.RoadEdges`; player and bar
-  endpoints are projected onto their road segments without NavMesh.
+  deterministic weighted Dijkstra with a binary min-heap over street and park
+  path edges; player and bar endpoints are projected onto their segments
+  without NavMesh.
 - **Accepted — Modal schematic city map:** A runtime IMGUI overlay fits the
-  complete finite city in one view, exposes mouse/keyboard/gamepad editing,
+  complete finite city in one view, colors and labels all five districts,
+  distinguishes park land and paths, exposes mouse/keyboard/gamepad editing,
   and temporarily suspends motor, interaction, camera orbit, cinematic camera
   motion and the HUD.
 - **Accepted — Independent player heading:** The motor rotates the player root
@@ -152,7 +173,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   without remaining visible through solid geometry.
 - **Accepted — Data-first night fixtures:** `CityNightFixturePlanner` derives
   two lamps per road edge and at most six signalized degree-3+ intersections
-  deterministically from the city seed and road graph before GameObjects exist.
+  deterministically from the city seed and road graph before GameObjects
+  exist. Visual lamp fixtures and bulbs are combined into separate `48 m`
+  meshes while lightweight anchors preserve the pooled-light contract.
 - **Accepted — Bounded practical lights:** All bulbs and signal lenses reuse
   one HDR URP Unlit material; a player-relative pool of directed street spot
   lights plus bar entrance point lights keeps the complete exterior at no more

@@ -25,8 +25,8 @@ namespace BarPromenade.Tests.EditMode
                 first.Segments,
                 second.Segments);
             CollectionAssert.AreEqual(
-                first.EntranceOpenings,
-                second.EntranceOpenings);
+                first.Openings,
+                second.Openings);
         }
 
         [Test]
@@ -36,10 +36,11 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default;
             settings.LoopChance = 1f;
             settings.BarCount = 8;
+            settings.MinimumBarRouteDistance = 0f;
             CityLayout layout =
                 CityLayoutGenerator.Generate(settings, -4119);
             IReadOnlyList<Rect> roads =
-                layout.CreateRoadRects();
+                layout.CreateStreetRects();
 
             RoadFencePlan plan =
                 RoadFencePlanner.CreatePlan(layout);
@@ -98,7 +99,7 @@ namespace BarPromenade.Tests.EditMode
                         settings,
                         seeds[seedIndex]);
                 IReadOnlyList<Rect> roads =
-                    layout.CreateRoadRects();
+                    layout.CreateStreetRects();
                 RoadFencePlan plan =
                     RoadFencePlanner.CreatePlan(layout);
 
@@ -169,7 +170,7 @@ namespace BarPromenade.Tests.EditMode
             float expectedLength = 2f *
                 (outerWidth + outerDepth + innerWidth + innerDepth);
 
-            Assert.That(plan.EntranceOpenings, Is.Empty);
+            Assert.That(plan.Openings, Is.Empty);
             Assert.That(plan.Segments, Has.Count.EqualTo(8));
             Assert.That(
                 plan.Segments.Sum(segment => segment.Length),
@@ -213,8 +214,8 @@ namespace BarPromenade.Tests.EditMode
             {
                 CityGenerationSettings settings =
                     CityGenerationSettings.Default;
-                settings.BarCount =
-                    settings.BlocksX * settings.BlocksZ;
+                settings.BarCount = 12;
+                settings.MinimumBarRouteDistance = 0f;
                 CityLayout layout =
                     CityLayoutGenerator.Generate(
                         settings,
@@ -260,6 +261,102 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void CreatePlan_LeavesFourClearParkGateOpenings()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                71923);
+
+            RoadFencePlan plan =
+                RoadFencePlanner.CreatePlan(layout);
+
+            Assert.That(layout.Park.IsEnabled, Is.True);
+            Assert.That(layout.Park.Gates, Has.Count.EqualTo(4));
+            Assert.That(plan.ParkGateOpenings, Has.Count.EqualTo(4));
+            Assert.That(
+                plan.Openings.Count,
+                Is.EqualTo(
+                    plan.EntranceOpenings.Count +
+                    plan.ParkGateOpenings.Count));
+            foreach (CityParkGateDescriptor gate
+                     in layout.Park.Gates)
+            {
+                RoadFenceOpeningDescriptor opening =
+                    plan.ParkGateOpenings.Single(
+                        candidate =>
+                            candidate.ParkGateId == gate.Id);
+
+                Assert.That(
+                    opening.Kind,
+                    Is.EqualTo(RoadFenceOpeningKind.ParkGate));
+                Assert.That(opening.BarId, Is.Empty);
+                Assert.That(opening.Center, Is.EqualTo(gate.Center));
+                Assert.That(
+                    opening.OutwardNormal,
+                    Is.EqualTo(gate.OutwardNormal));
+                Assert.That(opening.Width, Is.EqualTo(gate.Width));
+                AssertOpeningHasNoFence(plan, opening);
+            }
+        }
+
+        [Test]
+        public void Build_CreatesBoundedColliderFreeSpatialChunks()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                71923);
+            RoadFencePlan plan =
+                RoadFencePlanner.CreatePlan(layout);
+            var parent = new GameObject("Fence Test Parent");
+
+            try
+            {
+                GameObject fenceRoot =
+                    RoadFenceWorldBuilder.Build(
+                        parent.transform,
+                        plan);
+
+                Assert.That(
+                    fenceRoot.transform.childCount,
+                    Is.GreaterThan(1));
+                for (int index = 0;
+                     index < fenceRoot.transform.childCount;
+                     index++)
+                {
+                    Transform chunk =
+                        fenceRoot.transform.GetChild(index);
+                    Renderer[] renderers =
+                        chunk.GetComponentsInChildren<Renderer>(
+                            true);
+                    Assert.That(
+                        renderers.Length,
+                        Is.InRange(1, 2),
+                        chunk.name);
+                    foreach (Renderer renderer in renderers)
+                    {
+                        Assert.That(
+                            renderer.bounds.size.x,
+                            Is.LessThanOrEqualTo(49f),
+                            $"{chunk.name} is too wide.");
+                        Assert.That(
+                            renderer.bounds.size.z,
+                            Is.LessThanOrEqualTo(49f),
+                            $"{chunk.name} is too deep.");
+                    }
+                }
+
+                Assert.That(
+                    fenceRoot.GetComponentsInChildren<Collider>(
+                        true),
+                    Is.Empty);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void CreatePlan_WithNullLayout_Throws()
         {
             Assert.That(
@@ -297,7 +394,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     overlap,
                     Is.LessThanOrEqualTo(Tolerance),
-                    $"Fence overlaps entrance {opening.BarId}.");
+                    $"Fence overlaps opening {opening.Id}.");
                 hasFenceBefore |=
                     segment.MaximumCoordinate <=
                     opening.MinimumCoordinate + Tolerance;
@@ -309,11 +406,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 hasFenceBefore,
                 Is.True,
-                $"No fence borders the first side of {opening.BarId}.");
+                $"No fence borders the first side of {opening.Id}.");
             Assert.That(
                 hasFenceAfter,
                 Is.True,
-                $"No fence borders the second side of {opening.BarId}.");
+                $"No fence borders the second side of {opening.Id}.");
         }
 
         private static void AssertSideCoverage(
@@ -355,6 +452,24 @@ namespace BarPromenade.Tests.EditMode
                         roads,
                         boundaryPoint +
                         (outwardNormal * 0.02f)))
+                {
+                    continue;
+                }
+
+                bool liesInsideOpening =
+                    plan.Openings.Any(opening =>
+                        opening.IsHorizontal == horizontal &&
+                        Mathf.Abs(
+                            opening.FixedCoordinate -
+                            fixedCoordinate) <= Tolerance &&
+                        (opening.OutwardNormal -
+                         outwardNormal).sqrMagnitude <=
+                        Tolerance * Tolerance &&
+                        coordinate >=
+                        opening.MinimumCoordinate - Tolerance &&
+                        coordinate <=
+                        opening.MaximumCoordinate + Tolerance);
+                if (liesInsideOpening)
                 {
                     continue;
                 }
@@ -420,6 +535,7 @@ namespace BarPromenade.Tests.EditMode
             settings.BlocksX = 1;
             settings.BlocksZ = 1;
             settings.BarCount = barCount;
+            settings.MinimumBarRouteDistance = 0f;
             settings.LoopChance = 1f;
             return settings;
         }

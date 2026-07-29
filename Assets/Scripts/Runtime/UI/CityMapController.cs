@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -48,6 +49,7 @@ namespace BarPromenade
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
         private int inputUnlockFrame;
+        private long openedTimestamp;
 
         public bool IsInitialized { get; private set; }
         public bool IsOpen { get; private set; }
@@ -116,7 +118,23 @@ namespace BarPromenade
 
             View.Initialize(this);
             IsInitialized = true;
-            RefreshPath();
+            RefreshPath("initialize");
+            GameLog.Info(
+                "map",
+                "initialized",
+                GameLog.Field("bar_count", bars.Count),
+                GameLog.Field(
+                    "selected_bar_index",
+                    SelectedBarIndex),
+                GameLog.Field(
+                    "route",
+                    FormatRoute()),
+                GameLog.Field(
+                    "visited_count",
+                    VisitedBarCount),
+                GameLog.Field(
+                    "path_length",
+                    CurrentPath.TotalLength));
         }
 
         public bool Open()
@@ -138,17 +156,41 @@ namespace BarPromenade
 
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
-            RefreshPath();
+            openedTimestamp = Stopwatch.GetTimestamp();
+            RefreshPath("open");
             RetroAudio.Play(RetroSfxId.MapOpen);
+            GameLog.Info(
+                "map",
+                "opened",
+                GameLog.Field(
+                    "selected_bar_id",
+                    GetSelectedBarId()),
+                GameLog.Field(
+                    "selected_bar_index",
+                    SelectedBarIndex),
+                GameLog.Field(
+                    "route_count",
+                    Route.Count),
+                GameLog.Field(
+                    "path_length",
+                    CurrentPath.TotalLength),
+                GameLog.Field(
+                    "player_x",
+                    PlayerWorldPosition.x),
+                GameLog.Field(
+                    "player_z",
+                    PlayerWorldPosition.z));
             return true;
         }
 
         public bool Close()
         {
-            return Close(true);
+            return Close(true, "user");
         }
 
-        private bool Close(bool playSound)
+        private bool Close(
+            bool playSound,
+            string reason)
         {
             if (!IsOpen)
             {
@@ -163,6 +205,22 @@ namespace BarPromenade
                 RetroAudio.Play(RetroSfxId.UiCancel);
             }
 
+            GameLog.Info(
+                "map",
+                "closed",
+                GameLog.Field("reason", reason),
+                GameLog.Field(
+                    "open_duration_ms",
+                    GetOpenDurationMilliseconds()),
+                GameLog.Field(
+                    "route",
+                    FormatRoute()),
+                GameLog.Field(
+                    "path_length",
+                    CurrentPath == null
+                        ? 0f
+                        : CurrentPath.TotalLength));
+            openedTimestamp = 0L;
             return true;
         }
 
@@ -185,7 +243,10 @@ namespace BarPromenade
                 GameSessionState.TryAddRouteStop(barId);
             }
 
-            RefreshPath();
+            RefreshPath(
+                wasSelected
+                    ? "remove_stop"
+                    : "add_stop");
             bool changed =
                 wasSelected != (GetRouteOrder(barId) >= 0);
             if (changed)
@@ -211,7 +272,7 @@ namespace BarPromenade
             }
 
             GameSessionState.MoveRouteStop(barId, direction);
-            RefreshPath();
+            RefreshPath("move_stop");
             bool changed = GetRouteOrder(barId) != previousIndex;
             if (changed)
             {
@@ -229,7 +290,7 @@ namespace BarPromenade
             }
 
             GameSessionState.ClearRoute();
-            RefreshPath();
+            RefreshPath("clear_route");
             RetroAudio.Play(RetroSfxId.UiCancel);
             return true;
         }
@@ -331,7 +392,7 @@ namespace BarPromenade
 
             if (SceneTransitionService.IsTransitioning)
             {
-                Close(false);
+                Close(false, "transition");
                 return;
             }
 
@@ -373,12 +434,12 @@ namespace BarPromenade
         private void OnDisable()
         {
             pendingCommands.Clear();
-            Close(false);
+            Close(false, "disabled");
         }
 
         private void OnDestroy()
         {
-            Close(false);
+            Close(false, "destroyed");
         }
 
         private void ProcessQueuedCommands()
@@ -424,7 +485,7 @@ namespace BarPromenade
             }
         }
 
-        private void RefreshPath()
+        private void RefreshPath(string reason)
         {
             if (!IsInitialized && Layout == null)
             {
@@ -447,6 +508,29 @@ namespace BarPromenade
                 Layout,
                 PlayerWorldPosition,
                 orderedStops);
+            GameLog.Debug(
+                "map",
+                "path_rebuilt",
+                GameLog.Field("reason", reason),
+                GameLog.Field("route", FormatRoute()),
+                GameLog.Field(
+                    "ordered_stop_count",
+                    orderedStops.Count),
+                GameLog.Field(
+                    "point_count",
+                    CurrentPath.Points.Count),
+                GameLog.Field(
+                    "path_length",
+                    CurrentPath.TotalLength),
+                GameLog.Field(
+                    "is_empty",
+                    CurrentPath.IsEmpty),
+                GameLog.Field(
+                    "player_x",
+                    PlayerWorldPosition.x),
+                GameLog.Field(
+                    "player_z",
+                    PlayerWorldPosition.z));
         }
 
         private void RemoveUnknownRouteStops()
@@ -457,9 +541,44 @@ namespace BarPromenade
             {
                 if (FindBarIndex(route[index]) < 0)
                 {
-                    GameSessionState.RemoveRouteStop(route[index]);
+                    string barId = route[index];
+                    GameSessionState.RemoveRouteStop(barId);
+                    GameLog.Warning(
+                        "map",
+                        "unknown_route_stop_removed",
+                        GameLog.Field("bar_id", barId));
                 }
             }
+        }
+
+        private string GetSelectedBarId()
+        {
+            return IsValidBarIndex(SelectedBarIndex)
+                ? bars[SelectedBarIndex].BarId
+                : string.Empty;
+        }
+
+        private static string FormatRoute()
+        {
+            return string.Join(
+                ",",
+                GameSessionState.PlannedBarRoute);
+        }
+
+        private long GetOpenDurationMilliseconds()
+        {
+            if (openedTimestamp <= 0L)
+            {
+                return 0L;
+            }
+
+            long elapsedTicks =
+                Stopwatch.GetTimestamp() - openedTimestamp;
+            return Math.Max(
+                0L,
+                (long)(
+                    (elapsedTicks * 1000d) /
+                    Stopwatch.Frequency));
         }
 
         private void MoveSelection(int delta)

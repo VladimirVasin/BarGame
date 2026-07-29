@@ -18,6 +18,9 @@ namespace BarPromenade.Tests
 
             CollectionAssert.AreEqual(first.Nodes, second.Nodes);
             CollectionAssert.AreEqual(first.RoadEdges, second.RoadEdges);
+            CollectionAssert.AreEqual(
+                first.PathKinds,
+                second.PathKinds);
             Assert.That(second.SpawnNode, Is.EqualTo(first.SpawnNode));
             Assert.That(second.SpawnWorldPosition, Is.EqualTo(first.SpawnWorldPosition));
             Assert.That(second.BuildingLots.Count, Is.EqualTo(first.BuildingLots.Count));
@@ -31,6 +34,12 @@ namespace BarPromenade.Tests
                 Assert.That(actual.Size, Is.EqualTo(expected.Size));
                 Assert.That(actual.Height, Is.EqualTo(expected.Height));
                 Assert.That(actual.Color, Is.EqualTo(expected.Color));
+                Assert.That(
+                    actual.District,
+                    Is.EqualTo(expected.District));
+                Assert.That(
+                    actual.LandUse,
+                    Is.EqualTo(expected.LandUse));
                 Assert.That(actual.IsBar, Is.EqualTo(expected.IsBar));
                 Assert.That(actual.BarId, Is.EqualTo(expected.BarId));
                 Assert.That(
@@ -41,6 +50,131 @@ namespace BarPromenade.Tests
                     Is.EqualTo(expected.FrontageDirection));
                 Assert.That(actual.DoorPosition, Is.EqualTo(expected.DoorPosition));
                 Assert.That(actual.ReturnPosition, Is.EqualTo(expected.ReturnPosition));
+            }
+
+            CollectionAssert.AreEqual(
+                first.Park.Cells,
+                second.Park.Cells);
+            CollectionAssert.AreEqual(
+                first.Park.Gates,
+                second.Park.Gates);
+            CollectionAssert.AreEqual(
+                first.Park.TreePositions,
+                second.Park.TreePositions);
+        }
+
+        [Test]
+        public void DefaultSettings_CreateNineTimesLargerDistrictCity()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                GameSessionState.DefaultCitySeed);
+
+            Assert.That(settings.BlocksX, Is.EqualTo(12));
+            Assert.That(settings.BlocksZ, Is.EqualTo(12));
+            Assert.That(layout.BuildingLots, Has.Count.EqualTo(144));
+            Assert.That(
+                Vector3.Distance(
+                    layout.GetNodeWorldPosition(Vector2Int.zero),
+                    layout.GetNodeWorldPosition(
+                        new Vector2Int(settings.BlocksX, 0))),
+                Is.EqualTo(288f).Within(0.001f));
+            Assert.That(layout.Districts, Has.Count.EqualTo(5));
+            Assert.That(
+                layout.Districts.Select(district => district.Kind),
+                Is.EquivalentTo(new[]
+                {
+                    CityDistrictKind.OldTown,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Industrial,
+                    CityDistrictKind.Nightlife,
+                    CityDistrictKind.CentralPark
+                }));
+        }
+
+        [Test]
+        public void DefaultSettings_CreateConnectedWalkableCentralPark()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                73119);
+
+            Assert.That(layout.Park.IsEnabled, Is.True);
+            Assert.That(layout.Park.Cells, Has.Count.EqualTo(16));
+            Assert.That(layout.Park.Gates, Has.Count.EqualTo(4));
+            Assert.That(
+                layout.BuildingLots
+                    .Where(lot => lot.IsPark)
+                    .All(lot =>
+                        !lot.HasBuilding &&
+                        !lot.IsBar &&
+                        lot.District ==
+                        CityDistrictKind.CentralPark),
+                Is.True);
+            Assert.That(
+                layout.RoadEdges.Count(edge =>
+                    layout.GetPathKind(edge) ==
+                    CityPathKind.ParkPath),
+                Is.GreaterThanOrEqualTo(8));
+
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+            Assert.That(
+                walkable.Contains(layout.Park.Center),
+                Is.True);
+            for (int index = 0;
+                 index < layout.Park.Gates.Count;
+                 index++)
+            {
+                Assert.That(
+                    walkable.Contains(layout.Park.Gates[index].Center),
+                    Is.True,
+                    layout.Park.Gates[index].Id);
+            }
+        }
+
+        [Test]
+        public void DefaultSettings_PlaceFourDistantBarsInUrbanDistricts()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            BuildingLot[] bars = layout.BuildingLots
+                .Where(lot => lot.IsBar)
+                .ToArray();
+
+            Assert.That(bars, Has.Length.EqualTo(4));
+            Assert.That(
+                bars.Select(bar => bar.District),
+                Is.Unique);
+            Assert.That(
+                bars.All(bar =>
+                    bar.HasBuilding &&
+                    !bar.IsPark &&
+                    layout.GetPathKind(
+                        RoadEdge.ForCellFrontage(
+                            bar.Cell,
+                            bar.FrontageDirection)) ==
+                    CityPathKind.Street),
+                Is.True);
+
+            for (int first = 0; first < bars.Length; first++)
+            {
+                for (int second = first + 1;
+                     second < bars.Length;
+                     second++)
+                {
+                    Assert.That(
+                        CityTravelDistance.BetweenBars(
+                            layout,
+                            bars[first],
+                            bars[second]),
+                        Is.GreaterThanOrEqualTo(
+                            layout.MinimumBarRouteDistance - 0.001f));
+                }
             }
         }
 
@@ -103,6 +237,7 @@ namespace BarPromenade.Tests
         {
             CityGenerationSettings settings = CityGenerationSettings.Default;
             settings.BarCount = 5;
+            settings.MinimumBarRouteDistance = 0f;
 
             CityLayout layout = CityLayoutGenerator.Generate(settings, 77);
 
@@ -143,6 +278,7 @@ namespace BarPromenade.Tests
         {
             CityGenerationSettings settings = CityGenerationSettings.Default;
             settings.BarCount = 5;
+            settings.MinimumBarRouteDistance = 0f;
 
             CityLayout layout = CityLayoutGenerator.Generate(settings, 91275);
             BuildingLot[] orderedBars = layout.BuildingLots

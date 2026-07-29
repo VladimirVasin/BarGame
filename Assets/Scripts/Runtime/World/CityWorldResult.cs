@@ -14,6 +14,7 @@ namespace BarPromenade
             RoadWalkableArea walkableArea,
             IList<BarEntrance> bars,
             RoadFencePlan fencePlan,
+            GameObject parkRoot,
             Bounds bounds)
         {
             Root = root;
@@ -22,6 +23,7 @@ namespace BarPromenade
                 new List<BarEntrance>(bars));
             FencePlan = fencePlan ??
                 throw new ArgumentNullException(nameof(fencePlan));
+            ParkRoot = parkRoot;
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
@@ -37,6 +39,7 @@ namespace BarPromenade
         public RoadWalkableArea WalkableArea { get; }
         public IReadOnlyList<BarEntrance> Bars { get; }
         public RoadFencePlan FencePlan { get; }
+        public GameObject ParkRoot { get; }
         public Bounds Bounds { get; }
 
         public bool TryGetBar(string barId, out BarEntrance entrance)

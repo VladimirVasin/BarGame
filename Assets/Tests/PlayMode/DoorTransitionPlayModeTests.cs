@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -67,6 +68,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     RuntimeSceneSetup.DoorTransitionFarClipPlane)
                     .Within(0.01f));
+            Assert.That(
+                root.Camera
+                    .GetUniversalAdditionalCameraData()
+                    .renderPostProcessing,
+                Is.False);
             Assert.That(RenderSettings.fog, Is.False);
             Assert.That(root.DoorPivot, Is.Not.Null);
             Assert.That(root.HandlePivot, Is.Not.Null);

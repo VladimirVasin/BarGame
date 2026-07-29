@@ -2,25 +2,49 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
     public sealed class SceneTransitionService : MonoBehaviour
     {
         private static SceneTransitionService instance;
+        private static long operationSequence;
+        private static string activeOperationId = string.Empty;
+        private static string activeSourceScene = string.Empty;
+        private static string activeTargetScene = string.Empty;
+        private static string activeMode = string.Empty;
+        private static string activeDirection = string.Empty;
+        private static long activeStartedTimestamp;
+        private static bool activeUsedFallback;
 
         public static bool IsTransitioning { get; private set; }
+        public static string CurrentOperationId => activeOperationId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
             instance = null;
             IsTransitioning = false;
+            operationSequence = 0L;
+            ClearActiveOperation();
         }
 
         public static bool RequestLoad(string sceneName)
         {
-            if (!TryReserveTransition(sceneName))
+            return RequestLoad(sceneName, out _);
+        }
+
+        public static bool RequestLoad(
+            string sceneName,
+            out string operationId)
+        {
+            operationId = CreateOperationId();
+            if (!TryReserveTransition(
+                    sceneName,
+                    operationId,
+                    "direct",
+                    string.Empty))
             {
                 return false;
             }
@@ -33,8 +57,26 @@ namespace BarPromenade
             string sceneName,
             DoorTransitionDirection direction)
         {
+            return RequestDoorLoad(
+                sceneName,
+                direction,
+                out _);
+        }
+
+        public static bool RequestDoorLoad(
+            string sceneName,
+            DoorTransitionDirection direction,
+            out string operationId)
+        {
+            operationId = CreateOperationId();
             if (sceneName == SceneIds.DoorTransition)
             {
+                ReportRejected(
+                    operationId,
+                    sceneName,
+                    "door",
+                    direction.ToString(),
+                    "door_self_destination");
                 Debug.LogError(
                     "DoorTransition cannot be used as its own destination.");
                 return false;
@@ -43,13 +85,23 @@ namespace BarPromenade
             if (!Application.CanStreamedLevelBeLoaded(
                     SceneIds.DoorTransition))
             {
+                ReportRejected(
+                    operationId,
+                    sceneName,
+                    "door",
+                    direction.ToString(),
+                    "door_scene_missing");
                 Debug.LogError(
                     $"Scene '{SceneIds.DoorTransition}' is not available " +
                     "in Build Settings.");
                 return false;
             }
 
-            if (!TryReserveTransition(sceneName))
+            if (!TryReserveTransition(
+                    sceneName,
+                    operationId,
+                    "door",
+                    direction.ToString()))
             {
                 return false;
             }
@@ -59,15 +111,42 @@ namespace BarPromenade
             return true;
         }
 
-        private static bool TryReserveTransition(string sceneName)
+        private static bool TryReserveTransition(
+            string sceneName,
+            string operationId,
+            string mode,
+            string direction)
         {
-            if (IsTransitioning || string.IsNullOrWhiteSpace(sceneName))
+            if (IsTransitioning)
             {
+                ReportRejected(
+                    operationId,
+                    sceneName,
+                    mode,
+                    direction,
+                    "busy");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                ReportRejected(
+                    operationId,
+                    sceneName,
+                    mode,
+                    direction,
+                    "invalid_scene_name");
                 return false;
             }
 
             if (!Application.CanStreamedLevelBeLoaded(sceneName))
             {
+                ReportRejected(
+                    operationId,
+                    sceneName,
+                    mode,
+                    direction,
+                    "target_scene_missing");
                 Debug.LogError(
                     $"Scene '{sceneName}' is not available in Build Settings.");
                 return false;
@@ -75,6 +154,29 @@ namespace BarPromenade
 
             EnsureInstance();
             IsTransitioning = true;
+            activeOperationId = operationId;
+            activeSourceScene = GetActiveSceneName();
+            activeTargetScene = sceneName;
+            activeMode = mode;
+            activeDirection = direction;
+            activeStartedTimestamp = Stopwatch.GetTimestamp();
+            activeUsedFallback = false;
+            GameLog.Info(
+                "scene",
+                "transition_requested",
+                GameLog.Field(
+                    "operation_id",
+                    activeOperationId),
+                GameLog.Field(
+                    "from_scene",
+                    activeSourceScene),
+                GameLog.Field(
+                    "target_scene",
+                    activeTargetScene),
+                GameLog.Field("mode", activeMode),
+                GameLog.Field(
+                    "direction",
+                    activeDirection));
             return true;
         }
 
@@ -104,7 +206,9 @@ namespace BarPromenade
                 LoadSceneMode.Single);
             if (operation == null)
             {
-                IsTransitioning = false;
+                FinishTransition(
+                    "load_operation_unavailable",
+                    false);
                 yield break;
             }
 
@@ -113,7 +217,7 @@ namespace BarPromenade
                 yield return null;
             }
 
-            IsTransitioning = false;
+            FinishTransition("completed", true);
         }
 
         private IEnumerator LoadThroughDoor(
@@ -127,7 +231,9 @@ namespace BarPromenade
                     LoadSceneMode.Single);
             if (transitionOperation == null)
             {
-                IsTransitioning = false;
+                FinishTransition(
+                    "door_load_operation_unavailable",
+                    false);
                 yield break;
             }
 
@@ -140,6 +246,7 @@ namespace BarPromenade
                 FindAnyObjectByType<DoorTransitionRoot>();
             if (presentation == null)
             {
+                ReportFallback("door_root_missing");
                 Debug.LogError(
                     "DoorTransition loaded without DoorTransitionRoot; " +
                     "falling back to the requested destination.");
@@ -160,6 +267,8 @@ namespace BarPromenade
 
             if (!initialized)
             {
+                ReportFallback(
+                    "door_presentation_initialization_failed");
                 yield return LoadFallback(sceneName);
                 yield break;
             }
@@ -169,7 +278,9 @@ namespace BarPromenade
                 LoadSceneMode.Single);
             if (targetOperation == null)
             {
-                IsTransitioning = false;
+                FinishTransition(
+                    "target_load_operation_unavailable",
+                    false);
                 yield break;
             }
 
@@ -186,7 +297,7 @@ namespace BarPromenade
                 yield return null;
             }
 
-            IsTransitioning = false;
+            FinishTransition("completed", true);
         }
 
         private static IEnumerator PlayPresentationSafely(
@@ -213,6 +324,7 @@ namespace BarPromenade
 
                 if (failure != null)
                 {
+                    ReportFallback("door_presentation_failed");
                     Debug.LogException(failure);
                     DisposePlayback(playback);
                     if (presentation != null)
@@ -250,6 +362,146 @@ namespace BarPromenade
             }
         }
 
+        private static string CreateOperationId()
+        {
+            operationSequence++;
+            return $"transition-{operationSequence}";
+        }
+
+        private static void ReportRejected(
+            string operationId,
+            string targetScene,
+            string mode,
+            string direction,
+            string reason)
+        {
+            GameLog.Warning(
+                "scene",
+                "transition_rejected",
+                GameLog.Field(
+                    "operation_id",
+                    operationId),
+                GameLog.Field(
+                    "active_operation_id",
+                    activeOperationId),
+                GameLog.Field(
+                    "from_scene",
+                    GetActiveSceneName()),
+                GameLog.Field(
+                    "target_scene",
+                    targetScene ?? string.Empty),
+                GameLog.Field("mode", mode),
+                GameLog.Field("direction", direction),
+                GameLog.Field("reason", reason));
+        }
+
+        private static void ReportFallback(string reason)
+        {
+            if (activeUsedFallback)
+            {
+                return;
+            }
+
+            activeUsedFallback = true;
+            GameLog.Warning(
+                "scene",
+                "transition_fallback",
+                GameLog.Field(
+                    "operation_id",
+                    activeOperationId),
+                GameLog.Field(
+                    "from_scene",
+                    activeSourceScene),
+                GameLog.Field(
+                    "target_scene",
+                    activeTargetScene),
+                GameLog.Field("reason", reason),
+                GameLog.Field(
+                    "elapsed_ms",
+                    GetActiveElapsedMilliseconds()));
+        }
+
+        private static void FinishTransition(
+            string outcome,
+            bool succeeded)
+        {
+            long durationMilliseconds =
+                GetActiveElapsedMilliseconds();
+            GameLogField[] fields =
+            {
+                GameLog.Field(
+                    "operation_id",
+                    activeOperationId),
+                GameLog.Field(
+                    "from_scene",
+                    activeSourceScene),
+                GameLog.Field(
+                    "target_scene",
+                    activeTargetScene),
+                GameLog.Field("mode", activeMode),
+                GameLog.Field(
+                    "direction",
+                    activeDirection),
+                GameLog.Field("outcome", outcome),
+                GameLog.Field(
+                    "used_fallback",
+                    activeUsedFallback),
+                GameLog.Field(
+                    "duration_ms",
+                    durationMilliseconds)
+            };
+            if (succeeded)
+            {
+                GameLog.Info(
+                    "scene",
+                    "transition_completed",
+                    fields);
+            }
+            else
+            {
+                GameLog.Error(
+                    "scene",
+                    "transition_failed",
+                    fields);
+            }
+
+            IsTransitioning = false;
+            ClearActiveOperation();
+        }
+
+        private static long GetActiveElapsedMilliseconds()
+        {
+            if (activeStartedTimestamp <= 0L)
+            {
+                return 0L;
+            }
+
+            long elapsedTicks =
+                Stopwatch.GetTimestamp() - activeStartedTimestamp;
+            return Math.Max(
+                0L,
+                (long)(
+                    (elapsedTicks * 1000d) /
+                    Stopwatch.Frequency));
+        }
+
+        private static string GetActiveSceneName()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            return scene.IsValid() ? scene.name : string.Empty;
+        }
+
+        private static void ClearActiveOperation()
+        {
+            activeOperationId = string.Empty;
+            activeSourceScene = string.Empty;
+            activeTargetScene = string.Empty;
+            activeMode = string.Empty;
+            activeDirection = string.Empty;
+            activeStartedTimestamp = 0L;
+            activeUsedFallback = false;
+        }
+
         private IEnumerator LoadFallback(string sceneName)
         {
             AsyncOperation operation = SceneManager.LoadSceneAsync(
@@ -257,7 +509,9 @@ namespace BarPromenade
                 LoadSceneMode.Single);
             if (operation == null)
             {
-                IsTransitioning = false;
+                FinishTransition(
+                    "fallback_load_operation_unavailable",
+                    false);
                 yield break;
             }
 
@@ -266,7 +520,7 @@ namespace BarPromenade
                 yield return null;
             }
 
-            IsTransitioning = false;
+            FinishTransition("fallback_completed", true);
         }
     }
 }

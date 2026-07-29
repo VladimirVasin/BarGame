@@ -10,6 +10,8 @@ namespace BarPromenade
             Vector2 size,
             float height,
             Color color,
+            CityDistrictKind district,
+            CityLandUseKind landUse,
             bool isBar,
             string barId,
             BarActivityKind barActivity,
@@ -22,6 +24,8 @@ namespace BarPromenade
             Size = size;
             Height = height;
             Color = color;
+            District = district;
+            LandUse = landUse;
             IsBar = isBar;
             BarId = barId ?? string.Empty;
             BarActivity = barActivity;
@@ -40,6 +44,10 @@ namespace BarPromenade
         public Vector2 FootprintSize => Size;
         public float Height { get; }
         public Color Color { get; }
+        public CityDistrictKind District { get; }
+        public CityLandUseKind LandUse { get; }
+        public bool HasBuilding => LandUse == CityLandUseKind.Building;
+        public bool IsPark => LandUse == CityLandUseKind.Park;
         public bool IsBar { get; }
         public string BarId { get; }
         public BarActivityKind BarActivity { get; }

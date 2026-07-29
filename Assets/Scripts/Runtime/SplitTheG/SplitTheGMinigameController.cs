@@ -41,6 +41,7 @@ namespace BarPromenade
         private bool completionRaised;
         private bool completeAfterSettling;
         private bool awaitingFreshRelease;
+        private string minigameRunId = string.Empty;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -149,6 +150,8 @@ namespace BarPromenade
             activeInputSource = DrinkInputSource.None;
             observedPhase = session.Phase;
             IsOpen = true;
+            minigameRunId = Guid.NewGuid().ToString("N");
+            LogOpened();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -191,6 +194,21 @@ namespace BarPromenade
             observedPhase = session.Phase;
             inputUnlockFrame = Time.frameCount + 1;
             gulpElapsed = 0f;
+            GameLog.Info(
+                "split_g",
+                "retry_started",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "attempt",
+                    session.CurrentAttemptNumber),
+                GameLog.Field(
+                    "attempts_completed",
+                    session.AttemptsCompleted),
+                GameLog.Field(
+                    "best_score",
+                    session.BestScore));
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -266,6 +284,11 @@ namespace BarPromenade
                 ReleaseDrink();
             }
 
+            if (!completionRaised)
+            {
+                LogCancelled("user");
+            }
+
             RetroAudio.Play(RetroSfxId.UiCancel);
             Close();
         }
@@ -324,11 +347,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            LogInterruptedClose("disabled");
             Close();
         }
 
         private void OnDestroy()
         {
+            LogInterruptedClose("destroyed");
             Close();
         }
 
@@ -346,6 +371,21 @@ namespace BarPromenade
             awaitingFreshRelease = false;
             observedPhase = session.Phase;
             gulpElapsed = 0f;
+            GameLog.Info(
+                "split_g",
+                "attempt_started",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "attempt",
+                    session.CurrentAttemptNumber),
+                GameLog.Field(
+                    "input_source",
+                    inputSource.ToString()),
+                GameLog.Field(
+                    "target_level",
+                    session.Settings.TargetLevel));
             RetroAudio.Play(RetroSfxId.DrinkGulp);
             return true;
         }
@@ -398,29 +438,40 @@ namespace BarPromenade
             }
 
             committedAttempts = session.AttemptsCompleted;
+            SplitTheGAttemptResult result = session.LastResult;
             double consumedFraction =
-                session.LastResult.ConsumedFraction;
+                result.ConsumedFraction;
+            int previousIntoxication = currentIntoxication;
+            int requestedGain = 0;
+            if (consumedFraction > 0.000001d)
+            {
+                int fullGlassGain =
+                    DrinkRules.GetIntoxicationGain(
+                        DrinkId.DarkBeer);
+                requestedGain = (int)Math.Round(
+                    fullGlassGain * consumedFraction,
+                    MidpointRounding.AwayFromZero);
+                currentIntoxication = Mathf.Clamp(
+                    currentIntoxication + requestedGain,
+                    0,
+                    100);
+                currentDrinksConsumed++;
+                if (persistSessionProgress)
+                {
+                    GameSessionState.UpdateDrinkingProgress(
+                        currentIntoxication,
+                        DrinkId.DarkBeer,
+                        currentDrinksConsumed);
+                }
+            }
+
+            LogAttemptResolved(
+                result,
+                previousIntoxication,
+                requestedGain);
             if (consumedFraction <= 0.000001d)
             {
                 return;
-            }
-
-            int fullGlassGain =
-                DrinkRules.GetIntoxicationGain(DrinkId.DarkBeer);
-            int intoxicationGain = (int)Math.Round(
-                fullGlassGain * consumedFraction,
-                MidpointRounding.AwayFromZero);
-            currentIntoxication = Mathf.Clamp(
-                currentIntoxication + intoxicationGain,
-                0,
-                100);
-            currentDrinksConsumed++;
-            if (persistSessionProgress)
-            {
-                GameSessionState.UpdateDrinkingProgress(
-                    currentIntoxication,
-                    DrinkId.DarkBeer,
-                    currentDrinksConsumed);
             }
 
             if (currentIntoxication < 100)
@@ -514,6 +565,7 @@ namespace BarPromenade
             gulpElapsed = 0f;
             awaitingFreshRelease = false;
             completeAfterSettling = false;
+            minigameRunId = string.Empty;
         }
 
         private void RaiseCompleted()
@@ -524,7 +576,162 @@ namespace BarPromenade
             }
 
             completionRaised = true;
+            LogCompleted();
             Completed?.Invoke();
+        }
+
+        private void LogOpened()
+        {
+            GameLog.Info(
+                "split_g",
+                "opened",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "bar_id",
+                    GameSessionState.ActiveBarId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "initial_intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed),
+                GameLog.Field(
+                    "target_level",
+                    session.Settings.TargetLevel),
+                GameLog.Field(
+                    "drink_speed",
+                    session.Settings.DrinkSpeed),
+                GameLog.Field(
+                    "maximum_drink_seconds",
+                    session.Settings.MaximumDrinkTime),
+                GameLog.Field(
+                    "settling_seconds",
+                    session.Settings.SettlingTime),
+                GameLog.Field(
+                    "maximum_attempts",
+                    session.Settings.MaximumAttempts));
+        }
+
+        private void LogAttemptResolved(
+            SplitTheGAttemptResult result,
+            int previousIntoxication,
+            int requestedGain)
+        {
+            GameLog.Info(
+                "split_g",
+                "attempt_resolved",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "attempt",
+                    result.AttemptNumber),
+                GameLog.Field(
+                    "target_level",
+                    result.TargetLevel),
+                GameLog.Field(
+                    "final_level",
+                    result.FinalLevel),
+                GameLog.Field(
+                    "consumed_fraction",
+                    result.ConsumedFraction),
+                GameLog.Field(
+                    "absolute_error",
+                    result.AbsoluteError),
+                GameLog.Field("score", result.Score),
+                GameLog.Field(
+                    "band",
+                    result.Band.ToString()),
+                GameLog.Field(
+                    "direction",
+                    result.Direction.ToString()),
+                GameLog.Field(
+                    "auto_stopped",
+                    result.WasAutoStopped),
+                GameLog.Field(
+                    "previous_intoxication",
+                    previousIntoxication),
+                GameLog.Field(
+                    "requested_gain",
+                    requestedGain),
+                GameLog.Field(
+                    "applied_gain",
+                    currentIntoxication -
+                    previousIntoxication),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed));
+        }
+
+        private void LogCompleted()
+        {
+            GameLog.Info(
+                "split_g",
+                "completed",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "attempts_completed",
+                    session.AttemptsCompleted),
+                GameLog.Field(
+                    "best_score",
+                    session.BestScore),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed));
+        }
+
+        private void LogInterruptedClose(string reason)
+        {
+            if (IsOpen && !completionRaised)
+            {
+                LogCancelled(reason);
+            }
+        }
+
+        private void LogCancelled(string reason)
+        {
+            GameLog.Info(
+                "split_g",
+                "cancelled",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field("close_reason", reason),
+                GameLog.Field(
+                    "phase",
+                    session?.Phase.ToString() ??
+                    SplitTheGPhase.Countdown.ToString()),
+                GameLog.Field(
+                    "attempts_completed",
+                    session?.AttemptsCompleted ?? 0),
+                GameLog.Field(
+                    "best_score",
+                    session?.BestScore ?? 0),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed));
         }
 
         private bool IsInitiatingInputReleased()

@@ -168,23 +168,79 @@ namespace BarPromenade.Tests.PlayMode
             Material sharedGlow = CityNightResources.EmissiveMaterial;
             Renderer[] renderers =
                 night.Root.GetComponentsInChildren<Renderer>(true);
-            int glowingBulbCount = 0;
+            int fixtureBatchCount = 0;
+            int bulbBatchCount = 0;
+            Material sharedFixtureMaterial = null;
             for (int index = 0; index < renderers.Length; index++)
             {
-                if (renderers[index].name != "Glowing Bulb")
+                Renderer renderer = renderers[index];
+                if (renderer.name == "Street Lamp Fixtures")
                 {
+                    fixtureBatchCount++;
+                    Assert.That(
+                        renderer.transform.parent.name.StartsWith(
+                            "Street Lamp Chunk ",
+                            StringComparison.Ordinal),
+                        Is.True);
+                    Assert.That(
+                        renderer.GetComponent<MeshFilter>().sharedMesh.name,
+                        Is.EqualTo(
+                            "Street Lamp Fixtures Combined Mesh"));
+                    if (sharedFixtureMaterial == null)
+                    {
+                        sharedFixtureMaterial = renderer.sharedMaterial;
+                    }
+
+                    Assert.That(
+                        renderer.sharedMaterial,
+                        Is.SameAs(sharedFixtureMaterial));
                     continue;
                 }
 
-                glowingBulbCount++;
+                if (renderer.name == "Street Lamp Bulbs")
+                {
+                    bulbBatchCount++;
+                    Assert.That(
+                        renderer.transform.parent.name.StartsWith(
+                            "Street Lamp Chunk ",
+                            StringComparison.Ordinal),
+                        Is.True);
+                    Assert.That(
+                        renderer.GetComponent<MeshFilter>().sharedMesh.name,
+                        Is.EqualTo(
+                            "Street Lamp Bulbs Combined Mesh"));
+                    Assert.That(
+                        renderer.sharedMaterial,
+                        Is.SameAs(sharedGlow));
+                    continue;
+                }
+
                 Assert.That(
-                    renderers[index].sharedMaterial,
-                    Is.SameAs(sharedGlow));
+                    renderer.name,
+                    Is.Not.EqualTo("Pole")
+                        .And.Not.EqualTo("Lamp Arm")
+                        .And.Not.EqualTo("Lamp Hood")
+                        .And.Not.EqualTo("Glowing Bulb"));
             }
 
+            Assert.That(fixtureBatchCount, Is.GreaterThan(0));
             Assert.That(
-                glowingBulbCount,
-                Is.EqualTo(night.Plan.StreetLamps.Count));
+                bulbBatchCount,
+                Is.EqualTo(fixtureBatchCount));
+            Assert.That(
+                bulbBatchCount,
+                Is.LessThan(night.Plan.StreetLamps.Count));
+            for (int index = 0;
+                 index < night.LampAnchors.Count;
+                 index++)
+            {
+                Transform anchor = night.LampAnchors[index];
+                Assert.That(
+                    anchor.name,
+                    Does.StartWith("Street Lamp Anchor "));
+                Assert.That(anchor.childCount, Is.Zero);
+                Assert.That(anchor.GetComponent<Renderer>(), Is.Null);
+            }
 
             TrafficSignalController signal = night.TrafficSignals[0];
             Assert.That(

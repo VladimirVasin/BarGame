@@ -66,6 +66,7 @@ namespace BarPromenade
         private bool persistSessionProgress = true;
         private bool completionRaised;
         private bool finishAfterPresentation;
+        private string minigameRunId = string.Empty;
 
         public bool IsOpen { get; private set; }
         public event Action Completed;
@@ -154,9 +155,10 @@ namespace BarPromenade
                 return false;
             }
 
+            int generatedSessionSeed =
+                CreateSessionSeed(sessionOrdinal);
             var newSession =
-                new TinctureMatchSession(
-                    CreateSessionSeed(sessionOrdinal));
+                new TinctureMatchSession(generatedSessionSeed);
             if (!modalLock.TryCaptureAndDisable(
                     interactor,
                     cameraFollow,
@@ -191,6 +193,10 @@ namespace BarPromenade
             presentationPhase =
                 TinctureMatchPresentationPhase.AwaitingInput;
             IsOpen = true;
+            minigameRunId = Guid.NewGuid().ToString("N");
+            LogOpened(
+                generatedSessionSeed,
+                sessionOrdinal - 1);
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -432,6 +438,7 @@ namespace BarPromenade
                 fromRow,
                 fromColumn);
             var to = new TinctureMatchCell(toRow, toColumn);
+            int previousIntoxication = currentIntoxication;
             bool accepted = session.TrySwap(
                 from,
                 to,
@@ -446,12 +453,18 @@ namespace BarPromenade
             {
                 presentationPhase =
                     TinctureMatchPresentationPhase.InvalidSwap;
+                LogMoveResolved(
+                    result,
+                    previousIntoxication);
                 RetroAudio.Play(RetroSfxId.Bad);
                 return false;
             }
 
             lastAcceptedMove = result;
             CommitMoonshineIfNeeded(result);
+            LogMoveResolved(
+                result,
+                previousIntoxication);
             presentationPhase =
                 TinctureMatchPresentationPhase.Swapping;
             RetroAudio.Play(RetroSfxId.ShotSwap);
@@ -521,6 +534,11 @@ namespace BarPromenade
             if (!IsOpen)
             {
                 return;
+            }
+
+            if (!completionRaised && !WillCompleteOnClose())
+            {
+                LogCancelled("user");
             }
 
             RetroAudio.Play(RetroSfxId.UiCancel);
@@ -610,11 +628,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            LogInterruptedClose("disabled");
             Close();
         }
 
         private void OnDestroy()
         {
+            LogInterruptedClose("destroyed");
             Close();
         }
 
@@ -717,10 +737,14 @@ namespace BarPromenade
                 return;
             }
 
+            int previousIntoxication = currentIntoxication;
+            int requestedGain =
+                DrinkRules.GetIntoxicationGain(
+                    DrinkId.Moonshine);
             moonshineActivations++;
             currentIntoxication = Mathf.Clamp(
                 currentIntoxication +
-                DrinkRules.GetIntoxicationGain(DrinkId.Moonshine),
+                requestedGain,
                 0,
                 100);
             currentDrinksConsumed++;
@@ -732,6 +756,37 @@ namespace BarPromenade
                     currentDrinksConsumed);
             }
 
+            GameLog.Info(
+                "tincture_match",
+                "moonshine_consumed",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "activation",
+                    moonshineActivations),
+                GameLog.Field(
+                    "activated_kind",
+                    result.ActivatedKind.ToString()),
+                GameLog.Field(
+                    "previous_intoxication",
+                    previousIntoxication),
+                GameLog.Field(
+                    "requested_gain",
+                    requestedGain),
+                GameLog.Field(
+                    "applied_gain",
+                    currentIntoxication -
+                    previousIntoxication),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress));
             if (currentIntoxication < 100)
             {
                 return;
@@ -1133,6 +1188,7 @@ namespace BarPromenade
             activeWaveIndex = 0;
             finishAfterPresentation = false;
             lastStickDirection = Vector2Int.zero;
+            minigameRunId = string.Empty;
         }
 
         private void RaiseCompleted()
@@ -1143,7 +1199,204 @@ namespace BarPromenade
             }
 
             completionRaised = true;
+            LogCompleted();
             Completed?.Invoke();
+        }
+
+        private void LogOpened(
+            int generatedSessionSeed,
+            int generatedSessionOrdinal)
+        {
+            GameLog.Info(
+                "tincture_match",
+                "opened",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "bar_id",
+                    GameSessionState.ActiveBarId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field(
+                    "session_seed",
+                    generatedSessionSeed),
+                GameLog.Field(
+                    "session_ordinal",
+                    generatedSessionOrdinal),
+                GameLog.Field("rows", session.Settings.Rows),
+                GameLog.Field(
+                    "columns",
+                    session.Settings.Columns),
+                GameLog.Field(
+                    "move_limit",
+                    session.Settings.MoveLimit),
+                GameLog.Field(
+                    "minimum_legal_swaps",
+                    session.Settings.MinimumInitialLegalSwaps),
+                GameLog.Field(
+                    "initial_board_hash",
+                    session.Board.GetHashCode()),
+                GameLog.Field(
+                    "initial_intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed));
+        }
+
+        private void LogMoveResolved(
+            TinctureMatchMoveResult result,
+            int previousIntoxication)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            int clearedTileCount = 0;
+            for (int index = 0;
+                 index < result.Waves.Count;
+                 index++)
+            {
+                clearedTileCount +=
+                    result.Waves[index].ClearedTileCount;
+            }
+
+            GameLog.Info(
+                "tincture_match",
+                "move_resolved",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "from",
+                    result.From.ToString()),
+                GameLog.Field("to", result.To.ToString()),
+                GameLog.Field("accepted", result.Accepted),
+                GameLog.Field(
+                    "rejection_reason",
+                    result.RejectionReason.ToString()),
+                GameLog.Field(
+                    "move",
+                    result.MoveNumber),
+                GameLog.Field(
+                    "moves_remaining",
+                    result.MovesRemaining),
+                GameLog.Field(
+                    "score_awarded",
+                    result.ScoreAwarded),
+                GameLog.Field(
+                    "total_score",
+                    result.TotalScore),
+                GameLog.Field(
+                    "cascade_depth",
+                    result.CascadeDepth),
+                GameLog.Field(
+                    "cleared_tiles",
+                    clearedTileCount),
+                GameLog.Field(
+                    "moonshine_activated",
+                    result.ActivatedMoonshine),
+                GameLog.Field(
+                    "activated_kind",
+                    result.ActivatedKind.ToString()),
+                GameLog.Field(
+                    "moonshine_created",
+                    result.CreatedMoonshine),
+                GameLog.Field(
+                    "reshuffled",
+                    result.WasReshuffled),
+                GameLog.Field(
+                    "board_hash",
+                    result.BoardFinal.GetHashCode()),
+                GameLog.Field(
+                    "previous_intoxication",
+                    previousIntoxication),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication));
+        }
+
+        private void LogCompleted()
+        {
+            GameLog.Info(
+                "tincture_match",
+                "completed",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field("score", session.Score),
+                GameLog.Field(
+                    "rank",
+                    Rank.ToString()),
+                GameLog.Field(
+                    "moves_completed",
+                    session.MovesCompleted),
+                GameLog.Field(
+                    "best_cascade",
+                    session.BestCascade),
+                GameLog.Field(
+                    "moonshine_activations",
+                    moonshineActivations),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "drinks_consumed",
+                    currentDrinksConsumed));
+        }
+
+        private void LogInterruptedClose(string reason)
+        {
+            if (IsOpen &&
+                !completionRaised &&
+                !WillCompleteOnClose())
+            {
+                LogCancelled(reason);
+            }
+        }
+
+        private bool WillCompleteOnClose()
+        {
+            return finishAfterPresentation ||
+                   (session != null && session.IsFinished);
+        }
+
+        private void LogCancelled(string reason)
+        {
+            GameLog.Info(
+                "tincture_match",
+                "cancelled",
+                GameLog.Field(
+                    "minigame_run_id",
+                    minigameRunId),
+                GameLog.Field(
+                    "persist_progress",
+                    persistSessionProgress),
+                GameLog.Field("close_reason", reason),
+                GameLog.Field(
+                    "phase",
+                    presentationPhase.ToString()),
+                GameLog.Field(
+                    "moves_completed",
+                    session?.MovesCompleted ?? 0),
+                GameLog.Field(
+                    "score",
+                    session?.Score ?? 0),
+                GameLog.Field(
+                    "best_cascade",
+                    session?.BestCascade ?? 0),
+                GameLog.Field(
+                    "intoxication",
+                    currentIntoxication),
+                GameLog.Field(
+                    "moonshine_activations",
+                    moonshineActivations));
         }
     }
 }

@@ -37,21 +37,42 @@ namespace BarPromenade
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
             IsReturningToCity = false;
-            ResetDrinkingState();
-            ClearRoute();
-            ClearVisitedBars();
+            IntoxicationLevel = 0;
+            LastAlcoholicDrink = DrinkId.None;
+            DrinksConsumed = 0;
+            BalanceCheckDelayRemaining = 0f;
+            BalanceCheckSequence = 0;
+            plannedBarRoute.Clear();
+            visitedBars.Clear();
+            GameLog.SetCitySeed(CitySeed);
         }
 
         public static void SetCitySeed(int seed)
         {
             if (CitySeed == seed)
             {
+                GameLog.SetCitySeed(seed);
                 return;
             }
 
+            int previousSeed = CitySeed;
+            int clearedRouteCount = plannedBarRoute.Count;
+            int clearedVisitedCount = visitedBars.Count;
             CitySeed = seed;
+            GameLog.SetCitySeed(seed);
             ClearRoute();
             ClearVisitedBars();
+            GameLog.Info(
+                "session",
+                "city_seed_changed",
+                GameLog.Field("previous_seed", previousSeed),
+                GameLog.Field("new_seed", CitySeed),
+                GameLog.Field(
+                    "cleared_route_count",
+                    clearedRouteCount),
+                GameLog.Field(
+                    "cleared_visited_count",
+                    clearedVisitedCount));
         }
 
         public static bool TryAddRouteStop(string barId)
@@ -63,13 +84,38 @@ namespace BarPromenade
             }
 
             plannedBarRoute.Add(barId);
+            GameLog.Info(
+                "session",
+                "route_stop_added",
+                GameLog.Field("bar_id", barId),
+                GameLog.Field(
+                    "route_index",
+                    plannedBarRoute.Count - 1),
+                GameLog.Field("route", FormatRoute()));
             return true;
         }
 
         public static bool RemoveRouteStop(string barId)
         {
-            return !string.IsNullOrWhiteSpace(barId) &&
-                   plannedBarRoute.Remove(barId);
+            if (string.IsNullOrWhiteSpace(barId))
+            {
+                return false;
+            }
+
+            int routeIndex = plannedBarRoute.IndexOf(barId);
+            if (routeIndex < 0)
+            {
+                return false;
+            }
+
+            plannedBarRoute.RemoveAt(routeIndex);
+            GameLog.Info(
+                "session",
+                "route_stop_removed",
+                GameLog.Field("bar_id", barId),
+                GameLog.Field("previous_index", routeIndex),
+                GameLog.Field("route", FormatRoute()));
+            return true;
         }
 
         public static bool MoveRouteStop(string barId, int direction)
@@ -92,12 +138,32 @@ namespace BarPromenade
             string displacedBarId = plannedBarRoute[targetIndex];
             plannedBarRoute[targetIndex] = barId;
             plannedBarRoute[currentIndex] = displacedBarId;
+            GameLog.Info(
+                "session",
+                "route_stop_moved",
+                GameLog.Field("bar_id", barId),
+                GameLog.Field("previous_index", currentIndex),
+                GameLog.Field("new_index", targetIndex),
+                GameLog.Field("displaced_bar_id", displacedBarId),
+                GameLog.Field("route", FormatRoute()));
             return true;
         }
 
         public static void ClearRoute()
         {
+            if (plannedBarRoute.Count == 0)
+            {
+                return;
+            }
+
+            string previousRoute = FormatRoute();
+            int previousCount = plannedBarRoute.Count;
             plannedBarRoute.Clear();
+            GameLog.Info(
+                "session",
+                "route_cleared",
+                GameLog.Field("previous_route", previousRoute),
+                GameLog.Field("previous_count", previousCount));
         }
 
         public static bool MarkBarVisited(string barId)
@@ -108,7 +174,22 @@ namespace BarPromenade
             }
 
             bool firstVisit = visitedBars.Add(barId);
-            RemoveRouteStop(barId);
+            bool removedFromRoute = RemoveRouteStop(barId);
+            if (firstVisit || removedFromRoute)
+            {
+                GameLog.Info(
+                    "session",
+                    "bar_visited",
+                    GameLog.Field("bar_id", barId),
+                    GameLog.Field("first_visit", firstVisit),
+                    GameLog.Field(
+                        "removed_from_route",
+                        removedFromRoute),
+                    GameLog.Field(
+                        "visited_count",
+                        visitedBars.Count));
+            }
+
             return firstVisit;
         }
 
@@ -120,7 +201,17 @@ namespace BarPromenade
 
         public static void ClearVisitedBars()
         {
+            if (visitedBars.Count == 0)
+            {
+                return;
+            }
+
+            int previousCount = visitedBars.Count;
             visitedBars.Clear();
+            GameLog.Info(
+                "session",
+                "visited_bars_cleared",
+                GameLog.Field("previous_count", previousCount));
         }
 
         public static void EnterBar(string barId)
@@ -132,16 +223,50 @@ namespace BarPromenade
             string barId,
             BarActivityKind barActivity)
         {
-            ActiveBarId = barId ?? string.Empty;
-            ActiveBarActivity = string.IsNullOrEmpty(ActiveBarId)
+            string nextBarId = barId ?? string.Empty;
+            BarActivityKind nextActivity =
+                string.IsNullOrEmpty(nextBarId)
                 ? BarActivityKind.None
                 : NormalizeBarActivity(barActivity);
+            if (string.Equals(
+                    ActiveBarId,
+                    nextBarId,
+                    StringComparison.Ordinal) &&
+                ActiveBarActivity == nextActivity &&
+                !IsReturningToCity)
+            {
+                return;
+            }
+
+            ActiveBarId = nextBarId;
+            ActiveBarActivity = nextActivity;
             IsReturningToCity = false;
+            GameLog.Info(
+                "session",
+                "bar_entered",
+                GameLog.Field("bar_id", ActiveBarId),
+                GameLog.Field(
+                    "activity",
+                    ActiveBarActivity.ToString()));
         }
 
         public static void PrepareCityReturn()
         {
-            IsReturningToCity = !string.IsNullOrEmpty(ActiveBarId);
+            bool nextValue = !string.IsNullOrEmpty(ActiveBarId);
+            if (IsReturningToCity == nextValue)
+            {
+                return;
+            }
+
+            IsReturningToCity = nextValue;
+            GameLog.Info(
+                "session",
+                "city_return_prepared",
+                GameLog.Field("bar_id", ActiveBarId),
+                GameLog.Field(
+                    "activity",
+                    ActiveBarActivity.ToString()),
+                GameLog.Field("is_returning", IsReturningToCity));
         }
 
         public static bool TryGetReturnBarId(out string barId)
@@ -152,7 +277,19 @@ namespace BarPromenade
 
         public static void CompleteCityReturn()
         {
+            if (!IsReturningToCity)
+            {
+                return;
+            }
+
             IsReturningToCity = false;
+            GameLog.Info(
+                "session",
+                "city_return_completed",
+                GameLog.Field("bar_id", ActiveBarId),
+                GameLog.Field(
+                    "activity",
+                    ActiveBarActivity.ToString()));
         }
 
         public static void UpdateDrinkingProgress(
@@ -160,19 +297,75 @@ namespace BarPromenade
             DrinkId lastDrink,
             int drinksConsumed)
         {
-            IntoxicationLevel = Mathf.Clamp(intoxication, 0, 100);
+            int nextIntoxication = Mathf.Clamp(intoxication, 0, 100);
+            int nextDrinksConsumed = Mathf.Max(0, drinksConsumed);
+            bool resetBalanceDelay =
+                nextIntoxication <=
+                IntoxicationStageRules.BalanceThreshold &&
+                BalanceCheckDelayRemaining > 0f;
+            if (IntoxicationLevel == nextIntoxication &&
+                LastAlcoholicDrink == lastDrink &&
+                DrinksConsumed == nextDrinksConsumed &&
+                !resetBalanceDelay)
+            {
+                return;
+            }
+
+            int previousIntoxication = IntoxicationLevel;
+            DrinkId previousDrink = LastAlcoholicDrink;
+            int previousDrinksConsumed = DrinksConsumed;
+            IntoxicationLevel = nextIntoxication;
             LastAlcoholicDrink = lastDrink;
-            DrinksConsumed = Mathf.Max(0, drinksConsumed);
+            DrinksConsumed = nextDrinksConsumed;
             if (IntoxicationLevel <=
                 IntoxicationStageRules.BalanceThreshold)
             {
                 BalanceCheckDelayRemaining = 0f;
             }
+
+            GameLog.Info(
+                "session",
+                "drinking_changed",
+                GameLog.Field(
+                    "previous_intoxication",
+                    previousIntoxication),
+                GameLog.Field(
+                    "intoxication",
+                    IntoxicationLevel),
+                GameLog.Field(
+                    "previous_drink",
+                    previousDrink.ToString()),
+                GameLog.Field(
+                    "last_drink",
+                    LastAlcoholicDrink.ToString()),
+                GameLog.Field(
+                    "previous_drinks_consumed",
+                    previousDrinksConsumed),
+                GameLog.Field(
+                    "drinks_consumed",
+                    DrinksConsumed),
+                GameLog.Field(
+                    "balance_delay_reset",
+                    resetBalanceDelay));
         }
 
         public static void SetBalanceCheckDelay(float seconds)
         {
-            BalanceCheckDelayRemaining = Mathf.Max(0f, seconds);
+            float nextValue = Mathf.Max(0f, seconds);
+            if (BalanceCheckDelayRemaining == nextValue)
+            {
+                return;
+            }
+
+            float previousValue = BalanceCheckDelayRemaining;
+            BalanceCheckDelayRemaining = nextValue;
+            GameLog.Debug(
+                "balance",
+                "delay_changed",
+                GameLog.Field("previous_seconds", previousValue),
+                GameLog.Field(
+                    "remaining_seconds",
+                    BalanceCheckDelayRemaining));
         }
 
         public static void AdvanceBalanceCheckDelay(
@@ -188,22 +381,54 @@ namespace BarPromenade
         {
             int sequence = BalanceCheckSequence;
             BalanceCheckSequence++;
+            GameLog.Debug(
+                "balance",
+                "sequence_consumed",
+                GameLog.Field("sequence", sequence),
+                GameLog.Field(
+                    "next_sequence",
+                    BalanceCheckSequence));
             return sequence;
         }
 
         public static void ResetDrinkingState()
         {
+            if (IntoxicationLevel == 0 &&
+                LastAlcoholicDrink == DrinkId.None &&
+                DrinksConsumed == 0 &&
+                BalanceCheckDelayRemaining <= 0f &&
+                BalanceCheckSequence == 0)
+            {
+                return;
+            }
+
+            int previousIntoxication = IntoxicationLevel;
+            int previousDrinksConsumed = DrinksConsumed;
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
+            GameLog.Info(
+                "session",
+                "drinking_reset",
+                GameLog.Field(
+                    "previous_intoxication",
+                    previousIntoxication),
+                GameLog.Field(
+                    "previous_drinks_consumed",
+                    previousDrinksConsumed));
         }
 
         private static BarActivityKind NormalizeBarActivity(
             BarActivityKind barActivity)
         {
             return BarMinigameCatalog.NormalizeActivity(barActivity);
+        }
+
+        private static string FormatRoute()
+        {
+            return string.Join(",", plannedBarRoute);
         }
     }
 }

@@ -160,6 +160,26 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (WasOpenLogDirectoryPressed())
+            {
+                if (GameDiagnosticsSnapshot.TryOpenLogDirectory())
+                {
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                }
+
+                return;
+            }
+
+            if (WasSnapshotPressed())
+            {
+                if (GameDiagnosticsSnapshot.Capture("f8_hotkey"))
+                {
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                }
+
+                return;
+            }
+
             if (WasTogglePressed())
             {
                 Toggle();
@@ -634,6 +654,22 @@ namespace BarPromenade
             Keyboard keyboard = Keyboard.current;
             return keyboard != null &&
                    keyboard.f9Key.wasPressedThisFrame;
+        }
+
+        private static bool WasSnapshotPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null &&
+                   keyboard.f8Key.wasPressedThisFrame;
+        }
+
+        private static bool WasOpenLogDirectoryPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null &&
+                   keyboard.f8Key.wasPressedThisFrame &&
+                   (keyboard.leftShiftKey.isPressed ||
+                    keyboard.rightShiftKey.isPressed);
         }
 
         private static bool WasCancelPressed()

@@ -14,6 +14,8 @@ namespace BarPromenade
         private const float PostWidth = 0.18f;
         private const float PostHeight = 1.18f;
         private const float MaximumPostSpacing = 2.80f;
+        private const float SpatialChunkSize = 48f;
+        private const float CoordinateEpsilon = 0.0001f;
 
         private static readonly Color PostColor =
             new Color(0.12f, 0.14f, 0.15f);
@@ -37,73 +39,144 @@ namespace BarPromenade
             Transform root =
                 new GameObject("Road Edge Fences").transform;
             root.SetParent(parent, false);
-            var railBoxes = new List<Bounds>(
-                checked(plan.Segments.Count * 2));
-            var postBoxes = new List<Bounds>();
+            var chunks =
+                new Dictionary<ChunkCoordinate, FenceChunkGeometry>();
 
             for (int index = 0;
                  index < plan.Segments.Count;
                  index++)
             {
                 AddSegmentGeometry(
-                    railBoxes,
-                    postBoxes,
+                    chunks,
                     plan.Segments[index]);
             }
 
-            if (railBoxes.Count > 0)
+            var coordinates =
+                new List<ChunkCoordinate>(chunks.Keys);
+            coordinates.Sort(CompareChunks);
+            for (int index = 0;
+                 index < coordinates.Count;
+                 index++)
             {
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Safety Rails",
-                    root,
-                    railBoxes,
-                    RailColor);
-            }
+                ChunkCoordinate coordinate = coordinates[index];
+                FenceChunkGeometry geometry = chunks[coordinate];
+                Transform chunkRoot = new GameObject(
+                    $"Fence Chunk {coordinate.X} {coordinate.Z}")
+                    .transform;
+                chunkRoot.SetParent(root, false);
+                chunkRoot.localPosition = coordinate.Origin;
 
-            if (postBoxes.Count > 0)
-            {
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Fence Posts",
-                    root,
-                    postBoxes,
-                    PostColor);
+                if (geometry.RailBoxes.Count > 0)
+                {
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Safety Rails",
+                        chunkRoot,
+                        geometry.RailBoxes,
+                        RailColor);
+                }
+
+                if (geometry.PostBoxes.Count > 0)
+                {
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Fence Posts",
+                        chunkRoot,
+                        geometry.PostBoxes,
+                        PostColor);
+                }
             }
 
             return root.gameObject;
         }
 
         private static void AddSegmentGeometry(
-            ICollection<Bounds> railBoxes,
-            ICollection<Bounds> postBoxes,
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
             RoadFenceSegmentDescriptor descriptor)
         {
             Vector3 segmentCenter =
                 descriptor.Center +
                 (descriptor.OutwardNormal * (FenceDepth * 0.5f));
+            AddRails(chunks, descriptor);
+            AddPosts(chunks, descriptor, segmentCenter);
+        }
 
+        private static void AddRails(
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
+            RoadFenceSegmentDescriptor descriptor)
+        {
+            float pieceStart = descriptor.MinimumCoordinate;
+            float maximum = descriptor.MaximumCoordinate;
+            int boundaryIndex =
+                Mathf.FloorToInt(pieceStart / SpatialChunkSize) + 1;
+            float boundary = boundaryIndex * SpatialChunkSize;
+            while (boundary < maximum - CoordinateEpsilon)
+            {
+                AddRailPiece(
+                    chunks,
+                    descriptor,
+                    pieceStart,
+                    boundary);
+                pieceStart = boundary;
+                boundary += SpatialChunkSize;
+            }
+
+            AddRailPiece(
+                chunks,
+                descriptor,
+                pieceStart,
+                maximum);
+        }
+
+        private static void AddRailPiece(
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
+            RoadFenceSegmentDescriptor descriptor,
+            float minimum,
+            float maximum)
+        {
+            float length = maximum - minimum;
+            if (length <= CoordinateEpsilon)
+            {
+                return;
+            }
+
+            float centerCoordinate = (minimum + maximum) * 0.5f;
+            Vector3 center = descriptor.IsHorizontal
+                ? new Vector3(
+                    centerCoordinate,
+                    0f,
+                    descriptor.FixedCoordinate)
+                : new Vector3(
+                    descriptor.FixedCoordinate,
+                    0f,
+                    centerCoordinate);
+            center +=
+                descriptor.OutwardNormal * (FenceDepth * 0.5f);
             Vector3 railSize = descriptor.IsHorizontal
                 ? new Vector3(
-                    descriptor.Length,
+                    length,
                     RailHeight,
                     FenceDepth)
                 : new Vector3(
                     FenceDepth,
                     RailHeight,
-                    descriptor.Length);
-            railBoxes.Add(new Bounds(
-                segmentCenter +
-                (Vector3.up * (RoadSurfaceY + LowerRailY)),
-                railSize));
-            railBoxes.Add(new Bounds(
-                segmentCenter +
-                (Vector3.up * (RoadSurfaceY + UpperRailY)),
-                railSize));
-
-            AddPosts(postBoxes, descriptor, segmentCenter);
+                    length);
+            AddBox(
+                chunks,
+                new Bounds(
+                    center +
+                    (Vector3.up * (RoadSurfaceY + LowerRailY)),
+                    railSize),
+                true);
+            AddBox(
+                chunks,
+                new Bounds(
+                    center +
+                    (Vector3.up * (RoadSurfaceY + UpperRailY)),
+                    railSize),
+                true);
         }
 
         private static void AddPosts(
-            ICollection<Bounds> postBoxes,
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
             RoadFenceSegmentDescriptor descriptor,
             Vector3 segmentCenter)
         {
@@ -112,10 +185,10 @@ namespace BarPromenade
                 Mathf.Min(PostWidth * 0.5f, length * 0.5f);
             float usableLength =
                 Mathf.Max(0f, length - (endInset * 2f));
-            if (usableLength <= 0.0001f)
+            if (usableLength <= CoordinateEpsilon)
             {
                 AddPost(
-                    postBoxes,
+                    chunks,
                     descriptor.IsHorizontal,
                     segmentCenter,
                     0f);
@@ -135,7 +208,7 @@ namespace BarPromenade
                         usableLength * 0.5f,
                         t);
                 AddPost(
-                    postBoxes,
+                    chunks,
                     descriptor.IsHorizontal,
                     segmentCenter,
                     offset);
@@ -143,7 +216,7 @@ namespace BarPromenade
         }
 
         private static void AddPost(
-            ICollection<Bounds> postBoxes,
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
             bool horizontal,
             Vector3 segmentCenter,
             float offset)
@@ -157,12 +230,107 @@ namespace BarPromenade
                     0f,
                     RoadSurfaceY + (PostHeight * 0.5f),
                     offset);
-            postBoxes.Add(new Bounds(
-                segmentCenter + localOffset,
+            AddBox(
+                chunks,
+                new Bounds(
+                    segmentCenter + localOffset,
+                    new Vector3(
+                        PostWidth,
+                        PostHeight,
+                        PostWidth)),
+                false);
+        }
+
+        private static void AddBox(
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
+            Bounds box,
+            bool isRail)
+        {
+            ChunkCoordinate coordinate =
+                ChunkCoordinate.FromPosition(box.center);
+            if (!chunks.TryGetValue(
+                    coordinate,
+                    out FenceChunkGeometry geometry))
+            {
+                geometry = new FenceChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            Bounds localBox = box;
+            localBox.center -= coordinate.Origin;
+            if (isRail)
+            {
+                geometry.RailBoxes.Add(localBox);
+            }
+            else
+            {
+                geometry.PostBoxes.Add(localBox);
+            }
+        }
+
+        private static int CompareChunks(
+            ChunkCoordinate left,
+            ChunkCoordinate right)
+        {
+            int zComparison = left.Z.CompareTo(right.Z);
+            return zComparison != 0
+                ? zComparison
+                : left.X.CompareTo(right.X);
+        }
+
+        private readonly struct ChunkCoordinate :
+            IEquatable<ChunkCoordinate>
+        {
+            public ChunkCoordinate(int x, int z)
+            {
+                X = x;
+                Z = z;
+            }
+
+            public int X { get; }
+            public int Z { get; }
+            public Vector3 Origin =>
                 new Vector3(
-                    PostWidth,
-                    PostHeight,
-                    PostWidth)));
+                    X * SpatialChunkSize,
+                    0f,
+                    Z * SpatialChunkSize);
+
+            public bool Equals(ChunkCoordinate other)
+            {
+                return X == other.X && Z == other.Z;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is ChunkCoordinate other &&
+                       Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (X * 397) ^ Z;
+                }
+            }
+
+            public static ChunkCoordinate FromPosition(
+                Vector3 position)
+            {
+                return new ChunkCoordinate(
+                    Mathf.FloorToInt(
+                        position.x / SpatialChunkSize),
+                    Mathf.FloorToInt(
+                        position.z / SpatialChunkSize));
+            }
+        }
+
+        private sealed class FenceChunkGeometry
+        {
+            public List<Bounds> RailBoxes { get; } =
+                new List<Bounds>();
+            public List<Bounds> PostBoxes { get; } =
+                new List<Bounds>();
         }
     }
 }

@@ -9,6 +9,11 @@ namespace BarPromenade
     {
         private readonly HashSet<Vector2Int> nodeSet;
         private readonly HashSet<RoadEdge> edgeSet;
+        private readonly ReadOnlyDictionary<RoadEdge, CityPathKind>
+            readOnlyPathKinds;
+        private readonly Dictionary<CityDistrictKind, CityDistrictDescriptor>
+            districtsByKind;
+        private bool hasValidated;
 
         internal CityLayout(
             int seed,
@@ -16,9 +21,13 @@ namespace BarPromenade
             Vector2 nodeSpacing,
             Vector3 worldOrigin,
             float roadWidth,
+            float minimumBarRouteDistance,
             IList<Vector2Int> nodes,
             IList<RoadEdge> roadEdges,
+            IDictionary<RoadEdge, CityPathKind> pathKinds,
             IList<BuildingLot> buildingLots,
+            IList<CityDistrictDescriptor> districts,
+            CityParkPlan park,
             Vector2Int spawnNode)
         {
             Seed = seed;
@@ -26,16 +35,36 @@ namespace BarPromenade
             NodeSpacing = nodeSpacing;
             WorldOrigin = worldOrigin;
             RoadWidth = roadWidth;
+            MinimumBarRouteDistance = minimumBarRouteDistance;
             Nodes = new ReadOnlyCollection<Vector2Int>(
                 new List<Vector2Int>(nodes));
             RoadEdges = new ReadOnlyCollection<RoadEdge>(
                 new List<RoadEdge>(roadEdges));
             BuildingLots = new ReadOnlyCollection<BuildingLot>(
                 new List<BuildingLot>(buildingLots));
+            Districts = new ReadOnlyCollection<CityDistrictDescriptor>(
+                new List<CityDistrictDescriptor>(districts));
+            Park = park ?? throw new ArgumentNullException(nameof(park));
             SpawnNode = spawnNode;
             SpawnWorldPosition = GetNodeWorldPosition(spawnNode);
             nodeSet = new HashSet<Vector2Int>(Nodes);
             edgeSet = new HashSet<RoadEdge>(RoadEdges);
+            var copiedPathKinds =
+                new Dictionary<RoadEdge, CityPathKind>(pathKinds);
+            readOnlyPathKinds =
+                new ReadOnlyDictionary<RoadEdge, CityPathKind>(
+                    copiedPathKinds);
+            districtsByKind =
+                new Dictionary<CityDistrictKind, CityDistrictDescriptor>();
+            for (int index = 0; index < Districts.Count; index++)
+            {
+                CityDistrictDescriptor district = Districts[index];
+                if (district != null &&
+                    !districtsByKind.ContainsKey(district.Kind))
+                {
+                    districtsByKind.Add(district.Kind, district);
+                }
+            }
         }
 
         public int Seed { get; }
@@ -43,10 +72,15 @@ namespace BarPromenade
         public Vector2 NodeSpacing { get; }
         public Vector3 WorldOrigin { get; }
         public float RoadWidth { get; }
+        public float MinimumBarRouteDistance { get; }
         public IReadOnlyList<Vector2Int> Nodes { get; }
         public IReadOnlyList<RoadEdge> RoadEdges { get; }
+        public IReadOnlyDictionary<RoadEdge, CityPathKind> PathKinds =>
+            readOnlyPathKinds;
         public IReadOnlyList<BuildingLot> BuildingLots { get; }
         public IReadOnlyList<BuildingLot> Lots => BuildingLots;
+        public IReadOnlyList<CityDistrictDescriptor> Districts { get; }
+        public CityParkPlan Park { get; }
         public Vector2Int SpawnNode { get; }
         public Vector3 SpawnWorldPosition { get; }
 
@@ -79,6 +113,27 @@ namespace BarPromenade
             return edgeSet.Contains(edge);
         }
 
+        public CityPathKind GetPathKind(RoadEdge edge)
+        {
+            if (!readOnlyPathKinds.TryGetValue(
+                    edge,
+                    out CityPathKind kind))
+            {
+                throw new ArgumentException(
+                    "The requested edge does not belong to this layout.",
+                    nameof(edge));
+            }
+
+            return kind;
+        }
+
+        public bool TryGetDistrict(
+            CityDistrictKind kind,
+            out CityDistrictDescriptor district)
+        {
+            return districtsByKind.TryGetValue(kind, out district);
+        }
+
         public Rect GetRoadRect(RoadEdge edge)
         {
             if (!edgeSet.Contains(edge))
@@ -107,6 +162,21 @@ namespace BarPromenade
             }
 
             return Array.AsReadOnly(rectangles);
+        }
+
+        public IReadOnlyList<Rect> CreateStreetRects()
+        {
+            var rectangles = new List<Rect>(RoadEdges.Count);
+            for (int index = 0; index < RoadEdges.Count; index++)
+            {
+                RoadEdge edge = RoadEdges[index];
+                if (GetPathKind(edge) == CityPathKind.Street)
+                {
+                    rectangles.Add(GetRoadRect(edge));
+                }
+            }
+
+            return new ReadOnlyCollection<Rect>(rectangles);
         }
 
         public bool TryGetFrontageEdge(BuildingLot lot, out RoadEdge edge)
@@ -163,6 +233,11 @@ namespace BarPromenade
 
         public void ValidateOrThrow()
         {
+            if (hasValidated)
+            {
+                return;
+            }
+
             int expectedNodeCount =
                 checked((BlockCount.x + 1) * (BlockCount.y + 1));
             if (Nodes.Count != expectedNodeCount || nodeSet.Count != Nodes.Count)
@@ -176,6 +251,12 @@ namespace BarPromenade
                 throw new InvalidOperationException("The layout contains duplicate road edges.");
             }
 
+            if (readOnlyPathKinds.Count != RoadEdges.Count)
+            {
+                throw new InvalidOperationException(
+                    "Every travel edge must define exactly one path kind.");
+            }
+
             for (int index = 0; index < RoadEdges.Count; index++)
             {
                 RoadEdge edge = RoadEdges[index];
@@ -183,6 +264,14 @@ namespace BarPromenade
                 {
                     throw new InvalidOperationException(
                         $"Road edge {edge} references an unknown node.");
+                }
+
+                CityPathKind kind = GetPathKind(edge);
+                if (kind != CityPathKind.Street &&
+                    kind != CityPathKind.ParkPath)
+                {
+                    throw new InvalidOperationException(
+                        $"Road edge {edge} has an unsupported path kind.");
                 }
             }
 
@@ -196,7 +285,48 @@ namespace BarPromenade
             if (BuildingLots.Count != expectedLotCount)
             {
                 throw new InvalidOperationException(
-                    "The layout must contain one building lot per block.");
+                    "The layout must contain one lot descriptor per block.");
+            }
+
+            var districtKinds = new HashSet<CityDistrictKind>();
+            var districtCells =
+                new Dictionary<Vector2Int, CityDistrictKind>();
+            for (int index = 0; index < Districts.Count; index++)
+            {
+                CityDistrictDescriptor district = Districts[index];
+                if (district == null ||
+                    !districtKinds.Add(district.Kind) ||
+                    district.Cells.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        "Districts must be non-null, non-empty and unique.");
+                }
+
+                for (int cellIndex = 0;
+                     cellIndex < district.Cells.Count;
+                     cellIndex++)
+                {
+                    Vector2Int cell = district.Cells[cellIndex];
+                    if (!IsCellInsideGrid(cell) ||
+                        !districtCells.TryAdd(cell, district.Kind))
+                    {
+                        throw new InvalidOperationException(
+                            "District cells must cover unique in-grid blocks.");
+                    }
+                }
+            }
+
+            if (districtCells.Count != expectedLotCount)
+            {
+                throw new InvalidOperationException(
+                    "Districts must cover every city block exactly once.");
+            }
+
+            var parkCells = new HashSet<Vector2Int>(Park.Cells);
+            if (parkCells.Count != Park.Cells.Count)
+            {
+                throw new InvalidOperationException(
+                    "Park cells must be unique.");
             }
 
             var cells = new HashSet<Vector2Int>();
@@ -211,6 +341,24 @@ namespace BarPromenade
                         "Building lots must be non-null and have unique cells.");
                 }
 
+                if (!districtCells.TryGetValue(
+                        lot.Cell,
+                        out CityDistrictKind district) ||
+                    district != lot.District)
+                {
+                    throw new InvalidOperationException(
+                        $"Lot {lot.Cell} does not match its district plan.");
+                }
+
+                bool isPlannedPark = parkCells.Contains(lot.Cell);
+                if (lot.IsPark != isPlannedPark ||
+                    lot.IsPark !=
+                    (lot.District == CityDistrictKind.CentralPark))
+                {
+                    throw new InvalidOperationException(
+                        $"Lot {lot.Cell} has inconsistent park land use.");
+                }
+
                 if (!lot.IsBar)
                 {
                     if (lot.BarActivity != BarActivityKind.None)
@@ -220,6 +368,13 @@ namespace BarPromenade
                     }
 
                     continue;
+                }
+
+                if (!lot.HasBuilding ||
+                    lot.District == CityDistrictKind.CentralPark)
+                {
+                    throw new InvalidOperationException(
+                        $"Bar {lot.BarId} cannot occupy park land.");
                 }
 
                 if (lot.BarActivity != BarActivityKind.Cocktail &&
@@ -243,6 +398,12 @@ namespace BarPromenade
                         $"Bar {lot.BarId} has no matching road frontage.");
                 }
 
+                if (GetPathKind(frontage) != CityPathKind.Street)
+                {
+                    throw new InvalidOperationException(
+                        $"Bar {lot.BarId} must face a city street.");
+                }
+
                 Rect road = GetRoadRect(frontage);
                 if (!ContainsInclusive(road, lot.ReturnPosition))
                 {
@@ -254,6 +415,7 @@ namespace BarPromenade
             }
 
             bars.Sort(CompareLotsRowMajor);
+            var firstBarDistricts = new HashSet<CityDistrictKind>();
             for (int ordinal = 0; ordinal < bars.Count; ordinal++)
             {
                 BarActivityKind expected =
@@ -265,7 +427,40 @@ namespace BarPromenade
                         $"{bars[ordinal].BarActivity}, but row-major ordinal " +
                         $"{ordinal} requires {expected}.");
                 }
+
+                if (bars.Count <= 4 &&
+                    !firstBarDistricts.Add(bars[ordinal].District))
+                {
+                    throw new InvalidOperationException(
+                        "The first four bars must occupy different districts.");
+                }
             }
+
+            if (MinimumBarRouteDistance > 0f)
+            {
+                for (int first = 0; first < bars.Count; first++)
+                {
+                    for (int second = first + 1;
+                         second < bars.Count;
+                         second++)
+                    {
+                        float distance = CityTravelDistance.BetweenBars(
+                            this,
+                            bars[first],
+                            bars[second]);
+                        if (distance + 0.001f <
+                            MinimumBarRouteDistance)
+                        {
+                            throw new InvalidOperationException(
+                                $"Bars {bars[first].BarId} and " +
+                                $"{bars[second].BarId} are only " +
+                                $"{distance:0.##} m apart.");
+                        }
+                    }
+                }
+            }
+
+            hasValidated = true;
         }
 
         private static int CompareLotsRowMajor(BuildingLot left, BuildingLot right)
@@ -282,6 +477,14 @@ namespace BarPromenade
                    position.x <= rectangle.xMax &&
                    position.z >= rectangle.yMin &&
                    position.z <= rectangle.yMax;
+        }
+
+        private bool IsCellInsideGrid(Vector2Int cell)
+        {
+            return cell.x >= 0 &&
+                   cell.x < BlockCount.x &&
+                   cell.y >= 0 &&
+                   cell.y < BlockCount.y;
         }
     }
 }

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -39,10 +41,21 @@ namespace BarPromenade
         }
 
         public bool IsInitialized { get; private set; }
+        public BarInteriorLayoutPlan Layout { get; private set; }
+        public Transform Room { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public BarMusicPlayer Music { get; private set; }
         public BarAmbiencePlayer Ambience { get; private set; }
+        public BarSoundscape Soundscape { get; private set; }
+        public BarInteriorAtmosphere Atmosphere { get; private set; }
+        public BarNpcPlan NpcPlan { get; private set; }
+        public BarNpcDirector NpcDirector { get; private set; }
+        public BarArrivalPresentation ArrivalPresentation
+        {
+            get;
+            private set;
+        }
         public BarActivityKind ActiveActivity { get; private set; }
         public BarActivityStation ActivityStation { get; private set; }
         public IBarMinigame ActiveMinigame { get; private set; }
@@ -85,12 +98,66 @@ namespace BarPromenade
                 return;
             }
 
+            GameLog.SetScene(gameObject.scene.name);
+            GameLog.SetCitySeed(GameSessionState.CitySeed);
+            Stopwatch totalTimer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
+            GameLog.Info(
+                "bar",
+                "initialize_started",
+                GameLog.Field(
+                    "bar_id",
+                    GameSessionState.ActiveBarId),
+                GameLog.Field(
+                    "requested_activity",
+                    GameSessionState.ActiveBarActivity.ToString()),
+                GameLog.Field("seed", GameSessionState.CitySeed),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "last_drink",
+                    GameSessionState.LastAlcoholicDrink.ToString()),
+                GameLog.Field(
+                    "drinks_consumed",
+                    GameSessionState.DrinksConsumed));
+
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            ReportPhase("runtime_setup", phaseTimer);
+
+            phaseTimer.Restart();
             activeBarId = GameSessionState.ActiveBarId;
+            BarActivityKind requestedActivity =
+                GameSessionState.ActiveBarActivity;
             ActiveActivity = ResolveActivity(
-                GameSessionState.ActiveBarActivity);
-            BuildRoom(ActiveActivity);
+                requestedActivity);
+            if (requestedActivity != ActiveActivity)
+            {
+                GameLog.Warning(
+                    "bar",
+                    "activity_normalized",
+                    GameLog.Field(
+                        "requested_activity",
+                        requestedActivity.ToString()),
+                    GameLog.Field(
+                        "resolved_activity",
+                        ActiveActivity.ToString()));
+            }
+
+            string layoutBarId = string.IsNullOrWhiteSpace(activeBarId)
+                ? "bar-interior"
+                : activeBarId;
+            Layout = BarInteriorLayoutPlanner.Generate(
+                GameSessionState.CitySeed,
+                layoutBarId,
+                ActiveActivity);
+            ReportPhase("layout_generation", phaseTimer);
+            ReportLayout(Layout);
+
+            phaseTimer.Restart();
+            BuildRoom();
+            BuildAtmosphere();
 
             GameObject musicObject = new GameObject("Bar Music");
             musicObject.transform.SetParent(transform, false);
@@ -100,7 +167,10 @@ namespace BarPromenade
             ambienceObject.transform.SetParent(transform, false);
             Ambience =
                 ambienceObject.AddComponent<BarAmbiencePlayer>();
+            BuildSoundscape();
+            ReportPhase("environment_build", phaseTimer);
 
+            phaseTimer.Restart();
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
             InteractionPromptView prompt = ui.AddComponent<InteractionPromptView>();
@@ -108,10 +178,10 @@ namespace BarPromenade
                 ui.AddComponent<IntoxicationHudView>();
 
             IWalkableArea walkableArea = new InteriorWalkableArea(
-                new Rect(-5.25f, -4.25f, 10.5f, 8.5f));
+                Layout.WalkableBounds);
             Player = PlayerFactory.Create(
                 transform,
-                new Vector3(0f, 0.12f, -2.6f),
+                Layout.PlayerSpawn,
                 camera,
                 walkableArea,
                 prompt);
@@ -144,10 +214,41 @@ namespace BarPromenade
                 intoxicationHud,
                 null,
                 ActiveMinigame);
+            ReportPhase("player_and_ui", phaseTimer);
 
+            phaseTimer.Restart();
             BuildActivityStation();
             BuildExit();
+            BuildNpcCrowd(camera);
             IsInitialized = true;
+            BuildArrivalPresentation(camera, follow);
+            ReportPhase("activity_and_crowd", phaseTimer);
+            totalTimer.Stop();
+            GameLog.Info(
+                "bar",
+                "initialize_completed",
+                GameLog.Field("bar_id", activeBarId),
+                GameLog.Field(
+                    "activity",
+                    ActiveActivity.ToString()),
+                GameLog.Field(
+                    "minigame_id",
+                    GetMinigameId()),
+                GameLog.Field(
+                    "stable_seed",
+                    (long)Layout.StableSeed),
+                GameLog.Field(
+                    "npc_count",
+                    NpcPlan.Definitions.Count),
+                GameLog.Field(
+                    "light_count",
+                    Layout.LightAnchors.Count),
+                GameLog.Field(
+                    "audio_anchor_count",
+                    Layout.AudioAnchors.Count),
+                GameLog.Field(
+                    "duration_ms",
+                    totalTimer.ElapsedMilliseconds));
         }
 
         private void OnDestroy()
@@ -158,269 +259,116 @@ namespace BarPromenade
             }
         }
 
-        private void BuildRoom(BarActivityKind activity)
+        private void BuildRoom()
         {
-            Transform room = new GameObject(
-                $"Interior {GameSessionState.ActiveBarId}").transform;
-            room.SetParent(transform, false);
+            Room = BarInteriorWorldBuilder.Build(transform, Layout);
+        }
 
-            Color floor = new Color(0.22f, 0.11f, 0.07f);
-            Color wall = new Color(0.50f, 0.22f, 0.16f);
-            Color trim = new Color(0.92f, 0.60f, 0.22f);
-            Color furniture = new Color(0.12f, 0.055f, 0.035f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Floor", room, new Vector3(0f, -0.12f, 0f),
-                new Vector3(12f, 0.24f, 10f), floor);
-            RuntimePrimitiveFactory.CreateBox(
-                "Back Wall", room, new Vector3(0f, 1.6f, 5f),
-                new Vector3(12f, 3.2f, 0.3f), wall);
-            RuntimePrimitiveFactory.CreateBox(
-                "Left Wall", room, new Vector3(-6f, 1.6f, 0f),
-                new Vector3(0.3f, 3.2f, 10f), wall);
-            RuntimePrimitiveFactory.CreateBox(
-                "Right Wall", room, new Vector3(6f, 1.6f, 0f),
-                new Vector3(0.3f, 3.2f, 10f), wall);
-            RuntimePrimitiveFactory.CreateBox(
-                "Front Wall Left", room, new Vector3(-3.7f, 1.6f, -5f),
-                new Vector3(4.6f, 3.2f, 0.3f), wall);
-            RuntimePrimitiveFactory.CreateBox(
-                "Front Wall Right", room, new Vector3(3.7f, 1.6f, -5f),
-                new Vector3(4.6f, 3.2f, 0.3f), wall);
+        private void BuildAtmosphere()
+        {
+            GameObject atmosphereObject =
+                new GameObject("Bar Interior Atmosphere");
+            atmosphereObject.transform.SetParent(transform, false);
+            Atmosphere =
+                atmosphereObject.AddComponent<BarInteriorAtmosphere>();
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Counter", room, new Vector3(0f, 0.65f, 3.35f),
-                new Vector3(6.6f, 1.3f, 0.8f), furniture);
-            RuntimePrimitiveFactory.CreateBox(
-                "Counter Trim", room, new Vector3(0f, 1.34f, 3.35f),
-                new Vector3(6.9f, 0.12f, 1f), trim, false);
-
-            if (activity == BarActivityKind.BeerPong)
+            var lights = new List<BarPracticalLightSpec>(
+                Layout.LightAnchors.Count);
+            for (int index = 0;
+                 index < Layout.LightAnchors.Count;
+                 index++)
             {
-                BuildBeerPongTable(room, furniture, trim);
+                BarInteriorLightAnchor anchor =
+                    Layout.LightAnchors[index];
+                lights.Add(new BarPracticalLightSpec(
+                    anchor.Id,
+                    anchor.Position,
+                    anchor.Direction,
+                    anchor.Color,
+                    anchor.IsSpot ? LightType.Spot : LightType.Point,
+                    anchor.Intensity,
+                    anchor.Range,
+                    anchor.SpotAngle));
             }
-            else
+
+            Atmosphere.Initialize(lights);
+        }
+
+        private void BuildSoundscape()
+        {
+            Vector3 crowdPosition = new Vector3(0f, 1.4f, 1f);
+            Vector3 cuePosition = Layout.CounterPosition;
+            float crowdRadius = 12f;
+            float crowdGain = 1f;
+            float cueRadius = 8f;
+            float cueGain = 1f;
+            for (int index = 0;
+                 index < Layout.AudioAnchors.Count;
+                 index++)
             {
-                BuildTable(
-                    room,
-                    new Vector3(-2.7f, 0f, 0.2f),
-                    furniture,
-                    trim);
-                BuildTable(
-                    room,
-                    new Vector3(2.7f, 0f, 0.2f),
-                    furniture,
-                    trim);
-                BuildTable(
-                    room,
-                    new Vector3(-2.4f, 0f, -2f),
-                    furniture,
-                    trim);
-                BuildTable(
-                    room,
-                    new Vector3(2.4f, 0f, -2f),
-                    furniture,
-                    trim);
-                if (activity == BarActivityKind.SplitTheG)
+                BarInteriorAudioAnchor anchor =
+                    Layout.AudioAnchors[index];
+                if (anchor.Kind == BarInteriorAudioKind.CrowdBed)
                 {
-                    BuildSplitTheGDisplay(room, furniture, trim);
+                    crowdPosition = anchor.Position;
+                    crowdRadius = anchor.Radius;
+                    crowdGain = anchor.Gain;
                 }
-                else if (activity == BarActivityKind.TinctureMatch)
+                else if (
+                    anchor.Kind == BarInteriorAudioKind.BarService)
                 {
-                    BuildTinctureMatchDisplay(room, furniture, trim);
+                    cuePosition = anchor.Position;
+                    cueRadius = anchor.Radius;
+                    cueGain = anchor.Gain;
                 }
             }
+
+            GameObject soundscapeObject =
+                new GameObject("Bar Soundscape");
+            soundscapeObject.transform.SetParent(transform, false);
+            Soundscape =
+                soundscapeObject.AddComponent<BarSoundscape>();
+            Soundscape.Initialize(
+                unchecked((int)Layout.StableSeed),
+                transform.TransformPoint(crowdPosition),
+                transform.TransformPoint(cuePosition),
+                crowdRadius,
+                crowdGain,
+                cueRadius,
+                cueGain);
         }
 
-        private static void BuildTable(
-            Transform parent,
-            Vector3 position,
-            Color baseColor,
-            Color topColor)
+        private void BuildNpcCrowd(Camera camera)
         {
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Table Leg", parent, position + (Vector3.up * 0.45f),
-                new Vector3(0.16f, 0.45f, 0.16f), baseColor);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Table Top", parent, position + (Vector3.up * 0.92f),
-                new Vector3(0.78f, 0.08f, 0.78f), topColor);
+            NpcPlan = BarNpcPlanner.Create(
+                Layout.CitySeed,
+                Layout.BarId,
+                Layout.Activity,
+                Layout.NpcAnchors);
+            NpcDirector = BarNpcFactory.CreateWithDefaultLibrary(
+                transform,
+                camera,
+                NpcPlan);
+            NpcDirector.ConfigureDepthSorting(
+                camera,
+                Player.GameObject.transform);
         }
 
-        private static void BuildBeerPongTable(
-            Transform parent,
-            Color baseColor,
-            Color trimColor)
+        private void BuildArrivalPresentation(
+            Camera camera,
+            PlayerCameraFollow follow)
         {
-            Color tableColor = new Color(0.08f, 0.23f, 0.25f);
-            Vector3 tableCenter = new Vector3(0f, 0.92f, 0.45f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Beer Pong Table",
-                parent,
-                tableCenter,
-                new Vector3(2.35f, 0.14f, 4.25f),
-                tableColor);
-
-            Vector3[] legPositions =
-            {
-                new Vector3(-0.9f, 0.43f, -1.25f),
-                new Vector3(0.9f, 0.43f, -1.25f),
-                new Vector3(-0.9f, 0.43f, 2.15f),
-                new Vector3(0.9f, 0.43f, 2.15f)
-            };
-            for (int index = 0; index < legPositions.Length; index++)
-            {
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Beer Pong Table Leg {index + 1}",
-                    parent,
-                    legPositions[index],
-                    new Vector3(0.16f, 0.86f, 0.16f),
-                    baseColor);
-            }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Beer Pong Center Line",
-                parent,
-                tableCenter + (Vector3.up * 0.08f),
-                new Vector3(2.1f, 0.025f, 0.06f),
-                trimColor,
-                false);
-
-            Vector3[] cupPositions =
-            {
-                new Vector3(0f, 1.15f, 1.45f),
-                new Vector3(-0.27f, 1.15f, 1.75f),
-                new Vector3(0.27f, 1.15f, 1.75f),
-                new Vector3(-0.54f, 1.15f, 2.05f),
-                new Vector3(0f, 1.15f, 2.05f),
-                new Vector3(0.54f, 1.15f, 2.05f)
-            };
-            Color cupColor = new Color(0.78f, 0.17f, 0.12f);
-            for (int index = 0; index < cupPositions.Length; index++)
-            {
-                RuntimePrimitiveFactory.CreateCylinder(
-                    $"Beer Pong Cup {index + 1}",
-                    parent,
-                    cupPositions[index],
-                    new Vector3(0.22f, 0.16f, 0.22f),
-                    cupColor,
-                    false);
-            }
-        }
-
-        private static void BuildSplitTheGDisplay(
-            Transform parent,
-            Color baseColor,
-            Color trimColor)
-        {
-            Vector3 displayPosition =
-                new Vector3(2.15f, 1.42f, 3.34f);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Split the G Coaster",
-                parent,
-                displayPosition,
-                new Vector3(0.38f, 0.035f, 0.38f),
-                baseColor,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Split the G Pint",
-                parent,
-                displayPosition + (Vector3.up * 0.30f),
-                new Vector3(0.25f, 0.30f, 0.25f),
-                new Color(0.36f, 0.16f, 0.055f),
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Split the G Foam",
-                parent,
-                displayPosition + (Vector3.up * 0.61f),
-                new Vector3(0.26f, 0.045f, 0.26f),
-                new Color(0.94f, 0.83f, 0.61f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Split the G Target",
-                parent,
-                displayPosition +
-                new Vector3(0f, 0.32f, -0.26f),
-                new Vector3(0.31f, 0.045f, 0.025f),
-                trimColor,
-                false);
-        }
-
-        private static void BuildTinctureMatchDisplay(
-            Transform parent,
-            Color baseColor,
-            Color trimColor)
-        {
-            Vector3 trayPosition = new Vector3(0f, 1.43f, 3.34f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Tincture Match Tray",
-                parent,
-                trayPosition,
-                new Vector3(2.15f, 0.08f, 0.62f),
-                baseColor,
-                false);
-
-            Color[] tinctureColors =
-            {
-                new Color(0.66f, 0.08f, 0.10f),
-                new Color(0.94f, 0.44f, 0.08f),
-                new Color(0.20f, 0.12f, 0.48f),
-                new Color(0.13f, 0.48f, 0.24f),
-                new Color(0.74f, 0.57f, 0.20f)
-            };
-            for (int index = 0; index < tinctureColors.Length; index++)
-            {
-                float x = -0.76f + (index * 0.38f);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    $"Tincture Shot {index + 1}",
-                    parent,
-                    trayPosition + new Vector3(x, 0.18f, 0f),
-                    new Vector3(0.22f, 0.16f, 0.22f),
-                    tinctureColors[index],
-                    false);
-            }
-
-            Vector3 bottlePosition = new Vector3(1.55f, 1.72f, 3.34f);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Tincture XXX Bottle",
-                parent,
-                bottlePosition,
-                new Vector3(0.34f, 0.34f, 0.34f),
-                new Color(0.70f, 0.82f, 0.78f),
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Tincture XXX Bottle Neck",
-                parent,
-                bottlePosition + (Vector3.up * 0.42f),
-                new Vector3(0.16f, 0.12f, 0.16f),
-                new Color(0.70f, 0.82f, 0.78f),
-                false);
-
-            Vector3 signPosition = new Vector3(1.55f, 1.74f, 3.13f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Tincture XXX Sign",
-                parent,
-                signPosition,
-                new Vector3(0.74f, 0.38f, 0.035f),
-                trimColor,
-                false);
-            Color ink = new Color(0.16f, 0.08f, 0.04f);
-            for (int xIndex = 0; xIndex < 3; xIndex++)
-            {
-                float x = signPosition.x - 0.22f + (xIndex * 0.22f);
-                for (int stroke = 0; stroke < 2; stroke++)
-                {
-                    GameObject mark = RuntimePrimitiveFactory.CreateBox(
-                        $"Tincture XXX Mark {xIndex + 1}-{stroke + 1}",
-                        parent,
-                        new Vector3(x, signPosition.y, 3.105f),
-                        new Vector3(0.055f, 0.29f, 0.025f),
-                        ink,
-                        false);
-                    mark.transform.localRotation = Quaternion.Euler(
-                        0f,
-                        0f,
-                        stroke == 0 ? 38f : -38f);
-                }
-            }
+            ArrivalPresentation =
+                gameObject.AddComponent<BarArrivalPresentation>();
+            ArrivalPresentation.Initialize(
+                camera,
+                follow,
+                transform.TransformPoint(
+                    new Vector3(7.35f, 3.15f, -6.2f)),
+                transform.TransformPoint(
+                    new Vector3(-0.6f, 1.25f, 2.6f)),
+                61f,
+                1.35f);
         }
 
         private void BuildMinigame(
@@ -453,22 +401,39 @@ namespace BarPromenade
                 ActiveMinigame as TinctureMatchMinigameController;
 
             ActiveMinigame.Completed += HandleMinigameCompleted;
+            GameLog.Info(
+                "bar",
+                "minigame_created",
+                GameLog.Field("bar_id", activeBarId),
+                GameLog.Field("minigame_id", definition.Id),
+                GameLog.Field(
+                    "activity",
+                    definition.Activity.ToString()),
+                GameLog.Field(
+                    "controller",
+                    ActiveMinigame.GetType().Name));
         }
 
         private void BuildExit()
         {
             GameObject exit = new GameObject("Bar Exit");
             exit.transform.SetParent(transform, false);
-            exit.transform.localPosition = new Vector3(0f, 0.9f, -4.25f);
+            exit.transform.localPosition = Layout.ExitPosition;
             BoxCollider trigger = exit.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
-            trigger.size = new Vector3(1.8f, 1.8f, 1.3f);
+            trigger.size = Layout.ExitTriggerSize;
             exit.AddComponent<BarExit>();
 
             RuntimePrimitiveFactory.CreateBox(
-                "Exit Header", transform, new Vector3(0f, 2.35f, -4.82f),
-                new Vector3(2.8f, 0.35f, 0.35f),
-                new Color(0.92f, 0.60f, 0.22f),
+                "Exit Header",
+                transform,
+                new Vector3(
+                    0f,
+                    Layout.RoomHeight - 0.62f,
+                    -Layout.RoomSize.y * 0.5f + 0.18f),
+                new Vector3(3.4f, 0.24f, 0.16f),
+                new Color(2.1f, 0.78f, 0.20f),
+                CityNightResources.EmissiveMaterial,
                 false);
         }
 
@@ -480,16 +445,16 @@ namespace BarPromenade
                 ActiveActivity == BarActivityKind.SplitTheG;
             bool isTinctureMatch =
                 ActiveActivity == BarActivityKind.TinctureMatch;
-            Vector3 stationPosition;
-            Vector3 triggerSize;
+            Vector3 stationPosition =
+                Layout.ActivityStationPosition;
+            Vector3 triggerSize =
+                Layout.ActivityStationTriggerSize;
             string stationName;
             string pointName;
             string signName;
             Vector3 signPosition;
             if (isBeerPong)
             {
-                stationPosition = new Vector3(0f, 0.9f, -1.95f);
-                triggerSize = new Vector3(1.8f, 1.8f, 0.9f);
                 stationName = "Beer Pong Minigame Station";
                 pointName = "Play Point";
                 signName = "Beer Pong Point Sign";
@@ -500,30 +465,27 @@ namespace BarPromenade
             }
             else if (isSplitTheG)
             {
-                stationPosition = new Vector3(3.85f, 0.9f, 3.35f);
-                triggerSize = new Vector3(1.2f, 1.8f, 1.2f);
                 stationName = "Split the G Minigame Station";
                 pointName = "Split the G Point";
                 signName = "Split the G Point Sign";
-                signPosition = new Vector3(3.85f, 1.75f, 3.72f);
+                signPosition =
+                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
             }
             else if (isTinctureMatch)
             {
-                stationPosition = new Vector3(0f, 0.9f, 3.35f);
-                triggerSize = new Vector3(1.4f, 1.8f, 1.2f);
                 stationName = "Tincture Match Minigame Station";
                 pointName = "Tincture Match Point";
                 signName = "Tincture Match Point Sign";
-                signPosition = new Vector3(0f, 1.75f, 3.72f);
+                signPosition =
+                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
             }
             else
             {
-                stationPosition = new Vector3(-3.85f, 0.9f, 3.35f);
-                triggerSize = new Vector3(1.2f, 1.8f, 1.2f);
                 stationName = "Cocktail Minigame Station";
                 pointName = "Order Point";
                 signName = "Order Point Sign";
-                signPosition = new Vector3(-3.85f, 1.75f, 3.72f);
+                signPosition =
+                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
             }
 
             string promptKey = BarMinigameCatalog.TryGet(
@@ -564,13 +526,99 @@ namespace BarPromenade
 
         private void HandleMinigameCompleted()
         {
-            GameSessionState.MarkBarVisited(activeBarId);
+            bool firstVisit =
+                GameSessionState.MarkBarVisited(activeBarId);
+            GameLog.Info(
+                "bar",
+                "minigame_completed",
+                GameLog.Field("bar_id", activeBarId),
+                GameLog.Field(
+                    "activity",
+                    ActiveActivity.ToString()),
+                GameLog.Field(
+                    "minigame_id",
+                    GetMinigameId()),
+                GameLog.Field("first_visit", firstVisit),
+                GameLog.Field(
+                    "visited_count",
+                    GameSessionState.VisitedBarCount));
         }
 
         private static BarActivityKind ResolveActivity(
             BarActivityKind activity)
         {
             return BarMinigameCatalog.NormalizeActivity(activity);
+        }
+
+        private static void ReportLayout(
+            BarInteriorLayoutPlan layout)
+        {
+            GameLog.Info(
+                "bar",
+                "layout_generated",
+                GameLog.Field("bar_id", layout.BarId),
+                GameLog.Field(
+                    "activity",
+                    layout.Activity.ToString()),
+                GameLog.Field(
+                    "stable_seed",
+                    (long)layout.StableSeed),
+                GameLog.Field(
+                    "room_width",
+                    layout.RoomSize.x),
+                GameLog.Field(
+                    "room_depth",
+                    layout.RoomSize.y),
+                GameLog.Field(
+                    "room_height",
+                    layout.RoomHeight),
+                GameLog.Field(
+                    "zone_count",
+                    layout.Zones.Count),
+                GameLog.Field(
+                    "path_count",
+                    layout.Paths.Count),
+                GameLog.Field(
+                    "furniture_count",
+                    layout.FurnitureFootprints.Count),
+                GameLog.Field(
+                    "npc_anchor_count",
+                    layout.NpcAnchors.Count),
+                GameLog.Field(
+                    "light_anchor_count",
+                    layout.LightAnchors.Count),
+                GameLog.Field(
+                    "audio_anchor_count",
+                    layout.AudioAnchors.Count),
+                GameLog.Field(
+                    "spawn_x",
+                    layout.PlayerSpawn.x),
+                GameLog.Field(
+                    "spawn_z",
+                    layout.PlayerSpawn.z));
+        }
+
+        private string GetMinigameId()
+        {
+            return BarMinigameCatalog.TryGet(
+                ActiveActivity,
+                out BarMinigameDefinition definition)
+                ? definition.Id
+                : string.Empty;
+        }
+
+        private static void ReportPhase(
+            string phase,
+            Stopwatch timer)
+        {
+            timer.Stop();
+            GameLog.Debug(
+                "bar",
+                "initialize_phase",
+                GameLog.Field("phase", phase),
+                GameLog.Field(
+                    "duration_ms",
+                    timer.ElapsedMilliseconds));
         }
     }
 }

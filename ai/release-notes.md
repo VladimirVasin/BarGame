@@ -2,6 +2,54 @@
 
 ## Unreleased
 
+### Support diagnostics
+
+- Added a bounded structured `debug.log` for reproducible support reports. It
+  records build/scene/seed context, generated city and bar summaries, route and
+  visit changes, correlated transitions, minigame results, drinking/balance
+  outcomes and Unity warnings or exceptions without per-frame telemetry.
+- Press `F8` in the city or bar to capture the current player/session/world
+  state immediately. `Shift+F8` opens the directory containing the active log.
+- Logs rotate automatically at 5 MiB and retain three archives; release builds
+  use a quieter profile while development builds include phase timings.
+
+### District-scale city and central park
+
+- Expanded the default city from `4 x 4` to `12 x 12` blocks, roughly
+  `288 x 288 m`, with cross-city arterials and a deterministic connected road
+  graph.
+- Added Old Town, Residential, Industrial and Nightlife districts with
+  different building proportions, heights, palettes and street details.
+- Added a central `4 x 4`-block park with a walkable lawn, crossing paths,
+  plaza, trees, benches, hedges and four open gates connected to surrounding
+  streets.
+- Moved the four bars into different urban districts and enforced at least
+  `120 m` of traversable graph distance between every pair.
+- Updated the full-screen map with district colors and localized labels plus
+  distinct park land and paths.
+- Spatially indexed walkability, changed route finding to a binary min-heap
+  and batched roads, fences and lamp geometry into `48 m` chunks so the larger
+  city remains practical at runtime.
+
+### Cinematic expanded bar interior
+
+- Expanded the bar into a denser `22 x 16 m` venue with a long counter and
+  mirrored backbar, bottle shelves, three booths, four social tables, a
+  curtained performance stage and dedicated activity space.
+- Added entrance dressing, posters, beams, wainscot, a ceiling fan, practical
+  lamps, service details and atmospheric dust so the room reads as a lived-in
+  venue from every camera angle.
+- Added 12 animated patrons: a working bartender, performer, seated booth
+  groups, standing guests and a roaming visitor. Their silhouettes layer
+  correctly around the player and furniture.
+- Warm cinematic grading, bloom, vignette and film grain now combine with six
+  shadowless practical lights. A skippable opening camera move establishes the
+  bar before returning cleanly to normal follow control.
+- Added a subtle spatial crowd bed and occasional glass/chair sounds while
+  retaining the bar theme and ambience.
+- Beer Pong, Split G and Tincture remain available in their respective bar
+  variants, with clear paths between the entrance, counter, activity and exit.
+
 ### Five-stage intoxication and balance
 
 - Replaced the former temporary intoxication status with one persistent

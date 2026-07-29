@@ -581,6 +581,26 @@
       "value": "Длина: {0:0} м"
     },
     {
+      "key": "map.district.old_town",
+      "value": "Старый город"
+    },
+    {
+      "key": "map.district.residential",
+      "value": "Жилой район"
+    },
+    {
+      "key": "map.district.industrial",
+      "value": "Промзона"
+    },
+    {
+      "key": "map.district.nightlife",
+      "value": "Ночной район"
+    },
+    {
+      "key": "map.district.central_park",
+      "value": "Центральный парк"
+    },
+    {
       "key": "debug.minigames.title",
       "value": "DEBUG: МИНИ-ИГРЫ"
     },

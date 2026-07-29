@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -44,6 +45,23 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(cityRoot.Layout, Is.Not.Null);
             Assert.That(cityRoot.World, Is.Not.Null);
+            Assert.That(
+                cityRoot.Layout.BlockCount,
+                Is.EqualTo(new Vector2Int(12, 12)));
+            Assert.That(
+                cityRoot.Layout.BuildingLots,
+                Has.Count.EqualTo(144));
+            Assert.That(
+                cityRoot.Layout.Districts,
+                Has.Count.EqualTo(5));
+            Assert.That(cityRoot.Layout.Park, Is.Not.Null);
+            Assert.That(
+                cityRoot.Layout.Park.Cells,
+                Has.Count.EqualTo(16));
+            Assert.That(cityRoot.World.ParkRoot, Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.name,
+                Is.EqualTo("Central Park"));
             Assert.That(cityRoot.Player.GameObject, Is.Not.Null);
             Assert.That(
                 cityRoot.Player.GameObject.transform.IsChildOf(cityRoot.transform),
@@ -51,6 +69,43 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<BarEntrance>(true),
                 Has.Length.EqualTo(4));
+            var barDistricts = new HashSet<CityDistrictKind>();
+            var barLots = new List<BuildingLot>();
+            for (int index = 0;
+                 index < cityRoot.Layout.BuildingLots.Count;
+                 index++)
+            {
+                BuildingLot lot =
+                    cityRoot.Layout.BuildingLots[index];
+                if (!lot.IsBar)
+                {
+                    continue;
+                }
+
+                barLots.Add(lot);
+                barDistricts.Add(lot.District);
+            }
+
+            Assert.That(barLots, Has.Count.EqualTo(4));
+            Assert.That(barDistricts, Has.Count.EqualTo(4));
+            for (int first = 0; first < barLots.Count; first++)
+            {
+                for (int second = first + 1;
+                     second < barLots.Count;
+                     second++)
+                {
+                    Assert.That(
+                        CityTravelDistance.BetweenBars(
+                            cityRoot.Layout,
+                            barLots[first],
+                            barLots[second]),
+                        Is.GreaterThanOrEqualTo(
+                            cityRoot.Layout
+                                .MinimumBarRouteDistance -
+                            0.001f));
+                }
+            }
+
             Assert.That(
                 cityRoot.World.Bars[0].BarActivity,
                 Is.EqualTo(BarActivityKind.Cocktail));
@@ -105,19 +160,42 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cityRoot.World.FencePlan, Is.Not.Null);
             Assert.That(
                 fenceRoot.childCount,
-                Is.EqualTo(2));
+                Is.GreaterThan(2));
             Renderer[] fenceRenderers =
                 fenceRoot.GetComponentsInChildren<Renderer>(true);
-            Assert.That(fenceRenderers, Has.Length.EqualTo(2));
-            Assert.That(
-                fenceRoot.Find("Safety Rails"),
-                Is.Not.Null);
-            Assert.That(
-                fenceRoot.Find("Fence Posts"),
-                Is.Not.Null);
+            Assert.That(fenceRenderers.Length, Is.GreaterThan(2));
+            for (int index = 0;
+                 index < fenceRoot.childCount;
+                 index++)
+            {
+                Transform chunk = fenceRoot.GetChild(index);
+                Assert.That(
+                    chunk.name,
+                    Does.StartWith("Fence Chunk "));
+                Assert.That(
+                    chunk.childCount,
+                    Is.GreaterThan(0));
+            }
+
+            for (int index = 0;
+                 index < fenceRenderers.Length;
+                 index++)
+            {
+                Assert.That(
+                    fenceRenderers[index].bounds.size.x,
+                    Is.LessThanOrEqualTo(49f));
+                Assert.That(
+                    fenceRenderers[index].bounds.size.z,
+                    Is.LessThanOrEqualTo(49f));
+            }
+
             Assert.That(
                 fenceRoot.GetComponentsInChildren<Collider>(true),
                 Is.Empty);
+            Assert.That(
+                cityRoot.World.FencePlan.ParkGateOpenings,
+                Has.Count.EqualTo(
+                    cityRoot.Layout.Park.Gates.Count));
 
             CharacterController playerController =
                 cityRoot.Player.GameObject.GetComponent<
@@ -158,6 +236,36 @@ namespace BarPromenade.Tests.PlayMode
                             playerController.radius),
                         Is.True,
                         $"Entrance path is not walkable for {lot.BarId}.");
+                }
+            }
+
+            for (int gateIndex = 0;
+                 gateIndex < cityRoot.Layout.Park.Gates.Count;
+                 gateIndex++)
+            {
+                CityParkGateDescriptor gate =
+                    cityRoot.Layout.Park.Gates[gateIndex];
+                Assert.That(
+                    TryFindParkGateOpening(
+                        cityRoot.World.FencePlan,
+                        gate.Id,
+                        out RoadFenceOpeningDescriptor opening),
+                    Is.True,
+                    gate.Id);
+                Assert.That(
+                    opening.Width,
+                    Is.GreaterThanOrEqualTo(gate.Width));
+                for (int sample = -5; sample <= 5; sample++)
+                {
+                    Vector3 point =
+                        gate.Center +
+                        gate.OutwardNormal * sample;
+                    Assert.That(
+                        cityRoot.World.WalkableArea.Contains(
+                            point,
+                            playerController.radius),
+                        Is.True,
+                        $"Park gate '{gate.Id}' is not continuously walkable.");
                 }
             }
         }
@@ -382,7 +490,7 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < cityRoot.Layout.BuildingLots.Count; index++)
             {
                 BuildingLot lot = cityRoot.Layout.BuildingLots[index];
-                if (lot.IsBar)
+                if (lot.IsBar || !lot.HasBuilding)
                 {
                     continue;
                 }
@@ -402,6 +510,23 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(ordinaryBuildingCount, Is.GreaterThan(0));
+            Assert.That(cityRoot.World.ParkRoot, Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.transform.Find("Park Lawn"),
+                Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.transform.Find(
+                    "Park Central Plaza"),
+                Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.transform.Find(
+                    "Park Boundary Hedges"),
+                Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.GetComponentsInChildren<
+                    Collider>(true),
+                Has.Length.EqualTo(
+                    cityRoot.Layout.Park.TreePositions.Count));
 
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
@@ -478,6 +603,89 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.DebugWindow.IsInitialized,
                 Is.True);
+            Assert.That(interiorRoot.Layout, Is.Not.Null);
+            Assert.That(interiorRoot.Layout.RoomSize,
+                Is.EqualTo(new Vector2(22f, 16f)));
+            Assert.That(interiorRoot.Layout.RoomHeight, Is.EqualTo(4.8f));
+            Assert.That(interiorRoot.Room, Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Ceiling"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Backbar Amber Sign"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Booth Base 1"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Small Stage"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Social High Table 4"), Is.Not.Null);
+            Assert.That(interiorRoot.Room.Find("Activity Bay Rug"), Is.Not.Null);
+            Collider stageCollider = interiorRoot.Room.Find("Small Stage")
+                .GetComponent<Collider>();
+            Collider counterCollider = interiorRoot.Room.Find("Bar Counter")
+                .GetComponent<Collider>();
+            Physics.SyncTransforms();
+            Assert.That(
+                stageCollider.bounds.Intersects(
+                    counterCollider.bounds),
+                Is.False,
+                $"Stage {stageCollider.bounds} overlaps counter " +
+                $"{counterCollider.bounds}.");
+            Assert.That(interiorRoot.Atmosphere, Is.Not.Null);
+            Assert.That(Camera.main.GetUniversalAdditionalCameraData()
+                .renderPostProcessing, Is.True);
+            Assert.That(interiorRoot.Atmosphere.PracticalLights,
+                Has.Count.EqualTo(6));
+            for (int lightIndex = 0;
+                 lightIndex <
+                 interiorRoot.Atmosphere.PracticalLights.Count;
+                 lightIndex++)
+            {
+                Assert.That(
+                    interiorRoot.Atmosphere
+                        .PracticalLights[lightIndex]
+                        .shadows,
+                    Is.EqualTo(LightShadows.None));
+            }
+
+            Assert.That(interiorRoot.NpcPlan, Is.Not.Null);
+            Assert.That(interiorRoot.NpcPlan.Count,
+                Is.EqualTo(BarNpcPlanner.TargetNpcCount));
+            Assert.That(interiorRoot.NpcDirector, Is.Not.Null);
+            Assert.That(interiorRoot.NpcDirector.Actors,
+                Has.Count.EqualTo(BarNpcPlanner.TargetNpcCount));
+            Assert.That(interiorRoot.NpcDirector
+                    .GetComponentsInChildren<PlayerMotor>(true),
+                Is.Empty);
+            Assert.That(interiorRoot.Soundscape, Is.Not.Null);
+            Assert.That(
+                interiorRoot.Soundscape.CrowdSource,
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.Soundscape.CueSource,
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.ArrivalPresentation,
+                Is.Not.Null);
+            Assert.That(
+                interiorRoot.ArrivalPresentation.IsPlaying,
+                Is.True);
+            const int arrivalSamples = 32;
+            for (int sample = 0;
+                 sample <= arrivalSamples;
+                 sample++)
+            {
+                Physics.SyncTransforms();
+                Assert.That(
+                    Physics.CheckSphere(
+                        Camera.main.transform.position,
+                        0.08f,
+                        Physics.AllLayers,
+                        QueryTriggerInteraction.Ignore),
+                    Is.False,
+                    $"Arrival camera intersects geometry at sample {sample}.");
+                interiorRoot.ArrivalPresentation.AdvancePresentation(
+                    interiorRoot.ArrivalPresentation.Duration /
+                    arrivalSamples);
+            }
+
+            Assert.That(
+                interiorRoot.ArrivalPresentation.IsPlaying,
+                Is.False);
             Assert.That(interiorRoot.Music, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source.loop, Is.True);
@@ -574,10 +782,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
                 Has.Length.EqualTo(1));
-            Assert.That(
+            Transform beerPongTable =
                 interiorRoot.transform.Find(
-                    $"Interior {barId}/Beer Pong Table"),
-                Is.Not.Null);
+                    $"Interior {barId}/Beer Pong Table");
+            Assert.That(beerPongTable, Is.Not.Null);
+            BoxCollider stationTrigger =
+                interiorRoot.ActivityStation
+                    .GetComponent<BoxCollider>();
+            Collider tableCollider =
+                beerPongTable.GetComponent<Collider>();
+            Assert.That(stationTrigger, Is.Not.Null);
+            Assert.That(tableCollider, Is.Not.Null);
+            Physics.SyncTransforms();
+            Assert.That(
+                stationTrigger.bounds.Intersects(
+                    tableCollider.bounds),
+                Is.False);
 
             Vector3 stationPosition =
                 interiorRoot.ActivityStation.transform.position;
@@ -1378,6 +1598,28 @@ namespace BarPromenade.Tests.PlayMode
                 RoadFenceOpeningDescriptor candidate =
                     plan.EntranceOpenings[index];
                 if (candidate.BarId == barId)
+                {
+                    opening = candidate;
+                    return true;
+                }
+            }
+
+            opening = default;
+            return false;
+        }
+
+        private static bool TryFindParkGateOpening(
+            RoadFencePlan plan,
+            string gateId,
+            out RoadFenceOpeningDescriptor opening)
+        {
+            for (int index = 0;
+                 index < plan.ParkGateOpenings.Count;
+                 index++)
+            {
+                RoadFenceOpeningDescriptor candidate =
+                    plan.ParkGateOpenings[index];
+                if (candidate.ParkGateId == gateId)
                 {
                     opening = candidate;
                     return true;

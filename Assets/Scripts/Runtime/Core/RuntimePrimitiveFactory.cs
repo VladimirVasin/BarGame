@@ -112,6 +112,21 @@ namespace BarPromenade
             IReadOnlyList<Bounds> boxes,
             Color color)
         {
+            return CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                null);
+        }
+
+        public static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            Material sharedMaterial)
+        {
             if (boxes == null)
             {
                 throw new ArgumentNullException(nameof(boxes));
@@ -132,7 +147,7 @@ namespace BarPromenade
                 Vector3.one,
                 color,
                 false,
-                null);
+                sharedMaterial);
             MeshFilter meshFilter =
                 result.GetComponent<MeshFilter>();
             Mesh sourceMesh = meshFilter.sharedMesh;

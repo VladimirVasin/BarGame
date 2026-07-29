@@ -103,7 +103,8 @@ namespace BarPromenade
 
             foreach (KeyValuePair<Vector2Int, int> pair in degrees)
             {
-                if (pair.Value < 3)
+                if (pair.Value < 3 ||
+                    TouchesParkPath(layout, pair.Key))
                 {
                     continue;
                 }
@@ -127,6 +128,26 @@ namespace BarPromenade
                     candidates[index].Node,
                     target);
             }
+        }
+
+        private static bool TouchesParkPath(
+            CityLayout layout,
+            Vector2Int node)
+        {
+            for (int index = 0;
+                 index < layout.RoadEdges.Count;
+                 index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (edge.Contains(node) &&
+                    layout.GetPathKind(edge) ==
+                    CityPathKind.ParkPath)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Dictionary<Vector2Int, int> CountNodeDegrees(

@@ -72,6 +72,9 @@ namespace BarPromenade
                 return false;
             }
 
+            activeInteractor
+                .GetComponentInParent<BarArrivalPresentation>()
+                ?.Skip();
             interactor = activeInteractor;
             motor = activeInteractor.GetComponent<PlayerMotor>();
             cameraFollow = ResolveCameraFollow(fallbackCamera);

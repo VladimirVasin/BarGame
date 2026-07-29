@@ -6,6 +6,8 @@ namespace BarPromenade
 {
     public static class CityNightWorldBuilder
     {
+        private const float LampSpatialChunkSize = 48f;
+
         private static readonly Color FixtureColor =
             new Color(0.085f, 0.095f, 0.120f);
         private static readonly Color LampGlow =
@@ -49,15 +51,23 @@ namespace BarPromenade
 
             var lampAnchors =
                 new List<Transform>(plan.StreetLamps.Count);
+            var lampChunks =
+                new Dictionary<LampChunkCoordinate, LampChunkGeometry>();
             for (int index = 0; index < plan.StreetLamps.Count; index++)
             {
-                lampAnchors.Add(BuildStreetLamp(
+                StreetLampDescriptor descriptor =
+                    plan.StreetLamps[index];
+                lampAnchors.Add(CreateStreetLampAnchor(
                     root,
-                    plan.StreetLamps[index],
-                    emissiveMaterial,
+                    descriptor,
                     index));
+                AddStreetLampGeometry(lampChunks, descriptor);
             }
 
+            BuildStreetLampChunks(
+                root,
+                lampChunks,
+                emissiveMaterial);
             var trafficSignals = BuildTrafficSignals(
                 root,
                 plan.TrafficSignals,
@@ -78,53 +88,127 @@ namespace BarPromenade
                 barLightPositions);
         }
 
-        private static Transform BuildStreetLamp(
+        private static Transform CreateStreetLampAnchor(
             Transform parent,
             StreetLampDescriptor descriptor,
-            Material emissiveMaterial,
             int index)
         {
-            Transform lamp = new GameObject($"Street Lamp {index + 1}").transform;
-            lamp.SetParent(parent, false);
-            lamp.localPosition = descriptor.Position;
-            lamp.localRotation = Quaternion.LookRotation(
+            Quaternion rotation = Quaternion.LookRotation(
                 descriptor.Forward,
                 Vector3.up);
-
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Pole",
-                lamp,
-                new Vector3(0f, 1.65f, 0f),
-                new Vector3(0.09f, 1.65f, 0.09f),
-                FixtureColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Lamp Arm",
-                lamp,
-                new Vector3(0f, 3.24f, 0.30f),
-                new Vector3(0.10f, 0.10f, 0.70f),
-                FixtureColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Lamp Hood",
-                lamp,
-                new Vector3(0f, 3.18f, 0.66f),
-                new Vector3(0.40f, 0.13f, 0.34f),
-                FixtureColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Glowing Bulb",
-                lamp,
-                new Vector3(0f, 3.10f, 0.67f),
-                new Vector3(0.24f, 0.10f, 0.22f),
-                LampGlow,
-                emissiveMaterial,
-                false);
-
-            Transform anchor = new GameObject("Light Anchor").transform;
-            anchor.SetParent(lamp, false);
-            anchor.localPosition = new Vector3(0f, 2.92f, 0.67f);
+            Transform anchor = new GameObject(
+                $"Street Lamp Anchor {index + 1}").transform;
+            anchor.SetParent(parent, false);
+            anchor.localPosition =
+                descriptor.Position +
+                (rotation * new Vector3(0f, 2.92f, 0.67f));
+            anchor.localRotation = rotation;
             return anchor;
+        }
+
+        private static void AddStreetLampGeometry(
+            IDictionary<LampChunkCoordinate, LampChunkGeometry> chunks,
+            StreetLampDescriptor descriptor)
+        {
+            LampChunkCoordinate coordinate =
+                LampChunkCoordinate.FromPosition(descriptor.Position);
+            if (!chunks.TryGetValue(
+                    coordinate,
+                    out LampChunkGeometry geometry))
+            {
+                geometry = new LampChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                descriptor.Forward,
+                Vector3.up);
+            Vector3 origin = coordinate.Origin;
+            geometry.FixtureBoxes.Add(CreateLampBox(
+                descriptor.Position,
+                rotation,
+                origin,
+                new Vector3(0f, 1.65f, 0f),
+                new Vector3(0.09f, 3.30f, 0.09f)));
+            geometry.FixtureBoxes.Add(CreateLampBox(
+                descriptor.Position,
+                rotation,
+                origin,
+                new Vector3(0f, 3.24f, 0.30f),
+                new Vector3(0.10f, 0.10f, 0.70f)));
+            geometry.FixtureBoxes.Add(CreateLampBox(
+                descriptor.Position,
+                rotation,
+                origin,
+                new Vector3(0f, 3.18f, 0.66f),
+                new Vector3(0.40f, 0.13f, 0.34f)));
+            geometry.BulbBoxes.Add(CreateLampBox(
+                descriptor.Position,
+                rotation,
+                origin,
+                new Vector3(0f, 3.10f, 0.67f),
+                new Vector3(0.24f, 0.10f, 0.22f)));
+        }
+
+        private static Bounds CreateLampBox(
+            Vector3 fixturePosition,
+            Quaternion fixtureRotation,
+            Vector3 chunkOrigin,
+            Vector3 localCenter,
+            Vector3 localSize)
+        {
+            Vector3 right = fixtureRotation * Vector3.right;
+            Vector3 up = fixtureRotation * Vector3.up;
+            Vector3 forward = fixtureRotation * Vector3.forward;
+            Vector3 size =
+                (Absolute(right) * localSize.x) +
+                (Absolute(up) * localSize.y) +
+                (Absolute(forward) * localSize.z);
+            Vector3 center =
+                fixturePosition +
+                (fixtureRotation * localCenter) -
+                chunkOrigin;
+            return new Bounds(center, size);
+        }
+
+        private static void BuildStreetLampChunks(
+            Transform parent,
+            IDictionary<LampChunkCoordinate, LampChunkGeometry> chunks,
+            Material emissiveMaterial)
+        {
+            var coordinates =
+                new List<LampChunkCoordinate>(chunks.Keys);
+            coordinates.Sort(LampChunkCoordinate.Compare);
+            for (int index = 0; index < coordinates.Count; index++)
+            {
+                LampChunkCoordinate coordinate = coordinates[index];
+                LampChunkGeometry geometry = chunks[coordinate];
+                Transform chunk = new GameObject(
+                    $"Street Lamp Chunk {coordinate.X} {coordinate.Z}")
+                    .transform;
+                chunk.SetParent(parent, false);
+                chunk.localPosition = coordinate.Origin;
+
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Street Lamp Fixtures",
+                    chunk,
+                    geometry.FixtureBoxes,
+                    FixtureColor);
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Street Lamp Bulbs",
+                    chunk,
+                    geometry.BulbBoxes,
+                    LampGlow,
+                    emissiveMaterial);
+            }
+        }
+
+        private static Vector3 Absolute(Vector3 value)
+        {
+            return new Vector3(
+                Mathf.Abs(value.x),
+                Mathf.Abs(value.y),
+                Mathf.Abs(value.z));
         }
 
         private static List<TrafficSignalController> BuildTrafficSignals(
@@ -251,6 +335,71 @@ namespace BarPromenade
 
             public Renderer Lens { get; }
             public CityLightHalo Halo { get; }
+        }
+
+        private readonly struct LampChunkCoordinate :
+            IEquatable<LampChunkCoordinate>
+        {
+            public LampChunkCoordinate(int x, int z)
+            {
+                X = x;
+                Z = z;
+            }
+
+            public int X { get; }
+            public int Z { get; }
+            public Vector3 Origin =>
+                new Vector3(
+                    X * LampSpatialChunkSize,
+                    0f,
+                    Z * LampSpatialChunkSize);
+
+            public bool Equals(LampChunkCoordinate other)
+            {
+                return X == other.X && Z == other.Z;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is LampChunkCoordinate other &&
+                       Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (X * 397) ^ Z;
+                }
+            }
+
+            public static LampChunkCoordinate FromPosition(
+                Vector3 position)
+            {
+                return new LampChunkCoordinate(
+                    Mathf.FloorToInt(
+                        position.x / LampSpatialChunkSize),
+                    Mathf.FloorToInt(
+                        position.z / LampSpatialChunkSize));
+            }
+
+            public static int Compare(
+                LampChunkCoordinate left,
+                LampChunkCoordinate right)
+            {
+                int zComparison = left.Z.CompareTo(right.Z);
+                return zComparison != 0
+                    ? zComparison
+                    : left.X.CompareTo(right.X);
+            }
+        }
+
+        private sealed class LampChunkGeometry
+        {
+            public List<Bounds> FixtureBoxes { get; } =
+                new List<Bounds>();
+            public List<Bounds> BulbBoxes { get; } =
+                new List<Bounds>();
         }
     }
 }

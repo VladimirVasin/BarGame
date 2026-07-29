@@ -57,10 +57,24 @@ namespace BarPromenade
             RetroUiTheme.MapGround;
         private static readonly Color Building =
             RetroUiTheme.MapBuilding;
+        private static readonly Color OldTownBuilding =
+            new Color32(91, 76, 68, 255);
+        private static readonly Color ResidentialBuilding =
+            new Color32(64, 83, 78, 255);
+        private static readonly Color IndustrialBuilding =
+            new Color32(70, 72, 82, 255);
+        private static readonly Color NightlifeBuilding =
+            new Color32(80, 63, 87, 255);
+        private static readonly Color ParkLand =
+            new Color32(54, 83, 60, 255);
         private static readonly Color BarBuilding =
             RetroUiTheme.MapBar;
         private static readonly Color Road =
             RetroUiTheme.MapRoad;
+        private static readonly Color ParkPath =
+            new Color32(159, 150, 105, 255);
+        private static readonly Color DistrictLabelBackdrop =
+            RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.78f);
         private static readonly Color Route =
             RetroUiTheme.Accent;
         private static readonly Color UnselectedBar =
@@ -79,6 +93,7 @@ namespace BarPromenade
         private GUIStyle routeBadgeStyle;
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
+        private GUIStyle districtLabelStyle;
 
         public void Initialize(CityMapController mapController)
         {
@@ -221,6 +236,7 @@ namespace BarPromenade
                 1f);
             DrawBuildings(projection);
             DrawRoads(projection);
+            DrawDistrictLabels(projection);
             DrawRoute(projection);
             DrawBars(projection);
             DrawPlayer(projection);
@@ -252,7 +268,7 @@ namespace BarPromenade
                     bottomRight.y);
                 DrawSolidRect(
                     buildingRect,
-                    lot.IsBar ? BarBuilding : Building);
+                    GetLotColor(lot));
             }
         }
 
@@ -273,13 +289,46 @@ namespace BarPromenade
             for (int index = 0; index < roads.Count; index++)
             {
                 RoadEdge edge = roads[index];
+                CityPathKind pathKind =
+                    controller.Layout.GetPathKind(edge);
                 DrawLine(
                     projection.WorldToScreen(
                         controller.Layout.GetNodeWorldPosition(edge.A)),
                     projection.WorldToScreen(
                         controller.Layout.GetNodeWorldPosition(edge.B)),
-                    roadWidth,
-                    Road);
+                    GetPathWidth(pathKind, roadWidth),
+                    GetPathColor(pathKind));
+            }
+        }
+
+        private void DrawDistrictLabels(MapProjection projection)
+        {
+            IReadOnlyList<CityDistrictDescriptor> districts =
+                controller.Layout.Districts;
+            for (int index = 0; index < districts.Count; index++)
+            {
+                CityDistrictDescriptor district = districts[index];
+                Vector2 position = projection.WorldToScreen(
+                    district.CenterWorldPosition);
+                const float labelWidth = 104f;
+                const float labelHeight = 13f;
+                var labelRect = new Rect(
+                    Mathf.Round(position.x - labelWidth * 0.5f),
+                    Mathf.Round(position.y - labelHeight * 0.5f),
+                    labelWidth,
+                    labelHeight);
+                DrawSolidRect(labelRect, DistrictLabelBackdrop);
+                RetroUiTheme.StrokeRect(
+                    labelRect,
+                    1f,
+                    RetroUiTheme.WithAlpha(
+                        GetDistrictColor(district.Kind),
+                        0.92f));
+                GUI.Label(
+                    labelRect,
+                    LocalizationService.Get(
+                        GetDistrictLocalizationKey(district.Kind)),
+                    districtLabelStyle);
             }
         }
 
@@ -717,6 +766,79 @@ namespace BarPromenade
             RetroUiTheme.FillRect(rectangle, color);
         }
 
+        private static Color GetLotColor(BuildingLot lot)
+        {
+            if (lot.LandUse == CityLandUseKind.Park)
+            {
+                return ParkLand;
+            }
+
+            if (lot.IsBar)
+            {
+                return BarBuilding;
+            }
+
+            return GetDistrictColor(lot.District);
+        }
+
+        private static Color GetDistrictColor(CityDistrictKind district)
+        {
+            switch (district)
+            {
+                case CityDistrictKind.OldTown:
+                    return OldTownBuilding;
+                case CityDistrictKind.Residential:
+                    return ResidentialBuilding;
+                case CityDistrictKind.Industrial:
+                    return IndustrialBuilding;
+                case CityDistrictKind.Nightlife:
+                    return NightlifeBuilding;
+                case CityDistrictKind.CentralPark:
+                    return ParkLand;
+                default:
+                    return Building;
+            }
+        }
+
+        private static string GetDistrictLocalizationKey(
+            CityDistrictKind district)
+        {
+            switch (district)
+            {
+                case CityDistrictKind.OldTown:
+                    return "map.district.old_town";
+                case CityDistrictKind.Residential:
+                    return "map.district.residential";
+                case CityDistrictKind.Industrial:
+                    return "map.district.industrial";
+                case CityDistrictKind.Nightlife:
+                    return "map.district.nightlife";
+                case CityDistrictKind.CentralPark:
+                    return "map.district.central_park";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(district),
+                        district,
+                        "Unsupported city district.");
+            }
+        }
+
+        private static Color GetPathColor(CityPathKind pathKind)
+        {
+            return pathKind == CityPathKind.ParkPath
+                ? ParkPath
+                : Road;
+        }
+
+        private static float GetPathWidth(
+            CityPathKind pathKind,
+            float streetWidth)
+        {
+            return pathKind == CityPathKind.ParkPath
+                ? Mathf.Max(2f, streetWidth * 0.55f)
+                : streetWidth;
+        }
+
         private void EnsureStyles()
         {
             if (titleStyle != null)
@@ -764,6 +886,11 @@ namespace BarPromenade
                 8,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
+                true);
+            districtLabelStyle = RetroUiTheme.CreateLabelStyle(
+                7,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.AccentPale,
                 true);
         }
     }

@@ -61,6 +61,9 @@ namespace BarPromenade
                 : challengeModel.Position;
         public float BalanceRisk =>
             challengeModel == null ? 0f : challengeModel.Risk;
+        public string BalanceStateName => balanceState.ToString();
+        public bool IsBalanceDelayArmed => delayArmed;
+        public int ScheduledBalanceSequence => scheduledSequence;
 
         public void Initialize(
             PlayerRuntime player,
@@ -116,11 +119,13 @@ namespace BarPromenade
             challengeSettings =
                 BalanceChallengeSettings.FromDifficulty(
                     rawProfile.BalanceDifficulty);
-            challengeModel = new BalanceChallengeModel(
-                challengeSettings,
+            int challengeSeed =
                 BalanceChallengeRules.GetChallengeSeed(
                     GameSessionState.CitySeed,
-                    scheduledSequence));
+                    scheduledSequence);
+            challengeModel = new BalanceChallengeModel(
+                challengeSettings,
+                challengeSeed);
             if (!balanceLock.TryCaptureAndDisable(
                     interactor,
                     cameraFollow,
@@ -128,6 +133,25 @@ namespace BarPromenade
                     BarMinigameModalLockOptions.BalanceCheck))
             {
                 ArmCheckDelay(ModalExitGraceDuration);
+                GameLog.Warning(
+                    "balance",
+                    "start_deferred",
+                    GameLog.Field(
+                        "sequence",
+                        scheduledSequence),
+                    GameLog.Field(
+                        "challenge_seed",
+                        challengeSeed),
+                    GameLog.Field(
+                        "intoxication",
+                        GameSessionState.IntoxicationLevel),
+                    GameLog.Field(
+                        "reason",
+                        "modal_lock_unavailable"),
+                    GameLog.Field(
+                        "retry_delay_seconds",
+                        GameSessionState
+                            .BalanceCheckDelayRemaining));
                 challengeModel = null;
                 return false;
             }
@@ -141,6 +165,33 @@ namespace BarPromenade
                 0f,
                 0f,
                 true);
+            GameLog.Info(
+                "balance",
+                "started",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field(
+                    "challenge_seed",
+                    challengeSeed),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "difficulty",
+                    challengeSettings.Difficulty),
+                GameLog.Field(
+                    "warning_seconds",
+                    challengeSettings.WarningDuration),
+                GameLog.Field(
+                    "duration_seconds",
+                    challengeSettings.Duration),
+                GameLog.Field(
+                    "safe_sector_degrees",
+                    challengeSettings.SafeSectorDegrees),
+                GameLog.Field(
+                    "initial_position",
+                    challengeModel.Position));
             return true;
         }
 
@@ -170,6 +221,36 @@ namespace BarPromenade
         private void UpdatePresentationLevel(float deltaTime)
         {
             int rawLevel = GameSessionState.IntoxicationLevel;
+            if (rawLevel != previousRawLevel)
+            {
+                IntoxicationStage previousStage =
+                    IntoxicationStageRules.GetStage(
+                        previousRawLevel);
+                IntoxicationStage nextStage =
+                    IntoxicationStageRules.GetStage(rawLevel);
+                if (previousStage != nextStage)
+                {
+                    GameLog.Info(
+                        "intoxication",
+                        "stage_changed",
+                        GameLog.Field(
+                            "previous_level",
+                            previousRawLevel),
+                        GameLog.Field("level", rawLevel),
+                        GameLog.Field(
+                            "previous_stage",
+                            previousStage.ToString()),
+                        GameLog.Field(
+                            "stage",
+                            nextStage.ToString()),
+                        GameLog.Field(
+                            "balance_enabled",
+                            rawLevel >
+                            IntoxicationStageRules
+                                .BalanceThreshold));
+                }
+            }
+
             bool levelIncreased = rawLevel > previousRawLevel;
             if (balanceState == BalanceState.Idle &&
                 delayArmed &&
@@ -370,6 +451,9 @@ namespace BarPromenade
                     0f)
                     ? 1f
                     : challengeModel.Position);
+            LogBalanceResult(
+                "failed",
+                fallDirection);
             balanceState = BalanceState.Falling;
             balanceStateElapsed = 0f;
             warningLean = 0f;
@@ -379,6 +463,7 @@ namespace BarPromenade
 
         private void CompleteSuccessfulCheck()
         {
+            LogBalanceResult("succeeded", 0f);
             balanceView?.Hide();
             balanceLock.Restore();
             balanceState = BalanceState.Idle;
@@ -391,6 +476,27 @@ namespace BarPromenade
 
         private void FinishFall()
         {
+            GameLog.Info(
+                "balance",
+                "fall_recovered",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "fall_direction",
+                    fallDirection),
+                GameLog.Field(
+                    "fall_seconds",
+                    FallDuration),
+                GameLog.Field(
+                    "down_seconds",
+                    DownDuration),
+                GameLog.Field(
+                    "rising_seconds",
+                    RisingDuration));
             balanceLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
@@ -402,6 +508,34 @@ namespace BarPromenade
 
         private void CancelBalanceCheck(bool keepGrace)
         {
+            GameLog.Info(
+                "balance",
+                "cancelled",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field(
+                    "state",
+                    balanceState.ToString()),
+                GameLog.Field(
+                    "keep_grace",
+                    keepGrace),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "elapsed_seconds",
+                    challengeModel?.Elapsed ?? 0f),
+                GameLog.Field(
+                    "position",
+                    challengeModel?.Position ?? warningLean),
+                GameLog.Field(
+                    "risk",
+                    challengeModel?.Risk ?? 0f),
+                GameLog.Field(
+                    "delay_before_seconds",
+                    GameSessionState
+                        .BalanceCheckDelayRemaining));
             balanceView?.Hide();
             balanceLock.Restore();
             balanceState = BalanceState.Idle;
@@ -428,12 +562,93 @@ namespace BarPromenade
             GameSessionState.SetBalanceCheckDelay(
                 Mathf.Max(0f, extraDelay) + interval);
             delayArmed = true;
+            GameLog.Info(
+                "balance",
+                "scheduled",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field(
+                    "challenge_seed",
+                    BalanceChallengeRules.GetChallengeSeed(
+                        GameSessionState.CitySeed,
+                        scheduledSequence)),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "interval_seconds",
+                    interval),
+                GameLog.Field(
+                    "extra_delay_seconds",
+                    Mathf.Max(0f, extraDelay)),
+                GameLog.Field(
+                    "total_delay_seconds",
+                    GameSessionState
+                        .BalanceCheckDelayRemaining));
         }
 
         private void ArmCheckDelay(float seconds)
         {
             EnsureScheduledSequence();
             GameSessionState.SetBalanceCheckDelay(seconds);
+            GameLog.Info(
+                "balance",
+                "delay_armed",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field(
+                    "challenge_seed",
+                    BalanceChallengeRules.GetChallengeSeed(
+                        GameSessionState.CitySeed,
+                        scheduledSequence)),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "delay_seconds",
+                    GameSessionState
+                        .BalanceCheckDelayRemaining));
+        }
+
+        private void LogBalanceResult(
+            string outcome,
+            float resultFallDirection)
+        {
+            if (challengeModel == null)
+            {
+                return;
+            }
+
+            GameLog.Info(
+                "balance",
+                "result",
+                GameLog.Field(
+                    "sequence",
+                    scheduledSequence),
+                GameLog.Field("outcome", outcome),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "difficulty",
+                    challengeSettings.Difficulty),
+                GameLog.Field(
+                    "elapsed_seconds",
+                    challengeModel.Elapsed),
+                GameLog.Field(
+                    "position",
+                    challengeModel.Position),
+                GameLog.Field(
+                    "velocity",
+                    challengeModel.Velocity),
+                GameLog.Field(
+                    "risk",
+                    challengeModel.Risk),
+                GameLog.Field(
+                    "fall_direction",
+                    resultFallDirection));
         }
 
         private void EnsureScheduledSequence()

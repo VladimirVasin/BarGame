@@ -16,19 +16,19 @@ namespace BarPromenade
             }
 
             layout.ValidateOrThrow();
-            IReadOnlyList<Rect> roadRectangles =
-                layout.CreateRoadRects();
+            IReadOnlyList<Rect> streetRectangles =
+                layout.CreateStreetRects();
             var exposedSides = new List<BoundarySpan>(
-                checked(roadRectangles.Count * 4));
+                checked(streetRectangles.Count * 4));
 
             for (int roadIndex = 0;
-                 roadIndex < roadRectangles.Count;
+                 roadIndex < streetRectangles.Count;
                  roadIndex++)
             {
-                Rect road = roadRectangles[roadIndex];
+                Rect road = streetRectangles[roadIndex];
                 AddExposedSide(
                     exposedSides,
-                    roadRectangles,
+                    streetRectangles,
                     roadIndex,
                     true,
                     road.yMin,
@@ -37,7 +37,7 @@ namespace BarPromenade
                     Vector3.back);
                 AddExposedSide(
                     exposedSides,
-                    roadRectangles,
+                    streetRectangles,
                     roadIndex,
                     true,
                     road.yMax,
@@ -46,7 +46,7 @@ namespace BarPromenade
                     Vector3.forward);
                 AddExposedSide(
                     exposedSides,
-                    roadRectangles,
+                    streetRectangles,
                     roadIndex,
                     false,
                     road.xMin,
@@ -55,7 +55,7 @@ namespace BarPromenade
                     Vector3.left);
                 AddExposedSide(
                     exposedSides,
-                    roadRectangles,
+                    streetRectangles,
                     roadIndex,
                     false,
                     road.xMax,
@@ -66,9 +66,9 @@ namespace BarPromenade
 
             List<BoundarySpan> merged = Merge(exposedSides);
             List<RoadFenceOpeningDescriptor> openings =
-                CreateEntranceOpenings(layout);
+                CreateOpenings(layout);
             List<BoundarySpan> openedBoundary =
-                SubtractEntranceOpenings(merged, openings);
+                SubtractOpenings(merged, openings);
             openedBoundary.Sort(CompareSpans);
 
             var segments =
@@ -250,7 +250,7 @@ namespace BarPromenade
         }
 
         private static List<RoadFenceOpeningDescriptor>
-            CreateEntranceOpenings(CityLayout layout)
+            CreateOpenings(CityLayout layout)
         {
             var openings =
                 new List<RoadFenceOpeningDescriptor>();
@@ -279,11 +279,25 @@ namespace BarPromenade
                     BarEntranceGeometry.FenceOpeningWidth));
             }
 
+            for (int index = 0;
+                 index < layout.Park.Gates.Count;
+                 index++)
+            {
+                CityParkGateDescriptor gate =
+                    layout.Park.Gates[index];
+                openings.Add(new RoadFenceOpeningDescriptor(
+                    RoadFenceOpeningKind.ParkGate,
+                    gate.Id,
+                    gate.Center,
+                    gate.OutwardNormal,
+                    gate.Width));
+            }
+
             openings.Sort(CompareOpenings);
             return openings;
         }
 
-        private static List<BoundarySpan> SubtractEntranceOpenings(
+        private static List<BoundarySpan> SubtractOpenings(
             IList<BoundarySpan> boundary,
             IReadOnlyList<RoadFenceOpeningDescriptor> openings)
         {
@@ -442,9 +456,16 @@ namespace BarPromenade
                 return minimumComparison;
             }
 
+            int kindComparison =
+                left.Kind.CompareTo(right.Kind);
+            if (kindComparison != 0)
+            {
+                return kindComparison;
+            }
+
             return string.Compare(
-                left.BarId,
-                right.BarId,
+                left.Id,
+                right.Id,
                 StringComparison.Ordinal);
         }
 

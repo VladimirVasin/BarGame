@@ -581,6 +581,26 @@
       "value": "Distance: {0:0} m"
     },
     {
+      "key": "map.district.old_town",
+      "value": "Old Town"
+    },
+    {
+      "key": "map.district.residential",
+      "value": "Residential"
+    },
+    {
+      "key": "map.district.industrial",
+      "value": "Industrial"
+    },
+    {
+      "key": "map.district.nightlife",
+      "value": "Nightlife"
+    },
+    {
+      "key": "map.district.central_park",
+      "value": "Central Park"
+    },
+    {
       "key": "debug.minigames.title",
       "value": "DEBUG: MINIGAMES"
     },

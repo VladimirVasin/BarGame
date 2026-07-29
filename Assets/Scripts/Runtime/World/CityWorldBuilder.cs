@@ -6,9 +6,25 @@ namespace BarPromenade
 {
     public static class CityWorldBuilder
     {
+        private const float WorldChunkSize = 48f;
+
         private static readonly Color Asphalt = new Color(0.175f, 0.195f, 0.195f);
+        private static readonly Color ParkPath =
+            new Color(0.39f, 0.34f, 0.24f);
         private static readonly Color RoadPaint = new Color(0.58f, 0.52f, 0.34f);
         private static readonly Color Ground = new Color(0.170f, 0.205f, 0.185f);
+        private static readonly Color ParkGrass =
+            new Color(0.16f, 0.30f, 0.18f);
+        private static readonly Color ParkPlaza =
+            new Color(0.38f, 0.35f, 0.29f);
+        private static readonly Color ParkTrunk =
+            new Color(0.20f, 0.12f, 0.07f);
+        private static readonly Color ParkCanopy =
+            new Color(0.12f, 0.27f, 0.15f);
+        private static readonly Color ParkBench =
+            new Color(0.38f, 0.22f, 0.10f);
+        private static readonly Color ParkHedge =
+            new Color(0.10f, 0.24f, 0.13f);
         private static readonly Color Sidewalk = new Color(0.31f, 0.33f, 0.305f);
         private static readonly Color WindowOff = new Color(0.025f, 0.035f, 0.040f);
         private static readonly Color ColdWindow = new Color(0.24f, 0.43f, 0.56f);
@@ -48,6 +64,7 @@ namespace BarPromenade
             Bounds bounds = BuildGround(world, layout, settings);
             BuildRoads(world, layout, settings);
             RoadFenceWorldBuilder.Build(world, fencePlan);
+            GameObject parkRoot = BuildPark(world, layout.Park);
 
             var bars = new List<BarEntrance>(settings.BarCount);
             for (int i = 0; i < layout.BuildingLots.Count; i++)
@@ -66,6 +83,7 @@ namespace BarPromenade
                 walkableArea,
                 bars,
                 fencePlan,
+                parkRoot,
                 bounds);
         }
 
@@ -97,6 +115,8 @@ namespace BarPromenade
         {
             Transform roads = new GameObject("Road Network").transform;
             roads.SetParent(parent, false);
+            var chunks =
+                new Dictionary<WorldChunkKey, RoadChunkGeometry>();
 
             for (int i = 0; i < layout.RoadEdges.Count; i++)
             {
@@ -108,18 +128,60 @@ namespace BarPromenade
                 Vector3 size = edge.IsHorizontal
                     ? new Vector3(Mathf.Abs(delta.x) + settings.RoadWidth, 0.16f, settings.RoadWidth)
                     : new Vector3(settings.RoadWidth, 0.16f, Mathf.Abs(delta.z) + settings.RoadWidth);
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Road {edge}",
-                    roads,
-                    center,
-                    size,
+                WorldChunkKey key = WorldChunkKey.FromPosition(center);
+                if (!chunks.TryGetValue(
+                        key,
+                        out RoadChunkGeometry geometry))
+                {
+                    geometry = new RoadChunkGeometry();
+                    chunks.Add(key, geometry);
+                }
+
+                Bounds surface = new Bounds(center, size);
+                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                {
+                    geometry.ParkPaths.Add(surface);
+                }
+                else
+                {
+                    geometry.Streets.Add(surface);
+                    AddRoadDashes(
+                        geometry.Dashes,
+                        start,
+                        end,
+                        edge.IsHorizontal);
+                }
+            }
+
+            var keys = new List<WorldChunkKey>(chunks.Keys);
+            keys.Sort(WorldChunkKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                WorldChunkKey key = keys[index];
+                RoadChunkGeometry geometry = chunks[key];
+                Transform chunk = new GameObject(
+                    $"Road Chunk {key.X}-{key.Z}").transform;
+                chunk.SetParent(roads, false);
+                BuildCombinedBoxesIfAny(
+                    "Street Surfaces",
+                    chunk,
+                    geometry.Streets,
                     Asphalt);
-                BuildRoadDashes(roads, start, end, edge.IsHorizontal);
+                BuildCombinedBoxesIfAny(
+                    "Park Paths",
+                    chunk,
+                    geometry.ParkPaths,
+                    ParkPath);
+                BuildCombinedBoxesIfAny(
+                    "Road Dashes",
+                    chunk,
+                    geometry.Dashes,
+                    RoadPaint);
             }
         }
 
-        private static void BuildRoadDashes(
-            Transform parent,
+        private static void AddRoadDashes(
+            ICollection<Bounds> target,
             Vector3 start,
             Vector3 end,
             bool horizontal)
@@ -134,14 +196,230 @@ namespace BarPromenade
                 Vector3 size = horizontal
                     ? new Vector3(Mathf.Min(2.1f, length / dashCount * 0.48f), 0.025f, 0.13f)
                     : new Vector3(0.13f, 0.025f, Mathf.Min(2.1f, length / dashCount * 0.48f));
-                RuntimePrimitiveFactory.CreateBox(
-                    "Road Dash",
-                    parent,
+                target.Add(new Bounds(
                     position + (Vector3.up * 0.095f),
-                    size,
-                    RoadPaint,
-                    false);
+                    size));
             }
+        }
+
+        private static GameObject BuildPark(
+            Transform parent,
+            CityParkPlan plan)
+        {
+            if (plan == null || !plan.IsEnabled)
+            {
+                return null;
+            }
+
+            Transform park = new GameObject("Central Park").transform;
+            park.SetParent(parent, false);
+            Rect bounds = plan.WalkableBounds;
+            Vector3 center = new Vector3(
+                bounds.center.x,
+                0f,
+                bounds.center.y);
+            RuntimePrimitiveFactory.CreateBox(
+                "Park Lawn",
+                park,
+                center,
+                new Vector3(bounds.width, 0.08f, bounds.height),
+                ParkGrass,
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Park Central Plaza",
+                park,
+                plan.Center + (Vector3.up * 0.065f),
+                new Vector3(8.5f, 0.035f, 8.5f),
+                ParkPlaza,
+                false);
+
+            var trunks = new List<Bounds>(plan.TreePositions.Count);
+            var canopies = new List<Bounds>(plan.TreePositions.Count);
+            Transform colliders =
+                new GameObject("Park Tree Colliders").transform;
+            colliders.SetParent(park, false);
+            for (int index = 0;
+                 index < plan.TreePositions.Count;
+                 index++)
+            {
+                Vector3 position = plan.TreePositions[index];
+                float height = 2.8f + (index % 4) * 0.24f;
+                trunks.Add(new Bounds(
+                    position + (Vector3.up * (height * 0.5f)),
+                    new Vector3(0.52f, height, 0.52f)));
+                canopies.Add(new Bounds(
+                    position + (Vector3.up * (height + 1.25f)),
+                    new Vector3(2.8f, 2.5f, 2.8f)));
+
+                GameObject colliderObject =
+                    new GameObject($"Tree Collider {index + 1}");
+                colliderObject.transform.SetParent(colliders, false);
+                colliderObject.transform.position =
+                    position + (Vector3.up * 1.15f);
+                BoxCollider collider =
+                    colliderObject.AddComponent<BoxCollider>();
+                collider.size = new Vector3(0.62f, 2.3f, 0.62f);
+            }
+
+            BuildCombinedBoxesIfAny(
+                "Park Tree Trunks",
+                park,
+                trunks,
+                ParkTrunk);
+            BuildCombinedBoxesIfAny(
+                "Park Tree Canopies",
+                park,
+                canopies,
+                ParkCanopy);
+
+            var benchParts =
+                new List<Bounds>(plan.BenchPositions.Count * 3);
+            for (int index = 0;
+                 index < plan.BenchPositions.Count;
+                 index++)
+            {
+                Vector3 position = plan.BenchPositions[index];
+                benchParts.Add(new Bounds(
+                    position + (Vector3.up * 0.62f),
+                    new Vector3(2.2f, 0.18f, 0.58f)));
+                benchParts.Add(new Bounds(
+                    position + new Vector3(-0.72f, 0.30f, 0f),
+                    new Vector3(0.18f, 0.60f, 0.46f)));
+                benchParts.Add(new Bounds(
+                    position + new Vector3(0.72f, 0.30f, 0f),
+                    new Vector3(0.18f, 0.60f, 0.46f)));
+            }
+
+            BuildCombinedBoxesIfAny(
+                "Park Benches",
+                park,
+                benchParts,
+                ParkBench);
+            BuildParkHedges(park, plan);
+            return park.gameObject;
+        }
+
+        private static void BuildParkHedges(
+            Transform parent,
+            CityParkPlan plan)
+        {
+            Rect bounds = plan.WalkableBounds;
+            float gateWidth = plan.Gates.Count > 0
+                ? plan.Gates[0].Width
+                : 6f;
+            float halfGate = gateWidth * 0.5f;
+            var hedges = new List<Bounds>(8);
+            AddHorizontalBoundaryParts(
+                hedges,
+                bounds.xMin,
+                bounds.xMax,
+                bounds.center.x,
+                bounds.yMin,
+                halfGate);
+            AddHorizontalBoundaryParts(
+                hedges,
+                bounds.xMin,
+                bounds.xMax,
+                bounds.center.x,
+                bounds.yMax,
+                halfGate);
+            AddVerticalBoundaryParts(
+                hedges,
+                bounds.yMin,
+                bounds.yMax,
+                bounds.center.y,
+                bounds.xMin,
+                halfGate);
+            AddVerticalBoundaryParts(
+                hedges,
+                bounds.yMin,
+                bounds.yMax,
+                bounds.center.y,
+                bounds.xMax,
+                halfGate);
+            BuildCombinedBoxesIfAny(
+                "Park Boundary Hedges",
+                parent,
+                hedges,
+                ParkHedge);
+        }
+
+        private static void AddHorizontalBoundaryParts(
+            ICollection<Bounds> target,
+            float minimum,
+            float maximum,
+            float gateCenter,
+            float fixedZ,
+            float halfGate)
+        {
+            AddHorizontalBoundaryPart(
+                target,
+                minimum,
+                gateCenter - halfGate,
+                fixedZ);
+            AddHorizontalBoundaryPart(
+                target,
+                gateCenter + halfGate,
+                maximum,
+                fixedZ);
+        }
+
+        private static void AddHorizontalBoundaryPart(
+            ICollection<Bounds> target,
+            float minimum,
+            float maximum,
+            float fixedZ)
+        {
+            if (maximum <= minimum)
+            {
+                return;
+            }
+
+            target.Add(new Bounds(
+                new Vector3(
+                    (minimum + maximum) * 0.5f,
+                    0.58f,
+                    fixedZ),
+                new Vector3(maximum - minimum, 1.16f, 0.72f)));
+        }
+
+        private static void AddVerticalBoundaryParts(
+            ICollection<Bounds> target,
+            float minimum,
+            float maximum,
+            float gateCenter,
+            float fixedX,
+            float halfGate)
+        {
+            AddVerticalBoundaryPart(
+                target,
+                minimum,
+                gateCenter - halfGate,
+                fixedX);
+            AddVerticalBoundaryPart(
+                target,
+                gateCenter + halfGate,
+                maximum,
+                fixedX);
+        }
+
+        private static void AddVerticalBoundaryPart(
+            ICollection<Bounds> target,
+            float minimum,
+            float maximum,
+            float fixedX)
+        {
+            if (maximum <= minimum)
+            {
+                return;
+            }
+
+            target.Add(new Bounds(
+                new Vector3(
+                    fixedX,
+                    0.58f,
+                    (minimum + maximum) * 0.5f),
+                new Vector3(0.72f, 1.16f, maximum - minimum)));
         }
 
         private static void BuildBuilding(
@@ -152,6 +430,11 @@ namespace BarPromenade
             RoadWalkableArea walkableArea,
             IList<BarEntrance> bars)
         {
+            if (!lot.HasBuilding)
+            {
+                return;
+            }
+
             Transform building = new GameObject(
                 lot.IsBar ? $"Bar {lot.BarId}" : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
             building.SetParent(parent, false);
@@ -174,10 +457,123 @@ namespace BarPromenade
 
             if (!lot.IsBar)
             {
+                BuildDistrictDetails(
+                    building,
+                    lot,
+                    emissiveMaterial);
                 return;
             }
 
             BuildBarFront(building, lot, walkableArea, bars);
+        }
+
+        private static void BuildDistrictDetails(
+            Transform parent,
+            BuildingLot lot,
+            Material emissiveMaterial)
+        {
+            switch (lot.District)
+            {
+                case CityDistrictKind.OldTown:
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Old Town Cornice",
+                        parent,
+                        lot.Center +
+                        (Vector3.up * (lot.Height - 0.42f)),
+                        new Vector3(
+                            lot.Size.x + 0.42f,
+                            0.30f,
+                            lot.Size.y + 0.42f),
+                        new Color(0.28f, 0.23f, 0.18f),
+                        false);
+                    break;
+                case CityDistrictKind.Residential:
+                    BuildResidentialPlanters(parent, lot);
+                    break;
+                case CityDistrictKind.Industrial:
+                    BuildIndustrialRoofDetails(parent, lot);
+                    break;
+                case CityDistrictKind.Nightlife:
+                    BuildNightlifeSign(
+                        parent,
+                        lot,
+                        emissiveMaterial);
+                    break;
+            }
+        }
+
+        private static void BuildResidentialPlanters(
+            Transform parent,
+            BuildingLot lot)
+        {
+            float z = lot.Center.z - lot.Size.y * 0.5f - 0.35f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 position = new Vector3(
+                    lot.Center.x + side * lot.Size.x * 0.28f,
+                    0.32f,
+                    z);
+                RuntimePrimitiveFactory.CreateBox(
+                    "Residential Planter",
+                    parent,
+                    position,
+                    new Vector3(1.8f, 0.52f, 0.58f),
+                    new Color(0.24f, 0.25f, 0.22f),
+                    false);
+                RuntimePrimitiveFactory.CreateBox(
+                    "Residential Shrub",
+                    parent,
+                    position + (Vector3.up * 0.58f),
+                    new Vector3(1.45f, 0.72f, 0.48f),
+                    new Color(0.12f, 0.29f, 0.17f),
+                    false);
+            }
+        }
+
+        private static void BuildIndustrialRoofDetails(
+            Transform parent,
+            BuildingLot lot)
+        {
+            for (int index = 0; index < 2; index++)
+            {
+                float xOffset = index == 0 ? -1.7f : 1.7f;
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Industrial Roof Vent",
+                    parent,
+                    lot.Center +
+                    new Vector3(
+                        xOffset,
+                        lot.Height + 0.85f,
+                        0f),
+                    new Vector3(0.46f, 0.72f, 0.46f),
+                    new Color(0.22f, 0.25f, 0.24f),
+                    false);
+            }
+        }
+
+        private static void BuildNightlifeSign(
+            Transform parent,
+            BuildingLot lot,
+            Material emissiveMaterial)
+        {
+            Color signColor = (lot.Cell.x + lot.Cell.y) % 2 == 0
+                ? new Color(1.2f, 0.22f, 0.72f)
+                : new Color(0.18f, 0.78f, 1.25f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Nightlife Neon Sign",
+                parent,
+                lot.Center +
+                new Vector3(
+                    0f,
+                    Mathf.Min(lot.Height - 1f, 4.4f),
+                    -(lot.Size.y * 0.5f + 0.05f)),
+                new Vector3(
+                    Mathf.Min(4.8f, lot.Size.x * 0.45f),
+                    0.42f,
+                    0.08f),
+                signColor,
+                emissiveMaterial,
+                false);
         }
 
         private static void BuildWindowBands(
@@ -568,6 +964,24 @@ namespace BarPromenade
             return hash == 0u ? 0xA341316Cu : hash;
         }
 
+        private static void BuildCombinedBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            RuntimePrimitiveFactory.CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color);
+        }
+
         private static Color Darken(Color color, float amount)
         {
             return new Color(
@@ -575,6 +989,42 @@ namespace BarPromenade
                 Mathf.Clamp01(color.g - amount),
                 Mathf.Clamp01(color.b - amount),
                 color.a);
+        }
+
+        private readonly struct WorldChunkKey
+        {
+            public WorldChunkKey(int x, int z)
+            {
+                X = x;
+                Z = z;
+            }
+
+            public int X { get; }
+            public int Z { get; }
+
+            public static WorldChunkKey FromPosition(Vector3 position)
+            {
+                return new WorldChunkKey(
+                    Mathf.FloorToInt(position.x / WorldChunkSize),
+                    Mathf.FloorToInt(position.z / WorldChunkSize));
+            }
+
+            public static int Compare(
+                WorldChunkKey left,
+                WorldChunkKey right)
+            {
+                int zComparison = left.Z.CompareTo(right.Z);
+                return zComparison != 0
+                    ? zComparison
+                    : left.X.CompareTo(right.X);
+            }
+        }
+
+        private sealed class RoadChunkGeometry
+        {
+            public readonly List<Bounds> Streets = new List<Bounds>();
+            public readonly List<Bounds> ParkPaths = new List<Bounds>();
+            public readonly List<Bounds> Dashes = new List<Bounds>();
         }
     }
 }

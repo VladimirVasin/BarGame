@@ -2,6 +2,93 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-29 — Structured session diagnostics
+
+- Added a fail-safe NDJSON session logger with stable envelopes, typed fields,
+  build/session/scene/seed context and basic/verbose/off runtime profiles.
+- Instrumented session mutations, city and bar initialization, scene
+  transitions, interactions, map lifecycle, all four minigames, intoxication
+  stages and balance challenges at state-changing boundaries.
+- Added correlation IDs for transitions, minigame runs, balance sequences and
+  manual snapshots. `F8` captures and flushes a support snapshot; `Shift+F8`
+  opens the active log directory.
+- Added 5 MiB copy-and-truncate rotation with three retained archives, bounded
+  field strings, exact-repeat suppression and separate bounded Unity warning
+  and error budgets with dropped-count summaries.
+- Documented locations, profiles, schema, event categories, retention, support
+  workflow and privacy considerations in `ai/debug-log.md`.
+
+Verification:
+
+- Runtime, EditModeTests, PlayModeTests and complete Assembly-CSharp .NET
+  builds: 0 errors, 0 warnings.
+- Complete Unity EditMode suite: 423/423 passed.
+- Complete headless Unity PlayMode suite: all 77 runnable checks passed;
+  three graphics-only checks were skipped by the null graphics device.
+- Verbose City → BarInterior → City integration: 1/1 passed. All 79 physical
+  log lines parsed as schema-v1 JSON, used one session, had contiguous
+  sequence numbers and correctly correlated both completed transitions.
+- `git diff --check` passed.
+
+## 2026-07-29 — District-scale city and traversable central park
+
+- Expanded the deterministic default layout from `4 x 4` to `12 x 12` blocks
+  and added mandatory cross-city arterials.
+- Added four distinct urban districts plus a `4 x 4` central park with a lawn,
+  plaza, trees, benches, hedges, crossing paths and four connected gates.
+- Replaced shuffled bar placement with deterministic max-min selection over
+  weighted graph travel. The four default bars occupy distinct districts and
+  every pair is at least `120 m` apart along traversable paths.
+- Updated the city map with localized district labels, district land colors
+  and separate park-path presentation.
+- Kept the larger world bounded by batching roads, fence rails/posts and lamp
+  fixtures/bulbs into `48 m` spatial chunks. Added a BVH-style index for
+  walkable rectangles and a binary min-heap for route finding.
+- Extended pure and scene-level coverage for districts, park topology,
+  continuous gate traversal, bar travel distance, map presentation, fence
+  openings/chunks, walkability indexing and lamp batching.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Complete Unity EditMode suite: 388/388 passed.
+- Complete headless Unity PlayMode suite: all 77 runnable checks passed;
+  three graphics-only render tests were skipped by the null graphics device.
+- Focused expanded-city scene checks: 3/3 passed, including all four park
+  gates and spatially chunked fence geometry.
+- `git diff --check` passed.
+
+## 2026-07-28 — Cinematic expanded bar interior
+
+- Rebuilt the runtime-composed bar around a deterministic `22 x 16 x 4.8 m`
+  layout with seven named zones, four protected circulation paths and validated
+  fixture clearances.
+- Added a longer counter and backbar, bottle shelves and mirror, three booths,
+  four social tables, a curtained stage, activity bay, entrance dressing,
+  posters, ceiling beams, fan, practical fixtures and a dedicated service door.
+- Populated the room with 12 lightweight NPCs: bartender, performer, booth
+  groups, standing patrons and a walker. Six shared PS1/noir sprites, centralized
+  low-frequency decisions and depth-aware billboard sorting keep the crowd
+  readable without adding colliders or per-NPC materials.
+- Added a six-light shadowless practical-light budget, warm URP grading, bloom,
+  vignette, film grain, local dust and a skippable `1.35 s` arrival reveal.
+- Added a two-source spatial soundscape for the crowd bed and rare bar-service
+  cues while preserving the existing music and ambience source budget.
+- Kept Beer Pong, Split G and Tincture variants functional, with exactly one
+  activity station and one exit. Fixed modal ownership so interacting during
+  the arrival reveal cannot restore stale input state.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds:
+  0 errors, 0 warnings.
+- Complete Unity EditMode suite: 365/365 passed.
+- Complete Unity PlayMode suite: 80/80 passed, 0 skipped.
+- D3D captures inspected the arrival, expanded room, crowd, stage, backbar and
+  activity dressing; a 32-sample physics check covers the full camera reveal.
+- Windows Player build: succeeded, `142098662` bytes, 0 warnings.
+
 ## 2026-07-28 — Five-stage intoxication and balance
 
 - Replaced the independent timed intoxication status with a single persistent

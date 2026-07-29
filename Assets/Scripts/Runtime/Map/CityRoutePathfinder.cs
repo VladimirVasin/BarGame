@@ -270,12 +270,13 @@ namespace BarPromenade
             }
 
             distances[startIndex] = 0f;
-            for (int iteration = 0; iteration < count; iteration++)
+            var pending = new NodeMinHeap(count);
+            pending.Enqueue(startIndex, 0f);
+            while (pending.TryDequeue(out int current))
             {
-                int current = FindClosestUnvisited(distances, visited);
-                if (current < 0)
+                if (visited[current])
                 {
-                    break;
+                    continue;
                 }
 
                 if (current == targetIndex)
@@ -302,6 +303,7 @@ namespace BarPromenade
 
                     distances[neighbour.NodeIndex] = candidate;
                     previous[neighbour.NodeIndex] = current;
+                    pending.Enqueue(neighbour.NodeIndex, candidate);
                 }
             }
 
@@ -334,25 +336,123 @@ namespace BarPromenade
             return new NodePath(reversed);
         }
 
-        private static int FindClosestUnvisited(
-            float[] distances,
-            bool[] visited)
+        private readonly struct NodeQueueEntry
         {
-            int closest = -1;
-            float closestDistance = float.PositiveInfinity;
-            for (int index = 0; index < distances.Length; index++)
+            public NodeQueueEntry(int nodeIndex, float distance)
             {
-                if (visited[index] ||
-                    distances[index] >= closestDistance)
-                {
-                    continue;
-                }
-
-                closest = index;
-                closestDistance = distances[index];
+                NodeIndex = nodeIndex;
+                Distance = distance;
             }
 
-            return closest;
+            public int NodeIndex { get; }
+            public float Distance { get; }
+        }
+
+        private sealed class NodeMinHeap
+        {
+            private NodeQueueEntry[] entries;
+            private int count;
+
+            public NodeMinHeap(int capacity)
+            {
+                entries = new NodeQueueEntry[Mathf.Max(1, capacity)];
+            }
+
+            public void Enqueue(int nodeIndex, float distance)
+            {
+                EnsureCapacity();
+                var entry = new NodeQueueEntry(nodeIndex, distance);
+                int index = count;
+                count++;
+
+                while (index > 0)
+                {
+                    int parent = (index - 1) / 2;
+                    if (Compare(entries[parent], entry) <= 0)
+                    {
+                        break;
+                    }
+
+                    entries[index] = entries[parent];
+                    index = parent;
+                }
+
+                entries[index] = entry;
+            }
+
+            public bool TryDequeue(out int nodeIndex)
+            {
+                if (count == 0)
+                {
+                    nodeIndex = -1;
+                    return false;
+                }
+
+                NodeQueueEntry result = entries[0];
+                count--;
+                if (count > 0)
+                {
+                    NodeQueueEntry replacement = entries[count];
+                    int index = 0;
+                    while (true)
+                    {
+                        int left = (index * 2) + 1;
+                        if (left >= count)
+                        {
+                            break;
+                        }
+
+                        int right = left + 1;
+                        int child =
+                            right < count &&
+                            Compare(entries[right], entries[left]) < 0
+                                ? right
+                                : left;
+                        if (Compare(replacement, entries[child]) <= 0)
+                        {
+                            break;
+                        }
+
+                        entries[index] = entries[child];
+                        index = child;
+                    }
+
+                    entries[index] = replacement;
+                }
+
+                nodeIndex = result.NodeIndex;
+                return true;
+            }
+
+            private static int Compare(
+                NodeQueueEntry left,
+                NodeQueueEntry right)
+            {
+                if (left.Distance < right.Distance)
+                {
+                    return -1;
+                }
+
+                if (left.Distance > right.Distance)
+                {
+                    return 1;
+                }
+
+                // The former linear scan visited equal-distance nodes in
+                // ascending graph-index order. Keep that route tie-break.
+                return left.NodeIndex.CompareTo(right.NodeIndex);
+            }
+
+            private void EnsureCapacity()
+            {
+                if (count < entries.Length)
+                {
+                    return;
+                }
+
+                int capacity = checked(entries.Length * 2);
+                Array.Resize(ref entries, capacity);
+            }
         }
 
         private static Vector3 ProjectOntoEdge(

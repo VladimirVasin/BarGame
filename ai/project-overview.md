@@ -23,7 +23,8 @@ same place.
 
 The vertical slice contains:
 
-- a finite, seed-reproducible connected city;
+- a finite, seed-reproducible connected `12 x 12`-block city spanning roughly
+  `288 x 288 m`;
 - a fixed atmospheric noir night with `0.070` exponential-squared luminous
   gray-green fog, a fog-matched terminal camera backdrop and a City-only
   `48 m` camera visibility cap, plus lifted geometry values, cold moonlight
@@ -42,8 +43,9 @@ The vertical slice contains:
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
-- deterministic collider-free street lamps with shadowless spot-light pools
-  and slow out-of-phase amber traffic signals generated from the road graph;
+- deterministic collider-free street lamps with geometry batched into
+  `48 m` spatial chunks, shadowless spot-light pools and slow out-of-phase
+  amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
@@ -53,13 +55,19 @@ The vertical slice contains:
   throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
   category pools, per-effect cooldowns and voice limits, plus separate
   scene-local procedural city and bar ambience;
-- a spanning-tree road graph with deterministic loops;
-- deterministic collider-free ochre guard rails, batched into two meshes,
-  that trace only the exposed boundary of the road union, close dead ends and
-  leave a `3.30 m` opening around every generated bar approach;
-- 16 building lots by default, including exactly 4 reachable bars; stable
-  row-major order assigns cocktail mixing, beer pong, Split the G and
-  Tinctures in a Row;
+- a spanning-tree road graph with deterministic loops, cross-city arterials
+  and a connected park-path cross;
+- five readable districts: Old Town, Residential, Industrial, Nightlife and
+  a central `4 x 4`-block park with lawn, plaza, trees, benches, hedges and
+  four continuously walkable gates;
+- deterministic collider-free ochre guard rails, batched into `48 m` spatial
+  chunks, that trace only street boundaries, close dead ends and leave clear
+  openings around every bar approach and park gate;
+- 144 land-use lots by default, including 16 park cells and exactly 4
+  reachable bars in four different urban districts; every bar pair is at
+  least `120 m` apart by traversable graph distance, while stable row-major
+  order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
+  Row;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -108,9 +116,10 @@ The vertical slice contains:
   side, keeps the upright player root stationary, expands and offsets the
   contact shadow, then recovers through `0.45 s` falling, `1.2 s` down and
   `1.0 s` rising states before restoring movement;
-- a full-screen city map with player/bar markers, persistent green completed
-  visits, ordered route editing and deterministic shortest paths constrained
-  to the generated road graph;
+- a full-screen city map with district colors and labels, distinct park land
+  and paths, player/bar markers, persistent green completed visits, ordered
+  route editing and deterministic shortest paths constrained to the generated
+  road graph;
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
   context for the current city;
@@ -118,8 +127,25 @@ The vertical slice contains:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
-- one generated shared bar-interior scene whose furniture and interaction
-  station adapt to the active bar activity, plus one exit;
+- one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
+  zones and four validated circulation paths; its long layered counter,
+  bottle-backed mirrors, three booths, four high tables, stage, entrance
+  dressing and dedicated activity bay are composed at runtime from one
+  validated layout plan;
+- six shadowless practical light pools, a bar-only Bloom/color/vignette/grain
+  grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
+  Bezier reveal establish the interior without changing the chase-camera
+  contract or the fog-free `220 m` bar range;
+- a deterministic 12-person bar crowd with bartender, booth patrons,
+  performer, standing groups and one bounded walker; six shared point-filtered
+  pixel characters use lightweight billboards, centralized `8 Hz` decisions,
+  role-specific idle actions and player-relative depth sorting;
+- a scene-local spatial crowd bed plus rare glass/chair cues consume their
+  layout radius/gain data and coexist with the existing bar music and
+  procedural ambience inside a four-source budget;
+- one exit and one interaction station remain authoritative, while the
+  activity fixture adapts to cocktail mixing, beer pong, Split the G or
+  Tinctures in a Row without blocking the validated approach;
 - one explicit `BarMinigameCatalog` whose ordered definitions and factories
   create both normal and debug minigame instances; cocktail mixing, beer pong
   Split the G and Tinctures in a Row are registered now, and future
@@ -130,6 +156,11 @@ The vertical slice contains:
   progress; clickable controls or the Left/Right arrow keys change the session
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
   last-drink or consumed-drink context;
+- bounded structured session diagnostics in `debug.log`: stable NDJSON
+  envelopes correlate scene transitions, generated-city/bar initialization,
+  route and visit state, minigame runs, drinking and balance outcomes, plus
+  Unity warnings/errors; `F8` writes an immediate state snapshot and
+  `Shift+F8` opens the log directory;
 - a same-scene modal cocktail minigame at the counter: exactly three served
   cocktails unless intoxication reaches 100, each built from one of four bases
   and 2–4 unique additions chosen from a deterministic seven-item shelf; its

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -21,6 +22,7 @@ namespace BarPromenade
         public static Camera EnsureCityNight()
         {
             Camera camera = EnsureCamera(CityFogColor);
+            SetPostProcessing(camera, true);
             camera.farClipPlane = CityFarClipPlane;
             ConfigureDirectionalLighting(
                 MoonlightColor,
@@ -40,6 +42,7 @@ namespace BarPromenade
         public static Camera EnsureDoorTransition()
         {
             Camera camera = EnsureCamera(Color.black);
+            SetPostProcessing(camera, false);
             camera.farClipPlane = DoorTransitionFarClipPlane;
 
             RenderSettings.fog = false;
@@ -54,14 +57,15 @@ namespace BarPromenade
         public static Camera EnsureBarInterior()
         {
             Camera camera = EnsureCamera(new Color(0.09f, 0.045f, 0.035f));
+            SetPostProcessing(camera, true);
             ConfigureDirectionalLighting(
-                new Color(1f, 0.92f, 0.82f),
-                1.25f,
-                new Color(0.32f, 0.18f, 0.14f),
-                1f);
+                new Color(0.92f, 0.82f, 0.72f),
+                0.72f,
+                new Color(0.11f, 0.055f, 0.045f),
+                0.72f);
 
             RenderSettings.fog = false;
-            RenderSettings.reflectionIntensity = 1f;
+            RenderSettings.reflectionIntensity = 0.65f;
             DynamicGI.UpdateEnvironment();
             return camera;
         }
@@ -134,6 +138,15 @@ namespace BarPromenade
 
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = ambientColor;
+        }
+
+        private static void SetPostProcessing(
+            Camera camera,
+            bool enabled)
+        {
+            UniversalAdditionalCameraData cameraData =
+                camera.GetUniversalAdditionalCameraData();
+            cameraData.renderPostProcessing = enabled;
         }
     }
 }

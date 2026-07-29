@@ -5,6 +5,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum RoadFenceOpeningKind
+    {
+        BarEntrance = 0,
+        ParkGate = 1
+    }
+
     public readonly struct RoadFenceSegmentDescriptor :
         IEquatable<RoadFenceSegmentDescriptor>
     {
@@ -76,14 +82,39 @@ namespace BarPromenade
             Vector3 center,
             Vector3 outwardNormal,
             float width)
+            : this(
+                RoadFenceOpeningKind.BarEntrance,
+                barId,
+                center,
+                outwardNormal,
+                width)
         {
-            BarId = barId;
+        }
+
+        internal RoadFenceOpeningDescriptor(
+            RoadFenceOpeningKind kind,
+            string id,
+            Vector3 center,
+            Vector3 outwardNormal,
+            float width)
+        {
+            Kind = kind;
+            Id = id ?? string.Empty;
             Center = center;
             OutwardNormal = outwardNormal;
             Width = width;
         }
 
-        public string BarId { get; }
+        public RoadFenceOpeningKind Kind { get; }
+        public string Id { get; }
+        public string BarId =>
+            Kind == RoadFenceOpeningKind.BarEntrance
+                ? Id
+                : string.Empty;
+        public string ParkGateId =>
+            Kind == RoadFenceOpeningKind.ParkGate
+                ? Id
+                : string.Empty;
         public Vector3 Center { get; }
         public Vector3 OutwardNormal { get; }
         public float Width { get; }
@@ -96,9 +127,10 @@ namespace BarPromenade
 
         public bool Equals(RoadFenceOpeningDescriptor other)
         {
-            return string.Equals(
-                   BarId,
-                       other.BarId,
+            return Kind == other.Kind &&
+                   string.Equals(
+                       Id,
+                       other.Id,
                        StringComparison.Ordinal) &&
                    Center.Equals(other.Center) &&
                    OutwardNormal.Equals(other.OutwardNormal) &&
@@ -116,10 +148,11 @@ namespace BarPromenade
             unchecked
             {
                 int hash = 17;
+                hash = (hash * 31) + (int)Kind;
                 hash = (hash * 31) +
-                       (BarId == null
+                       (Id == null
                            ? 0
-                           : StringComparer.Ordinal.GetHashCode(BarId));
+                           : StringComparer.Ordinal.GetHashCode(Id));
                 hash = (hash * 31) + Center.GetHashCode();
                 hash = (hash * 31) + OutwardNormal.GetHashCode();
                 hash = (hash * 31) + Width.GetHashCode();
@@ -146,18 +179,51 @@ namespace BarPromenade
     {
         internal RoadFencePlan(
             IList<RoadFenceSegmentDescriptor> segments,
-            IList<RoadFenceOpeningDescriptor> entranceOpenings)
+            IList<RoadFenceOpeningDescriptor> openings)
         {
             Segments =
                 new ReadOnlyCollection<RoadFenceSegmentDescriptor>(
                     new List<RoadFenceSegmentDescriptor>(segments));
+            var allOpenings =
+                new List<RoadFenceOpeningDescriptor>(openings);
+            var entranceOpenings =
+                new List<RoadFenceOpeningDescriptor>();
+            var parkGateOpenings =
+                new List<RoadFenceOpeningDescriptor>();
+            for (int index = 0; index < allOpenings.Count; index++)
+            {
+                RoadFenceOpeningDescriptor opening =
+                    allOpenings[index];
+                if (opening.Kind ==
+                    RoadFenceOpeningKind.BarEntrance)
+                {
+                    entranceOpenings.Add(opening);
+                }
+                else if (opening.Kind ==
+                         RoadFenceOpeningKind.ParkGate)
+                {
+                    parkGateOpenings.Add(opening);
+                }
+            }
+
+            Openings =
+                new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
+                    allOpenings);
             EntranceOpenings =
                 new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
-                    new List<RoadFenceOpeningDescriptor>(entranceOpenings));
+                    entranceOpenings);
+            ParkGateOpenings =
+                new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
+                    parkGateOpenings);
         }
 
         public IReadOnlyList<RoadFenceSegmentDescriptor> Segments { get; }
+        public IReadOnlyList<RoadFenceOpeningDescriptor> Openings { get; }
         public IReadOnlyList<RoadFenceOpeningDescriptor> EntranceOpenings
+        {
+            get;
+        }
+        public IReadOnlyList<RoadFenceOpeningDescriptor> ParkGateOpenings
         {
             get;
         }
