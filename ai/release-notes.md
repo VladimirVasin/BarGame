@@ -15,8 +15,11 @@
   rusty railings, exposed pipes, vents, grilles, electrical cabinets,
   radiators, damp damage and trash.
 - Added flickering practical lights, a green desaturated image grade, sparse
-  dust and a music-free procedural bed of ventilation, mains hum, pipe knocks
-  and distant drips.
+  dust and a procedural bed of ventilation, mains hum, pipe knocks and distant
+  drips.
+- Added a scene-local `stairwell_theme` music slot. Dropping a WAV, OGG or MP3
+  into `Resources/Audio/StairwellMusic` starts it only in the stairwell and
+  stops it automatically on the next Single-mode scene transition.
 - Fixed the player-radius navigation seams at the lobby and landings, so normal
   movement can enter and traverse the staircase instead of stopping at the
   first riser.
@@ -25,6 +28,12 @@
 - Rebuilt the fluorescent fixtures so their suspended glowing tubes are no
   longer hidden inside their housings, remain visible in their matching camera
   angles and cast stronger readable pools without removing the darkness.
+- Added a seated pixel-art cat to the upper rail of the intermediate landing.
+  It remains composed with its back to every fixed camera while turning its
+  head toward the hero, cycles through quiet idle movement and performs a rare
+  eight-frame grooming animation roughly every 36 seconds.
+- The cat can be addressed through the normal interaction control. For now it
+  returns a short localized text placeholder without stopping the player.
 
 ### 2026-07-30 — PC-only rendering configuration
 

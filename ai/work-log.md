@@ -2,6 +2,56 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Interactive stairwell cat
+
+- Added one seated rear-view pixel-art cat to the upper bar of the middle
+  landing rail. Its exact camera-plane billboard stays composed in all three
+  fixed stairwell shots, while directional rows turn the head toward the
+  player.
+- Built a point-filtered `512x256` atlas from retained image-generation source
+  sheets. The first three rows provide breathing, tail and ear idle variants;
+  the fourth provides a complete eight-frame paw-lick and face-wash sequence.
+- Added a deterministic idle timeline: the first grooming cycle starts after
+  24 seconds, lasts 2 seconds at 4 fps and repeats every 36 seconds.
+- Added a non-blocking `IInteractable` trigger on a radius-safe middle-landing
+  approach. `E` temporarily replaces the localized prompt with the short
+  placeholder “Кот молча смотрит.” / “The cat watches.” without locking player
+  input.
+- Added atlas/import, layout, look hysteresis, idle/grooming, interaction,
+  localization and scene-presentation coverage. The fixed-shot assertion now
+  checks both viewport composition and an unobstructed physics line of sight.
+
+Verification:
+
+- Final stairwell-cat EditMode selection passed 16/16.
+- Final stairwell presentation PlayMode passed 4/4.
+- Complete EditMode reported 540/544; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Complete DX12 PlayMode reported 101/102; the sole failure was the unrelated
+  input-timing-sensitive Home bed test, which passed its immediate targeted
+  DX12 retry 1/1.
+- The complete solution built with 0 errors and 0 warnings.
+- Windows build succeeded at `147846797` bytes with one package-owned URP
+  `Hidden/Core/DebugOccluder` shader warning.
+
+## 2026-07-30 — Stairwell scene-music slot
+
+- Added an optional scene-local `stairwell_theme` resource slot under
+  `Resources/Audio/StairwellMusic`.
+- Added `StairwellMusicPlayer` to the runtime-composed stairwell root. It uses
+  the shared looping non-spatial music setup, remains silent when the track is
+  absent and is destroyed on the next Single-mode scene transition.
+- Added an in-folder delivery README plus PlayMode coverage for the player,
+  source configuration, filter, resource path and scene ownership.
+- Updated the current overview, architecture, system map/tree, README and
+  release notes with the new music contract.
+
+Verification:
+
+- Stairwell presentation PlayMode passed 3/3.
+- Runtime project built with 0 errors and 0 warnings.
+- `git diff --check` passed.
+
 ## 2026-07-30 — Stairwell traversal, fixed-camera and lighting correction
 
 - Reproduced the blocked first flight through the real `PlayerMotor` path

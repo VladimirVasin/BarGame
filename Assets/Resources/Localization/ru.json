@@ -41,6 +41,14 @@
       "value": "E \u2014 \u043f\u0440\u043e\u0441\u043d\u0443\u0442\u044c\u0441\u044f"
     },
     {
+      "key": "interaction.cat",
+      "value": "E — обратиться к коту"
+    },
+    {
+      "key": "stairwell.cat.placeholder",
+      "value": "Кот молча смотрит."
+    },
+    {
       "key": "interaction.order_drinks",
       "value": "E — смешать коктейли"
     },

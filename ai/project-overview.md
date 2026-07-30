@@ -52,8 +52,10 @@ The vertical slice contains:
   amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
-  `Resources/Audio/BarMusic` in `BarInterior`; both receive a mild low-pass
-  treatment and each player is destroyed by the next Single-mode scene load;
+  `Resources/Audio/BarMusic` in `BarInterior` and the optional
+  `stairwell_theme` slot loads only from `Resources/Audio/StairwellMusic` in
+  `StairwellInterior`; all receive a mild low-pass treatment and each player
+  is destroyed by the next Single-mode scene load;
 - deterministic generated mono retro SFX at `22050 Hz`, including a separate
   door latch and sustained hinge creak, distinct beer-pong
   throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
@@ -165,8 +167,16 @@ The vertical slice contains:
   landing with height hysteresis; each shot keeps its exposed suspended HDR
   fluorescent tube and halo visible, while three stronger flickering
   practical-light pools, a green desaturated Bloom/vignette/grain profile, at
-  most 14 dust particles and a music-free procedural ventilation, mains, pipe
-  and drip loop establish the atmosphere;
+  most 14 dust particles, a procedural ventilation/mains/pipe/drip loop and
+  the separate optional `stairwell_theme` music slot establish the atmosphere;
+- one clickable pixel-art cat sits with its back to the camera on the
+  `Middle Landing Back Rail`; a camera-plane billboard preserves that
+  composition through the stairwell's fixed shots while authored look
+  variants keep its head turned toward the player. The point-filtered
+  `512x256` `Resources/Stairwell/Cat/StairwellCatAtlas` supplies an `8x4`
+  grid for ordinary idle motion and a rare eight-frame grooming sequence
+  roughly every 36 seconds, while the shared `IInteractable` path exposes a
+  localized temporary text placeholder without blocking movement;
 - one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
   zones and four validated circulation paths; its long layered counter,
   bottle-backed mirrors, three booths, four high tables, stage, entrance

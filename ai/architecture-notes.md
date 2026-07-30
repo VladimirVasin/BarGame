@@ -98,8 +98,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   apartment-landing poses with vertical hold-zone hysteresis because the
   lower and upper flights overlap in XZ. Each pose keeps its exposed suspended
   HDR fluorescent tube and halo in frame; stronger co-located flickering
-  practicals, post-processing, bounded dust and a music-free
-  ventilation/electrical/pipe ambience remain scene-owned.
+  practicals, post-processing, bounded dust, ventilation/electrical/pipe
+  ambience and an optional scene-local `stairwell_theme` slot remain
+  scene-owned.
+- **Accepted — Perched interactive stairwell cat:** One seated pixel-art cat
+  owns a non-blocking authored perch on the upper bar of the
+  `Middle Landing Back Rail` and a separate walkable interaction point. Its
+  depth-tested `BillboardSprite` aligns to each fixed camera plane while the
+  artwork keeps the body turned away from the viewer and selects a head turn
+  toward the player. The point-filtered
+  `Resources/Stairwell/Cat/StairwellCatAtlas` is exactly `512x256`, an `8x4`
+  grid used for ordinary idle motion and a rare eight-frame grooming sequence
+  roughly every 36 seconds. `StairwellCatInteraction` reuses
+  `IInteractable`; activating it does not lock movement and temporarily
+  replaces the localized prompt with an explicit future-interaction text
+  placeholder.
 - **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
   a real window and open glazed door connected to a walkable balcony at
   `4.7 m` street elevation. The room threshold and deck extend the same
@@ -248,10 +261,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   green lenses remain dimly visible without realtime lights.
 - **Accepted — Scene-local music:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
-  `bar_theme` from `Resources/Audio/BarMusic`. Each uses a non-spatial looping
-  `AudioSource` and a mild low-pass filter under its matching scene root, so a
-  Single-mode scene load destroys the old player and stops its theme
-  automatically.
+  `bar_theme` from `Resources/Audio/BarMusic` and
+  `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
+  `Resources/Audio/StairwellMusic`. Each uses a non-spatial looping
+  `AudioSource` and a mild low-pass filter under its matching scene root; a
+  missing optional track stays silent, and a Single-mode scene load destroys
+  the old player and stops its theme automatically.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
   the mono `22050 Hz` UI, footstep, door latch, sustained hinge creak,
   cocktail, beer-pong, Split-the-G and tincture clips in memory.

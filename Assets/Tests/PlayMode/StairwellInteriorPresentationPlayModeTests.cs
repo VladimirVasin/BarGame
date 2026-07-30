@@ -129,6 +129,50 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.Ambience.ActiveClip.name,
                 Is.EqualTo("RetroAmbience_Stairwell"));
+            Assert.That(root.Music, Is.Not.Null);
+            Assert.That(root.Music.Source, Is.Not.Null);
+            Assert.That(root.Music.Source.loop, Is.True);
+            Assert.That(
+                root.Music.Source.playOnAwake,
+                Is.False);
+            Assert.That(
+                root.Music.Source.spatialBlend,
+                Is.Zero);
+            Assert.That(root.Music.ToneFilter, Is.Not.Null);
+            Assert.That(
+                root.Music.transform.IsChildOf(root.transform),
+                Is.True);
+            Assert.That(
+                StairwellMusicPlayer.ResourcePath,
+                Is.EqualTo(
+                    "Audio/StairwellMusic/" +
+                    "stairwell_theme"));
+            Assert.That(root.Cat, Is.Not.Null);
+            Assert.That(root.Cat.IsInitialized, Is.True);
+            Assert.That(root.Cat.Renderer, Is.Not.Null);
+            Assert.That(root.Cat.Renderer.sprite, Is.Not.Null);
+            Assert.That(root.Cat.Billboard, Is.Not.Null);
+            Assert.That(
+                root.Cat.Billboard.CameraPlaneAlignmentEnabled,
+                Is.True);
+            Assert.That(root.CatInteraction, Is.Not.Null);
+            Assert.That(
+                root.CatInteraction.IsInitialized,
+                Is.True);
+            Assert.That(root.CatTrigger, Is.Not.Null);
+            Assert.That(root.CatTrigger.isTrigger, Is.True);
+            Assert.That(
+                root.Cat.transform.localPosition,
+                Is.EqualTo(root.CatPlan.VisualLocalPosition));
+            Assert.That(
+                root.CatInteraction.InteractionPosition,
+                Is.EqualTo(
+                    root.transform.TransformPoint(
+                        root.CatPlan.InteractionLocalPosition)));
+            Assert.That(
+                StairwellCatSpriteLibrary.DefaultResourcePath,
+                Is.EqualTo(
+                    "Stairwell/Cat/StairwellCatAtlas"));
 
             Assert.That(root.CameraFollow, Is.Not.Null);
             Assert.That(root.FixedCamera, Is.Not.Null);
@@ -148,6 +192,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.World.Root.Find(
                     "Stairwell Dressing/" +
                     "Apartment Fluorescent Tube"));
+            AssertCatVisible(Camera.main, root.Cat);
             Assert.That(
                 UnityEngine.Object.FindObjectsByType<Camera>(
                     FindObjectsInactive.Exclude),
@@ -166,6 +211,21 @@ namespace BarPromenade.Tests.PlayMode
                     BarMusicPlayer>(
                     FindObjectsInactive.Include),
                 Is.Empty);
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<
+                    StairwellMusicPlayer>(
+                    FindObjectsInactive.Include),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<
+                    StairwellCatActor>(
+                    FindObjectsInactive.Include),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<
+                    StairwellCatInteraction>(
+                    FindObjectsInactive.Include),
+                Has.Length.EqualTo(1));
         }
 
         [UnityTest]
@@ -186,6 +246,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     StairwellCameraShotKind.GroundFlight));
+            AssertCatVisible(Camera.main, root.Cat);
             Vector3 start =
                 root.Player.GameObject.transform.position;
             inputFixture.Press(
@@ -260,6 +321,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     StairwellCameraShotKind.MiddleFlight));
+            AssertCatVisible(Camera.main, root.Cat);
             AssertEmitterVisible(
                 Camera.main,
                 root.World.Root.Find(
@@ -283,6 +345,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     StairwellCameraShotKind
                         .ApartmentLanding));
+            AssertCatVisible(Camera.main, root.Cat);
             AssertEmitterVisible(
                 Camera.main,
                 root.World.Root.Find(
@@ -318,6 +381,66 @@ namespace BarPromenade.Tests.PlayMode
                     controller.radius +
                     0.08f),
                 "The player squeezed through the upper debris.");
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Scene_CatInteractionShowsPlaceholderWithoutLockingPlayer()
+        {
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.StreetDoor);
+            StairwellInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(
+                value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Stairwell root did not initialize.");
+
+            root.Player.Motor.Teleport(
+                root.transform.TransformPoint(
+                    root.CatPlan.InteractionLocalPosition));
+            Physics.SyncTransforms();
+            yield return WaitUntil(
+                () => ReferenceEquals(
+                    root.Player.Interactor.ActiveInteractable,
+                    root.CatInteraction),
+                "The cat did not become the active interaction.");
+
+            InteractionPromptView prompt =
+                root.GetComponentInChildren<
+                    InteractionPromptView>();
+            Assert.That(prompt, Is.Not.Null);
+            Assert.That(
+                prompt.PromptKey,
+                Is.EqualTo(
+                    StairwellCatInteraction.DefaultPromptKey));
+
+            inputFixture.Press(
+                keyboard.eKey,
+                queueEventOnly: true);
+            yield return null;
+            inputFixture.Release(
+                keyboard.eKey,
+                queueEventOnly: true);
+            yield return null;
+
+            Assert.That(
+                root.CatInteraction.PromptKey,
+                Is.EqualTo(
+                    StairwellCatInteraction.ResponsePromptKey));
+            Assert.That(
+                prompt.PromptKey,
+                Is.EqualTo(
+                    StairwellCatInteraction.ResponsePromptKey));
+            Assert.That(root.Player.Motor.InputEnabled, Is.True);
+            Assert.That(root.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(
+                root.CatInteraction.GetPromptKeyAt(
+                    Time.unscaledTime +
+                    StairwellCatInteraction
+                        .ResponseDurationSeconds),
+                Is.EqualTo(
+                    StairwellCatInteraction.DefaultPromptKey));
         }
 
         private static void AssertPracticalSources(
@@ -391,6 +514,42 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 viewport.y,
                 Is.InRange(0.05f, 0.95f));
+        }
+
+        private static void AssertCatVisible(
+            Camera camera,
+            StairwellCatActor cat)
+        {
+            Assert.That(camera, Is.Not.Null);
+            Assert.That(cat, Is.Not.Null);
+            Assert.That(cat.Renderer, Is.Not.Null);
+            Vector3 target = cat.Renderer.bounds.center;
+            Vector3 viewport =
+                camera.WorldToViewportPoint(
+                    target);
+            Assert.That(viewport.z, Is.GreaterThan(0f));
+            Assert.That(
+                viewport.x,
+                Is.InRange(0.05f, 0.95f));
+            Assert.That(
+                viewport.y,
+                Is.InRange(0.05f, 0.95f));
+
+            Vector3 toCat =
+                target - camera.transform.position;
+            bool occluded = Physics.Raycast(
+                camera.transform.position,
+                toCat.normalized,
+                out RaycastHit hit,
+                Mathf.Max(0f, toCat.magnitude - 0.04f),
+                ~0,
+                QueryTriggerInteraction.Ignore);
+            Assert.That(
+                occluded,
+                Is.False,
+                occluded && hit.collider != null
+                    ? $"Cat is hidden by {hit.collider.name}."
+                    : "Cat is hidden in its fixed-camera shot.");
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(

@@ -11,6 +11,7 @@ namespace BarPromenade
         public StairwellWorldResult World { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
+        public StairwellMusicPlayer Music { get; private set; }
         public StairwellAmbiencePlayer Ambience { get; private set; }
         public StairwellInteriorAtmosphere Atmosphere
         {
@@ -34,6 +35,14 @@ namespace BarPromenade
             get;
             private set;
         }
+        public StairwellCatPlan CatPlan { get; private set; }
+        public StairwellCatActor Cat { get; private set; }
+        public StairwellCatInteraction CatInteraction
+        {
+            get;
+            private set;
+        }
+        public BoxCollider CatTrigger { get; private set; }
 
         private void Awake()
         {
@@ -64,6 +73,11 @@ namespace BarPromenade
                     StairwellInteriorAtmosphere>();
             Atmosphere.Initialize();
 
+            GameObject musicObject =
+                new GameObject("Stairwell Music");
+            musicObject.transform.SetParent(transform, false);
+            Music =
+                musicObject.AddComponent<StairwellMusicPlayer>();
             GameObject ambienceObject =
                 new GameObject("Stairwell Ambience");
             ambienceObject.transform.SetParent(transform, false);
@@ -111,6 +125,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 StairwellFixedCameraController
                     .CreateDefaultShots(Layout));
+            BuildCat(camera);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -147,11 +162,40 @@ namespace BarPromenade
                     "light_count",
                     Atmosphere.PracticalLights.Count),
                 GameLog.Field(
+                    "cat_present",
+                    Cat != null),
+                GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        private void BuildCat(Camera camera)
+        {
+            CatPlan = StairwellCatPlan.Create(Layout);
+            GameObject catObject =
+                new GameObject("Stairwell Cat");
+            catObject.transform.SetParent(transform, false);
+            catObject.transform.localPosition =
+                CatPlan.VisualLocalPosition;
+
+            CatTrigger = catObject.AddComponent<BoxCollider>();
+            CatTrigger.isTrigger = true;
+            CatTrigger.center = CatPlan.TriggerLocalCenter;
+            CatTrigger.size = StairwellCatPlan.TriggerSize;
+
+            Cat = catObject.AddComponent<StairwellCatActor>();
+            Cat.Initialize(
+                camera,
+                Player.GameObject.transform);
+            CatInteraction =
+                catObject.AddComponent<
+                    StairwellCatInteraction>();
+            CatInteraction.Initialize(
+                transform.TransformPoint(
+                    CatPlan.InteractionLocalPosition));
         }
 
         private void BuildExits()

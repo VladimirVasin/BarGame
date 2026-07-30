@@ -32,6 +32,9 @@ Assets/
       BarMusic/
         bar_theme.*   looping BarInterior theme
         README.txt
+      StairwellMusic/
+        stairwell_theme.*  optional looping StairwellInterior theme
+        README.txt
     Cocktails/
       CocktailSpriteAtlas.png  4x4 glass/ingredient pixel-art atlas
     BeerPong/
@@ -51,6 +54,9 @@ Assets/
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
+    Stairwell/
+      Cat/
+        StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
     Localization/
       ru.json
       en.json
@@ -78,6 +84,7 @@ Assets/
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
+      Stairwell/Cat/ deterministic perch, atlas slicing, look and idle presentation
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles
@@ -86,6 +93,7 @@ Assets/
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
+        StairwellCatInteraction.cs     localized temporary cat-response placeholder
       Scenes/        bar/home/stairwell roots, atmosphere/reveal and transition
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
@@ -152,6 +160,12 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                       -> green grade + sparse dust
        -> StairwellFixedCameraController -> lower/middle/apartment hard cuts
                                          -> fixed pose + camera-plane billboard
+       -> StairwellCatPlan -> Middle Landing Back Rail perch + walkable approach
+                           -> StairwellCatActor -> rear-view billboard
+                                                   + player-tracking head
+                                                   + ordinary idle
+                                                   + rare 8-frame grooming (~36 s)
+                           -> StairwellCatInteraction -> localized text placeholder
        -> StairwellAmbiencePlayer -> ventilation + mains + pipes + drips
        -> HomeInteriorLayoutPlanner -> HomeInteriorLayoutValidator
                                     -> HomeInteriorWorldBuilder
@@ -212,6 +226,7 @@ state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
+Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme
 scene root -> matching City/Bar/Home/Stairwell procedural ambience
 input/gameplay events -> RetroAudioService -> pooled generated SFX
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
