@@ -146,6 +146,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroAmbienceKind.City)]
         [TestCase(RetroAmbienceKind.Bar)]
         [TestCase(RetroAmbienceKind.Home)]
+        [TestCase(RetroAmbienceKind.Stairwell)]
         public void Ambience_IsDeterministicQuietAndLoopSafe(
             RetroAmbienceKind kind)
         {

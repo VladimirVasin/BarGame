@@ -287,7 +287,7 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture.Press(
                 keyboard.dKey,
                 queueEventOnly: true);
-            InputSystem.Update();
+            yield return null;
             Assert.That(Keyboard.current, Is.SameAs(keyboard));
             Assert.That(keyboard.dKey.isPressed, Is.True);
             Assert.That(SceneTransitionService.IsTransitioning, Is.False);

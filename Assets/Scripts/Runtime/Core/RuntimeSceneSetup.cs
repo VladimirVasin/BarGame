@@ -87,6 +87,23 @@ namespace BarPromenade
             return camera;
         }
 
+        public static Camera EnsureStairwellInterior()
+        {
+            Camera camera = EnsureCamera(
+                new Color(0.035f, 0.052f, 0.044f));
+            SetPostProcessing(camera, true);
+            ConfigureDirectionalLighting(
+                new Color(0.50f, 0.62f, 0.55f),
+                0.34f,
+                new Color(0.040f, 0.055f, 0.046f),
+                0.72f);
+
+            RenderSettings.fog = false;
+            RenderSettings.reflectionIntensity = 0.30f;
+            DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
         public static Camera EnsureCamera(Color backgroundColor)
         {
             Camera camera = Camera.main;

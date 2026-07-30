@@ -2,9 +2,11 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public sealed class HomeExit : MonoBehaviour, IInteractable
+    public sealed class StairwellApartmentEntrance :
+        MonoBehaviour,
+        IInteractable
     {
-        public string PromptKey => "interaction.exit_apartment";
+        public string PromptKey => "interaction.enter_apartment";
         public Vector3 InteractionPosition => transform.position;
 
         public bool CanInteract(PlayerInteractor interactor)
@@ -25,22 +27,17 @@ namespace BarPromenade
                     : interactor.GetComponent<PlayerMotor>();
             motor?.SetInputEnabled(false);
             bool accepted = SceneTransitionService.RequestDoorLoad(
-                SceneIds.StairwellInterior,
-                DoorTransitionDirection.ExitApartment,
+                SceneIds.HomeInterior,
+                DoorTransitionDirection.EnterApartment,
                 out string operationId);
-            if (accepted)
-            {
-                GameSessionState.PrepareStairwellArrival(
-                    StairwellArrivalKind.ApartmentDoor);
-            }
-            else
+            if (!accepted)
             {
                 motor?.SetInputEnabled(true);
             }
 
             GameLog.Info(
                 "interaction",
-                "home_exit_result",
+                "apartment_enter_result",
                 GameLog.Field("accepted", accepted),
                 GameLog.Field("operation_id", operationId),
                 GameLog.Field(

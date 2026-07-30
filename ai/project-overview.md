@@ -12,7 +12,8 @@
   across movement, interaction and modal interfaces.
 - Build scenes: `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
-  `Assets/Scenes/BarInterior.unity` and
+  `Assets/Scenes/BarInterior.unity`,
+  `Assets/Scenes/StairwellInterior.unity` and
   `Assets/Scenes/HomeInterior.unity`.
 - Runtime assembly: `BarPromenade.Runtime`.
 - Test assemblies: `BarPromenade.EditModeTests` and
@@ -57,8 +58,10 @@ The vertical slice contains:
   door latch and sustained hinge creak, distinct beer-pong
   throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
   category pools, per-effect cooldowns and voice limits, plus separate
-  scene-local procedural city, bar and home ambience; the home loop layers a
-  refrigerator compressor, mains hum, pipes and periodic drips;
+  scene-local procedural city, bar, home and stairwell ambience; the home loop
+  layers a refrigerator compressor, mains hum, pipes and periodic drips,
+  while the stairwell adds ventilation, electrical hum, pipe knocks and
+  distant water;
 - a spanning-tree road graph with deterministic loops, cross-city arterials
   and a connected park-path cross;
 - five readable districts: Old Town, Residential, Industrial, Nightlife and
@@ -96,8 +99,9 @@ The vertical slice contains:
 - one camera-independent realtime player shadow that mirrors all nine
   articulated puppet parts in the authored view relative to the main light,
   faces them toward that light and reproduces live gait, compression and
-  whole-puppet sway in City, BarInterior and HomeInterior, plus one small
-  light-independent analytic contact patch fixed to the grounded player root;
+  whole-puppet sway in City, BarInterior, HomeInterior and StairwellInterior,
+  plus one small light-independent analytic contact patch fixed to the
+  grounded player root;
   neither changes the nine visible renderers;
 - one deterministic five-state body-expression atlas that swaps the existing
   body sprite for stronger half/closed blinks plus watchful and tense idle
@@ -116,8 +120,8 @@ The vertical slice contains:
   deterministic idle/walk motion and smoothly recovering obstacle-aware
   distance; cinematic motion fades out for fullscreen modals, while the
   balance-specific lock keeps its intoxication and fall reactions visible;
-- one percentage-driven intoxication profile shared by City, BarInterior and
-  HomeInterior:
+- one percentage-driven intoxication profile shared by City, BarInterior,
+  HomeInterior and StairwellInterior:
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
   `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
   Very Drunk / «В стельку»; `0` is Sober and hides the HUD;
@@ -140,12 +144,29 @@ The vertical slice contains:
   paths constrained to the generated road graph;
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
-  context for the current city, with an explicit bar-or-home return kind;
-- a dedicated `3.15 s` `DoorTransition` scene between the city and either
-  interior:
+  context for the current city, with an explicit bar-or-home return kind and
+  a separate stairwell-arrival side;
+- a dedicated `3.15 s` `DoorTransition` scene between connected locations:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;
+- one deterministic runtime-composed `8.6 x 9.6 x 6.25 m`
+  `StairwellInterior` between the exterior home entrance and the apartment:
+  the route climbs from a ground-floor lobby through a middle landing to the
+  hero's third-floor door, while a fully sealed debris pile makes the next
+  upward flight impassable; 48 visible steps use three seam-free walkable ramp
+  colliders, radius-safe overlapping navigation corridors keep every
+  floor/flight seam traversable by the real `PlayerMotor`, and side-aware
+  arrival restores the player beside the correct door;
+- a decayed industrial-horror stairwell treatment with stained concrete,
+  rusty rails, exposed pipes, ventilation grilles, electrical cabinets,
+  radiators, damp damage, trash and dense upper-floor junk; three bounded
+  fixed camera shots cut between the lower flight, middle flight and apartment
+  landing with height hysteresis; each shot keeps its exposed suspended HDR
+  fluorescent tube and halo visible, while three stronger flickering
+  practical-light pools, a green desaturated Bloom/vignette/grain profile, at
+  most 14 dust particles and a music-free procedural ventilation, mains, pipe
+  and drip loop establish the atmosphere;
 - one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
   zones and four validated circulation paths; its long layered counter,
   bottle-backed mirrors, three booths, four high tables, stage, entrance

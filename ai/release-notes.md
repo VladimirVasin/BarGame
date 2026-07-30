@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### 2026-07-30 — Decayed stairwell between home and street
+
+- Added a separate playable stairwell between the exterior home entrance and
+  the hero's apartment. Going home now means entering the building, climbing
+  two flights and using the apartment door; leaving follows the same route in
+  reverse and returns to the same exterior entrance.
+- Built a ground-floor lobby, an intermediate landing, the apartment-floor
+  landing and a further upward flight. The upper flight is visibly buried
+  under furniture, wire mesh, planks and sacks and is physically impassable.
+- Gave the space a dark industrial-horror treatment with stained concrete,
+  rusty railings, exposed pipes, vents, grilles, electrical cabinets,
+  radiators, damp damage and trash.
+- Added flickering practical lights, a green desaturated image grade, sparse
+  dust and a music-free procedural bed of ventilation, mains hum, pipe knocks
+  and distant drips.
+- Fixed the player-radius navigation seams at the lobby and landings, so normal
+  movement can enter and traverse the staircase instead of stopping at the
+  first riser.
+- Added three fixed cinematic camera angles for the lower flight, middle
+  flight and apartment floor, with stable hysteresis when crossing a landing.
+- Rebuilt the fluorescent fixtures so their suspended glowing tubes are no
+  longer hidden inside their housings, remain visible in their matching camera
+  angles and cast stronger readable pools without removing the darkness.
+
 ### 2026-07-30 — PC-only rendering configuration
 
 - Removed the unused mobile URP asset, renderer and quality preset. The current

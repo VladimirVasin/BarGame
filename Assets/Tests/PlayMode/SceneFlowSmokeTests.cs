@@ -17,6 +17,8 @@ namespace BarPromenade.Tests.PlayMode
         private const string InteriorRootName = "[Bar Promenade] Bar Interior Runtime";
         private const string HomeRootName =
             "[Bar Promenade] Home Interior Runtime";
+        private const string StairwellRootName =
+            "[Bar Promenade] Stairwell Interior Runtime";
         private const float TimeoutSeconds = 15f;
 
         [UnitySetUp]
@@ -1610,7 +1612,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator EnterAndExitHome_ReturnsToHomeInSameCity()
+        public IEnumerator EnterAndExitHome_UsesStairwellAndReturnsToSameCity()
         {
             CityGameRoot firstCity = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -1661,7 +1663,45 @@ namespace BarPromenade.Tests.PlayMode
                 "Home entry door did not initialize.");
             Assert.That(
                 enteringDoor.Direction,
-                Is.EqualTo(DoorTransitionDirection.EnterHome));
+                Is.EqualTo(DoorTransitionDirection.EnterBuilding));
+
+            StairwellInteriorRoot enteringStairwell = null;
+            yield return WaitForLoadedRoot<StairwellInteriorRoot>(
+                SceneIds.StairwellInterior,
+                StairwellRootName,
+                root => enteringStairwell = root);
+            yield return WaitUntil(
+                () =>
+                    enteringStairwell.IsInitialized &&
+                    !SceneTransitionService.IsTransitioning,
+                "Street-to-stairwell transition did not settle.");
+
+            Assert.That(
+                enteringStairwell.Arrival,
+                Is.EqualTo(StairwellArrivalKind.StreetDoor));
+            Assert.That(enteringStairwell.World, Is.Not.Null);
+            Assert.That(
+                enteringStairwell.World.UpperBlocker,
+                Is.Not.Null);
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+
+            enteringStairwell.ApartmentEntrance.Interact(
+                enteringStairwell.Player.Interactor);
+
+            DoorTransitionRoot apartmentDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => apartmentDoor = root);
+            yield return WaitUntil(
+                () => apartmentDoor.IsInitialized,
+                "Apartment entry door did not initialize.");
+            Assert.That(
+                apartmentDoor.Direction,
+                Is.EqualTo(
+                    DoorTransitionDirection.EnterApartment));
 
             HomeInteriorRoot home = null;
             yield return WaitForLoadedRoot<HomeInteriorRoot>(
@@ -1754,7 +1794,49 @@ namespace BarPromenade.Tests.PlayMode
                 "Home exit door did not initialize.");
             Assert.That(
                 exitingDoor.Direction,
-                Is.EqualTo(DoorTransitionDirection.ExitHome));
+                Is.EqualTo(
+                    DoorTransitionDirection.ExitApartment));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+
+            StairwellInteriorRoot exitingStairwell = null;
+            yield return WaitForLoadedRoot<StairwellInteriorRoot>(
+                SceneIds.StairwellInterior,
+                StairwellRootName,
+                root => exitingStairwell = root);
+            yield return WaitUntil(
+                () =>
+                    exitingStairwell.IsInitialized &&
+                    !SceneTransitionService.IsTransitioning,
+                "Apartment-to-stairwell transition did not settle.");
+            Assert.That(
+                exitingStairwell.Arrival,
+                Is.EqualTo(StairwellArrivalKind.ApartmentDoor));
+            Assert.That(
+                Vector3.Distance(
+                    exitingStairwell.Player.GameObject
+                        .transform.position,
+                    exitingStairwell.Layout.ApartmentSpawn),
+                Is.LessThan(0.05f));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+
+            exitingStairwell.StreetExit.Interact(
+                exitingStairwell.Player.Interactor);
+
+            DoorTransitionRoot buildingExitDoor = null;
+            yield return WaitForLoadedRoot<DoorTransitionRoot>(
+                SceneIds.DoorTransition,
+                DoorTransitionRootName,
+                root => buildingExitDoor = root);
+            yield return WaitUntil(
+                () => buildingExitDoor.IsInitialized,
+                "Building exit door did not initialize.");
+            Assert.That(
+                buildingExitDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.ExitBuilding));
             Assert.That(
                 GameSessionState.ReturnKind,
                 Is.EqualTo(CityReturnKind.PlayerHome));

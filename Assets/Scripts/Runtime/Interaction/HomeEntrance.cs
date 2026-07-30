@@ -5,7 +5,7 @@ namespace BarPromenade
     public sealed class HomeEntrance : MonoBehaviour, IInteractable
     {
         public Vector3 ReturnPosition { get; private set; }
-        public string PromptKey => "interaction.enter_home";
+        public string PromptKey => "interaction.enter_building";
         public Vector3 InteractionPosition => transform.position;
 
         public void Configure(Vector3 returnPosition)
@@ -47,12 +47,14 @@ namespace BarPromenade
                     : interactor.GetComponent<PlayerMotor>();
             motor?.SetInputEnabled(false);
             bool accepted = SceneTransitionService.RequestDoorLoad(
-                SceneIds.HomeInterior,
-                DoorTransitionDirection.EnterHome,
+                SceneIds.StairwellInterior,
+                DoorTransitionDirection.EnterBuilding,
                 out string operationId);
             if (accepted)
             {
                 GameSessionState.EnterHome();
+                GameSessionState.PrepareStairwellArrival(
+                    StairwellArrivalKind.StreetDoor);
             }
             else
             {

@@ -24,6 +24,11 @@ namespace BarPromenade
         public static CityReturnKind ReturnKind { get; private set; }
         public static bool IsReturningToCity =>
             ReturnKind != CityReturnKind.None;
+        public static StairwellArrivalKind StairwellArrival
+        {
+            get;
+            private set;
+        } = StairwellArrivalKind.StreetDoor;
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
@@ -41,6 +46,7 @@ namespace BarPromenade
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
             ReturnKind = CityReturnKind.None;
+            StairwellArrival = StairwellArrivalKind.StreetDoor;
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -307,6 +313,35 @@ namespace BarPromenade
                     "return_kind",
                     ReturnKind.ToString()),
                 GameLog.Field("is_returning", true));
+        }
+
+        public static void PrepareStairwellArrival(
+            StairwellArrivalKind arrival)
+        {
+            if (arrival != StairwellArrivalKind.StreetDoor &&
+                arrival != StairwellArrivalKind.ApartmentDoor)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrival));
+            }
+
+            StairwellArrival = arrival;
+            GameLog.Info(
+                "session",
+                "stairwell_arrival_prepared",
+                GameLog.Field(
+                    "arrival",
+                    StairwellArrival.ToString()));
+        }
+
+        public static StairwellArrivalKind ConsumeStairwellArrival()
+        {
+            StairwellArrivalKind arrival = StairwellArrival;
+            StairwellArrival = StairwellArrivalKind.StreetDoor;
+            GameLog.Info(
+                "session",
+                "stairwell_arrival_consumed",
+                GameLog.Field("arrival", arrival.ToString()));
+            return arrival;
         }
 
         public static bool TryGetReturnBarId(out string barId)

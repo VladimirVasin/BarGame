@@ -14,6 +14,8 @@ namespace BarPromenade.Editor
         private const string DoorTransitionScenePath =
             "Assets/Scenes/DoorTransition.unity";
         private const string BarInteriorScenePath = "Assets/Scenes/BarInterior.unity";
+        private const string StairwellInteriorScenePath =
+            "Assets/Scenes/StairwellInterior.unity";
         private const string HomeInteriorScenePath =
             "Assets/Scenes/HomeInterior.unity";
 
@@ -22,6 +24,7 @@ namespace BarPromenade.Editor
             EnsureCityScene();
             EnsureDoorTransitionScene();
             EnsureInteriorScene();
+            EnsureStairwellInteriorScene();
             EnsureHomeInteriorScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
@@ -40,6 +43,7 @@ namespace BarPromenade.Editor
                     CityScenePath,
                     DoorTransitionScenePath,
                     BarInteriorScenePath,
+                    StairwellInteriorScenePath,
                     HomeInteriorScenePath
                 },
                 locationPathName = "Build/Windows/BarPromenade.exe",
@@ -133,6 +137,26 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void EnsureStairwellInteriorScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                    StairwellInteriorScenePath) != null)
+            {
+                return;
+            }
+
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                NewSceneMode.Single);
+            if (!EditorSceneManager.SaveScene(
+                    scene,
+                    StairwellInteriorScenePath))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create '{StairwellInteriorScenePath}'.");
+            }
+        }
+
         private static void ConfigureBuildScenes()
         {
             EditorBuildSettings.scenes = new[]
@@ -140,6 +164,9 @@ namespace BarPromenade.Editor
                 new EditorBuildSettingsScene(CityScenePath, true),
                 new EditorBuildSettingsScene(DoorTransitionScenePath, true),
                 new EditorBuildSettingsScene(BarInteriorScenePath, true),
+                new EditorBuildSettingsScene(
+                    StairwellInteriorScenePath,
+                    true),
                 new EditorBuildSettingsScene(HomeInteriorScenePath, true)
             };
         }

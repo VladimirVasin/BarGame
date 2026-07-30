@@ -9,6 +9,7 @@ Assets/
     DoorTransition.unity
     BarInterior.unity
     HomeInterior.unity
+    StairwellInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
     PC_Renderer.asset             active PC PS1 renderer feature
@@ -57,7 +58,7 @@ Assets/
     Runtime/
       Core/          bootstrap, city root, session, transitions
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
-      Audio/         filtered themes, generated retro SFX and City/Bar/Home ambience
+      Audio/         filtered themes, generated retro SFX and scene ambience
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model, heap pathfinding and district map
@@ -74,17 +75,22 @@ Assets/
         HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
+        StairwellLayout*.cs      three elevations, connected flights and blocker
+        StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
+        StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
-      Interaction/   contract, shared minigame catalog, bar/home entrances/exits
+      Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
-      Scenes/        bar/home roots, atmosphere/reveal and door transition
+      Scenes/        bar/home/stairwell roots, atmosphere/reveal and transition
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
+        StairwellFixedCameraController.cs  three height-selected fixed shots
+        StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -94,8 +100,8 @@ Assets/
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout/bathroom/bed plans, atlases, audio and gameplay rules
-    PlayMode/        PS1 GPU, player poses, Home sleep/shots/atmosphere and complete flow
+    EditMode/        layout/bathroom/bed/stair plans, audio and gameplay rules
+    PlayMode/        presentation, physical traversal and complete scene flow
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -130,10 +136,23 @@ player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
-                         or HomeEntrance/HomeExit
+                         or HomeEntrance -> StairwellInterior
+                            -> StairwellApartmentEntrance -> HomeInterior
+                            -> HomeExit -> StairwellInterior
+                            -> StairwellStreetExit -> City home return
                                                   -> DoorTransitionRoot
                                                      -> preloaded destination
        <- active-bar return spawn/context <- GameSessionState
+       -> StairwellLayoutPlanner -> StairwellLayoutValidator
+                                 -> StairwellWorldBuilder
+                                    -> 48 visual steps + three physical ramps
+                                    -> lower/middle/apartment landings
+                                    -> sealed upper-flight debris
+       -> StairwellInteriorAtmosphere -> three flickering practicals
+                                      -> green grade + sparse dust
+       -> StairwellFixedCameraController -> lower/middle/apartment hard cuts
+                                         -> fixed pose + camera-plane billboard
+       -> StairwellAmbiencePlayer -> ventilation + mains + pipes + drips
        -> HomeInteriorLayoutPlanner -> HomeInteriorLayoutValidator
                                     -> HomeInteriorWorldBuilder
                                        -> HomeBathroomBuilder
@@ -193,7 +212,7 @@ state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 City root -> CityMusicPlayer -> city_theme
 Bar root -> BarMusicPlayer -> bar_theme
-scene root -> matching City/Bar/Home procedural ambience
+scene root -> matching City/Bar/Home/Stairwell procedural ambience
 input/gameplay events -> RetroAudioService -> pooled generated SFX
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
 world composite -> crisp retro IMGUI overlay

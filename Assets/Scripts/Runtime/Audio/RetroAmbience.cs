@@ -7,7 +7,8 @@ namespace BarPromenade
     {
         City = 0,
         Bar,
-        Home
+        Home,
+        Stairwell
     }
 
     public static class RetroAmbienceSynthesis
@@ -19,7 +20,8 @@ namespace BarPromenade
         {
             if (kind != RetroAmbienceKind.City &&
                 kind != RetroAmbienceKind.Bar &&
-                kind != RetroAmbienceKind.Home)
+                kind != RetroAmbienceKind.Home &&
+                kind != RetroAmbienceKind.Stairwell)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -42,8 +44,11 @@ namespace BarPromenade
                     case RetroAmbienceKind.Bar:
                         sample = GenerateBarSample(loopPhase);
                         break;
-                    default:
+                    case RetroAmbienceKind.Home:
                         sample = GenerateHomeSample(loopPhase);
+                        break;
+                    default:
+                        sample = GenerateStairwellSample(loopPhase);
                         break;
                 }
 
@@ -139,6 +144,44 @@ namespace BarPromenade
                    pipes +
                    drips;
         }
+
+        private static float GenerateStairwellSample(float phase)
+        {
+            float ventilationBreath =
+                0.72f +
+                Mathf.Sin(phase * 2f + 0.4f) * 0.12f +
+                Mathf.Sin(phase * 5f + 2.1f) * 0.05f;
+            float ventilation =
+                Mathf.Sin(phase * 47f + 0.3f) * 0.068f +
+                Mathf.Sin(phase * 83f + 1.8f) * 0.042f +
+                Mathf.Sin(phase * 139f + 4.2f) * 0.021f;
+            float mains =
+                Mathf.Sin(phase * 200f) * 0.043f +
+                Mathf.Sin(phase * 400f + 0.22f) * 0.018f;
+            float pipes =
+                Mathf.Sin(phase * 13f + 1.2f) * 0.018f +
+                Mathf.Sin(phase * 29f + 3.4f) * 0.010f;
+            float knockEnvelope = Mathf.Pow(
+                0.5f +
+                0.5f * Mathf.Cos(phase * 3f + 1.35f),
+                42f);
+            float knock =
+                knockEnvelope *
+                (Mathf.Sin(phase * 277f) * 0.075f +
+                 Mathf.Sin(phase * 391f + 0.7f) * 0.032f);
+            float dripEnvelope = Mathf.Pow(
+                0.5f +
+                0.5f * Mathf.Cos(phase * 7f - 0.5f),
+                48f);
+            float drip =
+                dripEnvelope *
+                Mathf.Sin(phase * 521f + 0.8f) * 0.055f;
+            return ventilation * ventilationBreath +
+                   mains +
+                   pipes +
+                   knock +
+                   drip;
+        }
     }
 
     [DisallowMultipleComponent]
@@ -218,5 +261,14 @@ namespace BarPromenade
             RetroAmbienceKind.Home;
         protected override float OutputVolume => 0.025f;
         protected override float CutoffFrequency => 3200f;
+    }
+
+    public sealed class StairwellAmbiencePlayer :
+        SceneAmbiencePlayer
+    {
+        protected override RetroAmbienceKind AmbienceKind =>
+            RetroAmbienceKind.Stairwell;
+        protected override float OutputVolume => 0.036f;
+        protected override float CutoffFrequency => 2900f;
     }
 }

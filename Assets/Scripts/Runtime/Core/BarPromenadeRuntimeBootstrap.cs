@@ -48,6 +48,10 @@ namespace BarPromenade
             {
                 EnsureHomeInteriorInstalled();
             }
+            else if (scene.name == SceneIds.StairwellInterior)
+            {
+                EnsureStairwellInteriorInstalled();
+            }
             else if (scene.name == SceneIds.DoorTransition)
             {
                 EnsureDoorTransitionInstalled();
@@ -131,6 +135,29 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Home Interior Runtime");
                 return root.AddComponent<HomeInteriorRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static StairwellInteriorRoot
+            EnsureStairwellInteriorInstalled()
+        {
+            StairwellInteriorRoot existing =
+                Object.FindAnyObjectByType<StairwellInteriorRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Stairwell Interior Runtime");
+                return root.AddComponent<StairwellInteriorRoot>();
             }
             finally
             {

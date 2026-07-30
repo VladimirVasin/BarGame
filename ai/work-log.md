@@ -2,6 +2,87 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Stairwell traversal, fixed-camera and lighting correction
+
+- Reproduced the blocked first flight through the real `PlayerMotor` path
+  instead of the earlier direct-`CharacterController` helper. The physical
+  ramp was sound, but independently radius-eroded walkable rectangles left a
+  gap at each floor/flight seam.
+- Extended the three stair navigation corridors into both adjacent landings by
+  more than the controller diameter and added dense radius-aware sampling over
+  the complete street-to-apartment route.
+- Added a stairwell-specific 3D fixed-camera selector because the lower and
+  blocked upper flights share XZ coordinates. Three hard-cut shots cover the
+  lower flight, middle/second flight and apartment landing; overlapping
+  vertical hold zones prevent rapid cuts at landing thresholds, and the
+  player billboard uses exact camera-plane alignment while the controller is
+  active.
+- Corrected the fluorescent fixtures: opaque housings no longer swallow the
+  emissive tubes, two sources were lowered into their camera frames, suspension
+  hardware was added, HDR output/halos were strengthened and the three
+  co-located flickering point lights received larger readable ranges.
+- Added PlayMode coverage using queued keyboard `W` through the actual motor,
+  camera-shot changes during the physical climb, per-shot emitter viewport
+  visibility, fixture separation/alignment and the unchanged upper blocker.
+- Stabilized one unrelated existing Home bed test discovered by the complete
+  run: queued `D` input now waits for the next player frame, matching the
+  other input assertions in that test instead of forcing a manual input update.
+- Updated current architecture, overview, system map/tree, README and release
+  notes to record the fixed navigation, cameras and visible practicals.
+
+Verification:
+
+- Stairwell layout/camera EditMode passed 7/7.
+- Stairwell presentation, real-motor seam traversal, physical climb/blocker
+  and complete home round trip passed 4/4.
+- Complete PlayMode passed 101/101.
+- Complete EditMode reported 527/531; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Runtime, Editor, EditModeTests and PlayModeTests projects each built with
+  0 errors and 0 warnings.
+- Windows build succeeded at `145532748` bytes with one package-owned URP
+  `Hidden/Core/DebugOccluder` shader warning.
+- `git diff --check` passed; Unity left no `InitTestScene` asset behind.
+
+## 2026-07-30 — Industrial home stairwell
+
+- Added `StairwellInterior` as the fifth runtime-composed build scene and
+  rerouted home travel through
+  `City -> StairwellInterior -> HomeInterior -> StairwellInterior -> City`.
+  A consumed side-aware arrival value places the player by the street or
+  apartment door without prematurely setting the City home-return state.
+- Added a validated three-elevation layout with a ground lobby, middle landing,
+  apartment landing and three stair flights. The 48 visible steps use three
+  invisible continuous ramp colliders so the `CharacterController` cannot
+  catch on individual riser seams.
+- Sealed the flight above the apartment floor with a full-width,
+  full-standing-height safety collider backed by a visible pile of furniture,
+  wire mesh, planks and sacks.
+- Built the decayed industrial-horror dressing from shared runtime primitives:
+  stained concrete, rusty rails, exposed pipes, ventilation, grilles,
+  electrical cabinets, radiators, damp damage and trash.
+- Added three bounded flickering practical lights, a green desaturated
+  Bloom/color/vignette/grain profile, at most 14 dust motes, and a dedicated
+  music-free procedural ventilation/mains/pipe/knock/drip ambience.
+- Added RU/EN building/apartment prompts, four distinct door-transition
+  directions, deterministic layout/state/audio coverage, full round-trip
+  scene-flow coverage and a physical PlayMode climb/blocker test.
+- Updated the scene helper, Build Settings, Windows scene list, README,
+  project overview, system tree/map, architecture notes and release notes.
+
+Verification:
+
+- Stairwell-focused EditMode passed 62/62.
+- Stairwell presentation, physical climb/blocker and complete home round trip
+  passed 3/3; complete PlayMode passed 100/100.
+- Complete EditMode reported 525/529; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Runtime, Editor, EditModeTests and PlayModeTests projects each built with
+  0 errors and 0 warnings.
+- Windows build succeeded at `145526908` bytes with one package-owned URP
+  `Hidden/Core/DebugOccluder` shader warning.
+- `git diff --check` passed.
+
 ## 2026-07-30 — PC-only quality/render configuration
 
 - Removed the unused `Mobile_RPAsset` and `Mobile_Renderer` assets after

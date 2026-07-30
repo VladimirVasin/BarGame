@@ -4,7 +4,9 @@ namespace BarPromenade
     {
         EnterBar,
         ExitBar,
-        EnterHome,
-        ExitHome
+        EnterBuilding,
+        ExitBuilding,
+        EnterApartment,
+        ExitApartment
     }
 }

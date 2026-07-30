@@ -7,7 +7,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in four explicit build scenes.
+  in five explicit build scenes.
 
 ## MVP decisions
 
@@ -47,12 +47,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `SpriteRenderer` components: body plus upper/lower segments for both arms
   and legs.
 - **Accepted — Explicit scene allow-list:** Only `City`, `DoorTransition`,
-  `BarInterior` and `HomeInterior` install their matching roots. Directly opening
-  `DoorTransition` installs an idle presentation root; only the transition
-  service initializes and plays it.
+  `BarInterior`, `HomeInterior` and `StairwellInterior` install their matching
+  roots. Directly opening `DoorTransition` installs an idle presentation root;
+  only the transition service initializes and plays it.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
-  state carries the seed, active bar context and explicit bar-or-home city
-  return kind between Single-mode scene loads.
+  state carries the seed, active bar context, explicit bar-or-home city return
+  kind and the next stairwell arrival side between Single-mode scene loads.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
   sequence, session/scene/seed context and explicit transition/minigame
@@ -61,7 +61,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and development runs default to verbose, release players to basic, and
   batch/command-line tests to off. Files rotate at 5 MiB with three retained
   archives, while `F8` writes and flushes a manual state snapshot.
-- **Accepted — Separate classic door transition:** Bar and home entrances/exits
+- **Accepted — Separate classic door transition:** Bar, home and stairwell doors
   reserve one transition guard for the complete
   `source -> DoorTransition -> destination` chain. The intermediate scene
   runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
@@ -79,9 +79,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   its cistern against the right wall and its bowl facing into the room. It
   reuses the common player, intoxication HUD, interaction and door-transition
   contracts while putting the single Main Camera into three authored fixed
-  poses with doorway/balcony hysteresis and a main-room fallback. Exiting sets the
-  home return kind and restores the matching city approach without altering
-  route, visit, cash or drinking progress.
+  poses with doorway/balcony hysteresis and a main-room fallback. Exiting sends
+  the player from the apartment into `StairwellInterior`; only the stairwell's
+  street door sets the home return kind and restores the matching city
+  approach, without altering route, visit, cash or drinking progress.
+- **Accepted — Separate vertical home stairwell:** The exterior home door and
+  apartment door connect through `StairwellInterior`, a deterministic
+  `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
+  elevations. Three continuous physical ramps support 48 collider-free visible
+  steps, while overlapping navigation corridors remain wider than the
+  controller diameter at every floor/flight seam; this keeps the real
+  `PlayerMotor` route continuous without changing the staircase silhouette.
+  A full-width, full-standing-height invisible safety collider backed by
+  visible furniture, mesh, planks and sacks seals the upward flight above the
+  hero's floor. Side-aware arrival state chooses the correct spawn; only the
+  street exit prepares the City home-return point. A separate 3D selector
+  hard-cuts the shared camera between lower-flight, middle-flight and
+  apartment-landing poses with vertical hold-zone hysteresis because the
+  lower and upper flights overlap in XZ. Each pose keeps its exposed suspended
+  HDR fluorescent tube and halo in frame; stronger co-located flickering
+  practicals, post-processing, bounded dust and a music-free
+  ventilation/electrical/pipe ambience remain scene-owned.
 - **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
   a real window and open glazed door connected to a walkable balcony at
   `4.7 m` street elevation. The room threshold and deck extend the same

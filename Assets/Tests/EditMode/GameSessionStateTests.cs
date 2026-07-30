@@ -132,6 +132,34 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(37));
         }
 
+        [Test]
+        public void StairwellArrival_IsConsumedAndResetsToStreetDoor()
+        {
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.ApartmentDoor);
+
+            Assert.That(
+                GameSessionState.StairwellArrival,
+                Is.EqualTo(StairwellArrivalKind.ApartmentDoor));
+            Assert.That(
+                GameSessionState.ConsumeStairwellArrival(),
+                Is.EqualTo(StairwellArrivalKind.ApartmentDoor));
+            Assert.That(
+                GameSessionState.StairwellArrival,
+                Is.EqualTo(StairwellArrivalKind.StreetDoor));
+            Assert.That(
+                GameSessionState.ConsumeStairwellArrival(),
+                Is.EqualTo(StairwellArrivalKind.StreetDoor));
+        }
+
+        [Test]
+        public void StairwellArrival_RejectsUnknownValue()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => GameSessionState.PrepareStairwellArrival(
+                    (StairwellArrivalKind)99));
+        }
+
         [TestCase(null)]
         [TestCase("")]
         public void MissingBarId_CannotCreateReturnDestination(string barId)
@@ -542,6 +570,7 @@ namespace BarPromenade.Tests.EditMode
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.ConsumeStairwellArrival();
         }
     }
 }

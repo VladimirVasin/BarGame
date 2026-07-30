@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/Scenes/BarInterior.unity
     guid: 3cbcaf0a033876d489552a2da0a8aaab
   - enabled: 1
+    path: Assets/Scenes/StairwellInterior.unity
+    guid: 974119a3606c7de4a95d18a1d907f9a6
+  - enabled: 1
     path: Assets/Scenes/HomeInterior.unity
     guid: 105b407cad1c4fabb4697d7abafb4396
   m_configObjects:
