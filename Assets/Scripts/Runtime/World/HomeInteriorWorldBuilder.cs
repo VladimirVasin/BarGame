@@ -14,6 +14,8 @@ namespace BarPromenade
             new Color(0.115f, 0.085f, 0.065f);
         private static readonly Color Wall =
             new Color(0.255f, 0.225f, 0.175f);
+        private static readonly Color Ceiling =
+            new Color(0.16f, 0.14f, 0.11f);
         private static readonly Color Trim =
             new Color(0.37f, 0.27f, 0.16f);
         private static readonly Color DarkWood =
@@ -27,16 +29,55 @@ namespace BarPromenade
             Transform parent,
             HomeInteriorLayoutPlan plan)
         {
+            return Build(
+                parent,
+                plan,
+                null,
+                null);
+        }
+
+        public static Transform Build(
+            Transform parent,
+            HomeInteriorLayoutPlan plan,
+            HomeBalconyLayoutPlan balcony)
+        {
+            return Build(
+                parent,
+                plan,
+                balcony,
+                null);
+        }
+
+        public static Transform Build(
+            Transform parent,
+            HomeInteriorLayoutPlan plan,
+            HomeBalconyLayoutPlan balcony,
+            HomeExteriorContextPlan exterior)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
             }
 
             HomeInteriorLayoutValidator.ValidateOrThrow(plan);
+            if (balcony != null)
+            {
+                HomeBalconyLayoutValidator.ValidateOrThrow(
+                    plan,
+                    balcony);
+            }
+
+            if (exterior != null && balcony == null)
+            {
+                throw new ArgumentException(
+                    "A home exterior view requires a balcony layout.",
+                    nameof(exterior));
+            }
+
             Transform room =
                 new GameObject("Home Interior").transform;
             room.SetParent(parent, false);
-            BuildShell(room, plan);
+            BuildShell(room, plan, balcony);
             BuildPracticalFixtures(room);
             for (int index = 0;
                  index < plan.Furniture.Count;
@@ -58,16 +99,34 @@ namespace BarPromenade
 
             HomeBathroomBuilder.Build(room, plan);
             HomeInteriorDressingBuilder.Build(room, plan);
+            if (balcony != null)
+            {
+                HomeBalconyWorldBuilder.Build(
+                    room,
+                    plan,
+                    balcony);
+            }
+
+            if (exterior != null)
+            {
+                HomeExteriorViewBuilder.Build(
+                    room,
+                    balcony,
+                    exterior);
+            }
+
             return room;
         }
 
         private static void BuildShell(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeBalconyLayoutPlan balcony)
         {
             float halfWidth = plan.RoomSize.x * 0.5f;
             float halfDepth = plan.RoomSize.y * 0.5f;
-            const float wallThickness = 0.24f;
+            float wallThickness =
+                PlayerHomeBalconyGeometry.WallThickness;
             RuntimePrimitiveFactory.CreateBox(
                 "Home Floor",
                 room,
@@ -77,6 +136,28 @@ namespace BarPromenade
                     0.16f,
                     plan.RoomSize.y),
                 Floor);
+            GameObject ceiling =
+                RuntimePrimitiveFactory.CreateBox(
+                    "Home Ceiling",
+                    room,
+                    new Vector3(
+                        0f,
+                        plan.RoomHeight + 0.04f,
+                        0f),
+                    new Vector3(
+                        plan.RoomSize.x +
+                        wallThickness * 2f,
+                        0.16f,
+                        plan.RoomSize.y +
+                        wallThickness * 2f),
+                    Ceiling,
+                    false);
+            Renderer ceilingRenderer =
+                ceiling.GetComponent<Renderer>();
+            ceilingRenderer.shadowCastingMode =
+                UnityEngine.Rendering
+                    .ShadowCastingMode.Off;
+            ceilingRenderer.receiveShadows = false;
             RuntimePrimitiveFactory.CreateBox(
                 "Home Back Wall",
                 room,
@@ -101,18 +182,30 @@ namespace BarPromenade
                     plan.RoomHeight,
                     plan.RoomSize.y),
                 Wall);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Right Wall",
-                room,
-                new Vector3(
-                    halfWidth,
-                    plan.RoomHeight * 0.5f,
-                    0f),
-                new Vector3(
-                    wallThickness,
-                    plan.RoomHeight,
-                    plan.RoomSize.y),
-                Wall);
+            if (balcony == null)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    "Home Right Wall",
+                    room,
+                    new Vector3(
+                        halfWidth,
+                        plan.RoomHeight * 0.5f,
+                        0f),
+                    new Vector3(
+                        wallThickness,
+                        plan.RoomHeight,
+                        plan.RoomSize.y),
+                    Wall);
+            }
+            else
+            {
+                BuildBalconyFacadeWall(
+                    room,
+                    plan,
+                    balcony,
+                    halfDepth,
+                    wallThickness);
+            }
             RuntimePrimitiveFactory.CreateBox(
                 "Home Entry Wall Left",
                 room,
@@ -149,6 +242,56 @@ namespace BarPromenade
                     0.76f,
                     wallThickness),
                 Trim);
+            const float entryOpeningHalfWidth = 1.30f;
+            const float exitDoorWidth = 1.60f;
+            const float exitDoorHeight = 2.30f;
+            const float entryLintelBottom = 2.64f;
+            float sideInfillWidth =
+                entryOpeningHalfWidth -
+                exitDoorWidth * 0.5f;
+            float sideInfillCenter =
+                exitDoorWidth * 0.5f +
+                sideInfillWidth * 0.5f;
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Wall Left Door Infill",
+                room,
+                new Vector3(
+                    -sideInfillCenter,
+                    entryLintelBottom * 0.5f,
+                    -halfDepth),
+                new Vector3(
+                    sideInfillWidth,
+                    entryLintelBottom,
+                    wallThickness),
+                Wall);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Wall Right Door Infill",
+                room,
+                new Vector3(
+                    sideInfillCenter,
+                    entryLintelBottom * 0.5f,
+                    -halfDepth),
+                new Vector3(
+                    sideInfillWidth,
+                    entryLintelBottom,
+                    wallThickness),
+                Wall);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Door Transom Infill",
+                room,
+                new Vector3(
+                    0f,
+                    exitDoorHeight +
+                    (entryLintelBottom -
+                     exitDoorHeight) *
+                    0.5f,
+                    -halfDepth),
+                new Vector3(
+                    exitDoorWidth,
+                    entryLintelBottom -
+                    exitDoorHeight,
+                    wallThickness),
+                Wall);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Entry Rug",
                 room,
@@ -166,8 +309,14 @@ namespace BarPromenade
             RuntimePrimitiveFactory.CreateBox(
                 "Home Exit Door",
                 room,
-                new Vector3(0f, 1.15f, -3.86f),
-                new Vector3(1.55f, 2.30f, 0.12f),
+                new Vector3(
+                    0f,
+                    exitDoorHeight * 0.5f,
+                    -3.86f),
+                new Vector3(
+                    exitDoorWidth,
+                    exitDoorHeight,
+                    0.12f),
                 DarkWood,
                 false);
             RuntimePrimitiveFactory.CreateBox(
@@ -177,6 +326,189 @@ namespace BarPromenade
                 new Vector3(0.54f, 0.72f, 0.025f),
                 new Color(0.21f, 0.125f, 0.072f),
                 false);
+        }
+
+        private static void BuildBalconyFacadeWall(
+            Transform room,
+            HomeInteriorLayoutPlan plan,
+            HomeBalconyLayoutPlan balcony,
+            float halfDepth,
+            float wallThickness)
+        {
+            float facadeX =
+                PlayerHomeBalconyGeometry.HomeFacadeX;
+            float windowMinimum =
+                balcony.WindowCenter.z -
+                balcony.WindowSize.z * 0.5f;
+            float windowMaximum =
+                balcony.WindowCenter.z +
+                balcony.WindowSize.z * 0.5f;
+            float doorMinimum =
+                balcony.DoorCenter.z -
+                balcony.DoorSize.z * 0.5f;
+            float doorMaximum =
+                balcony.DoorCenter.z +
+                balcony.DoorSize.z * 0.5f;
+
+            CreateFacadePier(
+                "Home Right Wall South Pier",
+                room,
+                facadeX,
+                -halfDepth,
+                windowMinimum,
+                plan.RoomHeight,
+                wallThickness);
+            CreateFacadePier(
+                "Home Right Wall Middle Pier",
+                room,
+                facadeX,
+                windowMaximum,
+                doorMinimum,
+                plan.RoomHeight,
+                wallThickness);
+            CreateFacadePier(
+                "Home Right Wall North Pier",
+                room,
+                facadeX,
+                doorMaximum,
+                halfDepth,
+                plan.RoomHeight,
+                wallThickness);
+
+            float windowBottom =
+                balcony.WindowCenter.y -
+                balcony.WindowSize.y * 0.5f;
+            float windowTop =
+                balcony.WindowCenter.y +
+                balcony.WindowSize.y * 0.5f;
+            CreateFacadeHorizontalSegment(
+                "Home Right Wall Window Sill",
+                room,
+                facadeX,
+                balcony.WindowCenter.z,
+                windowBottom,
+                balcony.WindowSize.z,
+                wallThickness);
+            CreateFacadeHorizontalSegment(
+                "Home Right Wall Window Lintel",
+                room,
+                facadeX,
+                balcony.WindowCenter.z,
+                plan.RoomHeight - windowTop,
+                balcony.WindowSize.z,
+                wallThickness,
+                windowTop);
+            CreateFacadeHorizontalSegment(
+                "Home Right Wall Door Lintel",
+                room,
+                facadeX,
+                balcony.DoorCenter.z,
+                plan.RoomHeight - balcony.DoorSize.y,
+                balcony.DoorSize.z,
+                wallThickness,
+                balcony.DoorSize.y);
+
+            float exteriorReturnDepth =
+                PlayerHomeBalconyGeometry.BalconyDepth +
+                0.65f;
+            CreateExteriorReturnWall(
+                "Home South Exterior Return Wall",
+                room,
+                facadeX,
+                -halfDepth,
+                plan.RoomHeight,
+                exteriorReturnDepth,
+                wallThickness);
+            CreateExteriorReturnWall(
+                "Home North Exterior Return Wall",
+                room,
+                facadeX,
+                halfDepth,
+                plan.RoomHeight,
+                exteriorReturnDepth,
+                wallThickness);
+        }
+
+        private static void CreateExteriorReturnWall(
+            string name,
+            Transform room,
+            float facadeX,
+            float z,
+            float roomHeight,
+            float depth,
+            float wallThickness)
+        {
+            RuntimePrimitiveFactory.CreateBox(
+                name,
+                room,
+                new Vector3(
+                    facadeX + depth * 0.5f,
+                    roomHeight * 0.5f,
+                    z),
+                new Vector3(
+                    depth,
+                    roomHeight,
+                    wallThickness),
+                Wall,
+                false);
+        }
+
+        private static void CreateFacadePier(
+            string name,
+            Transform room,
+            float facadeX,
+            float minimumZ,
+            float maximumZ,
+            float roomHeight,
+            float wallThickness)
+        {
+            float depth = maximumZ - minimumZ;
+            if (depth <= 0f)
+            {
+                return;
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                name,
+                room,
+                new Vector3(
+                    facadeX,
+                    roomHeight * 0.5f,
+                    (minimumZ + maximumZ) * 0.5f),
+                new Vector3(
+                    wallThickness,
+                    roomHeight,
+                    depth),
+                Wall);
+        }
+
+        private static void CreateFacadeHorizontalSegment(
+            string name,
+            Transform room,
+            float facadeX,
+            float centerZ,
+            float height,
+            float depth,
+            float wallThickness,
+            float bottom = 0f)
+        {
+            if (height <= 0f)
+            {
+                return;
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                name,
+                room,
+                new Vector3(
+                    facadeX,
+                    bottom + height * 0.5f,
+                    centerZ),
+                new Vector3(
+                    wallThickness,
+                    height,
+                    depth),
+                Wall);
         }
 
         private static void BuildPracticalFixtures(

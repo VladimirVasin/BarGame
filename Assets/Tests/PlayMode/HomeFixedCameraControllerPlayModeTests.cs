@@ -225,6 +225,20 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(HomeCameraShotKind.MainRoom),
                 "Floor outside the bathroom shot must fall back to the " +
                 "main-room camera even when the previous shot was the bathroom.");
+            Assert.That(
+                teleportedSelector.Select(
+                    new Vector3(6.20f, 0f, -1.40f)).Kind,
+                Is.EqualTo(HomeCameraShotKind.Balcony),
+                "A direct teleport onto the balcony must choose its exterior shot.");
+            Assert.That(
+                teleportedSelector.Select(
+                    new Vector3(5.05f, 0f, -1.40f)).Kind,
+                Is.EqualTo(HomeCameraShotKind.Balcony),
+                "The balcony shot must retain ownership through the doorway margin.");
+            Assert.That(
+                teleportedSelector.Select(
+                    new Vector3(4.60f, 0f, -1.40f)).Kind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
         }
 
         [Test]
@@ -392,6 +406,35 @@ namespace BarPromenade.Tests.PlayMode
                 camera,
                 follow,
                 shots[1]);
+
+            target.position =
+                new Vector3(6.20f, target.position.y, -1.40f);
+            yield return null;
+            Assert.That(
+                controller.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.Balcony));
+            AssertShotApplied(
+                camera,
+                follow,
+                shots[2]);
+
+            target.position =
+                new Vector3(5.05f, target.position.y, -1.40f);
+            yield return null;
+            Assert.That(
+                controller.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.Balcony));
+
+            target.position =
+                new Vector3(4.60f, target.position.y, -1.40f);
+            yield return null;
+            Assert.That(
+                controller.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            AssertShotApplied(
+                camera,
+                follow,
+                shots[0]);
         }
 
         private PlayerCameraFollow CreateFollow(
@@ -437,7 +480,14 @@ namespace BarPromenade.Tests.PlayMode
                     new Rect(-2.2f, 2.8f, 4.4f, 2.6f),
                     new Vector3(1.7f, 102.8f, 4.8f),
                     Quaternion.Euler(18f, -142f, 0f),
-                    50f)
+                    50f),
+                new HomeCameraShot(
+                    HomeCameraShotKind.Balcony,
+                    new Rect(5.2f, -3.2f, 2.3f, 3.4f),
+                    new Rect(4.9f, -3.5f, 2.9f, 4f),
+                    new Vector3(3.6f, 103.1f, -3.55f),
+                    Quaternion.Euler(24f, 55f, 0f),
+                    70f)
             };
         }
 

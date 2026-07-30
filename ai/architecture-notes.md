@@ -27,8 +27,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   generated bar, one non-bar building lot becomes the player home. Selection
   prefers a residential lot facing the same street as a bar and validates a
   maximum traversable approach distance of `48 m`; stable hashes keep the
-  result deterministic. A fresh city starts on that home's frontage node.
-  Bar-free custom layouts retain the central-road fallback and no home.
+  result deterministic. The default home mass is `8.8 m` tall and its City
+  facade uses the shared third-floor balcony/window/door geometry. A fresh
+  city starts on that home's frontage node. Bar-free custom layouts retain
+  the central-road fallback and no home.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
   park-lawn rectangles. The park connects to surrounding streets through four
@@ -76,18 +78,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   blocking junk owns the otherwise reachable camera corner; the toilet keeps
   its cistern against the right wall and its bowl facing into the room. It
   reuses the common player, intoxication HUD, interaction and door-transition
-  contracts while putting the single Main Camera into two authored fixed
-  poses with doorway hysteresis and a main-room fallback. Exiting sets the
+  contracts while putting the single Main Camera into three authored fixed
+  poses with doorway/balcony hysteresis and a main-room fallback. Exiting sets the
   home return kind and restores the matching city approach without altering
   route, visit, cash or drinking progress.
+- **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
+  a real window and open glazed door connected to a walkable balcony at
+  `4.7 m` street elevation. The room threshold and deck extend the same
+  `RoadWalkableArea`; open-looking rails retain invisible safety colliders.
+  `HomeInterior` does not additively load `City`: it regenerates the city plan
+  from the preserved seed, transforms only a bounded slice of the player-home
+  street into Home-local coordinates and renders nearby roads, lots, stable
+  windows, lamps and signals without collision, a second City root, player,
+  camera or realtime street-light pool. One shared geometry contract keeps
+  the Home opening and default `8.8 m` City facade balcony aligned.
 - **Accepted — Diegetic Home practicals and fixed sprite plane:** The Home
-  atmosphere owns exactly two shadowless realtime lights. A visible HDR
-  emitter and depth-tested halo are physically co-located with each light so
-  the warm hanging lamp and cold bathroom tube read as actual sources. During
-  Home fixed-camera ownership only, `BillboardSprite` aligns to
+  atmosphere retains exactly two shadowless practical realtime lights. A
+  visible HDR emitter and depth-tested halo are physically co-located with
+  each practical so the warm hanging lamp and cold bathroom tube read as
+  actual sources. One separate cold shadowed cookie Spot projects through the
+  window, and window/door panes reuse one shared transparent glass
+  shader/material. During Home fixed-camera ownership only,
+  `BillboardSprite` aligns to
   `-camera.forward` and `camera.up` instead of a yaw-only billboard, preserving
-  the authored `64 x 96` aspect at steep FOVs; disabling or destroying the
-  controller restores the shared default billboard behavior.
+  the authored `64 x 96` aspect across the main-room, bathroom and third
+  balcony shots; disabling or destroying the controller restores the shared
+  default billboard behavior.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
   scene loads for the same city. A terminal bar activity reports completion

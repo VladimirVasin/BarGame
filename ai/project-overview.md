@@ -74,6 +74,9 @@ The vertical slice contains:
   least `120 m` apart by traversable graph distance, while stable row-major
   order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
   Row;
+- a default `8.8 m` player-home mass with a recognizable third-floor balcony,
+  open door and window; the City facade uses the same balcony geometry as the
+  Home interior's exterior opening;
 - a fresh city session starts on the road node beside the deterministic player
   home and its neighboring bar, `12 m` from their shared street approach under
   default spacing; returning from either interior restores that entrance's own
@@ -153,10 +156,16 @@ The vertical slice contains:
 - one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
   and bathroom zones, clear entry/main/bathroom paths, six main-room furniture
   groups and separate toilet, shower and sink footprints; its runtime-built
-  shell, stained surfaces, boarded window, dirty dishes, bottles, cans,
+  shell, stained surfaces, dirty dishes, bottles, cans,
   ashtray, worn clothes, newspapers, old radio and personal remnants establish
   a neglected impoverished old alcoholic's bachelor flat, while the dedicated
   blocking camera-corner junk keeps the authored camera pocket unreachable;
+- a real window and open glazed door in the Home right wall leading, without
+  another scene load, onto a walkable third-floor balcony at `4.7 m` street
+  elevation; open-looking rails retain invisible safety colliders, while the
+  view rebuilds only a bounded same-seed slice of the actual street's roads,
+  lots, windows, lamps and signals and never creates a second City root,
+  player, camera or realtime street-light pool;
 - one reusable animated-interaction timeline and player controller with
   `Idle -> Entering -> Looping -> Exiting` phases; its outer presentation root
   stays camera-facing while an inner visual preserves authored handedness and
@@ -185,17 +194,20 @@ The vertical slice contains:
   leak stains and floor drain; the toilet cistern sits against the right wall
   and its bowl faces into the room;
 - one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
-  exactly two shadowless practical pools whose visible HDR emitters and halos
-  are physically aligned with their lights—a dirty-yellow hanging lamp and a
-  cold bathroom tube—a restrained Bloom/color/exposure/vignette/film-grain
-  runtime volume, at most 12 sparse dust motes and the dedicated procedural
+  exactly two unchanged shadowless practical pools whose visible HDR emitters
+  and halos are physically aligned with their lights—a dirty-yellow hanging
+  lamp and a cold bathroom tube—plus one cold shadowed cookie Spot projecting
+  night light through the window, a shared transparent glass shader/material,
+  a restrained Bloom/color/exposure/vignette/film-grain runtime volume, at
+  most 12 sparse dust motes and the dedicated procedural
   refrigerator/mains/pipe/drip ambience;
 - one Main Camera that hard-cuts between the user-approved main-room pose at
   `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)` and `64°` FOV and the
   bathroom pose at `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°`
-  FOV; separate activation and wider hold bounds provide threshold hysteresis,
-  while each fixed position ignores orbit/follow input and retains only
-  quarter-strength intoxication, balance and fall rotation;
+  FOV, plus a third balcony shot; separate activation and wider hold bounds
+  provide threshold hysteresis, while each fixed position ignores
+  orbit/follow input and retains only quarter-strength intoxication, balance
+  and fall rotation;
 - while the Home fixed-camera controller is active, the nine-layer
   `BillboardSprite` opts into exact camera-plane alignment using
   `-camera.forward` and `camera.up`; this preserves the authored `64 x 96`

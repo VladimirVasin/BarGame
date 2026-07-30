@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### 2026-07-30 — Window and walkable third-floor balcony
+
+- Replaced the black right side of the Home interior with a real window and an
+  open glazed door leading onto a balcony in the same scene.
+- The balcony is fully walkable at third-floor height and overlooks the same
+  seeded street as the exterior home. Its open rails keep their light
+  silhouette while an invisible safety boundary prevents accidental falls.
+- Nearby roads, buildings, lit windows, lamps and signals now continue beyond
+  the room instead of ending in darkness; the City version of the home has the
+  matching balcony facade.
+- A cold, shadowed shaft of night light enters through the window, while the
+  existing warm room lamp and cold bathroom tube keep their previous lighting.
+  The window and door use shared transparent glass.
+- Added a dedicated fixed camera shot that takes over when the hero steps
+  through the door and onto the balcony.
+- Sealed unintended ceiling, side-wall and front-entry gaps, removed the stray
+  orange exit marker from the camera edge, and kept exterior scenery strictly
+  outside the facade without changing the window, open door or walkable
+  balcony.
+
 ### 2026-07-30 — Animated sleep at home
 
 - The bed in the Home interior is now interactive from its open side. Press

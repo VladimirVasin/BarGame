@@ -2,6 +2,66 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Home balcony wall-leak correction
+
+- Clipped the Home exterior presentation to
+  `x >= HomeFacadeX + WallThickness / 2 + 0.01`: ground, roads, haze,
+  buildings and windows now stay outside the facade, while lamps and signals
+  use an additional wall-clearance filter.
+- Added an opaque collider-free ceiling plus south/north return walls to close
+  the remaining shell gaps without changing the window, open door or walkable
+  balcony.
+- Removed the obsolete emissive `Home Exit Header` that projected into the
+  upper-right camera edge and sealed the `0.50 m` side gaps plus `0.34 m`
+  transom gap around the front city-exit door with opaque wall sections.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests .NET builds completed with 0 errors
+  and 0 warnings.
+- Focused `HomeBalconyLayoutTests` EditMode coverage passed 8/8.
+- Focused `HomeBalconyPresentationPlayModeTests` and
+  `HomeInteriorPresentationPlayModeTests` passed 2/2; the follow-up front-entry
+  correction and Home-to-City transition coverage passed 3/3.
+- Inspected a `1516x824` D3D control render matching the reported frame: the
+  orange corner marker and unintended street sightline were absent.
+
+## 2026-07-30 — Same-scene third-floor Home balcony
+
+- Replaced the black Home right wall with a real window and open glazed door
+  leading directly to a walkable balcony at `4.7 m` street elevation without
+  loading another scene.
+- Extended the validated Home walkable mask through the doorway threshold and
+  across the balcony deck. Open-looking rails retain invisible solid safety
+  colliders so the player can occupy the exterior space without falling.
+- Reconstructed a bounded view of the actual player-home street from the
+  preserved city seed: nearby roads, lots, stable windows, lamps and signals
+  are transformed into Home-local coordinates without spawning a second City
+  root, player, camera or realtime street-light pool.
+- Added the matching balcony/window/door treatment to the generated City home
+  facade and raised its default mass to `8.8 m`, with shared transform and
+  dimension helpers keeping both representations aligned.
+- Added one cold shadowed cookie Spot aimed through the window while preserving
+  exactly the two existing shadowless practical lights. Window and door panes
+  reuse one shared transparent URP glass shader/material.
+- Added a third fixed Home camera shot for the balcony and expanded data-first,
+  scene-presentation, lighting, glass, collider and camera regressions.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests compilation completed with
+  0 errors and 0 warnings.
+- Focused EditMode coverage passed 35/35; focused PlayMode coverage passed 9/9.
+- Inspected the D3D visual capture of the finished window, directed night
+  light, exterior street and balcony presentation.
+- Complete EditMode passed 516/520; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Complete PlayMode reported 94 passed, 1 failed and 3 skipped; the sole
+  failure was the pre-existing batch-input second-`E` assertion in
+  `HomeBedInteractionPlayModeTests`.
+- Windows build succeeded at `145488227` bytes with 0 warnings.
+- `git diff --check` passed.
+
 ## 2026-07-30 — Animated bed sleep interaction
 
 - Added a reusable frame-rate-independent animated-interaction timeline with

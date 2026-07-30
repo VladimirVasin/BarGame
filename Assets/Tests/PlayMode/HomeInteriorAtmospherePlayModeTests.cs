@@ -36,14 +36,136 @@ namespace BarPromenade.Tests.PlayMode
             Light mainLight = atmosphere.PracticalLights[0];
             Light bathroomLight =
                 atmosphere.PracticalLights[1];
-            AssertPracticalLight(mainLight, 3.75f);
-            AssertPracticalLight(bathroomLight, 2.4f);
+            AssertPracticalLight(
+                mainLight,
+                new Vector3(-2.35f, 2.00f, 0.45f),
+                new Color(0.95f, 0.52f, 0.22f),
+                3.50f,
+                6.0f);
+            AssertPracticalLight(
+                bathroomLight,
+                new Vector3(3.15f, 2.04f, 3.38f),
+                new Color(0.52f, 0.68f, 0.72f),
+                2.20f,
+                4.0f);
             Assert.That(
                 mainLight.color.r,
                 Is.GreaterThan(mainLight.color.b));
             Assert.That(
                 bathroomLight.color.b,
                 Is.GreaterThan(bathroomLight.color.r));
+
+            Light windowLight = atmosphere.WindowLight;
+            Assert.That(windowLight, Is.Not.Null);
+            Assert.That(windowLight.enabled, Is.True);
+            Assert.That(
+                windowLight.type,
+                Is.EqualTo(LightType.Spot));
+            Assert.That(
+                windowLight.shadows,
+                Is.EqualTo(LightShadows.Hard));
+            Assert.That(
+                windowLight.renderMode,
+                Is.EqualTo(LightRenderMode.ForcePixel));
+            Assert.That(
+                windowLight.transform.localPosition.x,
+                Is.GreaterThan(
+                    PlayerHomeBalconyGeometry.HomeFacadeX));
+            Vector3 windowDirection =
+                windowLight.transform.localRotation *
+                Vector3.forward;
+            Assert.That(
+                Vector3.Dot(windowDirection, Vector3.left),
+                Is.GreaterThan(0.85f),
+                "The window light must face inward from the +X facade.");
+            Assert.That(
+                windowDirection.y,
+                Is.LessThan(-0.15f));
+            Assert.That(
+                windowLight.color.b,
+                Is.GreaterThan(windowLight.color.g)
+                    .And.GreaterThan(windowLight.color.r));
+            Assert.That(
+                windowLight.intensity,
+                Is.InRange(4.5f, 6.0f));
+            Assert.That(
+                windowLight.range,
+                Is.InRange(8f, 14f));
+            Assert.That(
+                windowLight.innerSpotAngle,
+                Is.GreaterThan(0f)
+                    .And.LessThan(windowLight.spotAngle));
+            Assert.That(
+                windowLight.spotAngle,
+                Is.InRange(45f, 75f));
+
+            Texture2D cookie =
+                HomeBalconyResources.WindowLightCookie;
+            Assert.That(windowLight.cookie, Is.SameAs(cookie));
+            Assert.That(
+                HomeBalconyResources.WindowLightCookie,
+                Is.SameAs(cookie),
+                "The window cookie must be generated only once.");
+            Assert.That(
+                cookie.width,
+                Is.EqualTo(
+                    HomeBalconyResources
+                        .WindowLightCookieResolution));
+            Assert.That(cookie.height, Is.EqualTo(cookie.width));
+            Assert.That(
+                cookie.wrapMode,
+                Is.EqualTo(TextureWrapMode.Clamp));
+            Assert.That(
+                cookie.GetPixel(0, 0).grayscale,
+                Is.LessThan(0.01f));
+            Assert.That(
+                cookie.GetPixel(16, 20).grayscale,
+                Is.GreaterThan(0.85f));
+            Assert.That(
+                cookie.GetPixel(
+                        cookie.width / 2,
+                        20)
+                    .grayscale,
+                Is.LessThan(0.01f),
+                "The generated cookie must preserve its vertical mullion.");
+
+            Light[] ownedLights =
+                atmosphere.GetComponentsInChildren<Light>();
+            Assert.That(
+                ownedLights,
+                Has.Length.EqualTo(
+                    HomeInteriorAtmosphere
+                        .MaximumRealtimeLights));
+            Assert.That(
+                ownedLights.Length,
+                Is.LessThanOrEqualTo(3));
+            Assert.That(
+                atmosphere.PracticalLights[0],
+                Is.Not.SameAs(windowLight),
+                "The window beam is separate from the two practicals.");
+            Assert.That(
+                atmosphere.PracticalLights[1],
+                Is.Not.SameAs(windowLight),
+                "The window beam is separate from the two practicals.");
+
+            Material glass =
+                HomeBalconyResources.GlassMaterial;
+            Assert.That(glass, Is.Not.Null);
+            Assert.That(
+                HomeBalconyResources.GlassMaterial,
+                Is.SameAs(glass),
+                "Every pane must reuse one shared glass material.");
+            Assert.That(glass.shader, Is.Not.Null);
+            Assert.That(
+                glass.shader.name,
+                Is.EqualTo(
+                    "Bar Promenade/Home Window Glass"));
+            Assert.That(
+                glass.GetTag("RenderType", false),
+                Is.EqualTo("Transparent"));
+            Assert.That(
+                glass.renderQueue,
+                Is.GreaterThanOrEqualTo(3000));
 
             Assert.That(
                 atmosphere.PostProcessVolume,
@@ -159,7 +281,10 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertPracticalLight(
             Light light,
-            float maximumIntensity)
+            Vector3 expectedPosition,
+            Color expectedColor,
+            float expectedIntensity,
+            float expectedRange)
         {
             Assert.That(light, Is.Not.Null);
             Assert.That(light.enabled, Is.True);
@@ -170,9 +295,24 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(LightRenderMode.ForcePixel));
             Assert.That(
                 light.intensity,
-                Is.GreaterThan(0f)
-                    .And.LessThanOrEqualTo(maximumIntensity));
-            Assert.That(light.range, Is.GreaterThan(0f));
+                Is.EqualTo(expectedIntensity).Within(0.001f));
+            Assert.That(
+                light.range,
+                Is.EqualTo(expectedRange).Within(0.001f));
+            Assert.That(
+                Vector3.Distance(
+                    light.transform.localPosition,
+                    expectedPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                light.color.r,
+                Is.EqualTo(expectedColor.r).Within(0.001f));
+            Assert.That(
+                light.color.g,
+                Is.EqualTo(expectedColor.g).Within(0.001f));
+            Assert.That(
+                light.color.b,
+                Is.EqualTo(expectedColor.b).Within(0.001f));
         }
     }
 }

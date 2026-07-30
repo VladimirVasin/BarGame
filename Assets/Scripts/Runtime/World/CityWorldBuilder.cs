@@ -37,6 +37,10 @@ namespace BarPromenade
         private static readonly Color HomeTrim = new Color(0.66f, 0.82f, 0.80f);
         private static readonly Color HomeDoor =
             new Color(0.08f, 0.20f, 0.22f);
+        private static readonly Color HomeBalconyConcrete =
+            new Color(0.27f, 0.31f, 0.30f);
+        private static readonly Color HomeBalconyRail =
+            new Color(0.18f, 0.25f, 0.25f);
 
         public static CityWorldResult Build(
             Transform parent,
@@ -477,6 +481,7 @@ namespace BarPromenade
                 BuildHomeFront(
                     building,
                     lot,
+                    emissiveMaterial,
                     walkableArea,
                     ref playerHome);
                 return;
@@ -662,16 +667,20 @@ namespace BarPromenade
                         0.035f);
                 }
 
-                BuildWindowRow(
-                    parent,
-                    "Front Windows",
-                    frontPosition,
-                    windowSize,
-                    lot,
-                    citySeed,
-                    floor,
-                    0,
-                    emissiveMaterial);
+                if (ShouldBuildGenericFrontWindowRow(lot, y))
+                {
+                    BuildWindowRow(
+                        parent,
+                        "Front Windows",
+                        frontPosition,
+                        windowSize,
+                        lot,
+                        citySeed,
+                        floor,
+                        0,
+                        emissiveMaterial);
+                }
+
                 BuildWindowRow(
                     parent,
                     "Back Windows",
@@ -683,6 +692,37 @@ namespace BarPromenade
                     1,
                     emissiveMaterial);
             }
+        }
+
+        internal static bool ShouldBuildGenericFrontWindowRow(
+            BuildingLot lot,
+            float centerY)
+        {
+            if (lot == null)
+            {
+                throw new ArgumentNullException(nameof(lot));
+            }
+
+            if (!lot.IsPlayerHome ||
+                !PlayerHomeBalconyGeometry.SupportsThirdFloor(
+                    lot.Height))
+            {
+                return true;
+            }
+
+            const float genericWindowHalfHeight = 0.35f;
+            float openingBottom =
+                PlayerHomeBalconyGeometry.ApartmentFloorElevation;
+            float openingTop =
+                PlayerHomeBalconyGeometry.ApartmentFloorElevation +
+                Mathf.Max(
+                    PlayerHomeBalconyGeometry.DoorHeight,
+                    PlayerHomeBalconyGeometry.WindowCenterY +
+                    PlayerHomeBalconyGeometry.WindowHeight * 0.5f);
+            return centerY + genericWindowHalfHeight <=
+                   openingBottom ||
+                   centerY - genericWindowHalfHeight >=
+                   openingTop;
         }
 
         private static void BuildWindowRow(
@@ -855,6 +895,7 @@ namespace BarPromenade
         private static void BuildHomeFront(
             Transform parent,
             BuildingLot lot,
+            Material emissiveMaterial,
             RoadWalkableArea walkableArea,
             ref HomeEntrance playerHome)
         {
@@ -870,6 +911,10 @@ namespace BarPromenade
                 ? new Vector3(0.12f, 2.15f, 1.35f)
                 : new Vector3(1.35f, 2.15f, 0.12f);
 
+            BuildHomeBalconyFacade(
+                parent,
+                lot,
+                emissiveMaterial);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Door",
                 parent,
@@ -969,6 +1014,321 @@ namespace BarPromenade
                 entranceObject.AddComponent<HomeEntrance>();
             playerHome.Configure(
                 lot.ReturnPosition + (Vector3.up * 0.12f));
+        }
+
+        internal static void BuildHomeBalconyFacade(
+            Transform parent,
+            BuildingLot lot,
+            Material emissiveMaterial)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            PlayerHomeBalconyGeometry.GetFrontageDirection(lot);
+            if (!PlayerHomeBalconyGeometry.SupportsThirdFloor(
+                    lot.Height))
+            {
+                return;
+            }
+
+            CreateHomeBalconyBox(
+                "Home Balcony Slab",
+                parent,
+                lot,
+                new Vector3(
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    PlayerHomeBalconyGeometry.BalconyDepth * 0.5f,
+                    -PlayerHomeBalconyGeometry
+                        .BalconySlabThickness * 0.5f,
+                    PlayerHomeBalconyGeometry.BalconyCenterZ),
+                new Vector3(
+                    PlayerHomeBalconyGeometry.BalconyDepth,
+                    PlayerHomeBalconyGeometry
+                        .BalconySlabThickness,
+                    PlayerHomeBalconyGeometry.BalconyWidth),
+                HomeBalconyConcrete);
+
+            BuildHomeBalconyOpening(
+                parent,
+                lot,
+                "Home Balcony Door",
+                PlayerHomeBalconyGeometry
+                    .DoorHeight * 0.5f,
+                PlayerHomeBalconyGeometry.DoorCenterZ,
+                PlayerHomeBalconyGeometry.DoorWidth,
+                PlayerHomeBalconyGeometry.DoorHeight,
+                HomeDoor,
+                null);
+            BuildHomeBalconyOpening(
+                parent,
+                lot,
+                "Home Balcony Window",
+                PlayerHomeBalconyGeometry.WindowCenterY,
+                PlayerHomeBalconyGeometry.WindowCenterZ,
+                PlayerHomeBalconyGeometry.WindowWidth,
+                PlayerHomeBalconyGeometry.WindowHeight,
+                HomeWindow,
+                emissiveMaterial);
+            BuildHomeBalconyOpeningFrame(
+                parent,
+                lot,
+                "Home Balcony Door",
+                PlayerHomeBalconyGeometry
+                    .DoorHeight * 0.5f,
+                PlayerHomeBalconyGeometry.DoorCenterZ,
+                PlayerHomeBalconyGeometry.DoorWidth,
+                PlayerHomeBalconyGeometry.DoorHeight,
+                false);
+            BuildHomeBalconyOpeningFrame(
+                parent,
+                lot,
+                "Home Balcony Window",
+                PlayerHomeBalconyGeometry.WindowCenterY,
+                PlayerHomeBalconyGeometry.WindowCenterZ,
+                PlayerHomeBalconyGeometry.WindowWidth,
+                PlayerHomeBalconyGeometry.WindowHeight,
+                true);
+            BuildHomeBalconyRails(parent, lot);
+        }
+
+        private static void BuildHomeBalconyOpening(
+            Transform parent,
+            BuildingLot lot,
+            string name,
+            float centerY,
+            float centerZ,
+            float width,
+            float height,
+            Color color,
+            Material sharedMaterial)
+        {
+            CreateHomeBalconyBox(
+                name,
+                parent,
+                lot,
+                new Vector3(
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    0.035f,
+                    centerY,
+                    centerZ),
+                new Vector3(0.07f, height, width),
+                color,
+                sharedMaterial);
+        }
+
+        private static void BuildHomeBalconyOpeningFrame(
+            Transform parent,
+            BuildingLot lot,
+            string name,
+            float centerY,
+            float centerZ,
+            float width,
+            float height,
+            bool includeSill)
+        {
+            const float frameWidth = 0.12f;
+            const float normalOffset = 0.09f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                CreateHomeBalconyBox(
+                    name + " Frame",
+                    parent,
+                    lot,
+                    new Vector3(
+                        PlayerHomeBalconyGeometry.HomeFacadeX +
+                        normalOffset,
+                        centerY,
+                        centerZ +
+                        side *
+                        (width + frameWidth) * 0.5f),
+                    new Vector3(
+                        0.12f,
+                        height + frameWidth * 2f,
+                        frameWidth),
+                    HomeTrim);
+            }
+
+            Vector3 horizontalSize = new Vector3(
+                0.12f,
+                frameWidth,
+                width + frameWidth * 2f);
+            CreateHomeBalconyBox(
+                name + " Header",
+                parent,
+                lot,
+                new Vector3(
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    normalOffset,
+                    centerY +
+                    (height + frameWidth) * 0.5f,
+                    centerZ),
+                horizontalSize,
+                HomeTrim);
+            if (!includeSill)
+            {
+                return;
+            }
+
+            CreateHomeBalconyBox(
+                name + " Sill",
+                parent,
+                lot,
+                new Vector3(
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    normalOffset,
+                    centerY -
+                    (height + frameWidth) * 0.5f,
+                    centerZ),
+                horizontalSize,
+                HomeTrim);
+            CreateHomeBalconyBox(
+                name + " Mullion",
+                parent,
+                lot,
+                new Vector3(
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    normalOffset + 0.01f,
+                    centerY,
+                    centerZ),
+                new Vector3(
+                    0.13f,
+                    height,
+                    frameWidth * 0.72f),
+                HomeTrim);
+        }
+
+        private static void BuildHomeBalconyRails(
+            Transform parent,
+            BuildingLot lot)
+        {
+            float depth = PlayerHomeBalconyGeometry.BalconyDepth;
+            float width = PlayerHomeBalconyGeometry.BalconyWidth;
+            float halfWidth = width * 0.5f;
+            float thickness = PlayerHomeBalconyGeometry.RailingThickness;
+            float height = PlayerHomeBalconyGeometry.RailingHeight;
+            float outerX =
+                PlayerHomeBalconyGeometry.HomeFacadeX +
+                depth -
+                thickness * 0.5f;
+            float topY = height - thickness * 0.5f;
+
+            CreateHomeBalconyBox(
+                "Home Balcony Front Rail",
+                parent,
+                lot,
+                new Vector3(
+                    outerX,
+                    topY,
+                    PlayerHomeBalconyGeometry.BalconyCenterZ),
+                new Vector3(thickness, thickness, width),
+                HomeBalconyRail);
+            for (int post = 0; post < 5; post++)
+            {
+                float z =
+                    PlayerHomeBalconyGeometry.BalconyCenterZ -
+                    halfWidth +
+                    thickness * 0.5f +
+                    post *
+                    (width - thickness) * 0.25f;
+                CreateHomeBalconyPost(
+                    parent,
+                    lot,
+                    outerX,
+                    z,
+                    "Home Balcony Front Post");
+            }
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float z =
+                    PlayerHomeBalconyGeometry.BalconyCenterZ +
+                    side *
+                    (halfWidth - thickness * 0.5f);
+                CreateHomeBalconyBox(
+                    side < 0
+                        ? "Home Balcony Side Rail Left"
+                        : "Home Balcony Side Rail Right",
+                    parent,
+                    lot,
+                    new Vector3(
+                        PlayerHomeBalconyGeometry.HomeFacadeX +
+                        depth * 0.5f,
+                        topY,
+                        z),
+                    new Vector3(depth, thickness, thickness),
+                    HomeBalconyRail);
+                CreateHomeBalconyPost(
+                    parent,
+                    lot,
+                    PlayerHomeBalconyGeometry.HomeFacadeX +
+                    depth * 0.52f,
+                    z,
+                    "Home Balcony Side Post");
+            }
+        }
+
+        private static void CreateHomeBalconyPost(
+            Transform parent,
+            BuildingLot lot,
+            float localX,
+            float localZ,
+            string name)
+        {
+            float thickness = PlayerHomeBalconyGeometry.RailingThickness;
+            float height = PlayerHomeBalconyGeometry.RailingHeight;
+            CreateHomeBalconyBox(
+                name,
+                parent,
+                lot,
+                new Vector3(localX, height * 0.5f, localZ),
+                new Vector3(thickness, height, thickness),
+                HomeBalconyRail);
+        }
+
+        private static void CreateHomeBalconyBox(
+            string name,
+            Transform parent,
+            BuildingLot lot,
+            Vector3 localPosition,
+            Vector3 localSize,
+            Color color,
+            Material sharedMaterial = null)
+        {
+            Vector3 direction =
+                PlayerHomeBalconyGeometry.GetFrontageDirection(
+                    lot);
+            Vector3 worldSize = Mathf.Abs(direction.x) > 0.5f
+                ? localSize
+                : new Vector3(
+                    localSize.z,
+                    localSize.y,
+                    localSize.x);
+            Vector3 worldPosition =
+                PlayerHomeBalconyGeometry.ToCityWorld(
+                    lot,
+                    localPosition);
+            if (sharedMaterial != null)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    name,
+                    parent,
+                    worldPosition,
+                    worldSize,
+                    color,
+                    sharedMaterial,
+                    false);
+                return;
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                worldPosition,
+                worldSize,
+                color,
+                false);
         }
 
         private static void BuildHomeDoorFrame(

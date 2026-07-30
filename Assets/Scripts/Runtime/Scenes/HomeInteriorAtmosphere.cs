@@ -12,6 +12,9 @@ namespace BarPromenade
     public sealed class HomeInteriorAtmosphere : MonoBehaviour
     {
         public const int MaximumPracticalLights = 2;
+        public const int MaximumWindowLights = 1;
+        public const int MaximumRealtimeLights =
+            MaximumPracticalLights + MaximumWindowLights;
         public const int MaximumDustParticles = 12;
 
         internal static readonly Vector3 MainEmitterPosition =
@@ -22,6 +25,18 @@ namespace BarPromenade
             new Vector3(3.15f, 2.16f, 3.755f);
         internal static readonly Vector3 BathroomLightPosition =
             new Vector3(3.15f, 2.04f, 3.38f);
+        internal static readonly Vector3 WindowLightPosition =
+            new Vector3(
+                PlayerHomeBalconyGeometry.HomeFacadeX + 1.35f,
+                2.75f,
+                PlayerHomeBalconyGeometry.WindowCenterZ);
+        internal static readonly Vector3 WindowLightTarget =
+            new Vector3(
+                0.65f,
+                0.22f,
+                PlayerHomeBalconyGeometry.WindowCenterZ);
+        internal static readonly Vector3 WindowLightDirection =
+            (WindowLightTarget - WindowLightPosition).normalized;
 
         private readonly List<Light> practicalLights =
             new List<Light>(MaximumPracticalLights);
@@ -35,6 +50,7 @@ namespace BarPromenade
         public Volume PostProcessVolume { get; private set; }
         public VolumeProfile RuntimeProfile => runtimeProfile;
         public ParticleSystem Dust { get; private set; }
+        public Light WindowLight { get; private set; }
 
         public void Initialize()
         {
@@ -49,6 +65,7 @@ namespace BarPromenade
         {
             if (IsInitialized ||
                 practicalLights.Count > 0 ||
+                WindowLight != null ||
                 PostProcessVolume != null)
             {
                 throw new InvalidOperationException(
@@ -76,6 +93,7 @@ namespace BarPromenade
                     new Color(0.52f, 0.68f, 0.72f),
                     2.20f,
                     4.0f));
+            WindowLight = CreateWindowLight();
             CreatePostProcessVolume();
             CreateDust();
             IsInitialized = true;
@@ -100,6 +118,37 @@ namespace BarPromenade
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.08f;
+            return light;
+        }
+
+        private Light CreateWindowLight()
+        {
+            GameObject lightObject = new GameObject(
+                "Home Window Night Light");
+            lightObject.transform.SetParent(transform, false);
+            lightObject.transform.localPosition =
+                WindowLightPosition;
+            lightObject.transform.localRotation =
+                Quaternion.LookRotation(
+                    WindowLightDirection,
+                    Vector3.up);
+
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color =
+                new Color(0.43f, 0.58f, 0.84f);
+            light.intensity = 5.25f;
+            light.range = 10.0f;
+            light.spotAngle = 58f;
+            light.innerSpotAngle = 34f;
+            light.shadows = LightShadows.Hard;
+            light.shadowStrength = 0.72f;
+            light.shadowBias = 0.04f;
+            light.shadowNormalBias = 0.28f;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0.08f;
+            light.cookie =
+                HomeBalconyResources.WindowLightCookie;
             return light;
         }
 

@@ -54,7 +54,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            HomeScene_BuildsBathroomAtmosphereAndTwoStableFixedShots()
+            HomeScene_BuildsBathroomAtmosphereAndThreeStableFixedShots()
         {
             AsyncOperation load =
                 SceneManager.LoadSceneAsync(
@@ -121,6 +121,7 @@ namespace BarPromenade.Tests.PlayMode
             AssertRequiredObject(
                 home.Room,
                 "Home Faded Photograph");
+            AssertEntryWallSealed(home);
             Transform mainEmitter = AssertRequiredObject(
                 home.Room,
                 "Home Main Dirty Bulb");
@@ -408,6 +409,93 @@ namespace BarPromenade.Tests.PlayMode
                 Is.InRange(-tolerance, tolerance),
                 $"'{itemName}' must rest on '{supportName}' instead of " +
                 "floating or intersecting deeply.");
+        }
+
+        private static void AssertEntryWallSealed(
+            HomeInteriorRoot home)
+        {
+            Renderer leftWall =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Wall Left")
+                    .GetComponent<Renderer>();
+            Renderer leftInfill =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Wall Left Door Infill")
+                    .GetComponent<Renderer>();
+            Renderer door =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Exit Door")
+                    .GetComponent<Renderer>();
+            Renderer rightInfill =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Wall Right Door Infill")
+                    .GetComponent<Renderer>();
+            Renderer rightWall =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Wall Right")
+                    .GetComponent<Renderer>();
+            Renderer transom =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Door Transom Infill")
+                    .GetComponent<Renderer>();
+            Renderer lintel =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Lintel")
+                    .GetComponent<Renderer>();
+
+            AssertBoundsMeet(
+                leftWall.bounds.max.x,
+                leftInfill.bounds.min.x);
+            AssertBoundsMeet(
+                leftInfill.bounds.max.x,
+                door.bounds.min.x);
+            AssertBoundsMeet(
+                door.bounds.max.x,
+                rightInfill.bounds.min.x);
+            AssertBoundsMeet(
+                rightInfill.bounds.max.x,
+                rightWall.bounds.min.x);
+            AssertBoundsMeet(
+                door.bounds.max.y,
+                transom.bounds.min.y);
+            AssertBoundsMeet(
+                transom.bounds.max.y,
+                lintel.bounds.min.y);
+            Assert.That(
+                leftInfill.GetComponent<Collider>(),
+                Is.Not.Null);
+            Assert.That(
+                rightInfill.GetComponent<Collider>(),
+                Is.Not.Null);
+            Assert.That(
+                transom.GetComponent<Collider>(),
+                Is.Not.Null);
+            Assert.That(
+                door.GetComponent<Collider>(),
+                Is.Null);
+            Assert.That(
+                home.transform.Find("Home Exit Header"),
+                Is.Null,
+                "The old emissive exit header must not intrude into the " +
+                "main-camera frame.");
+        }
+
+        private static void AssertBoundsMeet(
+            float first,
+            float second)
+        {
+            Assert.That(
+                first,
+                Is.EqualTo(second)
+                    .Within(0.002f),
+                "The entry shell must not leave a visible gap.");
         }
 
         private static void AssertPracticalEmitter(

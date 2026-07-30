@@ -6,45 +6,21 @@ namespace BarPromenade
 {
     public sealed class HomeInteriorRoot : MonoBehaviour
     {
-        private sealed class HomeWalkableArea : IWalkableArea
-        {
-            private readonly Rect bounds;
-
-            public HomeWalkableArea(Rect boundsToUse)
-            {
-                bounds = boundsToUse;
-            }
-
-            public bool Contains(
-                Vector3 position,
-                float radius = 0f)
-            {
-                return position.x >= bounds.xMin + radius &&
-                       position.x <= bounds.xMax - radius &&
-                       position.z >= bounds.yMin + radius &&
-                       position.z <= bounds.yMax - radius;
-            }
-
-            public Vector3 Constrain(
-                Vector3 currentPosition,
-                Vector3 desiredPosition,
-                float radius)
-            {
-                desiredPosition.x = Mathf.Clamp(
-                    desiredPosition.x,
-                    bounds.xMin + radius,
-                    bounds.xMax - radius);
-                desiredPosition.z = Mathf.Clamp(
-                    desiredPosition.z,
-                    bounds.yMin + radius,
-                    bounds.yMax - radius);
-                return desiredPosition;
-            }
-        }
-
         public bool IsInitialized { get; private set; }
         public HomeInteriorLayoutPlan Layout { get; private set; }
+        public HomeBalconyLayoutPlan BalconyLayout
+        {
+            get;
+            private set;
+        }
+        public HomeExteriorContextPlan ExteriorContext
+        {
+            get;
+            private set;
+        }
         public Transform Room { get; private set; }
+        public Transform Balcony { get; private set; }
+        public Transform ExteriorView { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public PlayerAnimatedInteractionController AnimatedInteraction
         {
@@ -88,9 +64,19 @@ namespace BarPromenade
                 RuntimeSceneSetup.EnsureHomeInterior();
             Audio = RetroAudioService.EnsureInstalled();
             Layout = HomeInteriorLayoutPlanner.Generate();
+            BalconyLayout =
+                HomeBalconyLayoutPlanner.Generate(Layout);
+            ExteriorContext =
+                HomeExteriorContextPlanner.Generate(
+                    GameSessionState.CitySeed);
             Room = HomeInteriorWorldBuilder.Build(
                 transform,
-                Layout);
+                Layout,
+                BalconyLayout,
+                ExteriorContext);
+            Balcony = Room.Find("Home Balcony");
+            ExteriorView =
+                Room.Find("Home Exterior View");
             GameObject atmosphereObject =
                 new GameObject("Home Atmosphere");
             atmosphereObject.transform.SetParent(transform, false);
@@ -114,8 +100,8 @@ namespace BarPromenade
                 transform,
                 Layout.PlayerSpawn,
                 camera,
-                new HomeWalkableArea(
-                    Layout.WalkableBounds),
+                new RoadWalkableArea(
+                    BalconyLayout.WalkableRectangles),
                 prompt);
             AnimatedInteraction =
                 Player.GameObject.AddComponent<
@@ -144,7 +130,9 @@ namespace BarPromenade
             FixedCamera.Initialize(
                 CameraFollow,
                 Player.GameObject.transform,
-                CreateCameraShots(Layout));
+                CreateCameraShots(
+                    Layout,
+                    BalconyLayout));
             BuildBedInteraction();
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
@@ -172,6 +160,13 @@ namespace BarPromenade
                     "camera_shot",
                     FixedCamera.ActiveShotKind.ToString()),
                 GameLog.Field(
+                    "balcony_height",
+                    PlayerHomeBalconyGeometry
+                        .ApartmentFloorElevation),
+                GameLog.Field(
+                    "exterior_lot_count",
+                    ExteriorContext.NearbyLots.Count),
+                GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
@@ -181,7 +176,8 @@ namespace BarPromenade
 
         private static IReadOnlyList<HomeCameraShot>
             CreateCameraShots(
-                HomeInteriorLayoutPlan plan)
+                HomeInteriorLayoutPlan plan,
+                HomeBalconyLayoutPlan balcony)
         {
             Rect walkable = plan.WalkableBounds;
             Rect bathroom = plan.BathroomBounds;
@@ -209,6 +205,13 @@ namespace BarPromenade
                 bathroom.yMin + 0.08f,
                 bathroom.width - 0.12f,
                 bathroom.height - 0.14f);
+            Rect balconyActivation =
+                balcony.BalconyCameraActivationBounds;
+            Rect balconyHold = Rect.MinMaxRect(
+                PlayerHomeBalconyGeometry.HomeFacadeX - 0.12f,
+                balcony.BalconyBounds.yMin + 0.04f,
+                balcony.BalconyBounds.xMax - 0.08f,
+                balcony.BalconyBounds.yMax - 0.04f);
 
             return new[]
             {
@@ -225,7 +228,14 @@ namespace BarPromenade
                     bathroomHold,
                     new Vector3(1.82f, 2.20f, 0.86f),
                     new Vector3(30f, 38f, 0f),
-                    92f)
+                    92f),
+                new HomeCameraShot(
+                    HomeCameraShotKind.Balcony,
+                    balconyActivation,
+                    balconyHold,
+                    new Vector3(5.28f, 3.05f, -3.12f),
+                    new Vector3(36f, 32f, 0f),
+                    70f)
             };
         }
 
@@ -241,18 +251,6 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
             Exit = exitObject.AddComponent<HomeExit>();
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Exit Header",
-                transform,
-                new Vector3(
-                    0f,
-                    Layout.RoomHeight - 0.46f,
-                    -Layout.RoomSize.y * 0.5f + 0.16f),
-                new Vector3(2.35f, 0.18f, 0.14f),
-                new Color(0.72f, 0.36f, 0.16f),
-                CityNightResources.EmissiveMaterial,
-                false);
         }
 
         private void BuildBedInteraction()

@@ -20,6 +20,7 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      HomeWindowGlass.shader      shared transparent Home window/door glass
       PlayerAnimatedInteractionOverlay.shader  depth-independent contextual sprite
       PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
@@ -65,6 +66,11 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         RoadWalkableArea.cs      XZ union; surface colliders own walkable height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
+        PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
+        HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
+        HomeExteriorContextPlan.cs  bounded same-seed street view descriptors
+        HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
+        HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
@@ -77,8 +83,8 @@ Assets/
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
       Scenes/        bar/home roots, atmosphere/reveal and door transition
-        HomeFixedCameraController.cs  authored shots and opt-in sprite-plane alignment
-        HomeInteriorAtmosphere.cs     two aligned lights/HDR emitters, grade and dust
+        HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
+        HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -111,6 +117,7 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                            -> four urban districts + central park
                                            -> distant bars via CityTravelDistance
                                            -> player home beside one bar street
+                                           -> shared third-floor balcony facade geometry
                                            -> fresh road-node spawn beside the home
                                            -> indexed RoadWalkableArea -> PlayerMotor
                                           -> CityRoutePathfinder
@@ -131,10 +138,16 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                     -> HomeInteriorWorldBuilder
                                        -> HomeBathroomBuilder
                                        -> HomeInteriorDressingBuilder
-       -> HomeInteriorAtmosphere -> two aligned Light/HDR-emitter/halo pairs
-                                 -> runtime grade + sparse dust
+       -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
+                                   -> window + open door + walkable safe balcony
+       -> same seed -> HomeExteriorContextPlanner
+                    -> bounded roads/lots/windows/lamps/signals view
+                    -> no second City root/player/camera/realtime street lights
+       -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
+                                 -> cold shadowed window cookie Spot
+                                 -> shared transparent glass + grade + sparse dust
        -> HomeAmbiencePlayer -> refrigerator + mains + pipes + drips
-       -> HomeFixedCameraController -> main/bath activation + hold bounds
+       -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
                                        -> reset when fixed control ends

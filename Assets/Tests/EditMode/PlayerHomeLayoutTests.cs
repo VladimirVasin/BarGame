@@ -31,6 +31,17 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(home.IsPark, Is.False);
             Assert.That(home.HasBuilding, Is.True);
             Assert.That(
+                home.Height,
+                Is.EqualTo(
+                        PlayerHomeBalconyGeometry
+                            .ResolveBuildingHeight(
+                                CityGenerationSettings.Default))
+                    .Within(0.001f));
+            Assert.That(
+                PlayerHomeBalconyGeometry.SupportsThirdFloor(
+                    home.Height),
+                Is.True);
+            Assert.That(
                 second.PlayerHome.Cell,
                 Is.EqualTo(home.Cell));
             Assert.That(
@@ -65,6 +76,199 @@ namespace BarPromenade.Tests.EditMode
                     CityLayoutGenerator
                         .MaximumHomeBarRouteDistance +
                     0.001f));
+        }
+
+        [TestCase(6.20f, false)]
+        [TestCase(7.40f, true)]
+        [TestCase(13.00f, true)]
+        public void Generate_PlayerHomeHeightHonorsCustomMaximum(
+            float maximumHeight,
+            bool supportsThirdFloor)
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.MaximumBuildingHeight = maximumHeight;
+
+            CityLayout layout =
+                CityLayoutGenerator.Generate(settings, 73119);
+
+            Assert.That(
+                layout.PlayerHome.Height,
+                Is.EqualTo(
+                        Mathf.Min(
+                            PlayerHomeBalconyGeometry
+                                .PreferredBuildingHeight,
+                            maximumHeight))
+                    .Within(0.001f));
+            Assert.That(
+                PlayerHomeBalconyGeometry.SupportsThirdFloor(
+                    layout.PlayerHome.Height),
+                Is.EqualTo(supportsThirdFloor));
+            Assert.That(
+                layout.BuildingLots
+                    .Where(lot => lot.HasBuilding)
+                    .All(lot => lot.Height <= maximumHeight),
+                Is.True);
+        }
+
+        [TestCase(GameSessionState.DefaultCitySeed)]
+        [TestCase(73119)]
+        [TestCase(-99123)]
+        public void PlayerHomeBalconyGeometry_CityTransformRoundTrips(
+            int seed)
+        {
+            BuildingLot home = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    seed)
+                .PlayerHome;
+            var local = new Vector3(
+                PlayerHomeBalconyGeometry.HomeFacadeX + 1.35f,
+                0.72f,
+                -1.12f);
+
+            Vector3 city =
+                PlayerHomeBalconyGeometry.ToCityWorld(home, local);
+            Vector3 roundTrip =
+                PlayerHomeBalconyGeometry.ToHomeLocal(home, city);
+
+            Assert.That(
+                Vector3.Distance(roundTrip, local),
+                Is.LessThan(0.001f));
+            Assert.That(
+                city.y,
+                Is.EqualTo(
+                        PlayerHomeBalconyGeometry
+                            .ApartmentFloorElevation +
+                        local.y)
+                    .Within(0.001f));
+            Assert.That(
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    home,
+                    PlayerHomeBalconyGeometry
+                        .GetFrontageDirection(home)),
+                Is.EqualTo(Vector3.right));
+        }
+
+        [Test]
+        public void CityHomeFacade_BuildsMatchingThirdFloorBalcony()
+        {
+            BuildingLot home = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    GameSessionState.DefaultCitySeed)
+                .PlayerHome;
+            var root = new GameObject("City Home Facade Test");
+
+            try
+            {
+                Material emissive =
+                    CityNightResources.EmissiveMaterial;
+                CityWorldBuilder.BuildHomeBalconyFacade(
+                    root.transform,
+                    home,
+                    emissive);
+
+                Transform slab =
+                    root.transform.Find("Home Balcony Slab");
+                Transform door =
+                    root.transform.Find("Home Balcony Door");
+                Transform window =
+                    root.transform.Find("Home Balcony Window");
+                Assert.That(slab, Is.Not.Null);
+                Assert.That(door, Is.Not.Null);
+                Assert.That(window, Is.Not.Null);
+                Assert.That(
+                    root.transform.Find(
+                        "Home Balcony Front Rail"),
+                    Is.Not.Null);
+                Assert.That(
+                    root.transform.Find(
+                        "Home Balcony Side Rail Left"),
+                    Is.Not.Null);
+                Assert.That(
+                    root.transform.Find(
+                        "Home Balcony Side Rail Right"),
+                    Is.Not.Null);
+                Assert.That(
+                    root.transform
+                        .Cast<Transform>()
+                        .Count(
+                            item =>
+                                item.name ==
+                                "Home Balcony Door Frame"),
+                    Is.EqualTo(2));
+                Assert.That(
+                    root.transform
+                        .Cast<Transform>()
+                        .Count(
+                            item =>
+                                item.name ==
+                                "Home Balcony Window Frame"),
+                    Is.EqualTo(2));
+
+                Assert.That(
+                    Vector3.Distance(
+                        slab.localPosition,
+                        PlayerHomeBalconyGeometry
+                            .GetCityBalconyCenter(home)),
+                    Is.LessThan(0.001f));
+                Vector3 expectedDoor =
+                    PlayerHomeBalconyGeometry.ToCityWorld(
+                        home,
+                        new Vector3(
+                            PlayerHomeBalconyGeometry
+                                .HomeFacadeX +
+                            0.035f,
+                            PlayerHomeBalconyGeometry
+                                .DoorHeight * 0.5f,
+                            PlayerHomeBalconyGeometry
+                                .DoorCenterZ));
+                Vector3 expectedWindow =
+                    PlayerHomeBalconyGeometry.ToCityWorld(
+                        home,
+                        new Vector3(
+                            PlayerHomeBalconyGeometry
+                                .HomeFacadeX +
+                            0.035f,
+                            PlayerHomeBalconyGeometry
+                                .WindowCenterY,
+                            PlayerHomeBalconyGeometry
+                                .WindowCenterZ));
+                Assert.That(
+                    Vector3.Distance(
+                        door.localPosition,
+                        expectedDoor),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Vector3.Distance(
+                        window.localPosition,
+                        expectedWindow),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    window
+                        .GetComponent<Renderer>()
+                        .sharedMaterial,
+                    Is.SameAs(emissive));
+                Assert.That(
+                    root.GetComponentsInChildren<Collider>(true),
+                    Is.Empty);
+
+                Assert.That(
+                    CityWorldBuilder
+                        .ShouldBuildGenericFrontWindowRow(
+                            home,
+                            1.5f + 2f * 2.35f),
+                    Is.False);
+                Assert.That(
+                    CityWorldBuilder
+                        .ShouldBuildGenericFrontWindowRow(
+                            home,
+                            1.5f + 1f * 2.35f),
+                    Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
         }
 
         [Test]

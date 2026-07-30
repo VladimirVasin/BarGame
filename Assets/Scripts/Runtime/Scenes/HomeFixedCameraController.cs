@@ -7,7 +7,8 @@ namespace BarPromenade
     public enum HomeCameraShotKind
     {
         MainRoom = 0,
-        Bathroom = 1
+        Bathroom = 1,
+        Balcony = 2
     }
 
     public readonly struct HomeCameraShot

@@ -851,7 +851,8 @@ namespace BarPromenade
             float height = landUse == CityLandUseKind.Park
                 ? 0.1f
                 : isPlayerHome
-                    ? Mathf.Min(5.8f, settings.MaximumBuildingHeight)
+                    ? PlayerHomeBalconyGeometry.ResolveBuildingHeight(
+                        settings)
                 : CreateBuildingHeight(settings, district, ref random);
             Vector3 center = GetLotCenter(settings, origin, cell);
 
