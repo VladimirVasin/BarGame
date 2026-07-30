@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### 2026-07-30 — Animated sleep at home
+
+- The bed in the Home interior is now interactive from its open side. Press
+  `E` once to lie down and fall asleep; the hero remains in a breathing sleep
+  loop for as long as desired, and a second `E` wakes them up.
+- Added a bespoke 64-frame sequence with a full lie-down, persistent sleeping
+  loop and separate wake-up animation. The normal walking puppet and both of
+  its shadows return only after the wake-up finishes.
+- Slowed the sleeping loop to one five-second breath: the chest rises at
+  `4 fps`, pauses briefly at full inhale, then settles into a longer rest
+  after exhale.
+- The sleeping hero now follows the bed's perspective, keeps their head on the
+  pillow side and sits evenly within the mattress instead of appearing
+  mirrored or screen-horizontal. The full sleeping silhouette now clears the
+  bedding instead of visually sinking into the mattress and blanket.
+- Movement remains locked for the complete sleep interaction, while the wake
+  prompt becomes available during sleep in both Russian and English.
+
 ### 2026-07-30 — Approved Home framing and practical lights
 
 - Moved the main-room fixed camera into the approved bed-side corner at

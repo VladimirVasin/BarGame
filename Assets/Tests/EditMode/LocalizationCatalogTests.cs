@@ -13,6 +13,8 @@ namespace BarPromenade.Tests.EditMode
             "interaction.exit_bar",
             "interaction.enter_home",
             "interaction.exit_home",
+            "interaction.sleep",
+            "interaction.wake",
             "interaction.order_drinks",
             "interaction.buy_drink",
             "interaction.play_beer_pong",

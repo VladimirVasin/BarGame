@@ -2,6 +2,74 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Animated bed sleep interaction
+
+- Added a reusable frame-rate-independent animated-interaction timeline with
+  `Idle -> Entering -> Looping -> Exiting` phases and a player controller that
+  presents atlas frames on the camera plane between authored stand/action hip
+  anchors.
+- Split presentation into an outer camera-facing root and an inner sprite
+  visual. Contextual interactions can now perspective-project an authored
+  world axis through `WorldToScreenPoint`, preserve texture handedness and ease
+  the inner visual into and out of the required camera-plane roll.
+- The controller locks the motor for the complete interaction, hides the
+  ordinary nine-layer rig plus dynamic/contact shadows, enables ordinary
+  interaction input only during the persistent loop for the second `E`, and
+  restores every captured state on completion, owner cancellation, disable or
+  scene cleanup.
+- Added one data-first trigger on the reachable `xMax` side of the Home bed.
+  The first localized `E` plays 24 lie-down frames at `12 fps`, 16 sleeping
+  frames loop indefinitely at `4 fps`, with an extra `0.25 s` delay on
+  full-inhale frame `034` and an extra `0.75 s` post-exhale rest on frame
+  `027` for one `5 s` breath cycle; the second localized `E` plays 24
+  dedicated wake-up frames at `12 fps`. The physical player root stays safely
+  beside the bed, and the crumpled shirt is hidden only while the sequence is
+  active.
+- Aligned the sleep pose with the bed's world `+X` head-to-foot axis after
+  perspective projection, kept the authored head-left side at the `xMin`
+  pillow, and moved the action hip `0.135 m` footward so the loop has balanced
+  approximately `7.7 cm` head and foot margins.
+- Added a shared contextual-sprite overlay shader with `ZWrite Off` and
+  `ZTest Always`, eliminating bed depth-buffer clipping across the complete
+  lie/sleep/wake sequence. Restored the natural `0.045 m` action-hip surface
+  clearance instead of compensating with an artificial vertical lift.
+- Made the bed own only the sequence it started. A disabled or destroyed bed
+  now cancels persistent sleep and restores movement, interaction input, the
+  rig, both shadows and the per-interaction captured clutter state; a disabled
+  or uninitialized animation controller no longer advertises the prompt.
+- Added the point-filtered `1024 x 768` player sleep atlas as 64 row-major
+  `128 x 96` cells with pivot `(64, 40)`, all 64 source frames, keyed/generated
+  working sheets and deterministic extraction, validation and packing tools.
+- Added pure timeline, bed-plan and asset-contract EditMode coverage plus a
+  real Home-scene `InputTestFixture` PlayMode regression for both `E` presses,
+  motor locking, persistent sleep, owner-disable cancellation and complete
+  movement/visual restoration.
+
+Verification:
+
+- After the depth-independent overlay correction, the focused
+  `PlayerBedSleepAssetTests` passed 3/3, including shader support, render queue,
+  pass lookup and explicit depth-state checks.
+- Atlas validation passed with file SHA256
+  `11EE6886B4BDB439CEB183EEE42F699B275A1362B527E61AEF06F0CC2AA4B56B`.
+- Sequential .NET builds of `BarPromenade.Runtime`, `BarPromenade.Editor`,
+  `BarPromenade.EditModeTests` and `BarPromenade.PlayModeTests` completed with
+  0 errors and 0 warnings.
+- After the breathing-timing follow-up, the Runtime, EditModeTests and
+  PlayModeTests .NET builds repeated with 0 errors and 0 warnings; the focused
+  animated-interaction timeline passed 16/16 and the real DX12 bed-sleep
+  scenario passed 1/1.
+- Two complete DX12 PlayMode runs each passed 96/97. Their only failure was the
+  existing batch-only synthetic `Keyboard.dKey` assertion in the bed test;
+  the same complete bed scenario passes 1/1 in isolation.
+- Complete EditMode repeated at 502/506; exactly the same four pre-existing
+  `CityLayoutGeneratorTests` remain red.
+- The earlier feature Windows build succeeded at `145453839` bytes with
+  0 warnings.
+- Reviewed the complete atlas visually for the lie-down, breathing loop and
+  dedicated wake-up sequence.
+- Final `git diff --check` passed.
+
 ## 2026-07-30 — Approved Home framing and visible practicals
 
 - Finalized the runtime-composed interior as an impoverished, cluttered old

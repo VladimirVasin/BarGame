@@ -46,6 +46,17 @@ namespace BarPromenade
         public HomeInteriorLayoutPlan Layout { get; private set; }
         public Transform Room { get; private set; }
         public PlayerRuntime Player { get; private set; }
+        public PlayerAnimatedInteractionController AnimatedInteraction
+        {
+            get;
+            private set;
+        }
+        public HomeBedInteraction Bed { get; private set; }
+        public HomeBedInteractionPlan BedInteractionPlan
+        {
+            get;
+            private set;
+        }
         public RetroAudioService Audio { get; private set; }
         public HomeAmbiencePlayer Ambience { get; private set; }
         public HomeInteriorAtmosphere Atmosphere { get; private set; }
@@ -106,6 +117,10 @@ namespace BarPromenade
                 new HomeWalkableArea(
                     Layout.WalkableBounds),
                 prompt);
+            AnimatedInteraction =
+                Player.GameObject.AddComponent<
+                    PlayerAnimatedInteractionController>();
+            AnimatedInteraction.Initialize(Player, camera);
 
             CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();
@@ -130,6 +145,7 @@ namespace BarPromenade
                 CameraFollow,
                 Player.GameObject.transform,
                 CreateCameraShots(Layout));
+            BuildBedInteraction();
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -237,6 +253,34 @@ namespace BarPromenade
                 new Color(0.72f, 0.36f, 0.16f),
                 CityNightResources.EmissiveMaterial,
                 false);
+        }
+
+        private void BuildBedInteraction()
+        {
+            BedInteractionPlan =
+                HomeBedInteractionPlan.Create(Layout);
+            GameObject bedObject =
+                new GameObject("Home Bed Interaction");
+            bedObject.transform.SetParent(transform, false);
+            bedObject.transform.localPosition =
+                BedInteractionPlan.TriggerCenter;
+            BoxCollider trigger =
+                bedObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = BedInteractionPlan.TriggerSize;
+
+            Bed =
+                bedObject.AddComponent<HomeBedInteraction>();
+            Transform surfaceClutter =
+                Room.Find(
+                    HomeBedInteraction.SurfaceClutterName);
+            Bed.Initialize(
+                Player,
+                AnimatedInteraction,
+                BedInteractionPlan,
+                surfaceClutter == null
+                    ? null
+                    : surfaceClutter.gameObject);
         }
     }
 }

@@ -20,6 +20,7 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      PlayerAnimatedInteractionOverlay.shader  depth-independent contextual sprite
       PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
     Audio/
@@ -44,6 +45,7 @@ Assets/
       PlayerDirectionalAtlas.png       corrected 8x1 visual reference
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
+      PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -63,6 +65,7 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         RoadWalkableArea.cs      XZ union; surface colliders own walkable height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
+        HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
@@ -71,6 +74,8 @@ Assets/
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
       Interaction/   contract, shared minigame catalog, bar/home entrances/exits
+        PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
+        HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
       Scenes/        bar/home roots, atmosphere/reveal and door transition
         HomeFixedCameraController.cs  authored shots and opt-in sprite-plane alignment
         HomeInteriorAtmosphere.cs     two aligned lights/HDR emitters, grade and dust
@@ -83,13 +88,16 @@ Assets/
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
     Editor/          scene/build helpers and reproducible noir/PS1 asset setup
   Tests/
-    EditMode/        layout/bathroom, roads/fences, audio and gameplay rules
-    PlayMode/        PS1 GPU, player poses, Home shots/atmosphere and complete flow
+    EditMode/        layout/bathroom/bed plans, atlases, audio and gameplay rules
+    PlayMode/        PS1 GPU, player poses, Home sleep/shots/atmosphere and complete flow
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
+    BedSleep/                    64 source frames plus keyed/generated sheets
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
+  extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
+  build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
 Packages/
@@ -130,6 +138,14 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
                                        -> reset when fixed control ends
+       -> HomeBedInteractionPlan -> reachable open-side trigger
+                                 -> HomeBedInteraction -> first/second E
+                                    -> PlayerAnimatedInteractionController
+                                       -> Idle/Entering/Looping/Exiting timeline
+                                       -> PlayerBedSleepAtlas camera-plane frames
+                                       -> projected bed axis + preserved handedness
+                                       -> lock motor; hide/restore rig + shadows
+                                       -> owner cancel -> complete restoration
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths

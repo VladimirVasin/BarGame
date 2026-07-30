@@ -157,6 +157,29 @@ The vertical slice contains:
   ashtray, worn clothes, newspapers, old radio and personal remnants establish
   a neglected impoverished old alcoholic's bachelor flat, while the dedicated
   blocking camera-corner junk keeps the authored camera pocket unreachable;
+- one reusable animated-interaction timeline and player controller with
+  `Idle -> Entering -> Looping -> Exiting` phases; its outer presentation root
+  stays camera-facing while an inner visual preserves authored handedness and
+  can perspective-project a contextual world axis into the camera plane,
+  can opt into a dedicated depth-independent shared sprite material,
+  supports optional extra holds on individual loop frames,
+  interpolates between stand/action hip anchors while preserving the physical
+  player root, locks movement through the complete interaction, allows
+  interaction input again only in the persistent loop, and safely restores
+  the nine-layer rig plus realtime and contact shadows on completion or
+  cleanup;
+- one reachable bed interaction on the open `xMax` side of the Home bed:
+  the first `E` plays 24 lie-down frames at `12 fps`, 16 sleeping frames loop
+  indefinitely at `4 fps` with a short full-inhale hold and a longer
+  post-exhale rest for one `5 s` breath cycle, and the second `E` plays 24
+  wake-up frames at `12 fps`; the sleep pose follows the bed's
+  perspective-projected head-to-foot
+  axis with the hero's head at the `xMin` pillow, balanced head/foot margins
+  and the complete opaque sleeping silhouette above the bedding; disabling or
+  destroying the owning bed safely cancels sleep and restores the player; the
+  point-filtered `8 x 8` atlas contains 64 `128 x 96` cells, uses localized
+  RU/EN sleep/wake prompts and retains all 64 source frames plus deterministic
+  extraction and atlas-build tools;
 - one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
   shower tray and curtain, pedestal sink, cracked mirror, exposed rusty pipes,
   leak stains and floor drain; the toilet cistern sits against the right wall
@@ -259,9 +282,10 @@ The vertical slice contains:
 - Multiple bespoke bar interiors.
 - Mobile renderer parity for the PS1 composite; the current presentation
   feature targets the PC renderer.
-- Full multi-frame eight-direction player animation; the current vertical
+- Full multi-frame eight-direction locomotion animation; the current vertical
   prototype uses one authored view per direction plus runtime joint walking,
-  procedural living-idle motion and body-sprite blink variants.
+  procedural living-idle motion and body-sprite blink variants, while the
+  implemented bed interaction uses its own contextual 64-frame sequence.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, income/jobs, inventory, a broader
   economy, dialogue, quests, combat, save slots, and online features.
