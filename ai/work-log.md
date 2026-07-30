@@ -2,6 +2,25 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — PC-only quality/render configuration
+
+- Removed the unused `Mobile_RPAsset` and `Mobile_Renderer` assets after
+  confirming that the project is currently Windows/PC-targeted.
+- Reduced `QualitySettings` to one PC quality level at index `0`, made it the
+  current and default level for every serialized platform key, and left its
+  platform exclusion list empty.
+- Kept mobile quality and renderer parity explicitly deferred.
+
+Verification:
+
+- Complete EditMode reported 517/521; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Complete PlayMode passed 98/98.
+- Windows build succeeded at `145489763` bytes with one package-owned URP
+  `Hidden/Core/DebugOccluder` shader warning.
+- No project references to either removed Mobile asset GUID remain, and
+  `git diff --check` passed.
+
 ## 2026-07-30 — Home balcony wall-leak correction
 
 - Clipped the Home exterior presentation to

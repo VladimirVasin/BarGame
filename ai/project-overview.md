@@ -4,8 +4,10 @@
 
 - Product name: **Барный Променад** (Bar Promenade).
 - Engine: Unity `6000.5.5f1`.
-- Rendering: Universal Render Pipeline package `17.5.0` with a PC-targeted
-  PS1 composite after URP post-processing.
+- Rendering: Universal Render Pipeline package `17.5.0` with one PC quality
+  level and one PC render-pipeline profile. PC is the current and default
+  quality at index `0` for every serialized platform key, has no platform
+  exclusions, and applies the PS1 composite after URP post-processing.
 - Input: Input System `1.19.0`; keyboard, mouse and gamepad are supported
   across movement, interaction and modal interfaces.
 - Build scenes: `Assets/Scenes/City.unity`,
@@ -292,8 +294,8 @@ The vertical slice contains:
 - Dynamic day/night, weather, rain, puddles and volumetric light shafts.
 - Vehicle or skating physics.
 - Multiple bespoke bar interiors.
-- Mobile renderer parity for the PS1 composite; the current presentation
-  feature targets the PC renderer.
+- Mobile quality/render-profile parity; the current Windows/PC-targeted project
+  retains only its PC quality level, render-pipeline asset and renderer.
 - Full multi-frame eight-direction locomotion animation; the current vertical
   prototype uses one authored view per direction plus runtime joint walking,
   procedural living-idle motion and body-sprite blink variants, while the

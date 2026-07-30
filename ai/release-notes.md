@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 2026-07-30 — PC-only rendering configuration
+
+- Removed the unused mobile URP asset, renderer and quality preset. The current
+  Windows version now retains a single PC quality/rendering configuration;
+  this does not change its presentation, while mobile support remains deferred.
+
 ### 2026-07-30 — Window and walkable third-floor balcony
 
 - Replaced the black right side of the Home interior with a real window and an
