@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 2026-07-31 — Deterministic home/bar frontage repair
+
+- Fixed generated homes choosing a street beside a bar's lot instead of the
+  street containing its actual entrance. Default fresh sessions now begin at
+  the intended shared home/bar approach.
+- Kept custom layouts bounded to a maximum `48 m` traversable route instead of
+  allowing some deterministic seeds to fail city validation during startup.
+
 ### 2026-07-30 — PS1 horror audio mix and interior soundscapes
 
 - Added one shared scene-aware audio mix for music, ambience, gameplay sounds

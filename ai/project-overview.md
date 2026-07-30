@@ -98,8 +98,9 @@ The vertical slice contains:
   Home interior's exterior opening;
 - a fresh city session starts on the road node beside the deterministic player
   home and its neighboring bar, `12 m` from their shared street approach under
-  default spacing; returning from either interior restores that entrance's own
-  return point;
+  default spacing; custom-layout fallback placement remains bounded to `48 m`
+  by traversable street distance, and returning from either interior restores
+  that entrance's own return point;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for

@@ -58,6 +58,29 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.GetPathKind(homeFrontage),
                 Is.EqualTo(CityPathKind.Street));
+            BuildingLot sharedFrontageBar =
+                first.BuildingLots.FirstOrDefault(
+                    lot =>
+                        lot.IsBar &&
+                        RoadEdge.ForCellFrontage(
+                            lot.Cell,
+                            lot.FrontageDirection) ==
+                        homeFrontage);
+            Assert.That(
+                sharedFrontageBar,
+                Is.Not.Null);
+            Assert.That(
+                sharedFrontageBar.Cell,
+                Is.EqualTo(
+                    home.Cell + home.FrontageDirection));
+            Assert.That(
+                sharedFrontageBar.FrontageDirection,
+                Is.EqualTo(-home.FrontageDirection));
+            Assert.That(
+                Vector3.Distance(
+                    home.ReturnPosition,
+                    sharedFrontageBar.ReturnPosition),
+                Is.LessThanOrEqualTo(0.001f));
             Assert.That(
                 homeFrontage.Contains(first.SpawnNode),
                 Is.True);

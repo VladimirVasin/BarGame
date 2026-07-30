@@ -2,6 +2,30 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Player-home frontage regression repair
+
+- Restricted preferred home placement to the selected bar's actual frontage
+  instead of accepting any street edge around that bar's lot.
+- Applied the `48 m` traversable-route bound before accepting preferred
+  candidates as well as fallback candidates. Default layouts retain their
+  shared approach and `12 m` fresh-spawn distance.
+- Added a direct regression assertion that the default player home shares a
+  frontage road with a selected bar.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests assemblies compiled with 0 errors
+  and 0 warnings.
+- Targeted `CityLayoutGeneratorTests` passed 21/21, targeted
+  `PlayerHomeLayoutTests` passed 28/28 and complete EditMode passed 563/563.
+- Relevant `SceneFlowSmokeTests` passed 10/10. Two complete PlayMode runs
+  reported 104/105 only because the pre-existing bed-input timing assertion
+  at `HomeBedInteractionPlayModeTests.cs:292` did not observe a queued key
+  within one frame; that test passed 1/1 in isolation.
+- Windows x64 Player build succeeded at `147880324` bytes with 0 warnings. A
+  15-second headless startup smoke contained no error, exception, assertion,
+  failure or missing-asset messages.
+
 ## 2026-07-30 — Shared PS1-horror audio mix and interior soundscapes
 
 - Added one canonical `BarPromenadeAudio` mixer with Music, two ambience

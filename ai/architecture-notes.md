@@ -25,12 +25,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   distance.
 - **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
   generated bar, one non-bar building lot becomes the player home. Selection
-  prefers a residential lot facing the same street as a bar and validates a
-  maximum traversable approach distance of `48 m`; stable hashes keep the
-  result deterministic. The default home mass is `8.8 m` tall and its City
-  facade uses the shared third-floor balcony/window/door geometry. A fresh
-  city starts on that home's frontage node. Bar-free custom layouts retain
-  the central-road fallback and no home.
+  first prefers a residential lot across the selected bar's actual frontage,
+  placing the default fresh spawn `12 m` from their shared street approach.
+  If that placement is unavailable, the deterministic fallback still validates
+  a maximum traversable approach distance of `48 m`. The default home mass is
+  `8.8 m` tall and its City facade uses the shared third-floor
+  balcony/window/door geometry. A fresh city starts on that home's frontage
+  node. Bar-free custom layouts retain the central-road fallback and no home.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
   park-lawn rectangles. The park connects to surrounding streets through four

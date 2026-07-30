@@ -527,7 +527,8 @@ namespace BarPromenade
                             bar.Cell,
                             direction);
                     Vector2Int homeCell = bar.Cell + direction;
-                    if (!roadSet.Contains(sharedRoad) ||
+                    if (sharedRoad != bar.Frontage ||
+                        !roadSet.Contains(sharedRoad) ||
                         pathKinds[sharedRoad] !=
                         CityPathKind.Street ||
                         !IsCellInsideGrid(settings, homeCell) ||
@@ -541,6 +542,30 @@ namespace BarPromenade
                         homeCell.y,
                         settings.BlocksX);
                     if (barLots.Contains(lotIndex))
+                    {
+                        continue;
+                    }
+
+                    Vector2Int frontage = -direction;
+                    Vector3 homeReturn = GetReturnPosition(
+                        settings,
+                        origin,
+                        homeCell,
+                        frontage);
+                    float distance =
+                        CityTravelDistance.BetweenAnchors(
+                            nodes,
+                            roads,
+                            node => GetNodeWorldPosition(
+                                settings,
+                                origin,
+                                node),
+                            sharedRoad,
+                            homeReturn,
+                            bar.Frontage,
+                            bar.ReturnPosition);
+                    if (distance >
+                        MaximumHomeBarRouteDistance + 0.001f)
                     {
                         continue;
                     }
@@ -564,7 +589,7 @@ namespace BarPromenade
                         bestLotIndex = lotIndex;
                         bestDistrictPenalty = districtPenalty;
                         bestRank = rank;
-                        bestFrontage = -direction;
+                        bestFrontage = frontage;
                     }
                 }
             }
