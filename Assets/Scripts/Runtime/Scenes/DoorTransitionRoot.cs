@@ -40,6 +40,8 @@ namespace BarPromenade
                 return;
             }
 
+            GameAudioMixer.ApplyProfile(
+                GameAudioProfile.DoorTransition);
             Direction = direction;
             Camera = RuntimeSceneSetup.EnsureDoorTransition();
             ConfigureEnvironment(direction);

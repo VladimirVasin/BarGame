@@ -50,6 +50,9 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(root.IsInitialized, Is.True);
+            Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.DoorTransition));
             Assert.That(root.IsComplete, Is.False);
             Assert.That(
                 root.Direction,

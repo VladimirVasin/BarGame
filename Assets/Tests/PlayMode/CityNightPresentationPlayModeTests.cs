@@ -23,6 +23,9 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(city.IsInitialized, Is.True);
+            Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.City));
             Assert.That(RenderSettings.fog, Is.True);
             Assert.That(
                 RenderSettings.fogMode,
@@ -490,6 +493,9 @@ namespace BarPromenade.Tests.PlayMode
                 root => interior = root);
 
             Assert.That(interior.IsInitialized, Is.True);
+            Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.Bar));
             Assert.That(RenderSettings.fog, Is.False);
             Assert.That(Camera.main, Is.Not.Null);
             Assert.That(

@@ -228,6 +228,9 @@ namespace BarPromenade
             crowdSource.maxDistance = crowdRadius;
             crowdSource.volume = CrowdVolume * crowdGain;
             crowdSource.priority = 176;
+            GameAudioMixer.Route(
+                crowdSource,
+                GameAudioGroup.AmbienceDetails);
 
             crowdFilter = crowdFilter != null
                 ? crowdFilter
@@ -254,6 +257,9 @@ namespace BarPromenade
             cueSource.maxDistance = cueRadius;
             cueSource.volume = CueVolume * cueGain;
             cueSource.priority = 168;
+            GameAudioMixer.Route(
+                cueSource,
+                GameAudioGroup.SfxWorld);
 
             cueFilter = cueFilter != null
                 ? cueFilter

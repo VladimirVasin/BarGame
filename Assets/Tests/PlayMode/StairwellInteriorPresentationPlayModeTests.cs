@@ -63,6 +63,9 @@ namespace BarPromenade.Tests.PlayMode
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.StairwellInterior));
             Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.Stairwell));
+            Assert.That(
                 root.Arrival,
                 Is.EqualTo(
                     StairwellArrivalKind.ApartmentDoor));
@@ -129,6 +132,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.Ambience.ActiveClip.name,
                 Is.EqualTo("RetroAmbience_Stairwell"));
+            Assert.That(root.Soundscape, Is.Not.Null);
+            Assert.That(root.Soundscape.IsInitialized, Is.True);
+            Assert.That(
+                root.Soundscape.GetComponentsInChildren<
+                    AudioSource>(true),
+                Has.Length.EqualTo(
+                    StairwellSoundscape.OwnedSourceCount));
+            Assert.That(
+                root.GetComponentsInChildren<AudioSource>(true),
+                Has.Length.EqualTo(
+                    2 +
+                    StairwellSoundscape.OwnedSourceCount),
+                "Stairwell audio must remain one music source, " +
+                "one base ambience source and three soundscape " +
+                "sources.");
             Assert.That(root.Music, Is.Not.Null);
             Assert.That(root.Music.Source, Is.Not.Null);
             Assert.That(root.Music.Source.loop, Is.True);

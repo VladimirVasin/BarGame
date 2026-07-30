@@ -13,6 +13,7 @@ namespace BarPromenade
         public RetroAudioService Audio { get; private set; }
         public StairwellMusicPlayer Music { get; private set; }
         public StairwellAmbiencePlayer Ambience { get; private set; }
+        public StairwellSoundscape Soundscape { get; private set; }
         public StairwellInteriorAtmosphere Atmosphere
         {
             get;
@@ -56,6 +57,7 @@ namespace BarPromenade
                 return;
             }
 
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Stairwell);
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
@@ -84,6 +86,18 @@ namespace BarPromenade
             Ambience =
                 ambienceObject.AddComponent<
                     StairwellAmbiencePlayer>();
+            GameObject soundscapeObject =
+                new GameObject("Stairwell Soundscape");
+            soundscapeObject.transform.SetParent(transform, false);
+            Soundscape =
+                soundscapeObject.AddComponent<
+                    StairwellSoundscape>();
+            Soundscape.Initialize(
+                GameSessionState.CitySeed,
+                InteriorSoundscapeAnchorPlanner
+                    .CreateStairwellWorld(
+                        Layout,
+                        transform));
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

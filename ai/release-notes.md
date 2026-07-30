@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### 2026-07-30 — PS1 horror audio mix and interior soundscapes
+
+- Added one shared scene-aware audio mix for music, ambience, gameplay sounds
+  and UI. Existing City, Bar and Stairwell music now passes through it instead
+  of bypassing the environmental treatment.
+- Added separate City, Bar, Stairwell, Home and door-transition profiles with
+  master headroom, compression and dedicated reverb/echo returns. UI remains
+  dry and readable.
+- Rebuilt the stairwell soundscape around an uneasy concrete bed, spatial
+  ventilation and electrical buzz, plus sparse pipe knocks, metal stress,
+  distant water and movement. Its profile has the longest, strongest reverb,
+  a dark high-frequency rolloff and restrained echo.
+- Rebuilt the Home soundscape as a calmer contrast: a soft room bed, spatial
+  refrigerator and balcony night air, plus sparse wood, radiator, radio and
+  bathroom details under a short damped reverb without echo.
+- Kept the new material procedural, deterministic and deliberately
+  low-resolution instead of introducing copied commercial sound assets.
+
 ### 2026-07-30 — Decayed stairwell between home and street
 
 - Added a separate playable stairwell between the exterior home entrance and

@@ -1735,6 +1735,19 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(home.Ambience, Is.Not.Null);
             Assert.That(home.Ambience.Source.loop, Is.True);
+            Assert.That(home.Soundscape, Is.Not.Null);
+            Assert.That(home.Soundscape.IsInitialized, Is.True);
+            Assert.That(
+                home.Soundscape.GetComponentsInChildren<
+                    AudioSource>(true),
+                Has.Length.EqualTo(
+                    HomeSoundscape.OwnedSourceCount));
+            Assert.That(
+                home.GetComponentsInChildren<AudioSource>(true),
+                Has.Length.EqualTo(
+                    1 + HomeSoundscape.OwnedSourceCount),
+                "Home audio must remain one base ambience " +
+                "source and three soundscape sources.");
             Assert.That(
                 home.Atmosphere,
                 Is.Not.Null);

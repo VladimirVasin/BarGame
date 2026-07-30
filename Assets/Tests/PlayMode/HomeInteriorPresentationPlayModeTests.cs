@@ -84,6 +84,9 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(home, Is.Not.Null);
             Assert.That(home.IsInitialized, Is.True);
+            Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.Home));
             Assert.That(home.Atmosphere, Is.Not.Null);
             Assert.That(home.Atmosphere.IsInitialized, Is.True);
             Assert.That(

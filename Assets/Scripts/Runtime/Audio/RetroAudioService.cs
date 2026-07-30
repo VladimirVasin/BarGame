@@ -20,7 +20,8 @@ namespace BarPromenade
             public SourcePool(
                 Transform parent,
                 string name,
-                int sourceCount)
+                int sourceCount,
+                GameAudioGroup outputGroup)
             {
                 sources = new AudioSource[sourceCount];
                 voices = new Voice[sourceCount];
@@ -39,6 +40,7 @@ namespace BarPromenade
                     source.minDistance = 1.2f;
                     source.maxDistance = 13f;
                     source.bypassReverbZones = true;
+                    GameAudioMixer.Route(source, outputGroup);
                     sources[index] = source;
                 }
             }
@@ -297,11 +299,23 @@ namespace BarPromenade
 
             pools = new SourcePool[(int)RetroSfxCategory.Count];
             pools[(int)RetroSfxCategory.Ui] =
-                new SourcePool(transform, "UI", UiPoolSize);
+                new SourcePool(
+                    transform,
+                    "UI",
+                    UiPoolSize,
+                    GameAudioGroup.Ui);
             pools[(int)RetroSfxCategory.World] =
-                new SourcePool(transform, "World", WorldPoolSize);
+                new SourcePool(
+                    transform,
+                    "World",
+                    WorldPoolSize,
+                    GameAudioGroup.SfxWorld);
             pools[(int)RetroSfxCategory.Bar] =
-                new SourcePool(transform, "Bar", BarPoolSize);
+                new SourcePool(
+                    transform,
+                    "Bar",
+                    BarPoolSize,
+                    GameAudioGroup.SfxGameplay);
             SourceCount = TotalPoolSize;
             initialized = true;
         }

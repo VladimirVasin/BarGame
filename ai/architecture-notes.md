@@ -259,23 +259,49 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Safe signal rhythm:** Each selected intersection uses one
   seed-phased controller for two heads and flashes amber below 1 Hz; red and
   green lenses remain dimly visible without realtime lights.
+- **Accepted — One canonical audio mixer:** `GameAudioMixer` loads one
+  `Resources/Audio/Mixers/BarPromenadeAudio` asset and resolves exact
+  `Music`, `Ambience/Beds`, `Ambience/Details`, `SFX/World`,
+  `SFX/Gameplay` and dry `UI` groups. Scene roots select City, Bar,
+  Stairwell, Home or DoorTransition snapshots; non-door profiles transition
+  over `0.25 s`, while DoorTransition cuts immediately at blackout.
+  The mixer keeps `-6 dB` master headroom under a compressor and owns
+  dedicated Receive/Reverb and Receive/Echo returns. Music, ambience details
+  and world SFX feed scene-specific send levels; Home stays short, damped and
+  echo-free, while Stairwell uses the longest/strongest reverb with a dark
+  high-frequency rolloff plus restrained stereo echo.
+- **Accepted — Reproducible mixer authoring:** The committed mixer is created
+  and updated through `AudioMixerAssetSetup`, which uses Unity's editor API,
+  preserves one exact topology across repeated runs and fails when a required
+  effect, send or echo parameter is unavailable. EditMode coverage validates
+  the DSP graph, send targets and critical snapshot values rather than only
+  checking group names.
 - **Accepted — Scene-local music:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
   `bar_theme` from `Resources/Audio/BarMusic` and
   `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
-  `Resources/Audio/StairwellMusic`. Each uses a non-spatial looping
-  `AudioSource` and a mild low-pass filter under its matching scene root; a
-  missing optional track stays silent, and a Single-mode scene load destroys
-  the old player and stops its theme automatically.
+  `Resources/Audio/StairwellMusic`. Each clip background-streams through a
+  non-spatial looping `AudioSource`, a mild low-pass filter and the shared
+  `Music` group under its matching scene root; a missing optional track stays
+  silent, and a Single-mode scene load destroys the old player and stops its
+  theme automatically.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
   the mono `22050 Hz` UI, footstep, door latch, sustained hinge creak,
   cocktail, beer-pong, Split-the-G and tincture clips in memory.
   `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
-  source pools, and applies per-effect cooldown and concurrent-voice limits.
-- **Accepted — Scene-local procedural ambience:** City and bar roots each own a
-  quiet deterministic `22050 Hz` ambience loop and tone filter. Single-mode
-  transitions destroy the old scene ambience, while the persistent SFX
-  service remains available to the next scene.
+  source pools, routes them to dry UI, world SFX or gameplay SFX, and applies
+  per-effect cooldown and concurrent-voice limits.
+- **Accepted — Layered scene-local procedural ambience:** Every playable root
+  owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
+  to `Ambience/Beds`. Home and Stairwell additionally own exactly three
+  spatial `Ambience/Details` sources and six runtime clips each: two
+  quantized eight-second loops plus four sparse cue types. Pure seeded
+  schedules bound pitch, gain and delay; a data-first anchor planner maps the
+  sources to refrigerator/balcony/domestic fixtures at Home and
+  ventilation/electrical/pipe/debris/water/door fixtures in Stairwell.
+  Single-mode transitions destroy every scene-local source and runtime clip,
+  while the persistent pooled SFX service remains available to the next
+  scene.
 - **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright

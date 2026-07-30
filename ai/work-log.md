@@ -2,6 +2,48 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-30 — Shared PS1-horror audio mix and interior soundscapes
+
+- Added one canonical `BarPromenadeAudio` mixer with Music, two ambience
+  layers, world/gameplay SFX and dry UI groups, plus dedicated environment
+  reverb and stereo echo returns under a headroom-preserving master
+  compressor.
+- Added City, Bar, Stairwell, Home and DoorTransition snapshots. Home uses a
+  short damped no-echo space; Stairwell uses the longest, strongest and
+  deliberately dark reverb plus restrained echo. Non-door profile changes
+  preserve wet tails through a `0.25 s` transition.
+- Routed all existing scene music, procedural ambience, pooled SFX, UI and bar
+  soundscape sources through their canonical groups. Existing music now
+  background-streams instead of fully decompressing on scene load.
+- Reworked the Home and Stairwell base loops into steady room beds, then added
+  exactly three spatial sources and six generated clips to each interior.
+  Home layers refrigerator/night air and sparse domestic details; Stairwell
+  layers ventilation/electrical buzz and sparse pipe, metal, water and
+  movement cues.
+- Kept synthesis deterministic and data-first: pure seeded schedules bound
+  delay/pitch/gain, layout planners provide world anchors, quantized
+  `22050 Hz` mono generation provides the low-resolution character and
+  scene-local cleanup releases every runtime clip/source.
+- Added an idempotent Unity editor setup for the mixer. Required DSP
+  effects/sends fail fast, and the EditMode contract validates the exact
+  topology, send targets, stereo echo parameters and scene snapshot values.
+
+Verification:
+
+- Two consecutive mixer setup runs exited successfully without duplicate
+  groups, snapshots, effects or sends; the dedicated mixer contract passed
+  9/9.
+- Targeted soundscape EditMode passed 10/10 and targeted component PlayMode
+  passed 2/2.
+- Complete solution build: 0 errors, 0 warnings.
+- Complete EditMode reported 559/563; the only failures were the same four
+  pre-existing `CityLayoutGeneratorTests`.
+- Complete PlayMode passed 105/105.
+- Windows x64 Player build succeeded at `147879812` bytes with 0 warnings.
+- The final Player stayed healthy through a 15-second headless startup smoke;
+  its log contained no error, exception, assertion, failure or missing-asset
+  messages.
+
 ## 2026-07-30 — Interactive stairwell cat
 
 - Added one seated rear-view pixel-art cat to the upper bar of the middle

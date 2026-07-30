@@ -54,16 +54,28 @@ The vertical slice contains:
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior` and the optional
   `stairwell_theme` slot loads only from `Resources/Audio/StairwellMusic` in
-  `StairwellInterior`; all receive a mild low-pass treatment and each player
-  is destroyed by the next Single-mode scene load;
+  `StairwellInterior`; all three import as background-streamed clips, receive
+  a mild low-pass treatment, route through the shared `Music` mixer group and
+  are destroyed by the next Single-mode scene load;
+- one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
+  `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
+  City, Bar, Stairwell, Home and DoorTransition snapshots keep `-6 dB`
+  headroom under a master compressor, feed dedicated reverb/echo returns and
+  switch with a short `0.25 s` wet-tail transition outside the immediate
+  DoorTransition blackout;
 - deterministic generated mono retro SFX at `22050 Hz`, including a separate
   door latch and sustained hinge creak, distinct beer-pong
   throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
-  category pools, per-effect cooldowns and voice limits, plus separate
-  scene-local procedural city, bar, home and stairwell ambience; the home loop
-  layers a refrigerator compressor, mains hum, pipes and periodic drips,
-  while the stairwell adds ventilation, electrical hum, pipe knocks and
-  distant water;
+  category pools, per-effect cooldowns and voice limits, all routed through
+  canonical mixer groups;
+- separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
+  plus three-source spatial soundscapes in Home and Stairwell. Home combines a
+  calm room bed, refrigerator and balcony night air with sparse soft wood,
+  radiator, radio and bathroom details; Stairwell combines a concrete room
+  bed, ventilation and electrical buzz with rarer pipe knocks, metal stress,
+  distant water and movement. Both use deterministic schedules, `22050 Hz`
+  mono clips, deliberately quantized retro waveforms and layout-derived
+  anchors;
 - a spanning-tree road graph with deterministic loops, cross-city arterials
   and a connected park-path cross;
 - five readable districts: Old Town, Residential, Industrial, Nightlife and
@@ -167,8 +179,10 @@ The vertical slice contains:
   landing with height hysteresis; each shot keeps its exposed suspended HDR
   fluorescent tube and halo visible, while three stronger flickering
   practical-light pools, a green desaturated Bloom/vignette/grain profile, at
-  most 14 dust particles, a procedural ventilation/mains/pipe/drip loop and
-  the separate optional `stairwell_theme` music slot establish the atmosphere;
+  most 14 dust particles, a concrete ambience bed, spatial ventilation and
+  electrical layers, sparse positional industrial cues, a long dark
+  reverb/moderate echo snapshot and the separate optional `stairwell_theme`
+  music slot establish the atmosphere;
 - one clickable pixel-art cat sits with its back to the camera on the
   `Middle Landing Back Rail`; a camera-plane billboard preserves that
   composition through the stairwell's fixed shots while authored look
@@ -232,8 +246,9 @@ The vertical slice contains:
   lamp and a cold bathroom tube—plus one cold shadowed cookie Spot projecting
   night light through the window, a shared transparent glass shader/material,
   a restrained Bloom/color/exposure/vignette/film-grain runtime volume, at
-  most 12 sparse dust motes and the dedicated procedural
-  refrigerator/mains/pipe/drip ambience;
+  most 12 sparse dust motes, a calm room bed, spatial refrigerator/balcony
+  layers, sparse domestic details and a short damped reverb snapshot without
+  echo;
 - one Main Camera that hard-cuts between the user-approved main-room pose at
   `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)` and `64°` FOV and the
   bathroom pose at `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°`

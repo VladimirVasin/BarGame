@@ -36,6 +36,9 @@ namespace BarPromenade
             audioSource.dopplerLevel = 0f;
             audioSource.volume = OutputVolume;
             audioSource.priority = 64;
+            GameAudioMixer.Route(
+                audioSource,
+                GameAudioGroup.Music);
         }
 
         private void ConfigureTone()

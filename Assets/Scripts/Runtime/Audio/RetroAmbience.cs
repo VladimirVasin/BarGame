@@ -110,77 +110,43 @@ namespace BarPromenade
 
         private static float GenerateHomeSample(float phase)
         {
-            float compressorCycle =
-                0.64f +
-                Mathf.Sin(phase * 2f + 0.35f) * 0.18f;
-            float refrigerator =
-                Mathf.Sin(phase * 192f + 0.7f) * 0.040f +
-                Mathf.Sin(phase * 384f + 1.4f) * 0.016f;
+            float roomBreath =
+                0.78f +
+                Mathf.Sin(phase + 0.35f) * 0.08f +
+                Mathf.Sin(phase * 3f + 2.1f) * 0.035f;
+            float softAir =
+                Mathf.Sin(phase * 29f + 0.7f) * 0.028f +
+                Mathf.Sin(phase * 53f + 1.4f) * 0.019f +
+                Mathf.Sin(phase * 91f + 2.8f) * 0.010f;
             float mains =
-                Mathf.Sin(phase * 200f) * 0.030f +
-                Mathf.Sin(phase * 400f + 0.18f) * 0.012f;
-            float pipes =
-                Mathf.Sin(phase * 17f + 2.1f) * 0.014f +
-                Mathf.Sin(phase * 43f + 0.4f) * 0.008f;
-
-            float primaryDripEnvelope = Mathf.Pow(
-                0.5f +
-                0.5f * Mathf.Cos(phase * 3f - 0.9f),
-                28f);
-            float secondaryDripEnvelope = Mathf.Pow(
-                0.5f +
-                0.5f * Mathf.Cos(phase * 5f + 1.8f),
-                36f);
-            float dripTone =
-                Mathf.Sin(phase * 367f + 0.3f) * 0.065f +
-                Mathf.Sin(phase * 521f + 1.2f) * 0.032f;
-            float drips =
-                dripTone *
-                (primaryDripEnvelope +
-                 secondaryDripEnvelope * 0.52f);
-
-            return refrigerator * compressorCycle +
-                   mains +
-                   pipes +
-                   drips;
+                Mathf.Sin(phase * 200f) * 0.014f +
+                Mathf.Sin(phase * 400f + 0.18f) * 0.005f;
+            float warmBody =
+                Mathf.Sin(phase * 11f + 1.1f) * 0.012f +
+                Mathf.Sin(phase * 19f + 3.2f) * 0.007f;
+            return softAir * roomBreath + mains + warmBody;
         }
 
         private static float GenerateStairwellSample(float phase)
         {
-            float ventilationBreath =
-                0.72f +
-                Mathf.Sin(phase * 2f + 0.4f) * 0.12f +
-                Mathf.Sin(phase * 5f + 2.1f) * 0.05f;
-            float ventilation =
-                Mathf.Sin(phase * 47f + 0.3f) * 0.068f +
-                Mathf.Sin(phase * 83f + 1.8f) * 0.042f +
-                Mathf.Sin(phase * 139f + 4.2f) * 0.021f;
+            float concreteBreath =
+                0.74f +
+                Mathf.Sin(phase * 2f + 0.4f) * 0.10f +
+                Mathf.Sin(phase * 5f + 2.1f) * 0.035f;
+            float roomAir =
+                Mathf.Sin(phase * 37f + 0.3f) * 0.045f +
+                Mathf.Sin(phase * 71f + 1.8f) * 0.026f +
+                Mathf.Sin(phase * 131f + 4.2f) * 0.013f;
             float mains =
-                Mathf.Sin(phase * 200f) * 0.043f +
-                Mathf.Sin(phase * 400f + 0.22f) * 0.018f;
-            float pipes =
-                Mathf.Sin(phase * 13f + 1.2f) * 0.018f +
-                Mathf.Sin(phase * 29f + 3.4f) * 0.010f;
-            float knockEnvelope = Mathf.Pow(
-                0.5f +
-                0.5f * Mathf.Cos(phase * 3f + 1.35f),
-                42f);
-            float knock =
-                knockEnvelope *
-                (Mathf.Sin(phase * 277f) * 0.075f +
-                 Mathf.Sin(phase * 391f + 0.7f) * 0.032f);
-            float dripEnvelope = Mathf.Pow(
-                0.5f +
-                0.5f * Mathf.Cos(phase * 7f - 0.5f),
-                48f);
-            float drip =
-                dripEnvelope *
-                Mathf.Sin(phase * 521f + 0.8f) * 0.055f;
-            return ventilation * ventilationBreath +
+                Mathf.Sin(phase * 200f) * 0.028f +
+                Mathf.Sin(phase * 400f + 0.22f) * 0.011f;
+            float concreteBody =
+                Mathf.Sin(phase * 9f + 0.6f) * 0.018f +
+                Mathf.Sin(phase * 17f + 2.7f) * 0.012f +
+                Mathf.Sin(phase * 31f + 4.1f) * 0.007f;
+            return roomAir * concreteBreath +
                    mains +
-                   pipes +
-                   knock +
-                   drip;
+                   concreteBody;
         }
     }
 
@@ -213,6 +179,9 @@ namespace BarPromenade
             Source.priority = 160;
             Source.volume = OutputVolume;
             Source.clip = generatedClip;
+            GameAudioMixer.Route(
+                Source,
+                GameAudioGroup.AmbienceBeds);
 
             ToneFilter.cutoffFrequency = CutoffFrequency;
             ToneFilter.lowpassResonanceQ = 1f;

@@ -54,6 +54,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(soundscape.CrowdSource.loop, Is.True);
             Assert.That(soundscape.CueSource.loop, Is.False);
             Assert.That(
+                soundscape.CrowdSource.outputAudioMixerGroup,
+                Is.SameAs(
+                    GameAudioMixer.AmbienceDetailsGroup));
+            Assert.That(
+                soundscape.CrowdSource
+                    .outputAudioMixerGroup.name,
+                Is.EqualTo("Details"));
+            Assert.That(
+                soundscape.CueSource.outputAudioMixerGroup,
+                Is.SameAs(GameAudioMixer.SfxWorldGroup));
+            Assert.That(
+                soundscape.CueSource
+                    .outputAudioMixerGroup.name,
+                Is.EqualTo("World"));
+            Assert.That(
                 soundscape.CrowdSource.spatialBlend,
                 Is.GreaterThan(0f));
             Assert.That(

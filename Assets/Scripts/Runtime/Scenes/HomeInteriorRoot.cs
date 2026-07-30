@@ -35,6 +35,7 @@ namespace BarPromenade
         }
         public RetroAudioService Audio { get; private set; }
         public HomeAmbiencePlayer Ambience { get; private set; }
+        public HomeSoundscape Soundscape { get; private set; }
         public HomeInteriorAtmosphere Atmosphere { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public HomeFixedCameraController FixedCamera { get; private set; }
@@ -57,6 +58,7 @@ namespace BarPromenade
                 return;
             }
 
+            GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
@@ -89,6 +91,17 @@ namespace BarPromenade
             ambienceObject.transform.SetParent(transform, false);
             Ambience =
                 ambienceObject.AddComponent<HomeAmbiencePlayer>();
+            GameObject soundscapeObject =
+                new GameObject("Home Soundscape");
+            soundscapeObject.transform.SetParent(transform, false);
+            Soundscape =
+                soundscapeObject.AddComponent<HomeSoundscape>();
+            Soundscape.Initialize(
+                GameSessionState.CitySeed,
+                InteriorSoundscapeAnchorPlanner.CreateHomeWorld(
+                    Layout,
+                    BalconyLayout,
+                    transform));
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

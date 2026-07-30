@@ -26,6 +26,8 @@ Assets/
       PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
     Audio/
+      Mixers/
+        BarPromenadeAudio.mixer  shared groups, DSP returns and five scene snapshots
       CityMusic/
         city_theme.*  looping City theme
         README.txt
@@ -64,7 +66,10 @@ Assets/
     Runtime/
       Core/          bootstrap, city root, session, transitions
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
-      Audio/         filtered themes, generated retro SFX and scene ambience
+      Audio/         shared mixer routing, filtered themes and generated retro audio
+        GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM generation
+        InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model, heap pathfinding and district map
@@ -95,6 +100,8 @@ Assets/
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
         StairwellCatInteraction.cs     localized temporary cat-response placeholder
       Scenes/        bar/home/stairwell roots, atmosphere/reveal and transition
+        HomeSoundscape*.cs               calm spatial beds and sparse domestic cues
+        StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
         StairwellFixedCameraController.cs  three height-selected fixed shots
@@ -106,10 +113,11 @@ Assets/
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, segmented HUD, map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
-    Editor/          scene/build helpers and reproducible noir/PS1 asset setup
+    Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
   Tests/
-    EditMode/        layout/bathroom/bed/stair plans, audio and gameplay rules
-    PlayMode/        presentation, physical traversal and complete scene flow
+    EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+    PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -166,7 +174,9 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                                    + ordinary idle
                                                    + rare 8-frame grooming (~36 s)
                            -> StairwellCatInteraction -> localized text placeholder
-       -> StairwellAmbiencePlayer -> ventilation + mains + pipes + drips
+       -> StairwellAmbiencePlayer -> steady concrete room bed
+       -> StairwellSoundscape -> spatial ventilation + electrical buzz
+                              -> seeded pipe/metal/water/movement cues
        -> HomeInteriorLayoutPlanner -> HomeInteriorLayoutValidator
                                     -> HomeInteriorWorldBuilder
                                        -> HomeBathroomBuilder
@@ -179,7 +189,9 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> cold shadowed window cookie Spot
                                  -> shared transparent glass + grade + sparse dust
-       -> HomeAmbiencePlayer -> refrigerator + mains + pipes + drips
+       -> HomeAmbiencePlayer -> calm steady room bed
+       -> HomeSoundscape -> spatial refrigerator + balcony night air
+                         -> seeded wood/radiator/radio/bathroom cues
        -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
@@ -224,11 +236,14 @@ F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
-City root -> CityMusicPlayer -> city_theme
-Bar root -> BarMusicPlayer -> bar_theme
-Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme
-scene root -> matching City/Bar/Home/Stairwell procedural ambience
-input/gameplay events -> RetroAudioService -> pooled generated SFX
+scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
+City root -> CityMusicPlayer -> city_theme -----------------------> Music
+Bar root -> BarMusicPlayer -> bar_theme --------------------------> Music
+Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme -> Music
+scene root -> matching procedural ambience -----------------------> Ambience/Beds
+Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details
+input/gameplay events -> RetroAudioService -> pooled SFX/UI groups
+Music/details/world sends -> reverb/echo returns -> Master compressor
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
 world composite -> crisp retro IMGUI overlay
 ```

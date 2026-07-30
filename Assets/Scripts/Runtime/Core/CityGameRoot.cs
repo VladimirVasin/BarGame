@@ -34,6 +34,7 @@ namespace BarPromenade
                 return;
             }
 
+            GameAudioMixer.ApplyProfile(GameAudioProfile.City);
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch totalTimer = Stopwatch.StartNew();
