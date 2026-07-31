@@ -109,6 +109,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
   approach, without altering route, visit, cash or drinking progress.
+- **Accepted — Data-first interactive Home refrigerator:** The refrigerator is
+  derived from the kitchen footprint as its own validated plan instead of
+  remaining an indistinct cube embedded in the counter. The counter is split
+  around its `1.08 x 0.76 m` footprint and the table moves `0.30 m` deeper in
+  Home-local Z, leaving a player-width waypoint route and a dedicated approach
+  trigger. Runtime composition builds a hollow worn cabinet, three shelves,
+  lower drawer and two door bins around six cavity plus two door storage slots;
+  stable slot IDs initially place one vodka bottle, chicken egg and open stew
+  can. These slots are a data/storage contract only and do not introduce the
+  deferred global inventory or pickup persistence.
+  `HomeRefrigeratorInteraction` owns a separate unscaled
+  `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
+  Sealing -> CameraReturn` timeline. It captures the shared modal lock, hides
+  the normal puppet and shadows, drives a quadratic first-person camera and
+  procedural sleeved hand, holds the `102°` open state until explicit close
+  input, then restores the exact active fixed-camera shot and every captured
+  gameplay presentation state on completion, disable or destroy. A cold
+  emissive strip plus `CityLightHalo` reveals the contents without increasing
+  Home's realtime-light count; generated seal, hinge and thunk cues and the
+  door-dependent refrigerator hum use the existing spatial audio contracts.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment

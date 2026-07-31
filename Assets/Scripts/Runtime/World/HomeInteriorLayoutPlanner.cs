@@ -68,7 +68,7 @@ namespace BarPromenade
                 new HomeFurnitureFootprint(
                     "table",
                     HomeFurnitureKind.Table,
-                    new Rect(-1.55f, 0.95f, 1.45f, 1.20f),
+                    new Rect(-1.55f, 1.25f, 1.45f, 1.20f),
                     0.90f,
                     true),
                 new HomeFurnitureFootprint(

@@ -87,6 +87,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
 
             AssertPointInside(kitchen.Bounds, first.Refrigerator);
+            Assert.That(
+                first.Refrigerator,
+                Is.EqualTo(
+                    HomeRefrigeratorPlan.Create(plan).SoundAnchor));
             AssertPointInside(bed.Bounds, first.SoftWood);
             AssertPointInside(bookcase.Bounds, first.Radio);
             AssertPointInside(plan.RoomBounds, first.Radiator);

@@ -163,6 +163,38 @@ namespace BarPromenade.Tests.PlayMode
             AssertSourceConfiguration(sources[0], true);
             AssertSourceConfiguration(sources[1], true);
             AssertSourceConfiguration(sources[2], false);
+            AudioLowPassFilter refrigeratorFilter =
+                sources[0].GetComponent<AudioLowPassFilter>();
+            Assert.That(refrigeratorFilter, Is.Not.Null);
+            Assert.That(
+                sources[0].volume,
+                Is.EqualTo(
+                    HomeSoundscape.ClosedRefrigeratorVolume)
+                    .Within(0.0001f));
+            Assert.That(
+                refrigeratorFilter.cutoffFrequency,
+                Is.EqualTo(
+                    HomeSoundscape.ClosedRefrigeratorCutoff)
+                    .Within(0.1f));
+
+            soundscape.SetRefrigeratorDoorOpenAmount(1f);
+            Assert.That(
+                soundscape.RefrigeratorDoorOpenAmount,
+                Is.EqualTo(1f));
+            Assert.That(
+                sources[0].volume,
+                Is.EqualTo(
+                    HomeSoundscape.OpenRefrigeratorVolume)
+                    .Within(0.0001f));
+            Assert.That(
+                refrigeratorFilter.cutoffFrequency,
+                Is.EqualTo(
+                    HomeSoundscape.OpenRefrigeratorCutoff)
+                    .Within(0.1f));
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => soundscape.SetRefrigeratorDoorOpenAmount(
+                    float.NaN));
+            soundscape.SetRefrigeratorDoorOpenAmount(0f);
             Assert.That(GameAudioMixer.IsAvailable, Is.True);
             for (int index = 0; index < sources.Length; index++)
             {

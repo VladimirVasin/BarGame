@@ -19,6 +19,8 @@ namespace BarPromenade.Tests.EditMode
             "interaction.exit_apartment",
             "interaction.sleep",
             "interaction.wake",
+            "interaction.open_refrigerator",
+            "interaction.close_refrigerator",
             "interaction.cat",
             "stairwell.cat.placeholder",
             "interaction.order_drinks",

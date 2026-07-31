@@ -154,30 +154,50 @@ namespace BarPromenade
                 HomeInteriorWorldBuilder
                     .KitchenDressingSurfaceHeight,
                 kitchen.Bounds.center.y);
+            HomeRefrigeratorPlan refrigerator =
+                HomeRefrigeratorPlan.Create(plan);
+            float leftCounterX =
+                (kitchen.Bounds.xMin +
+                 refrigerator.Footprint.xMin) * 0.5f;
+            float rightCounterX =
+                (refrigerator.Footprint.xMax +
+                 kitchen.Bounds.xMax) * 0.5f;
             RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Dirty Dishes",
                 room,
-                center + new Vector3(0.55f, 0.045f, -0.03f),
+                new Vector3(
+                    leftCounterX - 0.10f,
+                    center.y + 0.045f,
+                    center.z - 0.03f),
                 new Vector3(0.58f, 0.09f, 0.46f),
                 new Color(0.37f, 0.36f, 0.29f),
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Wet Rag",
                 room,
-                center + new Vector3(-0.20f, 0.018f, -0.31f),
+                new Vector3(
+                    rightCounterX + 0.04f,
+                    center.y + 0.018f,
+                    center.z - 0.31f),
                 new Vector3(0.62f, 0.035f, 0.27f),
                 new Color(0.20f, 0.24f, 0.20f),
                 false);
             CreateBottle(
                 "Home Kitchen Empty Bottle",
                 room,
-                center + new Vector3(-0.72f, 0f, 0.08f),
+                new Vector3(
+                    leftCounterX + 0.52f,
+                    center.y,
+                    center.z + 0.08f),
                 BottleClear,
                 0.20f);
             CreateCan(
                 "Home Kitchen Tin",
                 room,
-                center + new Vector3(0.92f, 0.095f, 0.05f),
+                new Vector3(
+                    leftCounterX - 0.55f,
+                    center.y + 0.095f,
+                    center.z + 0.05f),
                 new Color(0.31f, 0.25f, 0.16f));
         }
 

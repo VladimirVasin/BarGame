@@ -227,6 +227,21 @@ The vertical slice contains:
   ashtray, worn clothes, newspapers, old radio and personal remnants establish
   a neglected impoverished old alcoholic's bachelor flat, while the dedicated
   blocking camera-corner junk keeps the authored camera pocket unreachable;
+- one visually prominent data-first refrigerator fitted into a split kitchen
+  counter, with a validated player-width approach created by moving the table
+  deeper into the room; its runtime-built worn enamel cabinet contains a
+  hollow liner, three stained shelves, a lower drawer, frost, grime and two
+  door bins. Six cavity slots and two door slots form the storage contract;
+  the initial occupied slots hold a vodka bottle, one chicken egg and an open
+  can of stew, while global inventory and item transfer remain deferred;
+- one localized modal refrigerator interaction: the Home camera follows an
+  unscaled first-person Bezier approach, hides the ordinary puppet and brings
+  in a low-poly sleeved hand to turn the handle before the sealed door opens
+  to `102°`. The open inspection persists until a second interaction or cancel
+  input, then closes, seals and returns to the exact fixed Home shot while
+  restoring input, HUD, rig and shadows. A cold emissive strip and halo reveal
+  the contents without adding another realtime `Light`; generated seal,
+  hinge and closing-thunk cues accompany a door-open refrigerator-hum change;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the

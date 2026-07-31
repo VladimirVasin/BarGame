@@ -74,6 +74,9 @@ namespace BarPromenade
                     nameof(exterior));
             }
 
+            HomeRefrigeratorPlan refrigeratorPlan =
+                HomeRefrigeratorPlan.Create(plan);
+
             Transform room =
                 new GameObject("Home Interior").transform;
             room.SetParent(parent, false);
@@ -94,7 +97,8 @@ namespace BarPromenade
 
                 BuildFurniture(
                     room,
-                    plan.Furniture[index]);
+                    plan.Furniture[index],
+                    refrigeratorPlan);
             }
 
             HomeBathroomBuilder.Build(room, plan);
@@ -615,7 +619,8 @@ namespace BarPromenade
 
         private static void BuildFurniture(
             Transform room,
-            HomeFurnitureFootprint furniture)
+            HomeFurnitureFootprint furniture,
+            HomeRefrigeratorPlan refrigeratorPlan)
         {
             Rect bounds = furniture.Bounds;
             Vector3 center = new Vector3(
@@ -628,7 +633,10 @@ namespace BarPromenade
                     BuildBed(room, center, bounds);
                     break;
                 case HomeFurnitureKind.Kitchen:
-                    BuildKitchen(room, center, bounds);
+                    BuildKitchen(
+                        room,
+                        bounds,
+                        refrigeratorPlan);
                     break;
                 case HomeFurnitureKind.Sofa:
                     BuildSofa(room, center, bounds);
@@ -697,77 +705,94 @@ namespace BarPromenade
 
         private static void BuildKitchen(
             Transform room,
-            Vector3 center,
-            Rect bounds)
+            Rect bounds,
+            HomeRefrigeratorPlan refrigeratorPlan)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Kitchen Counter",
+            const float refrigeratorGap = 0.035f;
+            Rect footprint = refrigeratorPlan.Footprint;
+            Rect leftCounter = Rect.MinMaxRect(
+                bounds.xMin,
+                bounds.yMin,
+                footprint.xMin - refrigeratorGap,
+                bounds.yMax);
+            Rect rightCounter = Rect.MinMaxRect(
+                footprint.xMax + refrigeratorGap,
+                bounds.yMin,
+                bounds.xMax,
+                bounds.yMax);
+            BuildKitchenCounterSection(
                 room,
-                center + (Vector3.up * 0.48f),
-                new Vector3(
-                    bounds.width,
-                    0.92f,
-                    bounds.height),
-                new Color(0.16f, 0.18f, 0.16f));
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Kitchen Top",
+                "Left",
+                leftCounter);
+            BuildKitchenCounterSection(
                 room,
-                center + (Vector3.up * 0.98f),
-                new Vector3(
-                    bounds.width + 0.08f,
-                    0.10f,
-                    bounds.height + 0.08f),
-                Trim,
-                false);
+                "Right",
+                rightCounter);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Sink",
                 room,
-                center +
                 new Vector3(
-                    bounds.width * 0.23f,
+                    leftCounter.center.x -
+                    leftCounter.width * 0.06f,
                     1.05f,
-                    0f),
-                new Vector3(0.85f, 0.06f, 0.55f),
+                    leftCounter.center.y),
+                new Vector3(
+                    Mathf.Min(0.85f, leftCounter.width - 0.16f),
+                    0.06f,
+                    0.55f),
                 new Color(0.32f, 0.38f, 0.36f),
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Broken Door",
                 room,
-                center +
                 new Vector3(
-                    -bounds.width * 0.30f,
+                    leftCounter.center.x,
                     0.43f,
-                    -bounds.height * 0.51f),
+                    leftCounter.yMin - 0.01f),
                 new Vector3(
-                    bounds.width * 0.24f,
+                    Mathf.Min(0.58f, leftCounter.width * 0.72f),
                     0.70f,
                     0.055f),
                 new Color(0.12f, 0.14f, 0.12f),
                 false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Old Refrigerator",
+            HomeRefrigeratorWorldBuilder.Build(
                 room,
-                center +
-                new Vector3(
-                    -bounds.width * 0.38f,
-                    0.93f,
-                    0.02f),
-                new Vector3(
-                    bounds.width * 0.22f,
-                    1.82f,
-                    bounds.height * 0.88f),
-                new Color(0.30f, 0.31f, 0.25f),
-                false);
+                refrigeratorPlan);
+        }
+
+        private static void BuildKitchenCounterSection(
+            Transform room,
+            string sectionName,
+            Rect section)
+        {
+            if (section.width <= 0.05f ||
+                section.height <= 0.05f)
+            {
+                return;
+            }
+
+            Vector3 center = new Vector3(
+                section.center.x,
+                0.48f,
+                section.center.y);
             RuntimePrimitiveFactory.CreateBox(
-                "Home Refrigerator Handle",
+                $"Home Kitchen Counter {sectionName}",
                 room,
-                center +
+                center,
                 new Vector3(
-                    -bounds.width * 0.29f,
-                    1.12f,
-                    -bounds.height * 0.47f),
-                new Vector3(0.055f, 0.52f, 0.055f),
-                new Color(0.12f, 0.12f, 0.105f),
+                    section.width,
+                    0.92f,
+                    section.height),
+                new Color(0.16f, 0.18f, 0.16f));
+            RuntimePrimitiveFactory.CreateBox(
+                $"Home Kitchen Top {sectionName}",
+                room,
+                new Vector3(center.x, 0.98f, center.z),
+                new Vector3(
+                    section.width + 0.04f,
+                    0.10f,
+                    section.height + 0.08f),
+                Trim,
                 false);
         }
 

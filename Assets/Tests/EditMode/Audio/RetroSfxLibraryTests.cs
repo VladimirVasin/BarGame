@@ -70,6 +70,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.ShotSwap)]
         [TestCase(RetroSfxId.ShotMatch)]
         [TestCase(RetroSfxId.MoonshineBurst)]
+        [TestCase(RetroSfxId.RefrigeratorSeal)]
+        [TestCase(RetroSfxId.RefrigeratorHinge)]
+        [TestCase(RetroSfxId.RefrigeratorThunk)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {
@@ -119,6 +122,41 @@ namespace BarPromenade.Tests.EditMode
                 RetroSfxLibrary.GenerateSamples(RetroSfxId.DoorCreak),
                 Is.Not.EqualTo(
                     RetroSfxLibrary.GenerateSamples(RetroSfxId.Door)));
+        }
+
+        [Test]
+        public void RefrigeratorCues_AreDistinctSpatialWorldEffects()
+        {
+            RetroSfxId[] cues =
+            {
+                RetroSfxId.RefrigeratorSeal,
+                RetroSfxId.RefrigeratorHinge,
+                RetroSfxId.RefrigeratorThunk
+            };
+            for (int index = 0; index < cues.Length; index++)
+            {
+                RetroSfxDefinition definition =
+                    RetroSfxLibrary.GetDefinition(cues[index]);
+                Assert.That(
+                    definition.Category,
+                    Is.EqualTo(RetroSfxCategory.World));
+                Assert.That(
+                    definition.SpatialBlend,
+                    Is.GreaterThanOrEqualTo(0.9f));
+            }
+
+            Assert.That(
+                RetroSfxLibrary.GenerateSamples(
+                    RetroSfxId.RefrigeratorSeal),
+                Is.Not.EqualTo(
+                    RetroSfxLibrary.GenerateSamples(
+                        RetroSfxId.RefrigeratorHinge)));
+            Assert.That(
+                RetroSfxLibrary.GenerateSamples(
+                    RetroSfxId.RefrigeratorHinge),
+                Is.Not.EqualTo(
+                    RetroSfxLibrary.GenerateSamples(
+                        RetroSfxId.RefrigeratorThunk)));
         }
 
         [Test]

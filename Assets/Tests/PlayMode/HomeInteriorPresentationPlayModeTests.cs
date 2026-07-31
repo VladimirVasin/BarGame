@@ -151,7 +151,7 @@ namespace BarPromenade.Tests.PlayMode
                 "Home Table Green Bottle");
             AssertRestingOn(
                 home.Room,
-                "Home Kitchen Top",
+                "Home Kitchen Top Left",
                 "Home Kitchen Dirty Dishes");
             AssertRestingOn(
                 home.Room,

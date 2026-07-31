@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -29,6 +30,21 @@ namespace BarPromenade
         }
         public HomeBedInteraction Bed { get; private set; }
         public HomeBedInteractionPlan BedInteractionPlan
+        {
+            get;
+            private set;
+        }
+        public HomeRefrigeratorPlan RefrigeratorPlan
+        {
+            get;
+            private set;
+        }
+        public HomeRefrigeratorView Refrigerator
+        {
+            get;
+            private set;
+        }
+        public HomeRefrigeratorInteraction RefrigeratorInteraction
         {
             get;
             private set;
@@ -85,6 +101,8 @@ namespace BarPromenade
                 RuntimeSceneSetup.EnsureHomeInterior();
             Audio = RetroAudioService.EnsureInstalled();
             Layout = HomeInteriorLayoutPlanner.Generate();
+            RefrigeratorPlan =
+                HomeRefrigeratorPlan.Create(Layout);
             BalconyLayout =
                 HomeBalconyLayoutPlanner.Generate(Layout);
             ExteriorContext =
@@ -95,6 +113,14 @@ namespace BarPromenade
                 Layout,
                 BalconyLayout,
                 ExteriorContext);
+            Refrigerator =
+                Room.GetComponentInChildren<
+                    HomeRefrigeratorView>(true);
+            if (Refrigerator == null)
+            {
+                throw new InvalidOperationException(
+                    "The generated Home is missing its refrigerator.");
+            }
             AlarmClockPlan =
                 HomeAlarmClockPlan.Create(Layout);
             AlarmClock =
@@ -172,6 +198,7 @@ namespace BarPromenade
                     Layout,
                     BalconyLayout));
             BuildBedInteraction();
+            BuildRefrigeratorInteraction();
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -199,6 +226,9 @@ namespace BarPromenade
                 GameLog.Field(
                     "furniture_count",
                     Layout.Furniture.Count),
+                GameLog.Field(
+                    "refrigerator_slot_count",
+                    RefrigeratorPlan.Slots.Count),
                 GameLog.Field(
                     "camera_shot",
                     FixedCamera.ActiveShotKind.ToString()),
@@ -336,6 +366,27 @@ namespace BarPromenade
                 surfaceClutter == null
                     ? null
                     : surfaceClutter.gameObject);
+        }
+
+        private void BuildRefrigeratorInteraction()
+        {
+            GameObject interactionObject =
+                new GameObject("Home Refrigerator Interaction");
+            interactionObject.transform.SetParent(transform, false);
+            interactionObject.transform.localPosition =
+                RefrigeratorPlan.TriggerCenter;
+            BoxCollider trigger =
+                interactionObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = RefrigeratorPlan.TriggerSize;
+
+            RefrigeratorInteraction =
+                interactionObject.AddComponent<
+                    HomeRefrigeratorInteraction>();
+            RefrigeratorInteraction.Initialize(
+                this,
+                RefrigeratorPlan,
+                Refrigerator);
         }
     }
 }

@@ -35,6 +35,9 @@ namespace BarPromenade
         ShotMatch,
         MoonshineBurst,
         DoorCreak,
+        RefrigeratorSeal,
+        RefrigeratorHinge,
+        RefrigeratorThunk,
         Count
     }
 
@@ -348,7 +351,46 @@ namespace BarPromenade
                 1024,
                 4800f,
                 0.018f,
-                78)
+                78),
+            new RetroSfxDefinition(
+                RetroSfxId.RefrigeratorSeal,
+                RetroSfxCategory.World,
+                0.22f,
+                0.46f,
+                0.92f,
+                2,
+                0.14f,
+                2,
+                1024,
+                5200f,
+                0.018f,
+                72),
+            new RetroSfxDefinition(
+                RetroSfxId.RefrigeratorHinge,
+                RetroSfxCategory.World,
+                0.48f,
+                0.38f,
+                0.90f,
+                1,
+                0.24f,
+                3,
+                1024,
+                3900f,
+                0.016f,
+                82),
+            new RetroSfxDefinition(
+                RetroSfxId.RefrigeratorThunk,
+                RetroSfxCategory.World,
+                0.30f,
+                0.50f,
+                0.94f,
+                2,
+                0.18f,
+                2,
+                1024,
+                4600f,
+                0.015f,
+                68)
         };
 
         public static int Count => definitions.Length - 1;
@@ -454,6 +496,21 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.DoorCreak:
                     return GenerateDoorCreak(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.RefrigeratorSeal:
+                    return GenerateRefrigeratorSeal(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.RefrigeratorHinge:
+                    return GenerateRefrigeratorHinge(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.RefrigeratorThunk:
+                    return GenerateRefrigeratorThunk(
                         time,
                         duration,
                         ref noiseState);
@@ -634,6 +691,80 @@ namespace BarPromenade
             return (hinge + wood + grain) *
                    stickSlip *
                    envelope;
+        }
+
+        private static float GenerateRefrigeratorSeal(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.003f, 2.6f);
+            float suction = GlideSine(
+                time,
+                duration,
+                92f,
+                38f) * 0.58f;
+            float rubber =
+                Triangle(185f - normalized * 54f, time) *
+                Mathf.Sin(Mathf.PI * normalized) *
+                0.20f;
+            float snap = time < 0.038f
+                ? NextNoise(ref noiseState) *
+                  (1f - time / 0.038f) *
+                  0.34f
+                : 0f;
+            return (suction + rubber + snap) * envelope;
+        }
+
+        private static float GenerateRefrigeratorHinge(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.018f, 0.94f);
+            float pulse =
+                0.42f +
+                Mathf.Pow(
+                    Mathf.Abs(
+                        Mathf.Sin(
+                            2f *
+                            Mathf.PI *
+                            (4.1f + normalized) *
+                            time)),
+                    4f) *
+                0.58f;
+            float metal =
+                GlideSine(time, duration, 154f, 71f) * 0.32f +
+                Triangle(93f + normalized * 21f, time) * 0.16f;
+            float grain =
+                NextNoise(ref noiseState) *
+                (0.08f + pulse * 0.13f);
+            return (metal + grain) * pulse * envelope;
+        }
+
+        private static float GenerateRefrigeratorThunk(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.002f, 3.4f);
+            float body = GlideSine(
+                time,
+                duration,
+                116f,
+                43f) * 0.72f;
+            float rattle =
+                NextNoise(ref noiseState) *
+                Mathf.Max(0f, 1f - normalized * 2.2f) *
+                0.24f;
+            float canRing =
+                Mathf.Sin(2f * Mathf.PI * 690f * time) *
+                Mathf.Exp(-time * 18f) *
+                0.16f;
+            return (body + rattle + canRing) * envelope;
         }
 
         private static float GeneratePour(

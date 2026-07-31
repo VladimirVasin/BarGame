@@ -2,6 +2,47 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Interactive first-person Home refrigerator
+
+- Replaced the dark counter-embedded refrigerator placeholder with one
+  data-first `HomeRefrigeratorPlan` and a dedicated runtime builder/view. The
+  enlarged worn-enamel cabinet now has a real hollow liner, three stained
+  shelves, lower drawer, two door bins, frost, rust and grime; the counter is
+  physically split around its footprint instead of covering its lower half.
+- Defined six cavity slots and two door slots with stable IDs and item
+  envelopes. Three initial shelf occupants build as distinct low-poly models:
+  a vodka bottle, one chicken egg and an open can of stew. The contract is
+  ready for later item placement without claiming a global inventory system.
+- Moved the table `0.30 m` deeper in Home-local Z and added validated approach
+  bounds/waypoints, trigger, camera, light and sound anchors so the real player
+  can reach the refrigerator and it reads clearly from the main fixed shot.
+- Added a frame-rate-independent modal open/inspect/close timeline. The camera
+  follows a first-person quadratic approach, the normal puppet and shadows are
+  hidden, and a procedural low-poly sleeved hand reaches for and turns the
+  handle before the door unseals and swings to `102°`. Inspection persists
+  until close input; completion and cancellation restore the exact Home shot,
+  player renderers, shadows, controls and HUD.
+- Added a cold emissive interior strip and depth-tested halo without adding a
+  realtime `Light`, localized open/close prompts, generated seal/hinge/thunk
+  cues and a door-open volume/low-pass response on the existing spatial
+  refrigerator hum.
+
+Verification:
+
+- Added deterministic EditMode coverage for plan geometry, slot occupancy,
+  approach clearance, timeline endpoints/chunk invariance and cue contracts,
+  plus PlayMode coverage for generated storage, first-person camera/open state,
+  item framing/non-intersection, sound response and modal
+  restoration/cancellation.
+- Runtime and PlayModeTests generated projects compile with 0 errors and
+  0 warnings; focused refrigerator PlayMode passed 3/3 and the independently
+  rerun pre-existing bed-interaction fixture passed 2/2.
+- Complete EditMode passed 601/601 and complete D3D12 PlayMode passed 114/114.
+- A 960x540 rendered-frame smoke checked the closed main-room silhouette,
+  first-person hand grip and fully open inspection framing. The bottle, egg,
+  stew can, shelves, drawer and interior light were all readable in-frame.
+- The Windows x64 Player build succeeded at `148229232` bytes with 0 warnings.
+
 ## 2026-07-31 — Locked alarm-clock menu beat and extended first wake
 
 - Replaced the automatic clock-to-sleeper reveal with a clock shot that stays

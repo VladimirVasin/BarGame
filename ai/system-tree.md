@@ -87,6 +87,9 @@ Assets/
         HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
+        HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
+        HomeRefrigeratorWorldBuilder.cs  worn hollow cabinet, shelves, bins and contents
+        HomeRefrigeratorView.cs  animated door/handle/emissive interior presentation
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
@@ -103,6 +106,8 @@ Assets/
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
+        HomeRefrigeratorInteraction*.cs  modal first-person open/inspect/close timeline
+        HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
         StairwellCatInteraction.cs     localized temporary cat-response placeholder
       Scenes/        startup/bar/home/stairwell roots, atmosphere/reveal and transition
         MainMenuRoot.cs                 black build-index-0 new-run boundary
@@ -128,10 +133,12 @@ Assets/
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
+      HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
+      HomeRefrigerator*PlayModeTests.cs     generated storage and modal restoration
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -198,6 +205,11 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                     -> HomeInteriorWorldBuilder
                                        -> HomeBathroomBuilder
                                        -> HomeInteriorDressingBuilder
+                                       -> HomeRefrigeratorPlan
+                                          -> split counter + shifted table approach
+                                          -> HomeRefrigeratorWorldBuilder
+                                             -> hollow worn cabinet + eight slots
+                                             -> vodka / egg / open stew can
        -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
                                    -> window + open door + walkable safe balcony
        -> same seed -> HomeExteriorContextPlanner
@@ -221,6 +233,12 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                        -> projected bed axis + preserved handedness
                                        -> lock motor; hide/restore rig + shadows
                                        -> owner cancel -> complete restoration
+       -> HomeRefrigeratorInteraction -> modal unscaled timeline
+                                      -> first-person Bezier camera + low-poly hand
+                                      -> seal / handle / 102-degree door animation
+                                      -> persistent lit inspection
+                                      -> close + exact fixed-shot/player restoration
+                                      -> HomeSoundscape open-door hum response
        -> HomeAlarmClockPlan -> HomeAlarmClockBuilder
                              -> silent clock/nightstand room dressing
                              -> reusable flickering 05:59 / Wake-only solid 06:00

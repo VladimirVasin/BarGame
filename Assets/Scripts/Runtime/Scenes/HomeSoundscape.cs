@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -36,7 +37,11 @@ namespace BarPromenade
         public const int OwnedSourceCount = 3;
         public const int RuntimeClipCount = 6;
 
-        private const float RefrigeratorVolume = 0.095f;
+        public const float ClosedRefrigeratorVolume = 0.095f;
+        public const float OpenRefrigeratorVolume = 0.122f;
+        public const float ClosedRefrigeratorCutoff = 2600f;
+        public const float OpenRefrigeratorCutoff = 3850f;
+
         private const float BalconyVolume = 0.080f;
         private const float CueVolume = 0.105f;
         private const float RefrigeratorRadius = 9f;
@@ -59,6 +64,7 @@ namespace BarPromenade
         private int deterministicSeed;
         private int cueSequence;
         private float secondsUntilNextCue;
+        private float refrigeratorDoorOpenAmount;
         private HomeSoundscapeAnchors anchors;
 
         public bool IsInitialized { get; private set; }
@@ -78,11 +84,27 @@ namespace BarPromenade
         public AudioClip RadiatorTickClip => radiatorTickClip;
         public AudioClip RadioMurmurClip => radioMurmurClip;
         public AudioClip BathroomDetailClip => bathroomDetailClip;
+        public float RefrigeratorDoorOpenAmount =>
+            refrigeratorDoorOpenAmount;
+
+        public void SetRefrigeratorDoorOpenAmount(float amount)
+        {
+            if (float.IsNaN(amount) || float.IsInfinity(amount))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount),
+                    "Refrigerator door openness must be finite.");
+            }
+
+            refrigeratorDoorOpenAmount = Mathf.Clamp01(amount);
+            ApplyRefrigeratorDoorAudio();
+        }
 
         public void Initialize(
             int seed,
             HomeSoundscapeAnchors worldAnchors)
         {
+            refrigeratorDoorOpenAmount = 0f;
             EnsureRuntimeObjects();
             deterministicSeed = seed;
             anchors = worldAnchors;
@@ -288,7 +310,7 @@ namespace BarPromenade
             ConfigureSpatialSource(
                 refrigeratorSource,
                 true,
-                RefrigeratorVolume,
+                ClosedRefrigeratorVolume,
                 1.35f,
                 RefrigeratorRadius,
                 175,
@@ -296,8 +318,27 @@ namespace BarPromenade
             refrigeratorFilter = EnsureFilter(
                 refrigeratorSource,
                 refrigeratorFilter);
-            refrigeratorFilter.cutoffFrequency = 2600f;
             refrigeratorFilter.lowpassResonanceQ = 1f;
+            ApplyRefrigeratorDoorAudio();
+        }
+
+        private void ApplyRefrigeratorDoorAudio()
+        {
+            if (refrigeratorSource != null)
+            {
+                refrigeratorSource.volume = Mathf.Lerp(
+                    ClosedRefrigeratorVolume,
+                    OpenRefrigeratorVolume,
+                    refrigeratorDoorOpenAmount);
+            }
+
+            if (refrigeratorFilter != null)
+            {
+                refrigeratorFilter.cutoffFrequency = Mathf.Lerp(
+                    ClosedRefrigeratorCutoff,
+                    OpenRefrigeratorCutoff,
+                    refrigeratorDoorOpenAmount);
+            }
         }
 
         private void ConfigureBalconySource()

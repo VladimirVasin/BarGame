@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### 2026-07-31 — Interactive Home refrigerator
+
+- Rebuilt the apartment refrigerator as a larger, brighter and much more
+  readable worn-enamel fixture. The kitchen counter now ends cleanly on both
+  sides of it, and the nearby table moved deeper into the room to leave a
+  comfortable approach.
+- The refrigerator is now interactive. The camera glides into a first-person
+  view, the hero's sleeved hand reaches for and turns the handle, and the door
+  unseals and opens with dedicated sounds. It stays open for inspection until
+  another interaction or cancel input, then closes and returns smoothly to the
+  exact room view with normal control restored.
+- Built the interior in detail with a lined cavity, three stained shelves, a
+  lower drawer, frost, grime and two door bins. Its eight prepared storage
+  slots initially show a vodka bottle, one chicken egg and an open can of stew.
+- Opening the door brings up a cold interior glow and makes the existing
+  spatial refrigerator hum slightly louder and less muffled; localized Russian
+  and English prompts cover both opening and closing.
+
 ### 2026-07-31 — Windows Player material fix
 
 - Fixed the Windows build rendering the runtime-composed room and world in

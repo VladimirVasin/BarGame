@@ -51,10 +51,6 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(balcony));
             }
 
-            HomeFurnitureFootprint kitchen =
-                GetRequiredFurniture(
-                    plan,
-                    HomeFurnitureKind.Kitchen);
             HomeFurnitureFootprint bed =
                 GetRequiredFurniture(
                     plan,
@@ -65,11 +61,7 @@ namespace BarPromenade
                     HomeFurnitureKind.Bookcase);
 
             Vector3 refrigerator =
-                kitchen.Center +
-                new Vector3(
-                    -kitchen.Bounds.width * 0.38f,
-                    0.66f,
-                    0.02f);
+                HomeRefrigeratorPlan.Create(plan).SoundAnchor;
             Vector3 balconyNightAir =
                 balcony.WindowCenter + Vector3.right * 0.18f;
             Vector3 softWood =

@@ -57,6 +57,14 @@
       "value": "E \u2014 wake up"
     },
     {
+      "key": "interaction.open_refrigerator",
+      "value": "E \u2014 open refrigerator"
+    },
+    {
+      "key": "interaction.close_refrigerator",
+      "value": "E \u2014 close refrigerator"
+    },
+    {
       "key": "interaction.cat",
       "value": "E — talk to the cat"
     },
