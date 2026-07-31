@@ -65,6 +65,54 @@
       "value": "E \u2014 \u0437\u0430\u043a\u0440\u044b\u0442\u044c \u0445\u043e\u043b\u043e\u0434\u0438\u043b\u044c\u043d\u0438\u043a"
     },
     {
+      "key": "home.refrigerator.item.vodka.name",
+      "value": "Бутылка водки"
+    },
+    {
+      "key": "home.refrigerator.item.vodka.description",
+      "value": "Дешёвая бутылка, почти пустая. Даже через крышку тянет спиртом."
+    },
+    {
+      "key": "home.refrigerator.item.egg.name",
+      "value": "Куриное яйцо"
+    },
+    {
+      "key": "home.refrigerator.item.egg.description",
+      "value": "Одно пятнистое яйцо в мятом лотке. Возможно, оно ещё съедобно."
+    },
+    {
+      "key": "home.refrigerator.item.stew_can.name",
+      "value": "Открытая тушёнка"
+    },
+    {
+      "key": "home.refrigerator.item.stew_can.description",
+      "value": "Открытая банка тушёнки. Холодный жир застыл вокруг мяса."
+    },
+    {
+      "key": "home.refrigerator.action.take",
+      "value": "Взять"
+    },
+    {
+      "key": "home.refrigerator.action.use",
+      "value": "Использовать"
+    },
+    {
+      "key": "home.refrigerator.action.back",
+      "value": "Назад"
+    },
+    {
+      "key": "home.refrigerator.action.unavailable",
+      "value": "Пока недоступно."
+    },
+    {
+      "key": "home.refrigerator.controls.browse",
+      "value": "Мышь / \u2190/\u2192 / крестовина \u2014 выбрать   ЛКМ / E / Enter / A \u2014 осмотреть   Esc / B \u2014 закрыть"
+    },
+    {
+      "key": "home.refrigerator.controls.inspect",
+      "value": "\u2190/\u2192 / крестовина \u2014 действие   ЛКМ / E / Enter / A \u2014 выбрать   Esc / B \u2014 назад"
+    },
+    {
       "key": "interaction.cat",
       "value": "E — обратиться к коту"
     },

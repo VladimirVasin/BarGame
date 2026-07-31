@@ -20,9 +20,21 @@
 - Built the interior in detail with a lined cavity, three stained shelves, a
   lower drawer, frost, grime and two door bins. Its eight prepared storage
   slots initially show a vodka bottle, one chicken egg and an open can of stew.
-- Opening the door brings up a cold interior glow and makes the existing
-  spatial refrigerator hum slightly louder and less muffled; localized Russian
-  and English prompts cover both opening and closing.
+- The three visible contents can now be highlighted directly. Hovering with
+  the mouse shows a localized item name beside the cursor; keyboard and gamepad
+  selection are supported as well.
+- Clicking or confirming an item flies it into the center of the screen in the
+  style of a classic PS1 survival-horror examination. The room darkens behind
+  it, the model rotates slowly, and localized name and description text appear
+  with `Take`, `Use` and `Back` choices. `Take` and `Use` are safe unavailable
+  placeholders for now; they do not remove the item or alter the session.
+- Returning, cancelling or interrupting the inspection puts the item back in
+  its exact original place and restores its normal appearance before the
+  refrigerator may close.
+- Opening the door brings up a cold interior glow and smoothly crossfades
+  between two synchronized procedural refrigerator loops: a muffled
+  closed-cabinet hum and a brighter exposed motor/fan loop. Localized Russian
+  and English prompts cover browsing, inspection, actions and closing.
 
 ### 2026-07-31 — Windows Player material fix
 

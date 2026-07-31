@@ -12,6 +12,7 @@ namespace BarPromenade.Tests.PlayMode
             Stairwell_UsesThreeSpatialSourcesAndDeterministicCues()
         {
             var root = new GameObject("Stairwell Soundscape Test");
+            root.AddComponent<AudioListener>();
             StairwellSoundscape soundscape =
                 root.AddComponent<StairwellSoundscape>();
             StairwellSoundscapeAnchors anchors =
@@ -136,9 +137,10 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            Home_UsesThreeSpatialSourcesAndDeterministicCues()
+            Home_UsesFourSpatialSourcesAndDeterministicCues()
         {
             var root = new GameObject("Home Soundscape Test");
+            root.AddComponent<AudioListener>();
             HomeSoundscape soundscape =
                 root.AddComponent<HomeSoundscape>();
             HomeSoundscapeAnchors anchors =
@@ -153,29 +155,68 @@ namespace BarPromenade.Tests.PlayMode
                     HomeSoundscape.OwnedSourceCount));
             Assert.That(
                 HomeSoundscape.OwnedSourceCount,
-                Is.EqualTo(3));
+                Is.EqualTo(4));
             AudioSource[] sources =
             {
-                soundscape.RefrigeratorSource,
+                soundscape.ClosedRefrigeratorSource,
+                soundscape.OpenRefrigeratorSource,
                 soundscape.BalconySource,
                 soundscape.RareCueSource
             };
             AssertSourceConfiguration(sources[0], true);
             AssertSourceConfiguration(sources[1], true);
-            AssertSourceConfiguration(sources[2], false);
-            AudioLowPassFilter refrigeratorFilter =
+            AssertSourceConfiguration(sources[2], true);
+            AssertSourceConfiguration(sources[3], false);
+            Assert.That(
+                soundscape.RefrigeratorSource,
+                Is.SameAs(soundscape.ClosedRefrigeratorSource));
+            Assert.That(
+                sources[0].transform.position,
+                Is.EqualTo(sources[1].transform.position));
+            Assert.That(
+                sources[0].transform.position,
+                Is.EqualTo(anchors.Refrigerator));
+            AudioLowPassFilter closedRefrigeratorFilter =
                 sources[0].GetComponent<AudioLowPassFilter>();
-            Assert.That(refrigeratorFilter, Is.Not.Null);
+            AudioLowPassFilter openRefrigeratorFilter =
+                sources[1].GetComponent<AudioLowPassFilter>();
+            Assert.That(closedRefrigeratorFilter, Is.Not.Null);
+            Assert.That(openRefrigeratorFilter, Is.Not.Null);
             Assert.That(
                 sources[0].volume,
                 Is.EqualTo(
                     HomeSoundscape.ClosedRefrigeratorVolume)
                     .Within(0.0001f));
+            Assert.That(sources[1].volume, Is.Zero.Within(0.0001f));
             Assert.That(
-                refrigeratorFilter.cutoffFrequency,
+                closedRefrigeratorFilter.cutoffFrequency,
                 Is.EqualTo(
                     HomeSoundscape.ClosedRefrigeratorCutoff)
                     .Within(0.1f));
+            Assert.That(
+                openRefrigeratorFilter.cutoffFrequency,
+                Is.EqualTo(
+                    HomeSoundscape.OpenRefrigeratorCutoff)
+                    .Within(0.1f));
+
+            soundscape.SetRefrigeratorDoorOpenAmount(0.5f);
+            float equalPowerWeight = Mathf.Sqrt(0.5f);
+            Assert.That(
+                soundscape.ClosedRefrigeratorMixWeight,
+                Is.EqualTo(equalPowerWeight).Within(0.0001f));
+            Assert.That(
+                soundscape.OpenRefrigeratorMixWeight,
+                Is.EqualTo(equalPowerWeight).Within(0.0001f));
+            Assert.That(
+                sources[0].volume,
+                Is.EqualTo(
+                    HomeSoundscape.ClosedRefrigeratorVolume *
+                    equalPowerWeight).Within(0.0001f));
+            Assert.That(
+                sources[1].volume,
+                Is.EqualTo(
+                    HomeSoundscape.OpenRefrigeratorVolume *
+                    equalPowerWeight).Within(0.0001f));
 
             soundscape.SetRefrigeratorDoorOpenAmount(1f);
             Assert.That(
@@ -183,14 +224,12 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(1f));
             Assert.That(
                 sources[0].volume,
+                Is.Zero.Within(0.0001f));
+            Assert.That(
+                sources[1].volume,
                 Is.EqualTo(
                     HomeSoundscape.OpenRefrigeratorVolume)
                     .Within(0.0001f));
-            Assert.That(
-                refrigeratorFilter.cutoffFrequency,
-                Is.EqualTo(
-                    HomeSoundscape.OpenRefrigeratorCutoff)
-                    .Within(0.1f));
             Assert.Throws<System.ArgumentOutOfRangeException>(
                 () => soundscape.SetRefrigeratorDoorOpenAmount(
                     float.NaN));
@@ -210,6 +249,20 @@ namespace BarPromenade.Tests.PlayMode
                 Has.Length.EqualTo(
                     HomeSoundscape.RuntimeClipCount));
             AssertClips(clips, HomeSoundscape.SampleRate);
+            Assert.That(
+                soundscape.ClosedRefrigeratorClip.samples,
+                Is.EqualTo(
+                    Mathf.RoundToInt(
+                        HomeSoundscape.SampleRate *
+                        HomeSoundscapeSynthesis.LoopDuration)));
+            Assert.That(
+                soundscape.OpenRefrigeratorClip.samples,
+                Is.EqualTo(
+                    soundscape.ClosedRefrigeratorClip.samples));
+            Assert.That(
+                soundscape.OpenRefrigeratorClip,
+                Is.Not.SameAs(
+                    soundscape.ClosedRefrigeratorClip));
             Assert.That(
                 soundscape.SecondsUntilNextCue,
                 Is.EqualTo(
@@ -236,12 +289,16 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.RareCueSource.clip,
                 Is.SameAs(GetCueClip(soundscape, expected.Kind)));
 
-            AudioSource refrigeratorSource =
-                soundscape.RefrigeratorSource;
+            AudioSource closedRefrigeratorSource =
+                soundscape.ClosedRefrigeratorSource;
+            AudioSource openRefrigeratorSource =
+                soundscape.OpenRefrigeratorSource;
             AudioSource balconySource = soundscape.BalconySource;
             AudioSource cueSource = soundscape.RareCueSource;
-            AudioClip refrigeratorClip =
-                soundscape.RefrigeratorClip;
+            AudioClip closedRefrigeratorClip =
+                soundscape.ClosedRefrigeratorClip;
+            AudioClip openRefrigeratorClip =
+                soundscape.OpenRefrigeratorClip;
             HomeSoundscapeAnchors shifted =
                 CreateHomeAnchors(new Vector3(-11f, 2f, 17f));
             soundscape.Initialize(721, shifted);
@@ -249,8 +306,11 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.SecondsUntilNextCue;
 
             Assert.That(
-                soundscape.RefrigeratorSource,
-                Is.SameAs(refrigeratorSource));
+                soundscape.ClosedRefrigeratorSource,
+                Is.SameAs(closedRefrigeratorSource));
+            Assert.That(
+                soundscape.OpenRefrigeratorSource,
+                Is.SameAs(openRefrigeratorSource));
             Assert.That(
                 soundscape.BalconySource,
                 Is.SameAs(balconySource));
@@ -258,8 +318,11 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.RareCueSource,
                 Is.SameAs(cueSource));
             Assert.That(
-                soundscape.RefrigeratorClip,
-                Is.SameAs(refrigeratorClip));
+                soundscape.ClosedRefrigeratorClip,
+                Is.SameAs(closedRefrigeratorClip));
+            Assert.That(
+                soundscape.OpenRefrigeratorClip,
+                Is.SameAs(openRefrigeratorClip));
             Assert.That(soundscape.HasPlayedCue, Is.False);
             Assert.That(soundscape.CueSequence, Is.Zero);
             Assert.That(
@@ -268,7 +331,10 @@ namespace BarPromenade.Tests.PlayMode
                     HomeSoundscapeSchedule.GetCue(721, 0)
                         .DelaySeconds));
             Assert.That(
-                soundscape.RefrigeratorSource.transform.position,
+                soundscape.ClosedRefrigeratorSource.transform.position,
+                Is.EqualTo(shifted.Refrigerator));
+            Assert.That(
+                soundscape.OpenRefrigeratorSource.transform.position,
                 Is.EqualTo(shifted.Refrigerator));
             Assert.That(
                 soundscape.RareCueSource.transform.position,
@@ -282,6 +348,31 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(
                     HomeSoundscape.OwnedSourceCount));
+
+            yield return new WaitForSecondsRealtime(0.05f);
+            Assert.That(
+                soundscape.ClosedRefrigeratorSource.isPlaying,
+                Is.True);
+            Assert.That(
+                soundscape.OpenRefrigeratorSource.isPlaying,
+                Is.True);
+            root.SetActive(false);
+            Assert.That(
+                soundscape.ClosedRefrigeratorSource.isPlaying,
+                Is.False);
+            Assert.That(
+                soundscape.OpenRefrigeratorSource.isPlaying,
+                Is.False);
+            Assert.That(soundscape.BalconySource.isPlaying, Is.False);
+            root.SetActive(true);
+            yield return new WaitForSecondsRealtime(0.05f);
+            Assert.That(
+                soundscape.ClosedRefrigeratorSource.isPlaying,
+                Is.True);
+            Assert.That(
+                soundscape.OpenRefrigeratorSource.isPlaying,
+                Is.True);
+            Assert.That(soundscape.BalconySource.isPlaying, Is.True);
 
             Object.Destroy(root);
             yield return null;
@@ -357,7 +448,8 @@ namespace BarPromenade.Tests.PlayMode
         {
             return new[]
             {
-                soundscape.RefrigeratorClip,
+                soundscape.ClosedRefrigeratorClip,
+                soundscape.OpenRefrigeratorClip,
                 soundscape.BalconyClip,
                 soundscape.SoftWoodClip,
                 soundscape.RadiatorTickClip,

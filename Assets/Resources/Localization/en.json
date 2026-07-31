@@ -65,6 +65,54 @@
       "value": "E \u2014 close refrigerator"
     },
     {
+      "key": "home.refrigerator.item.vodka.name",
+      "value": "Vodka bottle"
+    },
+    {
+      "key": "home.refrigerator.item.vodka.description",
+      "value": "A cheap bottle, almost empty. It smells sharply even through the cap."
+    },
+    {
+      "key": "home.refrigerator.item.egg.name",
+      "value": "Chicken egg"
+    },
+    {
+      "key": "home.refrigerator.item.egg.description",
+      "value": "One speckled egg in a battered carton. It might still be edible."
+    },
+    {
+      "key": "home.refrigerator.item.stew_can.name",
+      "value": "Open can of stew"
+    },
+    {
+      "key": "home.refrigerator.item.stew_can.description",
+      "value": "An opened can of stew. Cold fat has set around the meat."
+    },
+    {
+      "key": "home.refrigerator.action.take",
+      "value": "Take"
+    },
+    {
+      "key": "home.refrigerator.action.use",
+      "value": "Use"
+    },
+    {
+      "key": "home.refrigerator.action.back",
+      "value": "Back"
+    },
+    {
+      "key": "home.refrigerator.action.unavailable",
+      "value": "Not available yet."
+    },
+    {
+      "key": "home.refrigerator.controls.browse",
+      "value": "Mouse / \u2190/\u2192 / D-pad \u2014 select   LMB / E / Enter / A \u2014 inspect   Esc / B \u2014 close"
+    },
+    {
+      "key": "home.refrigerator.controls.inspect",
+      "value": "\u2190/\u2192 / D-pad \u2014 action   LMB / E / Enter / A \u2014 confirm   Esc / B \u2014 back"
+    },
+    {
       "key": "interaction.cat",
       "value": "E — talk to the cat"
     },

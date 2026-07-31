@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.ObjectModel;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -48,9 +49,14 @@ namespace BarPromenade.Tests.PlayMode
 
             Collider[] colliders =
                 view.GetComponentsInChildren<Collider>(true);
-            Assert.That(colliders, Has.Length.EqualTo(1));
-            Assert.That(colliders[0], Is.SameAs(view.BodyCollider));
+            Assert.That(colliders, Has.Length.EqualTo(4));
+            Assert.That(colliders, Does.Contain(view.BodyCollider));
             Assert.That(view.BodyCollider.enabled, Is.True);
+            Assert.That(view.Items, Has.Count.EqualTo(3));
+            Assert.That(
+                view.Items,
+                Is.InstanceOf<
+                    ReadOnlyCollection<HomeRefrigeratorItemView>>());
 
             for (int index = 0; index < plan.Slots.Count; index++)
             {
@@ -78,7 +84,45 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     marker.InitialOccupant,
                     Is.EqualTo(slot.Occupant));
+
+                if (!slot.IsOccupied)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    view.TryGetItem(
+                        slot.Occupant,
+                        out HomeRefrigeratorItemView item),
+                    Is.True,
+                    slot.Id);
+                Assert.That(item.Kind, Is.EqualTo(slot.Occupant));
+                Assert.That(item.SlotId, Is.EqualTo(slot.Id));
+                Assert.That(item.OriginalRoot, Is.SameAs(item.transform));
+                Assert.That(
+                    item.OriginalRoot.parent,
+                    Is.SameAs(slotRoot));
+                Assert.That(item.Renderers, Is.Not.Empty);
+                Assert.That(
+                    item.Renderers,
+                    Is.InstanceOf<ReadOnlyCollection<Renderer>>());
+                Assert.That(item.SelectionCollider, Is.Not.Null);
+                Assert.That(item.SelectionCollider.enabled, Is.True);
+                Assert.That(item.SelectionCollider.isTrigger, Is.True);
+                Assert.That(
+                    item.SelectionCollider.transform,
+                    Is.SameAs(item.OriginalRoot));
+                Assert.That(
+                    item.SelectionCollider,
+                    Is.TypeOf<BoxCollider>());
+                AssertSelectionBounds(item);
             }
+
+            Assert.That(
+                view.TryGetItem(
+                    HomeRefrigeratorItemKind.None,
+                    out _),
+                Is.False);
 
             AssertRequiredChild(view.transform, "Home Refrigerator Shelf 1");
             AssertRequiredChild(view.transform, "Home Refrigerator Shelf 2");
@@ -260,6 +304,56 @@ namespace BarPromenade.Tests.PlayMode
                     }
                 }
             }
+        }
+
+        private static void AssertSelectionBounds(
+            HomeRefrigeratorItemView item)
+        {
+            Bounds visualBounds = item.Renderers[0].bounds;
+            for (int index = 1; index < item.Renderers.Count; index++)
+            {
+                visualBounds.Encapsulate(item.Renderers[index].bounds);
+            }
+
+            Bounds selectionBounds = item.SelectionCollider.bounds;
+            Assert.That(
+                Vector3.Distance(selectionBounds.center, visualBounds.center),
+                Is.LessThan(0.001f),
+                item.Kind.ToString());
+            Assert.That(
+                Vector3.Distance(selectionBounds.size, visualBounds.size),
+                Is.LessThan(0.001f),
+                item.Kind.ToString());
+
+            for (int index = 0; index < item.Renderers.Count; index++)
+            {
+                Bounds rendererBounds = item.Renderers[index].bounds;
+                Assert.That(
+                    ContainsWithTolerance(
+                        selectionBounds,
+                        rendererBounds.min),
+                    Is.True,
+                    item.Renderers[index].name);
+                Assert.That(
+                    ContainsWithTolerance(
+                        selectionBounds,
+                        rendererBounds.max),
+                    Is.True,
+                    item.Renderers[index].name);
+            }
+        }
+
+        private static bool ContainsWithTolerance(
+            Bounds bounds,
+            Vector3 point)
+        {
+            const float tolerance = 0.0001f;
+            return point.x >= bounds.min.x - tolerance &&
+                   point.x <= bounds.max.x + tolerance &&
+                   point.y >= bounds.min.y - tolerance &&
+                   point.y <= bounds.max.y + tolerance &&
+                   point.z >= bounds.min.z - tolerance &&
+                   point.z <= bounds.max.z + tolerance;
         }
     }
 }

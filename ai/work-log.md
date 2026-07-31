@@ -2,6 +2,43 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Refrigerator hum states and PS1 item inspection
+
+- Replaced the single refrigerator response with distinct deterministic
+  closed-cabinet and open motor/fan loops. Two co-located spatial sources start
+  at the same DSP time and follow the live door amount through cosine/sine
+  equal-power gains; initialization, disable and scene cleanup keep both loops
+  under the existing scene-local audio ownership contract.
+- Added stable catalog metadata and runtime item views for the vodka bottle,
+  chicken egg and open stew can. Each item registers its original root,
+  renderers and a tight trigger collider without changing the eight-slot
+  storage contract or introducing inventory persistence.
+- Added pointer ray hover with a reversible `MaterialPropertyBlock` tint and a
+  localized cursor label. Keyboard/gamepad cycling remains available as a
+  fallback and uses the same registered item set.
+- Added a nested unscaled `Browsing -> FlyingIn -> Inspecting -> FlyingOut`
+  timeline under the refrigerator's existing modal lock. The chosen model
+  eases into a camera-relative centered pivot, rotates slowly over a dark
+  backdrop and receives localized name/description plus `Take`, `Use` and
+  `Back` actions. `Take` and `Use` currently show a localized unavailable
+  placeholder and do not mutate storage or session state.
+- Normal return, outer close, cancel, component disable and destruction restore
+  the exact parent, sibling index, local transform, collider state and renderer
+  colors before releasing the outer interaction. The scaled retro UI now
+  converts pointer coordinates into its logical `640 x 360` canvas, and a
+  disabled nested controller rejects direct input calls.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests generated projects compile with
+  0 errors and 0 warnings; `git diff --check` passes.
+- Focused item/audio/catalog EditMode coverage passed 17/17, and the final
+  refrigerator interaction PlayMode fixture passed 6/6 with real Input System
+  mouse events, hover tint/shared-material assertions, backdrop alpha, item
+  framing, placeholder actions and lifecycle restoration.
+- Complete EditMode passed 612/612 and complete D3D12 PlayMode passed 118/118.
+- The Windows x64 Player build succeeded at `148258576` bytes with 0 warnings.
+
 ## 2026-07-31 — Refrigerator puppet handoff timing
 
 - Kept the ordinary player rig and both shadow presentations visible during

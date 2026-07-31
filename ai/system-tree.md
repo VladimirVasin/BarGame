@@ -71,7 +71,7 @@ Assets/
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
-        InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM generation
+        InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM + two-state fridge hum
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
@@ -90,6 +90,8 @@ Assets/
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
         HomeRefrigeratorWorldBuilder.cs  worn hollow cabinet, shelves, bins and contents
         HomeRefrigeratorView.cs  animated door/handle/emissive interior presentation
+        HomeRefrigeratorItemCatalog.cs  localized metadata and preview transforms
+        HomeRefrigeratorItemView.cs  stable renderers, selection trigger and original root
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
@@ -106,14 +108,15 @@ Assets/
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
-        HomeRefrigeratorInteraction*.cs  modal first-person open/inspect/close timeline
+        HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
+        HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
         StairwellCatInteraction.cs     localized temporary cat-response placeholder
       Scenes/        startup/bar/home/stairwell roots, atmosphere/reveal and transition
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
         HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
-        HomeSoundscape*.cs               calm spatial beds and sparse domestic cues
+        HomeSoundscape*.cs               paired fridge hum, balcony bed and domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
@@ -126,6 +129,7 @@ Assets/
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, segmented HUD, map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
+        HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
   Tests/
@@ -134,11 +138,14 @@ Assets/
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
+      HomeRefrigeratorItem{Catalog,InspectionTimeline}Tests.cs  metadata and nested phases
+      InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
-      HomeRefrigerator*PlayModeTests.cs     generated storage and modal restoration
+      HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
+      InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -210,6 +217,8 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                           -> HomeRefrigeratorWorldBuilder
                                              -> hollow worn cabinet + eight slots
                                              -> vodka / egg / open stew can
+                                             -> HomeRefrigeratorItemCatalog + ItemView
+                                                -> localized metadata + tight triggers
        -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
                                    -> window + open door + walkable safe balcony
        -> same seed -> HomeExteriorContextPlanner
@@ -219,8 +228,10 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                  -> cold shadowed window cookie Spot
                                  -> shared transparent glass + grade + sparse dust
        -> HomeAmbiencePlayer -> calm steady room bed
-       -> HomeSoundscape -> spatial refrigerator + balcony night air
-                         -> seeded wood/radiator/radio/bathroom cues
+       -> HomeSoundscape -> synchronized closed/open refrigerator loops
+                          -> equal-power crossfade from current door amount
+                          -> spatial balcony night air
+                          -> seeded wood/radiator/radio/bathroom cues
        -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
@@ -237,8 +248,14 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                       -> first-person Bezier camera + low-poly hand
                                       -> seal / handle / 102-degree door animation
                                       -> persistent lit inspection
+                                      -> HomeRefrigeratorItemInspectionController
+                                         -> hover tint + localized cursor name
+                                         -> Browsing/FlyingIn/Inspecting/FlyingOut
+                                         -> centered slow rotation + dark backdrop
+                                         -> name/description + Take/Use/Back placeholders
+                                         -> exact transform/collider/color restoration
                                       -> close + exact fixed-shot/player restoration
-                                      -> HomeSoundscape open-door hum response
+                                      -> HomeSoundscape equal-power hum crossfade
        -> HomeAlarmClockPlan -> HomeAlarmClockBuilder
                              -> silent clock/nightstand room dressing
                              -> reusable flickering 05:59 / Wake-only solid 06:00

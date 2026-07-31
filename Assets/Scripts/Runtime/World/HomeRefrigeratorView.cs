@@ -29,6 +29,8 @@ namespace BarPromenade
         private IReadOnlyDictionary<string, Transform> slotRoots =
             new ReadOnlyDictionary<string, Transform>(
                 new Dictionary<string, Transform>());
+        private IReadOnlyList<HomeRefrigeratorItemView> items =
+            Array.AsReadOnly(Array.Empty<HomeRefrigeratorItemView>());
         private Quaternion doorClosedRotation;
         private Quaternion handleClosedRotation;
         private Vector3 haloFullScale = Vector3.one;
@@ -45,6 +47,7 @@ namespace BarPromenade
         public CityLightHalo InteriorHalo => interiorHalo;
         public Collider BodyCollider => bodyCollider;
         public IReadOnlyDictionary<string, Transform> SlotRoots => slotRoots;
+        public IReadOnlyList<HomeRefrigeratorItemView> Items => items;
         public float DoorOpenAmount { get; private set; }
         public float HandleTurnAmount { get; private set; }
         public float InteriorLightAmount { get; private set; }
@@ -59,7 +62,8 @@ namespace BarPromenade
             Collider newBodyCollider,
             float newDoorOpenAngle,
             Color newInteriorLightColor,
-            IDictionary<string, Transform> newSlotRoots)
+            IDictionary<string, Transform> newSlotRoots,
+            IReadOnlyList<HomeRefrigeratorItemView> newItems)
         {
             doorPivot = newDoorPivot != null
                 ? newDoorPivot
@@ -97,6 +101,41 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(newSlotRoots));
             }
 
+            if (newItems == null)
+            {
+                throw new ArgumentNullException(nameof(newItems));
+            }
+
+            var itemCopy = new HomeRefrigeratorItemView[newItems.Count];
+            var itemKinds = new HashSet<HomeRefrigeratorItemKind>();
+            var itemSlots = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < newItems.Count; index++)
+            {
+                HomeRefrigeratorItemView item = newItems[index];
+                if (item == null ||
+                    !newSlotRoots.TryGetValue(
+                        item.SlotId,
+                        out Transform slotRoot) ||
+                    item.OriginalRoot.parent != slotRoot)
+                {
+                    throw new ArgumentException(
+                        "Every refrigerator item must belong to its declared " +
+                        "slot root.",
+                        nameof(newItems));
+                }
+
+                if (!itemKinds.Add(item.Kind) ||
+                    !itemSlots.Add(item.SlotId))
+                {
+                    throw new ArgumentException(
+                        "Refrigerator item kinds and occupied slots must be " +
+                        "unique.",
+                        nameof(newItems));
+                }
+
+                itemCopy[index] = item;
+            }
+
             doorOpenAngle = newDoorOpenAngle;
             interiorLightColor = newInteriorLightColor;
             doorClosedRotation = doorPivot.localRotation;
@@ -104,6 +143,7 @@ namespace BarPromenade
             haloFullScale = interiorHalo.transform.localScale;
             slotRoots = new ReadOnlyDictionary<string, Transform>(
                 new Dictionary<string, Transform>(newSlotRoots));
+            items = Array.AsReadOnly(itemCopy);
             lightProperties = new MaterialPropertyBlock();
             initialized = true;
             ResetPresentation();
@@ -193,6 +233,26 @@ namespace BarPromenade
             }
 
             return slotRoots.TryGetValue(id, out slotRoot);
+        }
+
+        public bool TryGetItem(
+            HomeRefrigeratorItemKind kind,
+            out HomeRefrigeratorItemView item)
+        {
+            if (kind != HomeRefrigeratorItemKind.None)
+            {
+                for (int index = 0; index < items.Count; index++)
+                {
+                    if (items[index].Kind == kind)
+                    {
+                        item = items[index];
+                        return true;
+                    }
+                }
+            }
+
+            item = null;
+            return false;
         }
 
         public void ResetPresentation()

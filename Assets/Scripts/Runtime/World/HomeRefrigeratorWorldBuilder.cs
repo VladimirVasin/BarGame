@@ -83,11 +83,13 @@ namespace BarPromenade
 
             var slots = new Dictionary<string, Transform>(
                 StringComparer.Ordinal);
+            var items = new List<HomeRefrigeratorItemView>();
             BuildSlotsAndContents(
                 cavityRoot,
                 doorPivot,
                 plan,
-                slots);
+                slots,
+                items);
 
             Renderer lightStrip = BuildInteriorLight(root, plan);
             CityLightHalo halo = BuildInteriorHalo(root, plan);
@@ -109,7 +111,8 @@ namespace BarPromenade
                 bodyCollider,
                 plan.DoorOpenAngle,
                 InteriorGlow,
-                slots);
+                slots,
+                items);
             return view;
         }
 
@@ -846,7 +849,8 @@ namespace BarPromenade
             Transform cavityRoot,
             Transform doorPivot,
             HomeRefrigeratorPlan plan,
-            IDictionary<string, Transform> slotRoots)
+            IDictionary<string, Transform> slotRoots,
+            IList<HomeRefrigeratorItemView> items)
         {
             for (int index = 0; index < plan.Slots.Count; index++)
             {
@@ -871,30 +875,46 @@ namespace BarPromenade
                 slotRoots.Add(slot.Id, slotRoot);
                 if (slot.IsOccupied)
                 {
-                    BuildOccupant(slotRoot, slot);
+                    Transform itemRoot = BuildOccupant(slotRoot, slot);
+                    Renderer[] renderers =
+                        itemRoot.GetComponentsInChildren<Renderer>(true);
+                    BoxCollider selectionCollider =
+                        BuildSelectionCollider(itemRoot, renderers);
+                    HomeRefrigeratorItemView itemView =
+                        itemRoot.gameObject.AddComponent<
+                            HomeRefrigeratorItemView>();
+                    itemView.Initialize(
+                        slot.Occupant,
+                        slot.Id,
+                        itemRoot,
+                        renderers,
+                        selectionCollider);
+                    items.Add(itemView);
                 }
             }
         }
 
-        private static void BuildOccupant(
+        private static Transform BuildOccupant(
             Transform slotRoot,
             HomeRefrigeratorSlotPlan slot)
         {
             switch (slot.Occupant)
             {
                 case HomeRefrigeratorItemKind.VodkaBottle:
-                    BuildVodkaBottle(slotRoot, slot.Size);
-                    break;
+                    return BuildVodkaBottle(slotRoot, slot.Size);
                 case HomeRefrigeratorItemKind.ChickenEgg:
-                    BuildChickenEgg(slotRoot, slot.Size);
-                    break;
+                    return BuildChickenEgg(slotRoot, slot.Size);
                 case HomeRefrigeratorItemKind.OpenStewCan:
-                    BuildOpenStewCan(slotRoot, slot.Size);
-                    break;
+                    return BuildOpenStewCan(slotRoot, slot.Size);
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(slot),
+                        slot.Occupant,
+                        "An occupied slot requires a supported item kind.");
             }
         }
 
-        private static void BuildVodkaBottle(
+        private static Transform BuildVodkaBottle(
             Transform parent,
             Vector3 slotSize)
         {
@@ -1000,9 +1020,10 @@ namespace BarPromenade
                     neckHeight * 0.58f,
                     0.008f),
                 new Color(0.64f, 0.36f, 0.21f));
+            return bottle;
         }
 
-        private static void BuildChickenEgg(
+        private static Transform BuildChickenEgg(
             Transform parent,
             Vector3 slotSize)
         {
@@ -1068,9 +1089,10 @@ namespace BarPromenade
                     eggHeight * 0.06f,
                     0.006f),
                 new Color(0.45f, 0.34f, 0.23f));
+            return eggRoot;
         }
 
-        private static void BuildOpenStewCan(
+        private static Transform BuildOpenStewCan(
             Transform parent,
             Vector3 slotSize)
         {
@@ -1154,6 +1176,7 @@ namespace BarPromenade
                 DeepRust);
             pullTab.transform.localRotation =
                 Quaternion.Euler(58f, 0f, 0f);
+            return can;
         }
 
         private static void CreateStewChunks(
@@ -1183,6 +1206,80 @@ namespace BarPromenade
                 new Vector3(diameter * 0.12f, y + 0.004f, -diameter * 0.16f),
                 size * 0.60f,
                 new Color(0.64f, 0.49f, 0.27f));
+        }
+
+        private static BoxCollider BuildSelectionCollider(
+            Transform itemRoot,
+            IReadOnlyList<Renderer> renderers)
+        {
+            Bounds bounds = CalculateLocalRendererBounds(
+                itemRoot,
+                renderers);
+            BoxCollider collider =
+                itemRoot.gameObject.AddComponent<BoxCollider>();
+            collider.center = bounds.center;
+            collider.size = new Vector3(
+                Mathf.Max(0.01f, bounds.size.x),
+                Mathf.Max(0.01f, bounds.size.y),
+                Mathf.Max(0.01f, bounds.size.z));
+            collider.isTrigger = true;
+            return collider;
+        }
+
+        private static Bounds CalculateLocalRendererBounds(
+            Transform itemRoot,
+            IReadOnlyList<Renderer> renderers)
+        {
+            if (renderers == null || renderers.Count == 0)
+            {
+                throw new ArgumentException(
+                    "An item selection collider requires renderers.",
+                    nameof(renderers));
+            }
+
+            bool hasPoint = false;
+            Bounds combined = default;
+            Matrix4x4 worldToItem = itemRoot.worldToLocalMatrix;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer itemRenderer = renderers[index];
+                if (itemRenderer == null)
+                {
+                    throw new ArgumentException(
+                        "Item renderers cannot contain null entries.",
+                        nameof(renderers));
+                }
+
+                Bounds rendererBounds = itemRenderer.localBounds;
+                Matrix4x4 rendererToItem =
+                    worldToItem * itemRenderer.transform.localToWorldMatrix;
+                Vector3 center = rendererBounds.center;
+                Vector3 extents = rendererBounds.extents;
+                for (int x = -1; x <= 1; x += 2)
+                {
+                    for (int y = -1; y <= 1; y += 2)
+                    {
+                        for (int z = -1; z <= 1; z += 2)
+                        {
+                            Vector3 point = rendererToItem.MultiplyPoint3x4(
+                                center + Vector3.Scale(
+                                    extents,
+                                    new Vector3(x, y, z)));
+                            if (!hasPoint)
+                            {
+                                combined = new Bounds(point, Vector3.zero);
+                                hasPoint = true;
+                            }
+                            else
+                            {
+                                combined.Encapsulate(point);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return combined;
         }
 
         private static Renderer BuildInteriorLight(

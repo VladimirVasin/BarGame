@@ -34,8 +34,8 @@ namespace BarPromenade
     {
         public const int SampleRate =
             HomeSoundscapeSynthesis.SampleRate;
-        public const int OwnedSourceCount = 3;
-        public const int RuntimeClipCount = 6;
+        public const int OwnedSourceCount = 4;
+        public const int RuntimeClipCount = 7;
 
         public const float ClosedRefrigeratorVolume = 0.095f;
         public const float OpenRefrigeratorVolume = 0.122f;
@@ -47,15 +47,21 @@ namespace BarPromenade
         private const float RefrigeratorRadius = 9f;
         private const float BalconyRadius = 11f;
         private const float CueRadius = 8f;
+        private const float HalfPi = Mathf.PI * 0.5f;
+        private const double ScheduledLoopLeadSeconds = 0.02d;
 
         [SerializeField] private AudioSource refrigeratorSource;
+        [SerializeField] private AudioSource openRefrigeratorSource;
         [SerializeField] private AudioSource balconySource;
         [SerializeField] private AudioSource rareCueSource;
         [SerializeField] private AudioLowPassFilter refrigeratorFilter;
+        [SerializeField]
+        private AudioLowPassFilter openRefrigeratorFilter;
         [SerializeField] private AudioLowPassFilter balconyFilter;
         [SerializeField] private AudioLowPassFilter rareCueFilter;
 
         private AudioClip refrigeratorClip;
+        private AudioClip openRefrigeratorClip;
         private AudioClip balconyClip;
         private AudioClip softWoodClip;
         private AudioClip radiatorTickClip;
@@ -75,9 +81,16 @@ namespace BarPromenade
         public int CueSequence => cueSequence;
         public float SecondsUntilNextCue => secondsUntilNextCue;
         public HomeSoundscapeAnchors Anchors => anchors;
+        public AudioSource ClosedRefrigeratorSource =>
+            refrigeratorSource;
+        public AudioSource OpenRefrigeratorSource =>
+            openRefrigeratorSource;
         public AudioSource RefrigeratorSource => refrigeratorSource;
         public AudioSource BalconySource => balconySource;
         public AudioSource RareCueSource => rareCueSource;
+        public AudioClip ClosedRefrigeratorClip => refrigeratorClip;
+        public AudioClip OpenRefrigeratorClip =>
+            openRefrigeratorClip;
         public AudioClip RefrigeratorClip => refrigeratorClip;
         public AudioClip BalconyClip => balconyClip;
         public AudioClip SoftWoodClip => softWoodClip;
@@ -86,6 +99,12 @@ namespace BarPromenade
         public AudioClip BathroomDetailClip => bathroomDetailClip;
         public float RefrigeratorDoorOpenAmount =>
             refrigeratorDoorOpenAmount;
+        public float ClosedRefrigeratorMixWeight =>
+            Mathf.Clamp01(
+                Mathf.Cos(refrigeratorDoorOpenAmount * HalfPi));
+        public float OpenRefrigeratorMixWeight =>
+            Mathf.Clamp01(
+                Mathf.Sin(refrigeratorDoorOpenAmount * HalfPi));
 
         public void SetRefrigeratorDoorOpenAmount(float amount)
         {
@@ -110,6 +129,8 @@ namespace BarPromenade
             anchors = worldAnchors;
             refrigeratorSource.transform.position =
                 anchors.Refrigerator;
+            openRefrigeratorSource.transform.position =
+                anchors.Refrigerator;
             balconySource.transform.position =
                 anchors.BalconyNightAir;
             rareCueSource.transform.position = anchors.SoftWood;
@@ -124,12 +145,13 @@ namespace BarPromenade
             IsInitialized = true;
 
             refrigeratorSource.Stop();
+            openRefrigeratorSource.Stop();
             balconySource.Stop();
             rareCueSource.Stop();
             rareCueSource.clip = null;
             if (isActiveAndEnabled)
             {
-                refrigeratorSource.Play();
+                StartSynchronizedRefrigeratorLoops();
                 balconySource.Play();
             }
         }
@@ -179,9 +201,11 @@ namespace BarPromenade
             }
 
             if (refrigeratorSource != null &&
-                !refrigeratorSource.isPlaying)
+                openRefrigeratorSource != null &&
+                (!refrigeratorSource.isPlaying ||
+                 !openRefrigeratorSource.isPlaying))
             {
-                refrigeratorSource.Play();
+                StartSynchronizedRefrigeratorLoops();
             }
 
             if (balconySource != null &&
@@ -194,6 +218,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             refrigeratorSource?.Stop();
+            openRefrigeratorSource?.Stop();
             balconySource?.Stop();
             rareCueSource?.Stop();
         }
@@ -201,23 +226,28 @@ namespace BarPromenade
         private void OnDestroy()
         {
             StopAndClear(refrigeratorSource);
+            StopAndClear(openRefrigeratorSource);
             StopAndClear(balconySource);
             StopAndClear(rareCueSource);
 
             DestroyRuntimeClip(ref refrigeratorClip);
+            DestroyRuntimeClip(ref openRefrigeratorClip);
             DestroyRuntimeClip(ref balconyClip);
             DestroyRuntimeClip(ref softWoodClip);
             DestroyRuntimeClip(ref radiatorTickClip);
             DestroyRuntimeClip(ref radioMurmurClip);
             DestroyRuntimeClip(ref bathroomDetailClip);
             DestroyOwnedSource(refrigeratorSource);
+            DestroyOwnedSource(openRefrigeratorSource);
             DestroyOwnedSource(balconySource);
             DestroyOwnedSource(rareCueSource);
 
             refrigeratorSource = null;
+            openRefrigeratorSource = null;
             balconySource = null;
             rareCueSource = null;
             refrigeratorFilter = null;
+            openRefrigeratorFilter = null;
             balconyFilter = null;
             rareCueFilter = null;
             IsInitialized = false;
@@ -268,8 +298,15 @@ namespace BarPromenade
             if (refrigeratorSource == null)
             {
                 refrigeratorSource = CreateOwnedSource(
-                    "Spatial Refrigerator",
+                    "Spatial Refrigerator Closed",
                     out refrigeratorFilter);
+            }
+
+            if (openRefrigeratorSource == null)
+            {
+                openRefrigeratorSource = CreateOwnedSource(
+                    "Spatial Refrigerator Open",
+                    out openRefrigeratorFilter);
             }
 
             if (balconySource == null)
@@ -287,6 +324,7 @@ namespace BarPromenade
             }
 
             ConfigureRefrigeratorSource();
+            ConfigureOpenRefrigeratorSource();
             ConfigureBalconySource();
             ConfigureRareCueSource();
             EnsureRuntimeClips();
@@ -318,7 +356,28 @@ namespace BarPromenade
             refrigeratorFilter = EnsureFilter(
                 refrigeratorSource,
                 refrigeratorFilter);
+            refrigeratorFilter.cutoffFrequency =
+                ClosedRefrigeratorCutoff;
             refrigeratorFilter.lowpassResonanceQ = 1f;
+            ApplyRefrigeratorDoorAudio();
+        }
+
+        private void ConfigureOpenRefrigeratorSource()
+        {
+            ConfigureSpatialSource(
+                openRefrigeratorSource,
+                true,
+                0f,
+                1.35f,
+                RefrigeratorRadius,
+                175,
+                30f);
+            openRefrigeratorFilter = EnsureFilter(
+                openRefrigeratorSource,
+                openRefrigeratorFilter);
+            openRefrigeratorFilter.cutoffFrequency =
+                OpenRefrigeratorCutoff;
+            openRefrigeratorFilter.lowpassResonanceQ = 1f;
             ApplyRefrigeratorDoorAudio();
         }
 
@@ -326,19 +385,36 @@ namespace BarPromenade
         {
             if (refrigeratorSource != null)
             {
-                refrigeratorSource.volume = Mathf.Lerp(
-                    ClosedRefrigeratorVolume,
-                    OpenRefrigeratorVolume,
-                    refrigeratorDoorOpenAmount);
+                refrigeratorSource.volume =
+                    ClosedRefrigeratorVolume *
+                    ClosedRefrigeratorMixWeight;
             }
 
-            if (refrigeratorFilter != null)
+            if (openRefrigeratorSource != null)
             {
-                refrigeratorFilter.cutoffFrequency = Mathf.Lerp(
-                    ClosedRefrigeratorCutoff,
-                    OpenRefrigeratorCutoff,
-                    refrigeratorDoorOpenAmount);
+                openRefrigeratorSource.volume =
+                    OpenRefrigeratorVolume *
+                    OpenRefrigeratorMixWeight;
             }
+        }
+
+        private void StartSynchronizedRefrigeratorLoops()
+        {
+            if (refrigeratorSource == null ||
+                openRefrigeratorSource == null)
+            {
+                return;
+            }
+
+            refrigeratorSource.Stop();
+            openRefrigeratorSource.Stop();
+            refrigeratorSource.timeSamples = 0;
+            openRefrigeratorSource.timeSamples = 0;
+            double startTime =
+                AudioSettings.dspTime +
+                ScheduledLoopLeadSeconds;
+            refrigeratorSource.PlayScheduled(startTime);
+            openRefrigeratorSource.PlayScheduled(startTime);
         }
 
         private void ConfigureBalconySource()
@@ -422,9 +498,17 @@ namespace BarPromenade
             if (refrigeratorClip == null)
             {
                 refrigeratorClip = CreateClip(
-                    "HomeSoundscape_Refrigerator",
+                    "HomeSoundscape_RefrigeratorClosed",
                     HomeSoundscapeSynthesis
-                        .GenerateRefrigeratorLoopSamples());
+                        .GenerateClosedRefrigeratorLoopSamples());
+            }
+
+            if (openRefrigeratorClip == null)
+            {
+                openRefrigeratorClip = CreateClip(
+                    "HomeSoundscape_RefrigeratorOpen",
+                    HomeSoundscapeSynthesis
+                        .GenerateOpenRefrigeratorLoopSamples());
             }
 
             if (balconyClip == null)
@@ -464,6 +548,7 @@ namespace BarPromenade
             }
 
             refrigeratorSource.clip = refrigeratorClip;
+            openRefrigeratorSource.clip = openRefrigeratorClip;
             balconySource.clip = balconyClip;
         }
 

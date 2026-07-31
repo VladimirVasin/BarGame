@@ -87,10 +87,12 @@ The vertical slice contains:
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
-  plus three-source spatial soundscapes in Home and Stairwell. Home combines a
-  calm room bed, refrigerator and balcony night air with sparse soft wood,
-  radiator, radio and bathroom details; Stairwell combines a concrete room
-  bed, ventilation and electrical buzz with rarer pipe knocks, metal stress,
+  plus a four-source Home spatial soundscape and a three-source Stairwell
+  soundscape. Home combines a calm room bed, synchronized co-located closed
+  and open refrigerator loops, balcony night air and sparse soft wood,
+  radiator, radio and bathroom details; the two refrigerator timbres use an
+  equal-power door crossfade. Stairwell combines a concrete room bed,
+  ventilation and electrical buzz with rarer pipe knocks, metal stress,
   distant water and movement. Both use deterministic schedules, `22050 Hz`
   mono clips, deliberately quantized retro waveforms and layout-derived
   anchors;
@@ -233,7 +235,9 @@ The vertical slice contains:
   hollow liner, three stained shelves, a lower drawer, frost, grime and two
   door bins. Six cavity slots and two door slots form the storage contract;
   the initial occupied slots hold a vodka bottle, one chicken egg and an open
-  can of stew, while global inventory and item transfer remain deferred;
+  can of stew. Each occupant owns stable catalog metadata, registered
+  renderers and a tight non-blocking selection trigger, while global inventory
+  and item transfer remain deferred;
 - one localized modal refrigerator interaction: the Home camera follows an
   unscaled first-person Bezier approach while the ordinary puppet remains
   visible, then hides its rig and shadows in the same frame that a low-poly
@@ -243,7 +247,20 @@ The vertical slice contains:
   return begins, while input and HUD restore on completion at the exact fixed
   Home shot. A cold emissive strip and halo reveal the contents without adding
   another realtime `Light`; generated seal, hinge and closing-thunk cues
-  accompany a door-open refrigerator-hum change;
+  accompany an equal-power crossfade between synchronized closed-door and
+  open-door spatial refrigerator loops;
+- while the outer refrigerator interaction holds the lit open state, one
+  nested PS1-style item browser highlights the vodka, egg or open stew can and
+  shows its localized name beside the pointer; keyboard/gamepad cycling and
+  confirm provide the same selection path. Click or confirm flies the chosen
+  model into the center of the camera, fades in a dark camera-facing backdrop,
+  rotates it slowly and presents a localized title, short description and
+  `Take`/`Use`/`Back` actions. `Take` and `Use` currently return a localized
+  unavailable placeholder without changing slots or session state; `Back`
+  returns the item before the refrigerator can close. Normal return, cancel,
+  disable and destroy restore the exact parent, sibling index, local transform,
+  selection collider and original renderer colors without acquiring a second
+  modal lock;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the

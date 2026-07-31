@@ -117,8 +117,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   trigger. Runtime composition builds a hollow worn cabinet, three shelves,
   lower drawer and two door bins around six cavity plus two door storage slots;
   stable slot IDs initially place one vodka bottle, chicken egg and open stew
-  can. These slots are a data/storage contract only and do not introduce the
-  deferred global inventory or pickup persistence.
+  can. `HomeRefrigeratorItemCatalog` owns each occupant's localized name,
+  description and preview transform, while `HomeRefrigeratorItemView` registers
+  its original root, renderers and tight trigger collider. These slots remain a
+  data/storage contract only and do not introduce the deferred global inventory
+  or pickup persistence.
   `HomeRefrigeratorInteraction` owns a separate unscaled
   `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
   Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
@@ -128,8 +131,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rig and shadows at the start of `CameraReturn`; the exact active fixed-camera
   shot, input and HUD restore on completion, disable or destroy. A cold
   emissive strip plus `CityLightHalo` reveals the contents without increasing
-  Home's realtime-light count; generated seal, hinge and thunk cues and the
-  door-dependent refrigerator hum use the existing spatial audio contracts.
+  Home's realtime-light count; generated seal, hinge and thunk cues use the
+  existing spatial audio contracts.
+- **Accepted — Nested PS1 refrigerator item inspection:** Item browsing exists
+  only while the outer refrigerator timeline holds `Inspecting` and reuses its
+  captured modal lock. A pointer ray against registered trigger colliders
+  applies a reversible `MaterialPropertyBlock` hover tint and draws the
+  localized name beside the cursor; keyboard/gamepad cycling plus confirm is an
+  equivalent path. Selecting the vodka, egg or open stew can advances a pure
+  unscaled `Browsing -> FlyingIn -> Inspecting -> FlyingOut` timeline, reparents
+  the model through a camera-relative pivot, eases it to a centered preview,
+  rotates it at `18°/s` and reveals a dark camera-facing backdrop. Crisp
+  post-composite UI shows the localized title, short description and
+  `Take`/`Use`/`Back`; the first two only show an unavailable placeholder and
+  never mutate slots or session state. Back or an outer close request returns
+  the active item before the door can close. Normal return, cancel, disable and
+  destroy restore its exact parent, sibling index, local position/rotation/
+  scale, selection-collider state and original renderer colors, then clear the
+  temporary presentation state.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
@@ -354,15 +373,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   begin. Later or direct Home visits keep the clock silent at `06:00`.
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
-  to `Ambience/Beds`. Home and Stairwell additionally own exactly three
-  spatial `Ambience/Details` sources and six runtime clips each: two
-  quantized eight-second loops plus four sparse cue types. Pure seeded
-  schedules bound pitch, gain and delay; a data-first anchor planner maps the
-  sources to refrigerator/balcony/domestic fixtures at Home and
+  to `Ambience/Beds`. Home additionally owns four spatial
+  `Ambience/Details` sources and seven runtime clips: distinct closed/open
+  refrigerator loops, a balcony loop and four sparse cue types. The two
+  refrigerator sources are co-located, scheduled at the same DSP time and
+  mixed from door openness with clamped cosine/sine equal-power gains; closed
+  and open states therefore use different deterministic eight-second mono
+  timbres instead of filtering one clip. Stairwell retains three spatial
+  sources and six clips: two quantized eight-second loops plus four cues. Pure
+  seeded schedules bound pitch, gain and delay; a data-first anchor planner
+  maps sources to refrigerator/balcony/domestic fixtures at Home and
   ventilation/electrical/pipe/debris/water/door fixtures in Stairwell.
-  Single-mode transitions destroy every scene-local source and runtime clip,
-  while the persistent pooled SFX service remains available to the next
-  scene.
+  Reinitialization reuses owned sources and clips, enable/disable restarts or
+  stops both synchronized refrigerator loops together, and Single-mode cleanup
+  destroys every scene-local source and runtime clip while the persistent
+  pooled SFX service remains available to the next scene.
 - **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright

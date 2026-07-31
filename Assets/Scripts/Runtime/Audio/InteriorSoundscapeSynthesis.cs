@@ -275,7 +275,7 @@ namespace BarPromenade
         private const float RadioMurmurDuration = 1.8f;
         private const float BathroomDetailDuration = 0.58f;
 
-        public static float[] GenerateRefrigeratorLoopSamples()
+        public static float[] GenerateClosedRefrigeratorLoopSamples()
         {
             int sampleCount = Mathf.RoundToInt(
                 SampleRate * LoopDuration);
@@ -302,6 +302,50 @@ namespace BarPromenade
             }
 
             return samples;
+        }
+
+        public static float[] GenerateOpenRefrigeratorLoopSamples()
+        {
+            int sampleCount = Mathf.RoundToInt(
+                SampleRate * LoopDuration);
+            var samples = new float[sampleCount];
+            for (int index = 0; index < sampleCount; index++)
+            {
+                float phase = InteriorSoundscapeSynthesis.LoopPhase(
+                    index,
+                    sampleCount);
+                float motorCycle =
+                    0.80f +
+                    Mathf.Sin(phase * 2f + 1.1f) * 0.075f +
+                    Mathf.Sin(phase * 5f + 2.3f) * 0.035f;
+                float exposedMotor =
+                    Mathf.Sin(phase * 424f + 0.1f) * 0.28f +
+                    Mathf.Sin(phase * 848f + 0.55f) * 0.115f +
+                    Mathf.Sin(phase * 1272f + 1.25f) * 0.052f;
+                float internalFan =
+                    InteriorSoundscapeSynthesis.PeriodicNoise(
+                        phase,
+                        1.35f,
+                        4211f) *
+                    0.17f;
+                float fanWhine =
+                    Mathf.Sin(phase * 1568f + 0.75f) * 0.045f +
+                    Mathf.Sin(phase * 6416f + 2.1f) * 0.032f +
+                    Mathf.Sin(phase * 10400f + 1.4f) * 0.018f;
+                samples[index] =
+                    InteriorSoundscapeSynthesis.Quantize(
+                        (exposedMotor * motorCycle +
+                         internalFan +
+                         fanWhine) *
+                        0.48f);
+            }
+
+            return samples;
+        }
+
+        public static float[] GenerateRefrigeratorLoopSamples()
+        {
+            return GenerateClosedRefrigeratorLoopSamples();
         }
 
         public static float[] GenerateBalconyNightAirLoopSamples()

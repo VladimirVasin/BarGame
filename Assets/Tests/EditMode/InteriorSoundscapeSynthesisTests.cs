@@ -22,9 +22,12 @@ namespace BarPromenade.Tests.EditMode
             float[] stairwellElectrical =
                 StairwellSoundscapeSynthesis
                     .GenerateElectricalBuzzLoopSamples();
-            float[] homeRefrigerator =
+            float[] homeClosedRefrigerator =
                 HomeSoundscapeSynthesis
-                    .GenerateRefrigeratorLoopSamples();
+                    .GenerateClosedRefrigeratorLoopSamples();
+            float[] homeOpenRefrigerator =
+                HomeSoundscapeSynthesis
+                    .GenerateOpenRefrigeratorLoopSamples();
             float[] homeNightAir =
                 HomeSoundscapeSynthesis
                     .GenerateBalconyNightAirLoopSamples();
@@ -38,7 +41,11 @@ namespace BarPromenade.Tests.EditMode
                 StairwellSoundscapeSynthesis.SampleRate,
                 StairwellSoundscapeSynthesis.LoopDuration);
             AssertLoop(
-                homeRefrigerator,
+                homeClosedRefrigerator,
+                HomeSoundscapeSynthesis.SampleRate,
+                HomeSoundscapeSynthesis.LoopDuration);
+            AssertLoop(
+                homeOpenRefrigerator,
                 HomeSoundscapeSynthesis.SampleRate,
                 HomeSoundscapeSynthesis.LoopDuration);
             AssertLoop(
@@ -79,9 +86,12 @@ namespace BarPromenade.Tests.EditMode
             float[] stairwellElectrical =
                 StairwellSoundscapeSynthesis
                     .GenerateElectricalBuzzLoopSamples();
-            float[] homeRefrigerator =
+            float[] homeClosedRefrigerator =
                 HomeSoundscapeSynthesis
-                    .GenerateRefrigeratorLoopSamples();
+                    .GenerateClosedRefrigeratorLoopSamples();
+            float[] homeOpenRefrigerator =
+                HomeSoundscapeSynthesis
+                    .GenerateOpenRefrigeratorLoopSamples();
             float[] homeNightAir =
                 HomeSoundscapeSynthesis
                     .GenerateBalconyNightAirLoopSamples();
@@ -91,15 +101,20 @@ namespace BarPromenade.Tests.EditMode
                 StairwellSoundscapeSynthesis
                     .GenerateVentilationLoopSamples());
             CollectionAssert.AreEqual(
-                homeRefrigerator,
+                homeClosedRefrigerator,
                 HomeSoundscapeSynthesis
-                    .GenerateRefrigeratorLoopSamples());
+                    .GenerateClosedRefrigeratorLoopSamples());
+            CollectionAssert.AreEqual(
+                homeOpenRefrigerator,
+                HomeSoundscapeSynthesis
+                    .GenerateOpenRefrigeratorLoopSamples());
 
             var signals = new[]
             {
                 stairwellVentilation,
                 stairwellElectrical,
-                homeRefrigerator,
+                homeClosedRefrigerator,
+                homeOpenRefrigerator,
                 homeNightAir
             };
             for (int first = 0;

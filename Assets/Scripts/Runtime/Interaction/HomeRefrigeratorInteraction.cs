@@ -31,6 +31,7 @@ namespace BarPromenade
         private HomeRefrigeratorView view;
         private HomeRefrigeratorInteractionTimeline timeline;
         private HomeRefrigeratorFirstPersonHand firstPersonHand;
+        private HomeRefrigeratorItemInspectionController itemInspection;
         private Camera targetCamera;
         private Vector3 cameraStartPosition;
         private Quaternion cameraStartRotation;
@@ -62,6 +63,8 @@ namespace BarPromenade
         public HomeRefrigeratorInteractionTimeline Timeline => timeline;
         public HomeRefrigeratorFirstPersonHand FirstPersonHand =>
             firstPersonHand;
+        public HomeRefrigeratorItemInspectionController ItemInspection =>
+            itemInspection;
         public HomeRefrigeratorPlan Plan => plan;
         public HomeRefrigeratorView View => view;
         public string PromptKey =>
@@ -125,6 +128,17 @@ namespace BarPromenade
             firstPersonHand.Initialize(
                 targetCamera,
                 view.HandlePivot);
+            itemInspection =
+                GetComponent<
+                    HomeRefrigeratorItemInspectionController>();
+            if (itemInspection == null)
+            {
+                itemInspection =
+                    gameObject.AddComponent<
+                        HomeRefrigeratorItemInspectionController>();
+            }
+
+            itemInspection.Initialize(targetCamera, view);
             view.ResetPresentation();
             home.Soundscape?.SetRefrigeratorDoorOpenAmount(0f);
             IsInitialized = true;
@@ -197,6 +211,12 @@ namespace BarPromenade
 
         public bool RequestClose()
         {
+            if (itemInspection != null && itemInspection.IsActive)
+            {
+                itemInspection.RequestReturn();
+                return false;
+            }
+
             if (!ownsInteraction ||
                 timeline == null ||
                 !timeline.BeginClose())
@@ -221,6 +241,13 @@ namespace BarPromenade
             HomeRefrigeratorInteractionPhase previousPhase =
                 timeline.Phase;
             timeline.Advance(unscaledDeltaTime);
+            bool canBrowseItems = timeline.IsInspecting;
+            itemInspection?.SetBrowsingEnabled(canBrowseItems);
+            if (canBrowseItems)
+            {
+                itemInspection?.AdvanceInspection(unscaledDeltaTime);
+            }
+
             PlayCrossedCues();
             ApplyCurrentPresentation();
             if (timeline.Phase ==
@@ -242,6 +269,7 @@ namespace BarPromenade
                 ownsInteraction ||
                 playerVisualStateCaptured ||
                 modalLock.IsLocked;
+            itemInspection?.CancelAndRestore();
             timeline?.Cancel();
             ownsInteraction = false;
             if (!hadInteraction)
@@ -265,7 +293,13 @@ namespace BarPromenade
                 return;
             }
 
-            if (timeline.IsInspecting && WasClosePressed())
+            bool nestedInputConsumed =
+                timeline.IsInspecting &&
+                itemInspection != null &&
+                itemInspection.HandleInput();
+            if (timeline.IsInspecting &&
+                !nestedInputConsumed &&
+                WasClosePressed())
             {
                 RequestClose();
             }
@@ -324,6 +358,9 @@ namespace BarPromenade
 
             HomeRefrigeratorInteractionFrame frame =
                 timeline.CurrentFrame;
+            itemInspection?.SetBrowsingEnabled(
+                frame.Phase ==
+                HomeRefrigeratorInteractionPhase.Inspecting);
             view?.ApplyPresentation(
                 frame.DoorOpen,
                 frame.HandleTurn,
@@ -337,7 +374,9 @@ namespace BarPromenade
             {
                 home.InteractionPrompt.SetPrompt(
                     frame.Phase ==
-                    HomeRefrigeratorInteractionPhase.Inspecting
+                        HomeRefrigeratorInteractionPhase.Inspecting &&
+                    (itemInspection == null ||
+                     !itemInspection.IsActive)
                         ? ClosePromptKey
                         : string.Empty);
             }
@@ -477,6 +516,8 @@ namespace BarPromenade
 
         private void RestoreOwnedState()
         {
+            itemInspection?.SetBrowsingEnabled(false);
+            itemInspection?.CancelAndRestore();
             view?.ResetPresentation();
             firstPersonHand?.Hide();
             home?.Soundscape?.SetRefrigeratorDoorOpenAmount(0f);
