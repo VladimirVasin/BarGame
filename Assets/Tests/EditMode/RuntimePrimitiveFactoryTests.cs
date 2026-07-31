@@ -6,6 +6,50 @@ namespace BarPromenade.Tests.EditMode
     public sealed class RuntimePrimitiveFactoryTests
     {
         [Test]
+        public void DefaultPrimitivesUseSharedSupportedUrpLitMaterial()
+        {
+            GameObject box = RuntimePrimitiveFactory.CreateBox(
+                "Box",
+                null,
+                Vector3.zero,
+                Vector3.one,
+                Color.red,
+                false);
+            GameObject cylinder =
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Cylinder",
+                    null,
+                    Vector3.zero,
+                    Vector3.one,
+                    Color.blue,
+                    false);
+
+            try
+            {
+                Material expected = Resources.Load<Material>(
+                    RuntimePrimitiveFactory
+                        .DefaultMaterialResourcePath);
+                Material boxMaterial =
+                    box.GetComponent<Renderer>().sharedMaterial;
+                Material cylinderMaterial =
+                    cylinder.GetComponent<Renderer>().sharedMaterial;
+
+                Assert.That(expected, Is.Not.Null);
+                Assert.That(boxMaterial, Is.SameAs(expected));
+                Assert.That(cylinderMaterial, Is.SameAs(expected));
+                Assert.That(
+                    expected.shader.name,
+                    Is.EqualTo("Universal Render Pipeline/Lit"));
+                Assert.That(expected.shader.isSupported, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(box);
+                Object.DestroyImmediate(cylinder);
+            }
+        }
+
+        [Test]
         public void CylindersReuseEightSidedPresentationMesh()
         {
             GameObject first = RuntimePrimitiveFactory.CreateCylinder(

@@ -126,10 +126,39 @@ namespace BarPromenade
                 controller.Phase ==
                 PlayerAnimatedInteractionPhase.Looping)
             {
-                controller.RequestExit();
+                RequestWake();
                 return;
             }
 
+            BeginOwnedInteraction(false);
+        }
+
+        public bool BeginSleeping()
+        {
+            if (!CanBeginOwnedInteraction())
+            {
+                return false;
+            }
+
+            return BeginOwnedInteraction(true);
+        }
+
+        public bool RequestWake()
+        {
+            return RequestWake(1f);
+        }
+
+        public bool RequestWake(float durationMultiplier)
+        {
+            return ownsActiveInteraction &&
+                   controller != null &&
+                   controller.Phase ==
+                   PlayerAnimatedInteractionPhase.Looping &&
+                   controller.RequestExit(durationMultiplier);
+        }
+
+        private bool BeginOwnedInteraction(bool startSleeping)
+        {
             surfaceClutterWasActive =
                 surfaceClutter != null &&
                 surfaceClutter.activeSelf;
@@ -138,11 +167,17 @@ namespace BarPromenade
             bool accepted;
             try
             {
-                accepted = controller.Begin(
-                    definition,
-                    plan.StandHipPosition,
-                    plan.ActionHipPosition,
-                    plan.HeadToFootAxis);
+                accepted = startSleeping
+                    ? controller.BeginLooping(
+                        definition,
+                        plan.StandHipPosition,
+                        plan.ActionHipPosition,
+                        plan.HeadToFootAxis)
+                    : controller.Begin(
+                        definition,
+                        plan.StandHipPosition,
+                        plan.ActionHipPosition,
+                        plan.HeadToFootAxis);
             }
             catch
             {
@@ -153,11 +188,24 @@ namespace BarPromenade
             if (!accepted)
             {
                 motor?.Teleport(previousPosition);
-                return;
+                return false;
             }
 
             ownsActiveInteraction = true;
             HandlePhaseChanged(controller.Phase);
+            return true;
+        }
+
+        private bool CanBeginOwnedInteraction()
+        {
+            return isActiveAndEnabled &&
+                   controller != null &&
+                   controller.IsInitialized &&
+                   controller.isActiveAndEnabled &&
+                   controller.Phase ==
+                   PlayerAnimatedInteractionPhase.Idle &&
+                   playerRoot != null &&
+                   !SceneTransitionService.IsTransitioning;
         }
 
         private static float[] CreateSleepLoopFrameHolds()

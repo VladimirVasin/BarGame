@@ -9,10 +9,36 @@ namespace BarPromenade
     public static class RuntimePrimitiveFactory
     {
         private const int LowPolyCylinderSides = 8;
+        public const string DefaultMaterialResourcePath =
+            "Materials/RuntimePrimitiveLit";
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static Mesh lowPolyCylinderMesh;
+        private static Material defaultMaterial;
+
+        public static Material DefaultMaterial
+        {
+            get
+            {
+                if (defaultMaterial == null)
+                {
+                    defaultMaterial = Resources.Load<Material>(
+                        DefaultMaterialResourcePath);
+                }
+
+                if (defaultMaterial == null ||
+                    defaultMaterial.shader == null ||
+                    !defaultMaterial.shader.isSupported)
+                {
+                    throw new InvalidOperationException(
+                        "Missing or unsupported runtime primitive material " +
+                        $"'{DefaultMaterialResourcePath}'.");
+                }
+
+                return defaultMaterial;
+            }
+        }
 
         public static GameObject CreateBox(
             string name,
@@ -261,10 +287,10 @@ namespace BarPromenade
             result.transform.localPosition = localPosition;
             result.transform.localScale = size;
             Renderer renderer = result.GetComponent<Renderer>();
-            if (sharedMaterial != null)
-            {
-                renderer.sharedMaterial = sharedMaterial;
-            }
+            renderer.sharedMaterial =
+                sharedMaterial != null
+                    ? sharedMaterial
+                    : DefaultMaterial;
 
             if (type == PrimitiveType.Cylinder)
             {

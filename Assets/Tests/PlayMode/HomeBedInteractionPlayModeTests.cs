@@ -123,6 +123,7 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
 
+            keyboard.MakeCurrent();
             inputFixture.Press(
                 keyboard.eKey,
                 queueEventOnly: true);
@@ -233,6 +234,7 @@ namespace BarPromenade.Tests.PlayMode
                 keyboard.eKey.isPressed,
                 Is.False,
                 "The first interaction key press must be released.");
+            keyboard.MakeCurrent();
             inputFixture.Press(
                 keyboard.eKey,
                 queueEventOnly: true);
@@ -287,9 +289,9 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture.Press(
                 keyboard.dKey,
                 queueEventOnly: true);
+            InputSystem.Update();
             yield return null;
             Assert.That(Keyboard.current, Is.SameAs(keyboard));
-            Assert.That(keyboard.dKey.isPressed, Is.True);
             Assert.That(SceneTransitionService.IsTransitioning, Is.False);
             yield return null;
             float movementDeadline =
@@ -301,6 +303,10 @@ namespace BarPromenade.Tests.PlayMode
                    Time.realtimeSinceStartup <
                    movementDeadline)
             {
+                keyboard.MakeCurrent();
+                inputFixture.Press(
+                    keyboard.dKey,
+                    queueEventOnly: true);
                 yield return null;
             }
 
@@ -309,7 +315,17 @@ namespace BarPromenade.Tests.PlayMode
                     home.Player.GameObject.transform.position,
                     wakePosition),
                 Is.GreaterThanOrEqualTo(0.04f),
-                "Movement input must work again after waking.");
+                "Movement input must work again after waking. " +
+                $"key={keyboard.dKey.isPressed}, " +
+                $"motorEnabled={home.Player.Motor.enabled}, " +
+                $"inputEnabled={home.Player.Motor.InputEnabled}, " +
+                $"speedMultiplier={home.Player.Motor.SpeedMultiplier}, " +
+                $"timeScale={Time.timeScale}, " +
+                $"deltaTime={Time.deltaTime}, " +
+                $"start={wakePosition}, " +
+                $"end={home.Player.GameObject.transform.position}, " +
+                $"spawn={home.Layout.PlayerSpawn}, " +
+                $"approach={home.BedInteractionPlan.ApproachRootPosition}");
             inputFixture.Release(
                 keyboard.dKey,
                 queueEventOnly: true);
@@ -369,6 +385,99 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Bed.CanInteract(home.Player.Interactor),
                 Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Bed_ProgrammaticSleepStartsInLoopAndWakeRestoresPlayer()
+        {
+            yield return LoadHome();
+
+            Transform surfaceClutter =
+                home.Room.Find(
+                    HomeBedInteraction.SurfaceClutterName);
+            Assert.That(surfaceClutter, Is.Not.Null);
+            Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
+
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(
+                home.AnimatedInteraction.FrameIndex,
+                Is.EqualTo(
+                    home.Bed.Definition.LoopStartFrame));
+            Assert.That(
+                home.Player.GameObject.transform.position,
+                Is.EqualTo(
+                    home.BedInteractionPlan
+                        .ApproachRootPosition));
+            Assert.That(
+                home.Player.Motor.InputEnabled,
+                Is.False);
+            Assert.That(
+                home.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(
+                home.Bed.PromptKey,
+                Is.EqualTo(HomeBedInteraction.WakePromptKey));
+            Assert.That(
+                home.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.True);
+            Assert.That(home.Player.Shadow.enabled, Is.False);
+            Assert.That(home.Player.ContactShadow.enabled, Is.False);
+            AssertRigRendererState(home, false);
+            Assert.That(surfaceClutter.gameObject.activeSelf, Is.False);
+            Assert.That(
+                home.Bed.BeginSleeping(),
+                Is.False,
+                "The bed must not replace an interaction it already owns.");
+
+            Assert.That(home.Bed.RequestWake(), Is.True);
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                home.AnimatedInteraction.ExitDurationMultiplier,
+                Is.EqualTo(1f),
+                "An ordinary bed wake must retain its base duration.");
+            Assert.That(
+                home.AnimatedInteraction.ExitDurationSeconds,
+                Is.EqualTo(
+                    home.Bed.Definition.ExitFrameCount /
+                    (double)home.Bed.Definition.ExitFramesPerSecond)
+                    .Within(0.0001d));
+            Assert.That(
+                home.Player.Interactor.InputEnabled,
+                Is.False);
+            Assert.That(home.Bed.RequestWake(), Is.False);
+
+            Time.timeScale = FastTimeScale;
+            yield return WaitForPhase(
+                home,
+                PlayerAnimatedInteractionPhase.Idle);
+            Time.timeScale = 1f;
+            yield return null;
+
+            Assert.That(
+                home.Player.Motor.InputEnabled,
+                Is.True);
+            Assert.That(
+                home.Player.Interactor.InputEnabled,
+                Is.True);
+            Assert.That(
+                home.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.False);
+            Assert.That(
+                home.Bed.PromptKey,
+                Is.EqualTo(HomeBedInteraction.SleepPromptKey));
+            Assert.That(home.Player.Shadow.enabled, Is.True);
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            AssertRigRendererState(home, true);
+            Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
         }
 
         private IEnumerator LoadHome()

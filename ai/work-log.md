@@ -2,6 +2,117 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Locked alarm-clock menu beat and extended first wake
+
+- Replaced the automatic clock-to-sleeper reveal with a clock shot that stays
+  active until the player chooses Wake Up. The first rendered Home frame shows
+  `05:59`; the opening discards its first potentially load-inflated delta and
+  then holds five unscaled seconds with no menu rendering or input path.
+- Rebuilt the clock face as one reusable 28-segment display. At the timing
+  boundary it reveals Wake Up/Quit without changing `05:59`, starting the
+  alarm or creating new display geometry. All digits and both colon elements
+  keep flickering off for only `0.16 s` at three-second intervals before and
+  after the menu appears, by toggling their renderers without material
+  instances or hierarchy churn.
+- Wake Up alone changes the display to solid `06:00`, hides the menu and
+  starts the spatial mechanical ring. The clock shot and persistent sleeping
+  loop remain unchanged for exactly three unscaled seconds; the alarm then
+  stops, the existing 24-frame exit starts with a `3x` duration multiplier
+  (`6 s` instead of the ordinary `2 s`), and the camera glides from the clock
+  to the sleeper through a `2.25 s` smootherstep quadratic path before easing
+  into the active MainRoom shot. The final pose already matches gameplay when
+  control returns, so there is no handoff cut.
+- Cancellation during the locked clock beat restores the silent ordinary
+  `05:59` display together with normal Home input; only a successful Wake
+  request can switch this opening clock to `06:00`.
+- Stabilized the ordinary-bed input proof by making its virtual keyboard
+  current at each tested press, explicitly processing and holding the movement
+  event across frames, and asserting restored movement rather than a transient
+  raw key flag.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests generated projects compile with
+  0 errors and 0 warnings.
+- Focused opening/animated-interaction EditMode tests passed 23/23.
+- Real MainMenu/opening, alarm and ordinary-bed PlayMode tests passed 7/7,
+  including the five-second input gate, silent menu, Wake-only time change,
+  exact three-second alarm hold, cleanup during the ring, segment counts,
+  persistent flicker timing, both camera-move stages, cut-free gameplay
+  handoff and the `3x`/`1x` wake-duration split.
+- Complete EditMode passed 583/583 and complete D3D12 PlayMode passed 111/111.
+- The Windows Player build succeeded at `148173632` bytes with 0 warnings.
+
+## 2026-07-31 — Windows Player runtime-material repair
+
+- Reproduced the all-magenta Windows Player and traced it to runtime-composed
+  primitives retaining `GameObject.CreatePrimitive`'s implicit material.
+  Editor-only URP defaults made that path look valid in Play Mode, while the
+  Player data contained no `Universal Render Pipeline/Lit` shader.
+- Added one serialized `RuntimePrimitiveLit` Resources material and made
+  `RuntimePrimitiveFactory` assign it to every primitive without an explicit
+  specialized material. Per-instance colors remain in
+  `MaterialPropertyBlock`, and explicit emissive, atmosphere and glass
+  materials remain unchanged.
+- Added a regression contract that boxes and cylinders resolve the same
+  supported shared URP/Lit material.
+
+Verification:
+
+- Focused `RuntimePrimitiveFactoryTests` passed 4/4; complete EditMode passed
+  581/581.
+- Complete PlayMode passed 110/110 on D3D12, including the graphics-device
+  RenderGraph test and the real Unity Test Framework bootstrap path.
+- A full Windows x64 Player build succeeded at `148166976` bytes with
+  0 warnings. Its serialized Player data now contains
+  `Universal Render Pipeline/Lit` and `RuntimePrimitiveLit`.
+- An eight-second D3D12 built-player visual smoke reached the waking Home
+  menu with the room, hero, clock and furniture correctly shaded instead of
+  magenta; its Player log contained no shader/material error or runtime
+  exception.
+
+## 2026-07-31 — PS1 waking opening and Home alarm clock
+
+- Added `MainMenu` as build scene index `0`. Its black launch camera holds the
+  initial frame while `MainMenuRoot` resets the complete session, prepares the
+  one-shot `HomeArrivalKind.OpeningSleep` value and Single-loads the existing
+  `HomeInterior`.
+- Added a frame-rate-independent Home opening that starts the existing bed
+  interaction directly in its persistent sleep loop, captures modal input,
+  reveals clock and sleeper fixed shots, and presents localized PS1-style
+  Wake Up/Quit choices.
+- Wake Up stops the alarm, requests the existing 24-frame wake sequence and
+  restores ordinary Home input, HUD, shadows and active fixed-camera shot
+  without reloading the room. Direct and later Home arrivals consume
+  `Normal`, so they never replay the opening.
+- Added one validated bed-relative nightstand and low-poly 3D alarm clock to
+  every Home composition. The opening uses a generated looping mono
+  `22050 Hz` mechanical ring on a fully spatial `SFX/World` source plus a
+  bounded visual rattle; ordinary visits keep the clock silent.
+- Extended the editor scene setup, build-scene contract, RU/EN localization,
+  new-session/arrival state, opening timeline, alarm plan/synthesis/lifecycle
+  and Home scene-flow coverage.
+- Pinned ordinary Unity Editor Play to `MainMenu` from every currently open
+  scene. Unity Test Framework's exact temporary `InitTestScene{GUID}` path
+  suppresses the override while PlayMode tests start, then restores it on the
+  return to Edit Mode.
+
+Verification:
+
+- Opening-focused EditMode passed 52/52; the complete EditMode suite passed
+  575/575.
+- The opening/alarm/input/transition PlayMode paths passed, including a real
+  `E` press and Home-to-Stairwell handoff; the complete PlayMode suite passed
+  110/110 after making the older bed movement assertion process its queued
+  Input System event explicitly.
+- `BarPromenade.Runtime`, EditMode tests and PlayMode tests compile through
+  their generated projects with 0 errors and 0 warnings.
+- Windows Player build succeeded at `147903696` bytes with 0 warnings.
+- A 12-second built-player smoke recorded `MainMenu` at build index `0`, the
+  complete new-game reset, `OpeningSleep` prepare/consume and initialized
+  `HomeInterior` at build index `5`, with no runtime exception in the Player
+  log.
+
 ## 2026-07-31 — Player-home frontage regression repair
 
 - Restricted preferred home placement to the selected bar's actual frontage

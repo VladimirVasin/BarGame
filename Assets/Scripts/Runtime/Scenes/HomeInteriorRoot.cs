@@ -33,6 +33,13 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeAlarmClockPlan AlarmClockPlan
+        {
+            get;
+            private set;
+        }
+        public HomeAlarmClock AlarmClock { get; private set; }
+        public HomeArrivalKind Arrival { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public HomeAmbiencePlayer Ambience { get; private set; }
         public HomeSoundscape Soundscape { get; private set; }
@@ -44,6 +51,17 @@ namespace BarPromenade
             get;
             private set;
         }
+        public InteractionPromptView InteractionPrompt
+        {
+            get;
+            private set;
+        }
+        public IntoxicationHudView IntoxicationHud
+        {
+            get;
+            private set;
+        }
+        public HomeOpeningController Opening { get; private set; }
         public HomeExit Exit { get; private set; }
 
         private void Awake()
@@ -61,6 +79,7 @@ namespace BarPromenade
             GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
+            Arrival = GameSessionState.ConsumeHomeArrival();
             Stopwatch timer = Stopwatch.StartNew();
             Camera camera =
                 RuntimeSceneSetup.EnsureHomeInterior();
@@ -76,6 +95,12 @@ namespace BarPromenade
                 Layout,
                 BalconyLayout,
                 ExteriorContext);
+            AlarmClockPlan =
+                HomeAlarmClockPlan.Create(Layout);
+            AlarmClock =
+                HomeAlarmClockBuilder.Build(
+                    Room,
+                    AlarmClockPlan);
             Balcony = Room.Find("Home Balcony");
             ExteriorView =
                 Room.Find("Home Exterior View");
@@ -105,9 +130,9 @@ namespace BarPromenade
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
-            InteractionPromptView prompt =
+            InteractionPrompt =
                 ui.AddComponent<InteractionPromptView>();
-            IntoxicationHudView intoxicationHud =
+            IntoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
             Player = PlayerFactory.Create(
                 transform,
@@ -115,7 +140,7 @@ namespace BarPromenade
                 camera,
                 new RoadWalkableArea(
                     BalconyLayout.WalkableRectangles),
-                prompt);
+                InteractionPrompt);
             AnimatedInteraction =
                 Player.GameObject.AddComponent<
                     PlayerAnimatedInteractionController>();
@@ -157,9 +182,14 @@ namespace BarPromenade
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                intoxicationHud,
+                IntoxicationHud,
                 balanceView);
             BuildExit();
+            if (Arrival == HomeArrivalKind.OpeningSleep)
+            {
+                BuildOpening();
+            }
+
             IsInitialized = true;
             timer.Stop();
             GameLog.Info(
@@ -183,8 +213,22 @@ namespace BarPromenade
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
+                    "arrival",
+                    Arrival.ToString()),
+                GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        private void BuildOpening()
+        {
+            GameObject openingObject =
+                new GameObject("Home Opening");
+            openingObject.transform.SetParent(transform, false);
+            Opening =
+                openingObject.AddComponent<
+                    HomeOpeningController>();
+            Opening.Initialize(this);
         }
 
         private static IReadOnlyList<HomeCameraShot>

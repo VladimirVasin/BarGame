@@ -160,6 +160,117 @@ namespace BarPromenade.Tests.EditMode
                     (StairwellArrivalKind)99));
         }
 
+        [Test]
+        public void HomeArrival_IsConsumedAndResetsToNormal()
+        {
+            Assert.That(
+                GameSessionState.HomeArrival,
+                Is.EqualTo(HomeArrivalKind.Normal));
+            Assert.That(
+                GameSessionState.ConsumeHomeArrival(),
+                Is.EqualTo(HomeArrivalKind.Normal));
+
+            GameSessionState.PrepareHomeArrival(
+                HomeArrivalKind.OpeningSleep);
+
+            Assert.That(
+                GameSessionState.HomeArrival,
+                Is.EqualTo(HomeArrivalKind.OpeningSleep));
+            Assert.That(
+                GameSessionState.ConsumeHomeArrival(),
+                Is.EqualTo(HomeArrivalKind.OpeningSleep));
+            Assert.That(
+                GameSessionState.HomeArrival,
+                Is.EqualTo(HomeArrivalKind.Normal));
+            Assert.That(
+                GameSessionState.ConsumeHomeArrival(),
+                Is.EqualTo(HomeArrivalKind.Normal));
+        }
+
+        [Test]
+        public void HomeArrival_RejectsUnknownValue()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => GameSessionState.PrepareHomeArrival(
+                    (HomeArrivalKind)99));
+        }
+
+        [Test]
+        public void BeginNewGame_RestoresEverySessionContract()
+        {
+            GameSessionState.SetCitySeed(-7001);
+            GameSessionState.TryAddRouteStop("bar-route");
+            GameSessionState.TryAddRouteStop("bar-visited");
+            GameSessionState.MarkBarVisited("bar-visited");
+            GameSessionState.EnterBar(
+                "bar-active",
+                BarActivityKind.BeerPong);
+            GameSessionState.PrepareCityReturn();
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.ApartmentDoor);
+            GameSessionState.PrepareHomeArrival(
+                HomeArrivalKind.OpeningSleep);
+            GameSessionState.UpdateDrinkingProgress(
+                67,
+                DrinkId.CognacVsop,
+                4);
+            Assert.That(
+                GameSessionState.TryPurchaseDrink(
+                    DrinkId.Water).Succeeded,
+                Is.True);
+            GameSessionState.SetBalanceCheckDelay(14f);
+            GameSessionState.ConsumeBalanceCheckSequence();
+
+            GameSessionState.BeginNewGame();
+
+            Assert.That(
+                GameSessionState.CitySeed,
+                Is.EqualTo(GameSessionState.DefaultCitySeed));
+            Assert.That(GameSessionState.ActiveBarId, Is.Empty);
+            Assert.That(
+                GameSessionState.ActiveBarActivity,
+                Is.EqualTo(BarActivityKind.None));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+            Assert.That(
+                GameSessionState.IsReturningToCity,
+                Is.False);
+            Assert.That(
+                GameSessionState.StairwellArrival,
+                Is.EqualTo(StairwellArrivalKind.StreetDoor));
+            Assert.That(
+                GameSessionState.HomeArrival,
+                Is.EqualTo(HomeArrivalKind.Normal));
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.None));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(GameSessionState.DefaultCash));
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.BalanceCheckSequence,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.PlannedBarRoute,
+                Is.Empty);
+            Assert.That(
+                GameSessionState.VisitedBarCount,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-visited"),
+                Is.False);
+        }
+
         [TestCase(null)]
         [TestCase("")]
         public void MissingBarId_CannotCreateReturnDestination(string barId)
@@ -563,14 +674,7 @@ namespace BarPromenade.Tests.EditMode
 
         private static void ResetPublicState()
         {
-            GameSessionState.SetCitySeed(GameSessionState.DefaultCitySeed);
-            GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
-            GameSessionState.EnterBar(null);
-            GameSessionState.CompleteCityReturn();
-            GameSessionState.ResetDrinkingState();
-            GameSessionState.ResetEconomyState();
-            GameSessionState.ConsumeStairwellArrival();
+            GameSessionState.BeginNewGame();
         }
     }
 }

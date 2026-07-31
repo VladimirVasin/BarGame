@@ -1737,6 +1737,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Ambience.Source.loop, Is.True);
             Assert.That(home.Soundscape, Is.Not.Null);
             Assert.That(home.Soundscape.IsInitialized, Is.True);
+            Assert.That(home.AlarmClock, Is.Not.Null);
+            Assert.That(home.AlarmClock.IsInitialized, Is.True);
+            Assert.That(home.AlarmClock.IsRinging, Is.False);
             Assert.That(
                 home.Soundscape.GetComponentsInChildren<
                     AudioSource>(true),
@@ -1745,9 +1748,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(
-                    1 + HomeSoundscape.OwnedSourceCount),
+                    1 +
+                    HomeSoundscape.OwnedSourceCount +
+                    HomeAlarmClock.OwnedSourceCount),
                 "Home audio must remain one base ambience " +
-                "source and three soundscape sources.");
+                "source, three soundscape sources and one " +
+                "diegetic alarm source.");
             Assert.That(
                 home.Atmosphere,
                 Is.Not.Null);
@@ -2069,13 +2075,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ResetSessionState()
         {
-            GameSessionState.SetCitySeed(GameSessionState.DefaultCitySeed);
-            GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
-            GameSessionState.EnterBar(null);
-            GameSessionState.CompleteCityReturn();
-            GameSessionState.ResetDrinkingState();
-            GameSessionState.ResetEconomyState();
+            GameSessionState.BeginNewGame();
         }
     }
 }

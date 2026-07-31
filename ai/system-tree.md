@@ -5,6 +5,7 @@
 ```text
 Assets/
   Scenes/
+    MainMenu.unity
     City.unity
     DoorTransition.unity
     BarInterior.unity
@@ -17,6 +18,7 @@ Assets/
     Materials/
       CityNoirEmission.mat
       Ps1Composite.mat
+      RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Rendering/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
@@ -64,10 +66,11 @@ Assets/
       en.json
   Scripts/
     Runtime/
-      Core/          bootstrap, city root, session, transitions
+      Core/          six-scene bootstrap, city root, session, transitions
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
         InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM generation
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
@@ -84,6 +87,8 @@ Assets/
         HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
+        HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
+        HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
         StairwellLayout*.cs      three elevations, connected flights and blocker
@@ -99,7 +104,10 @@ Assets/
         PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
         StairwellCatInteraction.cs     localized temporary cat-response placeholder
-      Scenes/        bar/home/stairwell roots, atmosphere/reveal and transition
+      Scenes/        startup/bar/home/stairwell roots, atmosphere/reveal and transition
+        MainMenuRoot.cs                 black build-index-0 new-run boundary
+        HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
+        HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
         HomeSoundscape*.cs               calm spatial beds and sparse domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
@@ -117,7 +125,13 @@ Assets/
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
   Tests/
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+      ProjectBuildSceneTests.cs             startup scene order/allow-list
+      HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
+      HomeAlarmClockPlanTests.cs            clock placement and circulation
+      Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
+      HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
+      HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
@@ -135,6 +149,9 @@ ProjectSettings/
 Cross-system flow:
 
 ```text
+build index 0 -> MainMenuRoot -> BeginNewGame
+                              -> HomeArrival.OpeningSleep
+                              -> Single-load HomeInterior
 seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                            -> four urban districts + central park
                                            -> distant bars via CityTravelDistance
@@ -204,6 +221,19 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                        -> projected bed axis + preserved handedness
                                        -> lock motor; hide/restore rig + shadows
                                        -> owner cancel -> complete restoration
+       -> HomeAlarmClockPlan -> HomeAlarmClockBuilder
+                             -> silent clock/nightstand room dressing
+                             -> reusable flickering 05:59 / Wake-only solid 06:00
+                             -> HomeAlarmClockSynthesis -> spatial SFX/World ring
+       -> consumed HomeArrival.OpeningSleep -> HomeOpeningController
+                                             -> direct sleeping loop + modal lock
+                                             -> 5 s locked flickering 05:59 shot
+                                             -> silent 05:59 + Wake Up/Quit
+                                             -> Wake -> solid 06:00 + 3 s ring
+                                             -> ring stops -> wake + smooth camera arc
+                                             -> 3x exit + continuous gameplay settle
+                                             -> existing wake frames
+                                             -> normal Home camera/input, no handoff cut
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths
@@ -242,6 +272,7 @@ Bar root -> BarMusicPlayer -> bar_theme --------------------------> Music
 Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme -> Music
 scene root -> matching procedural ambience -----------------------> Ambience/Beds
 Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details
+Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/World
 input/gameplay events -> RetroAudioService -> pooled SFX/UI groups
 Music/details/world sends -> reverb/echo returns -> Master compressor
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale

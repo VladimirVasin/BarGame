@@ -297,6 +297,31 @@ namespace BarPromenade.Tests.EditMode
                         typeof(Vector3)
                     }),
                 Is.Not.Null);
+            Assert.That(
+                controllerType.GetMethod(
+                    nameof(
+                        PlayerAnimatedInteractionController
+                            .BeginLooping),
+                    new[]
+                    {
+                        definitionType,
+                        typeof(Vector3),
+                        typeof(Vector3)
+                    }),
+                Is.Not.Null);
+            Assert.That(
+                controllerType.GetMethod(
+                    nameof(
+                        PlayerAnimatedInteractionController
+                            .BeginLooping),
+                    new[]
+                    {
+                        definitionType,
+                        typeof(Vector3),
+                        typeof(Vector3),
+                        typeof(Vector3)
+                    }),
+                Is.Not.Null);
         }
 
         [Test]
@@ -416,6 +441,109 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.RequestExit(), Is.False);
 
             timeline.Advance(2f);
+
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(-1));
+            Assert.That(timeline.IsActive, Is.False);
+        }
+
+        [Test]
+        public void
+            Timeline_ExitDurationMultiplierSlowsOnlyTheRequestedExit()
+        {
+            PlayerAnimatedInteractionTimeline cinematic =
+                CreateTimeline();
+            PlayerAnimatedInteractionTimeline ordinary =
+                CreateTimeline();
+            cinematic.BeginLooping();
+            ordinary.BeginLooping();
+
+            const float durationMultiplier = 3f;
+            Assert.That(
+                cinematic.RequestExit(durationMultiplier),
+                Is.True);
+            Assert.That(ordinary.RequestExit(), Is.True);
+            Assert.That(
+                cinematic.ExitDurationMultiplier,
+                Is.EqualTo(durationMultiplier));
+            Assert.That(
+                cinematic.ExitDurationSeconds,
+                Is.EqualTo(
+                    ordinary.ExitDurationSeconds *
+                    durationMultiplier)
+                    .Within(Tolerance));
+
+            ordinary.Advance(2f);
+            cinematic.Advance(2f);
+
+            Assert.That(
+                ordinary.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(
+                cinematic.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                cinematic.PhaseProgress,
+                Is.EqualTo(1f / durationMultiplier)
+                    .Within(Tolerance));
+
+            cinematic.Advance(4f);
+            Assert.That(
+                cinematic.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(
+                cinematic.ExitDurationMultiplier,
+                Is.EqualTo(1f));
+            Assert.That(cinematic.BeginLooping(), Is.True);
+            Assert.That(cinematic.RequestExit(), Is.True);
+            Assert.That(
+                cinematic.ExitDurationMultiplier,
+                Is.EqualTo(1f),
+                "A later exit must not inherit the cinematic multiplier.");
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => cinematic.RequestExit(0f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => cinematic.RequestExit(-1f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => cinematic.RequestExit(float.NaN));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => cinematic.RequestExit(float.PositiveInfinity));
+        }
+
+        [Test]
+        public void Timeline_CanBeginDirectlyInLoopAndExitNormally()
+        {
+            PlayerAnimatedInteractionTimeline timeline =
+                CreateTimelineWithLoopHolds();
+
+            Assert.That(timeline.BeginLooping(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(1));
+            Assert.That(timeline.PhaseProgress, Is.Zero);
+            Assert.That(timeline.IsActive, Is.True);
+            Assert.That(timeline.Begin(), Is.False);
+            Assert.That(timeline.BeginLooping(), Is.False);
+
+            timeline.Advance(1f);
+            Assert.That(timeline.FrameIndex, Is.EqualTo(2));
+
+            Assert.That(timeline.RequestExit(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(5));
+
+            timeline.Advance(0.5f);
 
             Assert.That(
                 timeline.Phase,

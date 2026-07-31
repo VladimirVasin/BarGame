@@ -444,6 +444,20 @@ namespace BarPromenade
             ApplyShot(ActiveShot);
         }
 
+        public bool ReapplyActiveShot()
+        {
+            if (!IsInitialized ||
+                cameraFollow == null ||
+                target == null ||
+                selector == null)
+            {
+                return false;
+            }
+
+            RefreshSelection(true);
+            return true;
+        }
+
         private void OnEnable()
         {
             if (IsInitialized)

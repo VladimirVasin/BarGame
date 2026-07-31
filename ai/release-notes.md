@@ -2,6 +2,37 @@
 
 ## Unreleased
 
+### 2026-07-31 — Windows Player material fix
+
+- Fixed the Windows build rendering the runtime-composed room and world in
+  solid purple. All ordinary geometry now uses an explicitly packaged shared
+  URP material, matching its correct Editor presentation.
+
+### 2026-07-31 — PS1 waking opening and Home alarm clock
+
+- The build now begins behind a black launch boundary and opens on the hero
+  already asleep in their existing room instead of dropping directly into the
+  city.
+- Pressing Play in the Unity Editor now follows the same opening from any
+  currently selected scene; manual scene selection is no longer required.
+- The first Home shot now stays on the alarm clock at `05:59` for five silent
+  seconds with no available buttons. The whole red display flickers off
+  briefly at three-second intervals; the localized `ПРОСНУТЬСЯ / WAKE UP` or
+  `ВЫЙТИ / QUIT` menu then appears while the shot stays silent and the
+  flickering `05:59` remains unchanged.
+- Choosing Wake Up switches the clock to solid `06:00`, starts the alarm and
+  hides the menu. It rings and rattles for three seconds while the camera stays
+  on the clock and the hero remains asleep. The alarm then stops and only then
+  does the camera arc to the sleeper and ease into the normal Home shot
+  without a final cut. The one-shot wake itself takes six seconds—three times
+  the ordinary bed wake—before control returns without a reload.
+- Added a low-poly 3D alarm clock and nightstand beside the bed. Its generated
+  mechanical ring is spatial, passes through the shared Home audio treatment
+  and visibly rattles the clock during the opening.
+- The clock remains as silent room dressing on normal Home visits, and the
+  usual apartment exit through the stairwell continues into the generated
+  city.
+
 ### 2026-07-31 — Deterministic home/bar frontage repair
 
 - Fixed generated homes choosing a street beside a bar's lot instead of the

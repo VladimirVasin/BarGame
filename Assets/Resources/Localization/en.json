@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "key": "opening.title",
+      "value": "BAR PROMENADE"
+    },
+    {
+      "key": "opening.wake_up",
+      "value": "WAKE UP"
+    },
+    {
+      "key": "opening.quit",
+      "value": "QUIT"
+    },
+    {
+      "key": "opening.controls",
+      "value": "\u2191/\u2193 \u2014 select   Enter / E \u2014 confirm"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — enter the bar"
     },

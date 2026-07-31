@@ -10,7 +10,8 @@
   exclusions, and applies the PS1 composite after URP post-processing.
 - Input: Input System `1.19.0`; keyboard, mouse and gamepad are supported
   across movement, interaction and modal interfaces.
-- Build scenes: `Assets/Scenes/City.unity`,
+- Build scenes: `Assets/Scenes/MainMenu.unity`,
+  `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
   `Assets/Scenes/BarInterior.unity`,
   `Assets/Scenes/StairwellInterior.unity` and
@@ -27,6 +28,22 @@ and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
+- a black `MainMenu` launch boundary at build index `0` that resets every
+  session-owned value, writes the one-shot `OpeningSleep` Home arrival and
+  Single-loads the existing `HomeInterior` instead of duplicating the room;
+  ordinary Editor Play also enters through `MainMenu` regardless of which
+  scene is currently open;
+- a cinematic waking opening inside that Home: the hero begins directly in
+  the persistent bed-sleep loop while the first rendered Home frame fixes on
+  the silent alarm clock at `05:59`; its whole display flickers briefly at
+  long intervals while no menu input exists for five seconds. A localized
+  PS1-style `ПРОСНУТЬСЯ / WAKE UP` or `ВЫЙТИ / QUIT` menu then appears over
+  the same held shot while the silent display keeps flickering `05:59`. Wake
+  Up alone switches it to solid `06:00`, starts the alarm and hides the menu.
+  After three more unscaled seconds on the clock and sleeping loop, the alarm
+  stops; only then does the six-second, three-times-slower opening wake begin,
+  gliding to the sleeper over `2.25 s` and easing onward into the active
+  gameplay shot without a cut;
 - a finite, seed-reproducible connected `12 x 12`-block city spanning roughly
   `288 x 288 m`;
 - a fixed atmospheric noir night with `0.070` exponential-squared luminous
@@ -42,8 +59,9 @@ The vertical slice contains:
 - a crisp retro IMGUI layer after the world composite: prompts, HUD and city
   map use a logical `640x360` canvas, while the information-dense cocktail
   interface keeps responsive sizing;
-- shared 8-sided cylinder geometry, hard directional shadows and disabled
-  camera MSAA for a deliberate low-poly silhouette;
+- shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
+  material for ordinary runtime primitives, hard directional shadows and
+  disabled camera MSAA for a deliberate low-poly silhouette;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
@@ -96,11 +114,11 @@ The vertical slice contains:
 - a default `8.8 m` player-home mass with a recognizable third-floor balcony,
   open door and window; the City facade uses the same balcony geometry as the
   Home interior's exterior opening;
-- a fresh city session starts on the road node beside the deterministic player
-  home and its neighboring bar, `12 m` from their shared street approach under
-  default spacing; custom-layout fallback placement remains bounded to `48 m`
-  by traversable street distance, and returning from either interior restores
-  that entrance's own return point;
+- when the opening route first reaches the City, the hero starts on the road
+  node beside the deterministic player home and its neighboring bar, `12 m`
+  from their shared street approach under default spacing; custom-layout
+  fallback placement remains bounded to `48 m` by traversable street distance,
+  and returning from either interior restores that entrance's own return point;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -159,8 +177,9 @@ The vertical slice contains:
   paths constrained to the generated road graph;
 - localized interaction prompts from RU/EN JSON catalogs;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
-  context for the current city, with an explicit bar-or-home return kind and
-  a separate stairwell-arrival side;
+  context for the current city, with an explicit bar-or-home return kind, a
+  separate stairwell-arrival side and a consumed `Normal`/`OpeningSleep` Home
+  arrival value;
 - a dedicated `3.15 s` `DoorTransition` scene between connected locations:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
@@ -219,7 +238,8 @@ The vertical slice contains:
   stays camera-facing while an inner visual preserves authored handedness and
   can perspective-project a contextual world axis into the camera plane,
   can opt into a dedicated depth-independent shared sprite material,
-  supports optional extra holds on individual loop frames,
+  supports optional extra holds on individual loop frames and a validated
+  per-request exit-duration multiplier that resets after each interaction,
   interpolates between stand/action hip anchors while preserving the physical
   player root, locks movement through the complete interaction, allows
   interaction input again only in the persistent loop, and safely restores
@@ -237,6 +257,18 @@ The vertical slice contains:
   point-filtered `8 x 8` atlas contains 64 `128 x 96` cells, uses localized
   RU/EN sleep/wake prompts and retains all 64 source frames plus deterministic
   extraction and atlas-build tools;
+- one bed-relative low-poly nightstand and 3D alarm clock that remain visible
+  as ordinary Home dressing. Its reusable 28-segment display begins the
+  one-shot opening at `05:59` and flickers all digits and punctuation briefly
+  at long intervals. After a silent five-second input lock it reveals the menu
+  without changing the time or starting the alarm. Choosing Wake Up changes
+  the display to solid `06:00`, generates a looping mono `22050 Hz` mechanical
+  ring, rattles visibly and routes its fully spatial source through
+  `SFX/World`. The clock shot and sleeping loop remain fixed for three
+  unscaled seconds; the ring then stops and only then does the camera glide to
+  the sleeper and smoothly settle into the active Home shot while the existing
+  24-frame wake sequence plays over six seconds instead of the ordinary two,
+  restoring normal control without a camera cut or another scene load;
 - one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
   shower tray and curtain, pedestal sink, cracked mirror, exposed rusty pipes,
   leak stains and floor drain; the toilet cistern sits against the right wall

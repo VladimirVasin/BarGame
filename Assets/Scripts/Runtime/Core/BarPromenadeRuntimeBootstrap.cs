@@ -36,7 +36,11 @@ namespace BarPromenade
                 return;
             }
 
-            if (scene.name == SceneIds.City)
+            if (scene.name == SceneIds.MainMenu)
+            {
+                EnsureMainMenuInstalled();
+            }
+            else if (scene.name == SceneIds.City)
             {
                 EnsureCityInstalled();
             }
@@ -55,6 +59,28 @@ namespace BarPromenade
             else if (scene.name == SceneIds.DoorTransition)
             {
                 EnsureDoorTransitionInstalled();
+            }
+        }
+
+        public static MainMenuRoot EnsureMainMenuInstalled()
+        {
+            MainMenuRoot existing =
+                Object.FindAnyObjectByType<MainMenuRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Main Menu Runtime");
+                return root.AddComponent<MainMenuRoot>();
+            }
+            finally
+            {
+                creating = false;
             }
         }
 

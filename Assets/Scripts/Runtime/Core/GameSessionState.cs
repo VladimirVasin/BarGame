@@ -5,6 +5,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum HomeArrivalKind
+    {
+        Normal = 0,
+        OpeningSleep = 1
+    }
+
     public static class GameSessionState
     {
         public const int DefaultCitySeed = 20260727;
@@ -29,6 +35,11 @@ namespace BarPromenade
             get;
             private set;
         } = StairwellArrivalKind.StreetDoor;
+        public static HomeArrivalKind HomeArrival
+        {
+            get;
+            private set;
+        } = HomeArrivalKind.Normal;
         public static int IntoxicationLevel { get; private set; }
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
@@ -42,11 +53,30 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
+            ResetToDefaults();
+        }
+
+        public static void BeginNewGame()
+        {
+            ResetToDefaults();
+            GameLog.Info(
+                "session",
+                "new_game_started",
+                GameLog.Field("city_seed", CitySeed),
+                GameLog.Field("cash_balance", CashBalance),
+                GameLog.Field(
+                    "home_arrival",
+                    HomeArrival.ToString()));
+        }
+
+        private static void ResetToDefaults()
+        {
             CitySeed = DefaultCitySeed;
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
             ReturnKind = CityReturnKind.None;
             StairwellArrival = StairwellArrivalKind.StreetDoor;
+            HomeArrival = HomeArrivalKind.Normal;
             IntoxicationLevel = 0;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -340,6 +370,35 @@ namespace BarPromenade
             GameLog.Info(
                 "session",
                 "stairwell_arrival_consumed",
+                GameLog.Field("arrival", arrival.ToString()));
+            return arrival;
+        }
+
+        public static void PrepareHomeArrival(
+            HomeArrivalKind arrival)
+        {
+            if (arrival != HomeArrivalKind.Normal &&
+                arrival != HomeArrivalKind.OpeningSleep)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrival));
+            }
+
+            HomeArrival = arrival;
+            GameLog.Info(
+                "session",
+                "home_arrival_prepared",
+                GameLog.Field(
+                    "arrival",
+                    HomeArrival.ToString()));
+        }
+
+        public static HomeArrivalKind ConsumeHomeArrival()
+        {
+            HomeArrivalKind arrival = HomeArrival;
+            HomeArrival = HomeArrivalKind.Normal;
+            GameLog.Info(
+                "session",
+                "home_arrival_consumed",
                 GameLog.Field("arrival", arrival.ToString()));
             return arrival;
         }

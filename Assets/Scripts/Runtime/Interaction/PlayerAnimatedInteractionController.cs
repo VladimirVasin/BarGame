@@ -61,6 +61,14 @@ namespace BarPromenade
             timeline != null ? timeline.FrameIndex : -1;
         public bool IsActive =>
             timeline != null && timeline.IsActive;
+        public float ExitDurationMultiplier =>
+            timeline != null
+                ? timeline.ExitDurationMultiplier
+                : 1f;
+        public double ExitDurationSeconds =>
+            timeline != null
+                ? timeline.ExitDurationSeconds
+                : 0d;
         public SpriteRenderer AnimationRenderer =>
             animationRenderer;
         public Transform AnimationVisualRoot =>
@@ -117,6 +125,47 @@ namespace BarPromenade
             Vector3 actionHipPosition,
             Vector3 worldActionRightAxis)
         {
+            return BeginInternal(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                worldActionRightAxis,
+                false);
+        }
+
+        public bool BeginLooping(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition)
+        {
+            return BeginLooping(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                Vector3.zero);
+        }
+
+        public bool BeginLooping(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition,
+            Vector3 worldActionRightAxis)
+        {
+            return BeginInternal(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                worldActionRightAxis,
+                true);
+        }
+
+        private bool BeginInternal(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition,
+            Vector3 worldActionRightAxis,
+            bool startLooping)
+        {
             if (!IsInitialized)
             {
                 throw new InvalidOperationException(
@@ -146,7 +195,14 @@ namespace BarPromenade
 
             PlayerAnimatedInteractionTimeline nextTimeline =
                 new PlayerAnimatedInteractionTimeline(definition);
-            nextTimeline.Begin();
+            if (startLooping)
+            {
+                nextTimeline.BeginLooping();
+            }
+            else
+            {
+                nextTimeline.Begin();
+            }
 
             standHip = standHipPosition;
             actionHip = actionHipPosition;
@@ -154,6 +210,7 @@ namespace BarPromenade
             actionRightAxis = normalizedActionRightAxis;
             CaptureAndHidePlayerState();
             timeline = nextTimeline;
+            ApplyInputForPhase(Phase);
             animationRenderer.enabled = true;
             ApplyCurrentPresentation();
             PhaseChanged?.Invoke(Phase);
@@ -162,7 +219,13 @@ namespace BarPromenade
 
         public bool RequestExit()
         {
-            if (timeline == null || !timeline.RequestExit())
+            return RequestExit(1f);
+        }
+
+        public bool RequestExit(float durationMultiplier)
+        {
+            if (timeline == null ||
+                !timeline.RequestExit(durationMultiplier))
             {
                 return false;
             }

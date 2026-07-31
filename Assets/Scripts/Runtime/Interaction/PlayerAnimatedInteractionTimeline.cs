@@ -203,6 +203,7 @@ namespace BarPromenade
     {
         private readonly PlayerAnimatedInteractionDefinition definition;
         private double phaseElapsedSeconds;
+        private float exitDurationMultiplier = 1f;
 
         public PlayerAnimatedInteractionTimeline(
             PlayerAnimatedInteractionDefinition definition)
@@ -218,6 +219,12 @@ namespace BarPromenade
         public int FrameIndex { get; private set; }
         public bool IsActive =>
             Phase != PlayerAnimatedInteractionPhase.Idle;
+        public float ExitDurationMultiplier =>
+            exitDurationMultiplier;
+        public double ExitDurationSeconds =>
+            definition.ExitFrameCount /
+            (double)definition.ExitFramesPerSecond *
+            exitDurationMultiplier;
         public float PhaseProgress
         {
             get
@@ -232,9 +239,7 @@ namespace BarPromenade
                         return GetProgress(
                             definition.LoopDurationSeconds);
                     case PlayerAnimatedInteractionPhase.Exiting:
-                        return GetProgress(
-                            definition.ExitFrameCount,
-                            definition.ExitFramesPerSecond);
+                        return GetProgress(ExitDurationSeconds);
                     default:
                         return 0f;
                 }
@@ -251,6 +256,19 @@ namespace BarPromenade
             Phase = PlayerAnimatedInteractionPhase.Entering;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.EnterStartFrame;
+            return true;
+        }
+
+        public bool BeginLooping()
+        {
+            if (IsActive)
+            {
+                return false;
+            }
+
+            Phase = PlayerAnimatedInteractionPhase.Looping;
+            phaseElapsedSeconds = 0d;
+            FrameIndex = definition.LoopStartFrame;
             return true;
         }
 
@@ -288,11 +306,27 @@ namespace BarPromenade
 
         public bool RequestExit()
         {
+            return RequestExit(1f);
+        }
+
+        public bool RequestExit(float durationMultiplier)
+        {
+            if (float.IsNaN(durationMultiplier) ||
+                float.IsInfinity(durationMultiplier) ||
+                durationMultiplier <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(durationMultiplier),
+                    durationMultiplier,
+                    "Exit duration multiplier must be finite and positive.");
+            }
+
             if (Phase != PlayerAnimatedInteractionPhase.Looping)
             {
                 return false;
             }
 
+            exitDurationMultiplier = durationMultiplier;
             Phase = PlayerAnimatedInteractionPhase.Exiting;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.ExitStartFrame;
@@ -304,6 +338,7 @@ namespace BarPromenade
             Phase = PlayerAnimatedInteractionPhase.Idle;
             phaseElapsedSeconds = 0d;
             FrameIndex = -1;
+            exitDurationMultiplier = 1f;
         }
 
         private void AdvanceEntering()
@@ -336,9 +371,7 @@ namespace BarPromenade
 
         private void AdvanceExiting()
         {
-            double duration = GetDuration(
-                definition.ExitFrameCount,
-                definition.ExitFramesPerSecond);
+            double duration = ExitDurationSeconds;
             if (phaseElapsedSeconds >= duration)
             {
                 Reset();
@@ -346,9 +379,9 @@ namespace BarPromenade
             }
 
             FrameIndex = definition.ExitStartFrame +
-                GetLocalFrame(
+                GetLocalFrameForDuration(
                     definition.ExitFrameCount,
-                    definition.ExitFramesPerSecond);
+                    duration);
         }
 
         private int GetLocalFrame(
@@ -375,6 +408,19 @@ namespace BarPromenade
             return (float)Math.Min(
                 1d,
                 Math.Max(0d, phaseElapsedSeconds / duration));
+        }
+
+        private int GetLocalFrameForDuration(
+            int frameCount,
+            double duration)
+        {
+            int frame = (int)Math.Floor(
+                phaseElapsedSeconds /
+                duration *
+                frameCount);
+            return Math.Min(
+                frameCount - 1,
+                Math.Max(0, frame));
         }
 
         private int GetLoopLocalFrame()

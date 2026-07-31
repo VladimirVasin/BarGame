@@ -7,7 +7,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in five explicit build scenes.
+  in six explicit build scenes.
 
 ## MVP decisions
 
@@ -47,13 +47,38 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms
   and legs.
-- **Accepted — Explicit scene allow-list:** Only `City`, `DoorTransition`,
-  `BarInterior`, `HomeInterior` and `StairwellInterior` install their matching
-  roots. Directly opening `DoorTransition` installs an idle presentation root;
-  only the transition service initializes and plays it.
+- **Accepted — Explicit scene allow-list:** Only `MainMenu`, `City`,
+  `DoorTransition`, `BarInterior`, `HomeInterior` and `StairwellInterior`
+  install their matching roots. Directly opening `DoorTransition` installs an
+  idle presentation root; only the transition service initializes and plays
+  it.
+- **Accepted — Black startup boundary and one-shot Home opening:**
+  `MainMenu` is build index `0` and owns only a black launch camera. After one
+  frame it resets the complete run, prepares `HomeArrivalKind.OpeningSleep`
+  and Single-loads the existing `HomeInterior`. Home consumes that value once,
+  starts the existing bed interaction directly in its sleeping loop, captures
+  modal input and holds the first rendered Home frame on a silent `05:59`
+  clock. Its complete display flickers briefly at three-second intervals.
+  For five seconds no menu choice or input path exists; the localized
+  PS1-style Wake Up/Quit menu then appears without changing the silent,
+  flickering `05:59` display or leaving the clock shot. Wake Up alone switches
+  the clock to solid `06:00`, starts its mechanical ring and hides the menu.
+  The camera and persistent sleep loop hold for three more unscaled seconds;
+  only when the ring stops does the existing 24-frame exit begin with a `3x`
+  duration multiplier (`6 s` instead of the ordinary `2 s`). The camera then
+  glides to the sleeper along a `2.25 s` smootherstep quadratic path and eases
+  continuously into the active Home shot. It reaches that gameplay pose
+  before ordinary Home input, HUD and fixed-camera state return without a
+  reload; normal
+  Home arrivals never install the opening controller.
+  Editor Play pins its start scene to `MainMenu`; the exact temporary
+  `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
+  override for PlayMode tests and restores it after returning to Edit Mode.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
   state carries the seed, active bar context, explicit bar-or-home city return
-  kind and the next stairwell arrival side between Single-mode scene loads.
+  kind, the next stairwell arrival side and one consumed Home arrival kind
+  between Single-mode scene loads. `BeginNewGame` restores all of those values
+  together with route, visits, wallet, drinking and balance state.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
   sequence, session/scene/seed context and explicit transition/minigame
@@ -211,8 +236,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Split-the-G and tincture bitmaps load from `Resources` and are sliced or
   drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
-  `MaterialPropertyBlock`; emissive and atmosphere effects reuse cached shared
-  resources, with no per-instance materials or runtime `Shader.Find`.
+  `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
+  the serialized Resources `RuntimePrimitiveLit` URP material so Player builds
+  do not depend on Editor-only primitive defaults. Emissive and atmosphere
+  effects reuse their cached specialized resources, with no per-instance
+  materials or runtime `Shader.Find`.
 - **Accepted — PC PS1 world composite:** The active PC renderer runs one native
   Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
   Game camera. It footprint-averages the world to `640x360` by default, blends
@@ -292,6 +320,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
   source pools, routes them to dry UI, world SFX or gameplay SFX, and applies
   per-effect cooldown and concurrent-voice limits.
+- **Accepted — Diegetic opening alarm:** Home always builds one validated
+  bed-relative nightstand and collider-free low-poly alarm clock. The clock
+  owns one reusable four-digit, 28-segment display that keeps briefly
+  flickering `05:59` before and after the five-second menu boundary, then
+  switches to solid `06:00` only when Wake Up is chosen without rebuilding
+  geometry, plus one generated looping mono `22050 Hz` mechanical ring on a fully
+  spatial `SFX/World` source and applies a bounded visual rattle while active.
+  The menu remains silent; choosing Wake Up starts the ring together with
+  `06:00`, keeps the clock shot and sleeping loop for exactly three unscaled
+  seconds, then stops the ring before camera motion and the wake animation
+  begin. Later or direct Home visits keep the clock silent at `06:00`.
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
   to `Ambience/Beds`. Home and Stairwell additionally own exactly three

@@ -10,6 +10,8 @@ namespace BarPromenade.Editor
     public static class ProjectSceneSetup
     {
         private const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
+        private const string MainMenuScenePath =
+            "Assets/Scenes/MainMenu.unity";
         private const string CityScenePath = "Assets/Scenes/City.unity";
         private const string DoorTransitionScenePath =
             "Assets/Scenes/DoorTransition.unity";
@@ -18,9 +20,32 @@ namespace BarPromenade.Editor
             "Assets/Scenes/StairwellInterior.unity";
         private const string HomeInteriorScenePath =
             "Assets/Scenes/HomeInterior.unity";
+        private const string TestBootstrapScenePrefix =
+            "Assets/InitTestScene";
+
+        private static SceneAsset mainMenuStartScene;
+
+        [InitializeOnLoadMethod]
+        private static void SchedulePlayModeStartScene()
+        {
+            EditorApplication.update -=
+                SuppressStartSceneForTestBootstrap;
+            EditorApplication.update +=
+                SuppressStartSceneForTestBootstrap;
+            EditorApplication.playModeStateChanged -=
+                HandlePlayModeStateChanged;
+            EditorApplication.playModeStateChanged +=
+                HandlePlayModeStateChanged;
+            EditorApplication.delayCall -=
+                ConfigurePlayModeStartScene;
+            EditorApplication.delayCall +=
+                ConfigurePlayModeStartScene;
+        }
 
         public static void Run()
         {
+            EnsureMainMenuScene();
+            ConfigurePlayModeStartScene();
             EnsureCityScene();
             EnsureDoorTransitionScene();
             EnsureInteriorScene();
@@ -29,7 +54,9 @@ namespace BarPromenade.Editor
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            EditorSceneManager.OpenScene(CityScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(
+                MainMenuScenePath,
+                OpenSceneMode.Single);
             Debug.Log("Bar Promenade scenes and Build Settings are configured.");
         }
 
@@ -40,6 +67,7 @@ namespace BarPromenade.Editor
             {
                 scenes = new[]
                 {
+                    MainMenuScenePath,
                     CityScenePath,
                     DoorTransitionScenePath,
                     BarInteriorScenePath,
@@ -61,6 +89,128 @@ namespace BarPromenade.Editor
             Debug.Log(
                 $"Windows build succeeded: {report.summary.totalSize} bytes, " +
                 $"{report.summary.totalWarnings} warnings.");
+        }
+
+        public static void ConfigurePlayModeStartScene()
+        {
+            EditorApplication.delayCall -=
+                ConfigurePlayModeStartScene;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
+            SetMainMenuAsPlayModeStartScene();
+        }
+
+        public static bool IsTestBootstrapScenePath(
+            string scenePath)
+        {
+            const string suffix = ".unity";
+            if (string.IsNullOrEmpty(scenePath) ||
+                !scenePath.StartsWith(
+                    TestBootstrapScenePrefix,
+                    StringComparison.Ordinal) ||
+                !scenePath.EndsWith(
+                    suffix,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            int guidLength =
+                scenePath.Length -
+                TestBootstrapScenePrefix.Length -
+                suffix.Length;
+            return guidLength > 0 &&
+                   Guid.TryParse(
+                       scenePath.Substring(
+                           TestBootstrapScenePrefix.Length,
+                           guidLength),
+                       out _);
+        }
+
+        private static void SuppressStartSceneForTestBootstrap()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
+            TrySuppressStartSceneForTestBootstrap();
+        }
+
+        private static void HandlePlayModeStateChanged(
+            PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                if (!TrySuppressStartSceneForTestBootstrap())
+                {
+                    SetMainMenuAsPlayModeStartScene();
+                }
+            }
+            else if (state ==
+                     PlayModeStateChange.EnteredEditMode)
+            {
+                SetMainMenuAsPlayModeStartScene();
+            }
+        }
+
+        private static bool
+            TrySuppressStartSceneForTestBootstrap()
+        {
+            Scene activeScene =
+                EditorSceneManager.GetActiveScene();
+            if (!activeScene.IsValid() ||
+                !IsTestBootstrapScenePath(activeScene.path))
+            {
+                return false;
+            }
+
+            if (EditorSceneManager.playModeStartScene != null)
+            {
+                EditorSceneManager.playModeStartScene = null;
+            }
+
+            return true;
+        }
+
+        private static void SetMainMenuAsPlayModeStartScene()
+        {
+            if (mainMenuStartScene == null)
+            {
+                mainMenuStartScene =
+                    AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                        MainMenuScenePath);
+            }
+
+            SceneAsset mainMenu = mainMenuStartScene;
+            if (mainMenu != null &&
+                EditorSceneManager.playModeStartScene != mainMenu)
+            {
+                EditorSceneManager.playModeStartScene = mainMenu;
+            }
+        }
+
+        private static void EnsureMainMenuScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                    MainMenuScenePath) != null)
+            {
+                return;
+            }
+
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                NewSceneMode.Single);
+            if (!EditorSceneManager.SaveScene(
+                    scene,
+                    MainMenuScenePath))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create '{MainMenuScenePath}'.");
+            }
         }
 
         private static void EnsureCityScene()
@@ -161,6 +311,9 @@ namespace BarPromenade.Editor
         {
             EditorBuildSettings.scenes = new[]
             {
+                new EditorBuildSettingsScene(
+                    MainMenuScenePath,
+                    true),
                 new EditorBuildSettingsScene(CityScenePath, true),
                 new EditorBuildSettingsScene(DoorTransitionScenePath, true),
                 new EditorBuildSettingsScene(BarInteriorScenePath, true),
