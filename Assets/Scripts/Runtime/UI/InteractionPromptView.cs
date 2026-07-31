@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -5,13 +6,30 @@ namespace BarPromenade
     public sealed class InteractionPromptView : MonoBehaviour
     {
         private string promptKey = string.Empty;
-        private GUIStyle style;
+        private Func<bool> promptAction;
+        private GUIStyle buttonStyle;
+        private GUIStyle labelStyle;
 
         public string PromptKey => promptKey;
+        public bool IsClickable =>
+            !string.IsNullOrEmpty(promptKey) && promptAction != null;
 
-        public void SetPrompt(string key)
+        public void SetPrompt(
+            string key,
+            Func<bool> action = null)
         {
             promptKey = key ?? string.Empty;
+            promptAction = string.IsNullOrEmpty(promptKey)
+                ? null
+                : action;
+        }
+
+        public bool TryInvokePrompt()
+        {
+            Func<bool> action = promptAction;
+            return !string.IsNullOrEmpty(promptKey) &&
+                   action != null &&
+                   action();
         }
 
         private void OnGUI()
@@ -21,7 +39,7 @@ namespace BarPromenade
                 return;
             }
 
-            EnsureStyle();
+            EnsureStyles();
             GUI.depth = -80;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
@@ -44,14 +62,25 @@ namespace BarPromenade
                     true,
                     2f,
                     1f);
-                GUI.Label(
-                    new Rect(
-                        rect.x + 4f,
-                        rect.y + 1f,
-                        rect.width - 8f,
-                        rect.height - 2f),
-                    LocalizationService.Get(promptKey),
-                    style);
+                string text = LocalizationService.Get(promptKey);
+                if (promptAction != null)
+                {
+                    if (GUI.Button(rect, text, buttonStyle))
+                    {
+                        TryInvokePrompt();
+                    }
+                }
+                else
+                {
+                    GUI.Label(
+                        new Rect(
+                            rect.x + 4f,
+                            rect.y + 1f,
+                            rect.width - 8f,
+                            rect.height - 2f),
+                        text,
+                        labelStyle);
+                }
             }
             finally
             {
@@ -59,14 +88,19 @@ namespace BarPromenade
             }
         }
 
-        private void EnsureStyle()
+        private void EnsureStyles()
         {
-            if (style != null)
+            if (buttonStyle != null && labelStyle != null)
             {
                 return;
             }
 
-            style = RetroUiTheme.CreateLabelStyle(
+            buttonStyle = RetroUiTheme.CreateButtonStyle(
+                11,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                true);
+            labelStyle = RetroUiTheme.CreateLabelStyle(
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,

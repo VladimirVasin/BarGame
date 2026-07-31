@@ -36,7 +36,6 @@ namespace BarPromenade
         private GUIStyle titleShadowStyle;
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
-        private GUIStyle hintStyle;
         private bool initialClockFramePending;
         private bool restored;
         private Vector3 wakeCameraStartPosition;
@@ -672,11 +671,6 @@ namespace BarPromenade
                 quitRect,
                 HomeOpeningMenuOption.Quit,
                 "opening.quit");
-
-            GUI.Label(
-                new Rect(407f, 337f, 221f, 14f),
-                LocalizationService.Get("opening.controls"),
-                hintStyle);
         }
 
         private void DrawOption(
@@ -743,11 +737,6 @@ namespace BarPromenade
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
                 true);
-            hintStyle = RetroUiTheme.CreateLabelStyle(
-                7,
-                TextAnchor.MiddleRight,
-                RetroUiTheme.Muted,
-                false);
         }
 
         private static Quaternion LookAt(

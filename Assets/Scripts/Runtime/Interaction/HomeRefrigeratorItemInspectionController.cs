@@ -31,11 +31,6 @@ namespace BarPromenade
             "home.refrigerator.action.back";
         public const string UnavailableFeedbackKey =
             "home.refrigerator.action.unavailable";
-        public const string BrowseControlsKey =
-            "home.refrigerator.controls.browse";
-        public const string InspectControlsKey =
-            "home.refrigerator.controls.inspect";
-
         private const float PreviewDistance = 0.68f;
         private const float BackdropDistance = 0.82f;
         private const float PreviewHeightFraction = 0.46f;

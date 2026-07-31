@@ -127,8 +127,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
   the normal puppet and shadows through the camera approach, then hides them
   in the same presentation frame that the procedural sleeved hand appears.
-  It holds the `102°` open state until explicit close input and restores the
-  rig and shadows at the start of `CameraReturn`; the exact active fixed-camera
+  It holds the `102°` open state until explicit close input; while the ordinary
+  interactor is suspended, its clickable close prompt binds directly to the
+  same `RequestClose` guard used by keyboard/gamepad input. It restores the rig
+  and shadows at the start of `CameraReturn`; the exact active fixed-camera
   shot, input and HUD restore on completion, disable or destroy. A cold
   emissive strip plus `CityLightHalo` reveals the contents without increasing
   Home's realtime-light count; generated seal, hinge and thunk cues use the
@@ -295,7 +297,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Prompts, segmented intoxication HUD, overhead balance gauge, map, beer pong,
   Split the G and Tinctures in a Row use a logical `640x360` canvas; the
   denser cocktail view remains responsive while sharing the same palette,
-  stepped frames and point-filtered accents.
+  stepped frames and point-filtered accents. Menus, modal inspectors, the map
+  and minigames omit persistent key-binding guides and control-hint footers.
+  Clickable modal actions keep action-only labels; every active contextual
+  prompt is also a full pointer target and invokes the exact same guarded action
+  path as E, Enter or gamepad South instead of duplicating interaction logic.
 - **Accepted — Shared low-poly cylinder:** Runtime cylinder requests replace
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or

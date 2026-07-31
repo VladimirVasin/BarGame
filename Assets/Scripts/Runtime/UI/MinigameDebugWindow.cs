@@ -432,14 +432,13 @@ namespace BarPromenade
                 DrawDefinitionRows(definitions);
             }
 
-            string footerKey = string.IsNullOrEmpty(
-                LastLaunchErrorKey)
-                ? "debug.minigames.controls"
-                : LastLaunchErrorKey;
-            GUI.Label(
-                new Rect(132f, 303f, 376f, 20f),
-                LocalizationService.Get(footerKey),
-                footerStyle);
+            if (!string.IsNullOrEmpty(LastLaunchErrorKey))
+            {
+                GUI.Label(
+                    new Rect(132f, 303f, 376f, 20f),
+                    LocalizationService.Get(LastLaunchErrorKey),
+                    footerStyle);
+            }
         }
 
         private void DrawIntoxicationControls()

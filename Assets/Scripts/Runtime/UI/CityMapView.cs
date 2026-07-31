@@ -113,25 +113,14 @@ namespace BarPromenade
 
             EnsureStyles();
             GUI.depth = -90;
+            if (!controller.IsOpen)
+            {
+                return;
+            }
+
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
-
-            if (!controller.IsOpen)
-            {
-                Matrix4x4 hintMatrix =
-                    RetroUiTheme.BeginCanvas(canvas);
-                try
-                {
-                    DrawOpenHint();
-                }
-                finally
-                {
-                    RetroUiTheme.EndCanvas(hintMatrix);
-                }
-
-                return;
-            }
 
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
@@ -164,7 +153,6 @@ namespace BarPromenade
 
                 const float outerMargin = 11f;
                 const float headerHeight = 33f;
-                const float footerHeight = 27f;
                 float routePanelWidth = Mathf.Clamp(
                     panel.width * 0.28f,
                     130f,
@@ -173,7 +161,7 @@ namespace BarPromenade
                     panel.x + outerMargin,
                     panel.y + headerHeight,
                     panel.width - outerMargin * 2f,
-                    panel.height - headerHeight - footerHeight);
+                    panel.height - headerHeight);
                 Rect mapArea = new Rect(
                     content.x,
                     content.y,
@@ -188,44 +176,10 @@ namespace BarPromenade
                 MapProjection projection = CreateProjection(mapArea);
                 DrawMap(projection);
                 DrawRoutePanel(routePanel);
-
-                GUI.Label(
-                    new Rect(
-                        panel.x + 10f,
-                        panel.yMax - footerHeight + 4f,
-                        panel.width - 20f,
-                        16f),
-                    LocalizationService.Get("map.instructions"),
-                    centeredStyle);
             }
             finally
             {
                 RetroUiTheme.EndCanvas(previousMatrix);
-            }
-        }
-
-        private void DrawOpenHint()
-        {
-            const float width = 87f;
-            const float height = 21f;
-            Rect hint = new Rect(
-                RetroUiTheme.LogicalWidth - width - 10f,
-                9f,
-                width,
-                height);
-            RetroUiTheme.DrawPanel(
-                hint,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.Accent,
-                true,
-                2f,
-                1f);
-            if (GUI.Button(
-                hint,
-                LocalizationService.Get("map.open_hint"),
-                hintStyle))
-            {
-                controller.QueueToggleMap();
             }
         }
 

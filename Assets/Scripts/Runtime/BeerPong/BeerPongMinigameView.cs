@@ -83,7 +83,6 @@ namespace BarPromenade
             DrawAimPreview();
             DrawHud();
             DrawPowerPanel();
-            DrawControls();
             DrawImpactFeedback();
 
             if (controller.PresentationPhase ==
@@ -482,31 +481,6 @@ namespace BarPromenade
             }
         }
 
-        private void DrawControls()
-        {
-            Rect controls = new Rect(8f, 327f, 624f, 25f);
-            RetroUiTheme.DrawPanel(
-                controls,
-                Panel,
-                RetroUiTheme.BorderMuted,
-                false,
-                2f,
-                1f);
-            string text =
-                LocalizationService.Get(
-                    "beerpong.controls.aim") +
-                "   •   " +
-                LocalizationService.Get(
-                    "beerpong.controls.throw") +
-                "   •   " +
-                LocalizationService.Get(
-                    "beerpong.controls.cancel");
-            GUI.Label(
-                new Rect(14f, 330f, 612f, 18f),
-                text,
-                smallStyle);
-        }
-
         private void DrawImpactFeedback()
         {
             if (controller.ImpactPulse <= 0f)
@@ -629,7 +603,7 @@ namespace BarPromenade
             GUI.Label(
                 new Rect(166f, 219f, 308f, 30f),
                 LocalizationService.Get(
-                    "beerpong.result.continue"),
+                    "beerpong.finish"),
                 scoreStyle);
             if (GUI.Button(
                     card,

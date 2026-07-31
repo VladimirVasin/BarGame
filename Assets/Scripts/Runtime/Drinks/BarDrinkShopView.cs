@@ -23,7 +23,6 @@ namespace BarPromenade
         private GUIStyle balanceStyle;
         private GUIStyle previewStyle;
         private GUIStyle feedbackStyle;
-        private GUIStyle controlsStyle;
         private GUIStyle buttonStyle;
         private GUIStyle statusStyle;
 
@@ -136,15 +135,13 @@ namespace BarPromenade
                     preview.IntoxicationAfter),
                 previewStyle);
 
-            string message = string.IsNullOrEmpty(controller.FeedbackKey)
-                ? LocalizationService.Get("drink_shop.controls")
-                : LocalizationService.Get(controller.FeedbackKey);
-            GUI.Label(
-                new Rect(28f, 316f, 392f, 22f),
-                message,
-                string.IsNullOrEmpty(controller.FeedbackKey)
-                    ? controlsStyle
-                    : feedbackStyle);
+            if (!string.IsNullOrEmpty(controller.FeedbackKey))
+            {
+                GUI.Label(
+                    new Rect(28f, 316f, 392f, 22f),
+                    LocalizationService.Get(controller.FeedbackKey),
+                    feedbackStyle);
+            }
 
             DrawButton(
                 new Rect(430f, 296f, 104f, 38f),
@@ -213,10 +210,6 @@ namespace BarPromenade
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Bad,
                 true);
-            controlsStyle = RetroUiTheme.CreateLabelStyle(
-                9,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Muted);
             buttonStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,

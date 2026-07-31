@@ -50,6 +50,7 @@ namespace BarPromenade
         private bool closingRequested;
         private bool closingHingePlayed;
         private bool closingThunkPlayed;
+        private Func<bool> closePromptAction;
 
         public event Action<HomeRefrigeratorInteractionPhase>
             PhaseChanged;
@@ -139,6 +140,11 @@ namespace BarPromenade
             }
 
             itemInspection.Initialize(targetCamera, view);
+            if (closePromptAction == null)
+            {
+                closePromptAction = RequestClose;
+            }
+
             view.ResetPresentation();
             home.Soundscape?.SetRefrigeratorDoorOpenAmount(0f);
             IsInitialized = true;
@@ -372,13 +378,14 @@ namespace BarPromenade
             ApplyPlayerVisualForFrame(frame);
             if (home?.InteractionPrompt != null)
             {
-                home.InteractionPrompt.SetPrompt(
+                bool canRequestClose =
                     frame.Phase ==
-                        HomeRefrigeratorInteractionPhase.Inspecting &&
+                    HomeRefrigeratorInteractionPhase.Inspecting &&
                     (itemInspection == null ||
-                     !itemInspection.IsActive)
-                        ? ClosePromptKey
-                        : string.Empty);
+                     !itemInspection.IsActive);
+                home.InteractionPrompt.SetPrompt(
+                    canRequestClose ? ClosePromptKey : string.Empty,
+                    canRequestClose ? closePromptAction : null);
             }
         }
 

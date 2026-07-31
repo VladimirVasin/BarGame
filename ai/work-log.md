@@ -2,6 +2,59 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Clickable contextual interaction prompts
+
+- Turned the shared bottom `InteractionPromptView` panel into a full pointer
+  click target while preserving its localized `E — action` label and keyboard
+  and gamepad controls.
+- Routed both pointer and input activation through one cached
+  `PlayerInteractor` action that rechecks input ownership, scene transitions,
+  destroyed targets and `CanInteract` immediately before dispatch. All eleven
+  ordinary `IInteractable` implementations inherit that path.
+- Bound the modal refrigerator close prompt directly to its existing
+  `RequestClose` guard while the ordinary interactor is disabled, and clear
+  every stored callback when its prompt is hidden or replaced.
+- Added callback-lifecycle EditMode coverage plus generic cat-prompt and
+  refrigerator open/close click dispatch regressions.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests generated projects compile with
+  0 errors and 0 warnings; `git diff --check` passes.
+- Focused prompt EditMode passed 2/2; focused refrigerator and stairwell
+  PlayMode passed 10/10, including both shared and modal prompt callbacks.
+- Complete EditMode passed 643/643.
+- Complete headless PlayMode passed 120 tests, skipped the same 3
+  graphics-device-only tests and failed the same 2 unrelated synthetic-input
+  `PlayerMotorHeadingPlayModeTests` seen before this change; all changed
+  interaction fixtures passed.
+- Windows x64 Player build succeeded at `148322048` bytes with 0 warnings.
+
+## 2026-07-31 — Removed persistent control hints
+
+- Removed key-binding guide strips from the opening menu, refrigerator browser
+  and inspection, drink shop, city map, cocktail view, beer pong, Split the G,
+  Tinctures in a Row and the F9 minigame window.
+- Kept contextual world-interaction prompts and gameplay state text. Clickable
+  serve, finish and continue actions now use action-only RU/EN labels, and the
+  balance state no longer embeds arrow-key instructions.
+- Deleted the retired localization entries and added an EditMode catalog
+  regression that prevents those control-hint keys from returning.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests generated projects compile
+  with 0 errors and 0 warnings; both localization catalogs parse and
+  `git diff --check` passes.
+- Complete EditMode passed 641/641, including all 5 localization catalog
+  checks and the new retired-control-hint regression.
+- Complete headless PlayMode passed 120 tests, skipped 3 graphics-only tests
+  and failed 2 unrelated input-timing-sensitive player-motor checks. The
+  isolated motor-class retry passed 5/6: the opposite-input case recovered,
+  while the pre-existing held-then-released synthetic-input assertion still
+  failed without any player-motor changes in this session.
+- Windows x64 Player build succeeded at `148321536` bytes with 0 warnings.
+
 ## 2026-07-31 — Physical first-person bar drink service
 
 - Replaced the retail drink shop's full-screen list with a compact overlay on

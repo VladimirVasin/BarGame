@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,6 +10,7 @@ namespace BarPromenade
         private readonly Collider[] overlapBuffer = new Collider[24];
         private InteractionPromptView promptView;
         private IInteractable activeInteractable;
+        private Func<bool> promptAction;
 
         public bool InputEnabled { get; private set; } = true;
         public IInteractable ActiveInteractable => activeInteractable;
@@ -16,6 +18,10 @@ namespace BarPromenade
         public void Initialize(InteractionPromptView view)
         {
             promptView = view;
+            if (promptAction == null)
+            {
+                promptAction = TryInteractActive;
+            }
         }
 
         public void SetInputEnabled(bool enabled)
@@ -36,12 +42,26 @@ namespace BarPromenade
             }
 
             SetActive(FindClosestInteractable());
-            if (activeInteractable != null &&
-                WasInteractPressed() &&
-                activeInteractable.CanInteract(this))
+            if (WasInteractPressed())
             {
-                activeInteractable.Interact(this);
+                TryInteractActive();
             }
+        }
+
+        private bool TryInteractActive()
+        {
+            if (!InputEnabled ||
+                SceneTransitionService.IsTransitioning ||
+                activeInteractable == null ||
+                (activeInteractable is UnityEngine.Object unityObject &&
+                 unityObject == null) ||
+                !activeInteractable.CanInteract(this))
+            {
+                return false;
+            }
+
+            activeInteractable.Interact(this);
+            return true;
         }
 
         private IInteractable FindClosestInteractable()
@@ -94,7 +114,11 @@ namespace BarPromenade
                 return;
             }
 
-            promptView.SetPrompt(interactable == null ? string.Empty : interactable.PromptKey);
+            promptView.SetPrompt(
+                interactable == null
+                    ? string.Empty
+                    : interactable.PromptKey,
+                interactable == null ? null : promptAction);
         }
 
         private static bool WasInteractPressed()

@@ -13,10 +13,6 @@
       "value": "QUIT"
     },
     {
-      "key": "opening.controls",
-      "value": "\u2191/\u2193 \u2014 select   Enter / E \u2014 confirm"
-    },
-    {
       "key": "interaction.enter_bar",
       "value": "E — enter the bar"
     },
@@ -105,14 +101,6 @@
       "value": "Not available yet."
     },
     {
-      "key": "home.refrigerator.controls.browse",
-      "value": "Mouse / \u2190/\u2192 / D-pad \u2014 select   LMB / E / Enter / A \u2014 inspect   Esc / B \u2014 close"
-    },
-    {
-      "key": "home.refrigerator.controls.inspect",
-      "value": "\u2190/\u2192 / D-pad \u2014 action   LMB / E / Enter / A \u2014 confirm   Esc / B \u2014 back"
-    },
-    {
       "key": "interaction.cat",
       "value": "E — talk to the cat"
     },
@@ -174,7 +162,7 @@
     },
     {
       "key": "balance.hold",
-      "value": "← / →  HOLD THE CENTER"
+      "value": "HOLD THE CENTER"
     },
     {
       "key": "drinking.none",
@@ -201,20 +189,12 @@
       "value": "Add 2 to 4 ingredients without ruining the mix"
     },
     {
-      "key": "cocktail.controls.choose",
-      "value": "←/→ — choose"
+      "key": "cocktail.serve",
+      "value": "SERVE"
     },
     {
-      "key": "cocktail.controls.add",
-      "value": "E / Enter — add"
-    },
-    {
-      "key": "cocktail.controls.serve",
-      "value": "Space — serve"
-    },
-    {
-      "key": "cocktail.controls.back",
-      "value": "Esc — back"
+      "key": "cocktail.finish",
+      "value": "FINISH"
     },
     {
       "key": "cocktail.score.current",
@@ -353,18 +333,6 @@
       "value": "Power"
     },
     {
-      "key": "beerpong.controls.aim",
-      "value": "Mouse / WASD — aim"
-    },
-    {
-      "key": "beerpong.controls.throw",
-      "value": "LMB / Space — hold and release"
-    },
-    {
-      "key": "beerpong.controls.cancel",
-      "value": "Esc — leave"
-    },
-    {
       "key": "beerpong.feedback.clean",
       "value": "+100 — CLEAN SINK!"
     },
@@ -401,8 +369,8 @@
       "value": "Final: {0} points — {1}"
     },
     {
-      "key": "beerpong.result.continue",
-      "value": "LMB / Enter — finish"
+      "key": "beerpong.finish",
+      "value": "FINISH"
     },
     {
       "key": "splitg.title",
@@ -443,10 +411,6 @@
     {
       "key": "splitg.settling",
       "value": "LET THE FOAM SETTLE..."
-    },
-    {
-      "key": "splitg.controls",
-      "value": "Space / LMB / A - hold and release   •   Enter / Y - continue   •   Esc / B - leave"
     },
     {
       "key": "splitg.result.score",
@@ -529,10 +493,6 @@
       "value": "none"
     },
     {
-      "key": "tincture.controls",
-      "value": "LMB / drag or arrows + Enter - swap   •   Esc / B - leave"
-    },
-    {
       "key": "tincture.invalid_swap",
       "value": "NO MATCH - MOVE RETURNED"
     },
@@ -562,7 +522,7 @@
     },
     {
       "key": "tincture.continue",
-      "value": "LMB / Enter - continue"
+      "value": "CONTINUE"
     },
     {
       "key": "tincture.xxx.warning",
@@ -689,10 +649,6 @@
       "value": "EXIT"
     },
     {
-      "key": "drink_shop.controls",
-      "value": "Mouse / arrows / WASD — select   Enter / E / A — buy   Esc / B — exit"
-    },
-    {
       "key": "drink_shop.serving",
       "value": "YOUR DRINK IS BEING SERVED..."
     },
@@ -721,16 +677,8 @@
       "value": "This drink is not available."
     },
     {
-      "key": "map.open_hint",
-      "value": "M — city map"
-    },
-    {
       "key": "map.title",
       "value": "Promenade Map"
-    },
-    {
-      "key": "map.instructions",
-      "value": "LMB / E — add   •   ←/→ — select   •   ↑/↓ — reorder   •   R — clear   •   Esc / M — close"
     },
     {
       "key": "map.route_title",
@@ -791,10 +739,6 @@
     {
       "key": "debug.minigames.hint",
       "value": "Minigame launches remain isolated from progress"
-    },
-    {
-      "key": "debug.minigames.controls",
-      "value": "←/→: intoxication −/+20  •  ↑/↓: select  •  Enter: launch  •  Esc/F9: close"
     },
     {
       "key": "debug.minigames.empty",

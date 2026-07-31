@@ -85,7 +85,6 @@ namespace BarPromenade
             DrawHud();
             DrawGlass();
             DrawPhasePrompt();
-            DrawControls();
 
             if (controller.Phase == SplitTheGPhase.AttemptResult)
             {
@@ -366,22 +365,6 @@ namespace BarPromenade
                 3f,
                 1f);
             GUI.Label(prompt, text, phaseStyle);
-        }
-
-        private void DrawControls()
-        {
-            Rect controls = new Rect(8f, 327f, 624f, 25f);
-            RetroUiTheme.DrawPanel(
-                controls,
-                Panel,
-                RetroUiTheme.BorderMuted,
-                false,
-                2f,
-                1f);
-            GUI.Label(
-                new Rect(14f, 330f, 612f, 18f),
-                LocalizationService.Get("splitg.controls"),
-                smallStyle);
         }
 
         private void DrawAttemptResult()

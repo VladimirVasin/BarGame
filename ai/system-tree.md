@@ -129,6 +129,7 @@ Assets/
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, segmented HUD, map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
+        InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
@@ -139,6 +140,7 @@ Assets/
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       HomeRefrigeratorItem{Catalog,InspectionTimeline}Tests.cs  metadata and nested phases
+      InteractionPromptViewTests.cs          prompt callback lifecycle
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
@@ -182,7 +184,8 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
-player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
+player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
+                         -> BarEntrance/BarExit -> SceneTransitionService
                          or HomeEntrance -> StairwellInterior
                             -> StairwellApartmentEntrance -> HomeInterior
                             -> HomeExit -> StairwellInterior
@@ -245,6 +248,7 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                                        -> lock motor; hide/restore rig + shadows
                                        -> owner cancel -> complete restoration
        -> HomeRefrigeratorInteraction -> modal unscaled timeline
+                                      -> clickable close prompt -> RequestClose
                                       -> first-person Bezier camera + low-poly hand
                                       -> seal / handle / 102-degree door animation
                                       -> persistent lit inspection

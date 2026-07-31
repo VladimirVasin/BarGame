@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-07-31 — Cleaner game screens
+
+- Removed persistent keyboard, mouse and gamepad instruction strips from every
+  menu, inspector, map and minigame screen. Contextual interaction prompts and
+  clickable actions remain, with buttons labeled only by their action.
+- Made every contextual action prompt clickable with the pointer, including
+  opening and closing the refrigerator, while preserving its existing
+  keyboard and gamepad controls.
+
 ### 2026-07-31 — Physical first-person bar menu
 
 - Replaced the ordinary full-screen drink list with a seated first-person

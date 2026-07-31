@@ -432,14 +432,9 @@ namespace BarPromenade.Tests.PlayMode
                 prompt.PromptKey,
                 Is.EqualTo(
                     StairwellCatInteraction.DefaultPromptKey));
+            Assert.That(prompt.IsClickable, Is.True);
 
-            inputFixture.Press(
-                keyboard.eKey,
-                queueEventOnly: true);
-            yield return null;
-            inputFixture.Release(
-                keyboard.eKey,
-                queueEventOnly: true);
+            Assert.That(prompt.TryInvokePrompt(), Is.True);
             yield return null;
 
             Assert.That(

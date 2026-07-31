@@ -31,8 +31,6 @@ namespace BarPromenade.Tests.EditMode
             "home.refrigerator.action.use",
             "home.refrigerator.action.back",
             "home.refrigerator.action.unavailable",
-            "home.refrigerator.controls.browse",
-            "home.refrigerator.controls.inspect",
             "interaction.cat",
             "stairwell.cat.placeholder",
             "interaction.order_drinks",
@@ -54,10 +52,8 @@ namespace BarPromenade.Tests.EditMode
             "cocktail.choose_base",
             "cocktail.choose_base_hint",
             "cocktail.mix_hint",
-            "cocktail.controls.choose",
-            "cocktail.controls.add",
-            "cocktail.controls.serve",
-            "cocktail.controls.back",
+            "cocktail.serve",
+            "cocktail.finish",
             "cocktail.score.current",
             "cocktail.score.total",
             "cocktail.feedback.good",
@@ -92,9 +88,6 @@ namespace BarPromenade.Tests.EditMode
             "beerpong.intoxication",
             "beerpong.aim",
             "beerpong.power",
-            "beerpong.controls.aim",
-            "beerpong.controls.throw",
-            "beerpong.controls.cancel",
             "beerpong.feedback.clean",
             "beerpong.feedback.bank",
             "beerpong.feedback.rim",
@@ -104,7 +97,7 @@ namespace BarPromenade.Tests.EditMode
             "beerpong.result.out_of_throws",
             "beerpong.result.max_intoxication",
             "beerpong.result.final",
-            "beerpong.result.continue",
+            "beerpong.finish",
             "splitg.title",
             "splitg.attempt",
             "splitg.best",
@@ -115,7 +108,6 @@ namespace BarPromenade.Tests.EditMode
             "splitg.ready",
             "splitg.drinking",
             "splitg.settling",
-            "splitg.controls",
             "splitg.result.score",
             "splitg.result.error",
             "splitg.retry",
@@ -136,7 +128,6 @@ namespace BarPromenade.Tests.EditMode
             "tincture.intoxication",
             "tincture.selected",
             "tincture.selected.none",
-            "tincture.controls",
             "tincture.invalid_swap",
             "tincture.reshuffling",
             "tincture.final",
@@ -174,7 +165,6 @@ namespace BarPromenade.Tests.EditMode
             "drink_shop.buy",
             "drink_shop.cancel",
             "drink_shop.exit",
-            "drink_shop.controls",
             "drink_shop.serving",
             "drink_shop.pouring",
             "drink_shop.drinking",
@@ -182,9 +172,7 @@ namespace BarPromenade.Tests.EditMode
             "drink_shop.failure.insufficient_funds",
             "drink_shop.failure.maximum_intoxication",
             "drink_shop.failure.not_offered",
-            "map.open_hint",
             "map.title",
-            "map.instructions",
             "map.route_title",
             "map.route_empty",
             "map.bar_name",
@@ -195,13 +183,33 @@ namespace BarPromenade.Tests.EditMode
             "map.distance",
             "debug.minigames.title",
             "debug.minigames.hint",
-            "debug.minigames.controls",
             "debug.minigames.empty",
             "debug.minigames.unavailable",
             "debug.minigame.cocktail",
             "debug.minigame.beer_pong",
             "debug.minigame.split_the_g",
             "debug.minigame.tincture_match"
+        };
+
+        private static readonly string[] RetiredControlHintKeys =
+        {
+            "opening.controls",
+            "home.refrigerator.controls.browse",
+            "home.refrigerator.controls.inspect",
+            "cocktail.controls.choose",
+            "cocktail.controls.add",
+            "cocktail.controls.serve",
+            "cocktail.controls.back",
+            "beerpong.controls.aim",
+            "beerpong.controls.throw",
+            "beerpong.controls.cancel",
+            "beerpong.result.continue",
+            "splitg.controls",
+            "tincture.controls",
+            "drink_shop.controls",
+            "map.open_hint",
+            "map.instructions",
+            "debug.minigames.controls"
         };
 
         [TestCase("Localization/ru")]
@@ -272,6 +280,25 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 valuesByKey["drink_shop.preview"],
                 Does.Contain("{3}"));
+        }
+
+        [TestCase("Localization/ru")]
+        [TestCase("Localization/en")]
+        public void Catalog_DoesNotContainRetiredControlHints(
+            string resourcePath)
+        {
+            Dictionary<string, string> valuesByKey = LoadValues(resourcePath);
+
+            for (int index = 0;
+                 index < RetiredControlHintKeys.Length;
+                 index++)
+            {
+                Assert.That(
+                    valuesByKey.ContainsKey(RetiredControlHintKeys[index]),
+                    Is.False,
+                    $"{resourcePath} still contains control hint " +
+                    $"'{RetiredControlHintKeys[index]}'.");
+            }
         }
 
         [Test]

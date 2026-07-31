@@ -85,6 +85,11 @@ namespace BarPromenade.Tests.PlayMode
                 home.RefrigeratorPlan.ApproachPosition);
             Physics.SyncTransforms();
             yield return WaitForActiveRefrigerator();
+            Assert.That(
+                home.InteractionPrompt.PromptKey,
+                Is.EqualTo(
+                    HomeRefrigeratorInteraction.OpenPromptKey));
+            Assert.That(home.InteractionPrompt.IsClickable, Is.True);
 
             Vector3 gameplayCameraPosition =
                 home.CameraFollow.FixedBasePosition;
@@ -98,7 +103,9 @@ namespace BarPromenade.Tests.PlayMode
             Quaternion renderedCameraRotation =
                 camera.transform.rotation;
             float renderedFieldOfView = camera.fieldOfView;
-            Assert.That(interaction.BeginInteraction(), Is.True);
+            Assert.That(
+                home.InteractionPrompt.TryInvokePrompt(),
+                Is.True);
             Assert.That(interaction.OwnsInteraction, Is.True);
             Assert.That(home.Player.Motor.InputEnabled, Is.False);
             Assert.That(home.Player.Interactor.InputEnabled, Is.False);
@@ -187,6 +194,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.InteractionPrompt.PromptKey,
                 Is.EqualTo(
                     HomeRefrigeratorInteraction.ClosePromptKey));
+            Assert.That(home.InteractionPrompt.IsClickable, Is.True);
             Assert.That(
                 interaction.FirstPersonHand.IsVisible,
                 Is.False);
@@ -210,7 +218,11 @@ namespace BarPromenade.Tests.PlayMode
                         home.Player.Interactor.InputEnabled;
                 }
             };
-            Assert.That(interaction.RequestClose(), Is.True);
+            Assert.That(
+                home.InteractionPrompt.TryInvokePrompt(),
+                Is.True);
+            Assert.That(home.InteractionPrompt.PromptKey, Is.Empty);
+            Assert.That(home.InteractionPrompt.IsClickable, Is.False);
             interaction.AdvanceInteraction(
                 HomeRefrigeratorInteractionTimeline
                     .ClosingDurationSeconds);

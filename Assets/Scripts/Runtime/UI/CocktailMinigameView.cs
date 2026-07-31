@@ -94,7 +94,6 @@ namespace BarPromenade
                 DrawFinalResult(panel);
             }
 
-            DrawControls(panel);
             DrawCloseButton(panel);
         }
 
@@ -777,7 +776,7 @@ namespace BarPromenade
                     2f);
                 GUI.Label(
                     serveButton,
-                    LocalizationService.Get("cocktail.controls.serve"),
+                    LocalizationService.Get("cocktail.serve"),
                     cardStyle);
                 if (GUI.Button(
                         serveButton,
@@ -1090,55 +1089,8 @@ namespace BarPromenade
                     resultCard.yMax - 55f,
                     resultCard.width - 60f,
                     36f),
-                "E / Enter",
+                LocalizationService.Get("cocktail.finish"),
                 centeredStyle);
-        }
-
-        private void DrawControls(Rect panel)
-        {
-            string controls;
-            switch (controller.PresentationPhase)
-            {
-                case CocktailPresentationPhase.ChoosingBase:
-                    controls =
-                        LocalizationService.Get(
-                            "cocktail.controls.choose") +
-                        "    •    " +
-                        LocalizationService.Get(
-                            "cocktail.controls.add") +
-                        "    •    " +
-                        LocalizationService.Get(
-                            "cocktail.controls.back");
-                    break;
-                case CocktailPresentationPhase.Mixing:
-                    controls =
-                        LocalizationService.Get(
-                            "cocktail.controls.choose") +
-                        "    •    " +
-                        LocalizationService.Get(
-                            "cocktail.controls.add") +
-                        "    •    " +
-                        LocalizationService.Get(
-                            "cocktail.controls.serve") +
-                        "    •    " +
-                        LocalizationService.Get(
-                            "cocktail.controls.back");
-                    break;
-                default:
-                    controls =
-                        LocalizationService.Get(
-                            "cocktail.controls.back");
-                    break;
-            }
-
-            GUI.Label(
-                new Rect(
-                    panel.x + 24f,
-                    panel.yMax - 43f,
-                    panel.width - 48f,
-                    28f),
-                controls,
-                smallStyle);
         }
 
         private void DrawCloseButton(Rect panel)

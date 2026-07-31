@@ -58,7 +58,11 @@ The vertical slice contains:
   pulse; lower `426x240` and `320x180` presets remain available;
 - a crisp retro IMGUI layer after the world composite: prompts, HUD and city
   map use a logical `640x360` canvas, while the information-dense cocktail
-  interface keeps responsive sizing;
+  interface keeps responsive sizing; persistent key-binding guides and
+  control-hint footers are intentionally absent from menus, modal inspectors,
+  the map and minigame views; every active contextual prompt is a full pointer
+  click target routed through the same guarded action as keyboard/gamepad
+  interaction;
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;
@@ -177,7 +181,8 @@ The vertical slice contains:
   and paths, player/bar markers, a dedicated labeled home icon, persistent
   green completed visits, ordered route editing and deterministic shortest
   paths constrained to the generated road graph;
-- localized interaction prompts from RU/EN JSON catalogs;
+- localized RU/EN interaction prompts whose pointer, keyboard and gamepad
+  activation share one action path;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
   context for the current city, with an explicit bar-or-home return kind, a
   separate stairwell-arrival side and a consumed `Normal`/`OpeningSleep` Home
@@ -242,13 +247,14 @@ The vertical slice contains:
   unscaled first-person Bezier approach while the ordinary puppet remains
   visible, then hides its rig and shadows in the same frame that a low-poly
   sleeved hand first appears to turn the handle before the sealed door opens
-  to `102°`. The open inspection persists until a second interaction or cancel
-  input, then closes and seals; the rig and shadows return as soon as camera
-  return begins, while input and HUD restore on completion at the exact fixed
-  Home shot. A cold emissive strip and halo reveal the contents without adding
-  another realtime `Light`; generated seal, hinge and closing-thunk cues
-  accompany an equal-power crossfade between synchronized closed-door and
-  open-door spatial refrigerator loops;
+  to `102°`. The open inspection persists until the clickable close prompt, a
+  second keyboard/gamepad interaction or cancel requests the same guarded
+  close path, then closes and seals; the rig and shadows return as soon as
+  camera return begins, while input and HUD restore on completion at the exact
+  fixed Home shot. A cold emissive strip and halo reveal the contents without
+  adding another realtime `Light`; generated seal, hinge and closing-thunk
+  cues accompany an equal-power crossfade between synchronized closed-door
+  and open-door spatial refrigerator loops;
 - while the outer refrigerator interaction holds the lit open state, one
   nested PS1-style item browser highlights the vodka, egg or open stew can and
   shows its localized name beside the pointer; keyboard/gamepad cycling and

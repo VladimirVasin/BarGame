@@ -13,10 +13,6 @@
       "value": "\u0412\u042b\u0419\u0422\u0418"
     },
     {
-      "key": "opening.controls",
-      "value": "\u2191/\u2193 \u2014 \u0432\u044b\u0431\u0440\u0430\u0442\u044c   Enter / E \u2014 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044c"
-    },
-    {
       "key": "interaction.enter_bar",
       "value": "E — войти в бар"
     },
@@ -105,14 +101,6 @@
       "value": "Пока недоступно."
     },
     {
-      "key": "home.refrigerator.controls.browse",
-      "value": "Мышь / \u2190/\u2192 / крестовина \u2014 выбрать   ЛКМ / E / Enter / A \u2014 осмотреть   Esc / B \u2014 закрыть"
-    },
-    {
-      "key": "home.refrigerator.controls.inspect",
-      "value": "\u2190/\u2192 / крестовина \u2014 действие   ЛКМ / E / Enter / A \u2014 выбрать   Esc / B \u2014 назад"
-    },
-    {
       "key": "interaction.cat",
       "value": "E — обратиться к коту"
     },
@@ -174,7 +162,7 @@
     },
     {
       "key": "balance.hold",
-      "value": "← / →  ДЕРЖИ БАЛАНС"
+      "value": "ДЕРЖИ БАЛАНС"
     },
     {
       "key": "drinking.none",
@@ -201,20 +189,12 @@
       "value": "Добавьте от 2 до 4 ингредиентов и не испортите сочетание"
     },
     {
-      "key": "cocktail.controls.choose",
-      "value": "←/→ — выбрать"
+      "key": "cocktail.serve",
+      "value": "ПОДАТЬ"
     },
     {
-      "key": "cocktail.controls.add",
-      "value": "E / Enter — добавить"
-    },
-    {
-      "key": "cocktail.controls.serve",
-      "value": "Пробел — подать"
-    },
-    {
-      "key": "cocktail.controls.back",
-      "value": "Esc — назад"
+      "key": "cocktail.finish",
+      "value": "ЗАВЕРШИТЬ"
     },
     {
       "key": "cocktail.score.current",
@@ -353,18 +333,6 @@
       "value": "Сила"
     },
     {
-      "key": "beerpong.controls.aim",
-      "value": "Мышь / WASD — целиться"
-    },
-    {
-      "key": "beerpong.controls.throw",
-      "value": "ЛКМ / Пробел — удержать и отпустить"
-    },
-    {
-      "key": "beerpong.controls.cancel",
-      "value": "Esc — выйти"
-    },
-    {
       "key": "beerpong.feedback.clean",
       "value": "+100 — ЧИСТО!"
     },
@@ -401,8 +369,8 @@
       "value": "Итог: {0} очков — {1}"
     },
     {
-      "key": "beerpong.result.continue",
-      "value": "ЛКМ / Enter — закончить"
+      "key": "beerpong.finish",
+      "value": "ЗАВЕРШИТЬ"
     },
     {
       "key": "splitg.title",
@@ -443,10 +411,6 @@
     {
       "key": "splitg.settling",
       "value": "ПЕНА ОСЕДАЕТ..."
-    },
-    {
-      "key": "splitg.controls",
-      "value": "Пробел / ЛКМ / A — держать и отпустить   •   Enter / Y — продолжить   •   Esc / B — выйти"
     },
     {
       "key": "splitg.result.score",
@@ -529,10 +493,6 @@
       "value": "ничего"
     },
     {
-      "key": "tincture.controls",
-      "value": "ЛКМ / перетаскивание или стрелки + Enter — обмен   •   Esc / B — выйти"
-    },
-    {
       "key": "tincture.invalid_swap",
       "value": "НЕТ ЛИНИИ — ХОД ВОЗВРАЩЁН"
     },
@@ -562,7 +522,7 @@
     },
     {
       "key": "tincture.continue",
-      "value": "ЛКМ / Enter — продолжить"
+      "value": "ПРОДОЛЖИТЬ"
     },
     {
       "key": "tincture.xxx.warning",
@@ -689,10 +649,6 @@
       "value": "ВЫЙТИ"
     },
     {
-      "key": "drink_shop.controls",
-      "value": "Мышь / стрелки / WASD — выбор   Enter / E / A — купить   Esc / B — выйти"
-    },
-    {
       "key": "drink_shop.serving",
       "value": "ВАШ НАПИТОК ГОТОВЯТ..."
     },
@@ -721,16 +677,8 @@
       "value": "Этот напиток сейчас недоступен."
     },
     {
-      "key": "map.open_hint",
-      "value": "M — карта города"
-    },
-    {
       "key": "map.title",
       "value": "Карта променада"
-    },
-    {
-      "key": "map.instructions",
-      "value": "ЛКМ / E — добавить   •   ←/→ — выбрать   •   ↑/↓ — порядок   •   R — очистить   •   Esc / M — закрыть"
     },
     {
       "key": "map.route_title",
@@ -791,10 +739,6 @@
     {
       "key": "debug.minigames.hint",
       "value": "Запуски мини-игр изолированы от прогресса"
-    },
-    {
-      "key": "debug.minigames.controls",
-      "value": "←/→: опьянение −/+20  •  ↑/↓: выбор  •  Enter: запуск  •  Esc/F9: закрыть"
     },
     {
       "key": "debug.minigames.empty",

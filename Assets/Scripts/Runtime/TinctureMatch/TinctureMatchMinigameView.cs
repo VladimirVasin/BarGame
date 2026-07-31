@@ -85,7 +85,6 @@ namespace BarPromenade
             DrawBoard();
             DrawSidePanel();
             DrawPhaseFeedback();
-            DrawControls();
 
             if (controller.PresentationPhase ==
                 TinctureMatchPresentationPhase.FinalResult)
@@ -715,24 +714,6 @@ namespace BarPromenade
                 4f,
                 2f);
             GUI.Label(banner, text, phaseStyle);
-        }
-
-        private void DrawControls()
-        {
-            Rect controls = new Rect(8f, 327f, 624f, 25f);
-            RetroUiTheme.DrawPanel(
-                controls,
-                RetroUiTheme.WithAlpha(
-                    RetroUiTheme.PanelInset,
-                    0.94f),
-                RetroUiTheme.BorderMuted,
-                false,
-                2f,
-                1f);
-            GUI.Label(
-                new Rect(14f, 330f, 612f, 18f),
-                LocalizationService.Get("tincture.controls"),
-                smallStyle);
         }
 
         private void DrawFinalResult()

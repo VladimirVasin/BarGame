@@ -16,10 +16,6 @@ namespace BarPromenade
             new Rect(92f, 244f, 456f, 48f);
         private static readonly Rect FeedbackRect =
             new Rect(108f, 292f, 424f, 17f);
-        private static readonly Rect ControlsRect =
-            new Rect(76f, 338f, 488f, 17f);
-        private static readonly Rect BrowseControlsRect =
-            new Rect(48f, 288f, 544f, 18f);
         private static readonly Rect[] ActionRects =
         {
             new Rect(142f, 310f, 112f, 25f),
@@ -38,7 +34,6 @@ namespace BarPromenade
         private GUIStyle descriptionStyle;
         private GUIStyle tooltipStyle;
         private GUIStyle feedbackStyle;
-        private GUIStyle controlsStyle;
         private GUIStyle actionStyle;
 
         public void Initialize(
@@ -71,7 +66,6 @@ namespace BarPromenade
                 }
                 else if (!controller.IsActive)
                 {
-                    DrawBrowseControls();
                     if (controller.HoveredItem != null)
                     {
                         DrawHoverTooltip(canvas);
@@ -117,23 +111,6 @@ namespace BarPromenade
                 2f,
                 1f);
             GUI.Label(tooltip, label, tooltipStyle);
-        }
-
-        private void DrawBrowseControls()
-        {
-            RetroUiTheme.DrawPanel(
-                BrowseControlsRect,
-                RetroUiTheme.Panel,
-                RetroUiTheme.BorderMuted,
-                false,
-                2f,
-                1f);
-            GUI.Label(
-                BrowseControlsRect,
-                LocalizationService.Get(
-                    HomeRefrigeratorItemInspectionController
-                        .BrowseControlsKey),
-                controlsStyle);
         }
 
         private void DrawInspection(RetroUiCanvas canvas)
@@ -189,13 +166,6 @@ namespace BarPromenade
             {
                 DrawAction(index, logicalMouse, eventType);
             }
-
-            GUI.Label(
-                ControlsRect,
-                LocalizationService.Get(
-                    HomeRefrigeratorItemInspectionController
-                        .InspectControlsKey),
-                controlsStyle);
         }
 
         private void DrawAction(
@@ -265,10 +235,6 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Bad,
                 true);
-            controlsStyle = RetroUiTheme.CreateLabelStyle(
-                9,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Muted);
             actionStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
