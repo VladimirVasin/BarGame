@@ -316,17 +316,21 @@ The vertical slice contains:
 - one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
   exactly two unchanged shadowless practical pools whose visible HDR emitters
   and halos are physically aligned with their lights—a dirty-yellow hanging
-  lamp and a cold bathroom tube—plus one cold shadowed cookie Spot projecting
-  night light through the window, a shared transparent glass shader/material,
-  a restrained Bloom/color/exposure/vignette/film-grain runtime volume, at
-  most 12 sparse dust motes, a calm room bed, spatial refrigerator/balcony
-  layers, sparse domestic details and a short damped reverb snapshot without
-  echo;
-- one Main Camera that hard-cuts between the user-approved main-room pose at
-  `(-4.48, 3.00, -3.25)`, Euler `(28°, 55°, 0°)` and `64°` FOV and the
-  bathroom pose at `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°`
-  FOV, plus a third balcony shot; separate activation and wider hold bounds
-  provide threshold hysteresis, while each fixed position ignores
+  lamp and a cold bathroom tube—plus one separate warm shadowless ForcePixel
+  Spot aimed at the existing apartment exit door and one cold shadowed cookie
+  Spot projecting night light through the window. These are capped at four
+  atmosphere-owned local realtime lights; the scene Directional light is
+  separate. The atmosphere also owns a shared transparent glass
+  shader/material, a restrained Bloom/color/exposure/vignette/film-grain
+  runtime volume, at most 12 sparse dust motes, a calm room bed, spatial
+  refrigerator/balcony layers, sparse domestic details and a short damped
+  reverb snapshot without echo;
+- one unchanged Main Camera setup that hard-cuts among three authored poses:
+  the user-approved MainRoom pose at `(-4.48, 3.00, -3.25)`, Euler
+  `(28°, 55°, 0°)` and `64°` FOV, the Bathroom pose at
+  `(1.82, 2.20, 0.86)`, Euler `(30°, 38°, 0°)` and `92°` FOV, and the Balcony
+  pose; separate activation and wider hold bounds provide threshold
+  hysteresis, while each fixed position ignores
   orbit/follow input and retains only quarter-strength intoxication, balance
   and fall rotation;
 - while the Home fixed-camera controller is active, the nine-layer

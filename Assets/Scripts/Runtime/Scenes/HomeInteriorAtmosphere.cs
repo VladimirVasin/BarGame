@@ -13,8 +13,11 @@ namespace BarPromenade
     {
         public const int MaximumPracticalLights = 2;
         public const int MaximumWindowLights = 1;
+        public const int MaximumExitDoorLights = 1;
         public const int MaximumRealtimeLights =
-            MaximumPracticalLights + MaximumWindowLights;
+            MaximumPracticalLights +
+            MaximumWindowLights +
+            MaximumExitDoorLights;
         public const int MaximumDustParticles = 12;
 
         internal static readonly Vector3 MainEmitterPosition =
@@ -37,6 +40,12 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.WindowCenterZ);
         internal static readonly Vector3 WindowLightDirection =
             (WindowLightTarget - WindowLightPosition).normalized;
+        internal static readonly Vector3 ExitDoorLightPosition =
+            new Vector3(-2.20f, 2.65f, -1.50f);
+        internal static readonly Vector3 ExitDoorLightTarget =
+            new Vector3(-0.25f, 1.30f, -3.78f);
+        internal static readonly Vector3 ExitDoorLightDirection =
+            (ExitDoorLightTarget - ExitDoorLightPosition).normalized;
 
         private readonly List<Light> practicalLights =
             new List<Light>(MaximumPracticalLights);
@@ -51,6 +60,7 @@ namespace BarPromenade
         public VolumeProfile RuntimeProfile => runtimeProfile;
         public ParticleSystem Dust { get; private set; }
         public Light WindowLight { get; private set; }
+        public Light ExitDoorLight { get; private set; }
 
         public void Initialize()
         {
@@ -66,6 +76,7 @@ namespace BarPromenade
             if (IsInitialized ||
                 practicalLights.Count > 0 ||
                 WindowLight != null ||
+                ExitDoorLight != null ||
                 PostProcessVolume != null)
             {
                 throw new InvalidOperationException(
@@ -94,6 +105,7 @@ namespace BarPromenade
                     2.20f,
                     4.0f));
             WindowLight = CreateWindowLight();
+            ExitDoorLight = CreateExitDoorLight();
             CreatePostProcessVolume();
             CreateDust();
             IsInitialized = true;
@@ -149,6 +161,31 @@ namespace BarPromenade
             light.bounceIntensity = 0.08f;
             light.cookie =
                 HomeBalconyResources.WindowLightCookie;
+            return light;
+        }
+
+        private Light CreateExitDoorLight()
+        {
+            GameObject lightObject = new GameObject(
+                "Home Exit Door Light");
+            lightObject.transform.SetParent(transform, false);
+            lightObject.transform.localPosition =
+                ExitDoorLightPosition;
+            lightObject.transform.localRotation =
+                Quaternion.LookRotation(
+                    ExitDoorLightDirection,
+                    Vector3.up);
+
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(0.86f, 0.58f, 0.32f);
+            light.intensity = 8.0f;
+            light.range = 5.2f;
+            light.spotAngle = 46f;
+            light.innerSpotAngle = 28f;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0f;
             return light;
         }
 

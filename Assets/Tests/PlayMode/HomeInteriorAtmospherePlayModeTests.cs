@@ -99,6 +99,50 @@ namespace BarPromenade.Tests.PlayMode
                 windowLight.spotAngle,
                 Is.InRange(45f, 75f));
 
+            Light exitDoorLight = atmosphere.ExitDoorLight;
+            Assert.That(exitDoorLight, Is.Not.Null);
+            Assert.That(exitDoorLight.enabled, Is.True);
+            Assert.That(
+                exitDoorLight.type,
+                Is.EqualTo(LightType.Spot));
+            Assert.That(
+                exitDoorLight.shadows,
+                Is.EqualTo(LightShadows.None));
+            Assert.That(
+                exitDoorLight.renderMode,
+                Is.EqualTo(LightRenderMode.ForcePixel));
+            Assert.That(
+                exitDoorLight.transform.localPosition,
+                Is.EqualTo(
+                    new Vector3(-2.20f, 2.65f, -1.50f)));
+            Vector3 exitDoorDirection =
+                exitDoorLight.transform.localRotation *
+                Vector3.forward;
+            Assert.That(
+                Vector3.Dot(
+                    exitDoorDirection,
+                    (new Vector3(-0.25f, 1.30f, -3.78f) -
+                     new Vector3(-2.20f, 2.65f, -1.50f)).normalized),
+                Is.GreaterThan(0.999f));
+            Assert.That(
+                exitDoorLight.intensity,
+                Is.EqualTo(8.0f).Within(0.001f));
+            Assert.That(
+                exitDoorLight.range,
+                Is.EqualTo(5.2f).Within(0.001f));
+            Assert.That(
+                exitDoorLight.innerSpotAngle,
+                Is.EqualTo(28f).Within(0.001f));
+            Assert.That(
+                exitDoorLight.spotAngle,
+                Is.EqualTo(46f).Within(0.001f));
+            Assert.That(
+                exitDoorLight.color,
+                Is.EqualTo(new Color(0.86f, 0.58f, 0.32f)));
+            Assert.That(
+                exitDoorLight.bounceIntensity,
+                Is.EqualTo(0f).Within(0.001f));
+
             Texture2D cookie =
                 HomeBalconyResources.WindowLightCookie;
             Assert.That(windowLight.cookie, Is.SameAs(cookie));
@@ -138,7 +182,7 @@ namespace BarPromenade.Tests.PlayMode
                         .MaximumRealtimeLights));
             Assert.That(
                 ownedLights.Length,
-                Is.LessThanOrEqualTo(3));
+                Is.LessThanOrEqualTo(4));
             Assert.That(
                 atmosphere.PracticalLights[0],
                 Is.Not.SameAs(windowLight),
@@ -147,6 +191,17 @@ namespace BarPromenade.Tests.PlayMode
                 atmosphere.PracticalLights[1],
                 Is.Not.SameAs(windowLight),
                 "The window beam is separate from the two practicals.");
+            Assert.That(
+                atmosphere.PracticalLights[0],
+                Is.Not.SameAs(exitDoorLight),
+                "The focused exit-door accent is not a room practical.");
+            Assert.That(
+                atmosphere.PracticalLights[1],
+                Is.Not.SameAs(exitDoorLight),
+                "The focused exit-door accent is not a room practical.");
+            Assert.That(
+                exitDoorLight,
+                Is.Not.SameAs(windowLight));
 
             Material glass =
                 HomeBalconyResources.GlassMaterial;

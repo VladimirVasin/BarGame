@@ -92,6 +92,32 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Atmosphere.PracticalLights,
                 Has.Count.EqualTo(2));
+            Assert.That(
+                home.Atmosphere.ExitDoorLight,
+                Is.Not.Null);
+            Renderer exitDoorRenderer = AssertRequiredObject(
+                home.Room,
+                "Home Exit Door").GetComponent<Renderer>();
+            Assert.That(exitDoorRenderer, Is.Not.Null);
+            Light exitDoorLight = home.Atmosphere.ExitDoorLight;
+            Assert.That(
+                exitDoorLight.cullingMask &
+                (1 << exitDoorRenderer.gameObject.layer),
+                Is.Not.EqualTo(0));
+            Assert.That(
+                Vector3.Distance(
+                    exitDoorLight.transform.position,
+                    exitDoorRenderer.bounds.center),
+                Is.LessThan(exitDoorLight.range));
+            Vector3 exitDoorDirection =
+                (exitDoorRenderer.bounds.center -
+                 exitDoorLight.transform.position).normalized;
+            Assert.That(
+                Vector3.Dot(
+                    exitDoorLight.transform.forward,
+                    exitDoorDirection),
+                Is.GreaterThan(0.995f),
+                "The local accent must point directly at the apartment exit.");
             Assert.That(RenderSettings.fog, Is.False);
 
             Transform toiletBowl = AssertRequiredObject(

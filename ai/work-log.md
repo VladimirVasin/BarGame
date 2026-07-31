@@ -2,6 +2,30 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-01 — Readable apartment exit lighting
+
+- Added one separate warm, shadowless ForcePixel Spot named
+  `Home Exit Door Light`, aimed at the existing stairwell door so it reads on
+  the right side of the ordinary MainRoom shot. The two practical lights and
+  cold shadowed window-cookie Spot remain; `HomeInteriorAtmosphere` now owns at
+  most four local realtime lights, while the scene Directional light remains
+  separate.
+- Kept the three existing MainRoom, Bathroom and Balcony camera poses intact.
+  The door geometry and material are also unchanged.
+- Added PlayMode coverage for the door light's type, placement, direction,
+  warm color, range, shadowless ForcePixel setup and atmosphere-owned light
+  budget, plus presentation checks that it reaches and points at the door.
+
+Verification:
+
+- `BarPromenade.PlayModeTests.csproj` compiles with 0 errors and 0 warnings.
+- Focused Home atmosphere and presentation PlayMode checks passed 2/2 and 1/1.
+- The full EditMode suite passed 643/643 and the full PlayMode suite passed
+  125/125 under D3D11.
+- A focused D3D11 visual-capture PlayMode check passed 1/1 and confirmed that
+  the added light makes the unchanged door readable in the unchanged MainRoom
+  composition.
+
 ## 2026-07-31 — Clickable contextual interaction prompts
 
 - Turned the shared bottom `InteractionPromptView` panel into a full pointer

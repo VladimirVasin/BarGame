@@ -105,7 +105,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   its cistern against the right wall and its bowl facing into the room. It
   reuses the common player, intoxication HUD, interaction and door-transition
   contracts while putting the single Main Camera into three authored fixed
-  poses with doorway/balcony hysteresis and a main-room fallback. Exiting sends
+  poses with doorway/balcony hysteresis and a main-room fallback. The camera
+  poses remain unchanged. A separate warm, shadowless ForcePixel Spot now
+  illuminates the existing apartment exit door; the two practical lights and
+  cold window-cookie Spot remain, for at most four atmosphere-owned local
+  realtime lights in addition to the scene Directional light. The door's
+  geometry and material remain unchanged. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
   approach, without altering route, visit, cash or drinking progress.

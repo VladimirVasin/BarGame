@@ -119,7 +119,7 @@ Assets/
         HomeSoundscape*.cs               paired fridge hum, balcony bed and domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
-        HomeInteriorAtmosphere.cs     two practicals + window cookie Spot, grade and dust
+        HomeInteriorAtmosphere.cs     two practicals + exit/window Spots, grade and dust
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
@@ -228,7 +228,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> bounded roads/lots/windows/lamps/signals view
                     -> no second City root/player/camera/realtime street lights
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
+                                 -> warm shadowless ForcePixel exit-door Spot
                                  -> cold shadowed window cookie Spot
+                                 -> at most four owned local realtime lights
+                                    + separate scene Directional light
                                  -> shared transparent glass + grade + sparse dust
        -> HomeAmbiencePlayer -> calm steady room bed
        -> HomeSoundscape -> synchronized closed/open refrigerator loops

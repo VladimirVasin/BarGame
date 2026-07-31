@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-01 — Readable apartment exit lighting
+
+- Added a local warm spotlight that makes the existing stairwell door readable
+  on the right side of the ordinary MainRoom shot. There is no additional
+  camera cut: all three Home camera poses, the door geometry and its material
+  remain unchanged.
+
 ### 2026-07-31 — Cleaner game screens
 
 - Removed persistent keyboard, mouse and gamepad instruction strips from every
