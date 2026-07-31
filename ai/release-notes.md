@@ -13,6 +13,10 @@
   unseals and opens with dedicated sounds. It stays open for inspection until
   another interaction or cancel input, then closes and returns smoothly to the
   exact room view with normal control restored.
+- Smoothed the first-person handoff: the hero now remains visible during the
+  camera glide and disappears only when the low-poly hand enters the frame.
+  After the door seals, the hero reappears immediately as the camera pulls
+  back.
 - Built the interior in detail with a lined cavity, three stained shelves, a
   lower drawer, frost, grime and two door bins. Its eight prepared storage
   slots initially show a vodka bottle, one chicken egg and an open can of stew.

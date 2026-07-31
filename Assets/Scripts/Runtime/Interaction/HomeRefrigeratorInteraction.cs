@@ -41,6 +41,7 @@ namespace BarPromenade
         private float cameraTargetFieldOfView;
         private bool ownsInteraction;
         private bool playerVisualStateCaptured;
+        private bool playerVisualHidden;
         private bool previousDynamicShadowEnabled;
         private bool previousContactShadowEnabled;
         private bool openingSealPlayed;
@@ -171,7 +172,7 @@ namespace BarPromenade
 
             try
             {
-                CaptureAndHidePlayerVisual();
+                CapturePlayerVisualState();
                 CaptureCameraPath();
                 ResetCueState();
                 if (!timeline.BeginOpen())
@@ -331,6 +332,7 @@ namespace BarPromenade
                 frame.DoorOpen);
             ApplyCamera(frame.CameraBlend);
             firstPersonHand?.ApplyReach(frame.HandReach);
+            ApplyPlayerVisualForFrame(frame);
             if (home?.InteractionPrompt != null)
             {
                 home.InteractionPrompt.SetPrompt(
@@ -366,7 +368,7 @@ namespace BarPromenade
                     amount));
         }
 
-        private void CaptureAndHidePlayerVisual()
+        private void CapturePlayerVisualState()
         {
             PlayerRuntime player = home.Player;
             previousDynamicShadowEnabled =
@@ -386,28 +388,35 @@ namespace BarPromenade
                         : null;
                 previousRigRendererStates[index] =
                     renderer != null && renderer.enabled;
-                if (renderer != null)
-                {
-                    renderer.enabled = false;
-                }
-            }
-
-            if (player.Shadow != null)
-            {
-                player.Shadow.enabled = false;
-            }
-
-            if (player.ContactShadow != null)
-            {
-                player.ContactShadow.enabled = false;
             }
 
             playerVisualStateCaptured = true;
+            playerVisualHidden = false;
         }
 
-        private void RestorePlayerVisual()
+        private void ApplyPlayerVisualForFrame(
+            HomeRefrigeratorInteractionFrame frame)
         {
-            if (!playerVisualStateCaptured || home == null)
+            // After Reach has elapsed, keep the first-person handoff latched
+            // even if one long frame skipped every visible hand sample or the
+            // hand has already retracted for inspection.
+            bool shouldHide =
+                frame.Phase ==
+                    HomeRefrigeratorInteractionPhase.Reach
+                    ? firstPersonHand != null &&
+                      firstPersonHand.IsVisible
+                    : frame.Phase >=
+                          HomeRefrigeratorInteractionPhase.Unsealing &&
+                      frame.Phase <=
+                          HomeRefrigeratorInteractionPhase.Sealing;
+            SetPlayerVisualHidden(shouldHide);
+        }
+
+        private void SetPlayerVisualHidden(bool hidden)
+        {
+            if (!playerVisualStateCaptured ||
+                home == null ||
+                playerVisualHidden == hidden)
             {
                 return;
             }
@@ -428,7 +437,9 @@ namespace BarPromenade
                     if (renderer != null)
                     {
                         renderer.enabled =
-                            previousRigRendererStates[index];
+                            hidden
+                                ? false
+                                : previousRigRendererStates[index];
                     }
                 }
             }
@@ -436,16 +447,32 @@ namespace BarPromenade
             if (player.Shadow != null)
             {
                 player.Shadow.enabled =
-                    previousDynamicShadowEnabled;
+                    hidden
+                        ? false
+                        : previousDynamicShadowEnabled;
             }
 
             if (player.ContactShadow != null)
             {
                 player.ContactShadow.enabled =
-                    previousContactShadowEnabled;
+                    hidden
+                        ? false
+                        : previousContactShadowEnabled;
             }
 
+            playerVisualHidden = hidden;
+        }
+
+        private void RestorePlayerVisual()
+        {
+            if (!playerVisualStateCaptured || home == null)
+            {
+                return;
+            }
+
+            SetPlayerVisualHidden(false);
             playerVisualStateCaptured = false;
+            playerVisualHidden = false;
         }
 
         private void RestoreOwnedState()

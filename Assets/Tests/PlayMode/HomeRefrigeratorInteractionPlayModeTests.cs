@@ -90,7 +90,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Player.Motor.InputEnabled, Is.False);
             Assert.That(home.Player.Interactor.InputEnabled, Is.False);
             Assert.That(home.IntoxicationHud.Visible, Is.False);
-            AssertRigRendererState(false);
+            AssertPlayerVisualState(true);
             Assert.That(
                 Vector3.Distance(
                     camera.transform.position,
@@ -113,6 +113,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeRefrigeratorInteractionPhase.Reach));
             Assert.That(
+                interaction.FirstPersonHand.IsVisible,
+                Is.False);
+            AssertPlayerVisualState(true);
+            Assert.That(
                 Vector3.Distance(
                     home.CameraFollow.FixedBasePosition,
                     home.transform.TransformPoint(
@@ -124,12 +128,28 @@ namespace BarPromenade.Tests.PlayMode
                     home.RefrigeratorPlan.CameraFieldOfView)
                     .Within(0.001f));
 
-            interaction.AdvanceInteraction(
+            const int reachProbeStepCount = 128;
+            float reachProbeStep =
                 HomeRefrigeratorInteractionTimeline
-                    .ReachDurationSeconds * 0.65f);
-            Assert.That(
-                interaction.FirstPersonHand.IsVisible,
-                Is.True);
+                    .ReachDurationSeconds /
+                reachProbeStepCount;
+            bool handBecameVisible = false;
+            for (int index = 0;
+                 index < reachProbeStepCount;
+                 index++)
+            {
+                interaction.AdvanceInteraction(reachProbeStep);
+                bool handVisible =
+                    interaction.FirstPersonHand.IsVisible;
+                AssertPlayerVisualState(!handVisible);
+                if (handVisible)
+                {
+                    handBecameVisible = true;
+                    break;
+                }
+            }
+
+            Assert.That(handBecameVisible, Is.True);
             Assert.That(
                 interaction.FirstPersonHand.ReachAmount,
                 Is.GreaterThan(0f));
@@ -157,6 +177,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interaction.FirstPersonHand.IsVisible,
                 Is.False);
+            AssertPlayerVisualState(false);
             Assert.That(view.SlotRoots, Has.Count.EqualTo(8));
 
             interaction.AdvanceInteraction(30f);
@@ -179,14 +200,38 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interaction.RequestClose(), Is.True);
             interaction.AdvanceInteraction(
                 HomeRefrigeratorInteractionTimeline
-                    .CloseSequenceDurationSeconds);
+                    .ClosingDurationSeconds);
+            Assert.That(
+                interaction.Phase,
+                Is.EqualTo(
+                    HomeRefrigeratorInteractionPhase.Sealing));
+            AssertPlayerVisualState(false);
+
+            interaction.AdvanceInteraction(
+                HomeRefrigeratorInteractionTimeline
+                    .SealingDurationSeconds);
+            Assert.That(
+                interaction.Phase,
+                Is.EqualTo(
+                    HomeRefrigeratorInteractionPhase.CameraReturn));
+            Assert.That(
+                interaction.FirstPersonHand.IsVisible,
+                Is.False);
+            AssertPlayerVisualState(true);
+            Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.False);
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True);
+
+            interaction.AdvanceInteraction(
+                HomeRefrigeratorInteractionTimeline
+                    .CameraReturnDurationSeconds);
             yield return null;
 
             AssertClosedPresentation(interaction, view);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Player.Interactor.InputEnabled, Is.True);
             Assert.That(home.IntoxicationHud.Visible, Is.True);
-            AssertRigRendererState(true);
+            AssertPlayerVisualState(true);
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(closedEventSawRestoredState, Is.True);
             Assert.That(
@@ -202,6 +247,39 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.CameraFollow.FixedBaseFieldOfView,
                 Is.EqualTo(gameplayFieldOfView).Within(0.001f));
+        }
+
+        [UnityTest]
+        public IEnumerator
+            LargeAdvanceSkipsRenderedReach_HidesRigForInspection()
+        {
+            yield return LoadHome();
+            HomeRefrigeratorInteraction interaction =
+                home.RefrigeratorInteraction;
+
+            Assert.That(interaction.BeginInteraction(), Is.True);
+            interaction.AdvanceInteraction(
+                HomeRefrigeratorInteractionTimeline
+                    .OpenSequenceDurationSeconds +
+                0.01f);
+
+            Assert.That(
+                interaction.Phase,
+                Is.EqualTo(
+                    HomeRefrigeratorInteractionPhase.Inspecting));
+            Assert.That(
+                interaction.FirstPersonHand.IsVisible,
+                Is.False);
+            AssertPlayerVisualState(false);
+
+            Assert.That(interaction.CancelInteraction(), Is.True);
+            yield return null;
+
+            AssertClosedPresentation(
+                interaction,
+                home.Refrigerator);
+            AssertPlayerVisualState(true);
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
         }
 
         [UnityTest]
@@ -228,7 +306,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Player.Interactor.InputEnabled, Is.True);
             Assert.That(home.IntoxicationHud.Visible, Is.True);
-            AssertRigRendererState(true);
+            AssertPlayerVisualState(true);
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
         }
 
@@ -312,6 +390,19 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(expected),
                     $"Unexpected player renderer state {index}.");
             }
+        }
+
+        private void AssertPlayerVisualState(bool expected)
+        {
+            AssertRigRendererState(expected);
+            Assert.That(
+                home.Player.Shadow.enabled,
+                Is.EqualTo(expected),
+                "Unexpected dynamic-shadow state.");
+            Assert.That(
+                home.Player.ContactShadow.enabled,
+                Is.EqualTo(expected),
+                "Unexpected contact-shadow state.");
         }
 
         private static void AssertFirstPersonHandIsInFrame(

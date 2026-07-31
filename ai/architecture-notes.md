@@ -121,11 +121,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   deferred global inventory or pickup persistence.
   `HomeRefrigeratorInteraction` owns a separate unscaled
   `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
-  Sealing -> CameraReturn` timeline. It captures the shared modal lock, hides
-  the normal puppet and shadows, drives a quadratic first-person camera and
-  procedural sleeved hand, holds the `102°` open state until explicit close
-  input, then restores the exact active fixed-camera shot and every captured
-  gameplay presentation state on completion, disable or destroy. A cold
+  Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
+  the normal puppet and shadows through the camera approach, then hides them
+  in the same presentation frame that the procedural sleeved hand appears.
+  It holds the `102°` open state until explicit close input and restores the
+  rig and shadows at the start of `CameraReturn`; the exact active fixed-camera
+  shot, input and HUD restore on completion, disable or destroy. A cold
   emissive strip plus `CityLightHalo` reveals the contents without increasing
   Home's realtime-light count; generated seal, hinge and thunk cues and the
   door-dependent refrigerator hum use the existing spatial audio contracts.

@@ -2,6 +2,23 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Refrigerator puppet handoff timing
+
+- Kept the ordinary player rig and both shadow presentations visible during
+  the refrigerator camera approach, then hid them in the exact frame that
+  the low-poly first-person hand becomes visible.
+- Restored the rig and shadows as soon as the sealed door enters camera return;
+  modal input ownership and HUD restoration still wait for the existing
+  interaction completion boundary.
+- Updated the focused PlayMode regression to cover the visible approach, hand
+  handoff, hidden inspection/close and immediate camera-return restoration.
+
+Verification:
+
+- Runtime and PlayMode test projects compile with 0 errors and 0 warnings.
+- Focused refrigerator interaction PlayMode passed 3/3; the neighboring pure
+  refrigerator timeline EditMode fixture passed 8/8.
+
 ## 2026-07-31 — Interactive first-person Home refrigerator
 
 - Replaced the dark counter-embedded refrigerator placeholder with one
