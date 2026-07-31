@@ -45,7 +45,8 @@ namespace BarPromenade
         public static CityWorldResult Build(
             Transform parent,
             CityLayout layout,
-            CityGenerationSettings settings)
+            CityGenerationSettings settings,
+            CityNightFixturePlan nightPlan = null)
         {
             if (parent == null)
             {
@@ -63,12 +64,22 @@ namespace BarPromenade
             }
 
             layout.ValidateOrThrow();
+            if (nightPlan == null)
+            {
+                nightPlan = CityNightFixturePlanner.CreatePlan(layout);
+            }
+
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadWalkableArea walkableArea = RoadWalkableArea.FromLayout(layout);
             RoadFencePlan fencePlan =
                 RoadFencePlanner.CreatePlan(layout);
+            CityDecorationPlan decorationPlan =
+                CityDecorationPlanner.CreatePlan(
+                    layout,
+                    fencePlan,
+                    nightPlan);
             Bounds bounds = BuildGround(world, layout, settings);
             BuildRoads(world, layout, settings);
             RoadFenceWorldBuilder.Build(world, fencePlan);
@@ -88,6 +99,12 @@ namespace BarPromenade
                     ref playerHome);
             }
 
+            GameObject decorationRoot =
+                CityDecorationWorldBuilder.Build(
+                    world,
+                    layout,
+                    decorationPlan);
+
             return new CityWorldResult(
                 world.gameObject,
                 walkableArea,
@@ -95,6 +112,8 @@ namespace BarPromenade
                 playerHome,
                 fencePlan,
                 parkRoot,
+                decorationPlan,
+                decorationRoot,
                 bounds);
         }
 
@@ -489,123 +508,10 @@ namespace BarPromenade
 
             if (!lot.IsBar)
             {
-                BuildDistrictDetails(
-                    building,
-                    lot,
-                    emissiveMaterial);
                 return;
             }
 
             BuildBarFront(building, lot, walkableArea, bars);
-        }
-
-        private static void BuildDistrictDetails(
-            Transform parent,
-            BuildingLot lot,
-            Material emissiveMaterial)
-        {
-            switch (lot.District)
-            {
-                case CityDistrictKind.OldTown:
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Old Town Cornice",
-                        parent,
-                        lot.Center +
-                        (Vector3.up * (lot.Height - 0.42f)),
-                        new Vector3(
-                            lot.Size.x + 0.42f,
-                            0.30f,
-                            lot.Size.y + 0.42f),
-                        new Color(0.28f, 0.23f, 0.18f),
-                        false);
-                    break;
-                case CityDistrictKind.Residential:
-                    BuildResidentialPlanters(parent, lot);
-                    break;
-                case CityDistrictKind.Industrial:
-                    BuildIndustrialRoofDetails(parent, lot);
-                    break;
-                case CityDistrictKind.Nightlife:
-                    BuildNightlifeSign(
-                        parent,
-                        lot,
-                        emissiveMaterial);
-                    break;
-            }
-        }
-
-        private static void BuildResidentialPlanters(
-            Transform parent,
-            BuildingLot lot)
-        {
-            float z = lot.Center.z - lot.Size.y * 0.5f - 0.35f;
-            for (int side = -1; side <= 1; side += 2)
-            {
-                Vector3 position = new Vector3(
-                    lot.Center.x + side * lot.Size.x * 0.28f,
-                    0.32f,
-                    z);
-                RuntimePrimitiveFactory.CreateBox(
-                    "Residential Planter",
-                    parent,
-                    position,
-                    new Vector3(1.8f, 0.52f, 0.58f),
-                    new Color(0.24f, 0.25f, 0.22f),
-                    false);
-                RuntimePrimitiveFactory.CreateBox(
-                    "Residential Shrub",
-                    parent,
-                    position + (Vector3.up * 0.58f),
-                    new Vector3(1.45f, 0.72f, 0.48f),
-                    new Color(0.12f, 0.29f, 0.17f),
-                    false);
-            }
-        }
-
-        private static void BuildIndustrialRoofDetails(
-            Transform parent,
-            BuildingLot lot)
-        {
-            for (int index = 0; index < 2; index++)
-            {
-                float xOffset = index == 0 ? -1.7f : 1.7f;
-                RuntimePrimitiveFactory.CreateCylinder(
-                    "Industrial Roof Vent",
-                    parent,
-                    lot.Center +
-                    new Vector3(
-                        xOffset,
-                        lot.Height + 0.85f,
-                        0f),
-                    new Vector3(0.46f, 0.72f, 0.46f),
-                    new Color(0.22f, 0.25f, 0.24f),
-                    false);
-            }
-        }
-
-        private static void BuildNightlifeSign(
-            Transform parent,
-            BuildingLot lot,
-            Material emissiveMaterial)
-        {
-            Color signColor = (lot.Cell.x + lot.Cell.y) % 2 == 0
-                ? new Color(1.2f, 0.22f, 0.72f)
-                : new Color(0.18f, 0.78f, 1.25f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Nightlife Neon Sign",
-                parent,
-                lot.Center +
-                new Vector3(
-                    0f,
-                    Mathf.Min(lot.Height - 1f, 4.4f),
-                    -(lot.Size.y * 0.5f + 0.05f)),
-                new Vector3(
-                    Mathf.Min(4.8f, lot.Size.x * 0.45f),
-                    0.42f,
-                    0.08f),
-                signColor,
-                emissiveMaterial,
-                false);
         }
 
         private static void BuildWindowBands(
@@ -626,12 +532,9 @@ namespace BarPromenade
                 Vector3 frontPosition;
                 Vector3 backPosition;
                 Vector3 windowSize;
-                if (lot.IsBar || lot.IsPlayerHome)
+                if (lot.HasRoadFrontage)
                 {
-                    Vector3 frontage = new Vector3(
-                        lot.FrontageDirection.x,
-                        0f,
-                        lot.FrontageDirection.y);
+                    Vector3 frontage = ResolveFacadeDirection(lot);
                     bool frontageIsX = Mathf.Abs(frontage.x) > 0.5f;
                     float facadeDistance = frontageIsX
                         ? lot.Size.x * 0.5f + 0.012f
@@ -1503,11 +1406,25 @@ namespace BarPromenade
 
             float value =
                 (lot.Color.r + lot.Color.g + lot.Color.b) / 3f;
+            Color tintedValue = Color.Lerp(
+                new Color(value, value, value, 1f),
+                lot.Color,
+                0.32f);
             return new Color(
-                value * 0.68f,
-                value * 0.73f,
-                value * 0.70f,
+                tintedValue.r * 0.68f,
+                tintedValue.g * 0.73f,
+                tintedValue.b * 0.70f,
                 1f);
+        }
+
+        private static Vector3 ResolveFacadeDirection(BuildingLot lot)
+        {
+            return lot.HasRoadFrontage
+                ? new Vector3(
+                    lot.FrontageDirection.x,
+                    0f,
+                    lot.FrontageDirection.y)
+                : Vector3.back;
         }
 
         private static uint StableHash(

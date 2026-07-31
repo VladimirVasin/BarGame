@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### 2026-08-01 — A city worth looking at
+
+- Replaced the repeated box-only streetscape with seeded district character.
+  Old Town now grows chimneys, dormers, scaffolding, markets and a clock-tower
+  landmark; Residential gains balconies, rooftop laundry, discarded furniture
+  and a communal greenhouse; Industrial receives stacks, tanks, pipe racks,
+  cargo and a gantry; Nightlife adds billboards, fire escapes, vending queues
+  and a cinema frontage.
+- Added bus shelters, phone booths, dumpsters, utility cabinets, roadworks and
+  bicycles along the route, plus a dry fountain/statue, bandstand, chess tables
+  and playground inside Central Park. Every ordinary building now carries a
+  distinct silhouette or facade treatment, and each district has a guaranteed
+  large landmark.
+- Made windows, balconies, signs and other facade pieces face the street that
+  actually serves their lot. The same seeded details are visible from the Home
+  balcony, so entering the apartment no longer swaps the neighborhood for a
+  simpler parallel version.
+- Kept the new layer lightweight: details are spatially batched, reuse shared
+  materials and add no collision, realtime lights, particles or shadow cost.
+
 ### 2026-08-01 — Readable apartment exit lighting
 
 - Added a local warm spotlight that makes the existing stairwell door readable

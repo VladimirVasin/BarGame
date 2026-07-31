@@ -67,6 +67,10 @@ namespace BarPromenade
             BuildTerminalEnvironment(root, balcony);
             BuildRoads(root, balcony, context);
             BuildBuildings(root, context);
+            CityDecorationWorldBuilder.BuildHomeExterior(
+                root,
+                context,
+                context.NearbyDecorations);
             BuildNightFixtures(root, context);
             return root;
         }
@@ -322,7 +326,7 @@ namespace BarPromenade
                 Vector3 frontPosition;
                 Vector3 backPosition;
                 Vector3 rowSize;
-                if (lot.IsBar || lot.IsPlayerHome)
+                if (lot.HasRoadFrontage)
                 {
                     Vector3 frontage = new Vector3(
                         lot.FrontageDirection.x,
@@ -638,10 +642,16 @@ namespace BarPromenade
                     1f);
             }
 
+            Color tintedValue = Color.Lerp(
+                new Color(value, value, value, 1f),
+                lot.Color,
+                0.32f);
+            float brightnessScale =
+                nightValue / Mathf.Max(value, 0.001f);
             return new Color(
-                nightValue * 0.88f,
-                nightValue,
-                nightValue * 0.96f,
+                tintedValue.r * brightnessScale * 0.88f,
+                tintedValue.g * brightnessScale,
+                tintedValue.b * brightnessScale * 0.96f,
                 1f);
         }
 

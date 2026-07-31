@@ -14,7 +14,8 @@ namespace BarPromenade
             IList<RoadEdge> nearbyRoads,
             IList<BuildingLot> nearbyLots,
             IList<StreetLampDescriptor> nearbyStreetLamps,
-            IList<TrafficSignalDescriptor> nearbyTrafficSignals)
+            IList<TrafficSignalDescriptor> nearbyTrafficSignals,
+            IList<CityDecorationDescriptor> nearbyDecorations)
         {
             Layout = layout ??
                 throw new ArgumentNullException(nameof(layout));
@@ -35,6 +36,10 @@ namespace BarPromenade
                 new ReadOnlyCollection<TrafficSignalDescriptor>(
                     new List<TrafficSignalDescriptor>(
                         nearbyTrafficSignals));
+            NearbyDecorations =
+                new ReadOnlyCollection<CityDecorationDescriptor>(
+                    new List<CityDecorationDescriptor>(
+                        nearbyDecorations));
         }
 
         public CityLayout Layout { get; }
@@ -47,6 +52,10 @@ namespace BarPromenade
             get;
         }
         public IReadOnlyList<TrafficSignalDescriptor> NearbyTrafficSignals
+        {
+            get;
+        }
+        public IReadOnlyList<CityDecorationDescriptor> NearbyDecorations
         {
             get;
         }
@@ -162,6 +171,30 @@ namespace BarPromenade
                 }
             }
 
+            RoadFencePlan fence =
+                RoadFencePlanner.CreatePlan(layout);
+            CityDecorationPlan cityDecorations =
+                CityDecorationPlanner.CreatePlan(
+                    layout,
+                    fence,
+                    night);
+            var decorations =
+                new List<CityDecorationDescriptor>();
+            for (int index = 0;
+                 index < cityDecorations.Descriptors.Count;
+                 index++)
+            {
+                CityDecorationDescriptor decoration =
+                    cityDecorations.Descriptors[index];
+                if (PlanarSquaredDistance(
+                        decoration.Position,
+                        home.DoorPosition) <=
+                    ViewRadius * ViewRadius)
+                {
+                    decorations.Add(decoration);
+                }
+            }
+
             return new HomeExteriorContextPlan(
                 layout,
                 home,
@@ -169,7 +202,8 @@ namespace BarPromenade
                 roads,
                 lots,
                 lamps,
-                signals);
+                signals,
+                decorations);
         }
 
         private static float SquaredDistance(

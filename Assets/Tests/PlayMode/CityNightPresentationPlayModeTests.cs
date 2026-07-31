@@ -63,6 +63,7 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.sun.shadows,
                 Is.EqualTo(LightShadows.Hard));
             AssertPlayerShadow(city.Player);
+            AssertCityDecorations(city.World);
 
             Volume volume =
                 UnityEngine.Object.FindAnyObjectByType<Volume>();
@@ -563,6 +564,68 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 player.Shadow.Renderer.sharedMaterial,
                 Is.SameAs(PlayerShadowResources.ShadowCasterMaterial));
+        }
+
+        private static void AssertCityDecorations(
+            CityWorldResult world)
+        {
+            Assert.That(world, Is.Not.Null);
+            Assert.That(world.DecorationPlan, Is.Not.Null);
+            Assert.That(world.DecorationRoot, Is.Not.Null);
+            Assert.That(
+                world.DecorationPlan.Count,
+                Is.GreaterThan(120).And.LessThanOrEqualTo(
+                    CityDecorationPlan.MaximumDescriptorCount));
+            Assert.That(
+                world.DecorationPlan.GetCount(
+                    CityDecorationAnchorKind.UrbanLandmark),
+                Is.EqualTo(4));
+            Assert.That(
+                world.DecorationPlan.GetCount(
+                    CityDecorationAnchorKind.ParkLandmark),
+                Is.EqualTo(2));
+            Assert.That(
+                world.DecorationRoot.transform.parent,
+                Is.SameAs(world.Root.transform));
+
+            Renderer[] renderers =
+                world.DecorationRoot.GetComponentsInChildren<Renderer>(
+                    true);
+            Assert.That(renderers, Is.Not.Empty);
+            Assert.That(
+                renderers.Length,
+                Is.LessThan(world.DecorationPlan.Count),
+                "Static city decorations must remain spatially batched.");
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Material material = renderers[index].sharedMaterial;
+                Assert.That(material, Is.Not.Null);
+                Assert.That(
+                    material == RuntimePrimitiveFactory.DefaultMaterial ||
+                    material == CityNightResources.EmissiveMaterial,
+                    Is.True,
+                    $"'{renderers[index].name}' must reuse a packaged " +
+                    "shared decoration material.");
+                Assert.That(
+                    renderers[index].shadowCastingMode,
+                    Is.EqualTo(ShadowCastingMode.Off));
+                Assert.That(renderers[index].receiveShadows, Is.False);
+            }
+
+            Assert.That(
+                world.DecorationRoot.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                world.DecorationRoot.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                world.DecorationRoot.GetComponentsInChildren<AudioSource>(
+                    true),
+                Is.Empty);
+            Assert.That(
+                world.DecorationRoot.GetComponentsInChildren<ParticleSystem>(
+                    true),
+                Is.Empty);
         }
     }
 }

@@ -79,6 +79,11 @@ Assets/
       World/         city plus validated bar/home layout plans and builders
         CityDistrict.cs          district, land-use, park and gate data
         CityTravelDistance.cs    weighted road/park-path distance between bars
+        CityDecorationDescriptor.cs  24 visual families and anchor contracts
+        CityDecorationPlan.cs        immutable ordered seeded decoration data
+        CityDecorationPlanner.cs     landmarks, lot visuals and clear clusters
+        CityDecorationValidator.cs   quotas, IDs, footprints and clearances
+        CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
         RoadWalkableArea.cs      XZ union; surface colliders own walkable height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -181,6 +186,13 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                              -> chunked fences + park gates
                                           -> CityNightFixturePlanner
                                              -> chunked lamps + signals
+                                          -> CityDecorationPlanner
+                                             -> one ordinary-lot visual each
+                                             -> four urban + two park landmarks
+                                             -> frontage/roadside/park clusters
+                                             -> CityDecorationWorldBuilder
+                                                -> six shared visual styles
+                                                -> shadowless 48 m chunks
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
@@ -225,7 +237,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
                                    -> window + open door + walkable safe balcony
        -> same seed -> HomeExteriorContextPlanner
-                    -> bounded roads/lots/windows/lamps/signals view
+                    -> bounded roads/lots/windows/lamps/signals/decorations view
+                    -> same CityDecorationWorldBuilder recipes in Home space
                     -> no second City root/player/camera/realtime street lights
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> warm shadowless ForcePixel exit-door Spot

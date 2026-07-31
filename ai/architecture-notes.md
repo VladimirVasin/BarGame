@@ -43,6 +43,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
   sole movement authority and camera collision does not react to decorative
   posts; rails and posts are combined into owned `48 m` spatial chunks.
+- **Accepted — Data-first seeded city decoration:** `CityDecorationPlanner`
+  consumes the validated layout plus fence and night-fixture plans and emits a
+  stable ordered plan without using Unity global random state. Every ordinary
+  building lot receives exactly one district silhouette/facade descriptor;
+  every urban district receives one landmark and the enabled park receives a
+  fountain/statue plus bandstand. Optional frontage, roadside and park
+  clusters use per-kind footprint clearances around entrances, gates, lamps,
+  signals, trees and benches. The 24 recipe families orient to actual road
+  frontage and expand as visual-only, collider-free, light-free and shadowless
+  boxes in at most six shared-material batches per `48 m` chunk. Home regenerates
+  and filters the same descriptors, then applies the same recipes after its
+  world-to-local transform and exterior half-space clip.
 - **Accepted — Physical/visual split:** `CharacterController` stays on the
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms

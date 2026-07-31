@@ -105,6 +105,18 @@ The vertical slice contains:
 - five readable districts: Old Town, Residential, Industrial, Nightlife and
   a central `4 x 4`-block park with lawn, plaza, trees, benches, hedges and
   four continuously walkable gates;
+- one deterministic city-decoration plan with a distinct silhouette or facade
+  treatment on every ordinary building lot, four urban landmarks, two park
+  landmarks and optional frontage, roadside and park clusters. Its 24 visual
+  families include chimneys, scaffolding, balconies, laundry, tanks, pipe
+  racks, billboards, fire escapes, markets, discarded furniture, cargo,
+  vending queues, shelters, phone booths, roadworks, a fountain/statue,
+  bandstand, chess tables and playground equipment;
+- frontage-aware windows and facade details now face each lot's actual road.
+  Decoration geometry is visual-only, shadowless and collider-free, reuses
+  the two packaged shared materials and combines at most six style batches per
+  `48 m` chunk. The bounded Home balcony exterior rebuilds the same seeded
+  descriptors in Home-local space instead of showing a simpler parallel city;
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the puppet intersect raised surfaces;

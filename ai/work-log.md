@@ -2,6 +2,44 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-01 — Seeded city silhouettes, landmarks and street details
+
+- Added a pure, version-independent city-decoration plan with stable IDs,
+  independent hash salts, explicit anchor/palette/visibility contracts and a
+  hard `420`-descriptor cap. Every ordinary building receives one district
+  visual; the four urban districts receive one landmark each and Central Park
+  receives a fountain/statue plus bandstand.
+- Implemented 24 low-poly recipe families spanning rooftop silhouettes,
+  facade depth, frontage stories, common roadside furniture and park features.
+  Windows and facade details now use the lot's real road frontage instead of a
+  fixed world direction, while ordinary facade tint keeps district color at
+  night.
+- Expanded static details through one dedicated builder into at most six
+  shared-material batches per `48 m` chunk. The layer adds no colliders,
+  realtime lights, audio sources, particles or shadows; per-kind footprints
+  protect entrances, gates and existing night fixtures, and narrow frontage
+  recipes stay inside the real street/building pocket.
+- Reused the same seeded descriptors and recipes in the bounded Home balcony
+  exterior after Home-local conversion and half-space clipping. Removed the
+  superseded ordinary-lot district detail call so legacy planters, vents and
+  signs cannot overlap the new compositions.
+- Added pure coverage for determinism, seed variation, all 24 kinds, ordinary
+  lot and landmark quotas, stable finite data and protected clearances. Added
+  City/Home scene contracts for batching, shared materials and the visual-only
+  component budget.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests generated projects compile with
+  0 errors and 0 warnings; `git diff --check` passes.
+- Focused decoration EditMode passed 6/6; focused City presentation passed 3/3
+  and Home balcony presentation passed 1/1.
+- Complete EditMode passed 649/649 and complete PlayMode passed 125/125.
+- Windows x64 Player build finished successfully with no build-warning markers.
+- A temporary D3D11 RenderTexture smoke captured and visually inspected all
+  four urban landmarks plus a street market, bus shelter and park fountain;
+  the temporary capture test was removed after verification.
+
 ## 2026-08-01 — Readable apartment exit lighting
 
 - Added one separate warm, shadowless ForcePixel Spot named

@@ -84,8 +84,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.IsInitialized, Is.True);
             Assert.That(home.BalconyLayout, Is.Not.Null);
             Assert.That(home.ExteriorContext, Is.Not.Null);
+            Assert.That(
+                home.ExteriorContext.NearbyDecorations,
+                Is.Not.Empty);
             Assert.That(home.Balcony, Is.Not.Null);
             Assert.That(home.ExteriorView, Is.Not.Null);
+            AssertRenderedExteriorDecorations(home.ExteriorView);
             Assert.That(
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.HomeInterior));
@@ -370,6 +374,35 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 viewport.y,
                 Is.InRange(0.04f, 0.96f));
+        }
+
+        private static void AssertRenderedExteriorDecorations(
+            Transform exterior)
+        {
+            Transform decorationRoot = null;
+            for (int index = 0; index < exterior.childCount; index++)
+            {
+                Transform child = exterior.GetChild(index);
+                if (string.Equals(
+                        child.name,
+                        "Home Exterior City Details",
+                        System.StringComparison.Ordinal))
+                {
+                    decorationRoot = child;
+                    break;
+                }
+            }
+
+            Assert.That(
+                decorationRoot,
+                Is.Not.Null,
+                "The reconstructed exterior must own its decoration child.");
+            Assert.That(
+                decorationRoot.GetComponentsInChildren<Renderer>(true),
+                Is.Not.Empty);
+            Assert.That(
+                decorationRoot.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
         }
     }
 }

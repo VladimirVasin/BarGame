@@ -73,13 +73,17 @@ namespace BarPromenade
             ReportLayout(Layout);
 
             phaseTimer.Restart();
-            World = CityWorldBuilder.Build(transform, Layout, settings);
+            CityNightFixturePlan nightPlan =
+                CityNightFixturePlanner.CreatePlan(Layout);
+            World = CityWorldBuilder.Build(
+                transform,
+                Layout,
+                settings,
+                nightPlan);
             ReportPhase("world_build", phaseTimer);
             ReportWorld(World);
 
             phaseTimer.Restart();
-            CityNightFixturePlan nightPlan =
-                CityNightFixturePlanner.CreatePlan(Layout);
             Night = CityNightWorldBuilder.Build(
                 transform,
                 nightPlan,
@@ -355,6 +359,15 @@ namespace BarPromenade
                 GameLog.Field(
                     "park_root_present",
                     world.ParkRoot != null),
+                GameLog.Field(
+                    "decoration_count",
+                    world.DecorationPlan.Count),
+                GameLog.Field(
+                    "decoration_landmark_count",
+                    world.DecorationPlan.GetCount(
+                        CityDecorationAnchorKind.UrbanLandmark) +
+                    world.DecorationPlan.GetCount(
+                        CityDecorationAnchorKind.ParkLandmark)),
                 GameLog.Field(
                     "bounds_size_x",
                     world.Bounds.size.x),
