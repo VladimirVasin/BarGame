@@ -483,6 +483,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   loads and reset when the application subsystem restarts. The remaining
   balance-check delay and consumed deterministic sequence share that
   scene-persistent session lifetime.
+- **Accepted — Physical first-person bar retail:** Every generated bar derives
+  one validated `BarDrinkServicePlan` from its existing counter/back-bar
+  layout. The world builder reserves the lower central shelf for exactly nine
+  stable retail bottle roots and builds each with renderers, a solid collider,
+  a larger selection trigger, a kinematic non-gravity Rigidbody and a mouth
+  anchor. Five shared low-poly vessel meshes cover tumbler, pint, wine glass,
+  shot glass and snifter; transparent glass and liquid resources are shared,
+  while per-drink colors and highlights use property blocks. A pure unscaled
+  timeline owns camera approach, persistent browsing, pickup, vessel
+  placement, pour/fill, bottle return, an exact three-second drink, empty
+  vessel return and the explicit-exit camera return. The player
+  self-pours with procedural camera-local arms, deterministic kinematic poses
+  and one reusable world-space liquid stream rather than a free physics/fluid
+  simulation. Confirmation remains the sole transaction boundary: cash and
+  drinking state commit exactly once before service and exit is then rejected
+  until the empty vessel reaches the counter. Completing service clears only
+  that order and returns to the same seated browser so another purchase can be
+  made; only the dedicated Exit action starts camera return and releases the
+  modal presentation. Lifecycle cleanup never refunds but always restores the
+  selected bottle, vessel, camera, player rig/shadows, controls and HUD. The
+  F9 debug window may replace only pre-commit browsing and refuses to interrupt
+  committed service. The validated seated framing keeps all bottle renderer
+  bounds inside a 16:10 viewport, and every reusable vessel snapshots and
+  restores its authored transform so repeated orders cannot compound scale.
+  The camera is placed above the counter at seated eye height with a shallow
+  upward pitch; the counter's floor marker and emissive sign participate in
+  the controller's captured presentation state and remain hidden through
+  repeated orders until the explicit camera return finishes.
 - **Accepted — Session wallet and immediate bar purchases:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
   city/bar scene loads and city-seed changes. Every bar owns one separate

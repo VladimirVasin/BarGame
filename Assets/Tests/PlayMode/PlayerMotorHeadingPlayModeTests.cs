@@ -211,9 +211,9 @@ namespace BarPromenade.Tests.PlayMode
             float firstBrakingSpeed = cruisingSpeed;
             float firstBrakingDeltaTime = 0f;
             float brakingSampleDeadline =
-                Time.realtimeSinceStartup + MovementTimeoutSeconds;
+                Time.time + MovementTimeoutSeconds;
             while (firstBrakingSpeed >= cruisingSpeed - 0.01f &&
-                   Time.realtimeSinceStartup < brakingSampleDeadline)
+                   Time.time < brakingSampleDeadline)
             {
                 releasePosition = playerObject.transform.position;
                 yield return null;
@@ -284,12 +284,11 @@ namespace BarPromenade.Tests.PlayMode
                 queueEventOnly: true);
 
             float reversalStartedAt = Time.time;
-            float reversalDeadline =
-                Time.realtimeSinceStartup + MovementTimeoutSeconds;
+            float reversalDeadline = Time.time + MovementTimeoutSeconds;
             while (Vector3.Dot(
                        motor.PlanarVelocity,
                        originalDirection) >= 0f &&
-                   Time.realtimeSinceStartup < reversalDeadline)
+                   Time.time < reversalDeadline)
             {
                 yield return null;
             }
@@ -308,7 +307,7 @@ namespace BarPromenade.Tests.PlayMode
             while (Vector3.Dot(
                        motor.PlanarVelocity,
                        originalDirection) > -MinimumMovingSpeed &&
-                   Time.realtimeSinceStartup < reversalDeadline)
+                   Time.time < reversalDeadline)
             {
                 yield return null;
             }

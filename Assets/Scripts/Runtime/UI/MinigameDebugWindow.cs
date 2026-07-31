@@ -64,12 +64,21 @@ namespace BarPromenade
         {
             if (!IsInitialized ||
                 IsOpen ||
-                SceneTransitionService.IsTransitioning)
+                SceneTransitionService.IsTransitioning ||
+                HasCommittedDrinkService())
             {
+                LastLaunchErrorKey =
+                    "debug.minigames.unavailable";
                 return false;
             }
 
-            CloseOtherModalContent();
+            if (!CloseOtherModalContent())
+            {
+                LastLaunchErrorKey =
+                    "debug.minigames.unavailable";
+                return false;
+            }
+
             if (!modalLock.TryCaptureAndDisable(
                     player.Interactor,
                     cameraFollow,
@@ -102,6 +111,7 @@ namespace BarPromenade
         {
             if (!IsInitialized ||
                 SceneTransitionService.IsTransitioning ||
+                HasCommittedDrinkService() ||
                 !BarMinigameCatalog.TryGet(
                     id,
                     out BarMinigameDefinition definition))
@@ -118,7 +128,12 @@ namespace BarPromenade
             }
             else
             {
-                CloseOtherModalContent();
+                if (!CloseOtherModalContent())
+                {
+                    LastLaunchErrorKey =
+                        "debug.minigames.unavailable";
+                    return false;
+                }
             }
 
             IBarMinigame minigame = GetOrCreateDebugMinigame(
@@ -289,8 +304,13 @@ namespace BarPromenade
             return true;
         }
 
-        private void CloseOtherModalContent()
+        private bool CloseOtherModalContent()
         {
+            if (HasCommittedDrinkService())
+            {
+                return false;
+            }
+
             if (cityMap != null && cityMap.IsOpen)
             {
                 cityMap.Close();
@@ -303,7 +323,7 @@ namespace BarPromenade
 
             if (drinkShop != null && drinkShop.IsOpen)
             {
-                drinkShop.Cancel();
+                drinkShop.Close();
             }
 
             foreach (IBarMinigame minigame in debugMinigames.Values)
@@ -315,6 +335,12 @@ namespace BarPromenade
             }
 
             ActiveDebugMinigame = null;
+            return true;
+        }
+
+        private bool HasCommittedDrinkService()
+        {
+            return drinkShop != null && drinkShop.IsServing;
         }
 
         private IBarMinigame GetOrCreateDebugMinigame(

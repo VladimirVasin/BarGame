@@ -2,26 +2,30 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// Crisp post-composite information for the world-space bottle browser.
+    /// The bar remains visible; this view only frames the selected offer and
+    /// exposes explicit mouse confirmation/exit actions.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarDrinkShopView : MonoBehaviour
     {
         public const int RowCount = 9;
 
-        private static readonly Rect PanelRect =
-            new Rect(50f, 4f, 540f, 352f);
-        private static readonly Rect RowsRect =
-            new Rect(66f, 52f, 508f, 225f);
+        private static readonly Rect HeaderRect =
+            new Rect(14f, 12f, 612f, 48f);
+        private static readonly Rect FooterRect =
+            new Rect(14f, 286f, 612f, 60f);
 
         private BarDrinkShopController controller;
         private GUIStyle titleStyle;
+        private GUIStyle nameStyle;
         private GUIStyle balanceStyle;
-        private GUIStyle rowNameStyle;
-        private GUIStyle rowValueStyle;
         private GUIStyle previewStyle;
         private GUIStyle feedbackStyle;
         private GUIStyle controlsStyle;
         private GUIStyle buttonStyle;
-        private GUIStyle closeStyle;
+        private GUIStyle statusStyle;
 
         public void Initialize(BarDrinkShopController shopController)
         {
@@ -37,18 +41,14 @@ namespace BarPromenade
 
             EnsureStyles();
             GUI.depth = -300;
-            RetroUiTheme.FillRect(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                RetroUiTheme.Backdrop);
-
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
-            Matrix4x4 previousMatrix =
-                RetroUiTheme.BeginCanvas(canvas);
+            Matrix4x4 previousMatrix = RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                DrawWindow();
+                DrawHeader();
+                DrawFooter();
             }
             finally
             {
@@ -56,190 +56,126 @@ namespace BarPromenade
             }
         }
 
-        private void DrawWindow()
+        private void DrawHeader()
         {
             RetroUiTheme.DrawPanel(
-                PanelRect,
+                HeaderRect,
                 RetroUiTheme.Panel,
                 RetroUiTheme.Accent,
                 true,
-                5f,
+                4f,
                 2f);
-            RetroUiTheme.StrokeRect(
-                new Rect(58f, 12f, 524f, 336f),
-                1f,
-                RetroUiTheme.BorderMuted);
-
             GUI.Label(
-                new Rect(72f, 13f, 280f, 32f),
+                new Rect(26f, 17f, 176f, 18f),
                 LocalizationService.Get("drink_shop.title"),
                 titleStyle);
             GUI.Label(
-                new Rect(342f, 15f, 194f, 28f),
+                new Rect(26f, 34f, 350f, 21f),
+                LocalizationService.Get(controller.SelectedOffer.NameKey),
+                nameStyle);
+            GUI.Label(
+                new Rect(388f, 18f, 198f, 30f),
                 string.Format(
-                    LocalizationService.Get(
-                        "drink_shop.balance"),
+                    LocalizationService.Get("drink_shop.balance"),
                     controller.CashBalance),
                 balanceStyle);
-            DrawCloseButton();
-            DrawOfferRows();
-            DrawFooter();
-        }
 
-        private void DrawOfferRows()
-        {
-            float rowHeight = RowsRect.height / RowCount;
-            int offerCount = Mathf.Min(
-                RowCount,
-                controller.Offers.Count);
-            for (int index = 0; index < offerCount; index++)
+            if (controller.IsBrowsing)
             {
-                Rect row = RetroUiTheme.SnapRect(new Rect(
-                    RowsRect.x,
-                    RowsRect.y + index * rowHeight,
-                    RowsRect.width,
-                    rowHeight - 2f));
-                BarDrinkOffer offer = controller.Offers[index];
-                bool selected = index == controller.SelectedIndex;
-                bool hovered =
-                    row.Contains(Event.current.mousePosition);
-
-                RetroUiTheme.DrawPanel(
-                    row,
-                    selected
-                        ? RetroUiTheme.PanelRaised
-                        : RetroUiTheme.PanelInset,
-                    selected
-                        ? RetroUiTheme.Accent
-                        : hovered
-                            ? RetroUiTheme.AccentPale
-                            : RetroUiTheme.BorderMuted,
-                    false,
-                    2f,
-                    selected ? 2f : 1f);
-
-                GUI.Label(
-                    new Rect(
-                        row.x + 10f,
-                        row.y,
-                        276f,
-                        row.height),
-                    (selected ? "› " : "  ") +
-                    LocalizationService.Get(offer.NameKey),
-                    rowNameStyle);
-                GUI.Label(
-                    new Rect(
-                        row.x + 292f,
-                        row.y,
-                        92f,
-                        row.height),
-                    string.Format(
-                        LocalizationService.Get(
-                            "drink_shop.price"),
-                        offer.Price),
-                    rowValueStyle);
-                GUI.Label(
-                    new Rect(
-                        row.x + 390f,
-                        row.y,
-                        108f,
-                        row.height),
-                    string.Format(
-                        LocalizationService.Get(
-                            "drink_shop.intoxication_gain"),
-                        DrinkRules.GetIntoxicationGain(
-                            offer.DrinkId)),
-                    rowValueStyle);
-
-                if (GUI.Button(
-                        row,
-                        GUIContent.none,
-                        GUIStyle.none))
-                {
-                    controller.Select(index);
-                }
+                Rect closeRect = new Rect(590f, 20f, 27f, 27f);
+                DrawButton(
+                    closeRect,
+                    "×",
+                    controller.Exit,
+                    false);
             }
         }
 
         private void DrawFooter()
         {
-            DrinkPurchaseResult preview =
-                controller.PreviewSelection();
+            RetroUiTheme.DrawPanel(
+                FooterRect,
+                RetroUiTheme.Panel,
+                RetroUiTheme.Accent,
+                true,
+                4f,
+                2f);
 
+            if (controller.IsBrowsing)
+            {
+                DrawBrowsingFooter();
+                return;
+            }
+
+            string statusKey = controller.Phase ==
+                BarDrinkServicePhase.Pouring
+                    ? "drink_shop.pouring"
+                    : controller.Phase ==
+                      BarDrinkServicePhase.Drinking
+                        ? "drink_shop.drinking"
+                        : controller.Phase ==
+                          BarDrinkServicePhase.VesselReturn
+                            ? "drink_shop.vessel_return"
+                            : "drink_shop.serving";
             GUI.Label(
-                new Rect(72f, 280f, 496f, 20f),
+                new Rect(28f, 298f, 584f, 34f),
+                LocalizationService.Get(statusKey),
+                statusStyle);
+        }
+
+        private void DrawBrowsingFooter()
+        {
+            DrinkPurchaseResult preview = controller.PreviewSelection();
+            GUI.Label(
+                new Rect(28f, 291f, 392f, 22f),
                 string.Format(
-                    LocalizationService.Get(
-                        "drink_shop.preview"),
+                    LocalizationService.Get("drink_shop.preview"),
                     preview.CashBefore,
                     preview.CashAfter,
                     preview.IntoxicationBefore,
                     preview.IntoxicationAfter),
                 previewStyle);
 
-            if (string.IsNullOrEmpty(controller.FeedbackKey))
-            {
-                GUI.Label(
-                    new Rect(72f, 301f, 496f, 19f),
-                    LocalizationService.Get(
-                        "drink_shop.controls"),
-                    controlsStyle);
-            }
-            else
-            {
-                GUI.Label(
-                    new Rect(72f, 300f, 496f, 20f),
-                    LocalizationService.Get(
-                        controller.FeedbackKey),
-                    feedbackStyle);
-            }
+            string message = string.IsNullOrEmpty(controller.FeedbackKey)
+                ? LocalizationService.Get("drink_shop.controls")
+                : LocalizationService.Get(controller.FeedbackKey);
+            GUI.Label(
+                new Rect(28f, 316f, 392f, 22f),
+                message,
+                string.IsNullOrEmpty(controller.FeedbackKey)
+                    ? controlsStyle
+                    : feedbackStyle);
 
             DrawButton(
-                new Rect(356f, 323f, 118f, 24f),
-                "drink_shop.buy",
-                () => controller.ConfirmSelection());
+                new Rect(430f, 296f, 104f, 38f),
+                LocalizationService.Get("drink_shop.buy"),
+                () => controller.ConfirmSelection(),
+                true);
             DrawButton(
-                new Rect(480f, 323f, 88f, 24f),
-                "drink_shop.cancel",
-                controller.Cancel);
-        }
-
-        private void DrawCloseButton()
-        {
-            Rect closeButton = new Rect(546f, 14f, 28f, 28f);
-            RetroUiTheme.DrawPanel(
-                closeButton,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.Bad,
-                false,
-                2f,
-                2f);
-            GUI.Label(closeButton, "×", closeStyle);
-            if (GUI.Button(
-                    closeButton,
-                    GUIContent.none,
-                    GUIStyle.none))
-            {
-                controller.Cancel();
-            }
+                new Rect(541f, 296f, 72f, 38f),
+                LocalizationService.Get("drink_shop.exit"),
+                controller.Exit,
+                true);
         }
 
         private void DrawButton(
             Rect rect,
-            string key,
-            System.Action action)
+            string label,
+            System.Action action,
+            bool framed)
         {
-            RetroUiTheme.DrawPanel(
-                rect,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.Accent,
-                false,
-                2f,
-                1f);
-            if (GUI.Button(
+            if (framed)
+            {
+                RetroUiTheme.DrawPanel(
                     rect,
-                    LocalizationService.Get(key),
-                    buttonStyle))
+                    RetroUiTheme.PanelRaised,
+                    RetroUiTheme.Accent,
+                    false,
+                    2f,
+                    1f);
+            }
+
+            if (GUI.Button(rect, label, buttonStyle))
             {
                 action?.Invoke();
             }
@@ -253,47 +189,43 @@ namespace BarPromenade
             }
 
             titleStyle = RetroUiTheme.CreateLabelStyle(
-                21,
+                11,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.AccentPale,
+                true);
+            nameStyle = RetroUiTheme.CreateLabelStyle(
+                17,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text,
                 true);
             balanceStyle = RetroUiTheme.CreateLabelStyle(
                 13,
                 TextAnchor.MiddleRight,
                 RetroUiTheme.Text,
                 true);
-            rowNameStyle = RetroUiTheme.CreateLabelStyle(
-                13,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                true);
-            rowValueStyle = RetroUiTheme.CreateLabelStyle(
-                12,
-                TextAnchor.MiddleRight,
-                RetroUiTheme.AccentPale);
             previewStyle = RetroUiTheme.CreateLabelStyle(
-                12,
-                TextAnchor.MiddleCenter,
+                11,
+                TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
                 true);
             feedbackStyle = RetroUiTheme.CreateLabelStyle(
                 11,
-                TextAnchor.MiddleCenter,
+                TextAnchor.MiddleLeft,
                 RetroUiTheme.Bad,
                 true);
             controlsStyle = RetroUiTheme.CreateLabelStyle(
-                10,
-                TextAnchor.MiddleCenter,
+                9,
+                TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted);
             buttonStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 true);
-            closeStyle = RetroUiTheme.CreateLabelStyle(
-                19,
+            statusStyle = RetroUiTheme.CreateLabelStyle(
+                15,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
+                RetroUiTheme.AccentPale,
                 true);
         }
     }

@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### 2026-07-31 — Physical first-person bar menu
+
+- Replaced the ordinary full-screen drink list with a seated first-person
+  counter scene. The camera glides to a natural seated eye height above the
+  counter and shows the hero's procedural low-poly arms while the world remains
+  visible behind a compact offer/price overlay. The green order-point floor
+  marker and emissive sign hide during the complete menu presentation, then
+  restore on return.
+- Added nine individually selectable 3D retail bottles to the lower back-bar
+  shelf. Every one is a real object with a solid collider, selection trigger,
+  kinematic Rigidbody, visible label treatment and mouth anchor; mouse,
+  keyboard and gamepad selection all address the same row. The seated shot
+  keeps the complete bottle geometry safely framed at both 16:9 and 16:10.
+- Confirming a purchase now makes the right hand pick up that exact bottle and
+  pour it through a real world-space stream. Water uses a tumbler, beer a pint,
+  wine a stemmed wine glass, vodka a shot glass and cognac a snifter; the
+  matching 3D liquid volume rises inside the vessel before the left hand holds
+  it at the mouth for a full three-second drink and returns it empty to the
+  counter.
+- Kept the existing atomic wallet/intoxication rules. Money and drinking state
+  commit exactly once at confirmation, insufficient purchases stay in the
+  browser, and Exit cannot interrupt or refund an already paid service.
+- Finishing a drink now returns to the seated bottle browser instead of
+  leaving the menu, so several orders can be placed in one visit. Camera return
+  and control restoration begin only from the dedicated `EXIT` / `ВЫЙТИ`
+  button or its `Esc` / gamepad `B` shortcut.
+- Added complete cleanup for camera, controls, HUD, player rig and shadows,
+  bottle transforms/colliders, vessel fill and stream state. F9 may replace an
+  unpaid browser but cannot interrupt committed service. Reused vessel types
+  restore their authored transform before every new order, while scene markers
+  remain hidden across repeat orders until explicit exit.
+
 ### 2026-07-31 — Interactive Home refrigerator
 
 - Rebuilt the apartment refrigerator as a larger, brighter and much more

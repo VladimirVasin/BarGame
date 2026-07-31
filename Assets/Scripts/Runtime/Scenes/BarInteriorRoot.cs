@@ -59,6 +59,8 @@ namespace BarPromenade
         public BarActivityKind ActiveActivity { get; private set; }
         public BarActivityStation ActivityStation { get; private set; }
         public BarCounterStation CounterStation { get; private set; }
+        public BarDrinkServicePlan DrinkServicePlan { get; private set; }
+        public BarDrinkServiceView DrinkServiceView { get; private set; }
         public BarDrinkShopController DrinkShop { get; private set; }
         public IBarMinigame ActiveMinigame { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
@@ -431,6 +433,12 @@ namespace BarPromenade
             IntoxicationHudView intoxicationHud,
             PlayerCameraFollow follow)
         {
+            DrinkServicePlan =
+                BarDrinkServicePlan.FromLayout(Layout);
+            DrinkServiceView =
+                BarDrinkServiceWorldBuilder.Build(
+                    Room,
+                    DrinkServicePlan);
             BarDrinkShopView view =
                 ui.AddComponent<BarDrinkShopView>();
             DrinkShop =
@@ -438,7 +446,9 @@ namespace BarPromenade
             DrinkShop.Initialize(
                 view,
                 intoxicationHud,
-                follow);
+                follow,
+                Player,
+                DrinkServiceView);
         }
 
         private void BuildCounterStation()
@@ -459,7 +469,7 @@ namespace BarPromenade
                 Layout.CounterStationPosition;
             Color markerColor =
                 new Color(0.30f, 0.74f, 0.57f);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject orderPoint = RuntimePrimitiveFactory.CreateBox(
                 "Drink Order Point",
                 transform,
                 new Vector3(
@@ -469,7 +479,7 @@ namespace BarPromenade
                 new Vector3(0.74f, 0.08f, 0.56f),
                 markerColor,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject orderSign = RuntimePrimitiveFactory.CreateBox(
                 "Drink Order Sign",
                 transform,
                 new Vector3(
@@ -480,6 +490,9 @@ namespace BarPromenade
                 markerColor,
                 CityNightResources.EmissiveMaterial,
                 false);
+            DrinkShop.ConfigureSceneMarkers(
+                orderPoint.GetComponent<Renderer>(),
+                orderSign.GetComponent<Renderer>());
         }
 
         private void BuildExit()

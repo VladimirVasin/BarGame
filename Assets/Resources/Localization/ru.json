@@ -126,7 +126,7 @@
     },
     {
       "key": "interaction.buy_drink",
-      "value": "E — купить напиток"
+      "value": "E — открыть барное меню"
     },
     {
       "key": "interaction.play_beer_pong",
@@ -685,8 +685,28 @@
       "value": "НАЗАД"
     },
     {
+      "key": "drink_shop.exit",
+      "value": "ВЫЙТИ"
+    },
+    {
       "key": "drink_shop.controls",
-      "value": "↑↓ / WASD — выбор   Enter / E / A — купить   Esc / B — назад"
+      "value": "Мышь / стрелки / WASD — выбор   Enter / E / A — купить   Esc / B — выйти"
+    },
+    {
+      "key": "drink_shop.serving",
+      "value": "ВАШ НАПИТОК ГОТОВЯТ..."
+    },
+    {
+      "key": "drink_shop.pouring",
+      "value": "НАЛИВАЕМ..."
+    },
+    {
+      "key": "drink_shop.drinking",
+      "value": "БУДЕМ."
+    },
+    {
+      "key": "drink_shop.vessel_return",
+      "value": "ВОЗВРАЩАЕМ БОКАЛ..."
     },
     {
       "key": "drink_shop.failure.insufficient_funds",

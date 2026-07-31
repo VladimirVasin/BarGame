@@ -2,6 +2,68 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-07-31 — Physical first-person bar drink service
+
+- Replaced the retail drink shop's full-screen list with a compact overlay on
+  a seated first-person presentation. A pure unscaled timeline now owns camera
+  approach, persistent bottle browsing, pickup, vessel placement, pouring,
+  bottle return, an exact three-second drink, empty-vessel return and an
+  explicit-exit camera return.
+- Derived one validated service plan from every generated bar layout and
+  reserved its lower central back-bar shelf for all nine retail offers. Each
+  offer builds as a separate low-poly bottle root with registered renderers,
+  stable slot ID, mouth anchor, solid collider, selection trigger and
+  kinematic Rigidbody; mouse rays accept both bottle colliders and respect
+  solid occluders.
+- Added reusable low-poly tumbler, pint, wine glass, shot glass and snifter
+  meshes, shared transparent glass/liquid materials, bottom-anchored liquid
+  fill and one reusable world-space pour stream. The presentation catalog maps
+  water, beers, wines, vodkas and cognacs to their correct vessel, bottle style,
+  colors and target fill.
+- Added procedural camera-local arms: the right hand grips and tilts the exact
+  selected bottle while the left hand presents and lifts the active vessel.
+  The ordinary player rig plus dynamic/contact shadows hand off cleanly and
+  restore with the camera.
+- Preserved the existing atomic transaction at confirmation. Failed purchase
+  validation remains in browsing; a successful purchase deducts and records
+  exactly once, rejects exit until service completes, returns to the same
+  browser after the vessel reaches the counter, and is never refunded by
+  disable/destroy/scene cleanup. Repeat orders reuse the same modal ownership;
+  only explicit Exit restores camera, input, HUD and player presentation.
+- Integrated the presentation into `BarInteriorRoot`, protected committed
+  service from the F9 debug launcher, retained immediate pre-commit replacement
+  and localized the browse/serve/pour/drink/vessel-return states plus the
+  dedicated `EXIT` / `ВЫЙТИ` action in RU/EN.
+- Added pure catalog/timeline coverage and PlayMode contracts for nine physical
+  bottles, five vessel mappings, shared resources, real fill/stream state,
+  first-person lifecycle, exactly-once debit, committed cancellation rules and
+  production scene flow. Also made bottle teardown avoid Unity's forbidden
+  sibling reorder during ancestor deactivation and made two pre-existing
+  queued-input timing checks independent from slow complete-suite wall-clock
+  frames.
+- Final edge-case auditing tightened the bottle row and widened the seated shot
+  so complete renderer bounds retain a tested safe margin at 16:10, and added
+  an exact vessel-transform snapshot/reset plus a regression that reuses pint,
+  wine-glass, shot-glass and snifter instances after animation scaling.
+- Raised the service camera from chest/counter height to a natural seated eye
+  height and reduced its upward pitch. The counter's green floor marker and
+  emissive sign now snapshot their exact renderer states, remain hidden through
+  browsing, repeated serving cycles and camera return, and restore on every
+  explicit-exit or close/disable path.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests generated projects compile with
+  0 errors and 0 warnings; localization JSON parses and `git diff --check`
+  passes.
+- Focused drink-service timeline coverage passed 12/12; complete EditMode
+  passed 639/639.
+- Complete headless PlayMode passed 122/122 executed tests with 3 GPU-only
+  tests skipped and 0 failures. All 8 bar-drink presentation, integration,
+  world-builder and production-scene tests passed; the focused repeat-order
+  path passed 4/4.
+- The Windows x64 Player build succeeded at `148327776` bytes with 0 warnings.
+
 ## 2026-07-31 — Refrigerator hum states and PS1 item inspection
 
 - Replaced the single refrigerator response with distinct deterministic

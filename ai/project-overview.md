@@ -348,7 +348,9 @@ The vertical slice contains:
   launched debug instances neither complete bar visits nor persist drinking
   progress; clickable controls or the Left/Right arrow keys change the session
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
-  last-drink or consumed-drink context;
+  last-drink or consumed-drink context; an unpaid bar-menu presentation may
+  be replaced immediately, but a committed physical drink service cannot be
+  interrupted through this debug path;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route and visit state, minigame runs, drinking and balance outcomes, plus
@@ -395,11 +397,27 @@ The vertical slice contains:
   immediately consumes `Moonshine` for 24 intoxication; reaching `100`
   terminates the applicable minigame at maximum intoxication without creating
   a separate timed status;
-- a session-only cash wallet starting at `$999` and a localized nine-item
-  counter menu in every bar; purchases atomically deduct a fixed integer price
-  and immediately consume the selected drink, while water costs `$2`, counts
-  as consumed, does not sober the player and preserves the last-alcohol
-  context.
+- a session-only cash wallet starting at `$999` and a localized physical
+  nine-item counter menu in every bar. Interaction glides into a seated
+  first-person shot with procedural low-poly arms and a full-width row of nine
+  individually selectable 3D bottle objects; every bottle owns a solid
+  collider, selection trigger, kinematic Rigidbody and mouth anchor. Confirm
+  atomically deducts the fixed integer price and consumes the selected drink
+  once, then locks ordinary cancellation while the right hand picks up and
+  tilts that exact bottle, a world-space stream fills the matching reusable 3D
+  tumbler, pint, wine glass, shot glass or snifter. The left hand holds it at
+  the mouth for an exact three-second drink, then returns the empty vessel to
+  the counter. Completing an order stays in the same seated browser for
+  another selection; only the dedicated Exit action (`Esc` / gamepad `B` or
+  the visible button) starts camera return and leaves the menu.
+  Water costs `$2`, counts as consumed, does not sober the player and preserves
+  the last-alcohol context; lifecycle teardown restores every transform,
+  collider, camera, rig, shadow, input and HUD state without refunding an
+  already committed purchase. The whole bottle row remains inside the seated
+  shot at 16:9 and 16:10, and repeated orders restore reusable vessels to their
+  authored scale. The service camera sits above the counter at natural seated
+  eye height, while the green order marker and sign remain hidden across
+  repeated orders until the explicit camera return completes.
 
 ## Deferred
 

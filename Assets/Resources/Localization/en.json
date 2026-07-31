@@ -126,7 +126,7 @@
     },
     {
       "key": "interaction.buy_drink",
-      "value": "E — buy a drink"
+      "value": "E — open the bar menu"
     },
     {
       "key": "interaction.play_beer_pong",
@@ -685,8 +685,28 @@
       "value": "BACK"
     },
     {
+      "key": "drink_shop.exit",
+      "value": "EXIT"
+    },
+    {
       "key": "drink_shop.controls",
-      "value": "↑↓ / WASD — select   Enter / E / A — buy   Esc / B — back"
+      "value": "Mouse / arrows / WASD — select   Enter / E / A — buy   Esc / B — exit"
+    },
+    {
+      "key": "drink_shop.serving",
+      "value": "YOUR DRINK IS BEING SERVED..."
+    },
+    {
+      "key": "drink_shop.pouring",
+      "value": "POURING..."
+    },
+    {
+      "key": "drink_shop.drinking",
+      "value": "CHEERS."
+    },
+    {
+      "key": "drink_shop.vessel_return",
+      "value": "RETURNING THE GLASS..."
     },
     {
       "key": "drink_shop.failure.insufficient_funds",

@@ -421,6 +421,16 @@ namespace BarPromenade
                 for (int column = 0; column < 18; column++)
                 {
                     float x = -4.85f + column * 0.57f;
+                    // The lower central shelf is reserved for the nine
+                    // individually selectable retail bottles built by the
+                    // drink-service presentation. Keep the remaining backbar
+                    // dressing combined so the physical menu does not turn
+                    // every decorative silhouette into a draw call.
+                    if (row == 0 && x >= -4.35f && x <= 2.0f)
+                    {
+                        continue;
+                    }
+
                     float height =
                         0.25f + ((column * 7 + row * 3) % 4) * 0.045f;
                     boxesByColor[(column + row * 2) % colors.Length].Add(

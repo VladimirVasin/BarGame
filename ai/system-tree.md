@@ -289,6 +289,13 @@ player -> PlayerInteractor -> BarEntrance/BarExit -> SceneTransitionService
                              -> completed visit -> CityMap
        -> BarCounterStation -> BarDrinkShop
                             -> retail catalog + atomic cash/drink transaction
+                            -> BarDrinkServicePlan -> nine physical bottle slots
+                            -> BarDrinkServiceWorldBuilder
+                               -> 9 bottle views + 5 vessel views + pour stream
+                            -> BarDrinkServiceTimeline
+                               -> seated camera + low-poly first-person arms
+                               -> pickup -> pour -> 3 s drink -> vessel return
+                               -> persistent browser -> explicit camera exit
                             -> GameSessionState wallet + drinking progress
 GameSessionState intoxication -> IntoxicationStageRules
                               -> motor + puppet + camera
