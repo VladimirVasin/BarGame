@@ -6,6 +6,29 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
+    public readonly struct CityMapPointOfInterest
+    {
+        internal CityMapPointOfInterest(
+            string stableId,
+            CityDistrictPointOfInterestKind kind,
+            CityDistrictKind district,
+            Vector2Int lotCell,
+            Vector3 worldPosition)
+        {
+            StableId = stableId ?? string.Empty;
+            Kind = kind;
+            District = district;
+            LotCell = lotCell;
+            WorldPosition = worldPosition;
+        }
+
+        public string StableId { get; }
+        public CityDistrictPointOfInterestKind Kind { get; }
+        public CityDistrictKind District { get; }
+        public Vector2Int LotCell { get; }
+        public Vector3 WorldPosition { get; }
+    }
+
     [DisallowMultipleComponent]
     public sealed class CityMapController : MonoBehaviour
     {
@@ -38,6 +61,8 @@ namespace BarPromenade
         }
 
         private readonly List<BuildingLot> bars = new List<BuildingLot>();
+        private readonly List<CityMapPointOfInterest> pointsOfInterest =
+            new List<CityMapPointOfInterest>();
         private readonly List<BuildingLot> orderedStops =
             new List<BuildingLot>();
         private readonly Queue<PendingCommand> pendingCommands =
@@ -55,6 +80,8 @@ namespace BarPromenade
         public bool IsOpen { get; private set; }
         public CityLayout Layout { get; private set; }
         public IReadOnlyList<BuildingLot> Bars => bars;
+        public IReadOnlyList<CityMapPointOfInterest> PointsOfInterest =>
+            pointsOfInterest;
         public BuildingLot PlayerHome => Layout?.PlayerHome;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
         public int VisitedBarCount
@@ -107,6 +134,7 @@ namespace BarPromenade
             }
 
             bars.Sort(CompareBarLots);
+            CollectPointsOfInterest();
             SelectedBarIndex = bars.Count == 0
                 ? -1
                 : Mathf.Clamp(SelectedBarIndex, 0, bars.Count - 1);
@@ -125,6 +153,9 @@ namespace BarPromenade
                 "initialized",
                 GameLog.Field("bar_count", bars.Count),
                 GameLog.Field(
+                    "point_of_interest_count",
+                    pointsOfInterest.Count),
+                GameLog.Field(
                     "selected_bar_index",
                     SelectedBarIndex),
                 GameLog.Field(
@@ -136,6 +167,21 @@ namespace BarPromenade
                 GameLog.Field(
                     "path_length",
                     CurrentPath.TotalLength));
+        }
+
+        public void Initialize(
+            CityLayout layout,
+            CityDecorationPlan decorationPlan,
+            PlayerRuntime playerRuntime,
+            PlayerCameraFollow follow,
+            IntoxicationHudView hud)
+        {
+            _ = decorationPlan;
+            Initialize(
+                layout,
+                playerRuntime,
+                follow,
+                hud);
         }
 
         public bool Open()
@@ -341,6 +387,45 @@ namespace BarPromenade
                     LocalizationService.Get("map.bar_name"),
                     barIndex + 1)
                 : string.Empty;
+        }
+
+        public string GetPointOfInterestLabel(int pointOfInterestIndex)
+        {
+            if (pointOfInterestIndex < 0 ||
+                pointOfInterestIndex >= pointsOfInterest.Count)
+            {
+                return string.Empty;
+            }
+
+            return TryGetPointOfInterestLocalizationKey(
+                    pointsOfInterest[pointOfInterestIndex].Kind,
+                    out string key)
+                ? LocalizationService.Get(key)
+                : string.Empty;
+        }
+
+        internal static bool TryGetPointOfInterestLocalizationKey(
+            CityDistrictPointOfInterestKind kind,
+            out string key)
+        {
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt:
+                    key = "map.poi.old_town_waterworks_court";
+                    return true;
+                case CityDistrictPointOfInterestKind.ResidentialDryingYard:
+                    key = "map.poi.residential_drying_yard";
+                    return true;
+                case CityDistrictPointOfInterestKind.IndustrialWeighbridge:
+                    key = "map.poi.industrial_weighbridge";
+                    return true;
+                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
+                    key = "map.poi.nightlife_last_route_island";
+                    return true;
+                default:
+                    key = string.Empty;
+                    return false;
+            }
         }
 
         public void QueueToggleMap()
@@ -608,12 +693,59 @@ namespace BarPromenade
             return index >= 0 && index < bars.Count;
         }
 
+        internal bool IsPointOfInterestLot(Vector2Int cell)
+        {
+            for (int index = 0; index < pointsOfInterest.Count; index++)
+            {
+                if (pointsOfInterest[index].LotCell == cell)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void CollectPointsOfInterest()
+        {
+            pointsOfInterest.Clear();
+            var descriptors = Layout.DistrictPointsOfInterest;
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                var descriptor = descriptors[index];
+
+                pointsOfInterest.Add(
+                    new CityMapPointOfInterest(
+                        descriptor.Id,
+                        descriptor.Kind,
+                        descriptor.District,
+                        descriptor.Cell,
+                        descriptor.Center));
+            }
+
+            pointsOfInterest.Sort(ComparePointsOfInterest);
+        }
+
         private static int CompareBarLots(BuildingLot left, BuildingLot right)
         {
             int rowComparison = left.Cell.y.CompareTo(right.Cell.y);
             return rowComparison != 0
                 ? rowComparison
                 : left.Cell.x.CompareTo(right.Cell.x);
+        }
+
+        private static int ComparePointsOfInterest(
+            CityMapPointOfInterest left,
+            CityMapPointOfInterest right)
+        {
+            int districtComparison =
+                left.District.CompareTo(right.District);
+            return districtComparison != 0
+                ? districtComparison
+                : string.Compare(
+                    left.StableId,
+                    right.StableId,
+                    StringComparison.Ordinal);
         }
 
         private static bool WasMapTogglePressed()

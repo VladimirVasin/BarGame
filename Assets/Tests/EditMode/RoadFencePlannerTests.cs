@@ -278,7 +278,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     plan.EntranceOpenings.Count +
                     plan.ParkGateOpenings.Count +
-                    plan.PlayerHomeOpenings.Count));
+                    plan.PlayerHomeOpenings.Count +
+                    plan.PublicSpaceOpenings.Count));
             foreach (CityParkGateDescriptor gate
                      in layout.Park.Gates)
             {
@@ -297,6 +298,55 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(gate.OutwardNormal));
                 Assert.That(opening.Width, Is.EqualTo(gate.Width));
                 AssertOpeningHasNoFence(plan, opening);
+            }
+        }
+
+        [Test]
+        public void CreatePlan_RemovesFenceAcrossEveryPublicStreetSide()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                71923);
+            RoadFencePlan plan = RoadFencePlanner.CreatePlan(layout);
+            int expectedOpeningCount =
+                layout.DistrictPointsOfInterest.Sum(
+                    point => point.Accesses.Count);
+
+            Assert.That(
+                plan.PublicSpaceOpenings,
+                Has.Count.EqualTo(expectedOpeningCount));
+            foreach (CityDistrictPointOfInterestDescriptor point
+                     in layout.DistrictPointsOfInterest)
+            {
+                foreach (
+                    CityDistrictPointOfInterestAccessDescriptor access
+                    in point.Accesses)
+                {
+                    RoadFenceOpeningDescriptor opening =
+                        plan.PublicSpaceOpenings.Single(
+                            candidate => candidate.Id == access.Id);
+                    float fullSideWidth =
+                        access.StreetSideDirection.x != 0
+                            ? point.PublicBounds.height
+                            : point.PublicBounds.width;
+
+                    Assert.That(
+                        opening.Kind,
+                        Is.EqualTo(
+                            RoadFenceOpeningKind
+                                .DistrictPointOfInterest));
+                    Assert.That(
+                        opening.DistrictPointOfInterestId,
+                        Is.EqualTo(access.Id));
+                    Assert.That(opening.Center, Is.EqualTo(access.Center));
+                    Assert.That(
+                        opening.OutwardNormal,
+                        Is.EqualTo(access.OutwardNormal));
+                    Assert.That(
+                        opening.Width,
+                        Is.EqualTo(fullSideWidth).Within(Tolerance));
+                    AssertOpeningHasNoFenceOverlap(plan, opening);
+                }
             }
         }
 
@@ -452,6 +502,37 @@ namespace BarPromenade.Tests.EditMode
                 hasFenceAfter,
                 Is.True,
                 $"No fence borders the second side of {opening.Id}.");
+        }
+
+        private static void AssertOpeningHasNoFenceOverlap(
+            RoadFencePlan plan,
+            RoadFenceOpeningDescriptor opening)
+        {
+            foreach (RoadFenceSegmentDescriptor segment
+                     in plan.Segments)
+            {
+                if (segment.IsHorizontal != opening.IsHorizontal ||
+                    Mathf.Abs(
+                        segment.FixedCoordinate -
+                        opening.FixedCoordinate) > Tolerance ||
+                    (segment.OutwardNormal -
+                     opening.OutwardNormal).sqrMagnitude >
+                    Tolerance * Tolerance)
+                {
+                    continue;
+                }
+
+                float overlap = Mathf.Min(
+                                    segment.MaximumCoordinate,
+                                    opening.MaximumCoordinate) -
+                                Mathf.Max(
+                                    segment.MinimumCoordinate,
+                                    opening.MinimumCoordinate);
+                Assert.That(
+                    overlap,
+                    Is.LessThanOrEqualTo(Tolerance),
+                    $"Fence overlaps opening {opening.Id}.");
+            }
         }
 
         private static void AssertSideCoverage(

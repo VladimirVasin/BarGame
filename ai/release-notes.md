@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### 2026-08-01 — Four open district places
+
+- Replaced the four facade-only POIs with full open city lots: Old Town's
+  waterworks court, Residential's drying yard, Industrial's weighbridge and
+  Nightlife's last-route island.
+- Each place removes the ordinary building from its block, opens every side
+  that meets a street and gives the player a distinct space to enter, cross and
+  walk around. Public approaches remain clear of guard rails, street lamps and
+  traffic signals. Custom blocks smaller than `18 x 18 m` safely omit these
+  authored places instead of squeezing them into an unreadable footprint.
+- Added free-standing district silhouettes and deliberate physical surfaces or
+  obstacles instead of another decoration pasted onto a house. Nearby places
+  also reconstruct in the same seeded exterior visible from Home.
+- Updated the city map to draw these lots as open ground and mark them with
+  four distinct symbols and localized names. They remain informational and do
+  not alter bar routes or visited progress.
+
 ### 2026-08-01 — A city worth looking at
 
 - Replaced the repeated box-only streetscape with seeded district character.

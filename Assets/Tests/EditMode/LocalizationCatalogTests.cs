@@ -181,6 +181,16 @@ namespace BarPromenade.Tests.EditMode
             "map.clear",
             "map.visited_count",
             "map.distance",
+            "map.poi.title",
+            "map.poi.old_town_waterworks_court",
+            "map.poi.residential_drying_yard",
+            "map.poi.industrial_weighbridge",
+            "map.poi.nightlife_last_route_island",
+            "map.district.old_town",
+            "map.district.residential",
+            "map.district.industrial",
+            "map.district.nightlife",
+            "map.district.central_park",
             "debug.minigames.title",
             "debug.minigames.hint",
             "debug.minigames.empty",
@@ -210,6 +220,14 @@ namespace BarPromenade.Tests.EditMode
             "map.open_hint",
             "map.instructions",
             "debug.minigames.controls"
+        };
+
+        private static readonly string[] RetiredPointOfInterestKeys =
+        {
+            "map.poi.old_town_palimpsest_house",
+            "map.poi.residential_corridor_gallery",
+            "map.poi.industrial_shift_gatehouse",
+            "map.poi.nightlife_glass_block_hall"
         };
 
         [TestCase("Localization/ru")]
@@ -298,6 +316,26 @@ namespace BarPromenade.Tests.EditMode
                     Is.False,
                     $"{resourcePath} still contains control hint " +
                     $"'{RetiredControlHintKeys[index]}'.");
+            }
+        }
+
+        [TestCase("Localization/ru")]
+        [TestCase("Localization/en")]
+        public void Catalog_DoesNotContainRetiredFacadePointOfInterestKeys(
+            string resourcePath)
+        {
+            Dictionary<string, string> valuesByKey = LoadValues(resourcePath);
+
+            for (int index = 0;
+                 index < RetiredPointOfInterestKeys.Length;
+                 index++)
+            {
+                Assert.That(
+                    valuesByKey.ContainsKey(
+                        RetiredPointOfInterestKeys[index]),
+                    Is.False,
+                    $"{resourcePath} still contains retired facade POI " +
+                    $"'{RetiredPointOfInterestKeys[index]}'.");
             }
         }
 

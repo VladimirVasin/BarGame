@@ -13,6 +13,11 @@ namespace BarPromenade
             readOnlyPathKinds;
         private readonly Dictionary<CityDistrictKind, CityDistrictDescriptor>
             districtsByKind;
+        private readonly Dictionary<
+            Vector2Int,
+            CityDistrictPointOfInterestDescriptor> districtPointsByCell;
+        private readonly ReadOnlyDictionary<CityDistrictKind, Vector2Int>
+            readOnlyPrimaryLandmarkCells;
         private bool hasValidated;
 
         internal CityLayout(
@@ -28,6 +33,10 @@ namespace BarPromenade
             IList<BuildingLot> buildingLots,
             IList<CityDistrictDescriptor> districts,
             CityParkPlan park,
+            IList<CityDistrictPointOfInterestDescriptor>
+                districtPointsOfInterest,
+            IDictionary<CityDistrictKind, Vector2Int>
+                primaryLandmarkCells,
             Vector2Int spawnNode)
         {
             Seed = seed;
@@ -54,6 +63,37 @@ namespace BarPromenade
             Districts = new ReadOnlyCollection<CityDistrictDescriptor>(
                 new List<CityDistrictDescriptor>(districts));
             Park = park ?? throw new ArgumentNullException(nameof(park));
+            DistrictPointsOfInterest =
+                new ReadOnlyCollection<
+                    CityDistrictPointOfInterestDescriptor>(
+                    new List<
+                        CityDistrictPointOfInterestDescriptor>(
+                        districtPointsOfInterest ??
+                        throw new ArgumentNullException(
+                            nameof(districtPointsOfInterest))));
+            districtPointsByCell =
+                new Dictionary<
+                    Vector2Int,
+                    CityDistrictPointOfInterestDescriptor>();
+            for (int index = 0;
+                 index < DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    DistrictPointsOfInterest[index];
+                if (point != null &&
+                    !districtPointsByCell.ContainsKey(point.Cell))
+                {
+                    districtPointsByCell.Add(point.Cell, point);
+                }
+            }
+
+            readOnlyPrimaryLandmarkCells =
+                new ReadOnlyDictionary<CityDistrictKind, Vector2Int>(
+                    new Dictionary<CityDistrictKind, Vector2Int>(
+                        primaryLandmarkCells ??
+                        throw new ArgumentNullException(
+                            nameof(primaryLandmarkCells))));
             SpawnNode = spawnNode;
             SpawnWorldPosition = GetNodeWorldPosition(spawnNode);
             nodeSet = new HashSet<Vector2Int>(Nodes);
@@ -91,6 +131,10 @@ namespace BarPromenade
         public BuildingLot PlayerHome { get; }
         public IReadOnlyList<CityDistrictDescriptor> Districts { get; }
         public CityParkPlan Park { get; }
+        public IReadOnlyList<CityDistrictPointOfInterestDescriptor>
+            DistrictPointsOfInterest { get; }
+        public IReadOnlyDictionary<CityDistrictKind, Vector2Int>
+            PrimaryLandmarkCells => readOnlyPrimaryLandmarkCells;
         public Vector2Int SpawnNode { get; }
         public Vector3 SpawnWorldPosition { get; }
 
@@ -142,6 +186,22 @@ namespace BarPromenade
             out CityDistrictDescriptor district)
         {
             return districtsByKind.TryGetValue(kind, out district);
+        }
+
+        public bool TryGetDistrictPointOfInterest(
+            Vector2Int cell,
+            out CityDistrictPointOfInterestDescriptor point)
+        {
+            return districtPointsByCell.TryGetValue(cell, out point);
+        }
+
+        public bool TryGetPrimaryLandmarkCell(
+            CityDistrictKind district,
+            out Vector2Int cell)
+        {
+            return readOnlyPrimaryLandmarkCells.TryGetValue(
+                district,
+                out cell);
         }
 
         public Rect GetRoadRect(RoadEdge edge)
@@ -340,6 +400,7 @@ namespace BarPromenade
             }
 
             var cells = new HashSet<Vector2Int>();
+            var lotsByCell = new Dictionary<Vector2Int, BuildingLot>();
             var barIds = new HashSet<string>(StringComparer.Ordinal);
             var bars = new List<BuildingLot>();
             BuildingLot playerHome = null;
@@ -351,6 +412,8 @@ namespace BarPromenade
                     throw new InvalidOperationException(
                         "Building lots must be non-null and have unique cells.");
                 }
+
+                lotsByCell.Add(lot.Cell, lot);
 
                 if (!districtCells.TryGetValue(
                         lot.Cell,
@@ -368,6 +431,21 @@ namespace BarPromenade
                 {
                     throw new InvalidOperationException(
                         $"Lot {lot.Cell} has inconsistent park land use.");
+                }
+
+                if (!lot.HasBuilding &&
+                    !lot.IsPark &&
+                    !lot.IsDistrictPointOfInterest)
+                {
+                    throw new InvalidOperationException(
+                        $"Lot {lot.Cell} has unsupported land use.");
+                }
+
+                if (lot.IsDistrictPointOfInterest &&
+                    lot.District == CityDistrictKind.CentralPark)
+                {
+                    throw new InvalidOperationException(
+                        "District points of interest must occupy urban land.");
                 }
 
                 if (!lot.IsBar)
@@ -467,6 +545,9 @@ namespace BarPromenade
 
                 bars.Add(lot);
             }
+
+            ValidatePrimaryLandmarkCells(lotsByCell);
+            ValidateDistrictPointsOfInterest(lotsByCell);
 
             if (!ReferenceEquals(PlayerHome, playerHome))
             {
@@ -571,6 +652,228 @@ namespace BarPromenade
             hasValidated = true;
         }
 
+        private void ValidatePrimaryLandmarkCells(
+            IReadOnlyDictionary<Vector2Int, BuildingLot> lotsByCell)
+        {
+            for (int index = 0; index < Districts.Count; index++)
+            {
+                CityDistrictKind district = Districts[index].Kind;
+                if (district == CityDistrictKind.CentralPark)
+                {
+                    continue;
+                }
+
+                if (!readOnlyPrimaryLandmarkCells.TryGetValue(
+                        district,
+                        out Vector2Int cell) ||
+                    !lotsByCell.TryGetValue(
+                        cell,
+                        out BuildingLot lot) ||
+                    !lot.HasBuilding ||
+                    lot.District != district)
+                {
+                    throw new InvalidOperationException(
+                        $"District '{district}' must reserve one " +
+                        "buildable primary landmark cell.");
+                }
+            }
+
+            foreach (KeyValuePair<CityDistrictKind, Vector2Int> pair
+                     in readOnlyPrimaryLandmarkCells)
+            {
+                if (pair.Key == CityDistrictKind.CentralPark ||
+                    !lotsByCell.TryGetValue(
+                        pair.Value,
+                        out BuildingLot lot) ||
+                    lot.District != pair.Key ||
+                    !lot.HasBuilding)
+                {
+                    throw new InvalidOperationException(
+                        "Primary landmark reservations must reference " +
+                        "buildable cells in their urban district.");
+                }
+            }
+        }
+
+        private void ValidateDistrictPointsOfInterest(
+            IReadOnlyDictionary<Vector2Int, BuildingLot> lotsByCell)
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            var cells = new HashSet<Vector2Int>();
+            var districts = new HashSet<CityDistrictKind>();
+            var accessIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0;
+                 index < DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    DistrictPointsOfInterest[index];
+                if (point == null ||
+                    string.IsNullOrEmpty(point.Id) ||
+                    !ids.Add(point.Id) ||
+                    !cells.Add(point.Cell) ||
+                    !districts.Add(point.District))
+                {
+                    throw new InvalidOperationException(
+                        "District points of interest must be non-null and " +
+                        "have unique IDs, cells and districts.");
+                }
+
+                if (!lotsByCell.TryGetValue(
+                        point.Cell,
+                        out BuildingLot lot) ||
+                    !lot.IsDistrictPointOfInterest ||
+                    lot.HasBuilding ||
+                    lot.IsPark ||
+                    lot.IsBar ||
+                    lot.IsPlayerHome ||
+                    lot.District != point.District ||
+                    ResolvePointOfInterestKind(point.District) != point.Kind)
+                {
+                    throw new InvalidOperationException(
+                        $"District point '{point.Id}' does not match its " +
+                        "reserved urban lot.");
+                }
+
+                if (point.Center != lot.Center ||
+                    !IsFinitePositive(point.PublicBounds) ||
+                    point.PublicBounds.width <
+                        CityLayoutGenerator
+                            .MinimumDistrictPointLotDimension ||
+                    point.PublicBounds.height <
+                        CityLayoutGenerator
+                            .MinimumDistrictPointLotDimension ||
+                    !ContainsInclusive(point.PublicBounds, point.Center) ||
+                    point.Accesses.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"District point '{point.Id}' must define usable " +
+                        "finite public ground and at least one street " +
+                        "access.");
+                }
+
+                var accessDirections = new HashSet<Vector2Int>();
+                for (int accessIndex = 0;
+                     accessIndex < point.Accesses.Count;
+                     accessIndex++)
+                {
+                    CityDistrictPointOfInterestAccessDescriptor access =
+                        point.Accesses[accessIndex];
+                    Vector2Int direction = access.StreetSideDirection;
+                    Vector3 expectedOutward = new Vector3(
+                        -direction.x,
+                        0f,
+                        -direction.y);
+                    RoadEdge expectedEdge =
+                        RoadEdge.ForCellFrontage(
+                            point.Cell,
+                            direction);
+                    if (string.IsNullOrEmpty(access.Id) ||
+                        !accessIds.Add(access.Id) ||
+                        Mathf.Abs(direction.x) + Mathf.Abs(direction.y) != 1 ||
+                        !accessDirections.Add(direction) ||
+                        access.FrontageEdge != expectedEdge ||
+                        !HasRoad(expectedEdge) ||
+                        GetPathKind(expectedEdge) != CityPathKind.Street ||
+                        (access.OutwardNormal - expectedOutward)
+                            .sqrMagnitude > 0.0001f ||
+                        !IsFinite(access.Width) ||
+                        access.Width <= 0f ||
+                        !IsFinitePositive(access.ApproachBounds) ||
+                        !ContainsInclusive(
+                            access.ApproachBounds,
+                            access.Center) ||
+                        !ContainsInclusive(
+                            point.PublicBounds,
+                            access.Center))
+                    {
+                        throw new InvalidOperationException(
+                            $"District point access '{access.Id}' is not " +
+                            "a valid open street approach.");
+                    }
+
+                    Rect street = GetRoadRect(expectedEdge);
+                    float approachDepth = direction.x != 0
+                        ? access.ApproachBounds.width
+                        : access.ApproachBounds.height;
+                    float sampleDistance = Mathf.Min(
+                        0.5f,
+                        Mathf.Min(
+                            RoadWidth * 0.25f,
+                            approachDepth * 0.25f));
+                    Vector3 roadSample = access.Center -
+                                         (access.OutwardNormal *
+                                          sampleDistance);
+                    Vector3 publicSample = access.Center +
+                                           (access.OutwardNormal *
+                                            sampleDistance);
+                    if (!ContainsInclusive(street, roadSample) ||
+                        !ContainsInclusive(
+                            access.ApproachBounds,
+                            roadSample) ||
+                        !ContainsInclusive(
+                            point.PublicBounds,
+                            publicSample) ||
+                        !ContainsInclusive(
+                            access.ApproachBounds,
+                            publicSample))
+                    {
+                        throw new InvalidOperationException(
+                            $"District point access '{access.Id}' must " +
+                            "overlap both its street and public ground.");
+                    }
+                }
+            }
+
+            int publicLotCount = 0;
+            foreach (BuildingLot lot in BuildingLots)
+            {
+                if (lot.IsDistrictPointOfInterest)
+                {
+                    publicLotCount++;
+                    if (!cells.Contains(lot.Cell))
+                    {
+                        throw new InvalidOperationException(
+                            $"Public lot {lot.Cell} has no district-point " +
+                            "descriptor.");
+                    }
+                }
+            }
+
+            if (publicLotCount != DistrictPointsOfInterest.Count ||
+                districtPointsByCell.Count !=
+                DistrictPointsOfInterest.Count)
+            {
+                throw new InvalidOperationException(
+                    "District-point lots and descriptors must match " +
+                    "one-to-one.");
+            }
+        }
+
+        private static CityDistrictPointOfInterestKind
+            ResolvePointOfInterestKind(CityDistrictKind district)
+        {
+            switch (district)
+            {
+                case CityDistrictKind.OldTown:
+                    return CityDistrictPointOfInterestKind
+                        .OldTownWaterworksCourt;
+                case CityDistrictKind.Residential:
+                    return CityDistrictPointOfInterestKind
+                        .ResidentialDryingYard;
+                case CityDistrictKind.Industrial:
+                    return CityDistrictPointOfInterestKind
+                        .IndustrialWeighbridge;
+                case CityDistrictKind.Nightlife:
+                    return CityDistrictPointOfInterestKind
+                        .NightlifeLastRouteIsland;
+                default:
+                    throw new InvalidOperationException(
+                        $"District '{district}' cannot own a district point " +
+                        "of interest.");
+            }
+        }
+
         private static int CompareLotsRowMajor(BuildingLot left, BuildingLot right)
         {
             int rowComparison = left.Cell.y.CompareTo(right.Cell.y);
@@ -585,6 +888,21 @@ namespace BarPromenade
                    position.x <= rectangle.xMax &&
                    position.z >= rectangle.yMin &&
                    position.z <= rectangle.yMax;
+        }
+
+        private static bool IsFinitePositive(Rect rectangle)
+        {
+            return IsFinite(rectangle.xMin) &&
+                   IsFinite(rectangle.xMax) &&
+                   IsFinite(rectangle.yMin) &&
+                   IsFinite(rectangle.yMax) &&
+                   rectangle.width > 0f &&
+                   rectangle.height > 0f;
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private bool IsCellInsideGrid(Vector2Int cell)

@@ -2,6 +2,64 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-01 — First-class open district points of interest
+
+- Replaced the temporary four facade POIs with a canonical layout-owned public
+  land use. After bars, the player home and primary landmark cells are fixed,
+  the generator selects at most one separate street-connected lot per urban
+  district by access count, primary-landmark separation and a stable seeded
+  rank. The default city provides all four. Authored sites require both lot
+  dimensions to meet `MinimumDistrictPointLotDimension` (`18 m`); smaller
+  custom blocks omit all four safely, while eligible compact layouts omit only
+  a district with no safe candidate.
+- Added stable public-place and access descriptors for Old Town's waterworks
+  court, Residential's drying yard, Industrial's weighbridge and Nightlife's
+  last-route island. A public lot contains no building, bar, home or primary
+  landmark. Its full ground and street approaches enter the walkable mask,
+  every adjacent street side becomes a complete fence opening, and lamp/signal
+  planning keeps both the ground and approaches clear.
+- Added a dedicated physical world builder. The four places use distinct
+  free-standing forms and movement grammars—asymmetric basin and standpipe,
+  parallel drying frames, axial weighbridge and broken-ring transit island—with
+  deliberate surface/obstacle colliders instead of collider-free facade props.
+  The bounded Home exterior reconstructs nearby sites from the same canonical
+  descriptors without gameplay colliders.
+- Returned the ordinary decoration catalog to its original 24 families and
+  four primary urban landmarks. Decoration planning now excludes public lots
+  naturally because they have no building.
+- Rewired the city map to consume `CityLayout.DistrictPointsOfInterest`
+  directly, render each public lot as open ground and show a distinct marker
+  shape plus localized RU/EN name for each kind. POIs remain informational and
+  do not enter route selection, pathfinding or visited-bar progress.
+- Added deterministic EditMode and PlayMode coverage for reservations,
+  validation, walkable approaches, complete fence openings, fixture clearance,
+  world/Home construction and canonical map integration.
+
+Verification:
+
+- A fresh isolated Unity import and compilation completed successfully.
+- Full Unity EditMode passed `668/668`.
+- Full Unity PlayMode passed `125/125`.
+- Windows x64 Player build succeeded at `141.5 MB`.
+- `git diff --check` passed.
+- A graphical or manual camera review was not run in this verification pass.
+
+## 2026-08-01 — City zone art-direction bible
+
+- Added a current-versus-target art bible for Old Town, Residential,
+  Industrial, Nightlife and Central Park.
+- Locked each zone's emotional role, spatial and facade grammar, material
+  aging, light, sound, human traces, bar threshold and explicit anti-goals.
+- Defined one-block visual transition bands, shared city constants,
+  determinism rules, implementation slices and objective recognition checks.
+- Kept the current topology, localization names, bar activity assignment,
+  global noir presentation and runtime contracts unchanged.
+
+Verification:
+
+- Documentation-only change; reviewed against the current district generator,
+  decoration plan, world builder, map localization and project memory.
+
 ## 2026-08-01 — Seeded city silhouettes, landmarks and street details
 
 - Added a pure, version-independent city-decoration plan with stable IDs,

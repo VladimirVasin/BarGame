@@ -63,7 +63,7 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.sun.shadows,
                 Is.EqualTo(LightShadows.Hard));
             AssertPlayerShadow(city.Player);
-            AssertCityDecorations(city.World);
+            AssertCityDecorations(city.World, city.Layout);
 
             Volume volume =
                 UnityEngine.Object.FindAnyObjectByType<Volume>();
@@ -567,7 +567,8 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void AssertCityDecorations(
-            CityWorldResult world)
+            CityWorldResult world,
+            CityLayout layout)
         {
             Assert.That(world, Is.Not.Null);
             Assert.That(world.DecorationPlan, Is.Not.Null);
@@ -626,6 +627,236 @@ namespace BarPromenade.Tests.PlayMode
                 world.DecorationRoot.GetComponentsInChildren<ParticleSystem>(
                     true),
                 Is.Empty);
+
+            AssertDistrictPointsOfInterest(world, layout);
+        }
+
+        private static void AssertDistrictPointsOfInterest(
+            CityWorldResult world,
+            CityLayout layout)
+        {
+            GameObject root = world.DistrictPointOfInterestRoot;
+            Assert.That(root, Is.Not.Null);
+            Assert.That(
+                root.transform.parent,
+                Is.SameAs(world.Root.transform));
+            Assert.That(
+                layout.DistrictPointsOfInterest.Count,
+                Is.EqualTo(4));
+            Assert.That(
+                root.transform.childCount,
+                Is.EqualTo(
+                    layout.DistrictPointsOfInterest.Count));
+
+            string[] recipeNames =
+            {
+                "Old Town Waterworks Court",
+                "Residential Drying Yard",
+                "Industrial Weighbridge",
+                "Nightlife Last Route Island"
+            };
+            int publicGroundCount = 0;
+            int recipeCount = 0;
+            Transform[] transforms =
+                root.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < transforms.Length; index++)
+            {
+                Transform item = transforms[index];
+                Assert.That(
+                    item.name,
+                    Is.Not.EqualTo("Building Mass"));
+                Assert.That(
+                    item.name.IndexOf(
+                        "Fence",
+                        StringComparison.OrdinalIgnoreCase),
+                    Is.LessThan(0));
+                Assert.That(
+                    item.name.IndexOf(
+                        "Gate",
+                        StringComparison.OrdinalIgnoreCase),
+                    Is.LessThan(0));
+                if (item.name ==
+                    CityDistrictPointOfInterestWorldBuilder
+                        .PublicGroundName)
+                {
+                    publicGroundCount++;
+                    Assert.That(
+                        item.GetComponent<BoxCollider>(),
+                        Is.Not.Null);
+                }
+
+                for (int recipe = 0;
+                     recipe < recipeNames.Length;
+                     recipe++)
+                {
+                    if (item.name == recipeNames[recipe])
+                    {
+                        recipeCount++;
+                    }
+                }
+            }
+
+            Assert.That(publicGroundCount, Is.EqualTo(4));
+            Assert.That(recipeCount, Is.EqualTo(4));
+            for (int descriptorIndex = 0;
+                 descriptorIndex <
+                 layout.DistrictPointsOfInterest.Count;
+                 descriptorIndex++)
+            {
+                CityDistrictPointOfInterestDescriptor descriptor =
+                    layout.DistrictPointsOfInterest[descriptorIndex];
+                Transform site = root.transform.Find(
+                    CityDistrictPointOfInterestWorldBuilder
+                        .GetSiteName(descriptor.Id));
+                Assert.That(site, Is.Not.Null);
+                Transform ground = site.Find(
+                    CityDistrictPointOfInterestWorldBuilder
+                        .PublicGroundName);
+                Assert.That(ground, Is.Not.Null);
+                Renderer groundRenderer =
+                    ground.GetComponent<Renderer>();
+                Assert.That(groundRenderer, Is.Not.Null);
+                Assert.That(
+                    groundRenderer.bounds.center.x,
+                    Is.EqualTo(descriptor.PublicBounds.center.x)
+                        .Within(0.01f));
+                Assert.That(
+                    groundRenderer.bounds.center.z,
+                    Is.EqualTo(descriptor.PublicBounds.center.y)
+                        .Within(0.01f));
+                Assert.That(
+                    groundRenderer.bounds.size.x,
+                    Is.EqualTo(descriptor.PublicBounds.width)
+                        .Within(0.01f));
+                Assert.That(
+                    groundRenderer.bounds.size.z,
+                    Is.EqualTo(descriptor.PublicBounds.height)
+                        .Within(0.01f));
+                AssertApproachesHaveNoSolidObstacle(
+                    site,
+                    descriptor);
+                AssertReadableDetailsFacePrimaryStreet(
+                    site,
+                    descriptor);
+            }
+
+            Assert.That(
+                root.GetComponentsInChildren<Renderer>(true),
+                Is.Not.Empty);
+            Assert.That(
+                root.GetComponentsInChildren<Collider>(true).Length,
+                Is.GreaterThan(4));
+            Assert.That(
+                root.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                root.GetComponentsInChildren<AudioSource>(true),
+                Is.Empty);
+            Assert.That(
+                root.GetComponentsInChildren<ParticleSystem>(true),
+                Is.Empty);
+        }
+
+        private static void AssertReadableDetailsFacePrimaryStreet(
+            Transform site,
+            CityDistrictPointOfInterestDescriptor descriptor)
+        {
+            Transform recipe = site.Find(
+                CityDistrictPointOfInterestWorldBuilder.GetRecipeName(
+                    descriptor.Kind));
+            Assert.That(recipe, Is.Not.Null);
+            Vector3 primaryStreetDirection =
+                descriptor.Accesses[0].Center - descriptor.Center;
+            primaryStreetDirection.y = 0f;
+            Assert.That(
+                Vector3.Dot(
+                    recipe.forward,
+                    primaryStreetDirection.normalized),
+                Is.GreaterThan(0.99f),
+                "Recipe +Z must face its primary street.");
+
+            switch (descriptor.Kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .OldTownWaterworksCourt:
+                    AssertDetailFacesPositiveLocalZ(
+                        recipe,
+                        "Cast Iron Standpipe",
+                        "Water Spout Mouth");
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .IndustrialWeighbridge:
+                    AssertDetailFacesPositiveLocalZ(
+                        recipe,
+                        "Scale Indicator Head",
+                        "Scale Indicator Face");
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    AssertDetailFacesPositiveLocalZ(
+                        recipe,
+                        "Broken Route Totem",
+                        "Totem Cyan Half");
+                    AssertDetailFacesPositiveLocalZ(
+                        recipe,
+                        "Departure Board",
+                        "Departure Board Line");
+                    break;
+            }
+        }
+
+        private static void AssertDetailFacesPositiveLocalZ(
+            Transform recipe,
+            string bodyName,
+            string detailName)
+        {
+            Transform body = recipe.Find(bodyName);
+            Transform detail = recipe.Find(detailName);
+            Assert.That(body, Is.Not.Null, bodyName);
+            Assert.That(detail, Is.Not.Null, detailName);
+            Assert.That(
+                detail.localPosition.z,
+                Is.GreaterThan(body.localPosition.z),
+                $"'{detailName}' must face the recipe's primary-street side.");
+        }
+
+        private static void AssertApproachesHaveNoSolidObstacle(
+            Transform site,
+            CityDistrictPointOfInterestDescriptor descriptor)
+        {
+            Collider[] colliders =
+                site.GetComponentsInChildren<Collider>(true);
+            for (int accessIndex = 0;
+                 accessIndex < descriptor.Accesses.Count;
+                 accessIndex++)
+            {
+                Rect approach =
+                    descriptor.Accesses[accessIndex].ApproachBounds;
+                for (int colliderIndex = 0;
+                     colliderIndex < colliders.Length;
+                     colliderIndex++)
+                {
+                    Collider collider = colliders[colliderIndex];
+                    if (collider.name ==
+                        CityDistrictPointOfInterestWorldBuilder
+                            .PublicGroundName)
+                    {
+                        continue;
+                    }
+
+                    Bounds bounds = collider.bounds;
+                    var footprint = Rect.MinMaxRect(
+                        bounds.min.x,
+                        bounds.min.z,
+                        bounds.max.x,
+                        bounds.max.z);
+                    Assert.That(
+                        footprint.Overlaps(approach),
+                        Is.False,
+                        $"'{collider.name}' blocks public access " +
+                        $"'{descriptor.Accesses[accessIndex].Id}'.");
+                }
+            }
         }
     }
 }

@@ -713,6 +713,26 @@
       "value": "Distance: {0:0} m"
     },
     {
+      "key": "map.poi.title",
+      "value": "Points of Interest"
+    },
+    {
+      "key": "map.poi.old_town_waterworks_court",
+      "value": "Old Waterworks Court"
+    },
+    {
+      "key": "map.poi.residential_drying_yard",
+      "value": "Drying Yard"
+    },
+    {
+      "key": "map.poi.industrial_weighbridge",
+      "value": "Cold Weighbridge"
+    },
+    {
+      "key": "map.poi.nightlife_last_route_island",
+      "value": "Last Route Island"
+    },
+    {
       "key": "map.district.old_town",
       "value": "Old Town"
     },

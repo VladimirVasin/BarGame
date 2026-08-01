@@ -713,6 +713,26 @@
       "value": "Длина: {0:0} м"
     },
     {
+      "key": "map.poi.title",
+      "value": "Точки интереса"
+    },
+    {
+      "key": "map.poi.old_town_waterworks_court",
+      "value": "Двор старого водоразбора"
+    },
+    {
+      "key": "map.poi.residential_drying_yard",
+      "value": "Сушильный двор"
+    },
+    {
+      "key": "map.poi.industrial_weighbridge",
+      "value": "Остывшая весовая"
+    },
+    {
+      "key": "map.poi.nightlife_last_route_island",
+      "value": "Остров последнего рейса"
+    },
+    {
       "key": "map.district.old_town",
       "value": "Старый город"
     },

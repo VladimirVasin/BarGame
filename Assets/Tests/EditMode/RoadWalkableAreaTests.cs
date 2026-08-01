@@ -145,6 +145,41 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void FromLayout_AddsEveryDistrictPointAndStreetApproach()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                731942);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+
+            Assert.That(
+                layout.DistrictPointsOfInterest,
+                Has.Count.EqualTo(4));
+            foreach (CityDistrictPointOfInterestDescriptor point
+                     in layout.DistrictPointsOfInterest)
+            {
+                Assert.That(
+                    area.Contains(point.Center, 0.32f),
+                    Is.True,
+                    point.Id);
+                foreach (
+                    CityDistrictPointOfInterestAccessDescriptor access
+                    in point.Accesses)
+                {
+                    for (int sample = -5; sample <= 5; sample++)
+                    {
+                        Vector3 position = access.Center +
+                            (access.OutwardNormal * (sample * 0.25f));
+                        Assert.That(
+                            area.Contains(position, 0.32f),
+                            Is.True,
+                            $"{access.Id} sample {sample}");
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void SpatialIndex_MatchesLinearReference_ForSeededRectanglesAndBoundaries()
         {
             const int seed = 0x51A7C17;

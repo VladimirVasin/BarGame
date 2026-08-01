@@ -431,6 +431,220 @@ namespace BarPromenade.Tests
             }
         }
 
+        [Test]
+        public void DefaultSettings_CreateOneOpenPointInEveryUrbanDistrict()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+
+            Assert.That(
+                layout.DistrictPointsOfInterest,
+                Has.Count.EqualTo(4));
+            Assert.That(
+                layout.DistrictPointsOfInterest
+                    .Select(point => point.District),
+                Is.EquivalentTo(new[]
+                {
+                    CityDistrictKind.OldTown,
+                    CityDistrictKind.Residential,
+                    CityDistrictKind.Industrial,
+                    CityDistrictKind.Nightlife
+                }));
+            Assert.That(
+                layout.DistrictPointsOfInterest
+                    .Select(point => point.Kind),
+                Is.EquivalentTo(new[]
+                {
+                    CityDistrictPointOfInterestKind
+                        .OldTownWaterworksCourt,
+                    CityDistrictPointOfInterestKind
+                        .ResidentialDryingYard,
+                    CityDistrictPointOfInterestKind
+                        .IndustrialWeighbridge,
+                    CityDistrictPointOfInterestKind
+                        .NightlifeLastRouteIsland
+                }));
+            Assert.That(
+                layout.DistrictPointsOfInterest.Select(point => point.Id),
+                Is.Unique);
+
+            foreach (CityDistrictPointOfInterestDescriptor point
+                     in layout.DistrictPointsOfInterest)
+            {
+                BuildingLot lot = layout.BuildingLots.Single(
+                    candidate => candidate.Cell == point.Cell);
+                Assert.That(lot.IsDistrictPointOfInterest, Is.True);
+                Assert.That(
+                    lot.LandUse,
+                    Is.EqualTo(
+                        CityLandUseKind.DistrictPointOfInterest));
+                Assert.That(lot.HasBuilding, Is.False);
+                Assert.That(lot.IsPark, Is.False);
+                Assert.That(lot.IsBar, Is.False);
+                Assert.That(lot.IsPlayerHome, Is.False);
+                Assert.That(lot.District, Is.EqualTo(point.District));
+                Assert.That(point.Center, Is.EqualTo(lot.Center));
+                Assert.That(point.PublicBounds.width, Is.EqualTo(18f));
+                Assert.That(point.PublicBounds.height, Is.EqualTo(18f));
+                Assert.That(point.Accesses, Is.Not.Empty);
+                Assert.That(
+                    layout.TryGetDistrictPointOfInterest(
+                        point.Cell,
+                        out CityDistrictPointOfInterestDescriptor indexed),
+                    Is.True);
+                Assert.That(indexed, Is.SameAs(point));
+
+                foreach (
+                    CityDistrictPointOfInterestAccessDescriptor access
+                    in point.Accesses)
+                {
+                    Assert.That(
+                        layout.HasRoad(access.FrontageEdge),
+                        Is.True,
+                        access.Id);
+                    Assert.That(
+                        layout.GetPathKind(access.FrontageEdge),
+                        Is.EqualTo(CityPathKind.Street),
+                        access.Id);
+                    float expectedWidth =
+                        access.StreetSideDirection.x != 0
+                            ? point.PublicBounds.height
+                            : point.PublicBounds.width;
+                    Assert.That(
+                        access.Width,
+                        Is.EqualTo(expectedWidth).Within(0.001f),
+                        access.Id);
+                    Assert.That(
+                        access.ApproachBounds.width,
+                        Is.GreaterThan(0f));
+                    Assert.That(
+                        access.ApproachBounds.height,
+                        Is.GreaterThan(0f));
+                }
+
+                Assert.That(
+                    layout.TryGetPrimaryLandmarkCell(
+                        point.District,
+                        out Vector2Int primaryCell),
+                    Is.True);
+                Assert.That(primaryCell, Is.Not.EqualTo(point.Cell));
+                Assert.That(
+                    layout.BuildingLots.Single(
+                        candidate => candidate.Cell == primaryCell)
+                        .HasBuilding,
+                    Is.True);
+            }
+
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void DistrictPoints_WithSameSeed_AreDeterministic()
+        {
+            CityLayout first = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                -470119);
+            CityLayout second = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                -470119);
+
+            Assert.That(
+                second.DistrictPointsOfInterest.Count,
+                Is.EqualTo(first.DistrictPointsOfInterest.Count));
+            for (int index = 0;
+                 index < first.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor expected =
+                    first.DistrictPointsOfInterest[index];
+                CityDistrictPointOfInterestDescriptor actual =
+                    second.DistrictPointsOfInterest[index];
+                Assert.That(actual.Id, Is.EqualTo(expected.Id));
+                Assert.That(actual.District, Is.EqualTo(expected.District));
+                Assert.That(actual.Kind, Is.EqualTo(expected.Kind));
+                Assert.That(actual.Cell, Is.EqualTo(expected.Cell));
+                Assert.That(actual.Center, Is.EqualTo(expected.Center));
+                Assert.That(
+                    actual.PublicBounds,
+                    Is.EqualTo(expected.PublicBounds));
+                Assert.That(
+                    actual.Accesses.Count,
+                    Is.EqualTo(expected.Accesses.Count));
+                for (int accessIndex = 0;
+                     accessIndex < expected.Accesses.Count;
+                     accessIndex++)
+                {
+                    CityDistrictPointOfInterestAccessDescriptor
+                        expectedAccess = expected.Accesses[accessIndex];
+                    CityDistrictPointOfInterestAccessDescriptor
+                        actualAccess = actual.Accesses[accessIndex];
+                    Assert.That(
+                        actualAccess.Id,
+                        Is.EqualTo(expectedAccess.Id));
+                    Assert.That(
+                        actualAccess.StreetSideDirection,
+                        Is.EqualTo(expectedAccess.StreetSideDirection));
+                    Assert.That(
+                        actualAccess.Center,
+                        Is.EqualTo(expectedAccess.Center));
+                    Assert.That(
+                        actualAccess.OutwardNormal,
+                        Is.EqualTo(expectedAccess.OutwardNormal));
+                    Assert.That(
+                        actualAccess.Width,
+                        Is.EqualTo(expectedAccess.Width));
+                    Assert.That(
+                        actualAccess.ApproachBounds,
+                        Is.EqualTo(expectedAccess.ApproachBounds));
+                    Assert.That(
+                        actualAccess.FrontageEdge,
+                        Is.EqualTo(expectedAccess.FrontageEdge));
+                }
+            }
+        }
+
+        [Test]
+        public void CompactDistrictWithoutSpareLot_OmitsOpenPoint()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BlocksX = 1;
+            settings.BlocksZ = 1;
+            settings.BarCount = 0;
+            settings.MinimumBarRouteDistance = 0f;
+
+            CityLayout layout =
+                CityLayoutGenerator.Generate(settings, 17031);
+
+            Assert.That(layout.PrimaryLandmarkCells, Has.Count.EqualTo(1));
+            Assert.That(layout.DistrictPointsOfInterest, Is.Empty);
+            Assert.That(
+                layout.BuildingLots.Single().HasBuilding,
+                Is.True);
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void UndersizedBlocks_OmitAuthoredOpenPoints()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BlockWidth =
+                CityLayoutGenerator.MinimumDistrictPointLotDimension - 1f;
+            settings.BlockDepth =
+                CityLayoutGenerator.MinimumDistrictPointLotDimension - 1f;
+            settings.BarCount = 0;
+            settings.MinimumBarRouteDistance = 0f;
+
+            CityLayout layout =
+                CityLayoutGenerator.Generate(settings, 17032);
+
+            Assert.That(layout.DistrictPointsOfInterest, Is.Empty);
+            Assert.That(layout.PrimaryLandmarkCells, Has.Count.EqualTo(4));
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
         private static bool ContainsInclusive(Rect rectangle, Vector3 point)
         {
             return point.x >= rectangle.xMin &&

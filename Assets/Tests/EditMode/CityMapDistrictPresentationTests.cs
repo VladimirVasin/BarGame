@@ -55,6 +55,155 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(expected));
         }
 
+        [TestCase(
+            CityDistrictPointOfInterestKind.OldTownWaterworksCourt,
+            "map.poi.old_town_waterworks_court")]
+        [TestCase(
+            CityDistrictPointOfInterestKind.ResidentialDryingYard,
+            "map.poi.residential_drying_yard")]
+        [TestCase(
+            CityDistrictPointOfInterestKind.IndustrialWeighbridge,
+            "map.poi.industrial_weighbridge")]
+        [TestCase(
+            CityDistrictPointOfInterestKind.NightlifeLastRouteIsland,
+            "map.poi.nightlife_last_route_island")]
+        public void PointOfInterestLocalizationKeys_AreStable(
+            CityDistrictPointOfInterestKind kind,
+            string expected)
+        {
+            Assert.That(
+                CityMapController.TryGetPointOfInterestLocalizationKey(
+                    kind,
+                    out string actual),
+                Is.True);
+            Assert.That(actual, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void UnsupportedPointOfInterestKind_HasNoLocalizationKey()
+        {
+            Assert.That(
+                CityMapController.TryGetPointOfInterestLocalizationKey(
+                    (CityDistrictPointOfInterestKind)999,
+                    out _),
+                Is.False);
+        }
+
+        [Test]
+        public void DefaultMapMarkers_MirrorCanonicalLayoutPointsOfInterest()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                58021);
+            var mapObject = new GameObject("City Map Test");
+            var previousRoute = new List<string>(
+                GameSessionState.PlannedBarRoute);
+            try
+            {
+                CityMapController controller =
+                    mapObject.AddComponent<CityMapController>();
+                controller.Initialize(
+                    layout,
+                    default,
+                    null,
+                    null);
+
+                Assert.That(controller.PointsOfInterest.Count, Is.EqualTo(4));
+                Assert.That(
+                    controller.PointsOfInterest.Count,
+                    Is.EqualTo(layout.DistrictPointsOfInterest.Count));
+
+                var markersById =
+                    new Dictionary<string, CityMapPointOfInterest>();
+                for (int index = 0;
+                     index < controller.PointsOfInterest.Count;
+                     index++)
+                {
+                    CityMapPointOfInterest marker =
+                        controller.PointsOfInterest[index];
+                    markersById.Add(marker.StableId, marker);
+                }
+
+                for (int index = 0;
+                     index < layout.DistrictPointsOfInterest.Count;
+                     index++)
+                {
+                    var descriptor =
+                        layout.DistrictPointsOfInterest[index];
+                    Assert.That(
+                        markersById.TryGetValue(
+                            descriptor.Id,
+                            out CityMapPointOfInterest marker),
+                        Is.True,
+                        descriptor.Id);
+                    Assert.That(marker.Kind, Is.EqualTo(descriptor.Kind));
+                    Assert.That(marker.District, Is.EqualTo(descriptor.District));
+                    Assert.That(marker.LotCell, Is.EqualTo(descriptor.Cell));
+                    Assert.That(
+                        marker.WorldPosition,
+                        Is.EqualTo(descriptor.Center));
+                }
+            }
+            finally
+            {
+                GameSessionState.ClearRoute();
+                for (int index = 0; index < previousRoute.Count; index++)
+                {
+                    GameSessionState.TryAddRouteStop(previousRoute[index]);
+                }
+
+                UnityEngine.Object.DestroyImmediate(mapObject);
+            }
+        }
+
+        [Test]
+        public void PublicPlaceLot_UsesOpenGroundInsteadOfDistrictBuildingFill()
+        {
+            Color publicPlace = InvokePrivate<Color>(
+                "GetLotColor",
+                null,
+                true);
+            Color oldTownBuilding = InvokePrivate<Color>(
+                "GetDistrictColor",
+                CityDistrictKind.OldTown);
+            Color residentialBuilding = InvokePrivate<Color>(
+                "GetDistrictColor",
+                CityDistrictKind.Residential);
+
+            Assert.That(publicPlace, Is.Not.EqualTo(oldTownBuilding));
+            Assert.That(publicPlace, Is.Not.EqualTo(residentialBuilding));
+            Assert.That(publicPlace.a, Is.EqualTo(1f).Within(0.001f));
+        }
+
+        [TestCase(0, 1)]
+        [TestCase(0, 4)]
+        [TestCase(4, 1)]
+        [TestCase(4, 4)]
+        public void PointOfInterestLegend_FitsBetweenRouteAndFooter(
+            int routeCount,
+            int pointOfInterestCount)
+        {
+            var panel = new Rect(461f, 41f, 170f, 311f);
+            Rect legend = CityMapView.CreatePointOfInterestLegendRect(
+                panel,
+                routeCount,
+                pointOfInterestCount);
+            float routeContentBottom = routeCount == 0
+                ? panel.y + 74f
+                : panel.y + 29f +
+                  (routeCount - 1) * 26f +
+                  22f;
+
+            Assert.That(legend.xMin, Is.GreaterThan(panel.xMin));
+            Assert.That(legend.xMax, Is.LessThan(panel.xMax));
+            Assert.That(
+                legend.yMin,
+                Is.GreaterThan(routeContentBottom));
+            Assert.That(
+                legend.yMax,
+                Is.LessThanOrEqualTo(panel.yMax - 68f));
+        }
+
         [Test]
         public void ParkPath_UsesNarrowerDistinctMapStyle()
         {

@@ -50,6 +50,8 @@ namespace BarPromenade
         public CityLandUseKind LandUse { get; }
         public bool HasBuilding => LandUse == CityLandUseKind.Building;
         public bool IsPark => LandUse == CityLandUseKind.Park;
+        public bool IsDistrictPointOfInterest =>
+            LandUse == CityLandUseKind.DistrictPointOfInterest;
         public bool IsBar { get; }
         public bool IsPlayerHome { get; }
         public string BarId { get; }

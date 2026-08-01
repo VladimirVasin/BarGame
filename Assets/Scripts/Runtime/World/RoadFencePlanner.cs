@@ -312,6 +312,27 @@ namespace BarPromenade
                     gate.Width));
             }
 
+            for (int pointIndex = 0;
+                 pointIndex < layout.DistrictPointsOfInterest.Count;
+                 pointIndex++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    layout.DistrictPointsOfInterest[pointIndex];
+                for (int accessIndex = 0;
+                     accessIndex < point.Accesses.Count;
+                     accessIndex++)
+                {
+                    CityDistrictPointOfInterestAccessDescriptor access =
+                        point.Accesses[accessIndex];
+                    openings.Add(new RoadFenceOpeningDescriptor(
+                        RoadFenceOpeningKind.DistrictPointOfInterest,
+                        access.Id,
+                        access.Center,
+                        access.OutwardNormal,
+                        access.Width));
+                }
+            }
+
             openings.Sort(CompareOpenings);
             return openings;
         }

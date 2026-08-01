@@ -17,7 +17,8 @@ namespace BarPromenade
     public enum CityLandUseKind
     {
         Building = 0,
-        Park = 1
+        Park = 1,
+        DistrictPointOfInterest = 2
     }
 
     public enum CityPathKind

@@ -28,7 +28,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CreatePlan_PlacesTwoAlternatingLampsAlongEveryRoadEdge()
+        public void CreatePlan_PlacesAtMostTwoLampsPerEdgeOutsidePublicSpaces()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
@@ -39,7 +39,7 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 plan.StreetLamps.Count,
-                Is.EqualTo(layout.RoadEdges.Count * 2));
+                Is.LessThanOrEqualTo(layout.RoadEdges.Count * 2));
 
             foreach (RoadEdge edge in layout.RoadEdges)
             {
@@ -47,20 +47,22 @@ namespace BarPromenade.Tests.EditMode
                     .Where(lamp => lamp.Edge == edge)
                     .OrderBy(lamp => lamp.EdgeT)
                     .ToArray();
-                Assert.That(lamps, Has.Length.EqualTo(2), edge.ToString());
-                Assert.That(
-                    lamps[0].EdgeT,
-                    Is.EqualTo(CityNightFixturePlanner.FirstLampEdgeT));
-                Assert.That(
-                    lamps[1].EdgeT,
-                    Is.EqualTo(CityNightFixturePlanner.SecondLampEdgeT));
-                Assert.That(
-                    lamps[1].Side,
-                    Is.Not.EqualTo(lamps[0].Side),
-                    edge.ToString());
-
-                AssertLampFacesRoad(layout, lamps[0]);
-                AssertLampFacesRoad(layout, lamps[1]);
+                Assert.That(lamps.Length, Is.InRange(0, 2), edge.ToString());
+                for (int index = 0; index < lamps.Length; index++)
+                {
+                    Assert.That(
+                        lamps[index].EdgeT ==
+                            CityNightFixturePlanner.FirstLampEdgeT ||
+                        lamps[index].EdgeT ==
+                            CityNightFixturePlanner.SecondLampEdgeT,
+                        Is.True,
+                        edge.ToString());
+                    AssertLampFacesRoad(layout, lamps[index]);
+                    AssertOutsidePublicSpaceReservations(
+                        layout,
+                        lamps[index].Position,
+                        1f);
+                }
             }
         }
 
@@ -76,7 +78,7 @@ namespace BarPromenade.Tests.EditMode
                 CityNightFixturePlanner.CreatePlan(layout);
 
             int eligibleCount = degrees.Count(pair => pair.Value >= 3);
-            int expectedIntersectionCount = Mathf.Min(
+            int maximumIntersectionCount = Mathf.Min(
                 eligibleCount,
                 CityNightFixturePlanner.MaximumSignalIntersections);
             IGrouping<Vector2Int, TrafficSignalDescriptor>[] signalGroups =
@@ -86,10 +88,10 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 signalGroups,
-                Has.Length.EqualTo(expectedIntersectionCount));
+                Has.Length.LessThanOrEqualTo(maximumIntersectionCount));
             Assert.That(
                 plan.TrafficSignals.Count,
-                Is.EqualTo(expectedIntersectionCount * 2));
+                Is.EqualTo(signalGroups.Length * 2));
 
             foreach (IGrouping<Vector2Int, TrafficSignalDescriptor> group
                      in signalGroups)
@@ -118,6 +120,14 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThan(PositionTolerance));
                 AssertSignalFacesIntersection(nodePosition, signals[0]);
                 AssertSignalFacesIntersection(nodePosition, signals[1]);
+                AssertOutsidePublicSpaceReservations(
+                    layout,
+                    signals[0].Position,
+                    1f);
+                AssertOutsidePublicSpaceReservations(
+                    layout,
+                    signals[1].Position,
+                    1f);
             }
         }
 
@@ -187,6 +197,48 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Dot(signal.Forward, toNode),
                 Is.EqualTo(1f).Within(PositionTolerance));
+        }
+
+        private static void AssertOutsidePublicSpaceReservations(
+            CityLayout layout,
+            Vector3 position,
+            float clearance)
+        {
+            Vector2 point = new Vector2(position.x, position.z);
+            foreach (CityDistrictPointOfInterestDescriptor pointOfInterest
+                     in layout.DistrictPointsOfInterest)
+            {
+                Assert.That(
+                    ContainsExpanded(
+                        pointOfInterest.PublicBounds,
+                        point,
+                        clearance),
+                    Is.False,
+                    $"Fixture at {position} overlaps '{pointOfInterest.Id}'.");
+                foreach (
+                    CityDistrictPointOfInterestAccessDescriptor access
+                    in pointOfInterest.Accesses)
+                {
+                    Assert.That(
+                        ContainsExpanded(
+                            access.ApproachBounds,
+                            point,
+                            clearance),
+                        Is.False,
+                        $"Fixture at {position} blocks '{access.Id}'.");
+                }
+            }
+        }
+
+        private static bool ContainsExpanded(
+            Rect bounds,
+            Vector2 point,
+            float expansion)
+        {
+            return point.x >= bounds.xMin - expansion &&
+                   point.x <= bounds.xMax + expansion &&
+                   point.y >= bounds.yMin - expansion &&
+                   point.y <= bounds.yMax + expansion;
         }
 
         private static Dictionary<Vector2Int, int> CountDegrees(

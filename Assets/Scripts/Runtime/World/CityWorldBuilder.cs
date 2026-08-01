@@ -84,6 +84,10 @@ namespace BarPromenade
             BuildRoads(world, layout, settings);
             RoadFenceWorldBuilder.Build(world, fencePlan);
             GameObject parkRoot = BuildPark(world, layout.Park);
+            GameObject districtPointOfInterestRoot =
+                CityDistrictPointOfInterestWorldBuilder.Build(
+                    world,
+                    layout);
 
             var bars = new List<BarEntrance>(settings.BarCount);
             HomeEntrance playerHome = null;
@@ -112,6 +116,7 @@ namespace BarPromenade
                 playerHome,
                 fencePlan,
                 parkRoot,
+                districtPointOfInterestRoot,
                 decorationPlan,
                 decorationRoot,
                 bounds);

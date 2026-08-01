@@ -11,6 +11,7 @@ This directory is the concise, versioned memory for Bar Promenade.
 | `architecture-notes.md` | Accepted and proposed technical decisions |
 | `debug-log.md` | Structured diagnostics format, events and support workflow |
 | `player-art-spec.md` | Locked player design and layered puppet-atlas contract |
+| `city-zones-art-bible.md` | Current zone facts and locked target visual, spatial, emotional, light and sound identity |
 | `work-log.md` | Reverse-chronological implementation record |
 | `tutorial-scenario.md` | Planned vertical-slice walkthrough and acceptance path |
 | `release-notes.md` | Player-visible milestone notes |

@@ -243,6 +243,28 @@ namespace BarPromenade
             CityLayout layout,
             CityDistrictKind district)
         {
+            if (layout.TryGetPrimaryLandmarkCell(
+                    district,
+                    out Vector2Int reservedCell))
+            {
+                for (int index = 0;
+                     index < layout.BuildingLots.Count;
+                     index++)
+                {
+                    BuildingLot reservedLot = layout.BuildingLots[index];
+                    if (reservedLot.Cell == reservedCell &&
+                        reservedLot.HasBuilding &&
+                        reservedLot.District == district)
+                    {
+                        return reservedLot;
+                    }
+                }
+
+                throw new InvalidOperationException(
+                    $"District '{district}' primary landmark reservation " +
+                    $"{reservedCell} does not resolve to a building lot.");
+            }
+
             var candidates = new List<RankedLot>();
             for (int index = 0;
                  index < layout.BuildingLots.Count;

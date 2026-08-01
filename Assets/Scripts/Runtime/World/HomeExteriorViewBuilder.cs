@@ -11,7 +11,7 @@ namespace BarPromenade
     /// </summary>
     public static class HomeExteriorViewBuilder
     {
-        internal const float ExteriorMinimumX =
+        public const float ExteriorMinimumX =
             PlayerHomeBalconyGeometry.HomeFacadeX +
             PlayerHomeBalconyGeometry.WallThickness *
             0.5f +
@@ -67,6 +67,8 @@ namespace BarPromenade
             BuildTerminalEnvironment(root, balcony);
             BuildRoads(root, balcony, context);
             BuildBuildings(root, context);
+            CityDistrictPointOfInterestWorldBuilder
+                .BuildHomeExterior(root, context);
             CityDecorationWorldBuilder.BuildHomeExterior(
                 root,
                 context,

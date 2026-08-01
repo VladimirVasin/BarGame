@@ -7,6 +7,8 @@ namespace BarPromenade
     public static class CityLayoutGenerator
     {
         public const float MaximumHomeBarRouteDistance = 48f;
+        public const float DistrictPointApproachWidth = 5.2f;
+        public const float MinimumDistrictPointLotDimension = 18f;
 
         private static readonly Vector2Int[] CardinalDirections =
         {
@@ -23,6 +25,9 @@ namespace BarPromenade
             CityDistrictKind.Industrial,
             CityDistrictKind.Nightlife
         };
+
+        internal static IReadOnlyList<CityDistrictKind> UrbanDistricts =>
+            UrbanDistrictOrder;
 
         public static CityLayout Generate(CityGenerationSettings settings, int seed)
         {
@@ -53,7 +58,11 @@ namespace BarPromenade
                 origin,
                 nodes,
                 roads,
-                pathKinds);
+                pathKinds,
+                out List<CityDistrictPointOfInterestDescriptor>
+                    districtPointsOfInterest,
+                out Dictionary<CityDistrictKind, Vector2Int>
+                    primaryLandmarkCells);
             List<CityDistrictDescriptor> districts =
                 CreateDistricts(snapshot, lots);
             Vector2Int spawnNode =
@@ -72,6 +81,8 @@ namespace BarPromenade
                 lots,
                 districts,
                 park,
+                districtPointsOfInterest,
+                primaryLandmarkCells,
                 spawnNode);
             layout.ValidateOrThrow();
             return layout;
@@ -383,7 +394,11 @@ namespace BarPromenade
             Vector3 origin,
             IReadOnlyList<Vector2Int> nodes,
             List<RoadEdge> roads,
-            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds)
+            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds,
+            out List<CityDistrictPointOfInterestDescriptor>
+                districtPointsOfInterest,
+            out Dictionary<CityDistrictKind, Vector2Int>
+                primaryLandmarkCells)
         {
             int lotCount = checked(settings.BlocksX * settings.BlocksZ);
             var roadSet = new HashSet<RoadEdge>(roads);
@@ -449,6 +464,20 @@ namespace BarPromenade
                 frontages[homeLotIndex] = homeFrontage;
             }
 
+            CityDistrictPointOfInterestPlanner.Create(
+                settings,
+                seed,
+                origin,
+                roads,
+                pathKinds,
+                barLots,
+                homeLotIndex,
+                out primaryLandmarkCells,
+                out Dictionary<CityDistrictKind, int> districtPointLots,
+                out districtPointsOfInterest);
+            var districtPointLotIndices = new HashSet<int>(
+                districtPointLots.Values);
+
             var lots = new List<BuildingLot>(lotCount);
             int barOrdinal = 0;
             for (int z = 0; z < settings.BlocksZ; z++)
@@ -458,6 +487,8 @@ namespace BarPromenade
                     int lotIndex = ToLotIndex(x, z, settings.BlocksX);
                     bool isBar = barLots.Contains(lotIndex);
                     bool isPlayerHome = lotIndex == homeLotIndex;
+                    bool isDistrictPointOfInterest =
+                        districtPointLotIndices.Contains(lotIndex);
                     BarActivityKind barActivity = BarActivityKind.None;
                     if (isBar)
                     {
@@ -474,6 +505,7 @@ namespace BarPromenade
                         frontages[lotIndex],
                         isBar,
                         isPlayerHome,
+                        isDistrictPointOfInterest,
                         barActivity));
                 }
             }
@@ -852,6 +884,7 @@ namespace BarPromenade
             Vector2Int frontage,
             bool isBar,
             bool isPlayerHome,
+            bool isDistrictPointOfInterest,
             BarActivityKind barActivity)
         {
             var random = new DeterministicRandom(
@@ -859,10 +892,12 @@ namespace BarPromenade
             CityDistrictKind district = ResolveDistrict(settings, cell);
             CityLandUseKind landUse = settings.IsParkCell(cell)
                 ? CityLandUseKind.Park
-                : CityLandUseKind.Building;
+                : isDistrictPointOfInterest
+                    ? CityLandUseKind.DistrictPointOfInterest
+                    : CityLandUseKind.Building;
             float maximumWidth = settings.BlockWidth - (settings.BuildingInset * 2f);
             float maximumDepth = settings.BlockDepth - (settings.BuildingInset * 2f);
-            Vector2 size = landUse == CityLandUseKind.Park
+            Vector2 size = landUse != CityLandUseKind.Building
                 ? new Vector2(settings.BlockWidth, settings.BlockDepth)
                 : isPlayerHome
                     ? new Vector2(
@@ -873,7 +908,7 @@ namespace BarPromenade
                     maximumWidth,
                     maximumDepth,
                     ref random);
-            float height = landUse == CityLandUseKind.Park
+            float height = landUse != CityLandUseKind.Building
                 ? 0.1f
                 : isPlayerHome
                     ? PlayerHomeBalconyGeometry.ResolveBuildingHeight(
@@ -1065,7 +1100,7 @@ namespace BarPromenade
                 random.Range(minimumT, maximumT));
         }
 
-        private static Vector3 GetLotCenter(
+        internal static Vector3 GetLotCenter(
             CityGenerationSettings settings,
             Vector3 origin,
             Vector2Int cell)
@@ -1087,7 +1122,7 @@ namespace BarPromenade
                 node.y * settings.NodeSpacing.y);
         }
 
-        private static CityDistrictKind ResolveDistrict(
+        internal static CityDistrictKind ResolveDistrict(
             CityGenerationSettings settings,
             Vector2Int cell)
         {
@@ -1393,7 +1428,7 @@ namespace BarPromenade
             return (node.y * nodeWidth) + node.x;
         }
 
-        private static int ToLotIndex(int x, int z, int blockWidth)
+        internal static int ToLotIndex(int x, int z, int blockWidth)
         {
             return (z * blockWidth) + x;
         }
@@ -1421,6 +1456,17 @@ namespace BarPromenade
             uint hash = StableHash(unchecked((uint)seed), unchecked((uint)x));
             hash = StableHash(hash, unchecked((uint)z));
             return StableHash(hash, salt);
+        }
+
+        internal static uint StableHash(
+            int seed,
+            int x,
+            int z,
+            uint category,
+            uint salt)
+        {
+            uint hash = StableHash(seed, x, z, salt);
+            return StableHash(hash, category);
         }
 
         private static uint StableHash(uint first, uint second)

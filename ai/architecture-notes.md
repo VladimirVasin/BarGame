@@ -34,27 +34,56 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   node. Bar-free custom layouts retain the central-road fallback and no home.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
-  park-lawn rectangles. The park connects to surrounding streets through four
-  explicit gates.
+  park-lawn rectangles plus district-public-ground and street-approach
+  rectangles. The park connects to surrounding streets through four explicit
+  gates, while each generated district point of interest connects through
+  every one of its adjacent street sides.
 - **Accepted — Entrance-aware visual road boundary:** A pure planner derives
   the exposed perimeter of street rectangles only, including dead-end caps,
   and subtracts wider openings around every bar frontage, player-home frontage
-  and park gate.
+  and park gate. A district-public-place access subtracts its complete
+  block-side interval rather than creating a narrow gate, so no rail encloses
+  a public lot from an adjacent street.
   Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
   sole movement authority and camera collision does not react to decorative
   posts; rails and posts are combined into owned `48 m` spatial chunks.
+- **Accepted — First-class open district points of interest:** City land use,
+  not the late visual-decoration pass, owns public places. After bars, the
+  player home and one buildable primary-landmark cell per urban district are
+  reserved, `CityLayoutGenerator` deterministically chooses at most one other
+  street-connected lot in each district. It prefers more street sides, then
+  greater separation from the district's primary landmark, then a stable
+  seeded rank. The default layout yields four: Old Town's waterworks court,
+  Residential's drying yard, Industrial's weighbridge and Nightlife's
+  last-route island. The authored recipes require both `BlockWidth` and
+  `BlockDepth` to be at least
+  `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); a smaller
+  custom layout omits all four safely, and a compact eligible district may
+  still omit its place when no safe candidate exists. Each
+  `CityDistrictPointOfInterestDescriptor` is the
+  canonical stable ID/cell/kind/public-bounds/access contract. Its matching lot
+  has `CityLandUseKind.DistrictPointOfInterest`, has no building and cannot be a
+  bar, home, park cell or primary landmark. `RoadWalkableArea` adds the public
+  ground and approach rectangles, `RoadFencePlanner` opens each complete
+  street-facing side, and `CityNightFixturePlanner` excludes lamps and signals
+  from the reserved ground/approaches. A dedicated world builder creates the
+  physical paving, free-standing recipe and intentional solid colliders; the
+  bounded Home exterior rebuilds nearby descriptors through the same
+  world-to-local transform without gameplay colliders.
 - **Accepted — Data-first seeded city decoration:** `CityDecorationPlanner`
   consumes the validated layout plus fence and night-fixture plans and emits a
   stable ordered plan without using Unity global random state. Every ordinary
   building lot receives exactly one district silhouette/facade descriptor;
-  every urban district receives one landmark and the enabled park receives a
-  fountain/statue plus bandstand. Optional frontage, roadside and park
-  clusters use per-kind footprint clearances around entrances, gates, lamps,
-  signals, trees and benches. The 24 recipe families orient to actual road
-  frontage and expand as visual-only, collider-free, light-free and shadowless
-  boxes in at most six shared-material batches per `48 m` chunk. Home regenerates
-  and filters the same descriptors, then applies the same recipes after its
-  world-to-local transform and exterior half-space clip.
+  public-place lots are excluded because they have no building. Every urban
+  district retains one primary building landmark, and the enabled park still
+  receives a fountain/statue plus bandstand.
+  Optional frontage, roadside and park clusters use per-kind footprint
+  clearances around entrances, gates, lamps, signals, trees and benches. The 24
+  recipe families orient to actual road frontage and expand as visual-only,
+  collider-free, light-free and shadowless boxes in at most six shared-material
+  batches per `48 m` chunk. Home regenerates and filters the same descriptors,
+  then applies the same recipes after its world-to-local transform and exterior
+  half-space clip.
 - **Accepted — Physical/visual split:** `CharacterController` stays on the
   player root; a collider-free camera-facing child owns nine visual-only
   `SpriteRenderer` components: body plus upper/lower segments for both arms
@@ -234,7 +263,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   complete finite city in one view, colors and labels all five districts,
   distinguishes park land and paths, exposes mouse/keyboard/gamepad editing,
   and temporarily suspends motor, interaction, camera orbit, cinematic camera
-  motion and the HUD.
+  motion and the HUD. It consumes `CityLayout.DistrictPointsOfInterest`
+  directly, draws those lots as open public ground and gives the waterworks,
+  drying yard, weighbridge and last-route island distinct non-interactive
+  marker shapes plus a localized name legend. POIs are map context only: they
+  are not route stops, do not enter the visited set or count, and do not change
+  bar selection or pathfinding.
 - **Accepted — Independent player heading:** The motor rotates the player root
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.

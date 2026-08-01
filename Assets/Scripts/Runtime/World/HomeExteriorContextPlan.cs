@@ -13,6 +13,8 @@ namespace BarPromenade
             RoadEdge frontageEdge,
             IList<RoadEdge> nearbyRoads,
             IList<BuildingLot> nearbyLots,
+            IList<CityDistrictPointOfInterestDescriptor>
+                nearbyDistrictPointsOfInterest,
             IList<StreetLampDescriptor> nearbyStreetLamps,
             IList<TrafficSignalDescriptor> nearbyTrafficSignals,
             IList<CityDecorationDescriptor> nearbyDecorations)
@@ -28,6 +30,12 @@ namespace BarPromenade
             NearbyLots =
                 new ReadOnlyCollection<BuildingLot>(
                     new List<BuildingLot>(nearbyLots));
+            NearbyDistrictPointsOfInterest =
+                new ReadOnlyCollection<
+                    CityDistrictPointOfInterestDescriptor>(
+                    new List<
+                        CityDistrictPointOfInterestDescriptor>(
+                        nearbyDistrictPointsOfInterest));
             NearbyStreetLamps =
                 new ReadOnlyCollection<StreetLampDescriptor>(
                     new List<StreetLampDescriptor>(
@@ -47,6 +55,11 @@ namespace BarPromenade
         public RoadEdge FrontageEdge { get; }
         public IReadOnlyList<RoadEdge> NearbyRoads { get; }
         public IReadOnlyList<BuildingLot> NearbyLots { get; }
+        public IReadOnlyList<CityDistrictPointOfInterestDescriptor>
+            NearbyDistrictPointsOfInterest
+        {
+            get;
+        }
         public IReadOnlyList<StreetLampDescriptor> NearbyStreetLamps
         {
             get;
@@ -136,6 +149,25 @@ namespace BarPromenade
                 }
             }
 
+            var districtPointsOfInterest =
+                new List<
+                    CityDistrictPointOfInterestDescriptor>();
+            for (int index = 0;
+                 index <
+                 layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor descriptor =
+                    layout.DistrictPointsOfInterest[index];
+                if (SquaredDistance(
+                        descriptor.PublicBounds,
+                        anchor) <=
+                    ViewRadius * ViewRadius)
+                {
+                    districtPointsOfInterest.Add(descriptor);
+                }
+            }
+
             CityNightFixturePlan night =
                 CityNightFixturePlanner.CreatePlan(layout);
             var lamps = new List<StreetLampDescriptor>();
@@ -201,6 +233,7 @@ namespace BarPromenade
                 frontage,
                 roads,
                 lots,
+                districtPointsOfInterest,
                 lamps,
                 signals,
                 decorations);

@@ -11,6 +11,7 @@ namespace BarPromenade
         public const int MaximumSignalIntersections = 6;
 
         private const float FixtureRoadClearance = 0.75f;
+        private const float PublicSpaceFixtureClearance = 1.0f;
         private const uint LampSideSalt = 0x4C414D50u;
         private const uint SignalSelectionSalt = 0x53454C45u;
         private const uint SignalCornerSalt = 0x434F524Eu;
@@ -58,16 +59,55 @@ namespace BarPromenade
                     ? StreetLampSide.Right
                     : StreetLampSide.Left;
 
-                target.Add(CreateStreetLamp(
+                TryAddStreetLamp(
                     layout,
                     edge,
                     FirstLampEdgeT,
-                    firstSide));
-                target.Add(CreateStreetLamp(
+                    firstSide,
+                    target);
+                TryAddStreetLamp(
                     layout,
                     edge,
                     SecondLampEdgeT,
-                    secondSide));
+                    secondSide,
+                    target);
+            }
+        }
+
+        private static void TryAddStreetLamp(
+            CityLayout layout,
+            RoadEdge edge,
+            float edgeT,
+            StreetLampSide preferredSide,
+            ICollection<StreetLampDescriptor> target)
+        {
+            StreetLampDescriptor preferred = CreateStreetLamp(
+                layout,
+                edge,
+                edgeT,
+                preferredSide);
+            if (!IntersectsDistrictPointOfInterestReservation(
+                    layout,
+                    preferred.Position))
+            {
+                target.Add(preferred);
+                return;
+            }
+
+            StreetLampSide alternateSide =
+                preferredSide == StreetLampSide.Left
+                    ? StreetLampSide.Right
+                    : StreetLampSide.Left;
+            StreetLampDescriptor alternate = CreateStreetLamp(
+                layout,
+                edge,
+                edgeT,
+                alternateSide);
+            if (!IntersectsDistrictPointOfInterestReservation(
+                    layout,
+                    alternate.Position))
+            {
+                target.Add(alternate);
             }
         }
 
@@ -118,15 +158,19 @@ namespace BarPromenade
             }
 
             candidates.Sort(CompareSignalCandidates);
-            int count = Mathf.Min(
-                MaximumSignalIntersections,
-                candidates.Count);
-            for (int index = 0; index < count; index++)
+            int addedIntersectionCount = 0;
+            for (int index = 0;
+                 index < candidates.Count &&
+                 addedIntersectionCount < MaximumSignalIntersections;
+                 index++)
             {
-                CreateTrafficSignalPair(
+                if (TryCreateTrafficSignalPair(
                     layout,
                     candidates[index].Node,
-                    target);
+                    target))
+                {
+                    addedIntersectionCount++;
+                }
             }
         }
 
@@ -170,7 +214,7 @@ namespace BarPromenade
             return degrees;
         }
 
-        private static void CreateTrafficSignalPair(
+        private static bool TryCreateTrafficSignalPair(
             CityLayout layout,
             Vector2Int node,
             ICollection<TrafficSignalDescriptor> target)
@@ -192,18 +236,79 @@ namespace BarPromenade
                 node.y,
                 SignalPhaseSalt));
 
-            target.Add(new TrafficSignalDescriptor(
+            var first = new TrafficSignalDescriptor(
                 node,
                 0,
                 firstPosition,
                 (nodePosition - firstPosition).normalized,
-                phase));
-            target.Add(new TrafficSignalDescriptor(
+                phase);
+            var second = new TrafficSignalDescriptor(
                 node,
                 1,
                 secondPosition,
                 (nodePosition - secondPosition).normalized,
-                phase));
+                phase);
+            if (IntersectsDistrictPointOfInterestReservation(
+                    layout,
+                    first.Position) ||
+                IntersectsDistrictPointOfInterestReservation(
+                    layout,
+                    second.Position))
+            {
+                return false;
+            }
+
+            target.Add(first);
+            target.Add(second);
+            return true;
+        }
+
+        private static bool IntersectsDistrictPointOfInterestReservation(
+            CityLayout layout,
+            Vector3 position)
+        {
+            Vector2 point = new Vector2(position.x, position.z);
+            for (int index = 0;
+                 index < layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor pointOfInterest =
+                    layout.DistrictPointsOfInterest[index];
+                if (ContainsExpanded(
+                        pointOfInterest.PublicBounds,
+                        point,
+                        PublicSpaceFixtureClearance))
+                {
+                    return true;
+                }
+
+                for (int accessIndex = 0;
+                     accessIndex < pointOfInterest.Accesses.Count;
+                     accessIndex++)
+                {
+                    if (ContainsExpanded(
+                            pointOfInterest.Accesses[accessIndex]
+                                .ApproachBounds,
+                            point,
+                            PublicSpaceFixtureClearance))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ContainsExpanded(
+            Rect bounds,
+            Vector2 point,
+            float expansion)
+        {
+            return point.x >= bounds.xMin - expansion &&
+                   point.x <= bounds.xMax + expansion &&
+                   point.y >= bounds.yMin - expansion &&
+                   point.y <= bounds.yMax + expansion;
         }
 
         private static int CompareSignalCandidates(

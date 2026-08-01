@@ -106,12 +106,23 @@ The vertical slice contains:
   a central `4 x 4`-block park with lawn, plaza, trees, benches, hedges and
   four continuously walkable gates;
 - one deterministic city-decoration plan with a distinct silhouette or facade
-  treatment on every ordinary building lot, four urban landmarks, two park
-  landmarks and optional frontage, roadside and park clusters. Its 24 visual
-  families include chimneys, scaffolding, balconies, laundry, tanks, pipe
-  racks, billboards, fire escapes, markets, discarded furniture, cargo,
+  treatment on every ordinary building lot, four primary urban landmarks, two
+  park landmarks and optional frontage, roadside and park clusters. Its 24
+  visual families include chimneys, scaffolding, balconies, laundry, tanks,
+  pipe racks, billboards, fire escapes, markets, discarded furniture, cargo,
   vending queues, shelters, phone booths, roadworks, a fountain/statue,
   bandstand, chess tables and playground equipment;
+- four first-class open district points of interest on their own full-block
+  land-use lots: Old Town's waterworks court, Residential's drying yard,
+  Industrial's weighbridge and Nightlife's last-route island. Their canonical
+  layout descriptors reserve public ground and every adjacent street access;
+  the lots contain no building, bar, player home or primary landmark. A
+  dedicated physical builder gives each place a different free-standing
+  silhouette and movement grammar, while the Home exterior reconstructs the
+  same nearby descriptors in local space. These authored recipes require both
+  lot dimensions to meet
+  `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
+  custom blocks omit the district POIs safely;
 - frontage-aware windows and facade details now face each lot's actual road.
   Decoration geometry is visual-only, shadowless and collider-free, reuses
   the two packaged shared materials and combines at most six style batches per
@@ -122,10 +133,11 @@ The vertical slice contains:
   instead of letting the puppet intersect raised surfaces;
 - deterministic collider-free ochre guard rails, batched into `48 m` spatial
   chunks, that trace only street boundaries, close dead ends and leave clear
-  openings around every bar approach and park gate;
-- 144 land-use lots by default, including 16 park cells, exactly 4 reachable
-  bars in four different urban districts and one non-bar player home beside
-  one bar street; every bar pair is at
+  openings around every bar approach and park gate, while removing the full
+  fence interval from every public-place side that meets a street;
+- 144 land-use lots by default, including 16 park cells, 4 open district points
+  of interest, exactly 4 reachable bars in four different urban districts and
+  one non-bar player home beside one bar street; every bar pair is at
   least `120 m` apart by traversable graph distance, while stable row-major
   order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
   Row;
@@ -190,9 +202,13 @@ The vertical slice contains:
   contact shadow, then recovers through `0.45 s` falling, `1.2 s` down and
   `1.0 s` rising states before restoring movement;
 - a full-screen city map with district colors and labels, distinct park land
-  and paths, player/bar markers, a dedicated labeled home icon, persistent
-  green completed visits, ordered route editing and deterministic shortest
-  paths constrained to the generated road graph;
+  and paths, player/bar markers, a dedicated labeled home icon and four
+  non-interactive, kind-specific public-place markers with a localized legend.
+  Public lots are drawn as open ground rather than buildings, and both lot
+  cells and markers come directly from the canonical validated layout used by
+  the world builder. Bar visits, ordered route editing and deterministic
+  shortest paths remain separate from the POI presentation and are constrained
+  to the generated road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent seed/bar/route/visited

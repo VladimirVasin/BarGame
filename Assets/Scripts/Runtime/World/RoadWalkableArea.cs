@@ -49,6 +49,21 @@ namespace BarPromenade
                 area.Add(layout.Park.WalkableBounds);
             }
 
+            for (int pointIndex = 0;
+                 pointIndex < layout.DistrictPointsOfInterest.Count;
+                 pointIndex++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    layout.DistrictPointsOfInterest[pointIndex];
+                area.Add(point.PublicBounds);
+                for (int accessIndex = 0;
+                     accessIndex < point.Accesses.Count;
+                     accessIndex++)
+                {
+                    area.Add(point.Accesses[accessIndex].ApproachBounds);
+                }
+            }
+
             return area;
         }
 

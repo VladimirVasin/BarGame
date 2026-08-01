@@ -81,7 +81,7 @@ namespace BarPromenade
                 settings,
                 nightPlan);
             ReportPhase("world_build", phaseTimer);
-            ReportWorld(World);
+            ReportWorld(World, Layout);
 
             phaseTimer.Restart();
             Night = CityNightWorldBuilder.Build(
@@ -203,7 +203,11 @@ namespace BarPromenade
                 intoxicationHud,
                 balanceView);
             Map = ui.AddComponent<CityMapController>();
-            Map.Initialize(Layout, Player, follow, intoxicationHud);
+            Map.Initialize(
+                Layout,
+                Player,
+                follow,
+                intoxicationHud);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,
@@ -341,7 +345,9 @@ namespace BarPromenade
                     layout.MinimumBarRouteDistance));
         }
 
-        private static void ReportWorld(CityWorldResult world)
+        private static void ReportWorld(
+            CityWorldResult world,
+            CityLayout layout)
         {
             GameLog.Info(
                 "city",
@@ -359,6 +365,12 @@ namespace BarPromenade
                 GameLog.Field(
                     "park_root_present",
                     world.ParkRoot != null),
+                GameLog.Field(
+                    "district_point_of_interest_count",
+                    layout.DistrictPointsOfInterest.Count),
+                GameLog.Field(
+                    "district_point_of_interest_root_present",
+                    world.DistrictPointOfInterestRoot != null),
                 GameLog.Field(
                     "decoration_count",
                     world.DecorationPlan.Count),

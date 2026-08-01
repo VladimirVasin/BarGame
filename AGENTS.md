@@ -8,6 +8,12 @@ These instructions apply to the entire repository.
 2. Inspect the actual project before trusting planned documentation.
 3. Keep current facts separate from proposed architecture.
 
+## Host power state
+
+- Never put the user's PC into sleep mode unless the user explicitly requests
+  sleep for that specific run. Do not infer permission and do not treat an
+  earlier request as a standing preference.
+
 ## Current baseline
 
 - Unity `6000.5.5f1`, Universal Render Pipeline `17.5.0`.

@@ -359,6 +359,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(map, Is.Not.Null);
             Assert.That(map.Bars, Has.Count.EqualTo(4));
+            AssertMapPointsOfInterest(cityRoot, map);
             string visitedBarId = map.Bars[2].BarId;
             Assert.That(
                 GameSessionState.MarkBarVisited(visitedBarId),
@@ -1991,6 +1992,121 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 returnedFollow.FixedPoseActive,
                 Is.False);
+        }
+
+        private static void AssertMapPointsOfInterest(
+            CityGameRoot cityRoot,
+            CityMapController map)
+        {
+            var expectedDistricts = new Dictionary<
+                CityDistrictPointOfInterestKind,
+                CityDistrictKind>
+            {
+                {
+                    CityDistrictPointOfInterestKind.OldTownWaterworksCourt,
+                    CityDistrictKind.OldTown
+                },
+                {
+                    CityDistrictPointOfInterestKind.ResidentialDryingYard,
+                    CityDistrictKind.Residential
+                },
+                {
+                    CityDistrictPointOfInterestKind.IndustrialWeighbridge,
+                    CityDistrictKind.Industrial
+                },
+                {
+                    CityDistrictPointOfInterestKind.NightlifeLastRouteIsland,
+                    CityDistrictKind.Nightlife
+                }
+            };
+            var actualKinds =
+                new HashSet<CityDistrictPointOfInterestKind>();
+            var stableIds = new HashSet<string>(StringComparer.Ordinal);
+
+            Assert.That(
+                map.PointsOfInterest,
+                Has.Count.EqualTo(expectedDistricts.Count));
+            for (int index = 0;
+                 index < map.PointsOfInterest.Count;
+                 index++)
+            {
+                var pointOfInterest = map.PointsOfInterest[index];
+                Assert.That(
+                    expectedDistricts.ContainsKey(pointOfInterest.Kind),
+                    Is.True,
+                    pointOfInterest.Kind.ToString());
+                Assert.That(
+                    actualKinds.Add(pointOfInterest.Kind),
+                    Is.True,
+                    $"Duplicate map POI kind '{pointOfInterest.Kind}'.");
+                Assert.That(
+                    pointOfInterest.StableId,
+                    Is.Not.Null.And.Not.Empty);
+                Assert.That(
+                    stableIds.Add(pointOfInterest.StableId),
+                    Is.True,
+                    $"Duplicate map POI id '{pointOfInterest.StableId}'.");
+                Assert.That(
+                    pointOfInterest.District,
+                    Is.EqualTo(expectedDistricts[pointOfInterest.Kind]));
+
+                string label = map.GetPointOfInterestLabel(index);
+                Assert.That(label, Is.Not.Null.And.Not.Empty);
+                Assert.That(
+                    label,
+                    Does.Not.StartWith("map.poi."),
+                    $"POI '{pointOfInterest.Kind}' was not localized.");
+
+                Assert.That(
+                    cityRoot.Layout.TryGetDistrictPointOfInterest(
+                        pointOfInterest.LotCell,
+                        out CityDistrictPointOfInterestDescriptor descriptor),
+                    Is.True,
+                    $"Map POI '{pointOfInterest.StableId}' is absent " +
+                    "from the city layout.");
+                Assert.That(
+                    descriptor.Id,
+                    Is.EqualTo(pointOfInterest.StableId));
+                Assert.That(
+                    descriptor.Kind,
+                    Is.EqualTo(pointOfInterest.Kind));
+                Assert.That(
+                    descriptor.District,
+                    Is.EqualTo(pointOfInterest.District));
+
+                BuildingLot lot = null;
+                for (int lotIndex = 0;
+                     lotIndex < cityRoot.Layout.BuildingLots.Count;
+                     lotIndex++)
+                {
+                    BuildingLot candidate =
+                        cityRoot.Layout.BuildingLots[lotIndex];
+                    if (candidate.Cell == pointOfInterest.LotCell)
+                    {
+                        lot = candidate;
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    lot,
+                    Is.Not.Null,
+                    $"Map POI '{pointOfInterest.StableId}' has no lot.");
+                Assert.That(lot.District, Is.EqualTo(pointOfInterest.District));
+                Assert.That(lot.IsDistrictPointOfInterest, Is.True);
+                Assert.That(lot.HasBuilding, Is.False);
+                Assert.That(
+                    Vector3.Distance(
+                        pointOfInterest.WorldPosition,
+                        lot.Center),
+                    Is.LessThan(0.001f),
+                    $"Map POI '{pointOfInterest.StableId}' must use its " +
+                    "lot center.");
+            }
+
+            CollectionAssert.AreEquivalent(
+                expectedDistricts.Keys,
+                actualKinds);
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot<T>(

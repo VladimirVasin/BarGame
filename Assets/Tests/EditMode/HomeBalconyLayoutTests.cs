@@ -134,6 +134,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     second.NearbyStreetLamps));
             Assert.That(
+                first.NearbyDistrictPointsOfInterest.Select(
+                    descriptor => descriptor.Id),
+                Is.EqualTo(
+                    second.NearbyDistrictPointsOfInterest.Select(
+                        descriptor => descriptor.Id)));
+            Assert.That(
+                first.NearbyDecorations,
+                Is.EqualTo(second.NearbyDecorations));
+            Assert.That(
                 first.NearbyRoads,
                 Does.Contain(first.FrontageEdge));
             Assert.That(

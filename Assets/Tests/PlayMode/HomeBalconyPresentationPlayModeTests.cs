@@ -90,6 +90,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Balcony, Is.Not.Null);
             Assert.That(home.ExteriorView, Is.Not.Null);
             AssertRenderedExteriorDecorations(home.ExteriorView);
+            AssertRenderedExteriorDistrictPointsOfInterest(
+                home.ExteriorView,
+                home.ExteriorContext);
             Assert.That(
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.HomeInterior));
@@ -402,6 +405,81 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Empty);
             Assert.That(
                 decorationRoot.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                decorationRoot.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                decorationRoot.GetComponentsInChildren<AudioSource>(true),
+                Is.Empty);
+            Assert.That(
+                decorationRoot.GetComponentsInChildren<ParticleSystem>(true),
+                Is.Empty);
+        }
+
+        private static void
+            AssertRenderedExteriorDistrictPointsOfInterest(
+                Transform exterior,
+                HomeExteriorContextPlan context)
+        {
+            Transform pointOfInterestRoot = null;
+            for (int index = 0; index < exterior.childCount; index++)
+            {
+                Transform child = exterior.GetChild(index);
+                if (child.name ==
+                    CityDistrictPointOfInterestWorldBuilder
+                        .HomeExteriorRootName)
+                {
+                    pointOfInterestRoot = child;
+                    break;
+                }
+            }
+
+            Assert.That(pointOfInterestRoot, Is.Not.Null);
+            int expectedVisibleCount = 0;
+            for (int index = 0;
+                 index <
+                 context.NearbyDistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor descriptor =
+                    context.NearbyDistrictPointsOfInterest[index];
+                Rect bounds =
+                    PlayerHomeBalconyGeometry.ToHomeLocalRect(
+                        context.PlayerHome,
+                        descriptor.PublicBounds);
+                if (bounds.xMin <
+                    HomeExteriorViewBuilder.ExteriorMinimumX)
+                {
+                    continue;
+                }
+
+                expectedVisibleCount++;
+                Assert.That(
+                    pointOfInterestRoot.Find(
+                        CityDistrictPointOfInterestWorldBuilder
+                            .GetSiteName(descriptor.Id)),
+                    Is.Not.Null);
+            }
+
+            Assert.That(
+                pointOfInterestRoot.childCount,
+                Is.EqualTo(expectedVisibleCount));
+            Assert.That(
+                pointOfInterestRoot
+                    .GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                pointOfInterestRoot
+                    .GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                pointOfInterestRoot
+                    .GetComponentsInChildren<AudioSource>(true),
+                Is.Empty);
+            Assert.That(
+                pointOfInterestRoot
+                    .GetComponentsInChildren<ParticleSystem>(true),
                 Is.Empty);
         }
     }

@@ -75,16 +75,22 @@ Assets/
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
-      Map/           ordered road-route model, heap pathfinding and district map
+      Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home layout plans and builders
-        CityDistrict.cs          district, land-use, park and gate data
+        CityDistrict.cs          district/path/land-use enums and district/park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
+        CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
+        CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
+        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
-        CityDecorationPlanner.cs     landmarks, lot visuals and clear clusters
-        CityDecorationValidator.cs   quotas, IDs, footprints and clearances
+        CityDecorationPlanner.cs     primary landmarks, lot visuals and clear clusters
+        CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
-        RoadWalkableArea.cs      XZ union; surface colliders own walkable height
+        RoadFencePlan.cs         typed bar/home/park/public-place openings
+        RoadFencePlanner.cs      exposed street boundary minus complete public sides
+        CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
+        RoadWalkableArea.cs      street/park/public XZ union; surfaces own height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
@@ -132,8 +138,10 @@ Assets/
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
-      UI/            retro UI, segmented HUD, map and F9 debug
+      UI/            retro UI, segmented HUD, district/public-place map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
+        CityMapController.cs        canonical layout POIs plus bar-route state
+        CityMapView.cs              open public lots, four marker shapes and legend
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -177,22 +185,43 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                            -> four urban districts + central park
                                            -> distant bars via CityTravelDistance
                                            -> player home beside one bar street
+                                           -> four first-class public lots
+                                              -> only at >= 18 m lot width and depth
+                                              -> waterworks court
+                                              -> drying yard
+                                              -> weighbridge
+                                              -> last-route island
                                            -> shared third-floor balcony facade geometry
                                            -> fresh road-node spawn beside the home
-                                           -> indexed RoadWalkableArea -> PlayerMotor
+                                           -> RoadWalkableArea
+                                              -> streets + park
+                                              -> public grounds + approaches
+                                              -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
                                           -> RoadFencePlanner
-                                             -> chunked fences + park gates
+                                             -> bar/home/park openings
+                                             -> full public-place sides remain open
                                           -> CityNightFixturePlanner
+                                             -> public reservations stay clear
                                              -> chunked lamps + signals
+                                          -> CityDistrictPointOfInterestWorldBuilder
+                                             -> physical paving + free-standing recipes
+                                             -> intentional surface/obstacle colliders
                                           -> CityDecorationPlanner
                                              -> one ordinary-lot visual each
-                                             -> four urban + two park landmarks
+                                             -> four primary urban landmarks
+                                             -> two park landmarks
                                              -> frontage/roadside/park clusters
                                              -> CityDecorationWorldBuilder
                                                 -> six shared visual styles
                                                 -> shadowless 48 m chunks
+                                          -> CityMap
+                                             -> canonical public-place descriptors
+                                             -> open lots + four marker shapes + legend
+                                          -> Home exterior context
+                                             -> nearby canonical public places
+                                             -> local-space visual reconstruction
 player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
 player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers

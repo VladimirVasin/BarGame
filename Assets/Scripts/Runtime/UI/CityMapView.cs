@@ -67,6 +67,8 @@ namespace BarPromenade
             new Color32(80, 63, 87, 255);
         private static readonly Color ParkLand =
             new Color32(54, 83, 60, 255);
+        private static readonly Color PublicPlaceLand =
+            new Color32(123, 112, 91, 255);
         private static readonly Color BarBuilding =
             RetroUiTheme.MapBar;
         private static readonly Color HomeBuilding =
@@ -98,6 +100,8 @@ namespace BarPromenade
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
         private GUIStyle districtLabelStyle;
+        private GUIStyle pointOfInterestTitleStyle;
+        private GUIStyle pointOfInterestItemStyle;
 
         public void Initialize(CityMapController mapController)
         {
@@ -196,6 +200,7 @@ namespace BarPromenade
             DrawRoads(projection);
             DrawDistrictLabels(projection);
             DrawRoute(projection);
+            DrawPointsOfInterest(projection);
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
@@ -225,9 +230,62 @@ namespace BarPromenade
                     topLeft.y,
                     bottomRight.x,
                     bottomRight.y);
+                bool isPointOfInterest =
+                    controller.IsPointOfInterestLot(lot.Cell);
                 DrawSolidRect(
                     buildingRect,
-                    GetLotColor(lot));
+                    GetLotColor(lot, isPointOfInterest));
+                if (isPointOfInterest)
+                {
+                    DrawOpenPublicPlaceLot(
+                        buildingRect,
+                        GetDistrictColor(lot.District));
+                }
+            }
+        }
+
+        private static void DrawOpenPublicPlaceLot(
+            Rect lotRect,
+            Color districtColor)
+        {
+            float tick = Mathf.Max(
+                1f,
+                Mathf.Min(lotRect.width, lotRect.height) * 0.22f);
+            Color accent =
+                RetroUiTheme.WithAlpha(districtColor, 0.9f);
+            Vector2[] corners =
+            {
+                new Vector2(lotRect.xMin, lotRect.yMin),
+                new Vector2(lotRect.xMax, lotRect.yMin),
+                new Vector2(lotRect.xMax, lotRect.yMax),
+                new Vector2(lotRect.xMin, lotRect.yMax)
+            };
+            Vector2[] horizontalDirections =
+            {
+                Vector2.right,
+                Vector2.left,
+                Vector2.left,
+                Vector2.right
+            };
+            Vector2[] verticalDirections =
+            {
+                Vector2.down,
+                Vector2.down,
+                Vector2.up,
+                Vector2.up
+            };
+            for (int index = 0; index < corners.Length; index++)
+            {
+                DrawLine(
+                    corners[index],
+                    corners[index] + horizontalDirections[index] * tick,
+                    1f,
+                    accent);
+                DrawLine(
+                    corners[index],
+                    corners[index] + verticalDirections[index] * tick,
+                    1f,
+                    accent);
             }
         }
 
@@ -378,6 +436,26 @@ namespace BarPromenade
             }
         }
 
+        private void DrawPointsOfInterest(MapProjection projection)
+        {
+            IReadOnlyList<CityMapPointOfInterest> pointsOfInterest =
+                controller.PointsOfInterest;
+            for (int index = 0; index < pointsOfInterest.Count; index++)
+            {
+                CityMapPointOfInterest pointOfInterest =
+                    pointsOfInterest[index];
+                Vector2 position = projection.WorldToScreen(
+                    pointOfInterest.WorldPosition);
+                DrawPointOfInterestMarker(
+                    pointOfInterest.Kind,
+                    position,
+                    GetDistrictColor(pointOfInterest.District),
+                    6f,
+                    4f,
+                    2f);
+            }
+        }
+
         private void DrawPlayer(MapProjection projection)
         {
             Vector2 position =
@@ -504,6 +582,8 @@ namespace BarPromenade
                 DrawRouteRows(panel, route);
             }
 
+            DrawPointOfInterestLegend(panel, route.Count);
+
             CityRoutePath path = controller.CurrentPath;
             float distance = path == null ? 0f : path.TotalLength;
             Rect visitedSwatch = new Rect(
@@ -557,6 +637,94 @@ namespace BarPromenade
             }
 
             GUI.enabled = previousEnabled;
+        }
+
+        private void DrawPointOfInterestLegend(
+            Rect panel,
+            int routeCount)
+        {
+            int pointOfInterestCount = controller.PointsOfInterest.Count;
+            if (pointOfInterestCount == 0)
+            {
+                return;
+            }
+
+            Rect legend = CreatePointOfInterestLegendRect(
+                panel,
+                routeCount,
+                pointOfInterestCount);
+            DrawSolidRect(
+                legend,
+                RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.55f));
+            RetroUiTheme.StrokeRect(
+                legend,
+                1f,
+                RetroUiTheme.BorderMuted);
+            GUI.Label(
+                new Rect(
+                    legend.x + 4f,
+                    legend.y + 2f,
+                    legend.width - 8f,
+                    16f),
+                LocalizationService.Get("map.poi.title"),
+                pointOfInterestTitleStyle);
+
+            const float rowHeight = 17f;
+            float rowY = legend.y + 19f;
+            for (int index = 0;
+                 index < pointOfInterestCount;
+                 index++)
+            {
+                CityMapPointOfInterest pointOfInterest =
+                    controller.PointsOfInterest[index];
+                Vector2 markerCenter = new Vector2(
+                    legend.x + 10f,
+                    rowY + rowHeight * 0.5f);
+                DrawPointOfInterestMarker(
+                    pointOfInterest.Kind,
+                    markerCenter,
+                    GetDistrictColor(pointOfInterest.District),
+                    4f,
+                    3f,
+                    1f);
+                GUI.Label(
+                    new Rect(
+                        legend.x + 19f,
+                        rowY,
+                        legend.width - 23f,
+                        rowHeight),
+                    controller.GetPointOfInterestLabel(index),
+                    pointOfInterestItemStyle);
+                rowY += rowHeight;
+            }
+        }
+
+        internal static Rect CreatePointOfInterestLegendRect(
+            Rect panel,
+            int routeCount,
+            int pointOfInterestCount)
+        {
+            const float titleHeight = 19f;
+            const float rowHeight = 17f;
+            const float bottomPadding = 3f;
+            const float footerReserve = 68f;
+            float height = titleHeight +
+                           Mathf.Max(0, pointOfInterestCount) * rowHeight +
+                           bottomPadding;
+            float routeBottom = panel.y + 29f +
+                                Mathf.Max(0, routeCount) * 26f;
+            float preferredTop = Mathf.Max(
+                panel.y + 94f,
+                routeBottom + 9f);
+            float maximumTop = panel.yMax - footerReserve - height;
+            float top = Mathf.Max(
+                panel.y + 4f,
+                Mathf.Min(preferredTop, maximumTop));
+            return new Rect(
+                panel.x + 6f,
+                top,
+                panel.width - 12f,
+                height);
         }
 
         private void DrawRouteRows(
@@ -755,6 +923,131 @@ namespace BarPromenade
             GUI.color = previousColor;
         }
 
+        private static void DrawPointOfInterestMarker(
+            CityDistrictPointOfInterestKind kind,
+            Vector2 center,
+            Color districtColor,
+            float halfSize,
+            float haloWidth,
+            float outlineWidth)
+        {
+            DrawPointOfInterestOutline(
+                kind,
+                center,
+                halfSize,
+                haloWidth,
+                RetroUiTheme.Ink);
+            DrawPointOfInterestOutline(
+                kind,
+                center,
+                halfSize,
+                outlineWidth,
+                RetroUiTheme.Text);
+            DrawSolidRect(
+                new Rect(center.x - 1.5f, center.y - 1.5f, 3f, 3f),
+                districtColor);
+        }
+
+        private static void DrawPointOfInterestOutline(
+            CityDistrictPointOfInterestKind kind,
+            Vector2 center,
+            float halfSize,
+            float width,
+            Color color)
+        {
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind.OldTownWaterworksCourt:
+                    DrawDiamondOutline(
+                        new Vector2(center.x, center.y - halfSize),
+                        new Vector2(center.x + halfSize, center.y),
+                        new Vector2(center.x, center.y + halfSize),
+                        new Vector2(center.x - halfSize, center.y),
+                        width,
+                        color);
+                    break;
+                case CityDistrictPointOfInterestKind.ResidentialDryingYard:
+                    RetroUiTheme.StrokeRect(
+                        new Rect(
+                            center.x - halfSize,
+                            center.y - halfSize,
+                            halfSize * 2f,
+                            halfSize * 2f),
+                        width,
+                        color);
+                    break;
+                case CityDistrictPointOfInterestKind.IndustrialWeighbridge:
+                    RetroUiTheme.StrokeRect(
+                        new Rect(
+                            center.x - halfSize,
+                            center.y - halfSize * 0.55f,
+                            halfSize * 2f,
+                            halfSize * 1.1f),
+                        width,
+                        color);
+                    break;
+                case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
+                    DrawOpenOctagonOutline(
+                        center,
+                        halfSize,
+                        width,
+                        color);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(kind),
+                        kind,
+                        "Unsupported map point of interest kind.");
+            }
+        }
+
+        private static void DrawOpenOctagonOutline(
+            Vector2 center,
+            float radius,
+            float width,
+            Color color)
+        {
+            const float diagonal = 0.7071068f;
+            Vector2[] points =
+            {
+                center + new Vector2(0f, -radius),
+                center + new Vector2(radius * diagonal, -radius * diagonal),
+                center + new Vector2(radius, 0f),
+                center + new Vector2(radius * diagonal, radius * diagonal),
+                center + new Vector2(0f, radius),
+                center + new Vector2(-radius * diagonal, radius * diagonal),
+                center + new Vector2(-radius, 0f),
+                center + new Vector2(-radius * diagonal, -radius * diagonal)
+            };
+            for (int index = 0; index < points.Length; index++)
+            {
+                if (index == 4)
+                {
+                    continue;
+                }
+
+                DrawLine(
+                    points[index],
+                    points[(index + 1) % points.Length],
+                    width,
+                    color);
+            }
+        }
+
+        private static void DrawDiamondOutline(
+            Vector2 top,
+            Vector2 right,
+            Vector2 bottom,
+            Vector2 left,
+            float width,
+            Color color)
+        {
+            DrawLine(top, right, width, color);
+            DrawLine(right, bottom, width, color);
+            DrawLine(bottom, left, width, color);
+            DrawLine(left, top, width, color);
+        }
+
         private static Matrix4x4 CreateLineMatrix(
             Matrix4x4 parentMatrix,
             Vector2 start,
@@ -776,8 +1069,15 @@ namespace BarPromenade
             RetroUiTheme.FillRect(rectangle, color);
         }
 
-        private static Color GetLotColor(BuildingLot lot)
+        private static Color GetLotColor(
+            BuildingLot lot,
+            bool isPointOfInterest)
         {
+            if (isPointOfInterest)
+            {
+                return PublicPlaceLand;
+            }
+
             if (lot.LandUse == CityLandUseKind.Park)
             {
                 return ParkLand;
@@ -906,6 +1206,16 @@ namespace BarPromenade
                 7,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.AccentPale,
+                true);
+            pointOfInterestTitleStyle = RetroUiTheme.CreateLabelStyle(
+                8,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.AccentPale,
+                true);
+            pointOfInterestItemStyle = RetroUiTheme.CreateLabelStyle(
+                7,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text,
                 true);
         }
     }
