@@ -153,7 +153,16 @@ namespace BarPromenade
             atmosphereObject.transform.SetParent(transform, false);
             Atmosphere =
                 atmosphereObject.AddComponent<HomeInteriorAtmosphere>();
-            Atmosphere.Initialize();
+            HomeBathroomLightFixture bathroomLightFixture =
+                Room.GetComponentInChildren<
+                    HomeBathroomLightFixture>(true);
+            if (bathroomLightFixture == null)
+            {
+                throw new InvalidOperationException(
+                    "The generated Home is missing its bathroom light fixture.");
+            }
+
+            Atmosphere.Initialize(bathroomLightFixture);
 
             GameObject ambienceObject =
                 new GameObject("Home Ambience");

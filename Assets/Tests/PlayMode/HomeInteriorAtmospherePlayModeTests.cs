@@ -99,49 +99,83 @@ namespace BarPromenade.Tests.PlayMode
                 windowLight.spotAngle,
                 Is.InRange(45f, 75f));
 
-            Light exitDoorLight = atmosphere.ExitDoorLight;
-            Assert.That(exitDoorLight, Is.Not.Null);
-            Assert.That(exitDoorLight.enabled, Is.True);
+            Light bathroomSpillLight =
+                atmosphere.BathroomSpillLight;
+            Assert.That(bathroomSpillLight, Is.Not.Null);
+            Assert.That(bathroomSpillLight.enabled, Is.True);
             Assert.That(
-                exitDoorLight.type,
+                bathroomSpillLight.type,
                 Is.EqualTo(LightType.Spot));
             Assert.That(
-                exitDoorLight.shadows,
-                Is.EqualTo(LightShadows.None));
+                bathroomSpillLight.shadows,
+                Is.EqualTo(LightShadows.Hard));
             Assert.That(
-                exitDoorLight.renderMode,
+                bathroomSpillLight.renderMode,
                 Is.EqualTo(LightRenderMode.ForcePixel));
             Assert.That(
-                exitDoorLight.transform.localPosition,
+                bathroomSpillLight.transform.localPosition,
                 Is.EqualTo(
-                    new Vector3(-2.20f, 2.65f, -1.50f)));
-            Vector3 exitDoorDirection =
-                exitDoorLight.transform.localRotation *
+                    new Vector3(2.15f, 2.05f, 0.82f)));
+            Vector3 bathroomSpillDirection =
+                bathroomSpillLight.transform.localRotation *
                 Vector3.forward;
             Assert.That(
                 Vector3.Dot(
-                    exitDoorDirection,
-                    (new Vector3(-0.25f, 1.30f, -3.78f) -
-                     new Vector3(-2.20f, 2.65f, -1.50f)).normalized),
+                    bathroomSpillDirection,
+                    (new Vector3(0f, 0.12f, -3.05f) -
+                     new Vector3(2.15f, 2.05f, 0.82f)).normalized),
                 Is.GreaterThan(0.999f));
             Assert.That(
-                exitDoorLight.intensity,
-                Is.EqualTo(8.0f).Within(0.001f));
+                bathroomSpillLight.intensity,
+                Is.EqualTo(10.0f).Within(0.001f));
             Assert.That(
-                exitDoorLight.range,
-                Is.EqualTo(5.2f).Within(0.001f));
+                bathroomSpillLight.range,
+                Is.EqualTo(6.6f).Within(0.001f));
             Assert.That(
-                exitDoorLight.innerSpotAngle,
-                Is.EqualTo(28f).Within(0.001f));
+                bathroomSpillLight.innerSpotAngle,
+                Is.EqualTo(30f).Within(0.001f));
             Assert.That(
-                exitDoorLight.spotAngle,
-                Is.EqualTo(46f).Within(0.001f));
+                bathroomSpillLight.spotAngle,
+                Is.EqualTo(52f).Within(0.001f));
             Assert.That(
-                exitDoorLight.color,
-                Is.EqualTo(new Color(0.86f, 0.58f, 0.32f)));
+                bathroomSpillLight.color,
+                Is.EqualTo(new Color(0.52f, 0.68f, 0.72f)));
             Assert.That(
-                exitDoorLight.bounceIntensity,
+                bathroomSpillLight.bounceIntensity,
                 Is.EqualTo(0f).Within(0.001f));
+            Assert.That(
+                bathroomSpillLight.shadowStrength,
+                Is.EqualTo(0.62f).Within(0.001f));
+
+            HomeBathroomLightFlicker flicker =
+                atmosphere.BathroomFlicker;
+            Assert.That(flicker, Is.Not.Null);
+            Assert.That(flicker.IsInitialized, Is.True);
+            Assert.That(
+                flicker.BathroomLight,
+                Is.SameAs(bathroomLight));
+            Assert.That(
+                flicker.SpillLight,
+                Is.SameAs(bathroomSpillLight));
+            Assert.That(flicker.Fixture, Is.Null);
+            Assert.That(
+                HomeBathroomLightFlicker.EvaluateFactor(0f),
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                HomeBathroomLightFlicker.EvaluateFactor(4.72f),
+                Is.EqualTo(0.18f).Within(0.001f));
+            Assert.That(
+                HomeBathroomLightFlicker.EvaluateFactor(5.00f),
+                Is.EqualTo(
+                    HomeBathroomLightFlicker.MinimumFactor)
+                    .Within(0.001f));
+            Assert.That(
+                HomeBathroomLightFlicker.EvaluateFactor(5.30f),
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                HomeBathroomLightFlicker.EvaluateFactor(
+                    HomeBathroomLightFlicker.CycleSeconds + 4.72f),
+                Is.EqualTo(0.18f).Within(0.001f));
 
             Texture2D cookie =
                 HomeBalconyResources.WindowLightCookie;
@@ -193,14 +227,14 @@ namespace BarPromenade.Tests.PlayMode
                 "The window beam is separate from the two practicals.");
             Assert.That(
                 atmosphere.PracticalLights[0],
-                Is.Not.SameAs(exitDoorLight),
-                "The focused exit-door accent is not a room practical.");
+                Is.Not.SameAs(bathroomSpillLight),
+                "The bathroom spill is not a room practical.");
             Assert.That(
                 atmosphere.PracticalLights[1],
-                Is.Not.SameAs(exitDoorLight),
-                "The focused exit-door accent is not a room practical.");
+                Is.Not.SameAs(bathroomSpillLight),
+                "The bathroom spill is not a room practical.");
             Assert.That(
-                exitDoorLight,
+                bathroomSpillLight,
                 Is.Not.SameAs(windowLight));
 
             Material glass =

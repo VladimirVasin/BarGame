@@ -135,7 +135,8 @@ Assets/
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
-        HomeInteriorAtmosphere.cs     two practicals + exit/window Spots, grade and dust
+        HomeInteriorAtmosphere.cs     two practicals + bathroom/window Spots, grade and dust
+        HomeBathroomLight*.cs         synchronized tube/halo/point/spill flicker
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
@@ -197,7 +198,7 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                               -> waterworks court
                                               -> drying yard
                                               -> weighbridge
-                                              -> last-route island
+                                              -> grounded non-emissive last-route island
                                            -> shared third-floor balcony facade geometry
                                            -> fresh road-node spawn beside the home
                                            -> RoadWalkableArea
@@ -277,7 +278,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> same CityDecorationWorldBuilder recipes in Home space
                     -> no second City root/player/camera/realtime street lights
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
-                                 -> warm shadowless ForcePixel exit-door Spot
+                                 -> synchronized cold shadowed bathroom-spill Spot
                                  -> cold shadowed window cookie Spot
                                  -> at most four owned local realtime lights
                                     + separate scene Directional light

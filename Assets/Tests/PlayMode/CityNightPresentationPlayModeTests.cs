@@ -796,13 +796,119 @@ namespace BarPromenade.Tests.PlayMode
                     AssertDetailFacesPositiveLocalZ(
                         recipe,
                         "Broken Route Totem",
-                        "Totem Cyan Half");
+                        "Totem Route Map Backing");
                     AssertDetailFacesPositiveLocalZ(
                         recipe,
                         "Departure Board",
-                        "Departure Board Line");
+                        "Departure Board Glass");
+                    AssertLastRouteIslandDetails(recipe);
                     break;
             }
+        }
+
+        private static void AssertLastRouteIslandDetails(
+            Transform recipe)
+        {
+            string[] removedEmissiveParts =
+            {
+                "Totem Cyan Half",
+                "Totem Magenta Half",
+                "Departure Board Line"
+            };
+            for (int index = 0;
+                 index < removedEmissiveParts.Length;
+                 index++)
+            {
+                Assert.That(
+                    recipe.Find(removedEmissiveParts[index]),
+                    Is.Null,
+                    removedEmissiveParts[index]);
+            }
+
+            for (int segment = 1; segment <= 5; segment++)
+            {
+                Assert.That(
+                    recipe.Find(
+                        $"Broken Canopy Segment {segment} " +
+                        "Dead Route Strip"),
+                    Is.Null,
+                    "The last-route canopy must not retain neon strips.");
+            }
+
+            Renderer[] renderers =
+                recipe.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers, Is.Not.Empty);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Assert.That(
+                    renderers[index].sharedMaterial,
+                    Is.Not.SameAs(
+                        CityNightResources.EmissiveMaterial),
+                    $"'{renderers[index].name}' must be non-emissive.");
+            }
+
+            Transform board = AssertRequiredChild(
+                recipe,
+                "Departure Board");
+            Renderer boardRenderer = board.GetComponent<Renderer>();
+            Assert.That(boardRenderer, Is.Not.Null);
+            string[] supports =
+            {
+                "Departure Board Support West",
+                "Departure Board Support East"
+            };
+            Renderer islandRenderer = AssertRequiredChild(
+                    recipe,
+                    "Last Route Island")
+                .GetComponent<Renderer>();
+            Assert.That(islandRenderer, Is.Not.Null);
+            for (int index = 0; index < supports.Length; index++)
+            {
+                Renderer supportRenderer = AssertRequiredChild(
+                        recipe,
+                        supports[index])
+                    .GetComponent<Renderer>();
+                Assert.That(supportRenderer, Is.Not.Null);
+                Assert.That(
+                    supportRenderer.bounds.max.y,
+                    Is.EqualTo(boardRenderer.bounds.min.y)
+                        .Within(0.02f),
+                    $"'{supports[index]}' must meet the board.");
+                Assert.That(
+                    supportRenderer.bounds.min.y,
+                    Is.EqualTo(islandRenderer.bounds.max.y)
+                        .Within(0.02f),
+                    $"'{supports[index]}' must rest on the island.");
+            }
+
+            string[] addedDetails =
+            {
+                "Totem Torn Poster A",
+                "Totem Torn Poster B",
+                "Departure Schedule Row A",
+                "Departure Schedule Row B",
+                "Departure Schedule Row C",
+                "Departure Board Foot West",
+                "Departure Board Foot East",
+                "Island Waste Bin",
+                "Discarded Bottle Standing",
+                "Discarded Bottle Fallen",
+                "Lost Scarf",
+                "Discarded Timetable"
+            };
+            for (int index = 0; index < addedDetails.Length; index++)
+            {
+                AssertRequiredChild(recipe, addedDetails[index]);
+            }
+        }
+
+        private static Transform AssertRequiredChild(
+            Transform parent,
+            string childName)
+        {
+            Transform child = parent.Find(childName);
+            Assert.That(child, Is.Not.Null, childName);
+            return child;
         }
 
         private static void AssertDetailFacesPositiveLocalZ(

@@ -119,7 +119,11 @@ The vertical slice contains:
   the lots contain no building, bar, player home or primary landmark. A
   dedicated physical builder gives each place a different free-standing
   silhouette and movement grammar, while the Home exterior reconstructs the
-  same nearby descriptors in local space. These authored recipes require both
+  same nearby descriptors in local space. Nightlife's island keeps its broken
+  canopy ring but uses no emissive strips: the old departure board is visibly
+  grounded on two supports and weathered route plates, layered posters, a
+  waste bin, bottles, a discarded timetable and a lost scarf replace the
+  repeated neon. These authored recipes require both
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
@@ -353,11 +357,15 @@ The vertical slice contains:
   leak stains and floor drain; the toilet cistern sits against the right wall
   and its bowl faces into the room;
 - one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
-  exactly two unchanged shadowless practical pools whose visible HDR emitters
+  exactly two bounded shadowless practical pools whose visible HDR emitters
   and halos are physically aligned with their lights—a dirty-yellow hanging
-  lamp and a cold bathroom tube—plus one separate warm shadowless ForcePixel
-  Spot aimed at the existing apartment exit door and one cold shadowed cookie
-  Spot projecting night light through the window. These are capped at four
+  lamp and a cold bathroom tube. The bathroom point pool, tube and halo share
+  one deterministic unscaled flicker: they stay steady for most of each
+  `6.4 s` cycle, then briefly stutter through a `0.52 s` fluorescent-failure
+  burst. One separate cold shadowed ForcePixel Spot starts just inside the
+  bathroom threshold, shares the same flicker and projects through the ajar
+  door onto the apartment exit area; another cold shadowed cookie Spot casts
+  night light through the window. These remain capped at four
   atmosphere-owned local realtime lights; the scene Directional light is
   separate. The atmosphere also owns a shared transparent glass
   shader/material, a restrained Bloom/color/exposure/vignette/film-grain

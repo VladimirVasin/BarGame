@@ -93,31 +93,49 @@ namespace BarPromenade.Tests.PlayMode
                 home.Atmosphere.PracticalLights,
                 Has.Count.EqualTo(2));
             Assert.That(
-                home.Atmosphere.ExitDoorLight,
+                home.Atmosphere.BathroomSpillLight,
                 Is.Not.Null);
             Renderer exitDoorRenderer = AssertRequiredObject(
                 home.Room,
                 "Home Exit Door").GetComponent<Renderer>();
             Assert.That(exitDoorRenderer, Is.Not.Null);
-            Light exitDoorLight = home.Atmosphere.ExitDoorLight;
+            Light bathroomSpillLight =
+                home.Atmosphere.BathroomSpillLight;
             Assert.That(
-                exitDoorLight.cullingMask &
+                bathroomSpillLight.cullingMask &
                 (1 << exitDoorRenderer.gameObject.layer),
                 Is.Not.EqualTo(0));
             Assert.That(
                 Vector3.Distance(
-                    exitDoorLight.transform.position,
+                    bathroomSpillLight.transform.position,
                     exitDoorRenderer.bounds.center),
-                Is.LessThan(exitDoorLight.range));
+                Is.LessThan(bathroomSpillLight.range));
             Vector3 exitDoorDirection =
                 (exitDoorRenderer.bounds.center -
-                 exitDoorLight.transform.position).normalized;
+                 bathroomSpillLight.transform.position).normalized;
             Assert.That(
-                Vector3.Dot(
-                    exitDoorLight.transform.forward,
+                Vector3.Angle(
+                    bathroomSpillLight.transform.forward,
                     exitDoorDirection),
-                Is.GreaterThan(0.995f),
-                "The local accent must point directly at the apartment exit.");
+                Is.LessThan(
+                    bathroomSpillLight.innerSpotAngle * 0.5f),
+                "The apartment exit must remain inside the spill's " +
+                "full-strength inner cone.");
+            Assert.That(
+                bathroomSpillLight.transform.localPosition.x,
+                Is.InRange(
+                    home.Layout.BathroomDoorway.xMin,
+                    home.Layout.BathroomDoorway.xMax));
+            Assert.That(
+                bathroomSpillLight.transform.localPosition.z,
+                Is.GreaterThan(home.Layout.BathroomBounds.yMin),
+                "The spill source must sit inside the bathroom threshold.");
+            Assert.That(
+                bathroomSpillLight.color.b,
+                Is.GreaterThan(bathroomSpillLight.color.r));
+            Assert.That(
+                bathroomSpillLight.shadows,
+                Is.EqualTo(LightShadows.Hard));
             Assert.That(RenderSettings.fog, Is.False);
 
             Transform toiletBowl = AssertRequiredObject(
@@ -158,6 +176,23 @@ namespace BarPromenade.Tests.PlayMode
             Transform bathroomEmitter = AssertRequiredObject(
                 home.Room,
                 "Home Bathroom Cold Tube");
+            HomeBathroomLightFixture bathroomFixture =
+                bathroomEmitter.GetComponent<
+                    HomeBathroomLightFixture>();
+            Assert.That(bathroomFixture, Is.Not.Null);
+            Assert.That(bathroomFixture.IsInitialized, Is.True);
+            Assert.That(
+                home.Atmosphere.BathroomFlicker,
+                Is.Not.Null);
+            Assert.That(
+                home.Atmosphere.BathroomFlicker.Fixture,
+                Is.SameAs(bathroomFixture));
+            Assert.That(
+                home.Atmosphere.BathroomFlicker.BathroomLight,
+                Is.SameAs(home.Atmosphere.PracticalLights[1]));
+            Assert.That(
+                home.Atmosphere.BathroomFlicker.SpillLight,
+                Is.SameAs(bathroomSpillLight));
             AssertPracticalEmitter(
                 mainEmitter,
                 home.Atmosphere.PracticalLights[0],

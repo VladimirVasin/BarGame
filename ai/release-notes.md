@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### 2026-08-02 — A grounded last-route island
+
+- Removed the repeated cyan and magenta light bars from Nightlife's transport
+  island and grounded the old departure board on visible supports.
+- Weathered route plates, layered posters, faded timetable rows, a bin,
+  discarded bottles, a torn schedule and a lost scarf now tell the story of an
+  abandoned late-night stop without turning it into a neon installation.
+
+### 2026-08-02 — Bathroom light reaches the apartment entrance
+
+- Cold fluorescent light now spills through the ajar bathroom door across part
+  of the main room and reveals the apartment entrance without changing the
+  approved camera composition.
+- The bathroom tube, its local glow and the doorway spill stay steady most of
+  the time, then briefly stutter together like one failing fluorescent lamp.
+  The effect keeps the existing bounded Home light count.
+
 ### 2026-08-01 — Readable hero inside the apartment
 
 - Furniture, clutter, bathroom doors and balcony rails now dissolve into a

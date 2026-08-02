@@ -605,24 +605,31 @@ namespace BarPromenade
                 new Vector3(1.00f, 0.18f, 0.10f),
                 new Color(0.14f, 0.17f, 0.16f),
                 false);
+            Color coldTubeColor = new Color(1.35f, 2.40f, 2.20f);
             GameObject coldTube = RuntimePrimitiveFactory.CreateBox(
                 "Home Bathroom Cold Tube",
                 room,
                 HomeInteriorAtmosphere.BathroomEmitterPosition,
                 new Vector3(0.80f, 0.09f, 0.035f),
-                new Color(1.35f, 2.40f, 2.20f),
+                coldTubeColor,
                 CityNightResources.EmissiveMaterial,
                 false);
-            AddPracticalHalo(
+            CityLightHalo bathroomHalo = AddPracticalHalo(
                 coldTube.transform,
                 "Home Bathroom Tube Halo",
                 0.38f,
                 0.82f,
                 new Color(0.55f, 0.82f, 0.80f, 0.10f),
                 new Color(0.20f, 0.52f, 0.52f, 0.028f));
+            HomeBathroomLightFixture fixture =
+                coldTube.AddComponent<HomeBathroomLightFixture>();
+            fixture.Initialize(
+                coldTube.GetComponent<Renderer>(),
+                bathroomHalo,
+                coldTubeColor);
         }
 
-        private static void AddPracticalHalo(
+        private static CityLightHalo AddPracticalHalo(
             Transform emitter,
             string haloName,
             float innerSize,
@@ -642,6 +649,7 @@ namespace BarPromenade
                 outerSize,
                 innerColor,
                 outerColor);
+            return halo;
         }
 
         private static void BuildFurniture(

@@ -66,10 +66,16 @@ namespace BarPromenade
             new Color(0.085f, 0.090f, 0.125f);
         private static readonly Color NightlifeSeat =
             new Color(0.225f, 0.145f, 0.245f);
-        private static readonly Color MagentaGlow =
-            new Color(1.20f, 0.16f, 0.72f);
-        private static readonly Color CyanGlow =
-            new Color(0.12f, 0.88f, 1.25f);
+        private static readonly Color NightlifeRoutePaper =
+            new Color(0.385f, 0.335f, 0.255f);
+        private static readonly Color NightlifeRouteInk =
+            new Color(0.105f, 0.125f, 0.155f);
+        private static readonly Color NightlifePosterRed =
+            new Color(0.355f, 0.135f, 0.165f);
+        private static readonly Color NightlifePosterBlue =
+            new Color(0.145f, 0.245f, 0.295f);
+        private static readonly Color NightlifeWaste =
+            new Color(0.115f, 0.135f, 0.145f);
 
         public static GameObject Build(
             Transform parent,
@@ -541,11 +547,26 @@ namespace BarPromenade
                     3.25f, 0.26f, 0.42f, NightlifeFrame, false, homeExterior, angle);
                 AddBox(parent, name + " Roof", x, 3.58f, z,
                     3.45f, 0.18f, 1.25f, NightlifeFrame, false, homeExterior, angle);
-                Color signal = index % 2 == 0
-                    ? MagentaGlow
-                    : CyanGlow;
-                AddBox(parent, name + " Dead Route Strip", x, 3.43f, z,
-                    2.25f, 0.08f, 0.46f, signal, true, homeExterior, angle);
+                if (index == 1 || index == 4)
+                {
+                    float plateOffset = 0.18f;
+                    Color plateColor = index == 1
+                        ? NightlifePosterBlue
+                        : NightlifePosterRed;
+                    AddBox(
+                        parent,
+                        name + " Weathered Route Plate",
+                        x + Mathf.Sin(radians) * plateOffset,
+                        2.42f,
+                        z + Mathf.Cos(radians) * plateOffset,
+                        0.62f,
+                        0.44f,
+                        0.07f,
+                        plateColor,
+                        false,
+                        homeExterior,
+                        angle);
+                }
 
                 if (colliders)
                 {
@@ -563,18 +584,61 @@ namespace BarPromenade
                 0.34f, 5.70f, 0.34f, NightlifeFrame, false, homeExterior);
             AddBox(parent, "Broken Route Totem", -2.75f, 5.55f, -1.25f,
                 1.58f, 1.55f, 0.42f, NightlifeFrame, false, homeExterior);
-            AddBox(parent, "Totem Cyan Half", -3.08f, 5.68f, -1.02f,
-                0.56f, 0.94f, 0.04f, CyanGlow, true, homeExterior);
-            AddBox(parent, "Totem Magenta Half", -2.43f, 5.34f, -1.02f,
-                0.56f, 0.46f, 0.04f, MagentaGlow, true, homeExterior);
+            AddBox(parent, "Totem Route Map Backing", -2.75f, 5.55f, -1.02f,
+                1.28f, 1.20f, 0.04f, NightlifeRoutePaper, false, homeExterior);
+            AddBox(parent, "Totem Torn Poster A", -2.95f, 5.66f, -0.99f,
+                0.64f, 0.70f, 0.025f, NightlifePosterBlue, false, homeExterior,
+                -4f);
+            AddBox(parent, "Totem Torn Poster B", -2.52f, 5.33f, -0.98f,
+                0.50f, 0.43f, 0.025f, NightlifePosterRed, false, homeExterior,
+                6f);
+            AddBox(parent, "Totem Route Number Plate", -2.71f, 5.97f, -0.97f,
+                0.42f, 0.20f, 0.025f, NightlifeRouteInk, false, homeExterior);
             AddBox(parent, "Departure Board", 2.45f, 2.10f, -2.55f,
                 2.65f, 1.10f, 0.28f, NightlifeFrame, false, homeExterior, -12f);
-            AddBox(parent, "Departure Board Line", 2.45f, 2.20f, -2.38f,
-                2.15f, 0.12f, 0.04f, CyanGlow, true, homeExterior, -12f);
+            AddBox(parent, "Departure Board Support West", 1.61f, 0.885f, -2.73f,
+                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f);
+            AddBox(parent, "Departure Board Support East", 3.29f, 0.885f, -2.37f,
+                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f);
+            AddBox(parent, "Departure Board Foot West", 1.61f, 0.27f, -2.73f,
+                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f);
+            AddBox(parent, "Departure Board Foot East", 3.29f, 0.27f, -2.37f,
+                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f);
+            AddBox(parent, "Departure Board Glass", 2.45f, 2.10f, -2.39f,
+                2.30f, 0.78f, 0.035f, NightlifeRouteInk, false, homeExterior,
+                -12f);
+            AddBox(parent, "Departure Schedule Row A", 2.45f, 2.30f, -2.365f,
+                1.78f, 0.07f, 0.025f, NightlifeRoutePaper, false, homeExterior,
+                -12f);
+            AddBox(parent, "Departure Schedule Row B", 2.45f, 2.10f, -2.365f,
+                1.42f, 0.07f, 0.025f, NightlifePosterBlue, false, homeExterior,
+                -12f);
+            AddBox(parent, "Departure Schedule Row C", 2.45f, 1.90f, -2.365f,
+                1.92f, 0.07f, 0.025f, NightlifeRoutePaper, false, homeExterior,
+                -12f);
             AddBox(parent, "Empty Bench", 2.85f, 0.66f, 2.55f,
                 2.50f, 0.22f, 0.72f, NightlifeSeat, false, homeExterior, 22f);
             AddBox(parent, "Empty Bench Base", 2.85f, 0.33f, 2.55f,
                 0.38f, 0.66f, 0.48f, NightlifeFrame, false, homeExterior, 22f);
+            AddBox(parent, "Island Waste Bin", 4.15f, 0.71f, 2.20f,
+                0.72f, 1.00f, 0.72f, NightlifeWaste, false, homeExterior, 8f);
+            AddBox(parent, "Island Waste Bin Rim", 4.15f, 1.23f, 2.20f,
+                0.82f, 0.08f, 0.82f, NightlifeFrame, false, homeExterior, 8f);
+            AddBox(parent, "Island Waste Bin Opening", 4.15f, 1.275f, 2.20f,
+                0.54f, 0.018f, 0.50f, NightlifeRouteInk, false, homeExterior,
+                8f);
+            AddCylinder(parent, "Discarded Bottle Standing", 2.08f, 0.31f,
+                3.82f, 0.13f, 0.09f, 0.13f, NightlifeRoutePaper, false,
+                homeExterior);
+            AddBox(parent, "Discarded Bottle Fallen", 1.72f, 0.255f, 3.68f,
+                0.34f, 0.07f, 0.12f, NightlifePosterBlue, false, homeExterior,
+                28f);
+            AddBox(parent, "Lost Scarf", -0.35f, 0.292f, 1.05f,
+                1.10f, 0.025f, 0.34f, NightlifePosterRed, false, homeExterior,
+                -18f);
+            AddBox(parent, "Discarded Timetable", -1.20f, 0.228f, -3.65f,
+                0.72f, 0.025f, 0.50f, NightlifeRoutePaper, false,
+                homeExterior, 12f);
 
             if (colliders)
             {
@@ -595,6 +659,12 @@ namespace BarPromenade
                     new Vector3(2.85f, 0.44f, 2.55f),
                     new Vector3(2.50f, 0.88f, 0.72f),
                     22f);
+                AddObstacleCollider(
+                    parent,
+                    "Island Waste Bin Collider",
+                    new Vector3(4.15f, 0.71f, 2.20f),
+                    new Vector3(0.78f, 1.00f, 0.78f),
+                    8f);
             }
         }
 

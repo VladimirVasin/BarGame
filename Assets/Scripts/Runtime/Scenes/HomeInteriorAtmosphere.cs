@@ -13,11 +13,11 @@ namespace BarPromenade
     {
         public const int MaximumPracticalLights = 2;
         public const int MaximumWindowLights = 1;
-        public const int MaximumExitDoorLights = 1;
+        public const int MaximumBathroomSpillLights = 1;
         public const int MaximumRealtimeLights =
             MaximumPracticalLights +
             MaximumWindowLights +
-            MaximumExitDoorLights;
+            MaximumBathroomSpillLights;
         public const int MaximumDustParticles = 12;
 
         internal static readonly Vector3 MainEmitterPosition =
@@ -40,12 +40,13 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.WindowCenterZ);
         internal static readonly Vector3 WindowLightDirection =
             (WindowLightTarget - WindowLightPosition).normalized;
-        internal static readonly Vector3 ExitDoorLightPosition =
-            new Vector3(-2.20f, 2.65f, -1.50f);
-        internal static readonly Vector3 ExitDoorLightTarget =
-            new Vector3(-0.25f, 1.30f, -3.78f);
-        internal static readonly Vector3 ExitDoorLightDirection =
-            (ExitDoorLightTarget - ExitDoorLightPosition).normalized;
+        internal static readonly Vector3 BathroomSpillLightPosition =
+            new Vector3(2.15f, 2.05f, 0.82f);
+        internal static readonly Vector3 BathroomSpillLightTarget =
+            new Vector3(0f, 0.12f, -3.05f);
+        internal static readonly Vector3 BathroomSpillLightDirection =
+            (BathroomSpillLightTarget -
+             BathroomSpillLightPosition).normalized;
 
         private readonly List<Light> practicalLights =
             new List<Light>(MaximumPracticalLights);
@@ -60,11 +61,26 @@ namespace BarPromenade
         public VolumeProfile RuntimeProfile => runtimeProfile;
         public ParticleSystem Dust { get; private set; }
         public Light WindowLight { get; private set; }
-        public Light ExitDoorLight { get; private set; }
+        public Light BathroomSpillLight { get; private set; }
+        public HomeBathroomLightFlicker BathroomFlicker
+        {
+            get;
+            private set;
+        }
 
         public void Initialize()
         {
             Initialize(
+                null,
+                MainLightPosition,
+                BathroomLightPosition);
+        }
+
+        public void Initialize(
+            HomeBathroomLightFixture bathroomFixture)
+        {
+            Initialize(
+                bathroomFixture,
                 MainLightPosition,
                 BathroomLightPosition);
         }
@@ -73,10 +89,21 @@ namespace BarPromenade
             Vector3 mainLightPosition,
             Vector3 bathroomLightPosition)
         {
+            Initialize(
+                null,
+                mainLightPosition,
+                bathroomLightPosition);
+        }
+
+        private void Initialize(
+            HomeBathroomLightFixture bathroomFixture,
+            Vector3 mainLightPosition,
+            Vector3 bathroomLightPosition)
+        {
             if (IsInitialized ||
                 practicalLights.Count > 0 ||
                 WindowLight != null ||
-                ExitDoorLight != null ||
+                BathroomSpillLight != null ||
                 PostProcessVolume != null)
             {
                 throw new InvalidOperationException(
@@ -97,15 +124,22 @@ namespace BarPromenade
                     new Color(0.95f, 0.52f, 0.22f),
                     3.50f,
                     6.0f));
-            practicalLights.Add(
-                CreatePracticalLight(
-                    "Home Bathroom Practical Light",
-                    bathroomLightPosition,
-                    new Color(0.52f, 0.68f, 0.72f),
-                    2.20f,
-                    4.0f));
+            Light bathroomLight = CreatePracticalLight(
+                "Home Bathroom Practical Light",
+                bathroomLightPosition,
+                new Color(0.52f, 0.68f, 0.72f),
+                2.20f,
+                4.0f);
+            practicalLights.Add(bathroomLight);
             WindowLight = CreateWindowLight();
-            ExitDoorLight = CreateExitDoorLight();
+            BathroomSpillLight = CreateBathroomSpillLight();
+            BathroomFlicker =
+                bathroomLight.gameObject.AddComponent<
+                    HomeBathroomLightFlicker>();
+            BathroomFlicker.Initialize(
+                bathroomLight,
+                BathroomSpillLight,
+                bathroomFixture);
             CreatePostProcessVolume();
             CreateDust();
             IsInitialized = true;
@@ -164,26 +198,29 @@ namespace BarPromenade
             return light;
         }
 
-        private Light CreateExitDoorLight()
+        private Light CreateBathroomSpillLight()
         {
             GameObject lightObject = new GameObject(
-                "Home Exit Door Light");
+                "Home Bathroom Spill Light");
             lightObject.transform.SetParent(transform, false);
             lightObject.transform.localPosition =
-                ExitDoorLightPosition;
+                BathroomSpillLightPosition;
             lightObject.transform.localRotation =
                 Quaternion.LookRotation(
-                    ExitDoorLightDirection,
+                    BathroomSpillLightDirection,
                     Vector3.up);
 
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Spot;
-            light.color = new Color(0.86f, 0.58f, 0.32f);
-            light.intensity = 8.0f;
-            light.range = 5.2f;
-            light.spotAngle = 46f;
-            light.innerSpotAngle = 28f;
-            light.shadows = LightShadows.None;
+            light.color = new Color(0.52f, 0.68f, 0.72f);
+            light.intensity = 10.0f;
+            light.range = 6.6f;
+            light.spotAngle = 52f;
+            light.innerSpotAngle = 30f;
+            light.shadows = LightShadows.Hard;
+            light.shadowStrength = 0.62f;
+            light.shadowBias = 0.04f;
+            light.shadowNormalBias = 0.25f;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0f;
             return light;

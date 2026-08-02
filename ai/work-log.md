@@ -2,6 +2,67 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-02 — Grounded last-route island dressing
+
+- Removed all eight emissive magenta/cyan recipe pieces from Nightlife's
+  last-route island: five repeated canopy strips, both totem halves and the
+  single departure-board line. The broken canopy ring and open traversal
+  grammar remain unchanged.
+- Grounded the floating departure board with two visible posts and feet that
+  meet both the island paving and the board shell.
+- Replaced the neon repetition with two weathered canopy route plates, layered
+  paper posters on the totem, three faded schedule rows, a waste bin, two
+  bottles, a discarded timetable and one lost scarf. Only the bin adds a new
+  intentional obstacle collider; public approaches stay open.
+- Extended the City presentation regression to reject emissive island
+  materials and removed part names, prove both board supports meet their
+  surfaces and require the new grounded details.
+
+Verification:
+
+- `dotnet build BarPromenade.Runtime.csproj -nologo` passed with zero warnings
+  and zero errors.
+- `dotnet build BarPromenade.PlayModeTests.csproj -nologo` passed with zero
+  warnings and zero errors.
+- `CityNightPresentationPlayModeTests` passed `3/3`, including the new
+  no-emission, grounded-support and open-approach regression coverage.
+- `HomeBalconyPresentationPlayModeTests` passed `1/1`, confirming that the
+  shared last-route recipe still composes correctly in the apartment exterior
+  view.
+- GPU visual review of `Logs/CityLastRouteIsland.png` confirmed that the old
+  board is visibly supported, all cyan/magenta bars are absent and the dull
+  replacement dressing reads in the live City fog and lighting.
+- `git diff --check` passed.
+
+## 2026-08-02 — Flickering bathroom spill in the Home main shot
+
+- Replaced the isolated warm apartment-exit accent with a cold hard-shadow
+  ForcePixel Spot staged just inside the bathroom threshold and aimed through
+  the solid ajar door toward the existing exit area. The Home atmosphere still
+  owns at most four local realtime lights and all three fixed camera poses,
+  room geometry and door materials remain unchanged.
+- Added one deterministic unscaled `6.4 s` fluorescent-failure cycle. The
+  bathroom point pool and doorway spill stay steady for most of the cycle,
+  then share one brief irregular series of deep dips.
+- Connected the visible HDR tube and depth-tested halo to the same factor
+  through a dedicated fixture component. The emitter uses one reused material
+  property block and keeps the shared emissive material; the halo only hides
+  during the deepest dip.
+- Updated the focused atmosphere and complete Home-presentation regressions to
+  cover source placement inside the bathroom, cold hard-shadow direction,
+  bounded light count, deterministic timing and fixture wiring.
+
+Verification:
+
+- Runtime, Editor, EditModeTests and PlayModeTests assemblies compiled in
+  Unity with no compiler errors or warnings.
+- The complete filtered Home PlayMode set passed `28/28` on the final code.
+- A temporary GPU-backed `1280 x 720` capture test passed `1/1`; manual review
+  of the real MainRoom camera confirmed a bounded cold pool across the entry
+  floor, a matching cold bathroom threshold and no whole-room overexposure.
+  The temporary capture test was removed after verification.
+- `git diff --check` passed.
+
 ## 2026-08-01 — Home player visibility through foreground objects
 
 - Added one explicit Home occlusion registry populated by the runtime world,

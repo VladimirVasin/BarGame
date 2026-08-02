@@ -69,7 +69,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   from the reserved ground/approaches. A dedicated world builder creates the
   physical paving, free-standing recipe and intentional solid colliders; the
   bounded Home exterior rebuilds nearby descriptors through the same
-  world-to-local transform without gameplay colliders.
+  world-to-local transform without gameplay colliders. The last-route island
+  owns no emissive recipe parts: its previously unsupported departure board
+  meets the paving through two visible legs and feet, while dull route plates,
+  layered posters, a waste bin, bottles, a discarded timetable and a lost
+  scarf replace the repeated neon-strip treatment.
 - **Accepted — Data-first seeded city decoration:** `CityDecorationPlanner`
   consumes the validated layout plus fence and night-fixture plans and emits a
   stable ordered plan without using Unity global random state. Every ordinary
@@ -147,10 +151,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   reuses the common player, intoxication HUD, interaction and door-transition
   contracts while putting the single Main Camera into three authored fixed
   poses with doorway/balcony hysteresis and a main-room fallback. The camera
-  poses remain unchanged. A separate warm, shadowless ForcePixel Spot now
-  illuminates the existing apartment exit door; the two practical lights and
-  cold window-cookie Spot remain, for at most four atmosphere-owned local
-  realtime lights in addition to the scene Directional light. The door's
+  poses remain unchanged. A separate cold, hard-shadow ForcePixel Spot starts
+  just inside the bathroom threshold and projects through the ajar door onto
+  the existing apartment exit area. It shares one deterministic unscaled
+  fluorescent-failure flicker with the bathroom point pool, HDR tube and halo;
+  the main practical and cold window-cookie Spot remain, for at most four
+  atmosphere-owned local realtime lights in addition to the scene Directional
+  light. The exit door's
   geometry and material remain unchanged. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
@@ -241,8 +248,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   atmosphere retains exactly two shadowless practical realtime lights. A
   visible HDR emitter and depth-tested halo are physically co-located with
   each practical so the warm hanging lamp and cold bathroom tube read as
-  actual sources. One separate cold shadowed cookie Spot projects through the
-  window, and window/door panes reuse one shared transparent glass
+  actual sources. The bathroom point pool, tube and halo share a deterministic
+  unscaled `6.4 s` cycle with a separate cold hard-shadow Spot staged just
+  inside the bathroom threshold; the group remains steady for most of the
+  cycle, then stutters together briefly while the Spot projects through the
+  ajar door toward the apartment exit. One separate cold shadowed cookie Spot
+  projects through the window, and window/door panes reuse one shared
+  transparent glass
   shader/material. During Home fixed-camera ownership only,
   `BillboardSprite` aligns to
   `-camera.forward` and `camera.up` instead of a yaw-only billboard, preserving
