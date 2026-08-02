@@ -48,8 +48,9 @@ The vertical slice contains:
   `288 x 288 m`;
 - a fixed atmospheric noir night with `0.070` exponential-squared luminous
   gray-green fog, a fog-matched terminal camera backdrop and a City-only
-  `48 m` camera visibility cap, plus lifted geometry values, cold moonlight
-  and a retuned
+  `48 m` camera visibility cap. The Windows player explicitly retains the
+  runtime-only Exp2 shader variant instead of relying on build-scene scanning,
+  plus lifted geometry values, cold moonlight and a retuned
   Bloom/ColorAdjustments/Vignette/FilmGrain profile;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
@@ -76,12 +77,20 @@ The vertical slice contains:
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior` and the optional
   `stairwell_theme` slot loads only from `Resources/Audio/StairwellMusic` in
-  `StairwellInterior`. Home also owns an optional interaction-local
+  `StairwellInterior`; Home adds an optional
+  `Resources/Audio/HomeMusic/home_theme` loop. Every scene theme starts at
+  zero gain, waits for its background-streamed clip data and fades in over one
+  unscaled second. Before a Single-load
+  activates, the destination preloads while the current scene remains alive
+  long enough for its theme to fade fully out. Home pauses `home_theme` after
+  its fade-out whenever the Balcony shot owns the doorway-hysteresis zone,
+  then resumes the same sample through a fade-in only after returning indoors.
+  Home also owns an optional interaction-local
   `Resources/Audio/SmokingMusic/smoking_theme` loop: it starts from the
   beginning with a `3.2 s` fade when the balcony-smoking vignette begins and
-  fades out with its `2 s` exit. A missing smoking track is silent-safe. All
+  fades out with its `2 s` exit. Missing optional tracks are silent-safe. All
   themes route through the shared `Music` mixer group, receive a mild
-  low-pass treatment and are destroyed with their owning scene;
+  low-pass treatment and remain owned by their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
   City, Bar, Stairwell, Home and DoorTransition snapshots keep `-6 dB`
@@ -94,12 +103,16 @@ The vertical slice contains:
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
-  plus a four-source Home spatial soundscape and a three-source Stairwell
+  plus a five-source Home spatial soundscape and a three-source Stairwell
   soundscape. Home combines a calm room bed, synchronized co-located closed
   and open refrigerator loops, balcony night air and sparse soft wood,
-  radiator, radio and bathroom details; the two refrigerator timbres use an
-  equal-power door crossfade. Stairwell combines a concrete room bed,
-  ventilation and electrical buzz with rarer pipe knocks, metal stress,
+  radiator, radio and bathroom details, plus a dedicated fluorescent crackle
+  source co-located with the bathroom tube. The crackle is triggered by the
+  same applied-factor changes that drive the visible tube, halo, point and
+  spill lights. Both refrigerator timbres are `4 dB` louder than the original
+  mix and retain their equal-power door crossfade. Stairwell combines a
+  concrete room bed, ventilation and electrical buzz with rarer pipe knocks,
+  metal stress,
   distant water and movement. Both use deterministic schedules, `22050 Hz`
   mono clips, deliberately quantized retro waveforms and layout-derived
   anchors;
@@ -411,7 +424,8 @@ The vertical slice contains:
   lamp and a cold bathroom tube. The bathroom point pool, tube and halo share
   one deterministic unscaled flicker: they stay steady for most of each
   `6.4 s` cycle, then briefly stutter through a `0.52 s` fluorescent-failure
-  burst. One separate cold shadowed ForcePixel Spot starts just inside the
+  burst while a co-located spatial electrical crackle follows every actually
+  rendered factor change. One separate cold shadowed ForcePixel Spot starts just inside the
   bathroom threshold, shares the same flicker and projects through the ajar
   door onto the apartment exit area; another cold shadowed cookie Spot casts
   night light through the window. These remain capped at four

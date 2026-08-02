@@ -41,6 +41,9 @@ Assets/
       StairwellMusic/
         stairwell_theme.*  optional looping StairwellInterior theme
         README.txt
+      HomeMusic/
+        home_theme.*  optional looping Home theme with Balcony pause/resume
+        README.txt
       SmokingMusic/
         smoking_theme.*  optional Home balcony-vignette loop supplied by user
         README.txt
@@ -76,9 +79,11 @@ Assets/
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
+        HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
         HomeSmokingMusicPlayer.cs          optional interaction-local loop + gain envelope
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
-        InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM + two-state fridge hum
+        InteriorSoundscapeSynthesis.cs    quantized PCM, fridge hum + lamp crackle
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
@@ -139,7 +144,7 @@ Assets/
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
         HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
-        HomeSoundscape*.cs               paired fridge hum, balcony bed and domestic cues
+        HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
         HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog, grade and lights
@@ -181,6 +186,8 @@ Assets/
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
       HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/fade + restore
       HomeSmokingMusicPlayerPlayModeTests.cs optional clip and mixer-safe lifecycle
+      HomeMusicPlayerPlayModeTests.cs      missing-track and Balcony-zone lifecycle
+      SceneMusicPlayerPlayModeTests.cs     fade, pause/resume and scene-exit contracts
       HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
 ArtSource/
@@ -310,6 +317,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                           -> equal-power crossfade from current door amount
                           -> spatial balcony night air
                           -> seeded wood/radiator/radio/bathroom cues
+                          -> bathroom-tube crackle on applied flicker changes
+       -> HomeMusicPlayer -> optional home_theme -> unscaled fade envelope
+                          -> Balcony fade-out + pause
+                          -> indoor same-sample resume + fade-in
        -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
@@ -412,9 +423,11 @@ F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
-City root -> CityMusicPlayer -> city_theme -----------------------> Music
-Bar root -> BarMusicPlayer -> bar_theme --------------------------> Music
-Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme -> Music
+scene transition -> preload -> outgoing theme fade-out -> activate destination
+City root -> CityMusicPlayer -> city_theme + entry/exit fades ----> Music
+Bar root -> BarMusicPlayer -> bar_theme + entry/exit fades ------> Music
+Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme + fades -> Music
+Home root -> HomeMusicPlayer -> optional home_theme + Balcony pause/resume -> Music
 Home smoking interaction -> optional smoking_theme + gain envelope -> Music
 scene root -> matching procedural ambience -----------------------> Ambience/Beds
 Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details

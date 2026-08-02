@@ -247,6 +247,8 @@ namespace BarPromenade.Tests.PlayMode
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     HomeCameraShotKind.Balcony));
+            Assert.That(home.Music, Is.Not.Null);
+            Assert.That(home.Music.IsBalconyActive, Is.True);
             Assert.That(
                 home.ExteriorAtmosphere
                     .IsBalconyVisibilityActive,
@@ -354,6 +356,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     HomeCameraShotKind.MainRoom));
+            Assert.That(home.Music.IsBalconyActive, Is.False);
             Assert.That(
                 home.ExteriorAtmosphere
                     .IsBalconyVisibilityActive,

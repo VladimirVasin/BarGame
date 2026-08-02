@@ -1545,6 +1545,13 @@ namespace BarPromenade.Tests.PlayMode
                 () => firstCity.IsInitialized,
                 "Initial city did not finish initialization.");
             Assert.That(firstCity.Music, Is.Not.Null);
+            yield return WaitUntil(
+                () => firstCity.Music.PlaybackState !=
+                      SceneMusicPlaybackState.Loading,
+                "City music did not finish loading.");
+            firstCity.Music.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds);
+            CityMusicPlayer outgoingCityMusic = firstCity.Music;
 
             BarEntrance entrance = firstCity.World.Bars[1];
             string expectedBarId = entrance.BarId;
@@ -1573,6 +1580,26 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             entrance.Interact(firstCity.Player.Interactor);
             Assert.That(SceneTransitionService.IsTransitioning, Is.True);
+            yield return WaitUntil(
+                () => outgoingCityMusic != null &&
+                      outgoingCityMusic.IsSceneExitFadeRequested,
+                "The City-to-door transition did not request music fade.");
+            Assert.That(
+                outgoingCityMusic.IsSceneExitFadeRequested,
+                Is.True);
+            while (!SceneTransitionService
+                       .IsOutgoingMusicFadeGateComplete)
+            {
+                Assert.That(
+                    SceneManager.GetActiveScene().name,
+                    Is.EqualTo(SceneIds.City),
+                    "Scene activation must remain held until the outgoing " +
+                    "music gate completes.");
+                Assert.That(
+                    SceneTransitionService.IsTransitioning,
+                    Is.True);
+                yield return null;
+            }
 
             DoorTransitionRoot enteringDoor = null;
             yield return WaitForLoadedRoot<DoorTransitionRoot>(
@@ -1821,6 +1848,13 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(home.Ambience, Is.Not.Null);
             Assert.That(home.Ambience.Source.loop, Is.True);
+            Assert.That(home.Music, Is.Not.Null);
+            Assert.That(
+                HomeMusicPlayer.ResourcePath,
+                Is.EqualTo("Audio/HomeMusic/home_theme"));
+            Assert.That(
+                home.Music.transform.IsChildOf(home.transform),
+                Is.True);
             Assert.That(home.Soundscape, Is.Not.Null);
             Assert.That(home.Soundscape.IsInitialized, Is.True);
             Assert.That(home.AlarmClock, Is.Not.Null);
@@ -1834,13 +1868,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(
-                    2 +
+                    3 +
                     HomeSoundscape.OwnedSourceCount +
                     HomeAlarmClock.OwnedSourceCount),
                 "Home audio must remain one base ambience " +
-                "source, one optional smoking-music source, " +
-                "four soundscape sources and one diegetic " +
-                "alarm source.");
+                "source, one optional background-music source, " +
+                "one optional smoking-music source, five " +
+                "soundscape sources and one diegetic alarm " +
+                "source.");
             Assert.That(
                 home.Atmosphere,
                 Is.Not.Null);

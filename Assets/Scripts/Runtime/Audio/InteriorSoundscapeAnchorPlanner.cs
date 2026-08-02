@@ -86,6 +86,8 @@ namespace BarPromenade
                     plan.BathroomBounds.center.x,
                     0.10f,
                     plan.BathroomBounds.center.y);
+            Vector3 bathroomLight =
+                HomeInteriorAtmosphere.BathroomEmitterPosition;
 
             return new HomeSoundscapeAnchors(
                 refrigerator,
@@ -93,7 +95,8 @@ namespace BarPromenade
                 softWood,
                 radiator,
                 radio,
-                bathroom);
+                bathroom,
+                bathroomLight);
         }
 
         public static HomeSoundscapeAnchors CreateHomeWorld(
@@ -155,7 +158,8 @@ namespace BarPromenade
                 sceneRoot.TransformPoint(local.SoftWood),
                 sceneRoot.TransformPoint(local.Radiator),
                 sceneRoot.TransformPoint(local.Radio),
-                sceneRoot.TransformPoint(local.Bathroom));
+                sceneRoot.TransformPoint(local.Bathroom),
+                sceneRoot.TransformPoint(local.BathroomLight));
         }
     }
 }

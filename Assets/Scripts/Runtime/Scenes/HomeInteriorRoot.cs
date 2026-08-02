@@ -50,6 +50,7 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeMusicPlayer Music { get; private set; }
         public HomeRefrigeratorPlan RefrigeratorPlan
         {
             get;
@@ -203,6 +204,8 @@ namespace BarPromenade
                     Layout,
                     BalconyLayout,
                     transform));
+            Soundscape.BindBathroomFlicker(
+                Atmosphere.BathroomFlicker);
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -247,6 +250,11 @@ namespace BarPromenade
                 CreateCameraShots(
                     Layout,
                     BalconyLayout));
+            GameObject musicObject =
+                new GameObject("Home Music");
+            musicObject.transform.SetParent(transform, false);
+            Music = musicObject.AddComponent<HomeMusicPlayer>();
+            Music.Initialize(FixedCamera);
             GameObject exteriorAtmosphereObject =
                 new GameObject("Home Balcony Exterior Atmosphere");
             exteriorAtmosphereObject.transform.SetParent(

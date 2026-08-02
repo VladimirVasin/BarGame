@@ -269,6 +269,7 @@ namespace BarPromenade
     {
         public const int SampleRate = 22050;
         public const float LoopDuration = 8f;
+        public const float BathroomLightCrackleDuration = 0.055f;
 
         private const float SoftWoodDuration = 0.75f;
         private const float RadiatorTickDuration = 0.28f;
@@ -374,6 +375,43 @@ namespace BarPromenade
                 samples[index] =
                     InteriorSoundscapeSynthesis.Quantize(
                         (air * breath + farCity) * 0.72f);
+            }
+
+            return samples;
+        }
+
+        public static float[] GenerateBathroomLightCrackleSamples()
+        {
+            int sampleCount = Mathf.RoundToInt(
+                SampleRate * BathroomLightCrackleDuration);
+            var samples = new float[sampleCount];
+            uint noiseState = 0x4C414D50u;
+            float filteredNoise = 0f;
+            for (int index = 0; index < sampleCount; index++)
+            {
+                float time = index / (float)SampleRate;
+                float normalized = index / (float)sampleCount;
+                float edgeFade = Mathf.Sin(Mathf.PI * normalized);
+                float noise =
+                    InteriorSoundscapeSynthesis.NextNoise(
+                        ref noiseState);
+                filteredNoise +=
+                    (noise - filteredNoise) * 0.18f;
+                float brittleNoise = noise - filteredNoise;
+                float firstSnap =
+                    InteriorSoundscapeSynthesis.DecayingTone(
+                        time,
+                        0.003f,
+                        55f,
+                        2280f,
+                        0.36f);
+                float noiseEnvelope =
+                    Mathf.Exp(-time * 68f) * 0.18f;
+                samples[index] =
+                    InteriorSoundscapeSynthesis.Quantize(
+                        (firstSnap +
+                         brittleNoise * noiseEnvelope) *
+                        edgeFade);
             }
 
             return samples;

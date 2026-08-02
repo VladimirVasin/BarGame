@@ -453,8 +453,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   dedicated Bloom/ColorAdjustments/Vignette/FilmGrain
   `CityNoirVolumeProfile`. Its solid camera clear color exactly matches the fog
   color, so empty pixels beyond the finite geometry resolve to terminal haze
-  instead of a dark world edge. `BarInterior` explicitly disables exterior
-  fog and restores the default `220 m` camera range.
+  instead of a dark world edge. Graphics shader stripping is Custom and keeps
+  the Exp2 fog variant because every authored build scene serializes fog off
+  and `RuntimeSceneSetup` enables it only at runtime. `BarInterior` explicitly
+  disables exterior fog and restores the default `220 m` camera range.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles
   and a bounded `0.120` peak alpha. It reuses the shared atmosphere material
@@ -492,15 +494,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   effect, send or echo parameter is unavailable. EditMode coverage validates
   the DSP graph, send targets and critical snapshot values rather than only
   checking group names.
-- **Accepted — Scene-local music:** `CityMusicPlayer` loads only `city_theme`
+- **Accepted — Scene-local music with guarded fades:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
   `bar_theme` from `Resources/Audio/BarMusic` and
   `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
-  `Resources/Audio/StairwellMusic`. Each clip background-streams through a
-  non-spatial looping `AudioSource`, a mild low-pass filter and the shared
-  `Music` group under its matching scene root; a missing optional track stays
-  silent, and a Single-mode scene load destroys the old player and stops its
-  theme automatically.
+  `Resources/Audio/StairwellMusic`; `HomeMusicPlayer` optionally loads only
+  `home_theme` from `Resources/Audio/HomeMusic`. Each clip background-streams
+  through a non-spatial looping `AudioSource`, mild low-pass filter and the
+  shared `Music` group under its matching scene root. `SceneMusicPlayer` owns
+  a one-second smooth unscaled gain envelope, waits for background-streamed
+  clip data before starting that envelope and fails silent if loading fails.
+  `SceneTransitionService`
+  preloads the destination with activation held until every active-scene
+  theme reaches zero, then the new scene begins its own fade-in. Disabled or
+  missing players complete that handshake immediately, with a bounded safety
+  timeout preventing scene activation from deadlocking. Home alone reads the fixed-camera
+  Balcony shot: it fades `home_theme` to zero, pauses while preserving the
+  sample position and resumes through the same envelope only after the shot
+  returns indoors. The interaction-local `smoking_theme` retains its separate
+  animation-driven envelope.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
   the mono `22050 Hz` UI, footstep, door latch, sustained hinge creak,
   cocktail, beer-pong, Split-the-G and tincture clips in memory.
@@ -520,10 +532,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   begin. Later or direct Home visits keep the clock silent at `06:00`.
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
-  to `Ambience/Beds`. Home additionally owns four spatial
-  `Ambience/Details` sources and seven runtime clips: distinct closed/open
-  refrigerator loops, a balcony loop and four sparse cue types. The two
-  refrigerator sources are co-located, scheduled at the same DSP time and
+  to `Ambience/Beds`. Home additionally owns five spatial
+  `Ambience/Details` sources and eight runtime clips: distinct closed/open
+  refrigerator loops, a balcony loop, four sparse cue types and one dedicated
+  bathroom-tube crackle. The crackle source is co-located with the visible
+  tube and reacts in the same frame to every applied flicker-factor change.
+  The two refrigerator layers are raised by `4 dB`; their sources remain
+  co-located, scheduled at the same DSP time and
   mixed from door openness with clamped cosine/sine equal-power gains; closed
   and open states therefore use different deterministic eight-second mono
   timbres instead of filtering one clip. Stairwell retains three spatial

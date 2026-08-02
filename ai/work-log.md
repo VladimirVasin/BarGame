@@ -2,6 +2,57 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-02 — Runtime fog shader variant retained
+
+- Traced the Editor/player mismatch to built-in shader stripping: every build
+  scene serializes fog off, while `RuntimeSceneSetup` enables Exp2 only after
+  loading. The previous build reduced `City Atmosphere Particle` from eight
+  variants to one.
+- Switched Graphics fog stripping from Automatic to Custom and retained only
+  the used Exponential Squared mode. Added an EditMode build-contract test for
+  those serialized settings.
+
+Verification:
+
+- The EditMode test assembly compiled with zero warnings or errors. During the
+  requested rebuild, the shader compiled four internal D3D11 programs instead
+  of the previous two, confirming that the fogged variant was retained.
+- The Windows rebuild was stopped at the user's request so they can perform
+  the final player build manually; no completed build is claimed here.
+
+## 2026-08-02 — Apartment ambience and guarded music fades
+
+- Raised both synchronized Home refrigerator layers by exactly `4 dB` while
+  preserving their co-located equal-power door crossfade.
+- Added a fifth spatial Home detail source at the bathroom tube. Every one of
+  the seven applied visual flicker edges now triggers one deterministic
+  `55 ms` electrical crackle; unchanged factors do not retrigger it.
+- Added the optional `Resources/Audio/HomeMusic/home_theme` slot and
+  `HomeMusicPlayer`. The track fades in indoors, fades out to a real pause in
+  the fixed-camera Balcony zone, and resumes from the same sample on return.
+- Reworked shared scene music around an unscaled smooth one-second envelope.
+  Streaming clips wait for loaded audio data before playback; Single scene
+  loads hold destination activation until outgoing music reaches silence.
+  Missing, failed or disabled players complete safely, and a bounded fallback
+  prevents the activation gate from deadlocking.
+- Added deterministic envelope, preserved-sample, never-started-source,
+  camera-boundary, flicker-edge, root-binding and real scene-transition gate
+  coverage. Updated audio placement notes, architecture facts and player-facing
+  release notes.
+
+Verification:
+
+- Runtime, EditMode-test and PlayMode-test C# projects compiled with zero
+  warnings or errors.
+- Focused synthesis EditMode tests passed `4/4`; focused audio/Home PlayMode
+  tests passed `12/12`; the final never-started-source plus City transition
+  regression run passed `4/4`.
+- The final complete EditMode suite passed `698/698`. The final complete
+  PlayMode suite passed all `137` runnable tests with `0` failures; five
+  graphics-output tests remained intentionally ignored under `-nographics`.
+- A fresh `StandaloneWindows64` build completed successfully at
+  `156,379,088` bytes with zero build warnings. `git diff --check` passed.
+
 ## 2026-08-02 — City-biased balcony-smoking close framing
 
 - Increased `CameraCityLookOffset` from `0.18 m` to `0.33 m`, adding

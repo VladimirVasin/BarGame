@@ -1,0 +1,203 @@
+using System.Collections;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+
+namespace BarPromenade.Tests.PlayMode
+{
+    public sealed class SceneMusicPlayerPlayModeTests
+    {
+        private GameObject musicObject;
+
+        [UnityTest]
+        public IEnumerator Awake_StartsThemeAtZeroAndFadesToTargetGain()
+        {
+            CityMusicPlayer player = CreatePlayer();
+
+            Assert.That(player.ActiveClip, Is.Not.Null);
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Loading)
+                    .Or.EqualTo(
+                        SceneMusicPlaybackState.FadingIn));
+            yield return WaitForThemeReady(player);
+            player.FadeOutAndPause(0f);
+            player.ResumeWithFadeIn();
+
+            Assert.That(player.Source.isPlaying, Is.True);
+            Assert.That(player.NormalizedGain, Is.Zero.Within(0.0001f));
+            Assert.That(player.Source.volume, Is.Zero.Within(0.0001f));
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.FadingIn));
+
+            player.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds * 0.5f);
+            Assert.That(
+                player.NormalizedGain,
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(0.325f).Within(0.0001f));
+
+            player.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds * 0.5f);
+            Assert.That(player.NormalizedGain, Is.EqualTo(1f));
+            Assert.That(player.Source.volume, Is.EqualTo(0.65f));
+            Assert.That(player.IsFadeActive, Is.False);
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Playing));
+        }
+
+        [UnityTest]
+        public IEnumerator FadeOutAndPause_ResumesThroughSameEnvelope()
+        {
+            CityMusicPlayer player = CreatePlayer();
+            yield return WaitForThemeReady(player);
+            player.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds);
+            player.Source.timeSamples = 4096;
+            int expectedPausedSample = player.Source.timeSamples;
+
+            player.FadeOutAndPause(0.4f);
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.FadingOut));
+            player.AdvanceFade(0.2f);
+            Assert.That(
+                player.NormalizedGain,
+                Is.EqualTo(0.5f).Within(0.0001f));
+            player.AdvanceFade(0.2f);
+
+            Assert.That(player.NormalizedGain, Is.Zero.Within(0.0001f));
+            Assert.That(player.Source.volume, Is.Zero.Within(0.0001f));
+            Assert.That(player.IsPaused, Is.True);
+            Assert.That(player.Source.isPlaying, Is.False);
+            int pausedSample = player.Source.timeSamples;
+            Assert.That(
+                pausedSample,
+                Is.EqualTo(expectedPausedSample).Within(8));
+
+            player.ResumeWithFadeIn(0.4f);
+            Assert.That(player.Source.isPlaying, Is.True);
+            Assert.That(
+                player.Source.timeSamples,
+                Is.EqualTo(pausedSample).Within(8),
+                "Resume must continue from the paused sample.");
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.FadingIn));
+            player.AdvanceFade(0.4f);
+
+            Assert.That(player.NormalizedGain, Is.EqualTo(1f));
+            Assert.That(player.IsPaused, Is.False);
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Playing));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SceneExitFade_IsIdempotentAndReportsCompletion()
+        {
+            CityMusicPlayer player = CreatePlayer();
+            yield return WaitForThemeReady(player);
+            player.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds);
+
+            Assert.That(player.RequestSceneExitFade(0.6f), Is.True);
+            Assert.That(player.IsSceneExitFadeRequested, Is.True);
+            Assert.That(player.IsSceneExitFadeComplete, Is.False);
+            player.AdvanceFade(0.3f);
+
+            Assert.That(player.RequestSceneExitFade(0.6f), Is.True);
+            player.AdvanceFade(0.3f);
+            Assert.That(player.IsSceneExitFadeComplete, Is.True);
+            Assert.That(player.IsFadeActive, Is.False);
+            Assert.That(player.NormalizedGain, Is.Zero.Within(0.0001f));
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Silent));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MissingClip_CompletesSceneExitWithoutWaiting()
+        {
+            CityMusicPlayer player = CreatePlayer();
+            yield return WaitForThemeReady(player);
+            player.Source.Stop();
+            player.Source.clip = null;
+
+            Assert.That(player.RequestSceneExitFade(), Is.False);
+            Assert.That(player.IsSceneExitFadeRequested, Is.True);
+            Assert.That(player.IsSceneExitFadeComplete, Is.True);
+            Assert.That(player.NormalizedGain, Is.Zero.Within(0.0001f));
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Unavailable));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator DisabledPlayer_CannotHoldSceneExitFadeOpen()
+        {
+            CityMusicPlayer player = CreatePlayer();
+            yield return WaitForThemeReady(player);
+            player.AdvanceFade(
+                SceneMusicPlayer.DefaultFadeDurationSeconds);
+
+            Assert.That(player.RequestSceneExitFade(), Is.True);
+            Assert.That(player.IsSceneExitFadeComplete, Is.False);
+            player.enabled = false;
+
+            Assert.That(player.IsSceneExitFadeComplete, Is.True);
+            Assert.That(player.IsFadeActive, Is.False);
+            Assert.That(player.NormalizedGain, Is.Zero.Within(0.0001f));
+            Assert.That(
+                player.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Silent));
+            yield return null;
+        }
+
+        [UnityTearDown]
+        public IEnumerator TearDown()
+        {
+            if (musicObject != null)
+            {
+                Object.Destroy(musicObject);
+            }
+
+            yield return null;
+        }
+
+        private CityMusicPlayer CreatePlayer()
+        {
+            musicObject = new GameObject("Scene Music Fade Test");
+            return musicObject.AddComponent<CityMusicPlayer>();
+        }
+
+        private static IEnumerator WaitForThemeReady(
+            SceneMusicPlayer player)
+        {
+            float deadline = Time.realtimeSinceStartup + 5f;
+            while (player.PlaybackState ==
+                       SceneMusicPlaybackState.Loading &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(player.ActiveClip, Is.Not.Null);
+            Assert.That(
+                player.PlaybackState,
+                Is.Not.EqualTo(SceneMusicPlaybackState.Loading),
+                "The streaming theme did not finish loading.");
+            Assert.That(
+                player.PlaybackState,
+                Is.Not.EqualTo(SceneMusicPlaybackState.Unavailable),
+                "The streaming theme failed to load.");
+        }
+    }
+}

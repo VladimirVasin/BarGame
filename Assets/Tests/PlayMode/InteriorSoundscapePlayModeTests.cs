@@ -137,7 +137,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            Home_UsesFourSpatialSourcesAndDeterministicCues()
+            Home_UsesFiveSpatialSourcesAndDeterministicCues()
         {
             var root = new GameObject("Home Soundscape Test");
             root.AddComponent<AudioListener>();
@@ -155,18 +155,20 @@ namespace BarPromenade.Tests.PlayMode
                     HomeSoundscape.OwnedSourceCount));
             Assert.That(
                 HomeSoundscape.OwnedSourceCount,
-                Is.EqualTo(4));
+                Is.EqualTo(5));
             AudioSource[] sources =
             {
                 soundscape.ClosedRefrigeratorSource,
                 soundscape.OpenRefrigeratorSource,
                 soundscape.BalconySource,
-                soundscape.RareCueSource
+                soundscape.RareCueSource,
+                soundscape.BathroomLightCrackleSource
             };
             AssertSourceConfiguration(sources[0], true);
             AssertSourceConfiguration(sources[1], true);
             AssertSourceConfiguration(sources[2], true);
             AssertSourceConfiguration(sources[3], false);
+            AssertSourceConfiguration(sources[4], false);
             Assert.That(
                 soundscape.RefrigeratorSource,
                 Is.SameAs(soundscape.ClosedRefrigeratorSource));
@@ -176,6 +178,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 sources[0].transform.position,
                 Is.EqualTo(anchors.Refrigerator));
+            Assert.That(
+                sources[4].transform.position,
+                Is.EqualTo(anchors.BathroomLight));
+            Assert.That(
+                sources[4],
+                Is.Not.SameAs(soundscape.RareCueSource));
             AudioLowPassFilter closedRefrigeratorFilter =
                 sources[0].GetComponent<AudioLowPassFilter>();
             AudioLowPassFilter openRefrigeratorFilter =
@@ -187,6 +195,20 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeSoundscape.ClosedRefrigeratorVolume)
                     .Within(0.0001f));
+            Assert.That(
+                20f * Mathf.Log10(
+                    HomeSoundscape.ClosedRefrigeratorVolume /
+                    0.095f),
+                Is.EqualTo(4f).Within(0.001f));
+            Assert.That(
+                20f * Mathf.Log10(
+                    HomeSoundscape.OpenRefrigeratorVolume /
+                    0.122f),
+                Is.EqualTo(4f).Within(0.001f));
+            Assert.That(
+                HomeSoundscape.OpenRefrigeratorVolume /
+                HomeSoundscape.ClosedRefrigeratorVolume,
+                Is.EqualTo(0.122f / 0.095f).Within(0.0001f));
             Assert.That(sources[1].volume, Is.Zero.Within(0.0001f));
             Assert.That(
                 closedRefrigeratorFilter.cutoffFrequency,
@@ -198,6 +220,18 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeSoundscape.OpenRefrigeratorCutoff)
                     .Within(0.1f));
+            Assert.That(
+                sources[4].GetComponent<AudioLowPassFilter>()
+                    .cutoffFrequency,
+                Is.EqualTo(
+                    HomeSoundscape.BathroomLightCrackleCutoff)
+                    .Within(0.1f));
+            Assert.That(
+                sources[4].volume,
+                Is.EqualTo(
+                    HomeSoundscape.BathroomLightCrackleVolume)
+                    .Within(0.0001f));
+            Assert.That(sources[4].clip, Is.Null);
 
             soundscape.SetRefrigeratorDoorOpenAmount(0.5f);
             float equalPowerWeight = Mathf.Sqrt(0.5f);
@@ -295,10 +329,14 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.OpenRefrigeratorSource;
             AudioSource balconySource = soundscape.BalconySource;
             AudioSource cueSource = soundscape.RareCueSource;
+            AudioSource bathroomLightSource =
+                soundscape.BathroomLightCrackleSource;
             AudioClip closedRefrigeratorClip =
                 soundscape.ClosedRefrigeratorClip;
             AudioClip openRefrigeratorClip =
                 soundscape.OpenRefrigeratorClip;
+            AudioClip bathroomLightCrackleClip =
+                soundscape.BathroomLightCrackleClip;
             HomeSoundscapeAnchors shifted =
                 CreateHomeAnchors(new Vector3(-11f, 2f, 17f));
             soundscape.Initialize(721, shifted);
@@ -318,11 +356,17 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.RareCueSource,
                 Is.SameAs(cueSource));
             Assert.That(
+                soundscape.BathroomLightCrackleSource,
+                Is.SameAs(bathroomLightSource));
+            Assert.That(
                 soundscape.ClosedRefrigeratorClip,
                 Is.SameAs(closedRefrigeratorClip));
             Assert.That(
                 soundscape.OpenRefrigeratorClip,
                 Is.SameAs(openRefrigeratorClip));
+            Assert.That(
+                soundscape.BathroomLightCrackleClip,
+                Is.SameAs(bathroomLightCrackleClip));
             Assert.That(soundscape.HasPlayedCue, Is.False);
             Assert.That(soundscape.CueSequence, Is.Zero);
             Assert.That(
@@ -339,6 +383,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 soundscape.RareCueSource.transform.position,
                 Is.EqualTo(shifted.SoftWood));
+            Assert.That(
+                soundscape.BathroomLightCrackleSource
+                    .transform.position,
+                Is.EqualTo(shifted.BathroomLight));
 
             soundscape.Initialize(721, shifted);
             Assert.That(
@@ -378,6 +426,131 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             yield return null;
             AssertDestroyed(clips, sources);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Home_BathroomCrackleFollowsAppliedFlickerTransitions()
+        {
+            var root = new GameObject("Home Flicker Audio Test");
+            root.AddComponent<AudioListener>();
+            HomeSoundscape soundscape =
+                root.AddComponent<HomeSoundscape>();
+            soundscape.Initialize(
+                82,
+                CreateHomeAnchors(Vector3.zero));
+
+            GameObject bathroomObject =
+                new GameObject("Bathroom Flicker Test Light");
+            bathroomObject.transform.SetParent(root.transform, false);
+            Light bathroomLight =
+                bathroomObject.AddComponent<Light>();
+            bathroomLight.intensity = 2f;
+            GameObject spillObject =
+                new GameObject("Bathroom Flicker Test Spill");
+            spillObject.transform.SetParent(root.transform, false);
+            Light spillLight = spillObject.AddComponent<Light>();
+            spillLight.intensity = 10f;
+            HomeBathroomLightFlicker flicker =
+                bathroomObject.AddComponent<
+                    HomeBathroomLightFlicker>();
+            flicker.Initialize(bathroomLight, spillLight);
+            flicker.enabled = false;
+
+            int eventCount = 0;
+            float callbackFactor = 0f;
+            float callbackBathroomIntensity = 0f;
+            flicker.AppliedFactorChanged += factor =>
+            {
+                eventCount++;
+                callbackFactor = factor;
+                callbackBathroomIntensity = bathroomLight.intensity;
+            };
+            soundscape.BindBathroomFlicker(flicker);
+            soundscape.BindBathroomFlicker(flicker);
+
+            flicker.ApplyAtElapsedSeconds(4.72f);
+            Assert.That(eventCount, Is.EqualTo(1));
+            Assert.That(
+                callbackFactor,
+                Is.EqualTo(0.18f).Within(0.0001f));
+            Assert.That(
+                callbackBathroomIntensity,
+                Is.EqualTo(2f * callbackFactor).Within(0.0001f),
+                "The event must run after the discrete factor is applied.");
+            Assert.That(
+                soundscape.BathroomLightCracklePlayCount,
+                Is.EqualTo(1));
+            Assert.That(
+                soundscape.BoundBathroomFlicker,
+                Is.SameAs(flicker));
+
+            flicker.ApplyAtElapsedSeconds(4.72f);
+            Assert.That(eventCount, Is.EqualTo(1));
+            Assert.That(
+                soundscape.BathroomLightCracklePlayCount,
+                Is.EqualTo(1),
+                "Reapplying one factor must not trigger another crackle.");
+
+            flicker.ApplyAtElapsedSeconds(4.82f);
+            Assert.That(eventCount, Is.EqualTo(2));
+            Assert.That(
+                soundscape.BathroomLightCracklePlayCount,
+                Is.EqualTo(2));
+
+            float[] remainingVisualEdges =
+            {
+                4.90f,
+                5.00f,
+                5.08f,
+                5.16f,
+                5.24f
+            };
+            for (int index = 0;
+                 index < remainingVisualEdges.Length;
+                 index++)
+            {
+                flicker.ApplyAtElapsedSeconds(
+                    remainingVisualEdges[index]);
+            }
+
+            Assert.That(
+                eventCount,
+                Is.EqualTo(7),
+                "One callback is required for every visual flicker edge.");
+            Assert.That(
+                soundscape.BathroomLightCracklePlayCount,
+                Is.EqualTo(7),
+                "Every visual edge must trigger exactly one crackle.");
+            Assert.That(
+                soundscape.BathroomLightCrackleClip.length,
+                Is.LessThanOrEqualTo(0.06f),
+                "A crackle must finish before the next visual edge.");
+
+            soundscape.UnbindBathroomFlicker();
+            flicker.ApplyAtElapsedSeconds(4.72f);
+            Assert.That(eventCount, Is.EqualTo(8));
+            Assert.That(
+                soundscape.BathroomLightCracklePlayCount,
+                Is.EqualTo(7));
+
+            soundscape.BindBathroomFlicker(flicker);
+            AudioSource crackleSource =
+                soundscape.BathroomLightCrackleSource;
+            AudioClip crackleClip =
+                soundscape.BathroomLightCrackleClip;
+            Object.Destroy(soundscape);
+            yield return null;
+            yield return null;
+
+            Assert.That(crackleSource == null, Is.True);
+            Assert.That(crackleClip == null, Is.True);
+            Assert.DoesNotThrow(
+                () => flicker.ApplyAtElapsedSeconds(5.00f),
+                "Destroy must unsubscribe from the surviving flicker.");
+
+            Object.Destroy(root);
+            yield return null;
         }
 
         private static void AssertSourceConfiguration(
@@ -454,7 +627,8 @@ namespace BarPromenade.Tests.PlayMode
                 soundscape.SoftWoodClip,
                 soundscape.RadiatorTickClip,
                 soundscape.RadioMurmurClip,
-                soundscape.BathroomDetailClip
+                soundscape.BathroomDetailClip,
+                soundscape.BathroomLightCrackleClip
             };
         }
 
@@ -513,7 +687,8 @@ namespace BarPromenade.Tests.PlayMode
                 offset + new Vector3(-2f, 0.4f, -1f),
                 offset + new Vector3(4f, 1f, 2f),
                 offset + new Vector3(1f, 2f, 3f),
-                offset + new Vector3(3f, 0.2f, 3f));
+                offset + new Vector3(3f, 0.2f, 3f),
+                offset + new Vector3(3f, 2.1f, 3.7f));
         }
     }
 }

@@ -1,9 +1,11 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
@@ -27,6 +29,36 @@ namespace BarPromenade.Tests.EditMode
             };
 
             CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [Test]
+        public void BuildShaders_KeepRuntimeExponentialSquaredFogVariant()
+        {
+            string projectRoot = Directory.GetParent(
+                Application.dataPath)?.FullName;
+            Assert.That(projectRoot, Is.Not.Null);
+            string settings = File.ReadAllText(
+                    Path.Combine(
+                        projectRoot,
+                        "ProjectSettings",
+                        "GraphicsSettings.asset"))
+                .Replace("\r\n", "\n");
+
+            Assert.That(
+                settings,
+                Does.Contain("\n  m_FogStripping: 1\n"),
+                "Runtime-only City fog requires Custom fog stripping.");
+            Assert.That(
+                settings,
+                Does.Contain("\n  m_FogKeepExp2: 1\n"),
+                "The player must retain the Exponential Squared variant " +
+                "enabled by RuntimeSceneSetup.");
+            Assert.That(
+                settings,
+                Does.Contain("\n  m_FogKeepLinear: 0\n"));
+            Assert.That(
+                settings,
+                Does.Contain("\n  m_FogKeepExp: 0\n"));
         }
 
         [Test]

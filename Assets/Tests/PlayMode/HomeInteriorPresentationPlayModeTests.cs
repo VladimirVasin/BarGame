@@ -193,6 +193,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Atmosphere.BathroomFlicker.SpillLight,
                 Is.SameAs(bathroomSpillLight));
+            Assert.That(
+                home.Soundscape.BoundBathroomFlicker,
+                Is.SameAs(home.Atmosphere.BathroomFlicker),
+                "The composed Home root must bind each visual flicker " +
+                "edge to the bathroom crackle source.");
             AssertPracticalEmitter(
                 mainEmitter,
                 home.Atmosphere.PracticalLights[0],

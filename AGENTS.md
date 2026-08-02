@@ -43,10 +43,35 @@ These instructions apply to the entire repository.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
 
+## Interactive fast iteration
+
+Choose verification mode autonomously for each task, while preserving the
+user's explicit choice:
+
+- Use **fast mode** for clear, isolated, reversible iteration where one focused
+  compile or targeted test gives useful confidence.
+- Use **full mode** when uncertainty is material, the change crosses important
+  systems, release confidence is needed, or a missed regression would be costly.
+- Briefly state the selected mode at the start of non-trivial work so the user
+  can override it immediately.
+- An explicit request such as "быстро", "без полного прогона", or equivalent
+  forces fast mode. An explicit request for "финал", "полная проверка",
+  "release", or a completed build forces full mode.
+- In fast mode, make the requested change first and run only the fastest relevant
+  check. Do not run full suites, player builds, or broad cross-review. Report
+  deferred verification honestly.
+- In either mode, treat 30 seconds without useful progress as a soft timeout:
+  inspect the process immediately instead of repeating long polling cycles.
+- Prefer direct local work. Use parallel agents only when they materially reduce
+  ambiguity or total completion time.
+- If the user says they will build or test manually, stop any matching automated
+  process immediately and hand off the exact changed setting or file.
+
 ## Risk-based verification
 
-Classify each coherent change by its blast radius and use the highest applicable
-risk level. If the impact is unclear, raise the classification by one level.
+When full mode is selected, classify each coherent change by its blast radius
+and use the highest applicable risk level. If the impact is unclear, raise the
+classification by one level.
 
 - **Low risk:** documentation, comments, test-only edits, or isolated visual/data
   changes with no runtime contract change. Review the diff and run only the

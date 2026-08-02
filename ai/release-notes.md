@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### 2026-08-02 — Fog restored in Windows builds
+
+- The gray-green City and balcony fog now survives shader stripping in a
+  Windows player instead of appearing only inside the Unity Editor.
+
+### 2026-08-02 — A louder, living apartment
+
+- The refrigerator motor is now clearly present in the Home mix, with both
+  closed- and open-door timbres raised by `4 dB` while their smooth door
+  crossfade remains intact.
+- Every visible stutter of the bathroom fluorescent tube now produces one
+  short spatial electrical crack at the real fixture, so the sound follows
+  the light instead of running on an unrelated timer.
+- Home now has an optional `home_theme` composition slot. It fades in indoors,
+  fades out and pauses on the balcony, then resumes from the same musical
+  position when the player returns inside.
+- Scene compositions now cross scene boundaries cleanly: the next scene is
+  preloaded while the current track fades out, then its own track fades in
+  after activation. Empty optional music slots remain silent and safe.
+
 ### 2026-08-02 — A cigarette above the sleeping city
 
 - A new interaction point on the apartment balcony lets the hero turn toward

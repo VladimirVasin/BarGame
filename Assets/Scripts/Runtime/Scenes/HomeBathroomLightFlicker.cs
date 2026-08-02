@@ -23,6 +23,7 @@ namespace BarPromenade
         public Light BathroomLight => bathroomLight;
         public Light SpillLight => spillLight;
         public HomeBathroomLightFixture Fixture => fixture;
+        public event Action<float> AppliedFactorChanged;
 
         public void Initialize(
             Light localBathroomLight,
@@ -100,6 +101,16 @@ namespace BarPromenade
             return MaximumFactor;
         }
 
+        public void ApplyAtElapsedSeconds(float elapsedSeconds)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            Apply(EvaluateFactor(elapsedSeconds));
+        }
+
         private void Update()
         {
             if (!IsInitialized)
@@ -107,15 +118,17 @@ namespace BarPromenade
                 return;
             }
 
-            Apply(EvaluateFactor(Time.unscaledTime - startedAt));
+            ApplyAtElapsedSeconds(Time.unscaledTime - startedAt);
         }
 
         private void Apply(float factor)
         {
-            CurrentFactor = Mathf.Clamp(
+            float appliedFactor = Mathf.Clamp(
                 factor,
                 MinimumFactor,
                 MaximumFactor);
+            bool changed = appliedFactor != CurrentFactor;
+            CurrentFactor = appliedFactor;
             if (bathroomLight != null)
             {
                 bathroomLight.intensity =
@@ -129,6 +142,10 @@ namespace BarPromenade
             }
 
             fixture?.SetFactor(CurrentFactor);
+            if (changed)
+            {
+                AppliedFactorChanged?.Invoke(CurrentFactor);
+            }
         }
     }
 }

@@ -96,6 +96,13 @@ namespace BarPromenade.Tests.EditMode
             AssertPointInside(plan.RoomBounds, first.Radiator);
             AssertPointInside(plan.BathroomBounds, first.Bathroom);
             AssertPointInside(
+                plan.RoomBounds,
+                first.BathroomLight);
+            Assert.That(
+                first.BathroomLight,
+                Is.EqualTo(new Vector3(3.15f, 2.16f, 3.755f)),
+                "The crackle must originate at the visible bathroom tube.");
+            AssertPointInside(
                 balcony.BalconyBounds,
                 first.BalconyNightAir);
 
@@ -105,7 +112,8 @@ namespace BarPromenade.Tests.EditMode
                 first.SoftWood,
                 first.Radiator,
                 first.Radio,
-                first.Bathroom
+                first.Bathroom,
+                first.BathroomLight
             };
             for (int index = 0;
                  index < interiorAnchors.Length;
@@ -174,6 +182,11 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(
                         rootObject.transform.TransformPoint(
                             homeLocal.Bathroom)));
+                Assert.That(
+                    homeWorld.BathroomLight,
+                    Is.EqualTo(
+                        rootObject.transform.TransformPoint(
+                            homeLocal.BathroomLight)));
             }
             finally
             {
@@ -246,6 +259,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(second.Radiator, Is.EqualTo(first.Radiator));
             Assert.That(second.Radio, Is.EqualTo(first.Radio));
             Assert.That(second.Bathroom, Is.EqualTo(first.Bathroom));
+            Assert.That(
+                second.BathroomLight,
+                Is.EqualTo(first.BathroomLight));
         }
     }
 }

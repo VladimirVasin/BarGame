@@ -11,7 +11,8 @@ namespace BarPromenade
             Vector3 softWood,
             Vector3 radiator,
             Vector3 radio,
-            Vector3 bathroom)
+            Vector3 bathroom,
+            Vector3 bathroomLight)
         {
             Refrigerator = refrigerator;
             BalconyNightAir = balconyNightAir;
@@ -19,6 +20,7 @@ namespace BarPromenade
             Radiator = radiator;
             Radio = radio;
             Bathroom = bathroom;
+            BathroomLight = bathroomLight;
         }
 
         public Vector3 Refrigerator { get; }
@@ -27,6 +29,7 @@ namespace BarPromenade
         public Vector3 Radiator { get; }
         public Vector3 Radio { get; }
         public Vector3 Bathroom { get; }
+        public Vector3 BathroomLight { get; }
     }
 
     [DisallowMultipleComponent]
@@ -34,13 +37,18 @@ namespace BarPromenade
     {
         public const int SampleRate =
             HomeSoundscapeSynthesis.SampleRate;
-        public const int OwnedSourceCount = 4;
-        public const int RuntimeClipCount = 7;
+        public const int OwnedSourceCount = 5;
+        public const int RuntimeClipCount = 8;
 
-        public const float ClosedRefrigeratorVolume = 0.095f;
-        public const float OpenRefrigeratorVolume = 0.122f;
+        public const float RefrigeratorGain = 1.5848932f;
+        public const float ClosedRefrigeratorVolume =
+            0.095f * RefrigeratorGain;
+        public const float OpenRefrigeratorVolume =
+            0.122f * RefrigeratorGain;
         public const float ClosedRefrigeratorCutoff = 2600f;
         public const float OpenRefrigeratorCutoff = 3850f;
+        public const float BathroomLightCrackleVolume = 0.18f;
+        public const float BathroomLightCrackleCutoff = 5200f;
 
         private const float BalconyVolume = 0.080f;
         private const float CueVolume = 0.105f;
@@ -54,11 +62,14 @@ namespace BarPromenade
         [SerializeField] private AudioSource openRefrigeratorSource;
         [SerializeField] private AudioSource balconySource;
         [SerializeField] private AudioSource rareCueSource;
+        [SerializeField] private AudioSource bathroomLightCrackleSource;
         [SerializeField] private AudioLowPassFilter refrigeratorFilter;
         [SerializeField]
         private AudioLowPassFilter openRefrigeratorFilter;
         [SerializeField] private AudioLowPassFilter balconyFilter;
         [SerializeField] private AudioLowPassFilter rareCueFilter;
+        [SerializeField]
+        private AudioLowPassFilter bathroomLightCrackleFilter;
 
         private AudioClip refrigeratorClip;
         private AudioClip openRefrigeratorClip;
@@ -67,6 +78,8 @@ namespace BarPromenade
         private AudioClip radiatorTickClip;
         private AudioClip radioMurmurClip;
         private AudioClip bathroomDetailClip;
+        private AudioClip bathroomLightCrackleClip;
+        private HomeBathroomLightFlicker bathroomFlicker;
         private int deterministicSeed;
         private int cueSequence;
         private float secondsUntilNextCue;
@@ -88,6 +101,8 @@ namespace BarPromenade
         public AudioSource RefrigeratorSource => refrigeratorSource;
         public AudioSource BalconySource => balconySource;
         public AudioSource RareCueSource => rareCueSource;
+        public AudioSource BathroomLightCrackleSource =>
+            bathroomLightCrackleSource;
         public AudioClip ClosedRefrigeratorClip => refrigeratorClip;
         public AudioClip OpenRefrigeratorClip =>
             openRefrigeratorClip;
@@ -97,6 +112,11 @@ namespace BarPromenade
         public AudioClip RadiatorTickClip => radiatorTickClip;
         public AudioClip RadioMurmurClip => radioMurmurClip;
         public AudioClip BathroomDetailClip => bathroomDetailClip;
+        public AudioClip BathroomLightCrackleClip =>
+            bathroomLightCrackleClip;
+        public HomeBathroomLightFlicker BoundBathroomFlicker =>
+            bathroomFlicker;
+        public int BathroomLightCracklePlayCount { get; private set; }
         public float RefrigeratorDoorOpenAmount =>
             refrigeratorDoorOpenAmount;
         public float ClosedRefrigeratorMixWeight =>
@@ -134,10 +154,13 @@ namespace BarPromenade
             balconySource.transform.position =
                 anchors.BalconyNightAir;
             rareCueSource.transform.position = anchors.SoftWood;
+            bathroomLightCrackleSource.transform.position =
+                anchors.BathroomLight;
             cueSequence = 0;
             HasPlayedCue = false;
             LastPlayedCue = default;
             LastPlayedPosition = rareCueSource.transform.position;
+            BathroomLightCracklePlayCount = 0;
             secondsUntilNextCue =
                 HomeSoundscapeSchedule
                     .GetCue(deterministicSeed, cueSequence)
@@ -148,12 +171,43 @@ namespace BarPromenade
             openRefrigeratorSource.Stop();
             balconySource.Stop();
             rareCueSource.Stop();
+            bathroomLightCrackleSource.Stop();
             rareCueSource.clip = null;
             if (isActiveAndEnabled)
             {
                 StartSynchronizedRefrigeratorLoops();
                 balconySource.Play();
             }
+        }
+
+        public void BindBathroomFlicker(
+            HomeBathroomLightFlicker flicker)
+        {
+            if (flicker == null)
+            {
+                throw new ArgumentNullException(nameof(flicker));
+            }
+
+            if (bathroomFlicker == flicker)
+            {
+                return;
+            }
+
+            UnbindBathroomFlicker();
+            bathroomFlicker = flicker;
+            bathroomFlicker.AppliedFactorChanged +=
+                HandleBathroomFlickerFactorChanged;
+        }
+
+        public void UnbindBathroomFlicker()
+        {
+            if (bathroomFlicker != null)
+            {
+                bathroomFlicker.AppliedFactorChanged -=
+                    HandleBathroomFlickerFactorChanged;
+            }
+
+            bathroomFlicker = null;
         }
 
         public Vector3 GetCuePosition(HomeSoundscapeCueKind kind)
@@ -221,14 +275,17 @@ namespace BarPromenade
             openRefrigeratorSource?.Stop();
             balconySource?.Stop();
             rareCueSource?.Stop();
+            bathroomLightCrackleSource?.Stop();
         }
 
         private void OnDestroy()
         {
+            UnbindBathroomFlicker();
             StopAndClear(refrigeratorSource);
             StopAndClear(openRefrigeratorSource);
             StopAndClear(balconySource);
             StopAndClear(rareCueSource);
+            StopAndClear(bathroomLightCrackleSource);
 
             DestroyRuntimeClip(ref refrigeratorClip);
             DestroyRuntimeClip(ref openRefrigeratorClip);
@@ -237,19 +294,23 @@ namespace BarPromenade
             DestroyRuntimeClip(ref radiatorTickClip);
             DestroyRuntimeClip(ref radioMurmurClip);
             DestroyRuntimeClip(ref bathroomDetailClip);
+            DestroyRuntimeClip(ref bathroomLightCrackleClip);
             DestroyOwnedSource(refrigeratorSource);
             DestroyOwnedSource(openRefrigeratorSource);
             DestroyOwnedSource(balconySource);
             DestroyOwnedSource(rareCueSource);
+            DestroyOwnedSource(bathroomLightCrackleSource);
 
             refrigeratorSource = null;
             openRefrigeratorSource = null;
             balconySource = null;
             rareCueSource = null;
+            bathroomLightCrackleSource = null;
             refrigeratorFilter = null;
             openRefrigeratorFilter = null;
             balconyFilter = null;
             rareCueFilter = null;
+            bathroomLightCrackleFilter = null;
             IsInitialized = false;
         }
 
@@ -323,10 +384,18 @@ namespace BarPromenade
                     out rareCueFilter);
             }
 
+            if (bathroomLightCrackleSource == null)
+            {
+                bathroomLightCrackleSource = CreateOwnedSource(
+                    "Spatial Bathroom Light Crackle",
+                    out bathroomLightCrackleFilter);
+            }
+
             ConfigureRefrigeratorSource();
             ConfigureOpenRefrigeratorSource();
             ConfigureBalconySource();
             ConfigureRareCueSource();
+            ConfigureBathroomLightCrackleSource();
             EnsureRuntimeClips();
         }
 
@@ -451,6 +520,24 @@ namespace BarPromenade
             rareCueFilter.lowpassResonanceQ = 1f;
         }
 
+        private void ConfigureBathroomLightCrackleSource()
+        {
+            ConfigureSpatialSource(
+                bathroomLightCrackleSource,
+                false,
+                BathroomLightCrackleVolume,
+                1.05f,
+                8f,
+                168,
+                0f);
+            bathroomLightCrackleFilter = EnsureFilter(
+                bathroomLightCrackleSource,
+                bathroomLightCrackleFilter);
+            bathroomLightCrackleFilter.cutoffFrequency =
+                BathroomLightCrackleCutoff;
+            bathroomLightCrackleFilter.lowpassResonanceQ = 1f;
+        }
+
         private static void ConfigureSpatialSource(
             AudioSource source,
             bool loop,
@@ -547,9 +634,33 @@ namespace BarPromenade
                     "HomeSoundscape_BathroomDetail");
             }
 
+            if (bathroomLightCrackleClip == null)
+            {
+                bathroomLightCrackleClip = CreateClip(
+                    "HomeSoundscape_BathroomLightCrackle",
+                    HomeSoundscapeSynthesis
+                        .GenerateBathroomLightCrackleSamples());
+            }
+
             refrigeratorSource.clip = refrigeratorClip;
             openRefrigeratorSource.clip = openRefrigeratorClip;
             balconySource.clip = balconyClip;
+        }
+
+        private void HandleBathroomFlickerFactorChanged(
+            float appliedFactor)
+        {
+            if (!IsInitialized ||
+                !isActiveAndEnabled ||
+                bathroomLightCrackleSource == null ||
+                bathroomLightCrackleClip == null)
+            {
+                return;
+            }
+
+            bathroomLightCrackleSource.PlayOneShot(
+                bathroomLightCrackleClip);
+            BathroomLightCracklePlayCount++;
         }
 
         private static AudioClip CreateCueClip(

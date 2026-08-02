@@ -296,7 +296,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(
-                    2 +
+                    3 +
                     HomeSoundscape.OwnedSourceCount +
                     HomeAlarmClock.OwnedSourceCount));
             Assert.That(home.CameraFollow.FixedPoseActive, Is.True);

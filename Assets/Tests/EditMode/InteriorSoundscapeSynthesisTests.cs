@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void RareCues_AreFiniteQuietNonSilentAndEdgeSafe()
+        public void TransientCues_AreFiniteQuietNonSilentAndEdgeSafe()
         {
             foreach (
                 StairwellSoundscapeCueKind kind in
@@ -75,6 +75,30 @@ namespace BarPromenade.Tests.EditMode
                     HomeSoundscapeSynthesis
                         .GenerateCueSamples(kind));
             }
+
+            AssertCue(
+                HomeSoundscapeSynthesis
+                    .GenerateBathroomLightCrackleSamples());
+        }
+
+        [Test]
+        public void BathroomLightCrackle_IsRepeatableAndExpectedLength()
+        {
+            float[] first =
+                HomeSoundscapeSynthesis
+                    .GenerateBathroomLightCrackleSamples();
+            float[] second =
+                HomeSoundscapeSynthesis
+                    .GenerateBathroomLightCrackleSamples();
+
+            CollectionAssert.AreEqual(first, second);
+            Assert.That(
+                first.Length,
+                Is.EqualTo(
+                    Mathf.RoundToInt(
+                        HomeSoundscapeSynthesis.SampleRate *
+                        HomeSoundscapeSynthesis
+                            .BathroomLightCrackleDuration)));
         }
 
         [Test]
