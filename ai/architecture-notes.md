@@ -244,6 +244,58 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   windows, lamps and signals without collision, a second City root, player,
   camera or realtime street-light pool. One shared geometry contract keeps
   the Home opening and default `8.8 m` City facade balcony aligned.
+- **Accepted — Modal city-facing balcony-smoking vignette:** A data-first
+  `HomeBalconySmokingPlan` derives one walkable Home-local dock around
+  `(6.60, 0.12, -1.45)` from the balcony bounds. On the first `E`, modal
+  ownership docks the player there and faces the physical root along `+X`, out
+  toward the reconstructed city. The Balcony view's projected handedness
+  requires the smoking definition to set `TextureFlipX = false`; the
+  texture-left authored pose therefore reads outward in the final shot, while
+  the shared default remains `true` for existing interactions such as the bed.
+  The smoking definition separately sets
+  `AlignBillboardToCameraPlane = false`: its outer billboard follows the camera
+  only around world up, keeping the standing body vertical and its foot line
+  on the balcony while the close camera pitches down. The default remains
+  `true` for the reclining bed sequence, whose authored silhouette needs exact
+  camera-plane alignment to avoid fixed-shot foreshortening. The
+  dedicated point-filtered `8 x 8` atlas is exactly 64 frames: 24 enter and
+  24 loop frames at `6 fps`, followed by 16 exit frames at `8 fps`. Frame `0`
+  and frame `63` are exact copies of the ordinary right-direction idle at the
+  same hip/foot pivot. Deterministic `8 x 8` Bayer/RGB bridges on frames `1-7`
+  and `58-62` join those endpoints to the authored smoking silhouette without
+  a scale or pose cut. The controller simultaneously crossfades the ordinary
+  nine-part rig to the atlas over the first `0.35 s` of Entering and reverses
+  that handoff over the final `0.35 s` of Exiting. Dynamic and contact shadows
+  remain disabled for the complete active interaction because their renderers
+  have no matching alpha handoff; their captured states restore only when the
+  interaction completes. Extra holds on
+  loop-local frames `3`, `11`, `14` and `23` produce the `9.5 s`
+  rest/drag/breath/exhale cadence without duplicate art. A second `E` queues
+  immediately but reaches the exit sequence only at calm loop-local frames
+  `0-3` or `21-23`, so no active drag or smoke plume is cut. The camera holds
+  for `0.35 s` and follows a smooth quadratic push-in to `38°` FOV. Its close
+  look target uses a `0.33 m` Home-local `+X` cityward offset: the resulting
+  target yaw is about `13.12°`, the hero remains at about `0.37` viewport X
+  at `16:9` and inside the `0.28-0.43` safety band across supported desktop
+  aspects, and a point `1 m` farther toward the city stays visible to his
+  screen-right. The close-camera forward direction's dot with Home-local `+X`
+  stays above `0.19`, proving a material cityward component. This framing
+  changes only the look target; camera position and FOV remain unchanged. A
+  smoking-local
+  deterministic drift is layered over that base path with
+  local position amplitudes of `0.016 / 0.007 / 0.005 m` on X/Y/Z and
+  pitch/yaw/roll amplitudes of `0.12° / 0.20° / 0.08°`. Each channel combines
+  paired harmonics with periods from `13-23 s`, while one presentation clock
+  stays continuous across Entering, Looping and Exiting so phase changes never
+  restart or snap the motion. The existing camera blend is also the drift
+  envelope: it brings the offset in with the push and returns it exactly to
+  zero while the captured Balcony shot restores over the `2 s` exit. FOV keeps
+  the original interpolation and receives no pulse. This overlay is owned by
+  the smoking interaction and does not change generic `PlayerCameraFollow`
+  behavior. A separate non-spatial
+  `HomeSmokingMusicPlayer` loads only the optional user-supplied
+  `Resources/Audio/SmokingMusic/smoking_theme`, fades from zero over `3.2 s`,
+  fades with the exit and treats a missing clip as a silent no-op.
 - **Accepted — Diegetic Home practicals and fixed sprite plane:** The Home
   atmosphere retains exactly two shadowless practical realtime lights. A
   visible HDR emitter and depth-tested halo are physically co-located with

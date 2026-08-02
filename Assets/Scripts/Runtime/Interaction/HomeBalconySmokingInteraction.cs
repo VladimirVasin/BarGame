@@ -1,0 +1,557 @@
+using System;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace BarPromenade
+{
+    /// <summary>
+    /// Owns the modal balcony-smoking vignette: docking, atlas playback,
+    /// queued safe-frame exit, drifting camera push-in and the scene-local
+    /// music fade.
+    /// </summary>
+    [DefaultExecutionOrder(260)]
+    [DisallowMultipleComponent]
+    public sealed class HomeBalconySmokingInteraction :
+        MonoBehaviour,
+        IInteractable
+    {
+        public const string SmokePromptKey =
+            "interaction.smoke";
+        public const string StopSmokingPromptKey =
+            "interaction.stop_smoking";
+        public const float ExitInputDebounceSeconds = 0.12f;
+
+        private readonly BarMinigameModalLock modalLock =
+            new BarMinigameModalLock();
+
+        private HomeInteriorRoot home;
+        private HomeBalconySmokingPlan plan;
+        private PlayerAnimatedInteractionDefinition definition;
+        private PlayerAnimatedInteractionController controller;
+        private HomeSmokingMusicPlayer music;
+        private HomeBalconySmokingTimeline timeline;
+        private Transform playerRoot;
+        private Vector3 cameraStartPosition;
+        private Quaternion cameraStartRotation;
+        private float cameraStartFieldOfView;
+        private Vector3 cameraControlPosition;
+        private Vector3 cameraTargetPosition;
+        private Quaternion cameraTargetRotation;
+        private bool ownsInteraction;
+        private bool exitQueued;
+        private bool exitInputArmed;
+        private float exitInputArmTime;
+        private bool cameraPathCaptured;
+        private Func<bool> exitPromptAction;
+
+        public bool IsInitialized { get; private set; }
+        public bool OwnsInteraction => ownsInteraction;
+        public bool ExitQueued => exitQueued;
+        public HomeBalconySmokingPlan Plan => plan;
+        public HomeBalconySmokingTimeline Timeline => timeline;
+        public PlayerAnimatedInteractionDefinition Definition =>
+            definition;
+        public string PromptKey
+        {
+            get
+            {
+                if (!ownsInteraction)
+                {
+                    return SmokePromptKey;
+                }
+
+                return exitQueued ||
+                       controller == null ||
+                       controller.Phase ==
+                       PlayerAnimatedInteractionPhase.Exiting
+                    ? string.Empty
+                    : StopSmokingPromptKey;
+            }
+        }
+
+        public Vector3 InteractionPosition =>
+            home != null && plan != null
+                ? home.transform.TransformPoint(
+                    plan.DockRootPosition)
+                : transform.position;
+
+        public void Initialize(
+            HomeInteriorRoot homeRoot,
+            HomeBalconySmokingPlan smokingPlan,
+            HomeSmokingMusicPlayer musicPlayer)
+        {
+            if (homeRoot == null)
+            {
+                throw new ArgumentNullException(nameof(homeRoot));
+            }
+
+            if (smokingPlan == null)
+            {
+                throw new ArgumentNullException(nameof(smokingPlan));
+            }
+
+            ValidateHome(homeRoot);
+            CancelOwnedInteraction();
+            if (controller != null)
+            {
+                controller.PhaseChanged -=
+                    HandleAnimatedPhaseChanged;
+            }
+
+            home = homeRoot;
+            plan = smokingPlan;
+            controller = home.AnimatedInteraction;
+            music = musicPlayer;
+            playerRoot = home.Player.GameObject.transform;
+            definition = plan.CreateAnimationDefinition();
+            timeline = new HomeBalconySmokingTimeline();
+            exitPromptAction = RequestExit;
+            controller.PhaseChanged +=
+                HandleAnimatedPhaseChanged;
+            IsInitialized = true;
+        }
+
+        public bool CanInteract(PlayerInteractor interactor)
+        {
+            if (!IsInitialized ||
+                !isActiveAndEnabled ||
+                interactor == null ||
+                interactor != home.Player.Interactor ||
+                ownsInteraction ||
+                SceneTransitionService.IsTransitioning ||
+                BarMinigameModalLock.IsAnyLocked ||
+                controller == null ||
+                !controller.IsInitialized ||
+                !controller.isActiveAndEnabled ||
+                controller.IsActive ||
+                playerRoot == null)
+            {
+                return false;
+            }
+
+            Vector3 localRootPosition =
+                home.transform.InverseTransformPoint(
+                    playerRoot.position);
+            return plan.CanInteractAt(localRootPosition);
+        }
+
+        public void Interact(PlayerInteractor interactor)
+        {
+            if (CanInteract(interactor))
+            {
+                BeginInteraction();
+            }
+        }
+
+        public bool BeginInteraction()
+        {
+            PlayerInteractor interactor =
+                home != null ? home.Player.Interactor : null;
+            if (!CanInteract(interactor) ||
+                !modalLock.TryCaptureAndDisable(
+                    interactor,
+                    home.CameraFollow,
+                    home.IntoxicationHud,
+                    BarMinigameModalLockOptions.Fullscreen))
+            {
+                return false;
+            }
+
+            Vector3 previousPosition = playerRoot.position;
+            Quaternion previousRotation = playerRoot.rotation;
+            try
+            {
+                Vector3 dockWorldPosition =
+                    home.transform.TransformPoint(
+                        plan.DockRootPosition);
+                home.Player.Motor.Teleport(dockWorldPosition);
+                playerRoot.rotation =
+                    home.transform.rotation *
+                    plan.FacingRotation;
+                Physics.SyncTransforms();
+
+                home.FixedCamera.ReapplyActiveShot();
+                if (home.FixedCamera.ActiveShotKind !=
+                    HomeCameraShotKind.Balcony)
+                {
+                    throw new InvalidOperationException(
+                        "The smoking dock must select the Home balcony " +
+                        "camera shot.");
+                }
+
+                CaptureCameraPath();
+                if (!timeline.Begin())
+                {
+                    RestoreFailedBegin(
+                        previousPosition,
+                        previousRotation);
+                    return false;
+                }
+
+                Vector3 actionHipWorld =
+                    home.transform.TransformPoint(
+                        plan.ActionHipPosition);
+                if (!controller.Begin(
+                        definition,
+                        actionHipWorld,
+                        actionHipWorld))
+                {
+                    timeline.Reset();
+                    RestoreFailedBegin(
+                        previousPosition,
+                        previousRotation);
+                    return false;
+                }
+
+                ownsInteraction = true;
+                exitQueued = false;
+                exitInputArmed = false;
+                exitInputArmTime =
+                    Time.unscaledTime +
+                    ExitInputDebounceSeconds;
+                music?.BeginFromStart();
+                ApplyPresentation();
+                return true;
+            }
+            catch
+            {
+                timeline?.Reset();
+                controller?.CancelActiveInteraction();
+                RestoreFailedBegin(
+                    previousPosition,
+                    previousRotation);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Accepts the second interaction immediately, but starts the exit
+        /// atlas only when the loop reaches a calm bridge frame.
+        /// </summary>
+        public bool RequestExit()
+        {
+            if (!ownsInteraction ||
+                exitQueued ||
+                controller == null ||
+                (controller.Phase !=
+                    PlayerAnimatedInteractionPhase.Entering &&
+                 controller.Phase !=
+                    PlayerAnimatedInteractionPhase.Looping))
+            {
+                return false;
+            }
+
+            exitQueued = true;
+            ApplyPrompt();
+            TryBeginSafeExit();
+            return true;
+        }
+
+        private void Update()
+        {
+            if (!ownsInteraction)
+            {
+                return;
+            }
+
+            UpdateExitInputArm();
+            if (exitInputArmed &&
+                !exitQueued &&
+                WasExitPressed())
+            {
+                RequestExit();
+            }
+
+            TryBeginSafeExit();
+            timeline.Advance(Time.deltaTime);
+            ApplyPresentation();
+        }
+
+        private void LateUpdate()
+        {
+            if (ownsInteraction)
+            {
+                ApplyCamera(timeline.CameraBlend);
+            }
+        }
+
+        private void OnDisable()
+        {
+            CancelOwnedInteraction();
+        }
+
+        private void OnDestroy()
+        {
+            CancelOwnedInteraction();
+            if (controller != null)
+            {
+                controller.PhaseChanged -=
+                    HandleAnimatedPhaseChanged;
+            }
+        }
+
+        private void CaptureCameraPath()
+        {
+            PlayerCameraFollow cameraFollow = home.CameraFollow;
+            cameraStartPosition =
+                cameraFollow.FixedBasePosition;
+            cameraStartRotation =
+                cameraFollow.FixedBaseRotation;
+            cameraStartFieldOfView =
+                cameraFollow.FixedBaseFieldOfView;
+            cameraTargetPosition =
+                home.transform.TransformPoint(
+                    HomeBalconySmokingPlan.CameraPosition);
+            Vector3 lookAt =
+                home.transform.TransformPoint(
+                    plan.CameraLookAt);
+            Vector3 forward =
+                lookAt - cameraTargetPosition;
+            if (forward.sqrMagnitude <= 0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "The smoking camera must not coincide with its " +
+                    "look-at point.");
+            }
+
+            cameraTargetRotation = Quaternion.LookRotation(
+                forward.normalized,
+                home.transform.up);
+            cameraControlPosition = Vector3.Lerp(
+                    cameraStartPosition,
+                    cameraTargetPosition,
+                    0.52f) +
+                home.transform.up * 0.22f +
+                cameraStartRotation * Vector3.right * 0.06f;
+            cameraPathCaptured = true;
+        }
+
+        private void ApplyPresentation()
+        {
+            if (!ownsInteraction || timeline == null)
+            {
+                return;
+            }
+
+            ApplyCamera(timeline.CameraBlend);
+            music?.ApplyNormalizedGain(timeline.MusicGain);
+            ApplyPrompt();
+        }
+
+        private void ApplyCamera(float blend)
+        {
+            if (!cameraPathCaptured ||
+                timeline == null ||
+                home?.CameraFollow == null)
+            {
+                return;
+            }
+
+            float amount = Mathf.Clamp01(blend);
+            float remaining = 1f - amount;
+            Vector3 basePosition =
+                remaining * remaining * cameraStartPosition +
+                2f * remaining * amount * cameraControlPosition +
+                amount * amount * cameraTargetPosition;
+            Quaternion baseRotation = Quaternion.Slerp(
+                cameraStartRotation,
+                cameraTargetRotation,
+                amount);
+            HomeBalconySmokingCameraDriftSample drift =
+                timeline.CameraDrift;
+            Vector3 position =
+                basePosition +
+                baseRotation * drift.LocalPosition;
+            Quaternion rotation =
+                baseRotation *
+                Quaternion.Euler(drift.LocalEulerAngles);
+            home.CameraFollow.SetFixedPose(
+                position,
+                rotation,
+                Mathf.Lerp(
+                    cameraStartFieldOfView,
+                    HomeBalconySmokingPlan.CameraFieldOfView,
+                    amount));
+        }
+
+        private void ApplyPrompt()
+        {
+            if (home?.InteractionPrompt == null)
+            {
+                return;
+            }
+
+            bool showExit =
+                ownsInteraction &&
+                !exitQueued &&
+                controller != null &&
+                (controller.Phase ==
+                    PlayerAnimatedInteractionPhase.Entering ||
+                 controller.Phase ==
+                    PlayerAnimatedInteractionPhase.Looping);
+            home.InteractionPrompt.SetPrompt(
+                showExit ? StopSmokingPromptKey : string.Empty,
+                showExit ? exitPromptAction : null);
+        }
+
+        private void UpdateExitInputArm()
+        {
+            if (exitInputArmed ||
+                Time.unscaledTime < exitInputArmTime ||
+                IsExitHeld())
+            {
+                return;
+            }
+
+            exitInputArmed = true;
+        }
+
+        private bool TryBeginSafeExit()
+        {
+            if (!exitQueued ||
+                controller == null ||
+                controller.Phase !=
+                    PlayerAnimatedInteractionPhase.Looping)
+            {
+                return false;
+            }
+
+            int localLoopFrame =
+                controller.FrameIndex -
+                definition.LoopStartFrame;
+            return HomeBalconySmokingTimeline
+                       .IsSafeExitLoopFrame(localLoopFrame) &&
+                   controller.RequestExit();
+        }
+
+        private void HandleAnimatedPhaseChanged(
+            PlayerAnimatedInteractionPhase phase)
+        {
+            if (!ownsInteraction)
+            {
+                return;
+            }
+
+            switch (phase)
+            {
+                case PlayerAnimatedInteractionPhase.Looping:
+                    timeline.EnterLooping();
+                    TryBeginSafeExit();
+                    break;
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    timeline.BeginExit();
+                    ApplyPrompt();
+                    break;
+                case PlayerAnimatedInteractionPhase.Idle:
+                    CompleteOwnedInteraction();
+                    break;
+            }
+        }
+
+        private void CompleteOwnedInteraction()
+        {
+            if (!ownsInteraction)
+            {
+                return;
+            }
+
+            ownsInteraction = false;
+            RestoreOwnedState();
+        }
+
+        private void CancelOwnedInteraction()
+        {
+            bool hadOwnership =
+                ownsInteraction || modalLock.IsLocked;
+            if (!hadOwnership)
+            {
+                return;
+            }
+
+            ownsInteraction = false;
+            controller?.CancelActiveInteraction();
+            RestoreOwnedState();
+        }
+
+        private void RestoreOwnedState()
+        {
+            exitQueued = false;
+            exitInputArmed = false;
+            cameraPathCaptured = false;
+            timeline?.Reset();
+            music?.StopImmediate();
+            home?.InteractionPrompt?.SetPrompt(string.Empty);
+            modalLock.Restore();
+            home?.FixedCamera?.ReapplyActiveShot();
+        }
+
+        private void RestoreFailedBegin(
+            Vector3 previousPosition,
+            Quaternion previousRotation)
+        {
+            ownsInteraction = false;
+            cameraPathCaptured = false;
+            if (home?.Player.Motor != null)
+            {
+                home.Player.Motor.Teleport(previousPosition);
+            }
+
+            if (playerRoot != null)
+            {
+                playerRoot.rotation = previousRotation;
+            }
+
+            music?.StopImmediate();
+            modalLock.Restore();
+            home?.FixedCamera?.ReapplyActiveShot();
+        }
+
+        private static bool WasExitPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null &&
+                (keyboard.eKey.wasPressedThisFrame ||
+                 keyboard.enterKey.wasPressedThisFrame))
+            {
+                return true;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            return gamepad != null &&
+                   gamepad.buttonSouth.wasPressedThisFrame;
+        }
+
+        private static bool IsExitHeld()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null &&
+                (keyboard.eKey.isPressed ||
+                 keyboard.enterKey.isPressed))
+            {
+                return true;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            return gamepad != null &&
+                   gamepad.buttonSouth.isPressed;
+        }
+
+        private static void ValidateHome(
+            HomeInteriorRoot homeRoot)
+        {
+            if (homeRoot.Player.GameObject == null ||
+                homeRoot.Player.Motor == null ||
+                homeRoot.Player.Interactor == null ||
+                homeRoot.CameraFollow == null ||
+                homeRoot.FixedCamera == null ||
+                homeRoot.AnimatedInteraction == null ||
+                homeRoot.InteractionPrompt == null)
+            {
+                throw new ArgumentException(
+                    "Balcony smoking requires an initialized Home " +
+                    "player, camera and interaction stack.",
+                    nameof(homeRoot));
+            }
+        }
+    }
+}

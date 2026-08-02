@@ -82,6 +82,15 @@ namespace BarPromenade.Tests.PlayMode
                 home.Bed.Definition.RenderAboveSceneDepth,
                 Is.True);
             Assert.That(
+                home.Bed.Definition.TextureFlipX,
+                Is.True,
+                "The smoking-specific mirror override must not change " +
+                "the bed atlas orientation.");
+            Assert.That(
+                home.Bed.Definition.VisualCrossfadeDurationSeconds,
+                Is.Zero,
+                "Existing bed presentation keeps its established handoff.");
+            Assert.That(
                 home.Bed.Definition.LoopFrameCount,
                 Is.EqualTo(
                     HomeBedInteraction.SleepLoopFrameCount));
@@ -192,6 +201,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(
                     PlayerAnimatedInteractionResources
                         .OverlayMaterial));
+            Assert.That(
+                home.AnimatedInteraction.CameraPlaneAlignmentEnabled,
+                Is.True,
+                "The smoking-specific world-up override must not change " +
+                "the bed's established camera-plane alignment.");
             AssertBedAxisAlignment(home);
             Assert.That(home.Player.Shadow.enabled, Is.False);
             Assert.That(home.Player.ContactShadow.enabled, Is.False);

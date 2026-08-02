@@ -76,9 +76,12 @@ The vertical slice contains:
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior` and the optional
   `stairwell_theme` slot loads only from `Resources/Audio/StairwellMusic` in
-  `StairwellInterior`; all three import as background-streamed clips, receive
-  a mild low-pass treatment, route through the shared `Music` mixer group and
-  are destroyed by the next Single-mode scene load;
+  `StairwellInterior`. Home also owns an optional interaction-local
+  `Resources/Audio/SmokingMusic/smoking_theme` loop: it starts from the
+  beginning with a `3.2 s` fade when the balcony-smoking vignette begins and
+  fades out with its `2 s` exit. A missing smoking track is silent-safe. All
+  themes route through the shared `Music` mixer group, receive a mild
+  low-pass treatment and are destroyed with their owning scene;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
   City, Bar, Stairwell, Home and DoorTransition snapshots keep `-6 dB`
@@ -321,10 +324,51 @@ The vertical slice contains:
   bounded `12`-light street/bar pool, then restores the captured Home
   visibility and lighting for MainRoom, Bathroom, disable and destroy. It
   never creates a second City root, player or camera;
+- one modal balcony-smoking vignette at the Home-local dock around
+  `(6.60, 0.12, -1.45)`: the first `E` settles the hero at the rail facing the
+  city along `+X`. The smoking definition uses `TextureFlipX = false` because
+  the Balcony view projects the authored profile with the opposite apparent
+  handedness; this is an interaction-specific override, not the shared
+  animated-renderer default. It also sets
+  `AlignBillboardToCameraPlane = false`, so the smoking billboard faces the
+  camera with yaw only and retains world up through the pitched close shot.
+  The bed/default mode still uses the exact camera plane because its reclining
+  silhouette must remain uncompressed in the fixed view.
+  Its point-filtered 64-frame atlas starts and ends on the exact ordinary
+  right-direction idle with the same hip/foot pivot. Deterministic Bayer/RGB
+  bridge frames lead into and out of the narrower authored smoking silhouette,
+  while a simultaneous `0.35 s` alpha crossfade hands visibility between the
+  ordinary nine-part rig and the atlas at both ends. Dynamic and contact
+  shadows stay off throughout the active vignette and restore at completion,
+  avoiding an unsupported double-shadow fade. The atlas plays a slow 24-frame
+  draw/light/first-drag entrance at `6 fps`, then a 24-frame melancholic
+  `9.5 s` drag, breath-hold and side-exhale loop at `6 fps` with deliberate
+  `2.00 s`, `0.65 s`, `0.55 s` and `2.30 s` frame holds. A second `E` is
+  accepted immediately but queues the 16-frame `8 fps` discard and return
+  until a calm loop boundary, preventing a raised-hand or smoke cut;
+  the camera holds briefly and eases along a quadratic push-in to `38°` FOV.
+  Its close look target is biased `0.33 m` toward the city along Home-local
+  `+X`, turning the target yaw to about `13.12°`: the hero stays prominent at
+  about `0.37` viewport X while a point `1 m` cityward remains visible to his
+  right. Camera position and FOV are unchanged. A smoking-local deterministic
+  drift overlays that path with restrained
+  X/Y/Z position amplitudes of `0.016 / 0.007 / 0.005 m` and pitch/yaw/roll
+  amplitudes of `0.12° / 0.20° / 0.08°`. Paired `13-23 s` harmonics share one
+  clock across every interaction phase, while the camera blend fades their
+  envelope in and back to exactly zero during the smooth `2 s` Balcony-shot
+  restoration. FOV has no extra pulse and generic `PlayerCameraFollow` remains
+  unchanged. The
+  separate optional `smoking_theme` music starts from silence and fades with
+  the camera; without a supplied clip, the complete interaction remains
+  playable and silent;
 - one reusable animated-interaction timeline and player controller with
   `Idle -> Entering -> Looping -> Exiting` phases; its outer presentation root
-  stays camera-facing while an inner visual preserves authored handedness and
-  can perspective-project a contextual world axis into the camera plane,
+  can face the camera either with a world-up yaw billboard or with exact
+  camera-plane alignment selected per definition, while an inner visual
+  preserves authored handedness and can perspective-project a contextual
+  world axis into the presentation plane,
+  supports a per-definition horizontal flip and an optional edge-only visual
+  crossfade between the captured nine-part rig and interaction atlas,
   can opt into a dedicated depth-independent shared sprite material,
   supports optional extra holds on individual loop frames and a validated
   per-request exit-duration multiplier that resets after each interaction,
@@ -492,7 +536,8 @@ The vertical slice contains:
 - Full multi-frame eight-direction locomotion animation; the current vertical
   prototype uses one authored view per direction plus runtime joint walking,
   procedural living-idle motion and body-sprite blink variants, while the
-  implemented bed interaction uses its own contextual 64-frame sequence.
+  implemented bed and balcony-smoking interactions use their own contextual
+  64-frame sequences.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, income/jobs, inventory, a broader
   economy, dialogue, quests, combat, save slots, and online features.

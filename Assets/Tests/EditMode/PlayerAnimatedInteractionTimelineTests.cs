@@ -51,6 +51,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 definition.RenderAboveSceneDepth,
                 Is.False);
+            Assert.That(definition.TextureFlipX, Is.True);
+            Assert.That(
+                definition.VisualCrossfadeDurationSeconds,
+                Is.Zero);
+            Assert.That(
+                definition.AlignBillboardToCameraPlane,
+                Is.True,
+                "Existing interactions keep exact camera-plane " +
+                "alignment by default.");
             Assert.That(
                 definition.TotalFrameCount,
                 Is.EqualTo(64));
@@ -371,6 +380,80 @@ namespace BarPromenade.Tests.EditMode
                         1f,
                         targetRoll),
                 Is.Zero.Within(Tolerance));
+        }
+
+        [Test]
+        public void ControllerVisualCrossfade_BlendsOnlyAtPhaseEdges()
+        {
+            const float phaseDuration = 2f;
+            const float crossfadeDuration = 0.5f;
+
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Entering,
+                        0f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.Zero);
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Entering,
+                        0.125f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.EqualTo(0.5f).Within(Tolerance));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Entering,
+                        0.25f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.EqualTo(1f).Within(Tolerance));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Looping,
+                        0f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.EqualTo(1f));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Exiting,
+                        0.75f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.EqualTo(1f).Within(Tolerance));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Exiting,
+                        0.875f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.EqualTo(0.5f).Within(Tolerance));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Exiting,
+                        1f,
+                        phaseDuration,
+                        crossfadeDuration),
+                Is.Zero.Within(Tolerance));
+            Assert.That(
+                PlayerAnimatedInteractionController
+                    .EvaluateAnimationVisualOpacity(
+                        PlayerAnimatedInteractionPhase.Entering,
+                        0f,
+                        phaseDuration,
+                        0f),
+                Is.EqualTo(1f),
+                "Existing interactions keep their immediate handoff by " +
+                "default.");
         }
 
         [Test]
@@ -706,6 +789,14 @@ namespace BarPromenade.Tests.EditMode
                     ResourcePath,
                     loopFrameExtraHoldSeconds:
                         CreateLoopHolds(float.PositiveInfinity)));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new PlayerAnimatedInteractionDefinition(
+                    ResourcePath,
+                    visualCrossfadeDurationSeconds: -0.01f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new PlayerAnimatedInteractionDefinition(
+                    ResourcePath,
+                    visualCrossfadeDurationSeconds: float.NaN));
 
             PlayerAnimatedInteractionTimeline timeline =
                 CreateTimeline();

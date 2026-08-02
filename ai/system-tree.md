@@ -41,6 +41,9 @@ Assets/
       StairwellMusic/
         stairwell_theme.*  optional looping StairwellInterior theme
         README.txt
+      SmokingMusic/
+        smoking_theme.*  optional Home balcony-vignette loop supplied by user
+        README.txt
     Cocktails/
       CocktailSpriteAtlas.png  4x4 glass/ingredient pixel-art atlas
     BeerPong/
@@ -57,6 +60,7 @@ Assets/
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
       PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
+      PlayerBalconySmokingAtlas.png      8x8 sequence with idle-matched/dithered edges
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -72,6 +76,7 @@ Assets/
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        HomeSmokingMusicPlayer.cs          optional interaction-local loop + gain envelope
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
         InteriorSoundscapeSynthesis.cs    quantized Home/Stairwell PCM + two-state fridge hum
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
@@ -103,6 +108,7 @@ Assets/
         HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
+        HomeBalconySmokingPlan.cs  dock/trigger/facing/camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
         HomeRefrigeratorWorldBuilder.cs  worn hollow cabinet, shelves, bins and contents
         HomeRefrigeratorView.cs  animated door/handle/emissive interior presentation
@@ -122,8 +128,9 @@ Assets/
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
-        PlayerAnimatedInteraction*.cs  reusable enter/loop/exit sprite sequence
+        PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
+        HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
@@ -161,6 +168,8 @@ Assets/
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
+      HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, world-up yaw, timing, drift + safe exit
+      PlayerBalconySmokingAssetTests.cs       atlas/idle-handoff/source/build contract
       HomeRefrigeratorItem{Catalog,InspectionTimeline}Tests.cs  metadata and nested phases
       HomeOcclusion{Registry,Resolver}Tests.cs  group and ray contracts
       InteractionPromptViewTests.cs          prompt callback lifecycle
@@ -170,16 +179,21 @@ Assets/
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
+      HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/fade + restore
+      HomeSmokingMusicPlayerPlayModeTests.cs optional clip and mixer-safe lifecycle
       HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
     BedSleep/                    64 source frames plus keyed/generated sheets
+    BalconySmoking/              generated/keyed art + exact-idle dither handoff
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
   extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
   build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
+  extract-player-balcony-smoking-frames.py  align art + build exact-idle dither bridges
+  build-player-balcony-smoking-atlas.py  validate and pack the 8x8 smoking atlas
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
 Packages/
@@ -310,10 +324,28 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
                                        -> Idle/Entering/Looping/Exiting timeline
-                                       -> PlayerBedSleepAtlas camera-plane frames
+                                       -> PlayerBedSleepAtlas exact camera-plane billboard
                                        -> projected bed axis + preserved handedness
                                        -> lock motor; hide/restore rig + shadows
                                        -> owner cancel -> complete restoration
+       -> HomeBalconySmokingPlan -> dock at (6.60, 0.12, -1.45)
+                                  -> first E -> face city +X
+                                     -> smoking TextureFlipX false
+                                     -> world-up yaw billboard (camera-plane mode off)
+                                     -> 0.35 s rig-to-atlas crossfade
+                                     -> idle-matched/dithered 24-frame enter
+                                     -> held 24-frame drag/exhale loop
+                                  -> second E -> queued calm-boundary exit
+                                     -> 16-frame discard + dithered idle handoff
+                                     -> final 0.35 s atlas-to-rig crossfade
+                                  -> shadows off until complete, then restored
+                                  -> quadratic city-biased push to 38-degree FOV
+                                     -> 0.33 m Home-local +X look offset
+                                     -> hero near 0.37 viewport X; city visible right
+                                     -> local 13-23 s harmonic camera drift
+                                     -> no FOV pulse; continuous phase clock
+                                  -> drift fades to zero with exact shot restoration
+                                  -> optional smoking_theme fade in/out
        -> HomeRefrigeratorInteraction -> modal unscaled timeline
                                       -> clickable close prompt -> RequestClose
                                       -> first-person Bezier camera + low-poly hand
@@ -383,6 +415,7 @@ scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
 City root -> CityMusicPlayer -> city_theme -----------------------> Music
 Bar root -> BarMusicPlayer -> bar_theme --------------------------> Music
 Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme -> Music
+Home smoking interaction -> optional smoking_theme + gain envelope -> Music
 scene root -> matching procedural ambience -----------------------> Ambience/Beds
 Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details
 Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/World

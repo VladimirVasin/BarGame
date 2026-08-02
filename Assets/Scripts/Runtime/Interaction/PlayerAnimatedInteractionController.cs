@@ -6,11 +6,12 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// Temporarily replaces the articulated player visual with a camera-plane
+    /// Temporarily replaces the articulated player visual with a camera-facing
     /// frame sequence while leaving the physical player root at its stand
-    /// position.
+    /// position. Each interaction selects exact camera-plane or world-up
+    /// alignment.
     /// </summary>
-    [DefaultExecutionOrder(205)]
+    [DefaultExecutionOrder(220)]
     [DisallowMultipleComponent]
     public sealed class PlayerAnimatedInteractionController :
         MonoBehaviour
@@ -30,6 +31,8 @@ namespace BarPromenade
             new List<Sprite>(AtlasFrameCount);
         private readonly bool[] previousRigRendererStates =
             new bool[PlayerSpriteRig.PartCount];
+        private readonly Color[] previousRigRendererColors =
+            new Color[PlayerSpriteRig.PartCount];
 
         private PlayerRuntime player;
         private Camera targetCamera;
@@ -49,6 +52,7 @@ namespace BarPromenade
         private bool previousInteractorInput;
         private bool previousDynamicShadowEnabled;
         private bool previousContactShadowEnabled;
+        private Color animationRendererBaseColor = Color.white;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
 
@@ -71,6 +75,11 @@ namespace BarPromenade
                 : 0d;
         public SpriteRenderer AnimationRenderer =>
             animationRenderer;
+        public bool CameraPlaneAlignmentEnabled =>
+            billboard != null &&
+            billboard.CameraPlaneAlignmentEnabled;
+        public float RigVisualOpacity { get; private set; } = 1f;
+        public float AnimationVisualOpacity { get; private set; }
         public Transform AnimationVisualRoot =>
             animationVisualRoot;
         public bool HasActionRightAxis =>
@@ -192,6 +201,7 @@ namespace BarPromenade
                 out Vector3 normalizedActionRightAxis);
             PrepareFrames(definition);
             ConfigureMaterial(definition);
+            ConfigureBillboard(definition);
 
             PlayerAnimatedInteractionTimeline nextTimeline =
                 new PlayerAnimatedInteractionTimeline(definition);
@@ -208,8 +218,8 @@ namespace BarPromenade
             actionHip = actionHipPosition;
             hasActionRightAxis = useActionRightAxis;
             actionRightAxis = normalizedActionRightAxis;
-            CaptureAndHidePlayerState();
             timeline = nextTimeline;
+            CapturePlayerState();
             ApplyInputForPhase(Phase);
             animationRenderer.enabled = true;
             ApplyCurrentPresentation();
@@ -433,6 +443,75 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Returns the animated billboard opacity for an optional visual
+        /// handoff. Entering fades from the ordinary puppet; exiting fades
+        /// back during the final part of the authored exit sequence.
+        /// </summary>
+        public static float EvaluateAnimationVisualOpacity(
+            PlayerAnimatedInteractionPhase phase,
+            float phaseProgress,
+            float phaseDurationSeconds,
+            float crossfadeDurationSeconds)
+        {
+            if (!IsFinite(phaseProgress))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(phaseProgress),
+                    phaseProgress,
+                    "Phase progress must be finite.");
+            }
+
+            if (!IsFinite(phaseDurationSeconds) ||
+                phaseDurationSeconds <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(phaseDurationSeconds),
+                    phaseDurationSeconds,
+                    "Phase duration must be finite and positive.");
+            }
+
+            if (!IsFinite(crossfadeDurationSeconds) ||
+                crossfadeDurationSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(crossfadeDurationSeconds),
+                    crossfadeDurationSeconds,
+                    "Crossfade duration must be finite and non-negative.");
+            }
+
+            if (phase == PlayerAnimatedInteractionPhase.Idle)
+            {
+                return 0f;
+            }
+
+            if (crossfadeDurationSeconds <= 0f ||
+                phase == PlayerAnimatedInteractionPhase.Looping)
+            {
+                return 1f;
+            }
+
+            float phaseDuration =
+                Mathf.Max(0.0001f, phaseDurationSeconds);
+            float transitionDuration = Mathf.Min(
+                crossfadeDurationSeconds,
+                phaseDuration);
+            float progress = Mathf.Clamp01(phaseProgress);
+            switch (phase)
+            {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    return SmoothProgress(
+                        progress * phaseDuration /
+                        transitionDuration);
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    return SmoothProgress(
+                        (1f - progress) * phaseDuration /
+                        transitionDuration);
+                default:
+                    return 0f;
+            }
+        }
+
         private void Update()
         {
             if (!IsActive)
@@ -459,6 +538,14 @@ namespace BarPromenade
             PhaseChanged?.Invoke(timeline.Phase);
         }
 
+        private void LateUpdate()
+        {
+            if (IsActive)
+            {
+                ApplyVisualCrossfade();
+            }
+        }
+
         private void OnDisable()
         {
             CompleteInteraction();
@@ -471,7 +558,7 @@ namespace BarPromenade
             PhaseChanged = null;
         }
 
-        private void CaptureAndHidePlayerState()
+        private void CapturePlayerState()
         {
             previousMotorInput = player.Motor.InputEnabled;
             previousInteractorInput = player.Interactor.InputEnabled;
@@ -495,7 +582,8 @@ namespace BarPromenade
                     renderer != null && renderer.enabled;
                 if (renderer != null)
                 {
-                    renderer.enabled = false;
+                    previousRigRendererColors[index] =
+                        renderer.color;
                 }
             }
 
@@ -537,6 +625,8 @@ namespace BarPromenade
                     {
                         renderer.enabled =
                             previousRigRendererStates[index];
+                        renderer.color =
+                            previousRigRendererColors[index];
                     }
                 }
             }
@@ -557,6 +647,8 @@ namespace BarPromenade
             player.Interactor?.SetInputEnabled(
                 previousInteractorInput);
             stateCaptured = false;
+            RigVisualOpacity = 1f;
+            AnimationVisualOpacity = 0f;
         }
 
         private void ApplyInputForPhase(
@@ -593,6 +685,76 @@ namespace BarPromenade
             if (!animationRenderer.enabled)
             {
                 animationRenderer.enabled = true;
+            }
+
+            ApplyVisualCrossfade();
+        }
+
+        private void ApplyVisualCrossfade()
+        {
+            if (!stateCaptured ||
+                timeline == null ||
+                animationRenderer == null)
+            {
+                return;
+            }
+
+            PlayerAnimatedInteractionDefinition definition =
+                timeline.Definition;
+            float phaseDurationSeconds =
+                GetCurrentPhaseDurationSeconds(definition);
+            float animationOpacity =
+                EvaluateAnimationVisualOpacity(
+                    timeline.Phase,
+                    timeline.PhaseProgress,
+                    phaseDurationSeconds,
+                    definition.VisualCrossfadeDurationSeconds);
+            float rigOpacity = 1f - animationOpacity;
+            RigVisualOpacity = rigOpacity;
+            AnimationVisualOpacity = animationOpacity;
+
+            IReadOnlyList<SpriteRenderer> renderers =
+                player.Visual.Renderers;
+            for (int index = 0;
+                 index < PlayerSpriteRig.PartCount;
+                 index++)
+            {
+                SpriteRenderer renderer =
+                    index < renderers.Count
+                        ? renderers[index]
+                        : null;
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.enabled =
+                    previousRigRendererStates[index] &&
+                    rigOpacity > 0.0001f;
+                renderer.color = WithOpacity(
+                    previousRigRendererColors[index],
+                    rigOpacity);
+            }
+
+            animationRenderer.enabled =
+                animationOpacity > 0.0001f;
+            animationRenderer.color = WithOpacity(
+                animationRendererBaseColor,
+                animationOpacity);
+        }
+
+        private float GetCurrentPhaseDurationSeconds(
+            PlayerAnimatedInteractionDefinition definition)
+        {
+            switch (timeline.Phase)
+            {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    return definition.EnterFrameCount /
+                        definition.EnterFramesPerSecond;
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    return (float)timeline.ExitDurationSeconds;
+                default:
+                    return 1f;
             }
         }
 
@@ -657,6 +819,8 @@ namespace BarPromenade
             {
                 animationRenderer.enabled = false;
                 animationRenderer.sprite = null;
+                animationRenderer.color =
+                    animationRendererBaseColor;
             }
 
             ResetOrientation();
@@ -687,7 +851,7 @@ namespace BarPromenade
 
             GameObject visualObject =
                 new GameObject(
-                    "Animated Interaction Camera-Plane Visual");
+                    "Animated Interaction Visual");
             animationVisualRoot = visualObject.transform;
             animationVisualRoot.SetParent(
                 animationRoot,
@@ -748,6 +912,28 @@ namespace BarPromenade
                         .OverlayMaterial
                     : player.Visual.BodyRenderer
                         .sharedMaterial;
+            animationRenderer.flipX =
+                definition.TextureFlipX;
+            SpriteRenderer bodyRenderer =
+                player.Visual.BodyRenderer;
+            animationRendererBaseColor =
+                bodyRenderer != null
+                    ? bodyRenderer.color
+                    : Color.white;
+            animationRenderer.color =
+                animationRendererBaseColor;
+        }
+
+        private void ConfigureBillboard(
+            PlayerAnimatedInteractionDefinition definition)
+        {
+            if (billboard == null)
+            {
+                return;
+            }
+
+            billboard.SetCameraPlaneAlignment(
+                definition.AlignBillboardToCameraPlane);
         }
 
         private void PrepareFrames(
@@ -960,6 +1146,14 @@ namespace BarPromenade
                 0f,
                 1f,
                 Mathf.Clamp01(progress));
+        }
+
+        private static Color WithOpacity(
+            Color source,
+            float normalizedOpacity)
+        {
+            source.a *= Mathf.Clamp01(normalizedOpacity);
+            return source;
         }
 
         private static void DestroyGeneratedObject(

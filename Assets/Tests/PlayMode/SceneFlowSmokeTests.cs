@@ -1834,12 +1834,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(
-                    1 +
+                    2 +
                     HomeSoundscape.OwnedSourceCount +
                     HomeAlarmClock.OwnedSourceCount),
                 "Home audio must remain one base ambience " +
-                "source, three soundscape sources and one " +
-                "diegetic alarm source.");
+                "source, one optional smoking-music source, " +
+                "four soundscape sources and one diegetic " +
+                "alarm source.");
             Assert.That(
                 home.Atmosphere,
                 Is.Not.Null);

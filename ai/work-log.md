@@ -2,6 +2,152 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-02 — City-biased balcony-smoking close framing
+
+- Increased `CameraCityLookOffset` from `0.18 m` to `0.33 m`, adding
+  `0.15 m` along Home-local `+X` so the close shot looks farther toward the
+  reconstructed city instead of centering primarily on the hero. The target
+  yaw changes from about `8.03°` to `13.12°`, an increase of about `5.09°`.
+- Kept the authored close-camera position, `38°` FOV, slow harmonic drift and
+  exact two-second Balcony-shot restoration unchanged.
+- Tightened the framing regression: the hero resolves near `0.37` viewport X
+  at `16:9` and must remain inside `0.28-0.43` across supported desktop aspect
+  ratios, while a probe `1 m` farther along the city-facing direction must
+  stay in frame and project to his screen-right. A semantic direction check
+  also requires the close-camera forward dot with city-local `+X` to exceed
+  `0.19`.
+
+Verification:
+
+- A fresh isolated Unity `6000.5.5f1` copy passed the focused smoking-plan
+  EditMode tests (`2/2`) and the complete smoking-interaction PlayMode test
+  (`1/1`), including city-biased viewport composition, drift and exact exit
+  restoration.
+- Runtime, EditMode-test and PlayMode-test C# assemblies compiled with zero
+  warnings or errors, and `git diff --check` passed. A new
+  `StandaloneWindows64` build was not repeated for this data-only framing
+  adjustment; the immediately preceding smoking-camera batch built cleanly.
+
+## 2026-08-02 — Slow balcony-smoking camera drift
+
+- Layered a smoking-local deterministic camera drift over the existing
+  quadratic Balcony-to-close-shot path instead of changing generic
+  `PlayerCameraFollow`. Local X/Y/Z position amplitudes are
+  `0.016 / 0.007 / 0.005 m`; pitch/yaw/roll amplitudes are
+  `0.12° / 0.20° / 0.08°`.
+- Each position and rotation channel combines paired low-frequency harmonics
+  with periods between `13 s` and `23 s`. One presentation clock continues
+  across Entering, Looping and Exiting, preventing a motion restart at phase
+  boundaries.
+- Reused `CameraBlend` as the drift envelope. The offset arrives with the
+  existing camera push, fades back to exactly zero through the two-second exit
+  and leaves the captured Balcony pose and existing FOV interpolation intact;
+  there is no FOV pulse.
+
+Verification:
+
+- A fresh isolated Unity `6000.5.5f1` copy passed the complete EditMode suite
+  (`697/697`). The first complete PlayMode run passed `132/133`; its only
+  failure was the new test using `Quaternion.Angle`, which rounded the
+  sub-centidegree drift to `0°`. After replacing that assertion with a stable
+  small-angle calculation, the focused smoking test passed (`1/1`) and the
+  complete PlayMode rerun passed (`133/133`).
+- A fresh `StandaloneWindows64` player build completed successfully at
+  `156,367,888` bytes with zero build warnings. The C# runtime and affected
+  test assemblies also compiled without warnings, and `git diff --check`
+  passed.
+
+## 2026-08-02 — Balcony-smoking plane, facing and idle-handoff correction
+
+- Corrected the final Balcony-shot orientation without changing the physical
+  `+X` city-facing player root. The smoking definition now opts out of the
+  shared/default texture mirror with `TextureFlipX = false`, matching the
+  projected handedness of the actual Balcony view; the bed/default contract
+  remains mirrored and keeps its existing presentation.
+- Split billboard plane alignment from texture handedness in the shared
+  animated-interaction definition. Smoking now sets
+  `AlignBillboardToCameraPlane = false`, preserving world up and rotating only
+  around yaw, so the standing silhouette and feet no longer lean with the
+  pitched close camera. The default remains exact camera-plane alignment for
+  the bed, where the reclining silhouette must avoid fixed-shot foreshortening.
+- Rebuilt the atlas handoff around the ordinary directional rig. Frames `000`
+  and `063` now match the `PlayerDirectionalAtlas` right-direction idle
+  pixel-for-pixel at the same hip/foot pivot. Frames `001-007` use a
+  deterministic `8 x 8` Bayer/RGB bridge into the generated smoking art,
+  frame `008` is fully authored smoking art, and frames `058-062` reverse the
+  bridge before the exact final idle. The authored smoking silhouette was
+  also normalized to the ordinary side-view proportions.
+- Added an edge-only `0.35 s` visual crossfade to the reusable animated
+  interaction definition. On entry the ordinary nine-part rig fades out as
+  the smoking atlas fades in; the final `0.35 s` of exit reverses the same
+  handoff. Dynamic and contact shadows remain disabled for the complete
+  active interaction because neither supports the alpha blend, then restore
+  from their captured states only when completion returns control.
+
+Verification:
+
+- The in-memory extractor validation passed all 64 frames, exact ordinary-idle
+  endpoints, orientation, pivot and bounded handoff-step checks. The corrected
+  extracted-frame pixel SHA-256 is
+  `AECBD7E0486EE89042A58C6BF7D0A561E4311C5AF23F5FD340FCD5BCF64E1C65`.
+- The in-memory atlas validation passed all 64 RGBA `128 x 96` sources and the
+  `8 x 8` layout. The corrected atlas-pixel SHA-256 is
+  `90AA87008702C81A41259B4D60E3D9912BD4E42E23DE247A9EA2CDA16CC131A5`.
+- A fresh isolated Unity `6000.5.5f1` copy after the world-up correction
+  passed the complete EditMode suite (`695/695`) and complete PlayMode suite
+  (`133/133`). The smoking PlayMode contract now verifies a materially pitched
+  close camera, world-vertical presentation and the animated feet remaining
+  within `0.01 m` of the authored Balcony dock contact.
+- A fresh `StandaloneWindows64` player build completed successfully at
+  `156,365,840` bytes with zero build warnings. Final extractor/atlas
+  validation and `git diff --check` also passed.
+
+## 2026-08-02 — Melancholic balcony-smoking vignette
+
+- Added one reachable interaction point around Home-local
+  `(6.60, 0.12, -1.45)`. The first `E` docks and locks the hero facing the
+  city along `+X`; the view handedness and upright presentation are resolved
+  by the corrective follow-up above.
+- Added a dedicated 64-frame, point-filtered sequence: 24 slow cigarette-draw,
+  lighter and first-drag enter frames, a 24-frame rest/drag/breath-hold/side-
+  exhale loop with deliberate pauses for a `9.5 s` cycle, and 16 discard and
+  idle-handoff exit frames. The retained generated/keyed sources and strict
+  atlas builder provide a reproducible `8 x 8`, `1024 x 768` runtime atlas.
+- The second `E` is accepted immediately but waits for a calm loop boundary
+  before starting the exit, avoiding a cut during the raised-hand drag or
+  active exhale. Modal input, rig and shadows restore through the existing
+  animated-interaction cleanup contract.
+- Added a brief hold and smooth quadratic camera push to a close `38°` FOV,
+  followed by a two-second eased restoration to the captured Balcony shot.
+- Added the separate optional
+  `Assets/Resources/Audio/SmokingMusic/smoking_theme` slot. It restarts at
+  zero gain, fades in over `3.2 s`, loops through the shared `Music` group and
+  fades out with the exit; the vignette remains silent-safe until the user
+  places an OGG, WAV or MP3 file in that folder.
+- Added deterministic plan/timeline/asset coverage and PlayMode coverage for
+  modal entry, queued safe-frame exit, camera/music envelopes and complete
+  restoration.
+
+Initial implementation verification before the corrective pass:
+
+- Strict atlas validation passed for all 64 RGBA `128 x 96` sources, the
+  shared `(64, 40)` Unity hip pivot and the `8 x 8` lower-row-first layout;
+  the validated atlas-pixel SHA-256 is
+  `B29D7C5963AC1DEBC89BF933DE119EF6FFE472BC8502393DF22C0FDE325B18EE`.
+- The generated loop was normalized before final packing: logical frames
+  `047 -> 024` are pixel-identical at the held rest bridge, while the
+  `031 -> 032` mouth-pose join has only `0.03085` alpha XOR. The retained
+  profile family used the then-current generated proportions; the corrective
+  pass above replaced its edge handoff and smoking-specific flip contract.
+- An isolated Unity `6000.5.5f1` verification copy passed the complete
+  EditMode suite (`693/693`) and the complete PlayMode suite (`133/133`),
+  including the then-current smoking lifecycle and city-facing projection,
+  optional audio source and restoration checks. The final foot-pivot assertion
+  also passed in a focused EditMode rerun (`2/2`).
+- A clean `StandaloneWindows64` player build completed successfully at
+  `151,678,544` bytes with zero build warnings. Final localization JSON
+  parsing, Unity GUID uniqueness and `git diff --check` also passed.
+
 ## 2026-08-02 — City-parity view from the Home balcony
 
 - Removed the balcony view's separate dark exterior recipe. City and Home now

@@ -35,6 +35,21 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeBalconySmokingPlan SmokingPlan
+        {
+            get;
+            private set;
+        }
+        public HomeBalconySmokingInteraction Smoking
+        {
+            get;
+            private set;
+        }
+        public HomeSmokingMusicPlayer SmokingMusic
+        {
+            get;
+            private set;
+        }
         public HomeRefrigeratorPlan RefrigeratorPlan
         {
             get;
@@ -251,6 +266,7 @@ namespace BarPromenade
                 GameSessionState.CitySeed);
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
+            BuildBalconySmokingInteraction();
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -457,6 +473,41 @@ namespace BarPromenade
                 this,
                 RefrigeratorPlan,
                 Refrigerator);
+        }
+
+        private void BuildBalconySmokingInteraction()
+        {
+            SmokingPlan =
+                HomeBalconySmokingPlan.Create(
+                    Layout,
+                    BalconyLayout);
+
+            GameObject musicObject =
+                new GameObject("Home Smoking Music");
+            musicObject.transform.SetParent(transform, false);
+            SmokingMusic =
+                musicObject.AddComponent<
+                    HomeSmokingMusicPlayer>();
+
+            GameObject interactionObject =
+                new GameObject("Home Balcony Smoking Interaction");
+            interactionObject.transform.SetParent(
+                transform,
+                false);
+            interactionObject.transform.localPosition =
+                SmokingPlan.TriggerCenter;
+            BoxCollider trigger =
+                interactionObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = SmokingPlan.TriggerSize;
+
+            Smoking =
+                interactionObject.AddComponent<
+                    HomeBalconySmokingInteraction>();
+            Smoking.Initialize(
+                this,
+                SmokingPlan,
+                SmokingMusic);
         }
     }
 }

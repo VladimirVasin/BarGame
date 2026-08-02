@@ -27,7 +27,10 @@ namespace BarPromenade
             float exitFramesPerSecond = 12f,
             bool renderAboveSceneDepth = false,
             IReadOnlyList<float>
-                loopFrameExtraHoldSeconds = null)
+                loopFrameExtraHoldSeconds = null,
+            bool textureFlipX = true,
+            float visualCrossfadeDurationSeconds = 0f,
+            bool alignBillboardToCameraPlane = true)
         {
             if (string.IsNullOrWhiteSpace(textureResourcePath))
             {
@@ -55,6 +58,16 @@ namespace BarPromenade
                 CopyAndValidateLoopFrameHolds(
                     loopFrameExtraHoldSeconds,
                     loopFrameCount);
+            if (float.IsNaN(visualCrossfadeDurationSeconds) ||
+                float.IsInfinity(visualCrossfadeDurationSeconds) ||
+                visualCrossfadeDurationSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(visualCrossfadeDurationSeconds),
+                    visualCrossfadeDurationSeconds,
+                    "Visual crossfade duration must be finite and " +
+                    "non-negative.");
+            }
 
             TextureResourcePath = textureResourcePath.Trim();
             EnterFrameCount = enterFrameCount;
@@ -65,6 +78,11 @@ namespace BarPromenade
             ExitFramesPerSecond = exitFramesPerSecond;
             RenderAboveSceneDepth =
                 renderAboveSceneDepth;
+            TextureFlipX = textureFlipX;
+            VisualCrossfadeDurationSeconds =
+                visualCrossfadeDurationSeconds;
+            AlignBillboardToCameraPlane =
+                alignBillboardToCameraPlane;
             LoopDurationSeconds =
                 loopFrameCount /
                 (double)loopFramesPerSecond +
@@ -83,6 +101,9 @@ namespace BarPromenade
         public int ExitFrameCount { get; }
         public float ExitFramesPerSecond { get; }
         public bool RenderAboveSceneDepth { get; }
+        public bool TextureFlipX { get; }
+        public float VisualCrossfadeDurationSeconds { get; }
+        public bool AlignBillboardToCameraPlane { get; }
         public double LoopDurationSeconds { get; }
         public int TotalFrameCount { get; }
         public int EnterStartFrame => 0;

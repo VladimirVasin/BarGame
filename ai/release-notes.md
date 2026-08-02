@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+### 2026-08-02 — A cigarette above the sleeping city
+
+- A new interaction point on the apartment balcony lets the hero turn toward
+  the city and begin a slow, melancholic cigarette sequence with `E`.
+- The close camera eases toward the hero while he draws and lights the
+  cigarette, then lingers through a looping rhythm of pauses, drags and
+  wind-directed exhales. Pressing `E` again waits for a natural resting beat
+  before the cigarette is discarded and the camera returns smoothly.
+- The close framing now looks slightly farther toward the city, keeping the
+  hero prominent while giving the skyline and street more room beside him.
+  Its camera position, field of view and smooth return remain unchanged.
+- The close shot no longer freezes once it arrives: a restrained, very slow
+  positional and rotational drift gives it a melancholy breathing quality
+  without pulsing the field of view. The motion enters with the camera move,
+  stays continuous between smoking phases and settles completely during the
+  smooth pullback.
+- The smoking pose now faces outward toward the city and remains upright on
+  the balcony floor while the close camera pitches down. Unlike the reclining
+  bed presentation, it turns toward the camera only horizontally instead of
+  inheriting the complete camera plane. Entering and leaving it uses a
+  `0.35 s` dissolve plus idle-matched transition frames, removing the visible
+  pop between the normal hero and the cigarette animation.
+- The vignette has its own optional fading music slot. Add
+  `smoking_theme.ogg` (or WAV/MP3) under
+  `Assets/Resources/Audio/SmokingMusic/`; if no file is present, the scene
+  plays normally in silence.
+
 ### 2026-08-02 — The real city outside the balcony
 
 - The city visible from the apartment balcony now uses the same gray-green
