@@ -21,20 +21,6 @@ namespace BarPromenade
         private const float TrafficSignalExteriorClearance =
             0.65f;
 
-        private static readonly Color Ground =
-            new Color(0.105f, 0.135f, 0.125f);
-        private static readonly Color Asphalt =
-            new Color(0.155f, 0.175f, 0.175f);
-        private static readonly Color ParkPath =
-            new Color(0.31f, 0.28f, 0.21f);
-        private static readonly Color WindowOff =
-            new Color(0.018f, 0.028f, 0.032f);
-        private static readonly Color ColdWindow =
-            new Color(0.19f, 0.37f, 0.50f);
-        private static readonly Color WarmWindow =
-            new Color(0.72f, 0.38f, 0.15f);
-        private static readonly Color BarWindow =
-            new Color(1.08f, 0.57f, 0.21f);
         private static readonly Color TerminalHaze =
             new Color(0.050f, 0.073f, 0.071f);
         private static readonly Color TerminalHazeSide =
@@ -45,6 +31,20 @@ namespace BarPromenade
             HomeBalconyLayoutPlan balcony,
             HomeExteriorContextPlan context)
         {
+            return Build(
+                parent,
+                balcony,
+                context,
+                out _);
+        }
+
+        public static Transform Build(
+            Transform parent,
+            HomeBalconyLayoutPlan balcony,
+            HomeExteriorContextPlan context,
+            out CityNightWorldResult night)
+        {
+            night = null;
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -73,7 +73,7 @@ namespace BarPromenade
                 root,
                 context,
                 context.NearbyDecorations);
-            BuildNightFixtures(root, context);
+            night = BuildNightFixtures(root, context);
             return root;
         }
 
@@ -98,8 +98,8 @@ namespace BarPromenade
                         groundWidth,
                         0.32f,
                         groundWidth)),
-                Ground,
-                CityNightResources.EmissiveMaterial);
+                CityExteriorAppearance.Ground,
+                RuntimePrimitiveFactory.DefaultMaterial);
 
             float horizonX = facadeX + radius + 22f;
             float horizonHeight = 25f;
@@ -201,12 +201,12 @@ namespace BarPromenade
                 "Home Exterior Street Surfaces",
                 parent,
                 streets,
-                Asphalt);
+                CityExteriorAppearance.Asphalt);
             BuildCombinedBoxesIfAny(
                 "Home Exterior Park Paths",
                 parent,
                 parkPaths,
-                ParkPath);
+                CityExteriorAppearance.ParkPath);
         }
 
         private static void BuildBuildings(
@@ -245,7 +245,8 @@ namespace BarPromenade
                             lot.Height,
                             lot.Size.y));
                 Color facade =
-                    CreateNightFacadeColor(lot);
+                    CityExteriorAppearance
+                        .CreateNightFacadeColor(lot);
                 if (!TryClipToExteriorHalfSpace(
                         new Bounds(
                             localCenter,
@@ -268,7 +269,7 @@ namespace BarPromenade
                     exteriorMass.center,
                     exteriorMass.size,
                     facade,
-                    CityNightResources.EmissiveMaterial,
+                    RuntimePrimitiveFactory.DefaultMaterial,
                     false);
 
                 Vector3 roofCenter =
@@ -295,14 +296,24 @@ namespace BarPromenade
                         building,
                         exteriorRoof.center,
                         exteriorRoof.size,
-                        Darken(facade, 0.055f),
-                        CityNightResources.EmissiveMaterial,
+                        CityExteriorAppearance.Darken(
+                            facade,
+                            0.055f),
+                        RuntimePrimitiveFactory.DefaultMaterial,
                         false);
                 }
                 BuildWindowBands(
                     building,
                     context,
                     lot);
+                if (lot.IsBar)
+                {
+                    CityBarFacadeWorldBuilder
+                        .BuildHomeExterior(
+                            building,
+                            context,
+                            lot);
+                }
             }
         }
 
@@ -472,13 +483,14 @@ namespace BarPromenade
                     continue;
                 }
 
-                Color color = ResolveWindowColor(
-                    lot,
-                    context.Layout.Seed,
-                    floor,
-                    pane,
-                    side,
-                    out bool emissive);
+                Color color =
+                    CityExteriorAppearance.ResolveWindowColor(
+                        lot,
+                        context.Layout.Seed,
+                        floor,
+                        pane,
+                        side,
+                        out bool emissive);
 
                 if (emissive)
                 {
@@ -504,7 +516,7 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildNightFixtures(
+        private static CityNightWorldResult BuildNightFixtures(
             Transform parent,
             HomeExteriorContextPlan context)
         {
@@ -585,135 +597,7 @@ namespace BarPromenade
                     Array.Empty<BarEntrance>());
             result.Root.name =
                 "Home Exterior Night Fixtures";
-        }
-
-        private static Color ResolveWindowColor(
-            BuildingLot lot,
-            int citySeed,
-            int floor,
-            int pane,
-            int side,
-            out bool emissive)
-        {
-            if (lot.IsBar)
-            {
-                emissive = true;
-                return BarWindow;
-            }
-
-            uint hash = StableHash(
-                citySeed,
-                lot.Cell.x,
-                lot.Cell.y,
-                floor,
-                pane,
-                side);
-            int selection =
-                (int)(hash % 100u);
-            if (selection < 65)
-            {
-                emissive = false;
-                return WindowOff;
-            }
-
-            emissive = true;
-            return selection < 90
-                ? ColdWindow
-                : WarmWindow;
-        }
-
-        private static Color CreateNightFacadeColor(
-            BuildingLot lot)
-        {
-            float value =
-                (lot.Color.r +
-                 lot.Color.g +
-                 lot.Color.b) /
-                3f;
-            float nightValue =
-                Mathf.Clamp(
-                    value * 0.46f,
-                    0.085f,
-                    0.24f);
-            if (lot.IsBar)
-            {
-                return new Color(
-                    nightValue * 1.08f,
-                    nightValue * 0.78f,
-                    nightValue * 0.72f,
-                    1f);
-            }
-
-            Color tintedValue = Color.Lerp(
-                new Color(value, value, value, 1f),
-                lot.Color,
-                0.32f);
-            float brightnessScale =
-                nightValue / Mathf.Max(value, 0.001f);
-            return new Color(
-                tintedValue.r * brightnessScale * 0.88f,
-                tintedValue.g * brightnessScale,
-                tintedValue.b * brightnessScale * 0.96f,
-                1f);
-        }
-
-        private static Color Darken(
-            Color color,
-            float amount)
-        {
-            return new Color(
-                Mathf.Clamp01(color.r - amount),
-                Mathf.Clamp01(color.g - amount),
-                Mathf.Clamp01(color.b - amount),
-                color.a);
-        }
-
-        private static uint StableHash(
-            int seed,
-            int x,
-            int z,
-            int floor,
-            int pane,
-            int side)
-        {
-            uint hash =
-                unchecked((uint)seed) ^
-                0x9E3779B9u;
-            hash = Mix(
-                hash,
-                unchecked((uint)x));
-            hash = Mix(
-                hash,
-                unchecked((uint)z));
-            hash = Mix(
-                hash,
-                unchecked((uint)floor));
-            hash = Mix(
-                hash,
-                unchecked((uint)pane));
-            return Mix(
-                hash,
-                unchecked((uint)side));
-        }
-
-        private static uint Mix(
-            uint first,
-            uint second)
-        {
-            uint hash = first;
-            hash ^=
-                second +
-                0x85EBCA6Bu +
-                (hash << 6) +
-                (hash >> 2);
-            hash ^= hash >> 16;
-            hash *= 0x7FEB352Du;
-            hash ^= hash >> 15;
-            hash *= 0x846CA68Bu;
-            hash ^= hash >> 16;
-            return hash == 0u
-                ? 0xA341316Cu
-                : hash;
+            return result;
         }
 
         internal static bool TryClipToExteriorHalfSpace(
@@ -778,8 +662,7 @@ namespace BarPromenade
                 name,
                 parent,
                 boxes,
-                color,
-                CityNightResources.EmissiveMaterial);
+                color);
         }
     }
 }

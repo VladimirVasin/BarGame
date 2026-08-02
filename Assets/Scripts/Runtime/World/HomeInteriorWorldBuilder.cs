@@ -71,6 +71,22 @@ namespace BarPromenade
             HomeBalconyLayoutPlan balcony,
             HomeExteriorContextPlan exterior)
         {
+            return Build(
+                parent,
+                plan,
+                balcony,
+                exterior,
+                out _);
+        }
+
+        public static Transform Build(
+            Transform parent,
+            HomeInteriorLayoutPlan plan,
+            HomeBalconyLayoutPlan balcony,
+            HomeExteriorContextPlan exterior,
+            out CityNightWorldResult exteriorNight)
+        {
+            exteriorNight = null;
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -143,7 +159,8 @@ namespace BarPromenade
                 HomeExteriorViewBuilder.Build(
                     room,
                     balcony,
-                    exterior);
+                    exterior,
+                    out exteriorNight);
             }
 
             return room;

@@ -314,8 +314,13 @@ The vertical slice contains:
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
   view rebuilds only a bounded same-seed slice of the actual street's roads,
-  lots, windows, lamps and signals and never creates a second City root,
-  player, camera or realtime street-light pool;
+  lots, windows, lamps and signals. City and Home share the exterior ground,
+  road, facade, window and passive bar-front appearance recipe. The balcony
+  shot temporarily applies City's exact exponential-squared fog, matching
+  background, `48 m` visibility cap, moonlight, grading, local fog field and
+  bounded `12`-light street/bar pool, then restores the captured Home
+  visibility and lighting for MainRoom, Bathroom, disable and destroy. It
+  never creates a second City root, player or camera;
 - one reusable animated-interaction timeline and player controller with
   `Idle -> Entering -> Looping -> Exiting` phases; its outer presentation root
   stays camera-facing while an inner visual preserves authored handedness and

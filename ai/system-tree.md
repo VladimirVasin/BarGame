@@ -89,6 +89,8 @@ Assets/
         CityDecorationPlanner.cs     primary landmarks, lot visuals and clear clusters
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
+        CityExteriorAppearance.cs    shared City/Home ground, facade and window recipe
+        CityBarFacadeWorldBuilder.cs shared passive bar-front identity
         RoadFencePlan.cs         typed bar/home/park/public-place openings
         RoadFencePlanner.cs      exposed street boundary minus complete public sides
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
@@ -133,6 +135,7 @@ Assets/
         HomeSoundscape*.cs               paired fridge hum, balcony bed and domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
+        HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog, grade and lights
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
         HomeInteriorAtmosphere.cs     two practicals + bathroom/window Spots, grade and dust
@@ -276,7 +279,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> same seed -> HomeExteriorContextPlanner
                     -> bounded roads/lots/windows/lamps/signals/decorations view
                     -> same CityDecorationWorldBuilder recipes in Home space
-                    -> no second City root/player/camera/realtime street lights
+                    -> shared City exterior appearance + passive bar facade
+                    -> no second City root/player/camera
+                    -> Balcony-only City visibility, fog field and light pool
+                       -> exact City fog/background/48 m cap/moonlight/grade
+                       -> at most 12 street/bar lights; inactive indoors
+                       -> captured Home render state restored on exit/disable
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> synchronized cold shadowed bathroom-spill Spot
                                  -> cold shadowed window cookie Spot

@@ -107,6 +107,11 @@ namespace BarPromenade
             RefreshStreetLights(false);
         }
 
+        public void RefreshImmediate()
+        {
+            RefreshStreetLights(true);
+        }
+
         private void RefreshStreetLights(bool force)
         {
             if (player == null || streetLightPool.Length == 0)

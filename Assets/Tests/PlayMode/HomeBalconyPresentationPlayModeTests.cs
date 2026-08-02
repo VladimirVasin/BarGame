@@ -1,6 +1,8 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -89,6 +91,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Empty);
             Assert.That(home.Balcony, Is.Not.Null);
             Assert.That(home.ExteriorView, Is.Not.Null);
+            AssertExteriorAtmosphere(home);
+            AssertRenderedExteriorBarFacade(home);
             AssertRenderedExteriorDecorations(home.ExteriorView);
             AssertRenderedExteriorDistrictPointsOfInterest(
                 home.ExteriorView,
@@ -214,6 +218,21 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Camera camera = Camera.main;
+            Light homeSun = RenderSettings.sun;
+            Assert.That(homeSun, Is.Not.Null);
+            Quaternion homeSunRotation =
+                homeSun.transform.rotation;
+            Color homeSunColor = homeSun.color;
+            float homeSunIntensity = homeSun.intensity;
+            LightShadows homeSunShadows = homeSun.shadows;
+            float homeSunShadowStrength =
+                homeSun.shadowStrength;
+            AmbientMode homeAmbientMode =
+                RenderSettings.ambientMode;
+            Color homeAmbientLight =
+                RenderSettings.ambientLight;
+            float homeReflectionIntensity =
+                RenderSettings.reflectionIntensity;
             Rect balconyActivation =
                 home.BalconyLayout
                     .BalconyCameraActivationBounds;
@@ -228,6 +247,94 @@ namespace BarPromenade.Tests.PlayMode
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     HomeCameraShotKind.Balcony));
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .IsBalconyVisibilityActive,
+                Is.True);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .FogField.FogRenderer.enabled,
+                Is.True);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .CityPostProcessVolume.weight,
+                Is.EqualTo(1f));
+            AssertExteriorLightsActive(
+                home.ExteriorAtmosphere,
+                true);
+            Assert.That(RenderSettings.fog, Is.True);
+            Assert.That(
+                RenderSettings.fogMode,
+                Is.EqualTo(FogMode.ExponentialSquared));
+            Assert.That(
+                RenderSettings.fogDensity,
+                Is.EqualTo(
+                        RuntimeSceneSetup.CityFogDensity)
+                    .Within(0.0001f));
+            Assert.That(
+                RenderSettings.fogColor,
+                Is.EqualTo(
+                    RuntimeSceneSetup.CityFogColor));
+            Assert.That(
+                camera.backgroundColor,
+                Is.EqualTo(
+                    RuntimeSceneSetup.CityFogColor));
+            Assert.That(
+                camera.farClipPlane,
+                Is.EqualTo(
+                        RuntimeSceneSetup.CityFarClipPlane)
+                    .Within(0.001f));
+            AssertCityLighting(homeSun);
+            home.ExteriorAtmosphere.enabled = false;
+            Assert.That(RenderSettings.fog, Is.False);
+            Assert.That(
+                camera.backgroundColor,
+                Is.EqualTo(
+                    RuntimeSceneSetup.HomeBackgroundColor));
+            Assert.That(
+                camera.farClipPlane,
+                Is.EqualTo(
+                        RuntimeSceneSetup.DefaultFarClipPlane)
+                    .Within(0.001f));
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .FogField.FogRenderer.enabled,
+                Is.False);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .CityPostProcessVolume.weight,
+                Is.EqualTo(0f));
+            AssertExteriorLightsActive(
+                home.ExteriorAtmosphere,
+                false);
+            AssertHomeLightingRestored(
+                homeSun,
+                homeSunRotation,
+                homeSunColor,
+                homeSunIntensity,
+                homeSunShadows,
+                homeSunShadowStrength,
+                homeAmbientMode,
+                homeAmbientLight,
+                homeReflectionIntensity);
+            home.ExteriorAtmosphere.enabled = true;
+            Assert.That(RenderSettings.fog, Is.True);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .IsBalconyVisibilityActive,
+                Is.True);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .FogField.FogRenderer.enabled,
+                Is.True);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .CityPostProcessVolume.weight,
+                Is.EqualTo(1f));
+            AssertExteriorLightsActive(
+                home.ExteriorAtmosphere,
+                true);
+            AssertCityLighting(homeSun);
             yield return AssertBalconyOcclusionPresentation(home);
             AssertPlayerVisible(
                 camera,
@@ -248,9 +355,142 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeCameraShotKind.MainRoom));
             Assert.That(
+                home.ExteriorAtmosphere
+                    .IsBalconyVisibilityActive,
+                Is.False);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .FogField.FogRenderer.enabled,
+                Is.False);
+            Assert.That(
+                home.ExteriorAtmosphere
+                    .CityPostProcessVolume.weight,
+                Is.EqualTo(0f));
+            AssertExteriorLightsActive(
+                home.ExteriorAtmosphere,
+                false);
+            Assert.That(RenderSettings.fog, Is.False);
+            Assert.That(
+                camera.backgroundColor,
+                Is.EqualTo(
+                    RuntimeSceneSetup.HomeBackgroundColor));
+            Assert.That(
+                camera.farClipPlane,
+                Is.EqualTo(
+                        RuntimeSceneSetup.DefaultFarClipPlane)
+                    .Within(0.001f));
+            AssertHomeLightingRestored(
+                homeSun,
+                homeSunRotation,
+                homeSunColor,
+                homeSunIntensity,
+                homeSunShadows,
+                homeSunShadowStrength,
+                homeAmbientMode,
+                homeAmbientLight,
+                homeReflectionIntensity);
+            Assert.That(
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.HomeInterior));
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertExteriorLightsActive(
+            HomeBalconyExteriorAtmosphere atmosphere,
+            bool expectedActive)
+        {
+            CityNightAtmosphere lighting =
+                atmosphere.ExteriorLighting;
+            Assert.That(lighting, Is.Not.Null);
+            Assert.That(lighting.enabled, Is.EqualTo(expectedActive));
+            AssertLightObjectsActive(
+                lighting.BarLights,
+                expectedActive);
+            AssertLightObjectsActive(
+                lighting.StreetLightPool,
+                expectedActive);
+        }
+
+        private static void AssertLightObjectsActive(
+            System.Collections.Generic.IReadOnlyList<Light> lights,
+            bool expectedActive)
+        {
+            for (int index = 0;
+                 index < lights.Count;
+                 index++)
+            {
+                Assert.That(lights[index], Is.Not.Null);
+                Assert.That(
+                    lights[index].gameObject.activeSelf,
+                    Is.EqualTo(expectedActive));
+            }
+        }
+
+        private static void AssertCityLighting(
+            Light expectedSun)
+        {
+            Assert.That(RenderSettings.sun, Is.SameAs(expectedSun));
+            Assert.That(
+                expectedSun.color,
+                Is.EqualTo(RuntimeSceneSetup.MoonlightColor));
+            Assert.That(
+                expectedSun.intensity,
+                Is.EqualTo(
+                        RuntimeSceneSetup.CityMoonlightIntensity)
+                    .Within(0.001f));
+            Assert.That(
+                expectedSun.shadows,
+                Is.EqualTo(LightShadows.Hard));
+            Assert.That(
+                expectedSun.shadowStrength,
+                Is.EqualTo(
+                        RuntimeSceneSetup.CityShadowStrength)
+                    .Within(0.001f));
+            Assert.That(
+                RenderSettings.ambientMode,
+                Is.EqualTo(AmbientMode.Flat));
+            Assert.That(
+                RenderSettings.ambientLight,
+                Is.EqualTo(RuntimeSceneSetup.CityAmbientColor));
+            Assert.That(
+                RenderSettings.reflectionIntensity,
+                Is.EqualTo(0.50f).Within(0.001f));
+        }
+
+        private static void AssertHomeLightingRestored(
+            Light expectedSun,
+            Quaternion expectedRotation,
+            Color expectedColor,
+            float expectedIntensity,
+            LightShadows expectedShadows,
+            float expectedShadowStrength,
+            AmbientMode expectedAmbientMode,
+            Color expectedAmbientLight,
+            float expectedReflectionIntensity)
+        {
+            Assert.That(RenderSettings.sun, Is.SameAs(expectedSun));
+            Assert.That(
+                expectedSun.transform.rotation,
+                Is.EqualTo(expectedRotation));
+            Assert.That(expectedSun.color, Is.EqualTo(expectedColor));
+            Assert.That(
+                expectedSun.intensity,
+                Is.EqualTo(expectedIntensity).Within(0.001f));
+            Assert.That(
+                expectedSun.shadows,
+                Is.EqualTo(expectedShadows));
+            Assert.That(
+                expectedSun.shadowStrength,
+                Is.EqualTo(expectedShadowStrength).Within(0.001f));
+            Assert.That(
+                RenderSettings.ambientMode,
+                Is.EqualTo(expectedAmbientMode));
+            Assert.That(
+                RenderSettings.ambientLight,
+                Is.EqualTo(expectedAmbientLight));
+            Assert.That(
+                RenderSettings.reflectionIntensity,
+                Is.EqualTo(expectedReflectionIntensity).Within(0.001f));
         }
 
         private static Transform AssertRequiredObject(
@@ -263,6 +503,185 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Null,
                 $"Missing generated object '{path}'.");
             return result;
+        }
+
+        private static void AssertExteriorAtmosphere(
+            HomeInteriorRoot home)
+        {
+            HomeBalconyExteriorAtmosphere atmosphere =
+                home.ExteriorAtmosphere;
+            Assert.That(atmosphere, Is.Not.Null);
+            Assert.That(atmosphere.IsInitialized, Is.True);
+            Assert.That(
+                atmosphere.IsBalconyVisibilityActive,
+                Is.False);
+            Assert.That(
+                atmosphere.ExteriorRoot,
+                Is.SameAs(home.ExteriorView));
+            Assert.That(atmosphere.FogAnchor, Is.Not.Null);
+            Assert.That(
+                atmosphere.FogAnchor.localPosition.x,
+                Is.EqualTo(
+                        HomeExteriorViewBuilder.ExteriorMinimumX +
+                        HomeBalconyExteriorAtmosphere.FogAnchorDepth)
+                    .Within(0.001f));
+            Assert.That(
+                atmosphere.FogAnchor.localPosition.x,
+                Is.GreaterThan(
+                    HomeExteriorViewBuilder.ExteriorMinimumX));
+
+            CityFogField fog = atmosphere.FogField;
+            Assert.That(fog, Is.Not.Null);
+            Assert.That(fog.IsInitialized, Is.True);
+            Assert.That(
+                fog.Player,
+                Is.SameAs(atmosphere.FogAnchor));
+            Assert.That(
+                fog.Particles.main.maxParticles,
+                Is.EqualTo(CityFogField.MaximumParticles));
+            Assert.That(
+                fog.FogRenderer.sharedMaterial,
+                Is.SameAs(
+                    CityNightResources.AtmosphereMaterial));
+            Assert.That(fog.FogRenderer.enabled, Is.False);
+            Assert.That(
+                atmosphere.CityPostProcessVolume,
+                Is.Not.Null);
+            Assert.That(
+                atmosphere.CityPostProcessVolume.isGlobal,
+                Is.True);
+            Assert.That(
+                atmosphere.CityPostProcessVolume.priority,
+                Is.GreaterThan(
+                    home.Atmosphere.PostProcessVolume.priority));
+            Assert.That(
+                atmosphere.CityPostProcessVolume.weight,
+                Is.EqualTo(0f));
+            Assert.That(
+                atmosphere.RuntimeCityProfile,
+                Is.Not.Null);
+            Assert.That(atmosphere.ExteriorLighting, Is.Not.Null);
+            Assert.That(
+                atmosphere.ExteriorLighting.RealtimeLightCount,
+                Is.GreaterThan(0));
+            Assert.That(
+                atmosphere.ExteriorLighting.RealtimeLightCount,
+                Is.LessThanOrEqualTo(
+                    CityNightAtmosphere.MaximumRealtimeLights));
+            AssertExteriorLightsActive(atmosphere, false);
+            Assert.That(
+                atmosphere.RuntimeCityProfile.TryGet(
+                    out Bloom bloom),
+                Is.True);
+            Assert.That(bloom.intensity.value, Is.EqualTo(0.62f));
+            Assert.That(bloom.threshold.value, Is.EqualTo(0.60f));
+            Assert.That(
+                atmosphere.RuntimeCityProfile.TryGet(
+                    out ColorAdjustments color),
+                Is.True);
+            Assert.That(
+                color.postExposure.value,
+                Is.EqualTo(0.62f));
+            Assert.That(
+                color.colorFilter.value,
+                Is.EqualTo(new Color(0.94f, 1f, 0.97f, 1f)));
+            Assert.That(
+                fog.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                fog.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                fog.GetComponentsInChildren<AudioSource>(true),
+                Is.Empty);
+            Assert.That(RenderSettings.fog, Is.False);
+            Assert.That(
+                Camera.main.backgroundColor,
+                Is.EqualTo(
+                    RuntimeSceneSetup.HomeBackgroundColor));
+            Assert.That(
+                Camera.main.farClipPlane,
+                Is.EqualTo(
+                        RuntimeSceneSetup.DefaultFarClipPlane)
+                    .Within(0.001f));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    home.ExteriorView,
+                    "Home Exterior Ground"));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    home.ExteriorView,
+                    "Home Exterior Street Surfaces"));
+        }
+
+        private static void AssertRenderedExteriorBarFacade(
+            HomeInteriorRoot home)
+        {
+            BuildingLot barLot = null;
+            for (int index = 0;
+                 index < home.ExteriorContext.NearbyLots.Count;
+                 index++)
+            {
+                BuildingLot candidate =
+                    home.ExteriorContext.NearbyLots[index];
+                if (candidate.IsBar)
+                {
+                    barLot = candidate;
+                    break;
+                }
+            }
+
+            Assert.That(
+                barLot,
+                Is.Not.Null,
+                "The canonical Home street must retain its neighboring bar.");
+            Transform bar = home.ExteriorView.Find(
+                "Home Exterior Building Silhouettes/" +
+                $"Exterior Bar {barLot.BarId}");
+            Assert.That(bar, Is.Not.Null);
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    bar,
+                    "Exterior Building Mass"));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    bar,
+                    "Exterior Roof"));
+            Assert.That(bar.Find("Bar Door"), Is.Not.Null);
+            Assert.That(bar.Find("Bar Door Frame"), Is.Not.Null);
+            Assert.That(bar.Find("Bar Door Header"), Is.Not.Null);
+            Assert.That(bar.Find("Bar Entrance Canopy"), Is.Not.Null);
+            Assert.That(
+                bar.Find("Bar Entrance Canopy Inset"),
+                Is.Not.Null);
+            Assert.That(bar.Find("Bar Sign Bracket"), Is.Not.Null);
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(bar, "Bar Door"));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    bar,
+                    "Bar Entrance Canopy"));
+
+            Transform markerTransform =
+                bar.Find("Bar Landmark Marker");
+            Assert.That(markerTransform, Is.Not.Null);
+            BarBuildingMarker marker =
+                markerTransform.GetComponent<
+                    BarBuildingMarker>();
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(marker.BarId, Is.EqualTo(barLot.BarId));
+            Assert.That(
+                marker.Renderer.sprite,
+                Is.Not.Null);
+            Assert.That(
+                bar.GetComponentsInChildren<BarEntrance>(true),
+                Is.Empty);
+            Assert.That(
+                bar.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                bar.GetComponentsInChildren<Light>(true),
+                Is.Empty);
         }
 
         private static IEnumerator AssertBalconyOcclusionPresentation(
@@ -445,7 +864,8 @@ namespace BarPromenade.Tests.PlayMode
                  index++)
             {
                 Renderer renderer = renderers[index];
-                if (!renderer.enabled)
+                if (!renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -568,11 +988,15 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 expectedVisibleCount++;
-                Assert.That(
-                    pointOfInterestRoot.Find(
+                Transform site = pointOfInterestRoot.Find(
+                    CityDistrictPointOfInterestWorldBuilder
+                        .GetSiteName(descriptor.Id));
+                Assert.That(site, Is.Not.Null);
+                AssertUsesCityLitMaterial(
+                    AssertRequiredObject(
+                        site,
                         CityDistrictPointOfInterestWorldBuilder
-                            .GetSiteName(descriptor.Id)),
-                    Is.Not.Null);
+                            .PublicGroundName));
             }
 
             Assert.That(
@@ -594,6 +1018,17 @@ namespace BarPromenade.Tests.PlayMode
                 pointOfInterestRoot
                     .GetComponentsInChildren<ParticleSystem>(true),
                 Is.Empty);
+        }
+
+        private static void AssertUsesCityLitMaterial(
+            Transform transform)
+        {
+            Renderer renderer = transform.GetComponent<Renderer>();
+            Assert.That(renderer, Is.Not.Null);
+            Assert.That(
+                renderer.sharedMaterial,
+                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                $"'{transform.name}' must use the same lit material as City.");
         }
     }
 }

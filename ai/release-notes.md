@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 2026-08-02 — The real city outside the balcony
+
+- The city visible from the apartment balcony now uses the same gray-green
+  distance fog, moonlight, color grade and restricted visibility as the real
+  City location instead of a separate dark, clear presentation.
+- Roads, building faces, deterministic windows and the neighboring bar now
+  share City's materials, colors and facade recipe. Nearby street and bar
+  lights illuminate the view only while the balcony camera is active; the
+  apartment's original clear warm lighting returns immediately indoors.
+
 ### 2026-08-02 — A grounded last-route island
 
 - Removed the repeated cyan and magenta light bars from Nightlife's transport

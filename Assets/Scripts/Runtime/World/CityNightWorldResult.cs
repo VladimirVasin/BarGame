@@ -38,18 +38,40 @@ namespace BarPromenade
 
         public void InitializeLighting(Transform player, int citySeed)
         {
-            if (Atmosphere != null)
+            InitializeAtmosphere(
+                player,
+                barLightPositions);
+            if (FogField != null)
             {
                 return;
             }
 
-            Atmosphere = Root.AddComponent<CityNightAtmosphere>();
-            Atmosphere.Initialize(player, LampAnchors, barLightPositions);
             FogField = Root.AddComponent<CityFogField>();
             FogField.Initialize(
                 player,
                 CityNightResources.AtmosphereMaterial,
                 citySeed);
+        }
+
+        public void InitializeAtmosphere(
+            Transform player,
+            IReadOnlyList<Vector3> lightPositions)
+        {
+            if (Atmosphere != null)
+            {
+                return;
+            }
+
+            if (lightPositions == null)
+            {
+                throw new ArgumentNullException(nameof(lightPositions));
+            }
+
+            Atmosphere = Root.AddComponent<CityNightAtmosphere>();
+            Atmosphere.Initialize(
+                player,
+                LampAnchors,
+                lightPositions);
         }
     }
 }

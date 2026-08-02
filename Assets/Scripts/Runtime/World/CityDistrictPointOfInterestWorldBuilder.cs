@@ -285,9 +285,7 @@ namespace BarPromenade
                     PublicGroundHeight,
                     size.y),
                 color,
-                homeExterior
-                    ? CityNightResources.EmissiveMaterial
-                    : RuntimePrimitiveFactory.DefaultMaterial,
+                RuntimePrimitiveFactory.DefaultMaterial,
                 collider);
             ConfigureRenderer(ground, homeExterior);
         }
@@ -682,7 +680,7 @@ namespace BarPromenade
             bool homeExterior,
             float yaw = 0f)
         {
-            Material material = homeExterior || emissive
+            Material material = emissive
                 ? CityNightResources.EmissiveMaterial
                 : RuntimePrimitiveFactory.DefaultMaterial;
             GameObject part = RuntimePrimitiveFactory.CreateBox(
@@ -710,9 +708,8 @@ namespace BarPromenade
             bool collider,
             bool homeExterior)
         {
-            Material material = homeExterior
-                ? CityNightResources.EmissiveMaterial
-                : RuntimePrimitiveFactory.DefaultMaterial;
+            Material material =
+                RuntimePrimitiveFactory.DefaultMaterial;
             GameObject part = RuntimePrimitiveFactory.CreateCylinder(
                 name,
                 parent,

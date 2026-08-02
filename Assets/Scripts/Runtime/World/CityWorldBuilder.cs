@@ -8,11 +8,7 @@ namespace BarPromenade
     {
         private const float WorldChunkSize = 48f;
 
-        private static readonly Color Asphalt = new Color(0.175f, 0.195f, 0.195f);
-        private static readonly Color ParkPath =
-            new Color(0.39f, 0.34f, 0.24f);
         private static readonly Color RoadPaint = new Color(0.58f, 0.52f, 0.34f);
-        private static readonly Color Ground = new Color(0.170f, 0.205f, 0.185f);
         private static readonly Color ParkGrass =
             new Color(0.16f, 0.30f, 0.18f);
         private static readonly Color ParkPlaza =
@@ -26,14 +22,6 @@ namespace BarPromenade
         private static readonly Color ParkHedge =
             new Color(0.10f, 0.24f, 0.13f);
         private static readonly Color Sidewalk = new Color(0.31f, 0.33f, 0.305f);
-        private static readonly Color WindowOff = new Color(0.025f, 0.035f, 0.040f);
-        private static readonly Color ColdWindow = new Color(0.24f, 0.43f, 0.56f);
-        private static readonly Color WarmWindow = new Color(0.88f, 0.48f, 0.20f);
-        private static readonly Color BarWindow = new Color(1.35f, 0.72f, 0.28f);
-        private static readonly Color HomeWindow = new Color(0.82f, 1.10f, 1.22f);
-        private static readonly Color BarTrim = new Color(0.84f, 0.55f, 0.18f);
-        private static readonly Color BarAwning = new Color(0.24f, 0.018f, 0.045f);
-        private static readonly Color DoorColor = new Color(0.055f, 0.025f, 0.022f);
         private static readonly Color HomeTrim = new Color(0.66f, 0.82f, 0.80f);
         private static readonly Color HomeDoor =
             new Color(0.08f, 0.20f, 0.22f);
@@ -139,7 +127,7 @@ namespace BarPromenade
                 parent,
                 center + (Vector3.down * 0.24f),
                 size,
-                Ground);
+                CityExteriorAppearance.Ground);
             return new Bounds(center, new Vector3(size.x, 20f, size.z));
         }
 
@@ -201,13 +189,13 @@ namespace BarPromenade
                     "Street Surfaces",
                     chunk,
                     geometry.Streets,
-                    Asphalt,
+                    CityExteriorAppearance.Asphalt,
                     true);
                 BuildCombinedBoxesIfAny(
                     "Park Paths",
                     chunk,
                     geometry.ParkPaths,
-                    ParkPath,
+                    CityExteriorAppearance.ParkPath,
                     true);
                 BuildCombinedBoxesIfAny(
                     "Road Dashes",
@@ -484,7 +472,8 @@ namespace BarPromenade
                         : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
             building.SetParent(parent, false);
 
-            Color facadeColor = CreateNightFacadeColor(lot);
+            Color facadeColor =
+                CityExteriorAppearance.CreateNightFacadeColor(lot);
             RuntimePrimitiveFactory.CreateBox(
                 "Building Mass",
                 building,
@@ -496,7 +485,9 @@ namespace BarPromenade
                 building,
                 lot.Center + (Vector3.up * (lot.Height + 0.22f)),
                 new Vector3(lot.Size.x + 0.35f, 0.28f, lot.Size.y + 0.35f),
-                Darken(facadeColor, 0.055f),
+                CityExteriorAppearance.Darken(
+                    facadeColor,
+                    0.055f),
                 false);
             BuildWindowBands(building, lot, citySeed, emissiveMaterial);
 
@@ -671,13 +662,14 @@ namespace BarPromenade
                 Vector3 paneSize = runsAlongX
                     ? new Vector3(paneLength, paneHeight, rowSize.z)
                     : new Vector3(rowSize.x, paneHeight, paneLength);
-                Color color = ResolveWindowColor(
-                    lot,
-                    citySeed,
-                    floor,
-                    pane,
-                    side,
-                    out bool emissive);
+                Color color =
+                    CityExteriorAppearance.ResolveWindowColor(
+                        lot,
+                        citySeed,
+                        floor,
+                        pane,
+                        side,
+                        out bool emissive);
 
                 if (emissive)
                 {
@@ -703,44 +695,6 @@ namespace BarPromenade
             }
         }
 
-        private static Color ResolveWindowColor(
-            BuildingLot lot,
-            int citySeed,
-            int floor,
-            int pane,
-            int side,
-            out bool emissive)
-        {
-            if (lot.IsBar)
-            {
-                emissive = true;
-                return BarWindow;
-            }
-
-            if (lot.IsPlayerHome)
-            {
-                emissive = true;
-                return HomeWindow;
-            }
-
-            uint hash = StableHash(
-                citySeed,
-                lot.Cell.x,
-                lot.Cell.y,
-                floor,
-                pane,
-                side);
-            int selection = (int)(hash % 100u);
-            if (selection < 65)
-            {
-                emissive = false;
-                return WindowOff;
-            }
-
-            emissive = true;
-            return selection < 90 ? ColdWindow : WarmWindow;
-        }
-
         private static void BuildBarFront(
             Transform parent,
             BuildingLot lot,
@@ -751,20 +705,7 @@ namespace BarPromenade
                 lot.FrontageDirection.x,
                 0f,
                 lot.FrontageDirection.y);
-            Vector3 doorCenter = lot.DoorPosition + (direction * 0.045f) + (Vector3.up * 1.05f);
-            Vector3 doorSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(0.12f, 2.1f, 1.45f)
-                : new Vector3(1.45f, 2.1f, 0.12f);
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Door",
-                parent,
-                doorCenter,
-                doorSize,
-                DoorColor,
-                false);
-            BuildBarEntranceFrame(parent, lot.DoorPosition, direction);
-            BuildBarLandmark(parent, lot, direction);
+            CityBarFacadeWorldBuilder.BuildCity(parent, lot);
 
             Vector3 apronCenter = (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
             float apronLength = Vector3.Distance(lot.DoorPosition, lot.ReturnPosition);
@@ -977,7 +918,7 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.WindowCenterZ,
                 PlayerHomeBalconyGeometry.WindowWidth,
                 PlayerHomeBalconyGeometry.WindowHeight,
-                HomeWindow,
+                CityExteriorAppearance.HomeWindow,
                 emissiveMaterial);
             BuildHomeBalconyOpeningFrame(
                 parent,
@@ -1284,100 +1225,9 @@ namespace BarPromenade
                 (tangent * 1.16f) +
                 (Vector3.up * 2.18f),
                 new Vector3(0.28f, 0.38f, 0.28f),
-                HomeWindow * 1.35f,
+                CityExteriorAppearance.HomeWindow * 1.35f,
                 CityNightResources.EmissiveMaterial,
                 false);
-        }
-
-        private static void BuildBarEntranceFrame(
-            Transform parent,
-            Vector3 doorPosition,
-            Vector3 direction)
-        {
-            Vector3 tangent = new Vector3(-direction.z, 0f, direction.x);
-            Vector3 verticalSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(0.18f, 2.35f, 0.16f)
-                : new Vector3(0.16f, 2.35f, 0.18f);
-            Vector3 headerSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(0.18f, 0.22f, 2.05f)
-                : new Vector3(2.05f, 0.22f, 0.18f);
-            Vector3 canopySize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(
-                    0.82f,
-                    0.18f,
-                    BarEntranceGeometry.CanopyWidth)
-                : new Vector3(
-                    BarEntranceGeometry.CanopyWidth,
-                    0.18f,
-                    0.82f);
-
-            for (int side = -1; side <= 1; side += 2)
-            {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Bar Door Frame",
-                    parent,
-                    doorPosition +
-                    (direction * 0.10f) +
-                    (tangent * side * 0.86f) +
-                    (Vector3.up * 1.14f),
-                    verticalSize,
-                    BarTrim,
-                    false);
-            }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Door Header",
-                parent,
-                doorPosition + (direction * 0.10f) + (Vector3.up * 2.30f),
-                headerSize,
-                BarTrim,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Entrance Canopy",
-                parent,
-                doorPosition + (direction * 0.38f) + (Vector3.up * 2.52f),
-                canopySize,
-                BarTrim,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Entrance Canopy Inset",
-                parent,
-                doorPosition + (direction * 0.40f) + (Vector3.up * 2.46f),
-                Vector3.Scale(
-                    canopySize,
-                    new Vector3(0.88f, 0.55f, 0.88f)),
-                BarAwning,
-                false);
-        }
-
-        private static void BuildBarLandmark(
-            Transform parent,
-            BuildingLot lot,
-            Vector3 direction)
-        {
-            Vector3 markerPosition =
-                lot.DoorPosition +
-                (direction * 0.74f) +
-                (Vector3.up * 3.42f);
-            Vector3 bracketSize = Mathf.Abs(direction.x) > 0.5f
-                ? new Vector3(1.25f, 0.10f, 0.10f)
-                : new Vector3(0.10f, 0.10f, 1.25f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Sign Bracket",
-                parent,
-                lot.DoorPosition +
-                (direction * 0.34f) +
-                (Vector3.up * 4.10f),
-                bracketSize,
-                BarTrim,
-                false);
-
-            GameObject markerObject = new GameObject("Bar Landmark Marker");
-            markerObject.transform.SetParent(parent, false);
-            markerObject.transform.position = markerPosition;
-            BarBuildingMarker marker =
-                markerObject.AddComponent<BarBuildingMarker>();
-            marker.Initialize(lot.BarId, Camera.main);
         }
 
         private static Rect RectFromCenter(Vector3 center, float width, float depth)
@@ -1389,39 +1239,6 @@ namespace BarPromenade
                 center.z + (depth * 0.5f));
         }
 
-        private static Color CreateNightFacadeColor(BuildingLot lot)
-        {
-            if (lot.IsBar)
-            {
-                return new Color(
-                    lot.Color.r * 0.70f,
-                    lot.Color.g * 0.65f,
-                    lot.Color.b * 0.68f,
-                    1f);
-            }
-
-            if (lot.IsPlayerHome)
-            {
-                return new Color(
-                    lot.Color.r * 0.72f,
-                    lot.Color.g * 0.78f,
-                    lot.Color.b * 0.80f,
-                    1f);
-            }
-
-            float value =
-                (lot.Color.r + lot.Color.g + lot.Color.b) / 3f;
-            Color tintedValue = Color.Lerp(
-                new Color(value, value, value, 1f),
-                lot.Color,
-                0.32f);
-            return new Color(
-                tintedValue.r * 0.68f,
-                tintedValue.g * 0.73f,
-                tintedValue.b * 0.70f,
-                1f);
-        }
-
         private static Vector3 ResolveFacadeDirection(BuildingLot lot)
         {
             return lot.HasRoadFrontage
@@ -1430,34 +1247,6 @@ namespace BarPromenade
                     0f,
                     lot.FrontageDirection.y)
                 : Vector3.back;
-        }
-
-        private static uint StableHash(
-            int seed,
-            int x,
-            int z,
-            int floor,
-            int pane,
-            int side)
-        {
-            uint hash = unchecked((uint)seed) ^ 0x9E3779B9u;
-            hash = Mix(hash, unchecked((uint)x));
-            hash = Mix(hash, unchecked((uint)z));
-            hash = Mix(hash, unchecked((uint)floor));
-            hash = Mix(hash, unchecked((uint)pane));
-            return Mix(hash, unchecked((uint)side));
-        }
-
-        private static uint Mix(uint first, uint second)
-        {
-            uint hash = first;
-            hash ^= second + 0x85EBCA6Bu + (hash << 6) + (hash >> 2);
-            hash ^= hash >> 16;
-            hash *= 0x7FEB352Du;
-            hash ^= hash >> 15;
-            hash *= 0x846CA68Bu;
-            hash ^= hash >> 16;
-            return hash == 0u ? 0xA341316Cu : hash;
         }
 
         private static void BuildCombinedBoxesIfAny(
@@ -1478,15 +1267,6 @@ namespace BarPromenade
                 boxes,
                 color,
                 collider);
-        }
-
-        private static Color Darken(Color color, float amount)
-        {
-            return new Color(
-                Mathf.Clamp01(color.r - amount),
-                Mathf.Clamp01(color.g - amount),
-                Mathf.Clamp01(color.b - amount),
-                color.a);
         }
 
         private readonly struct WorldChunkKey

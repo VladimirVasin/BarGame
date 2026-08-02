@@ -22,6 +22,7 @@ namespace BarPromenade
         public Transform Room { get; private set; }
         public Transform Balcony { get; private set; }
         public Transform ExteriorView { get; private set; }
+        public CityNightWorldResult ExteriorNight { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public PlayerAnimatedInteractionController AnimatedInteraction
         {
@@ -60,6 +61,11 @@ namespace BarPromenade
         public HomeAmbiencePlayer Ambience { get; private set; }
         public HomeSoundscape Soundscape { get; private set; }
         public HomeInteriorAtmosphere Atmosphere { get; private set; }
+        public HomeBalconyExteriorAtmosphere ExteriorAtmosphere
+        {
+            get;
+            private set;
+        }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public HomeFixedCameraController FixedCamera { get; private set; }
         public HomeOcclusionRegistry OcclusionRegistry
@@ -122,7 +128,9 @@ namespace BarPromenade
                 transform,
                 Layout,
                 BalconyLayout,
-                ExteriorContext);
+                ExteriorContext,
+                out CityNightWorldResult exteriorNight);
+            ExteriorNight = exteriorNight;
             OcclusionRegistry =
                 Room.GetComponent<HomeOcclusionRegistry>();
             if (OcclusionRegistry == null)
@@ -224,6 +232,23 @@ namespace BarPromenade
                 CreateCameraShots(
                     Layout,
                     BalconyLayout));
+            GameObject exteriorAtmosphereObject =
+                new GameObject("Home Balcony Exterior Atmosphere");
+            exteriorAtmosphereObject.transform.SetParent(
+                transform,
+                false);
+            ExteriorAtmosphere =
+                exteriorAtmosphereObject.AddComponent<
+                    HomeBalconyExteriorAtmosphere>();
+            ExteriorAtmosphere.Initialize(
+                camera,
+                FixedCamera,
+                ExteriorView,
+                ExteriorNight,
+                ExteriorContext,
+                Player.GameObject.transform,
+                BalconyLayout,
+                GameSessionState.CitySeed);
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
             BalanceCheckView balanceView =

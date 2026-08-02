@@ -2,6 +2,44 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-02 — City-parity view from the Home balcony
+
+- Removed the balcony view's separate dark exterior recipe. City and Home now
+  share one deterministic Lit palette for ground, roads, building masses,
+  roofs and window states, plus one passive bar-facade builder that preserves
+  the neighboring bar's door, frame, canopy, bracket and landmark without
+  adding an entrance trigger or collision to Home.
+- Added a balcony-only exterior atmosphere controller. The Balcony shot uses
+  City's exact exponential-squared fog, fog-colored background, `48 m` camera
+  cap, moonlight, reflection level and post-process values, plus one seeded
+  36-particle fog field and the retained bounded street/bar light pool.
+  MainRoom, Bathroom, component disable and destruction restore the captured
+  Home fog, camera and lighting state and deactivate every exterior light and
+  halo.
+- Kept the reconstructed exterior visual-only: it still creates no second
+  City root, player, camera, listener, gameplay entrance or collider. Nearby
+  district public places now use the same ordinary Lit material as City while
+  retaining collider-free Home presentation.
+- Extended the Home balcony regression to cover the exact City fog, grade,
+  moonlight and reflection contract, exterior-light activation and cleanup,
+  shared Lit materials, passive neighboring-bar identity and indoor-state
+  restoration.
+
+Verification:
+
+- The focused Home balcony PlayMode regression passed `1/1` after the final
+  lighting lifecycle changes.
+- A temporary GPU-backed `1280 x 720` sRGB capture test passed `1/1`; manual
+  review confirmed the expected gray-green distance haze, illuminated facade
+  masses and neighboring bar light. The temporary test was removed afterward.
+- The complete EditMode suite passed `685/685`.
+- The complete GPU-backed PlayMode suite passed `128/128`.
+- A Windows build of all six configured scenes succeeded at `148,517,792`
+  bytes with zero warnings.
+- Runtime, Editor, EditModeTests and PlayModeTests `.csproj` builds each passed
+  with zero warnings and zero errors.
+- `git diff --check` passed.
+
 ## 2026-08-02 — Grounded last-route island dressing
 
 - Removed all eight emissive magenta/cyan recipe pieces from Nightlife's
