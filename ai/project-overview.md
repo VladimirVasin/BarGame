@@ -183,6 +183,17 @@ The vertical slice contains:
   deterministic idle/walk motion and smoothly recovering obstacle-aware
   distance; cinematic motion fades out for fullscreen modals, while the
   balance-specific lock keeps its intoxication and fall reactions visible;
+- Home keeps its three authored fixed shots and now protects the player from
+  foreground occlusion through one explicit registry of logical furniture,
+  dressing, door and balcony-rail groups. Five camera-to-sprite samples cover
+  the head, both sides of the chest, pelvis and feet; the first four drive
+  reveal decisions, while low objects may still hide the feet naturally.
+  Blocking groups fade to their authored `0.15-0.23` visibility floors through
+  one shared opaque alpha-clip dither material, with a `0.15 s` fade,
+  `0.12 s` clear hold and `0.30 s` restore. The material retains Forward+
+  practical lights, cookies, shadows and SSAO. The system never changes colliders,
+  glass, lights or the room shell, and restores full opacity while the opening,
+  refrigerator or animated Home interactions own presentation;
 - one percentage-driven intoxication profile shared by City, BarInterior,
   HomeInterior and StairwellInterior:
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,

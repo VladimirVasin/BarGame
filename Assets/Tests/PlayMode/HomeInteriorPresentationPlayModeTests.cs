@@ -151,6 +151,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.Room,
                 "Home Faded Photograph");
             AssertEntryWallSealed(home);
+            AssertFurnitureOcclusionCoverage(home);
             Transform mainEmitter = AssertRequiredObject(
                 home.Room,
                 "Home Main Dirty Bulb");
@@ -328,6 +329,9 @@ namespace BarPromenade.Tests.PlayMode
             AssertPlayerVisible(
                 camera,
                 home.Player.GameObject.transform);
+            AssertForegroundJunkOcclusionContract(
+                home,
+                cornerJunkCollider);
             AssertSpriteSilhouetteNotSquashed(
                 camera,
                 home.Player.Visual.VisualRoot);
@@ -438,6 +442,113 @@ namespace BarPromenade.Tests.PlayMode
                 Is.InRange(-tolerance, tolerance),
                 $"'{itemName}' must rest on '{supportName}' instead of " +
                 "floating or intersecting deeply.");
+        }
+
+        private static void AssertForegroundJunkOcclusionContract(
+            HomeInteriorRoot home,
+            Collider blockingCollider)
+        {
+            Assert.That(home.OcclusionRegistry, Is.Not.Null);
+            Assert.That(home.PlayerOcclusion, Is.Not.Null);
+            Assert.That(home.PlayerOcclusion.IsInitialized, Is.True);
+            Assert.That(
+                home.OcclusionRegistry.TryGetGroup(
+                    "home.furniture.camera-junk",
+                    out HomeOccluderGroup group),
+                Is.True);
+
+            Assert.That(
+                group.Kind,
+                Is.EqualTo(HomeOccluderKind.FurnitureBlocker));
+            Assert.That(group.Renderers, Is.Not.Empty);
+            Assert.That(blockingCollider, Is.Not.Null);
+            Assert.That(blockingCollider.enabled, Is.True);
+            Assert.That(
+                blockingCollider.gameObject.activeInHierarchy,
+                Is.True,
+                "Visual cutaway must not alter the blocking geometry.");
+            for (int index = 0;
+                 index < group.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    group.Renderers[index].sharedMaterial,
+                    Is.SameAs(HomeOcclusionResources.DitherMaterial));
+            }
+        }
+
+        private static void AssertFurnitureOcclusionCoverage(
+            HomeInteriorRoot home)
+        {
+            Assert.That(
+                home.OcclusionRegistry.TryGetGroup(
+                    "home.furniture.sofa",
+                    out HomeOccluderGroup sofaGroup),
+                Is.True);
+            Renderer cardboardBox =
+                AssertRequiredObject(
+                    home.Room,
+                    "Home Cardboard Box")
+                    .GetComponent<Renderer>();
+            Assert.That(cardboardBox, Is.Not.Null);
+            Assert.That(
+                sofaGroup.Renderers,
+                Does.Contain(cardboardBox),
+                "The tall box on the sofa must reveal with the sofa group.");
+
+            Assert.That(
+                home.OcclusionRegistry.TryGetGroup(
+                    "home.furniture.alarm-clock",
+                    out HomeOccluderGroup alarmGroup),
+                Is.True);
+            Assert.That(
+                alarmGroup.Kind,
+                Is.EqualTo(HomeOccluderKind.FurnitureBlocker));
+            string[] opaquePartNames =
+            {
+                "Home Alarm Clock Nightstand",
+                "Home Alarm Clock Nightstand Top",
+                "Home Alarm Clock Nightstand Handle",
+                "Alarm Clock Body",
+                "Alarm Clock Face",
+                "Alarm Clock Snooze"
+            };
+            for (int index = 0;
+                 index < opaquePartNames.Length;
+                 index++)
+            {
+                Renderer renderer =
+                    AssertRequiredObject(
+                        home.Room,
+                        opaquePartNames[index])
+                        .GetComponent<Renderer>();
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(
+                    alarmGroup.Renderers,
+                    Does.Contain(renderer));
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(HomeOcclusionResources.DitherMaterial));
+            }
+
+            Renderer displaySegment =
+                AssertRequiredObject(
+                    home.Room,
+                    "Alarm Clock Digit 0 Segment 0")
+                    .GetComponent<Renderer>();
+            Assert.That(displaySegment, Is.Not.Null);
+            for (int index = 0;
+                 index < alarmGroup.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    alarmGroup.Renderers[index],
+                    Is.Not.SameAs(displaySegment),
+                    "Emissive clock digits must remain outside the cutaway.");
+            }
+            Assert.That(
+                displaySegment.sharedMaterial,
+                Is.Not.SameAs(HomeOcclusionResources.DitherMaterial));
         }
 
         private static void AssertEntryWallSealed(

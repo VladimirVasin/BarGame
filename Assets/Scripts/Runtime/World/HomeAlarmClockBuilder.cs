@@ -1,9 +1,15 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
 {
     public static class HomeAlarmClockBuilder
     {
+        internal const string OccluderId =
+            "home.furniture.alarm-clock";
+
+        private const float MinimumVisibility = 0.23f;
+
         private static readonly Color NightstandWood =
             new Color(0.105f, 0.055f, 0.035f);
         private static readonly Color NightstandEdge =
@@ -19,12 +25,21 @@ namespace BarPromenade
             Transform room,
             HomeAlarmClockPlan plan)
         {
+            return Build(room, plan, null);
+        }
+
+        internal static HomeAlarmClock Build(
+            Transform room,
+            HomeAlarmClockPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
+        {
             if (room == null)
             {
                 throw new System.ArgumentNullException(nameof(room));
             }
 
-            BuildNightstand(room, plan);
+            var occluderParts = new List<GameObject>();
+            BuildNightstand(room, plan, occluderParts);
 
             GameObject alarmObject =
                 new GameObject("Home Alarm Clock");
@@ -32,27 +47,27 @@ namespace BarPromenade
             alarmObject.transform.localPosition =
                 plan.ClockPosition;
 
-            RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Alarm Clock Body",
                 alarmObject.transform,
                 Vector3.zero,
                 HomeAlarmClockPlan.ClockBodySize,
                 ClockBody,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Alarm Clock Face",
                 alarmObject.transform,
                 new Vector3(0f, 0f, -0.126f),
                 new Vector3(0.395f, 0.175f, 0.018f),
                 ClockFace,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Alarm Clock Snooze",
                 alarmObject.transform,
                 new Vector3(0f, 0.153f, 0.015f),
                 new Vector3(0.16f, 0.035f, 0.075f),
                 NightstandEdge,
-                false);
+                false));
             GameObject[] displaySegments =
                 BuildDisplay(
                     alarmObject.transform,
@@ -62,21 +77,27 @@ namespace BarPromenade
             alarm.ConfigureDisplay(
                 displaySegments,
                 displayPunctuation);
+            occlusionRegistry?.Register(
+                OccluderId,
+                HomeOccluderKind.FurnitureBlocker,
+                MinimumVisibility,
+                occluderParts.ToArray());
             return alarm;
         }
 
         private static void BuildNightstand(
             Transform room,
-            HomeAlarmClockPlan plan)
+            HomeAlarmClockPlan plan,
+            List<GameObject> occluderParts)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Alarm Clock Nightstand",
                 room,
                 plan.NightstandCenter,
                 plan.NightstandSize,
                 NightstandWood,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Alarm Clock Nightstand Top",
                 room,
                 new Vector3(
@@ -90,8 +111,8 @@ namespace BarPromenade
                     HomeAlarmClockPlan.NightstandTopThickness,
                     plan.NightstandSize.z + 0.04f),
                 NightstandEdge,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Alarm Clock Nightstand Handle",
                 room,
                 new Vector3(
@@ -101,7 +122,7 @@ namespace BarPromenade
                     plan.NightstandSize.z * 0.51f),
                 new Vector3(0.21f, 0.035f, 0.035f),
                 new Color(0.27f, 0.17f, 0.09f),
-                false);
+                false));
         }
 
         private static GameObject[] BuildDisplay(

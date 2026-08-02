@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -25,14 +26,15 @@ namespace BarPromenade
 
         public static void Build(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             BuildWindowAndWallDamage(room);
-            BuildTableCluster(room, plan);
-            BuildKitchenCluster(room, plan);
-            BuildBedCluster(room, plan);
-            BuildPersonalDetails(room, plan);
-            BuildFloorClutter(room);
+            BuildTableCluster(room, plan, occlusionRegistry);
+            BuildKitchenCluster(room, plan, occlusionRegistry);
+            BuildBedCluster(room, plan, occlusionRegistry);
+            BuildPersonalDetails(room, plan, occlusionRegistry);
+            BuildFloorClutter(room, occlusionRegistry);
         }
 
         private static void BuildWindowAndWallDamage(Transform room)
@@ -91,7 +93,8 @@ namespace BarPromenade
 
         private static void BuildTableCluster(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             if (!plan.TryGetFurniture(
                     HomeFurnitureKind.Table,
@@ -105,42 +108,48 @@ namespace BarPromenade
                 HomeInteriorWorldBuilder
                     .TableDressingSurfaceHeight,
                 table.Bounds.center.y);
-            CreateBottle(
+            var parts = new List<GameObject>();
+            parts.AddRange(CreateBottle(
                 "Home Table Green Bottle",
                 room,
                 center + new Vector3(-0.42f, 0f, 0.22f),
                 BottleGreen,
-                0.24f);
-            CreateBottle(
+                0.24f));
+            parts.AddRange(CreateBottle(
                 "Home Table Brown Bottle",
                 room,
                 center + new Vector3(-0.15f, 0f, 0.30f),
                 BottleBrown,
-                0.21f);
-            CreateCan(
+                0.21f));
+            parts.Add(CreateCan(
                 "Home Table Crushed Can",
                 room,
                 center + new Vector3(0.38f, 0.095f, -0.24f),
-                new Color(0.36f, 0.31f, 0.19f));
-            RuntimePrimitiveFactory.CreateCylinder(
+                new Color(0.36f, 0.31f, 0.19f)));
+            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
                 "Home Table Ashtray",
                 room,
                 center + new Vector3(0.24f, 0.025f, 0.20f),
                 new Vector3(0.30f, 0.025f, 0.30f),
                 new Color(0.16f, 0.15f, 0.13f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            parts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Table Stale Plate",
                 room,
                 center + new Vector3(0.18f, 0.018f, -0.13f),
                 new Vector3(0.44f, 0.035f, 0.36f),
                 new Color(0.43f, 0.40f, 0.31f),
-                false);
+                false));
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.TableOccluderId,
+                parts);
         }
 
         private static void BuildKitchenCluster(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             if (!plan.TryGetFurniture(
                     HomeFurnitureKind.Kitchen,
@@ -162,7 +171,9 @@ namespace BarPromenade
             float rightCounterX =
                 (refrigerator.Footprint.xMax +
                  kitchen.Bounds.xMax) * 0.5f;
-            RuntimePrimitiveFactory.CreateBox(
+            var leftParts = new List<GameObject>();
+            var rightParts = new List<GameObject>();
+            leftParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Dirty Dishes",
                 room,
                 new Vector3(
@@ -171,8 +182,8 @@ namespace BarPromenade
                     center.z - 0.03f),
                 new Vector3(0.58f, 0.09f, 0.46f),
                 new Color(0.37f, 0.36f, 0.29f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            rightParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Kitchen Wet Rag",
                 room,
                 new Vector3(
@@ -181,8 +192,8 @@ namespace BarPromenade
                     center.z - 0.31f),
                 new Vector3(0.62f, 0.035f, 0.27f),
                 new Color(0.20f, 0.24f, 0.20f),
-                false);
-            CreateBottle(
+                false));
+            leftParts.AddRange(CreateBottle(
                 "Home Kitchen Empty Bottle",
                 room,
                 new Vector3(
@@ -190,20 +201,29 @@ namespace BarPromenade
                     center.y,
                     center.z + 0.08f),
                 BottleClear,
-                0.20f);
-            CreateCan(
+                0.20f));
+            leftParts.Add(CreateCan(
                 "Home Kitchen Tin",
                 room,
                 new Vector3(
                     leftCounterX - 0.55f,
                     center.y + 0.095f,
                     center.z + 0.05f),
-                new Color(0.31f, 0.25f, 0.16f));
+                new Color(0.31f, 0.25f, 0.16f)));
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.KitchenLeftOccluderId,
+                leftParts);
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.KitchenRightOccluderId,
+                rightParts);
         }
 
         private static void BuildBedCluster(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             if (!plan.TryGetFurniture(
                     HomeFurnitureKind.Bed,
@@ -217,13 +237,17 @@ namespace BarPromenade
                 HomeInteriorWorldBuilder
                     .BedDressingSurfaceHeight,
                 bed.Bounds.center.y);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject shirt = RuntimePrimitiveFactory.CreateBox(
                 "Home Bed Crumpled Shirt",
                 room,
                 center + new Vector3(0.28f, 0.035f, 0.16f),
                 new Vector3(0.72f, 0.07f, 0.54f),
                 new Color(0.12f, 0.20f, 0.22f),
                 false);
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.BedOccluderId,
+                new List<GameObject> { shirt });
             RuntimePrimitiveFactory.CreateBox(
                 "Home Worn Slipper Left",
                 room,
@@ -257,7 +281,8 @@ namespace BarPromenade
 
         private static void BuildPersonalDetails(
             Transform room,
-            HomeInteriorLayoutPlan plan)
+            HomeInteriorLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             if (!plan.TryGetFurniture(
                     HomeFurnitureKind.Bookcase,
@@ -271,29 +296,30 @@ namespace BarPromenade
                 HomeInteriorWorldBuilder
                     .BookcaseDressingSurfaceHeight,
                 bookcase.Bounds.center.y);
-            RuntimePrimitiveFactory.CreateBox(
+            var cabinetParts = new List<GameObject>();
+            cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Old Radio",
                 room,
                 cabinetSurface + Vector3.up * 0.15f,
                 new Vector3(0.56f, 0.30f, 0.36f),
                 new Color(0.10f, 0.095f, 0.08f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Radio Dial",
                 room,
                 cabinetSurface +
                 new Vector3(0f, 0.16f, -0.19f),
                 new Vector3(0.32f, 0.12f, 0.018f),
                 new Color(0.36f, 0.20f, 0.09f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Faded Photograph",
                 room,
                 cabinetSurface +
                 new Vector3(-0.33f, 0.17f, 0.03f),
                 new Vector3(0.28f, 0.34f, 0.05f),
                 new Color(0.38f, 0.31f, 0.22f),
-                false);
+                false));
             RuntimePrimitiveFactory.CreateBox(
                 "Home Old Calendar",
                 room,
@@ -301,17 +327,23 @@ namespace BarPromenade
                 new Vector3(0.58f, 0.78f, 0.02f),
                 DirtyPaper,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Pill Blister",
                 room,
                 cabinetSurface +
                 new Vector3(0.28f, 0.013f, -0.05f),
                 new Vector3(0.34f, 0.025f, 0.18f),
                 new Color(0.55f, 0.55f, 0.48f),
-                false);
+                false));
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.BookcaseOccluderId,
+                cabinetParts);
         }
 
-        private static void BuildFloorClutter(Transform room)
+        private static void BuildFloorClutter(
+            Transform room,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             RuntimePrimitiveFactory.CreateBox(
                 "Home Folded Newspaper",
@@ -320,13 +352,18 @@ namespace BarPromenade
                 new Vector3(0.74f, 0.025f, 0.56f),
                 DirtyPaper,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject cardboardBox =
+                RuntimePrimitiveFactory.CreateBox(
                 "Home Cardboard Box",
                 room,
                 new Vector3(3.78f, 0.92f, -1.62f),
                 new Vector3(0.62f, 0.48f, 0.58f),
                 new Color(0.30f, 0.20f, 0.12f),
                 false);
+            AddToGroup(
+                occlusionRegistry,
+                HomeInteriorWorldBuilder.SofaOccluderId,
+                new List<GameObject> { cardboardBox });
             CreateCan(
                 "Home Floor Can",
                 room,
@@ -334,42 +371,56 @@ namespace BarPromenade
                 new Color(0.33f, 0.27f, 0.16f));
         }
 
-        private static void CreateBottle(
+        private static GameObject[] CreateBottle(
             string name,
             Transform parent,
             Vector3 position,
             Color color,
             float height)
         {
-            RuntimePrimitiveFactory.CreateCylinder(
+            GameObject body = RuntimePrimitiveFactory.CreateCylinder(
                 name,
                 parent,
                 position + Vector3.up * height,
                 new Vector3(0.13f, height, 0.13f),
                 color,
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            GameObject neck = RuntimePrimitiveFactory.CreateCylinder(
                 name + " Neck",
                 parent,
                 position + Vector3.up * (height * 2f + 0.055f),
                 new Vector3(0.055f, 0.055f, 0.055f),
                 color,
                 false);
+            return new[] { body, neck };
         }
 
-        private static void CreateCan(
+        private static GameObject CreateCan(
             string name,
             Transform parent,
             Vector3 position,
             Color color)
         {
-            RuntimePrimitiveFactory.CreateCylinder(
+            return RuntimePrimitiveFactory.CreateCylinder(
                 name,
                 parent,
                 position,
                 new Vector3(0.16f, 0.095f, 0.16f),
                 color,
                 false);
+        }
+
+        private static void AddToGroup(
+            HomeOcclusionRegistry registry,
+            string id,
+            List<GameObject> objects)
+        {
+            if (registry == null || objects == null || objects.Count == 0)
+            {
+                return;
+            }
+
+            registry.AddRenderers(id, objects.ToArray());
         }
 
         private static void CreatePipe(

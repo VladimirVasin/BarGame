@@ -249,6 +249,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the authored `64 x 96` aspect across the main-room, bathroom and third
   balcony shots; disabling or destroying the controller restores the shared
   default billboard behavior.
+- **Accepted — Explicit Home foreground cutaway:** Runtime Home builders
+  register logical renderer groups for furniture and its attached dressing,
+  bathroom and balcony doors, soft bathroom dressing and the visible balcony
+  rail sections. Each group owns a validated kind and minimum visibility;
+  renderers cannot belong to two groups. The structural room shell, glass,
+  practical lights and invisible safety colliders are deliberately absent from
+  the registry. `HomeOcclusionResolver` derives five camera-plane points from
+  the combined live player-renderer bounds: head, left chest, right chest,
+  pelvis and feet. Only the first four are protected, so low furniture may
+  still hide the feet without flattening scene depth. If any registered
+  renderer bounds intersects a camera segment to a protected point,
+  `HomePlayerOcclusionController` fades the whole logical group toward its
+  authored `0.15-0.23` floor. One shared opaque, depth-writing alpha-clip
+  dither material receives `_HomeOcclusionVisibility` through one reused
+  `MaterialPropertyBlock`; no per-renderer materials are created and
+  existing color properties survive. Its ForwardLit variants retain the PC
+  renderer's clustered additional lights, light cookies, light layers and
+  reflection probes, while matching alpha-clipped shadow, depth and depth-normal
+  passes keep shadows and SSAO coherent with the visible pattern. Fade-out
+  takes `0.15 s`, a cleared group
+  holds for `0.12 s`, and restoration takes `0.30 s`, all in unscaled time.
+  Renderer presentation never disables or changes colliders, triggers or
+  GameObjects. Opening, refrigerator and animated Home interactions suspend
+  the cutaway and restore full opacity; disable, destruction and camera release
+  also clear presentation state, with original shared materials restored when
+  the controller is destroyed.
 - **Accepted — Ordered session route:** The current itinerary is a unique
   ordered list of stable `BarId` values. A separate visited-ID set survives
   scene loads for the same city. A terminal bar activity reports completion

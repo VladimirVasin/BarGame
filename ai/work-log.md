@@ -2,6 +2,50 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-01 — Home player visibility through foreground objects
+
+- Added one explicit Home occlusion registry populated by the runtime world,
+  dressing, bathroom and balcony builders. Logical furniture, decoration,
+  door and visible rail groups own stable IDs, kinds, renderer membership and
+  authored minimum visibility, while the room shell, glass, lights and safety
+  colliders remain outside the presentation system. The tall box on the sofa
+  joins the sofa group, and the alarm-clock nightstand plus opaque clock shell
+  form their own group while the emissive digits remain untouched.
+- Corrected multi-object registration to accumulate renderers from every
+  supplied source instead of retaining only the last source, with a dedicated
+  regression proving that all parts of a composite object stay together.
+- Added a pure bounds resolver with five camera-plane player samples. Rays to
+  the head, left/right chest and pelvis protect the readable body; the feet
+  sample remains diagnostic so low foreground objects may preserve natural
+  depth.
+- Added a Home-owned controller that fades an entire blocking group through
+  one shared opaque alpha-clip dither material. It uses a `0.15 s` fade-out,
+  `0.12 s` clear hold and `0.30 s` restoration, preserves existing property
+  block colors and never changes colliders or GameObject state.
+- Kept the replacement material compatible with the active PC Forward+
+  renderer: clustered additional lights, cookies, light layers and reflection
+  probes remain available, and clipped shadow, depth and depth-normal passes
+  keep the fade coherent with shadows and SSAO.
+- Opening, refrigerator and animated Home interactions suspend the cutaway and
+  restore full opacity. Controller cleanup restores the original shared
+  materials.
+- Added registry/resolver contracts, a synthetic grouped controller lifecycle
+  regression, a GPU coverage check for the dither shader and a balcony-scene
+  presentation regression.
+
+Verification:
+
+- Focused Home occlusion EditMode checks passed, including the `12/12`
+  registry contract suite; the complete EditMode suite passed `685/685`.
+- Focused controller/GPU checks passed `3/3`, including real dither coverage
+  and clustered Forward+ additional-light rendering; all Home PlayMode checks
+  passed `27/27` and the complete PlayMode suite passed `128/128`.
+- Runtime, Editor, EditModeTests and PlayModeTests assemblies built with zero
+  compiler warnings and errors.
+- Windows x64 player build succeeded at `148,501,936` bytes. Its one warning is
+  the package-owned `Hidden/Core/DebugOccluder` vector-truncation warning, not
+  a project shader warning.
+
 ## 2026-08-01 — First-class open district points of interest
 
 - Replaced the temporary four facade POIs with a canonical layout-owned public

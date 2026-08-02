@@ -228,6 +228,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     HomeCameraShotKind.Balcony));
+            yield return AssertBalconyOcclusionPresentation(home);
             AssertPlayerVisible(
                 camera,
                 home.Player.GameObject.transform);
@@ -262,6 +263,118 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Null,
                 $"Missing generated object '{path}'.");
             return result;
+        }
+
+        private static IEnumerator AssertBalconyOcclusionPresentation(
+            HomeInteriorRoot home)
+        {
+            Assert.That(home.OcclusionRegistry, Is.Not.Null);
+            Assert.That(home.PlayerOcclusion, Is.Not.Null);
+            Assert.That(home.PlayerOcclusion.IsInitialized, Is.True);
+            string[] railGroupIds =
+            {
+                "home.balcony.rail.outer",
+                "home.balcony.rail.south",
+                "home.balcony.rail.north"
+            };
+            for (int index = 0;
+                 index < railGroupIds.Length;
+                 index++)
+            {
+                Assert.That(
+                    home.OcclusionRegistry.TryGetGroup(
+                        railGroupIds[index],
+                        out HomeOccluderGroup group),
+                    Is.True);
+                Assert.That(
+                    group.Kind,
+                    Is.EqualTo(HomeOccluderKind.VisualRail));
+                Assert.That(group.Renderers, Is.Not.Empty);
+                for (int rendererIndex = 0;
+                     rendererIndex < group.Renderers.Count;
+                     rendererIndex++)
+                {
+                    Renderer renderer = group.Renderers[rendererIndex];
+                    Assert.That(
+                        renderer.sharedMaterial,
+                        Is.SameAs(
+                            HomeOcclusionResources.DitherMaterial));
+                    Assert.That(
+                        renderer.GetComponent<Collider>(),
+                        Is.Null,
+                        "Visible balcony rails must remain separate from safety colliders.");
+                }
+
+            }
+
+            Assert.That(
+                home.OcclusionRegistry.TryGetGroup(
+                    "home.balcony.ajar-door",
+                    out HomeOccluderGroup doorGroup),
+                Is.True);
+            Assert.That(
+                doorGroup.Kind,
+                Is.EqualTo(HomeOccluderKind.StructuralCutaway));
+            Assert.That(doorGroup.Renderers, Is.Not.Empty);
+            for (int index = 0;
+                 index < doorGroup.Renderers.Count;
+                 index++)
+            {
+                Renderer renderer = doorGroup.Renderers[index];
+                Assert.That(
+                    renderer.name,
+                    Does.Not.Contain("Glass"));
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(HomeOcclusionResources.DitherMaterial));
+            }
+
+            Rect activation =
+                home.BalconyLayout.BalconyCameraActivationBounds;
+            Vector2[] samples =
+            {
+                new Vector2(
+                    activation.xMin + 0.20f,
+                    PlayerHomeBalconyGeometry.DoorCenterZ),
+                new Vector2(
+                    activation.xMin + 0.50f,
+                    PlayerHomeBalconyGeometry.DoorCenterZ),
+                new Vector2(
+                    activation.xMin + 0.80f,
+                    PlayerHomeBalconyGeometry.DoorCenterZ),
+                new Vector2(
+                    activation.xMin + 1.10f,
+                    PlayerHomeBalconyGeometry.DoorCenterZ)
+            };
+            bool fadedDoorFound = false;
+            for (int sampleIndex = 0;
+                 sampleIndex < samples.Length &&
+                 !fadedDoorFound;
+                 sampleIndex++)
+            {
+                home.Player.Motor.Teleport(
+                    new Vector3(
+                        samples[sampleIndex].x,
+                        home.Layout.PlayerSpawn.y,
+                        samples[sampleIndex].y));
+                yield return null;
+                home.PlayerOcclusion.RefreshImmediate();
+                fadedDoorFound =
+                    home.PlayerOcclusion.GetVisibility(
+                        doorGroup) < 0.999f;
+            }
+
+            Assert.That(
+                fadedDoorFound,
+                Is.True,
+                "The balcony shot must reveal the player through the open door leaf near the doorway.");
+
+            home.Player.Motor.Teleport(
+                new Vector3(
+                    activation.center.x,
+                    home.Layout.PlayerSpawn.y,
+                    activation.center.y));
+            yield return null;
         }
 
         private static void AssertPhysicalSurface(

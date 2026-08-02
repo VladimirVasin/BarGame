@@ -17,12 +17,14 @@ Assets/
   Resources/
     Materials/
       CityNoirEmission.mat
+      HomeOccluderDither.mat       shared opaque Home foreground cutaway
       Ps1Composite.mat
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Rendering/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
       PlayerAnimatedInteractionOverlay.shader  depth-independent contextual sprite
       PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
@@ -92,6 +94,7 @@ Assets/
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         RoadWalkableArea.cs      street/park/public XZ union; surfaces own height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
+        HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
         HomeExteriorContextPlan.cs  bounded same-seed street view descriptors
@@ -130,6 +133,8 @@ Assets/
         HomeSoundscape*.cs               paired fridge hum, balcony bed and domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
+        HomeOcclusionResolver.cs      five camera-to-player sample rays
+        HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
         HomeInteriorAtmosphere.cs     two practicals + exit/window Spots, grade and dust
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
@@ -153,6 +158,7 @@ Assets/
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       HomeRefrigeratorItem{Catalog,InspectionTimeline}Tests.cs  metadata and nested phases
+      HomeOcclusion{Registry,Resolver}Tests.cs  group and ray contracts
       InteractionPromptViewTests.cs          prompt callback lifecycle
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
@@ -160,6 +166,7 @@ Assets/
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
+      HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
 ArtSource/
   Player/
@@ -284,6 +291,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                     -> PlayerCameraFollow fixed pose
                                     -> BillboardSprite camera-plane opt-in
                                        -> reset when fixed control ends
+       -> HomeOcclusionRegistry -> furniture/dressing/door/rail renderer groups
+                                -> HomePlayerOcclusionController
+                                   -> five camera-to-sprite samples
+                                   -> head/chest/pelvis rays trigger group cutaway
+                                   -> shared dither fade / hold / restore
+                                   -> full opacity during Home modal presentation
        -> HomeBedInteractionPlan -> reachable open-side trigger
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController

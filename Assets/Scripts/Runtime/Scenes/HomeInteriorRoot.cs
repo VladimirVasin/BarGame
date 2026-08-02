@@ -62,6 +62,16 @@ namespace BarPromenade
         public HomeInteriorAtmosphere Atmosphere { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public HomeFixedCameraController FixedCamera { get; private set; }
+        public HomeOcclusionRegistry OcclusionRegistry
+        {
+            get;
+            private set;
+        }
+        public HomePlayerOcclusionController PlayerOcclusion
+        {
+            get;
+            private set;
+        }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -113,6 +123,13 @@ namespace BarPromenade
                 Layout,
                 BalconyLayout,
                 ExteriorContext);
+            OcclusionRegistry =
+                Room.GetComponent<HomeOcclusionRegistry>();
+            if (OcclusionRegistry == null)
+            {
+                throw new InvalidOperationException(
+                    "The generated Home is missing its occlusion registry.");
+            }
             Refrigerator =
                 Room.GetComponentInChildren<
                     HomeRefrigeratorView>(true);
@@ -126,7 +143,8 @@ namespace BarPromenade
             AlarmClock =
                 HomeAlarmClockBuilder.Build(
                     Room,
-                    AlarmClockPlan);
+                    AlarmClockPlan,
+                    OcclusionRegistry);
             Balcony = Room.Find("Home Balcony");
             ExteriorView =
                 Room.Find("Home Exterior View");
@@ -217,6 +235,8 @@ namespace BarPromenade
                 BuildOpening();
             }
 
+            BuildPlayerOcclusion(camera);
+
             IsInitialized = true;
             timer.Stop();
             GameLog.Info(
@@ -259,6 +279,22 @@ namespace BarPromenade
                 openingObject.AddComponent<
                     HomeOpeningController>();
             Opening.Initialize(this);
+        }
+
+        private void BuildPlayerOcclusion(Camera camera)
+        {
+            GameObject occlusionObject =
+                new GameObject("Home Player Occlusion");
+            occlusionObject.transform.SetParent(transform, false);
+            PlayerOcclusion =
+                occlusionObject.AddComponent<
+                    HomePlayerOcclusionController>();
+            PlayerOcclusion.Initialize(
+                this,
+                camera,
+                Player.Visual,
+                OcclusionRegistry,
+                FixedCamera);
         }
 
         private static IReadOnlyList<HomeCameraShot>

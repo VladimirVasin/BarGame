@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -10,6 +11,8 @@ namespace BarPromenade
     /// </summary>
     public static class HomeBalconyWorldBuilder
     {
+        private const float RailMinimumVisibility = 0.18f;
+        private const float StructuralMinimumVisibility = 0.15f;
         private static readonly Color Slab =
             new Color(0.23f, 0.23f, 0.20f);
         private static readonly Color Rail =
@@ -32,6 +35,19 @@ namespace BarPromenade
             HomeInteriorLayoutPlan interior,
             HomeBalconyLayoutPlan plan)
         {
+            return Build(
+                parent,
+                interior,
+                plan,
+                null);
+        }
+
+        internal static Transform Build(
+            Transform parent,
+            HomeInteriorLayoutPlan interior,
+            HomeBalconyLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -46,9 +62,9 @@ namespace BarPromenade
             root.SetParent(parent, false);
             BuildFacadeContinuation(root, interior, plan);
             BuildDeck(root, plan);
-            BuildGuards(root, plan);
+            BuildGuards(root, plan, occlusionRegistry);
             BuildWindow(root, plan);
-            BuildDoor(root, plan);
+            BuildDoor(root, plan, occlusionRegistry);
             return root;
         }
 
@@ -242,7 +258,8 @@ namespace BarPromenade
 
         private static void BuildGuards(
             Transform parent,
-            HomeBalconyLayoutPlan plan)
+            HomeBalconyLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             Rect bounds = plan.BalconyBounds;
             float guardHeight =
@@ -284,7 +301,10 @@ namespace BarPromenade
                     guardHeight,
                     thickness));
 
-            RuntimePrimitiveFactory.CreateBox(
+            var outerParts = new List<GameObject>();
+            var southParts = new List<GameObject>();
+            var northParts = new List<GameObject>();
+            outerParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Outer Rail Cap",
                 parent,
                 new Vector3(
@@ -296,8 +316,8 @@ namespace BarPromenade
                     0.07f,
                     bounds.height + 0.06f),
                 Rail,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            southParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony South Rail Cap",
                 parent,
                 new Vector3(
@@ -309,8 +329,8 @@ namespace BarPromenade
                     0.07f,
                     thickness + 0.08f),
                 Rail,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
+                false));
+            northParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony North Rail Cap",
                 parent,
                 new Vector3(
@@ -322,7 +342,7 @@ namespace BarPromenade
                     0.07f,
                     thickness + 0.08f),
                 Rail,
-                false);
+                false));
 
             float halfWidth =
                 PlayerHomeBalconyGeometry
@@ -344,37 +364,51 @@ namespace BarPromenade
                          .BalconyWidth -
                      thickness) *
                     0.25f;
-                CreateRailPost(
+                outerParts.Add(CreateRailPost(
                     parent,
                     "Home Balcony Outer Post",
                     outerX,
                     z,
                     guardHeight,
-                    thickness);
+                    thickness));
             }
 
             for (int side = -1;
                  side <= 1;
                  side += 2)
             {
-                CreateRailPost(
-                    parent,
-                    side < 0
-                        ? "Home Balcony South Post"
-                        : "Home Balcony North Post",
-                    PlayerHomeBalconyGeometry
-                        .HomeFacadeX +
-                    PlayerHomeBalconyGeometry
-                        .BalconyDepth *
-                    0.52f,
-                    PlayerHomeBalconyGeometry
-                        .BalconyCenterZ +
-                    side *
-                    (halfWidth -
-                     thickness * 0.5f),
-                    guardHeight,
-                    thickness);
+                GameObject post = CreateRailPost(
+                        parent,
+                        side < 0
+                            ? "Home Balcony South Post"
+                            : "Home Balcony North Post",
+                        PlayerHomeBalconyGeometry
+                            .HomeFacadeX +
+                        PlayerHomeBalconyGeometry
+                            .BalconyDepth *
+                        0.52f,
+                        PlayerHomeBalconyGeometry
+                            .BalconyCenterZ +
+                        side *
+                        (halfWidth -
+                         thickness * 0.5f),
+                        guardHeight,
+                        thickness);
+                (side < 0 ? southParts : northParts).Add(post);
             }
+
+            RegisterRail(
+                occlusionRegistry,
+                "home.balcony.rail.outer",
+                outerParts);
+            RegisterRail(
+                occlusionRegistry,
+                "home.balcony.rail.south",
+                southParts);
+            RegisterRail(
+                occlusionRegistry,
+                "home.balcony.rail.north",
+                northParts);
         }
 
         private static void CreateInvisibleGuard(
@@ -395,7 +429,7 @@ namespace BarPromenade
             collider.size = size;
         }
 
-        private static void CreateRailPost(
+        private static GameObject CreateRailPost(
             Transform parent,
             string name,
             float x,
@@ -403,7 +437,7 @@ namespace BarPromenade
             float height,
             float thickness)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            return RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
                 new Vector3(
@@ -416,6 +450,23 @@ namespace BarPromenade
                     thickness),
                 Rail,
                 false);
+        }
+
+        private static void RegisterRail(
+            HomeOcclusionRegistry registry,
+            string id,
+            List<GameObject> parts)
+        {
+            if (registry == null || parts == null || parts.Count == 0)
+            {
+                return;
+            }
+
+            registry.Register(
+                id,
+                HomeOccluderKind.VisualRail,
+                RailMinimumVisibility,
+                parts.ToArray());
         }
 
         private static void BuildWindow(
@@ -515,7 +566,8 @@ namespace BarPromenade
 
         private static void BuildDoor(
             Transform parent,
-            HomeBalconyLayoutPlan plan)
+            HomeBalconyLayoutPlan plan,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             Vector3 center = plan.DoorCenter;
             Vector3 size = plan.DoorSize;
@@ -566,22 +618,27 @@ namespace BarPromenade
                 center.z - size.z * 0.5f);
             pivot.localRotation =
                 Quaternion.Euler(0f, 76f, 0f);
-            BuildDoorLeaf(pivot, size);
+            BuildDoorLeaf(
+                pivot,
+                size,
+                occlusionRegistry);
         }
 
         private static void BuildDoorLeaf(
             Transform pivot,
-            Vector3 openingSize)
+            Vector3 openingSize,
+            HomeOcclusionRegistry occlusionRegistry)
         {
             float width = openingSize.z - 0.12f;
             float height = openingSize.y - 0.08f;
             const float frameWidth = 0.105f;
             const float leafDepth = 0.075f;
             float centerZ = width * 0.5f;
+            var cutawayParts = new List<GameObject>();
 
             for (int side = 0; side < 2; side++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                cutawayParts.Add(RuntimePrimitiveFactory.CreateBox(
                     "Home Balcony Door Leaf Stile",
                     pivot,
                     new Vector3(
@@ -596,32 +653,32 @@ namespace BarPromenade
                         height,
                         frameWidth),
                     Door,
-                    false);
+                    false));
             }
 
-            CreateDoorLeafRail(
+            cutawayParts.Add(CreateDoorLeafRail(
                 pivot,
                 "Home Balcony Door Leaf Bottom Rail",
                 0.10f,
                 width,
                 leafDepth,
-                frameWidth);
-            CreateDoorLeafRail(
+                frameWidth));
+            cutawayParts.Add(CreateDoorLeafRail(
                 pivot,
                 "Home Balcony Door Leaf Middle Rail",
                 0.86f,
                 width,
                 leafDepth,
-                frameWidth);
-            CreateDoorLeafRail(
+                frameWidth));
+            cutawayParts.Add(CreateDoorLeafRail(
                 pivot,
                 "Home Balcony Door Leaf Top Rail",
                 height - frameWidth * 0.5f,
                 width,
                 leafDepth,
-                frameWidth);
+                frameWidth));
 
-            RuntimePrimitiveFactory.CreateBox(
+            cutawayParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Door Lower Panel",
                 pivot,
                 new Vector3(
@@ -633,7 +690,7 @@ namespace BarPromenade
                     0.62f,
                     width - frameWidth * 2f),
                 Door,
-                false);
+                false));
             RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Door Glass",
                 pivot,
@@ -665,9 +722,16 @@ namespace BarPromenade
                     false);
             handle.transform.localRotation =
                 Quaternion.Euler(0f, 0f, 90f);
+            cutawayParts.Add(handle);
+
+            occlusionRegistry?.Register(
+                "home.balcony.ajar-door",
+                HomeOccluderKind.StructuralCutaway,
+                StructuralMinimumVisibility,
+                cutawayParts.ToArray());
         }
 
-        private static void CreateDoorLeafRail(
+        private static GameObject CreateDoorLeafRail(
             Transform pivot,
             string name,
             float y,
@@ -675,7 +739,7 @@ namespace BarPromenade
             float depth,
             float frameWidth)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            return RuntimePrimitiveFactory.CreateBox(
                 name,
                 pivot,
                 new Vector3(

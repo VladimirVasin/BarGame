@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### 2026-08-01 — Readable hero inside the apartment
+
+- Furniture, clutter, bathroom doors and balcony rails now dissolve into a
+  coarse PS1-style dither only when they block the hero's head or body from the
+  active Home camera. Every part of one object fades together instead of
+  leaving detached cushions, shelves or rail posts on screen.
+- Low objects may still cover the hero's feet, preserving the sense that the
+  character stands inside the room rather than being drawn over it. Cleared
+  objects return smoothly instead of popping, while their room lighting,
+  shadows and ambient occlusion remain consistent during the effect.
+- Collision, safety barriers, windows, lighting and the apartment shell remain
+  unchanged. The effect returns objects to full opacity during the waking,
+  bed and refrigerator presentations.
+
 ### 2026-08-01 — Four open district places
 
 - Replaced the four facade-only POIs with full open city lots: Old Town's
