@@ -26,6 +26,33 @@ namespace BarPromenade
         public Collider SelectionCollider => selectionCollider;
         public SupermarketShelfView Shelf { get; private set; }
 
+        public bool TryGetWorldBounds(out Bounds bounds)
+        {
+            bounds = default;
+            bool hasBounds = false;
+            Renderer[] renderers = productRenderers ?? Array.Empty<Renderer>();
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer productRenderer = renderers[index];
+                if (productRenderer == null)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = productRenderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(productRenderer.bounds);
+                }
+            }
+
+            return hasBounds;
+        }
+
         internal void Initialize(
             InventoryItemId newItemId,
             string newSourceId,

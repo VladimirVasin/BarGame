@@ -242,9 +242,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` runtime-composed
   room with protected aisles, three shelf sections, a stockroom facade and a
   decorative checkout plus cashier. The cashier and register do not process
-  sales. Each shelf owns an authored fixed camera and one interaction station;
-  its modal browser selects the actual physical products by pointer, keyboard
-  or gamepad without replacing or fading the player sprite.
+  sales. Each shelf owns an authored fixed camera and one interaction station.
+  One continuous modal browser cycles through every available physical product
+  in deterministic shelf/slot order, skips empty shelves and never releases its
+  captured player/camera state while changing shelves. The selected shelf keeps
+  its authored camera position and field of view while the rotation targets the
+  combined world renderer bounds of the selected product. Muted clickable
+  previous/next arrows follow the product's projected screen bounds; pointer,
+  keyboard and gamepad all use the same navigation path without replacing or
+  fading the player sprite.
   `SupermarketProductCatalog` offers exactly one physical chicken egg, vodka
   bottle, closed stew can, instant noodles and day-old loaf. Each product has a
   stable source ID. `GameSessionState.TryPurchaseWorldItem` is the sole commit

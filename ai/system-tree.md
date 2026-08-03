@@ -497,8 +497,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                 -> vodka + closed stew
                                                 -> chicken egg
                                              -> decorative checkout + cashier
-       -> SupermarketShelfStation -> authored fixed shelf camera
-                                   -> pointer/keyboard/gamepad product selection
+       -> SupermarketShelfStation -> product-centered authored shelf camera
+                                   -> cyclic stocked-shelf navigation
+                                      -> muted clickable arrows beside product
+                                      -> pointer/keyboard/gamepad shared action
                                    -> SupermarketPurchaseRules
                                       -> atomic cash + inventory + source commit
                                       -> remove physical product immediately

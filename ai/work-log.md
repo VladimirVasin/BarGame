@@ -2,6 +2,29 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Product-centered cross-shelf supermarket browsing
+
+- Kept the shelf browser under one modal ownership while extending previous/
+  next selection across the deterministic dry, pantry/spirits and cold shelf
+  order. Empty shelves are skipped in both directions, and buying a shelf's
+  final product continues at the next stocked shelf instead of closing early.
+- Reused every shelf's authored fixed camera position and field of view, but now
+  aim it at the combined world renderer bounds of the highlighted product on
+  open, selection, shelf transfer and post-purchase fallback.
+- Added low-contrast `<`/`>` controls immediately beside the selected model's
+  projected screen bounds. They brighten only on hover, share the existing
+  keyboard/gamepad navigation action and block click-through into world stock;
+  no footer control hint was added.
+
+Verification:
+
+- Focused PlayMode `SupermarketPurchasePersistencePlayModeTests` passed `2/2`,
+  covering product centering, arrow placement/hit blocking, bidirectional shelf
+  transfer, empty-shelf skipping, continued browsing after purchase, exact
+  modal/camera/input restoration and the existing reload persistence contract.
+- Full suites, player build and startup smoke were intentionally not run under
+  the fast-mode verification policy.
+
 ## 2026-08-04 — Finite-stock supermarket
 
 - Added `SupermarketInterior` as a seventh build scene and registered its

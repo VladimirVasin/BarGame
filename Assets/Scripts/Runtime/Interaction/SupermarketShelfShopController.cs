@@ -16,6 +16,8 @@ namespace BarPromenade
             new BarMinigameModalLock();
         private readonly List<SupermarketProductView> products =
             new List<SupermarketProductView>();
+        private readonly List<SupermarketShelfView> shelves =
+            new List<SupermarketShelfView>();
         private readonly Dictionary<SupermarketProductView, Vector3>
             productBaseScales =
                 new Dictionary<SupermarketProductView, Vector3>();
@@ -39,6 +41,7 @@ namespace BarPromenade
         public int CashBalance => GameSessionState.CashBalance;
         public SupermarketShelfView ActiveShelf => activeShelf;
         public IReadOnlyList<SupermarketProductView> Products => products;
+        public bool CanNavigate => CountAvailableProducts() > 1;
         public SupermarketProductView SelectedProduct =>
             products.Count > 0
                 ? products[Mathf.Clamp(
@@ -56,7 +59,7 @@ namespace BarPromenade
             SupermarketShelfShopView shopView,
             IntoxicationHudView intoxicationHud,
             PlayerCameraFollow follow,
-            IReadOnlyList<SupermarketShelfView> shelves)
+            IReadOnlyList<SupermarketShelfView> shopShelves)
         {
             Close();
             view = shopView;
@@ -65,18 +68,21 @@ namespace BarPromenade
             targetCamera = follow != null
                 ? follow.GetComponent<Camera>()
                 : Camera.main;
+            shelves.Clear();
             productBaseScales.Clear();
-            if (shelves != null)
+            if (shopShelves != null)
             {
                 for (int shelfIndex = 0;
-                     shelfIndex < shelves.Count;
+                     shelfIndex < shopShelves.Count;
                      shelfIndex++)
                 {
-                    SupermarketShelfView shelf = shelves[shelfIndex];
+                    SupermarketShelfView shelf = shopShelves[shelfIndex];
                     if (shelf == null)
                     {
                         continue;
                     }
+
+                    shelves.Add(shelf);
 
                     for (int productIndex = 0;
                          productIndex < shelf.Products.Count;
@@ -87,7 +93,7 @@ namespace BarPromenade
                 }
             }
 
-            view?.Initialize(this);
+            view?.Initialize(this, targetCamera);
         }
 
         public bool IsShelfAvailable(SupermarketShelfView shelf)
@@ -141,8 +147,8 @@ namespace BarPromenade
                 FeedbackKey = string.Empty;
                 inputUnlockFrame = Time.frameCount + 1;
                 IsOpen = true;
-                ApplyShelfCamera();
                 ApplySelectionHighlight();
+                ApplySelectedProductCamera();
                 Physics.SyncTransforms();
                 RetroAudio.Play(RetroSfxId.UiConfirm);
                 return true;
@@ -167,6 +173,8 @@ namespace BarPromenade
             SelectedIndex = index;
             FeedbackKey = string.Empty;
             ApplySelectionHighlight();
+            ApplySelectedProductCamera();
+            Physics.SyncTransforms();
             if (changed)
             {
                 RetroAudio.Play(RetroSfxId.UiMove);
@@ -177,15 +185,20 @@ namespace BarPromenade
 
         public bool MoveSelection(int direction)
         {
-            if (!IsOpen || products.Count == 0 || direction == 0)
+            if (!IsOpen || products.Count == 0 || direction == 0 ||
+                !CanNavigate)
             {
                 return false;
             }
 
-            int next =
-                (SelectedIndex + Math.Sign(direction) + products.Count) %
-                products.Count;
-            return Select(next);
+            int step = Math.Sign(direction);
+            int next = SelectedIndex + step;
+            if (next >= 0 && next < products.Count)
+            {
+                return Select(next);
+            }
+
+            return MoveToAdjacentShelf(step, true);
         }
 
         public bool ConfirmSelection()
@@ -221,19 +234,26 @@ namespace BarPromenade
 
             FeedbackKey = string.Empty;
             RetroAudio.Play(RetroSfxId.UiConfirm);
+            int removedIndex = SelectedIndex;
             RefreshProducts();
             Physics.SyncTransforms();
             if (products.Count == 0)
             {
-                Close();
+                inputUnlockFrame = Time.frameCount + 1;
+                if (!MoveToAdjacentShelf(1, false))
+                {
+                    Close();
+                }
+
                 return true;
             }
 
             SelectedIndex = Mathf.Clamp(
-                SelectedIndex,
+                removedIndex,
                 0,
                 products.Count - 1);
             ApplySelectionHighlight();
+            ApplySelectedProductCamera();
             inputUnlockFrame = Time.frameCount + 1;
             return true;
         }
@@ -286,13 +306,22 @@ namespace BarPromenade
             }
 
             Mouse mouse = Mouse.current;
-            if (mouse != null && mouse.leftButton.wasPressedThisFrame &&
-                TryFindPointedProduct(
-                    mouse.position.ReadValue(),
-                    out SupermarketProductView pointed))
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
-                Select(products.IndexOf(pointed));
-                return;
+                Vector2 pointer = mouse.position.ReadValue();
+                if (view != null &&
+                    view.ContainsPointerBlockingWorldSelection(pointer))
+                {
+                    return;
+                }
+
+                if (TryFindPointedProduct(
+                        pointer,
+                        out SupermarketProductView pointed))
+                {
+                    Select(products.IndexOf(pointed));
+                    return;
+                }
             }
 
             if (IsConfirmPressed())
@@ -325,10 +354,24 @@ namespace BarPromenade
                 cameraFollow.FixedBaseFieldOfView;
         }
 
-        private void ApplyShelfCamera()
+        private void ApplySelectedProductCamera()
         {
-            Vector3 direction =
-                activeShelf.CameraLookAt - activeShelf.CameraPosition;
+            SupermarketProductView selected = SelectedProduct;
+            if (activeShelf == null || selected == null)
+            {
+                return;
+            }
+
+            Vector3 lookAt = selected.TryGetWorldBounds(out Bounds bounds)
+                ? bounds.center
+                : selected.OriginalRoot.position;
+            Vector3 direction = lookAt - activeShelf.CameraPosition;
+            if (direction.sqrMagnitude < 0.0001f)
+            {
+                direction = activeShelf.CameraLookAt -
+                            activeShelf.CameraPosition;
+            }
+
             if (direction.sqrMagnitude < 0.0001f)
             {
                 direction = Vector3.forward;
@@ -388,6 +431,83 @@ namespace BarPromenade
                 CaptureBaseScale(product);
                 products.Add(product);
             }
+        }
+
+        private bool MoveToAdjacentShelf(
+            int direction,
+            bool playAudio)
+        {
+            if (!IsOpen || activeShelf == null || shelves.Count == 0 ||
+                direction == 0)
+            {
+                return false;
+            }
+
+            int activeIndex = shelves.IndexOf(activeShelf);
+            if (activeIndex < 0)
+            {
+                return false;
+            }
+
+            int step = Math.Sign(direction);
+            for (int offset = 1; offset <= shelves.Count; offset++)
+            {
+                int candidateIndex =
+                    (activeIndex + step * offset + shelves.Count) %
+                    shelves.Count;
+                SupermarketShelfView candidate = shelves[candidateIndex];
+                if (!IsShelfAvailable(candidate))
+                {
+                    continue;
+                }
+
+                ResetSelectionHighlight();
+                activeShelf = candidate;
+                RefreshProducts();
+                SelectedIndex = step > 0 ? 0 : products.Count - 1;
+                FeedbackKey = string.Empty;
+                ApplySelectionHighlight();
+                ApplySelectedProductCamera();
+                Physics.SyncTransforms();
+                if (playAudio)
+                {
+                    RetroAudio.Play(RetroSfxId.UiMove);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private int CountAvailableProducts()
+        {
+            int count = 0;
+            for (int shelfIndex = 0;
+                 shelfIndex < shelves.Count;
+                 shelfIndex++)
+            {
+                SupermarketShelfView shelf = shelves[shelfIndex];
+                if (shelf == null)
+                {
+                    continue;
+                }
+
+                for (int productIndex = 0;
+                     productIndex < shelf.Products.Count;
+                     productIndex++)
+                {
+                    SupermarketProductView product =
+                        shelf.Products[productIndex];
+                    if (product != null && product.OriginalRoot != null &&
+                        product.OriginalRoot.gameObject.activeInHierarchy)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
         }
 
         private void CaptureBaseScale(SupermarketProductView product)

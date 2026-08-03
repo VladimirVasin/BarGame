@@ -11,6 +11,11 @@
   instant noodles and a day-old loaf. Activate a shelf, select the physical
   product with mouse, keyboard or gamepad, and buy it with the same session cash
   shown in the inventory.
+- The shelf camera now centers every selected product and follows selection
+  across all three shelf sections without leaving the browser. Quiet clickable
+  arrows sit immediately beside the product; the same previous/next actions
+  work from keyboard and gamepad, skip empty shelves and continue after the
+  last item on one shelf is bought.
 - A successful purchase adds one item to the hero's inventory and removes that
   exact model from the shelf immediately. It stays gone after leaving and
   returning to the shop, and stock resets only when a new game begins.

@@ -331,9 +331,13 @@ The vertical slice contains:
 - one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
   protected aisles, three shelf sections, a stockroom facade and a decorative
   checkout staffed by one decorative cashier. The checkout is not a purchase
-  station: activating a shelf opens its authored fixed product view and lets
-  mouse, keyboard or gamepad selection operate directly on the shelf's
-  physical goods;
+  station: activating a shelf opens its authored fixed product view centered on
+  the first available physical product. The modal browser keeps one continuous
+  lock while previous/next input cycles through every stocked shelf, skips
+  empty shelves and moves the camera to the selected shelf while aiming at the
+  selected model's visual bounds. Muted clickable arrows sit directly beside
+  the product instead of adding another footer hint; keyboard and gamepad use
+  the same navigation path;
 - the three supermarket shelves contain exactly one finite physical unit of
   five catalog products: instant noodles and a day-old loaf, vodka and a closed
   stew can, plus one chicken egg on the cold shelf. Confirming a purchase
