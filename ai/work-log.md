@@ -2,6 +2,71 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Inventory-backed cat feeding
+
+- Added a reusable single-stack inventory-target definition, pure
+  `Choice -> Confirmation -> Executing` model and scene-local modal controller.
+  Talk/Interact, default-No confirmation, pointer/keyboard/gamepad input,
+  temporary prompt feedback, stale-requirement rejection and lifecycle cleanup
+  now share one contract that other world targets can reuse.
+- Added read-only inventory count/requirement queries and retained the existing
+  atomic `TryRemoveInventoryItem` commit. A handler prepares every required
+  presentation resource before removal, so failed setup, No, missing stew or an
+  item disappearing during confirmation cannot start a free interaction or
+  consume a partial requirement. The shared player animation now exposes a
+  non-starting resource/anchor preflight; a thrown start refunds the committed
+  stack, and target cleanup cancels only resources that adapter acquired.
+- Replaced the cat's direct placeholder response with the shared choice menu.
+  Talk preserves the old response; Interact without stew shows the localized
+  hunger thought; Interact with stew asks `Feed the cat?` and consumes exactly
+  one `OpenStewCan` only after Yes.
+- Added a validated middle-shot feeding dock and paired presentation. The
+  point-filtered `1024x768` player atlas plays 24 present, 16 action and 24
+  return frames; the cat begins its independent top-first `512x128`, 16-frame
+  `6 fps` track at the player loop while ordinary idle/look is paused. Normal
+  completion and abnormal modal/target lifecycle paths restore the player rig,
+  shadows, cat, camera, HUD, input and lock ownership.
+- Added raw and keyed source sheets plus explicit contracts under
+  `ArtSource/Player/CatFeeding` and `ArtSource/Stairwell/Cat/Feeding`. New
+  deterministic validators/packers are
+  `tools/build-player-cat-feeding-atlas.py` and
+  `tools/build-stairwell-cat-feeding-atlas.py`; their runtime outputs are
+  `Resources/Player/PlayerCatFeedingAtlas` and
+  `Resources/Stairwell/Cat/StairwellCatFeedingAtlas`.
+- Replaced the prompt's fixed `180x24` layout with a centered responsive panel:
+  it expands up to `520` logical pixels, enables wrapping and grows vertically
+  when required. Added an exact long-Russian-feedback regression that checks
+  expansion, wrapping height and containment inside the `640x360` UI canvas.
+- Corrected the player feeding presentation to use the shared authored
+  horizontal mirror. The source sheet faces image-right while the MiddleFlight
+  cat is camera-left; `TextureFlipX = true` now turns the hero and can toward
+  the cat. EditMode and runtime PlayMode contracts cover both the applied flip
+  and the camera-space cat/player ordering.
+
+Verification:
+
+- Focused inventory-target, session, localization, animated-player, interaction,
+  cat runtime and feeding-asset EditMode coverage passed `97/97`.
+- Focused GPU Stairwell PlayMode coverage passed `6/6`, including Talk,
+  missing-stew feedback, default-No confirmation, atomic one-can consumption,
+  paired animation visibility and exact completion cleanup.
+- Complete EditMode coverage passed `769/769`. Both complete GPU D3D12
+  PlayMode runs passed `157/158`; the only failure was the pre-existing bar
+  arrival smoke assertion after its presentation had already received skip
+  input from shared suite state. That exact unrelated test passed `1/1` in a
+  fresh isolated GPU run, while all six Stairwell/cat tests passed in every run.
+- Runtime/EditModeTests and PlayModeTests projects built with zero warnings or
+  errors. A Windows x64 player built successfully at
+  `Build/Windows/BarPromenade.exe` (`226,003,548` bytes); its single warning is
+  Unity URP's `Hidden/Core/DebugOccluder` D3D11 truncation warning. The player
+  remained healthy through a 15-second D3D12 startup smoke with no gameplay
+  exceptions or assertions.
+- The follow-up responsive-prompt change compiled through Runtime,
+  EditModeTests and PlayModeTests with zero warnings or errors. The focused
+  non-batch graphical PlayMode test passed `1/1` in the working project,
+  exercising the actual `OnGUI` path and confirming that the localized hungry-
+  cat text expands beyond the old width, fits and stays inside the canvas.
+
 ## 2026-08-03 — Quieter apartment music
 
 - Reduced only the looping Home theme's source-volume ceiling from the shared

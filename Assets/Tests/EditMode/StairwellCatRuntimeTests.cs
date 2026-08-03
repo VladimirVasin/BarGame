@@ -14,6 +14,9 @@ namespace BarPromenade.Tests.EditMode
             new List<Texture2D>();
         private readonly List<StairwellCatSpriteLibrary> libraries =
             new List<StairwellCatSpriteLibrary>();
+        private readonly List<StairwellCatFeedingSpriteLibrary>
+            feedingLibraries =
+                new List<StairwellCatFeedingSpriteLibrary>();
 
         [TearDown]
         public void TearDown()
@@ -37,6 +40,13 @@ namespace BarPromenade.Tests.EditMode
             }
 
             for (int index = 0;
+                 index < feedingLibraries.Count;
+                 index++)
+            {
+                feedingLibraries[index]?.Dispose();
+            }
+
+            for (int index = 0;
                  index < textures.Count;
                  index++)
             {
@@ -50,6 +60,7 @@ namespace BarPromenade.Tests.EditMode
             gameObjects.Clear();
             textures.Clear();
             libraries.Clear();
+            feedingLibraries.Clear();
         }
 
         [Test]
@@ -157,6 +168,179 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.Throws<ArgumentException>(
                 () => StairwellCatSpriteLibrary.Create(atlas));
+        }
+
+        [Test]
+        public void FeedingSpriteLibrary_SlicesTopFirstGridWithAuthoredPivot()
+        {
+            StairwellCatFeedingSpriteLibrary library =
+                CreateFeedingLibrary(CreateFeedingAtlas());
+
+            Assert.That(
+                library.Sprites,
+                Has.Count.EqualTo(
+                    StairwellCatFeedingSpriteLibrary.FrameCount));
+            Assert.That(
+                StairwellCatFeedingSpriteLibrary.FrameCount,
+                Is.EqualTo(16));
+            Assert.That(
+                library.GetSprite(0).rect,
+                Is.EqualTo(new Rect(0f, 64f, 64f, 64f)));
+            Assert.That(
+                library.GetSprite(7).rect,
+                Is.EqualTo(new Rect(448f, 64f, 64f, 64f)));
+            Assert.That(
+                library.GetSprite(8).rect,
+                Is.EqualTo(new Rect(0f, 0f, 64f, 64f)));
+            Assert.That(
+                library.GetSprite(15).rect,
+                Is.EqualTo(new Rect(448f, 0f, 64f, 64f)));
+            Assert.That(
+                library.GetSprite(0).pivot,
+                Is.EqualTo(new Vector2(32f, 4f)));
+            Assert.That(
+                library.GetSprite(0).pixelsPerUnit,
+                Is.EqualTo(96f));
+            Assert.That(
+                library.Atlas.filterMode,
+                Is.EqualTo(FilterMode.Point));
+            Assert.That(
+                library.Atlas.wrapMode,
+                Is.EqualTo(TextureWrapMode.Clamp));
+        }
+
+        [Test]
+        public void FeedingSpriteLibrary_RejectsWrongAtlasDimensions()
+        {
+            var atlas = new Texture2D(
+                512,
+                256,
+                TextureFormat.RGBA32,
+                false);
+            textures.Add(atlas);
+
+            Assert.Throws<ArgumentException>(
+                () => StairwellCatFeedingSpriteLibrary.Create(
+                    atlas));
+        }
+
+        [Test]
+        public void FeedingTimeline_IsOneShotAndFrameChunkIndependent()
+        {
+            var singleStep = new StairwellCatFeedingTimeline();
+            var chunked = new StairwellCatFeedingTimeline();
+
+            Assert.That(singleStep.FrameIndex, Is.EqualTo(-1));
+            Assert.That(singleStep.IsActive, Is.False);
+            Assert.That(singleStep.Begin(), Is.True);
+            Assert.That(singleStep.Begin(), Is.False);
+            Assert.That(chunked.Begin(), Is.True);
+
+            singleStep.Advance(1.75f);
+            for (int index = 0; index < 7; index++)
+            {
+                chunked.Advance(0.25f);
+            }
+
+            Assert.That(singleStep.IsActive, Is.True);
+            Assert.That(singleStep.FrameIndex, Is.EqualTo(10));
+            Assert.That(
+                chunked.FrameIndex,
+                Is.EqualTo(singleStep.FrameIndex));
+            Assert.That(
+                chunked.ElapsedSeconds,
+                Is.EqualTo(singleStep.ElapsedSeconds)
+                    .Within(0.00001d));
+
+            singleStep.Advance(0.75f);
+            chunked.Advance(0.75f);
+            Assert.That(singleStep.FrameIndex, Is.EqualTo(15));
+            Assert.That(chunked.FrameIndex, Is.EqualTo(15));
+
+            singleStep.Advance(1f / 6f);
+            chunked.Advance(1f / 6f);
+            Assert.That(singleStep.IsActive, Is.False);
+            Assert.That(singleStep.FrameIndex, Is.EqualTo(-1));
+            Assert.That(chunked.IsActive, Is.False);
+            Assert.That(singleStep.Complete(), Is.False);
+            Assert.That(singleStep.Cancel(), Is.False);
+        }
+
+        [Test]
+        public void FeedingTimeline_RejectsInvalidDeltaAndSupportsCancel()
+        {
+            var timeline = new StairwellCatFeedingTimeline();
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => timeline.Advance(-0.01f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => timeline.Advance(float.NaN));
+            Assert.That(timeline.Begin(), Is.True);
+            timeline.Advance(0.5f);
+            Assert.That(timeline.FrameIndex, Is.EqualTo(3));
+            Assert.That(timeline.Cancel(), Is.True);
+            Assert.That(timeline.IsActive, Is.False);
+            Assert.That(timeline.FrameIndex, Is.EqualTo(-1));
+        }
+
+        [Test]
+        public void FeedingPlan_StagesPlayerSafelyUnderMiddleShot()
+        {
+            StairwellLayoutPlan stairwell =
+                StairwellLayoutPlanner.Generate();
+            StairwellCatPlan cat =
+                StairwellCatPlan.Create(stairwell);
+            StairwellCatFeedingPlan feeding =
+                StairwellCatFeedingPlan.Create(
+                    stairwell,
+                    cat);
+            var walkable = new RoadWalkableArea(
+                stairwell.WalkableRectangles);
+            var selector = new StairwellCameraShotSelector(
+                StairwellFixedCameraController
+                    .CreateDefaultShots(stairwell));
+
+            Assert.That(
+                feeding.PlayerRootLocalPosition,
+                Is.EqualTo(cat.InteractionLocalPosition));
+            Assert.That(
+                walkable.Contains(
+                    feeding.PlayerRootLocalPosition,
+                    StairwellLayoutValidator.PlayerRadius),
+                Is.True);
+            Assert.That(
+                selector.Select(
+                    feeding.PlayerRootLocalPosition).Kind,
+                Is.EqualTo(
+                    StairwellCatFeedingPlan
+                        .RequiredCameraShotKind));
+            Assert.That(
+                feeding.StandHipLocalPosition,
+                Is.EqualTo(feeding.ActionHipLocalPosition));
+            Assert.That(
+                feeding.StandHipLocalPosition.y,
+                Is.EqualTo(
+                    feeding.PlayerRootLocalPosition.y +
+                    (PlayerAnimatedInteractionController
+                        .HipPivotYPixels -
+                     PlayerSpriteRig.FeetPivotPixels) /
+                    PlayerAnimatedInteractionController
+                        .PixelsPerUnit +
+                    StairwellCatFeedingPlan
+                        .UprightVisualOffset)
+                    .Within(0.0001f));
+            Assert.That(
+                feeding.FacingLocalDirection.y,
+                Is.Zero.Within(0.0001f));
+            Assert.That(
+                feeding.FacingLocalDirection.magnitude,
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(
+                Vector3.Dot(
+                    feeding.FacingLocalDirection,
+                    cat.VisualLocalPosition -
+                    feeding.PlayerRootLocalPosition),
+                Is.GreaterThan(0f));
         }
 
         [Test]
@@ -327,6 +511,81 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThanOrEqualTo(64f));
         }
 
+        [Test]
+        public void Actor_FeedingOverridePausesAndRestoresIdlePresentation()
+        {
+            GameObject cameraObject =
+                CreateGameObject("Feeding Test Camera");
+            cameraObject.transform.rotation =
+                Quaternion.LookRotation(Vector3.forward);
+            Camera camera = cameraObject.AddComponent<Camera>();
+            GameObject player =
+                CreateGameObject("Feeding Test Player");
+            player.transform.position = Vector3.right;
+            GameObject cat =
+                CreateGameObject("Feeding Test Actor");
+            StairwellCatActor actor =
+                cat.AddComponent<StairwellCatActor>();
+
+            actor.Initialize(
+                camera,
+                player.transform,
+                CreateAtlas(),
+                CreateFeedingAtlas());
+            actor.AdvancePresentation(
+                StairwellCatIdleModel
+                    .FirstGroomStartSeconds);
+            Sprite pausedIdleSprite = actor.Renderer.sprite;
+            int pausedIdleFrame = actor.CurrentFrame;
+            StairwellCatIdleKind pausedIdleKind =
+                actor.CurrentIdleKind;
+            StairwellCatLook pausedLook = actor.CurrentLook;
+
+            Assert.That(actor.TryPrepareFeeding(), Is.True);
+            Assert.That(actor.IsFeedingPrepared, Is.True);
+            Assert.That(actor.IsFeeding, Is.False);
+            Assert.That(actor.Renderer.sprite, Is.SameAs(pausedIdleSprite));
+            Assert.That(actor.BeginPreparedFeeding(), Is.True);
+            Assert.That(actor.IsFeedingPrepared, Is.False);
+            Assert.That(actor.BeginFeeding(), Is.False);
+            Assert.That(actor.IsFeeding, Is.True);
+            Assert.That(actor.CurrentFeedingFrame, Is.Zero);
+            Assert.That(
+                actor.Renderer.sprite.rect,
+                Is.EqualTo(new Rect(0f, 64f, 64f, 64f)));
+
+            player.transform.position = -Vector3.right;
+            actor.AdvancePresentation(0.5f);
+            Assert.That(actor.CurrentFeedingFrame, Is.EqualTo(3));
+            Assert.That(actor.CurrentFrame, Is.EqualTo(pausedIdleFrame));
+            Assert.That(actor.CurrentIdleKind, Is.EqualTo(pausedIdleKind));
+            Assert.That(actor.CurrentLook, Is.EqualTo(pausedLook));
+
+            Assert.That(actor.CancelFeeding(), Is.True);
+            Assert.That(actor.CancelFeeding(), Is.False);
+            Assert.That(actor.IsFeeding, Is.False);
+            Assert.That(actor.CurrentFeedingFrame, Is.EqualTo(-1));
+            Assert.That(actor.Renderer.sprite, Is.SameAs(pausedIdleSprite));
+
+            Assert.That(actor.BeginFeeding(), Is.True);
+            Assert.That(actor.CompleteFeeding(), Is.True);
+            Assert.That(actor.CompleteFeeding(), Is.False);
+            Assert.That(actor.Renderer.sprite, Is.SameAs(pausedIdleSprite));
+
+            Assert.That(actor.TryPrepareFeeding(), Is.True);
+            Assert.That(actor.CancelFeedingPreparation(), Is.True);
+            Assert.That(actor.CancelFeedingPreparation(), Is.False);
+            Assert.That(actor.BeginPreparedFeeding(), Is.False);
+            Assert.That(actor.Renderer.sprite, Is.SameAs(pausedIdleSprite));
+
+            Assert.That(actor.BeginFeeding(), Is.True);
+            actor.AdvancePresentation(
+                (float)StairwellCatFeedingTimeline
+                    .DurationSeconds);
+            Assert.That(actor.IsFeeding, Is.False);
+            Assert.That(actor.Renderer.sprite, Is.SameAs(pausedIdleSprite));
+        }
+
         private Texture2D CreateAtlas()
         {
             var atlas = new Texture2D(
@@ -341,12 +600,35 @@ namespace BarPromenade.Tests.EditMode
             return atlas;
         }
 
+        private Texture2D CreateFeedingAtlas()
+        {
+            var atlas = new Texture2D(
+                512,
+                128,
+                TextureFormat.RGBA32,
+                false)
+            {
+                name = "Stairwell Cat Feeding Test Atlas"
+            };
+            textures.Add(atlas);
+            return atlas;
+        }
+
         private StairwellCatSpriteLibrary CreateLibrary(
             Texture2D atlas)
         {
             StairwellCatSpriteLibrary library =
                 StairwellCatSpriteLibrary.Create(atlas);
             libraries.Add(library);
+            return library;
+        }
+
+        private StairwellCatFeedingSpriteLibrary
+            CreateFeedingLibrary(Texture2D atlas)
+        {
+            StairwellCatFeedingSpriteLibrary library =
+                StairwellCatFeedingSpriteLibrary.Create(atlas);
+            feedingLibraries.Add(library);
             return library;
         }
 

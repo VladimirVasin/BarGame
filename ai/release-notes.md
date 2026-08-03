@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### 2026-08-03 — Feed the stairwell cat
+
+- Interacting with the cat now offers `Talk` or `Interact`. Talking keeps the
+  cat's familiar silent response.
+- If the hero has no open stew, he notices that the cat is hungry but has
+  nothing to offer. With stew in the inventory, he can answer a default-No
+  `Feed the cat?` confirmation.
+- Choosing Yes consumes exactly one can and plays a new fixed-camera sequence
+  in which the hero places the food and the cat eats. Both characters return
+  cleanly to ordinary stairwell play afterward.
+- The same item-aware choice and confirmation flow is now reusable by future
+  world targets rather than being hard-coded only for the cat.
+- Interaction prompts now expand to their localized text and wrap when needed,
+  so the longer Russian hungry-cat message stays fully inside its panel.
+- The feeding hero and food can now face the cat correctly in the fixed
+  stairwell shot instead of appearing horizontally reversed.
+
 ### 2026-08-03 — Quieter apartment music
 
 - The apartment's background theme now sits noticeably lower in the mix,

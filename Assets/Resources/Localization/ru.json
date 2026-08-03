@@ -45,6 +45,22 @@
       "value": "\u041d\u0415\u0422"
     },
     {
+      "key": "common.yes",
+      "value": "\u0414\u0430"
+    },
+    {
+      "key": "common.no",
+      "value": "\u041d\u0435\u0442"
+    },
+    {
+      "key": "interaction.choice.talk",
+      "value": "\u041f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c"
+    },
+    {
+      "key": "interaction.choice.interact",
+      "value": "\u0412\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u043e\u0432\u0430\u0442\u044c"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — войти в бар"
     },
@@ -147,6 +163,14 @@
     {
       "key": "stairwell.cat.placeholder",
       "value": "Кот молча смотрит."
+    },
+    {
+      "key": "stairwell.cat.feed.confirm",
+      "value": "Покормить кота?"
+    },
+    {
+      "key": "stairwell.cat.feed.missing",
+      "value": "Ты явно голодный… Было бы у меня чем тебя покормить."
     },
     {
       "key": "interaction.order_drinks",

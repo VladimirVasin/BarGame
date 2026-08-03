@@ -116,6 +116,60 @@ namespace BarPromenade
             IsInitialized = true;
         }
 
+        /// <summary>
+        /// Validates anchors and loads/configures every presentation resource
+        /// without capturing player state or starting the timeline. Callers
+        /// that consume an inventory item can use this as their pre-commit
+        /// boundary.
+        /// </summary>
+        public bool TryPrepare(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition)
+        {
+            return TryPrepare(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                Vector3.zero);
+        }
+
+        public bool TryPrepare(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition,
+            Vector3 worldActionRightAxis)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the animated interaction controller first.");
+            }
+
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            if (!isActiveAndEnabled || IsActive)
+            {
+                return false;
+            }
+
+            ValidateAnchors(
+                standHipPosition,
+                actionHipPosition);
+            ValidateActionRightAxis(
+                worldActionRightAxis,
+                nameof(worldActionRightAxis),
+                out _,
+                out _);
+            PrepareFrames(definition);
+            ConfigureMaterial(definition);
+            ConfigureBillboard(definition);
+            return true;
+        }
+
         public bool Begin(
             PlayerAnimatedInteractionDefinition definition,
             Vector3 standHipPosition,
@@ -175,33 +229,20 @@ namespace BarPromenade
             Vector3 worldActionRightAxis,
             bool startLooping)
         {
-            if (!IsInitialized)
-            {
-                throw new InvalidOperationException(
-                    "Initialize the animated interaction controller first.");
-            }
-
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            if (!isActiveAndEnabled || IsActive)
+            if (!TryPrepare(
+                    definition,
+                    standHipPosition,
+                    actionHipPosition,
+                    worldActionRightAxis))
             {
                 return false;
             }
 
-            ValidateAnchors(
-                standHipPosition,
-                actionHipPosition);
             ValidateActionRightAxis(
                 worldActionRightAxis,
                 nameof(worldActionRightAxis),
                 out bool useActionRightAxis,
                 out Vector3 normalizedActionRightAxis);
-            PrepareFrames(definition);
-            ConfigureMaterial(definition);
-            ConfigureBillboard(definition);
 
             PlayerAnimatedInteractionTimeline nextTimeline =
                 new PlayerAnimatedInteractionTimeline(definition);

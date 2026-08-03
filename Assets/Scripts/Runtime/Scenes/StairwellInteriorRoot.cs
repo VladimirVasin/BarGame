@@ -37,6 +37,11 @@ namespace BarPromenade
             private set;
         }
         public StairwellCatPlan CatPlan { get; private set; }
+        public StairwellCatFeedingPlan CatFeedingPlan
+        {
+            get;
+            private set;
+        }
         public StairwellCatActor Cat { get; private set; }
         public StairwellCatInteraction CatInteraction
         {
@@ -44,6 +49,20 @@ namespace BarPromenade
             private set;
         }
         public BoxCollider CatTrigger { get; private set; }
+        public InteractionPromptView InteractionPrompt
+        {
+            get;
+            private set;
+        }
+        public IntoxicationHudView IntoxicationHud
+        {
+            get;
+            private set;
+        }
+        public PlayerAnimatedInteractionController
+            AnimatedInteraction { get; private set; }
+        public InventoryTargetInteractionController
+            TargetInteraction { get; private set; }
         public InventoryController Inventory { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
@@ -103,9 +122,9 @@ namespace BarPromenade
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
-            InteractionPromptView prompt =
+            InteractionPrompt =
                 ui.AddComponent<InteractionPromptView>();
-            IntoxicationHudView intoxicationHud =
+            IntoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 
             Arrival =
@@ -116,7 +135,7 @@ namespace BarPromenade
                 camera,
                 new RoadWalkableArea(
                     Layout.WalkableRectangles),
-                prompt);
+                InteractionPrompt);
             CameraFollow =
                 camera.GetComponent<PlayerCameraFollow>();
             if (CameraFollow == null)
@@ -141,6 +160,17 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 StairwellFixedCameraController
                     .CreateDefaultShots(Layout));
+            AnimatedInteraction =
+                Player.GameObject.AddComponent<
+                    PlayerAnimatedInteractionController>();
+            AnimatedInteraction.Initialize(Player, camera);
+            TargetInteraction =
+                ui.AddComponent<
+                    InventoryTargetInteractionController>();
+            TargetInteraction.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud);
             BuildCat(camera);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
@@ -152,19 +182,19 @@ namespace BarPromenade
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                intoxicationHud,
+                IntoxicationHud,
                 balanceView);
             BuildExits();
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,
                 CameraFollow,
-                intoxicationHud);
+                IntoxicationHud);
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(
                 Player,
                 CameraFollow,
-                intoxicationHud);
+                IntoxicationHud);
 
             IsInitialized = true;
             timer.Stop();
@@ -201,6 +231,9 @@ namespace BarPromenade
         private void BuildCat(Camera camera)
         {
             CatPlan = StairwellCatPlan.Create(Layout);
+            CatFeedingPlan = StairwellCatFeedingPlan.Create(
+                Layout,
+                CatPlan);
             GameObject catObject =
                 new GameObject("Stairwell Cat");
             catObject.transform.SetParent(transform, false);
@@ -220,8 +253,14 @@ namespace BarPromenade
                 catObject.AddComponent<
                     StairwellCatInteraction>();
             CatInteraction.Initialize(
+                transform,
                 transform.TransformPoint(
-                    CatPlan.InteractionLocalPosition));
+                    CatPlan.InteractionLocalPosition),
+                Player,
+                Cat,
+                AnimatedInteraction,
+                TargetInteraction,
+                CatFeedingPlan);
         }
 
         private void BuildExits()

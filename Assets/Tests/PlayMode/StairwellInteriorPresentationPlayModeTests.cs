@@ -66,6 +66,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.PauseMenu.IsInitialized, Is.True);
             Assert.That(root.Inventory, Is.Not.Null);
             Assert.That(root.Inventory.IsInitialized, Is.True);
+            Assert.That(root.InteractionPrompt, Is.Not.Null);
+            Assert.That(root.IntoxicationHud, Is.Not.Null);
+            Assert.That(root.TargetInteraction, Is.Not.Null);
+            Assert.That(root.TargetInteraction.IsInitialized, Is.True);
+            Assert.That(root.AnimatedInteraction, Is.Not.Null);
+            Assert.That(root.AnimatedInteraction.IsInitialized, Is.True);
             Assert.That(
                 GameAudioMixer.CurrentProfile,
                 Is.EqualTo(GameAudioProfile.Stairwell));
@@ -407,7 +413,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            Scene_CatInteractionShowsPlaceholderWithoutLockingPlayer()
+            Scene_CatTalkChoiceShowsExistingResponseAndRestoresPlayer()
         {
             GameSessionState.PrepareStairwellArrival(
                 StairwellArrivalKind.StreetDoor);
@@ -442,22 +448,242 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(
-                root.CatInteraction.PromptKey,
+                root.TargetInteraction.IsOpen,
+                Is.True);
+            Assert.That(
+                root.TargetInteraction.State,
                 Is.EqualTo(
-                    StairwellCatInteraction.ResponsePromptKey));
+                    InventoryTargetInteractionState.Choice));
+            Assert.That(
+                root.TargetInteraction.SelectedChoice,
+                Is.EqualTo(
+                    InventoryTargetInteractionChoice.Talk));
+            Assert.That(root.Player.Motor.InputEnabled, Is.False);
+            Assert.That(root.Player.Interactor.InputEnabled, Is.False);
+
+            Assert.That(
+                root.TargetInteraction.Confirm(),
+                Is.True);
+            yield return null;
+
+            Assert.That(root.TargetInteraction.IsOpen, Is.False);
             Assert.That(
                 prompt.PromptKey,
                 Is.EqualTo(
                     StairwellCatInteraction.ResponsePromptKey));
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
             Assert.That(root.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(prompt.IsFeedbackVisible, Is.True);
+            Assert.That(prompt.IsClickable, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Scene_CatInteractionWithoutStewShowsMissingMessage()
+        {
+            while (GameSessionState.TryRemoveInventoryItem(
+                       InventoryItemId.OpenStewCan))
+            {
+            }
+
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.StreetDoor);
+            StairwellInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(
+                value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Stairwell root did not initialize.");
+
+            root.Player.Motor.Teleport(
+                root.transform.TransformPoint(
+                    root.CatPlan.InteractionLocalPosition));
+            Physics.SyncTransforms();
+            yield return WaitUntil(
+                () => ReferenceEquals(
+                    root.Player.Interactor.ActiveInteractable,
+                    root.CatInteraction),
+                "The cat did not become the active interaction.");
+
             Assert.That(
-                root.CatInteraction.GetPromptKeyAt(
-                    Time.unscaledTime +
-                    StairwellCatInteraction
-                        .ResponseDurationSeconds),
+                root.CatInteraction.TryOpen(
+                    root.Player.Interactor),
+                Is.True);
+            Assert.That(
+                root.TargetInteraction.SelectChoice(
+                    InventoryTargetInteractionChoice.Interact),
+                Is.True);
+            Assert.That(
+                root.TargetInteraction.Confirm(),
+                Is.True);
+            yield return null;
+
+            Assert.That(root.TargetInteraction.IsOpen, Is.False);
+            Assert.That(
+                root.InteractionPrompt.PromptKey,
                 Is.EqualTo(
-                    StairwellCatInteraction.DefaultPromptKey));
+                    StairwellCatInteraction
+                        .MissingStewResponsePromptKey));
+            Assert.That(root.InteractionPrompt.IsClickable, Is.False);
+            Assert.That(root.Player.Motor.InputEnabled, Is.True);
+            Assert.That(root.Player.Interactor.InputEnabled, Is.True);
+            yield return null;
+
+            InteractionPromptView prompt = root.InteractionPrompt;
+            Assert.That(prompt.HasRenderedLayout, Is.True);
+            Assert.That(
+                prompt.LastRenderedText,
+                Is.EqualTo(
+                    LocalizationService.Get(
+                        StairwellCatInteraction
+                            .MissingStewResponsePromptKey)));
+            Assert.That(
+                prompt.LastRenderedPanelRect.width,
+                Is.GreaterThan(
+                    InteractionPromptView.MinimumPanelWidth),
+                "The hungry-cat feedback must expand beyond the legacy panel.");
+            Assert.That(prompt.LastRenderedTextFits, Is.True);
+            Assert.That(
+                prompt.LastRenderedPanelRect.xMin,
+                Is.GreaterThanOrEqualTo(0f));
+            Assert.That(
+                prompt.LastRenderedPanelRect.xMax,
+                Is.LessThanOrEqualTo(RetroUiTheme.LogicalWidth));
+            Assert.That(
+                prompt.LastRenderedPanelRect.yMin,
+                Is.GreaterThanOrEqualTo(0f));
+            Assert.That(
+                prompt.LastRenderedPanelRect.yMax,
+                Is.LessThanOrEqualTo(RetroUiTheme.LogicalHeight));
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Scene_FeedingConsumesOneStewAndCompletesPairedAnimation()
+        {
+            while (GameSessionState.TryRemoveInventoryItem(
+                       InventoryItemId.OpenStewCan))
+            {
+            }
+
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.StreetDoor);
+            StairwellInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(
+                value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Stairwell root did not initialize.");
+
+            root.Player.Motor.Teleport(
+                root.transform.TransformPoint(
+                    root.CatPlan.InteractionLocalPosition));
+            Physics.SyncTransforms();
+            yield return WaitUntil(
+                () => ReferenceEquals(
+                    root.Player.Interactor.ActiveInteractable,
+                    root.CatInteraction),
+                "The cat did not become the active interaction.");
+
+            Assert.That(
+                root.CatInteraction.TryOpen(
+                    root.Player.Interactor),
+                Is.True);
+            root.TargetInteraction.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+            Assert.That(
+                root.TargetInteraction.Confirm(),
+                Is.True);
+            Assert.That(
+                root.TargetInteraction.State,
+                Is.EqualTo(
+                    InventoryTargetInteractionState.Confirmation));
+            Assert.That(
+                root.TargetInteraction.ConfirmationYesSelected,
+                Is.False);
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+
+            root.TargetInteraction.SelectConfirmation(true);
+            Assert.That(
+                root.TargetInteraction.Confirm(),
+                Is.True);
+
+            Assert.That(root.TargetInteraction.IsExecuting, Is.True);
+            Assert.That(root.AnimatedInteraction.IsActive, Is.True);
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.Zero);
+            Assert.That(
+                Vector3.Distance(
+                    root.Player.GameObject.transform.position,
+                    root.transform.TransformPoint(
+                        root.CatFeedingPlan
+                            .PlayerRootLocalPosition)),
+                Is.LessThan(0.02f));
+            Assert.That(
+                root.FixedCamera.ActiveShotKind,
+                Is.EqualTo(
+                    StairwellCameraShotKind.MiddleFlight));
+
+            yield return WaitUntil(
+                () => root.Cat.IsFeeding,
+                "The cat feeding animation did not start with the " +
+                "player loop.");
+            Assert.That(
+                root.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.True);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.sprite,
+                Is.Not.Null);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.flipX,
+                Is.True,
+                "The feeding hero must face the camera-left cat.");
+            Assert.That(
+                root.Cat.CurrentFeedingFrame,
+                Is.InRange(
+                    0,
+                    StairwellCatFeedingSpriteLibrary
+                        .FrameCount - 1));
+            AssertCatVisible(Camera.main, root.Cat);
+            Vector3 playerViewport =
+                Camera.main.WorldToViewportPoint(
+                    root.AnimatedInteraction
+                        .AnimationRenderer.bounds.center);
+            Assert.That(playerViewport.z, Is.GreaterThan(0f));
+            Assert.That(playerViewport.x, Is.InRange(0.05f, 0.95f));
+            Assert.That(playerViewport.y, Is.InRange(0.05f, 0.95f));
+            Vector3 catViewport =
+                Camera.main.WorldToViewportPoint(
+                    root.Cat.Renderer.bounds.center);
+            Assert.That(
+                catViewport.x,
+                Is.LessThan(playerViewport.x),
+                "The orientation contract assumes the cat is camera-left " +
+                "of the feeding hero.");
+
+            yield return WaitUntil(
+                () => !root.TargetInteraction.IsOpen,
+                "The paired feeding animation did not finish.");
+
+            Assert.That(root.AnimatedInteraction.IsActive, Is.False);
+            Assert.That(root.Cat.IsFeeding, Is.False);
+            Assert.That(root.Cat.IsFeedingPrepared, Is.False);
+            Assert.That(root.CatInteraction.OwnsExecution, Is.False);
+            Assert.That(root.Player.Motor.InputEnabled, Is.True);
+            Assert.That(root.Player.Interactor.InputEnabled, Is.True);
         }
 
         private static void AssertPracticalSources(

@@ -64,6 +64,7 @@ Assets/
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
       PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
       PlayerBalconySmokingAtlas.png      8x8 sequence with idle-matched/dithered edges
+      PlayerCatFeedingAtlas.png          8x8 present/feed/return interaction sequence
       Falls/                             16 no-mirror fall atlases
         PlayerDetailedFall*Atlas.png     8 views x 2 sides, 10x8 cells at 128x96
     Bar/
@@ -72,6 +73,7 @@ Assets/
     Stairwell/
       Cat/
         StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
+        StairwellCatFeedingAtlas.png    512x128, top-first 8x2 feeding atlas
     Localization/
       ru.json
       en.json
@@ -128,7 +130,10 @@ Assets/
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
-      Stairwell/Cat/ deterministic perch, atlas slicing, look and idle presentation
+      Stairwell/Cat/ deterministic perch, idle/look and feeding presentation
+        StairwellCatFeedingPlan.cs          safe middle-shot dock and hip anchors
+        StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
+        StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
         IntoxicationStageRules.cs   five ranges and interpolated profiles
@@ -142,13 +147,14 @@ Assets/
         InventoryItemModelFactory.cs shared low-poly world/preview item models
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
+        InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
-        StairwellCatInteraction.cs     localized temporary cat-response placeholder
+        StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
       Scenes/        startup/bar/home/stairwell roots, atmosphere/reveal and transition
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
@@ -178,6 +184,7 @@ Assets/
         InventoryView.cs            640x360 status/grid/description/command UI
         InventoryIconLibrary.cs     point-filtered icons + canonical atlas crop
         InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
+        InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -188,7 +195,10 @@ Assets/
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
+      InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, atlas portrait and 3D models
+      CatFeedingAnimationAssetTests.cs    player/cat atlas import and binary-alpha contract
+      StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
@@ -204,6 +214,7 @@ Assets/
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
+      StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
@@ -218,12 +229,17 @@ ArtSource/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
     BedSleep/                    64 source frames plus keyed/generated sheets
     BalconySmoking/              generated/keyed art + exact-idle dither handoff
+    CatFeeding/                  raw/keyed 8x8 player source + packing contract
+  Stairwell/
+    Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
   extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
   build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
   extract-player-balcony-smoking-frames.py  align art + build exact-idle dither bridges
   build-player-balcony-smoking-atlas.py  validate and pack the 8x8 smoking atlas
+  build-player-cat-feeding-atlas.py  validate and pack the 8x8 feeding atlas
+  build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
 Packages/
@@ -303,7 +319,16 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                    + player-tracking head
                                                    + ordinary idle
                                                    + rare 8-frame grooming (~36 s)
-                           -> StairwellCatInteraction -> localized text placeholder
+                                                   + prepared 16-frame feeding override
+                           -> InventoryTargetInteractionController
+                              -> Talk -> existing localized cat response
+                              -> Interact -> OpenStewCan requirement
+                                 -> missing feedback
+                                 or default-No Feed confirmation
+                                    -> prepare player/cat resources
+                                    -> atomically remove one can
+                                    -> middle-shot paired player/cat animation
+                                    -> exact modal/presentation restoration
        -> StairwellAmbiencePlayer -> steady concrete room bed
        -> StairwellSoundscape -> spatial ventilation + electrical buzz
                               -> seeded pipe/metal/water/movement cues

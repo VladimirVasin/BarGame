@@ -29,8 +29,19 @@ namespace BarPromenade
             InputEnabled = enabled;
             if (!enabled)
             {
+                promptView?.ClearFeedback();
                 SetActive(null);
             }
+        }
+
+        public bool ShowFeedback(
+            string localizationKey,
+            float durationSeconds)
+        {
+            return promptView != null &&
+                   promptView.ShowFeedback(
+                       localizationKey,
+                       durationSeconds);
         }
 
         private void Update()
@@ -52,6 +63,8 @@ namespace BarPromenade
         {
             if (!InputEnabled ||
                 SceneTransitionService.IsTransitioning ||
+                (promptView != null &&
+                 promptView.IsFeedbackVisible) ||
                 activeInteractable == null ||
                 (activeInteractable is UnityEngine.Object unityObject &&
                  unityObject == null) ||

@@ -1,76 +1,425 @@
+using System;
 using UnityEngine;
 
 namespace BarPromenade
 {
+    [DefaultExecutionOrder(10)]
     [DisallowMultipleComponent]
     public sealed class StairwellCatInteraction :
         MonoBehaviour,
-        IInteractable
+        IInteractable,
+        IInventoryTargetInteractionHandler
     {
         public const string DefaultPromptKey = "interaction.cat";
         public const string ResponsePromptKey =
             "stairwell.cat.placeholder";
+        public const string FeedConfirmationPromptKey =
+            "stairwell.cat.feed.confirm";
+        public const string MissingStewResponsePromptKey =
+            "stairwell.cat.feed.missing";
+        public const string PlayerFeedingAtlasResourcePath =
+            "Player/PlayerCatFeedingAtlas";
         public const float ResponseDurationSeconds = 2.5f;
 
+        private Transform stairwellRoot;
+        private PlayerRuntime player;
+        private StairwellCatActor cat;
+        private PlayerAnimatedInteractionController
+            animatedInteraction;
+        private InventoryTargetInteractionController
+            targetInteraction;
+        private StairwellCatFeedingPlan feedingPlan;
         private Vector3 interactionPosition;
-        private float responseStartedAt;
-        private float responseExpiresAt;
+        private InventoryTargetInteractionDefinition
+            interactionDefinition;
+        private PlayerAnimatedInteractionDefinition
+            playerFeedingDefinition;
         private bool isInitialized;
-        private bool responseActive;
+        private bool ownsExecution;
+        private bool ownsPlayerPresentation;
+        private bool ownsCatPreparation;
+        private bool ownsCatFeeding;
+        private bool catFeedingStarted;
+        private bool exitRequested;
+        private bool exitPhaseObserved;
 
-        public string PromptKey =>
-            GetPromptKeyAt(Time.unscaledTime);
+        public string PromptKey => DefaultPromptKey;
         public Vector3 InteractionPosition =>
             interactionPosition;
         public bool IsInitialized => isInitialized;
+        public bool IsFeedingPrepared => ownsCatPreparation;
+        public bool OwnsExecution => ownsExecution;
+        public InventoryTargetInteractionDefinition Definition =>
+            interactionDefinition;
+        public PlayerAnimatedInteractionDefinition
+            PlayerFeedingDefinition => playerFeedingDefinition;
 
         public void Initialize(
-            Vector3 authoredWorldInteractionPosition)
+            Transform authoredStairwellRoot,
+            Vector3 authoredWorldInteractionPosition,
+            PlayerRuntime playerRuntime,
+            StairwellCatActor catActor,
+            PlayerAnimatedInteractionController
+                animationController,
+            InventoryTargetInteractionController
+                interactionController,
+            StairwellCatFeedingPlan authoredFeedingPlan)
         {
+            if (isInitialized)
+            {
+                throw new InvalidOperationException(
+                    "The stairwell cat interaction is already initialized.");
+            }
+
+            if (authoredStairwellRoot == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(authoredStairwellRoot));
+            }
+
+            if (playerRuntime.GameObject == null ||
+                playerRuntime.Motor == null ||
+                playerRuntime.Interactor == null)
+            {
+                throw new ArgumentException(
+                    "The cat interaction requires an initialized player.",
+                    nameof(playerRuntime));
+            }
+
+            if (catActor == null || !catActor.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The cat interaction requires an initialized cat.",
+                    nameof(catActor));
+            }
+
+            if (animationController == null ||
+                !animationController.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The cat interaction requires an initialized player " +
+                    "animation controller.",
+                    nameof(animationController));
+            }
+
+            if (interactionController == null ||
+                !interactionController.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The cat interaction requires an initialized target " +
+                    "interaction controller.",
+                    nameof(interactionController));
+            }
+
+            stairwellRoot = authoredStairwellRoot;
+            player = playerRuntime;
+            cat = catActor;
+            animatedInteraction = animationController;
+            targetInteraction = interactionController;
+            feedingPlan = authoredFeedingPlan;
             interactionPosition =
                 authoredWorldInteractionPosition;
+            interactionDefinition =
+                new InventoryTargetInteractionDefinition(
+                    new InventoryItemRequirement(
+                        InventoryItemId.OpenStewCan),
+                    ResponsePromptKey,
+                    FeedConfirmationPromptKey,
+                    MissingStewResponsePromptKey,
+                    ResponseDurationSeconds);
+            playerFeedingDefinition =
+                new PlayerAnimatedInteractionDefinition(
+                    PlayerFeedingAtlasResourcePath,
+                    enterFrameCount: 24,
+                    enterFramesPerSecond: 12f,
+                    loopFrameCount: 16,
+                    loopFramesPerSecond: 6f,
+                    exitFrameCount: 24,
+                    exitFramesPerSecond: 12f,
+                    renderAboveSceneDepth: false,
+                    // The source sheet faces image-right, while the
+                    // middle-flight shot places the cat camera-left. Mirror
+                    // the runtime sprite so both the hero and can face cat.
+                    textureFlipX: true,
+                    visualCrossfadeDurationSeconds: 0.25f,
+                    alignBillboardToCameraPlane: true);
+            animatedInteraction.PhaseChanged +=
+                HandlePlayerAnimationPhaseChanged;
             isInitialized = true;
-            responseActive = false;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            return interactor != null &&
+            return isInitialized &&
+                   interactor != null &&
+                   interactor == player.Interactor &&
                    interactor.isActiveAndEnabled &&
                    interactor.InputEnabled &&
-                   isInitialized &&
                    isActiveAndEnabled &&
+                   targetInteraction != null &&
+                   !targetInteraction.IsOpen &&
+                   animatedInteraction != null &&
+                   !animatedInteraction.IsActive &&
+                   cat != null &&
+                   !cat.IsFeeding &&
+                   !cat.IsFeedingPrepared &&
+                   !ownsPlayerPresentation &&
+                   !ownsCatPreparation &&
+                   !ownsCatFeeding &&
+                   !ownsExecution &&
                    !SceneTransitionService.IsTransitioning;
         }
 
         public void Interact(PlayerInteractor interactor)
         {
-            InteractAt(interactor, Time.unscaledTime);
+            TryOpen(interactor);
         }
 
-        public bool InteractAt(
-            PlayerInteractor interactor,
-            float unscaledTime)
+        public bool TryOpen(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor))
             {
                 return false;
             }
 
-            responseStartedAt = unscaledTime;
-            responseExpiresAt =
-                unscaledTime + ResponseDurationSeconds;
-            responseActive = true;
+            return targetInteraction.Open(
+                interactor,
+                interactionDefinition,
+                this);
+        }
+
+        public bool TryPrepareInventoryInteraction()
+        {
+            if (!isInitialized ||
+                !isActiveAndEnabled ||
+                targetInteraction == null ||
+                !targetInteraction.IsExecuting ||
+                ownsPlayerPresentation ||
+                ownsCatPreparation ||
+                ownsCatFeeding ||
+                ownsExecution ||
+                !animatedInteraction.isActiveAndEnabled ||
+                animatedInteraction.IsActive ||
+                cat.IsFeeding ||
+                cat.IsFeedingPrepared)
+            {
+                return false;
+            }
+
+            Vector3 worldStandHip = stairwellRoot.TransformPoint(
+                feedingPlan.StandHipLocalPosition);
+            Vector3 worldActionHip = stairwellRoot.TransformPoint(
+                feedingPlan.ActionHipLocalPosition);
+            if (!animatedInteraction.TryPrepare(
+                    playerFeedingDefinition,
+                    worldStandHip,
+                    worldActionHip))
+            {
+                return false;
+            }
+
+            if (!cat.TryPrepareFeeding())
+            {
+                return false;
+            }
+
+            ownsCatPreparation = true;
             return true;
         }
 
-        public string GetPromptKeyAt(float unscaledTime)
+        public void BeginInventoryInteraction()
         {
-            return responseActive &&
-                   unscaledTime >= responseStartedAt &&
-                   unscaledTime < responseExpiresAt
-                ? ResponsePromptKey
-                : DefaultPromptKey;
+            if (!ownsCatPreparation ||
+                !cat.IsFeedingPrepared ||
+                targetInteraction == null ||
+                !targetInteraction.IsExecuting)
+            {
+                throw new InvalidOperationException(
+                    "The cat feeding presentation was not prepared.");
+            }
+
+            Transform playerTransform = player.GameObject.transform;
+            Vector3 previousPosition = playerTransform.position;
+            Quaternion previousRotation = playerTransform.rotation;
+            Vector3 worldPlayerRoot = stairwellRoot.TransformPoint(
+                feedingPlan.PlayerRootLocalPosition);
+            Quaternion worldPlayerRotation =
+                stairwellRoot.rotation *
+                feedingPlan.FacingLocalRotation;
+
+            player.Motor.Teleport(worldPlayerRoot);
+            playerTransform.rotation = worldPlayerRotation;
+            Physics.SyncTransforms();
+
+            ownsExecution = true;
+            ownsPlayerPresentation = true;
+            catFeedingStarted = false;
+            exitRequested = false;
+            exitPhaseObserved = false;
+            try
+            {
+                bool began = animatedInteraction.Begin(
+                    playerFeedingDefinition,
+                    stairwellRoot.TransformPoint(
+                        feedingPlan.StandHipLocalPosition),
+                    stairwellRoot.TransformPoint(
+                        feedingPlan.ActionHipLocalPosition));
+                if (!began)
+                {
+                    throw new InvalidOperationException(
+                        "The player feeding animation could not begin.");
+                }
+            }
+            catch
+            {
+                CancelOwnedPresentation();
+                player.Motor.Teleport(previousPosition);
+                playerTransform.rotation = previousRotation;
+                Physics.SyncTransforms();
+                throw;
+            }
+        }
+
+        public void CancelInventoryInteractionPreparation()
+        {
+            CancelOwnedPresentation();
+        }
+
+        private void Update()
+        {
+            if (!ownsExecution ||
+                !catFeedingStarted ||
+                cat.IsFeeding ||
+                exitRequested ||
+                animatedInteraction.Phase !=
+                    PlayerAnimatedInteractionPhase.Looping)
+            {
+                return;
+            }
+
+            ownsCatFeeding = false;
+            exitRequested = true;
+            if (!animatedInteraction.RequestExit())
+            {
+                exitRequested = false;
+                targetInteraction.AbortExecution();
+            }
+        }
+
+        private void HandlePlayerAnimationPhaseChanged(
+            PlayerAnimatedInteractionPhase phase)
+        {
+            if (!ownsExecution)
+            {
+                return;
+            }
+
+            if (phase == PlayerAnimatedInteractionPhase.Looping)
+            {
+                if (!cat.BeginPreparedFeeding())
+                {
+                    targetInteraction.AbortExecution();
+                    return;
+                }
+
+                ownsCatPreparation = false;
+                ownsCatFeeding = true;
+                catFeedingStarted = true;
+                return;
+            }
+
+            if (phase == PlayerAnimatedInteractionPhase.Exiting)
+            {
+                if (!exitRequested)
+                {
+                    targetInteraction.AbortExecution();
+                    return;
+                }
+
+                exitPhaseObserved = true;
+                return;
+            }
+
+            if (phase != PlayerAnimatedInteractionPhase.Idle)
+            {
+                return;
+            }
+
+            if (!exitPhaseObserved)
+            {
+                targetInteraction.AbortExecution();
+                return;
+            }
+
+            ownsExecution = false;
+            ownsPlayerPresentation = false;
+            ownsCatPreparation = false;
+            ownsCatFeeding = false;
+            catFeedingStarted = false;
+            exitRequested = false;
+            exitPhaseObserved = false;
+            targetInteraction.CompleteExecution();
+        }
+
+        private void CancelOwnedPresentation()
+        {
+            bool cancelPlayer = ownsPlayerPresentation;
+            bool cancelCatFeeding = ownsCatFeeding;
+            bool cancelCatPreparation = ownsCatPreparation;
+
+            ownsExecution = false;
+            ownsPlayerPresentation = false;
+            ownsCatPreparation = false;
+            ownsCatFeeding = false;
+            catFeedingStarted = false;
+            exitRequested = false;
+            exitPhaseObserved = false;
+
+            if (cancelPlayer && animatedInteraction != null)
+            {
+                animatedInteraction.CancelActiveInteraction();
+            }
+
+            if (cat == null)
+            {
+                return;
+            }
+
+            if (cancelCatFeeding)
+            {
+                cat.CancelFeeding();
+            }
+
+            if (cancelCatPreparation)
+            {
+                cat.CancelFeedingPreparation();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (targetInteraction == null ||
+                !targetInteraction.CloseForHandler(this))
+            {
+                CancelInventoryInteractionPreparation();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (animatedInteraction != null)
+            {
+                animatedInteraction.PhaseChanged -=
+                    HandlePlayerAnimationPhaseChanged;
+            }
+
+            if (targetInteraction == null ||
+                !targetInteraction.CloseForHandler(this))
+            {
+                CancelInventoryInteractionPreparation();
+            }
+
+            isInitialized = false;
         }
     }
 }

@@ -321,6 +321,49 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.CollectedWorldItemCount, Is.EqualTo(1));
         }
 
+        [Test]
+        public void InventoryQueries_ReportCountsAndRejectNonPositiveNeeds()
+        {
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.Zero);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.False);
+
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    2),
+                Is.True);
+
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(2));
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    2),
+                Is.True);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    3),
+                Is.False);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    0),
+                Is.False);
+        }
+
         [TestCase(null)]
         [TestCase("")]
         public void MissingBarId_CannotCreateReturnDestination(string barId)

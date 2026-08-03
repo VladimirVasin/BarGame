@@ -120,6 +120,20 @@ namespace BarPromenade
             return added;
         }
 
+        public static int GetInventoryItemCount(
+            InventoryItemId itemId)
+        {
+            return inventory.GetCount(itemId);
+        }
+
+        public static bool HasInventoryItem(
+            InventoryItemId itemId,
+            int count = 1)
+        {
+            return count > 0 &&
+                   inventory.GetCount(itemId) >= count;
+        }
+
         public static bool TryRemoveInventoryItem(
             InventoryItemId itemId,
             int count = 1)

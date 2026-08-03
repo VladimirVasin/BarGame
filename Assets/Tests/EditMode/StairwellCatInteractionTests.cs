@@ -6,150 +6,311 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class StairwellCatInteractionTests
     {
-        private GameObject catObject;
-        private GameObject playerObject;
-        private StairwellCatInteraction cat;
-        private PlayerInteractor interactor;
-        private PlayerMotor motor;
+        private GameObject rootObject;
+        private Texture2D idleAtlas;
+        private Texture2D feedingAtlas;
+        private StairwellCatInteraction catInteraction;
+        private StairwellCatActor catActor;
+        private PlayerAnimatedInteractionController animation;
+        private InventoryTargetInteractionController controller;
+        private InteractionPromptView prompt;
+        private PlayerRuntime player;
 
         [SetUp]
         public void SetUp()
         {
+            GameSessionState.BeginNewGame();
             SetTransitioning(false);
 
-            catObject = new GameObject("Stairwell Cat");
-            cat = catObject.AddComponent<
-                StairwellCatInteraction>();
+            rootObject = new GameObject("Stairwell Test Root");
+            GameObject cameraObject = new GameObject("Camera");
+            cameraObject.transform.SetParent(rootObject.transform, false);
+            Camera camera = cameraObject.AddComponent<Camera>();
 
-            playerObject = new GameObject("Player");
-            motor = playerObject.AddComponent<PlayerMotor>();
-            interactor =
+            GameObject uiObject = new GameObject("UI");
+            uiObject.transform.SetParent(rootObject.transform, false);
+            prompt = uiObject.AddComponent<InteractionPromptView>();
+
+            GameObject playerObject = new GameObject("Player");
+            playerObject.transform.SetParent(rootObject.transform, false);
+            PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
+            PlayerInteractor interactor =
                 playerObject.AddComponent<PlayerInteractor>();
+            interactor.Initialize(prompt);
+            GameObject visualObject = new GameObject("Visual");
+            visualObject.transform.SetParent(playerObject.transform, false);
+            PlayerSpriteRig visual =
+                visualObject.AddComponent<PlayerSpriteRig>();
+            player = new PlayerRuntime(
+                playerObject,
+                motor,
+                interactor,
+                visual);
+
+            animation =
+                playerObject.AddComponent<
+                    PlayerAnimatedInteractionController>();
+            animation.Initialize(player, camera);
+            controller = uiObject.AddComponent<
+                InventoryTargetInteractionController>();
+            controller.Initialize(player, null, null);
+
+            StairwellLayoutPlan layout =
+                StairwellLayoutPlanner.Generate();
+            StairwellCatPlan catPlan =
+                StairwellCatPlan.Create(layout);
+            StairwellCatFeedingPlan feedingPlan =
+                StairwellCatFeedingPlan.Create(layout, catPlan);
+            GameObject catObject = new GameObject("Cat");
+            catObject.transform.SetParent(rootObject.transform, false);
+            catObject.transform.localPosition =
+                catPlan.VisualLocalPosition;
+            idleAtlas = new Texture2D(
+                StairwellCatSpriteLibrary.Columns *
+                    StairwellCatSpriteLibrary.FrameWidth,
+                StairwellCatSpriteLibrary.Rows *
+                    StairwellCatSpriteLibrary.FrameHeight,
+                TextureFormat.RGBA32,
+                false);
+            feedingAtlas = new Texture2D(
+                StairwellCatFeedingSpriteLibrary.Columns *
+                    StairwellCatFeedingSpriteLibrary.FrameWidth,
+                StairwellCatFeedingSpriteLibrary.Rows *
+                    StairwellCatFeedingSpriteLibrary.FrameHeight,
+                TextureFormat.RGBA32,
+                false);
+            catActor = catObject.AddComponent<StairwellCatActor>();
+            catActor.Initialize(
+                camera,
+                playerObject.transform,
+                idleAtlas,
+                feedingAtlas);
+            catInteraction =
+                catObject.AddComponent<StairwellCatInteraction>();
+            Vector3 interactionPosition =
+                rootObject.transform.TransformPoint(
+                    catPlan.InteractionLocalPosition);
+            catInteraction.Initialize(
+                rootObject.transform,
+                interactionPosition,
+                player,
+                catActor,
+                animation,
+                controller,
+                feedingPlan);
         }
 
         [TearDown]
         public void TearDown()
         {
             SetTransitioning(false);
-            Destroy(catObject);
-            Destroy(playerObject);
+            controller?.CloseForHandler(catInteraction);
+            Destroy(rootObject);
+            Destroy(idleAtlas);
+            Destroy(feedingAtlas);
+            GameSessionState.BeginNewGame();
         }
 
         [Test]
-        public void Initialize_UsesAuthoredWorldInteractionPosition()
+        public void Initialize_ExposesReusableInventoryAndAnimationContracts()
         {
-            Vector3 authoredPosition =
-                new Vector3(0.72f, 1.74f, 1.78f);
-
-            cat.Initialize(authoredPosition);
-
-            Assert.That(cat.IsInitialized, Is.True);
+            Assert.That(catInteraction.IsInitialized, Is.True);
             Assert.That(
-                cat.InteractionPosition,
-                Is.EqualTo(authoredPosition));
-            Assert.That(
-                cat.GetPromptKeyAt(0f),
+                catInteraction.PromptKey,
                 Is.EqualTo(
                     StairwellCatInteraction.DefaultPromptKey));
             Assert.That(
-                cat.CanInteract(interactor),
-                Is.True);
-        }
-
-        [Test]
-        public void InteractAt_ShowsResponseForExactlyTwoPointFiveSeconds()
-        {
-            cat.Initialize(Vector3.one);
-
+                catInteraction.Definition.Requirement.ItemId,
+                Is.EqualTo(InventoryItemId.OpenStewCan));
             Assert.That(
-                cat.InteractAt(interactor, 10f),
-                Is.True);
-
+                catInteraction.Definition.Requirement.Count,
+                Is.EqualTo(1));
             Assert.That(
-                cat.GetPromptKeyAt(10f),
+                catInteraction.Definition.TalkResponseKey,
                 Is.EqualTo(
                     StairwellCatInteraction.ResponsePromptKey));
             Assert.That(
-                cat.GetPromptKeyAt(12.499f),
+                catInteraction.Definition.ConfirmationPromptKey,
                 Is.EqualTo(
-                    StairwellCatInteraction.ResponsePromptKey));
+                    StairwellCatInteraction
+                        .FeedConfirmationPromptKey));
             Assert.That(
-                cat.GetPromptKeyAt(12.5f),
+                catInteraction.Definition
+                    .MissingRequirementResponseKey,
                 Is.EqualTo(
-                    StairwellCatInteraction.DefaultPromptKey));
+                    StairwellCatInteraction
+                        .MissingStewResponsePromptKey));
+
+            PlayerAnimatedInteractionDefinition animation =
+                catInteraction.PlayerFeedingDefinition;
             Assert.That(
-                cat.GetPromptKeyAt(9.999f),
+                animation.TextureResourcePath,
                 Is.EqualTo(
-                    StairwellCatInteraction.DefaultPromptKey));
+                    StairwellCatInteraction
+                        .PlayerFeedingAtlasResourcePath));
+            Assert.That(animation.EnterFrameCount, Is.EqualTo(24));
+            Assert.That(animation.LoopFrameCount, Is.EqualTo(16));
+            Assert.That(animation.ExitFrameCount, Is.EqualTo(24));
+            Assert.That(animation.LoopFramesPerSecond, Is.EqualTo(6f));
+            Assert.That(
+                animation.TextureFlipX,
+                Is.True,
+                "The image-right feeding sheet must mirror toward the " +
+                "camera-left cat.");
+            Assert.That(
+                catInteraction.CanInteract(player.Interactor),
+                Is.True);
         }
 
         [Test]
-        public void RepeatedInteraction_RestartsResponseTimer()
+        public void Talk_ClosesMenuAndShowsExistingCatResponse()
         {
-            cat.Initialize(Vector3.zero);
-
             Assert.That(
-                cat.InteractAt(interactor, 3f),
+                catInteraction.TryOpen(player.Interactor),
                 Is.True);
             Assert.That(
-                cat.InteractAt(interactor, 5f),
-                Is.True);
-
+                controller.State,
+                Is.EqualTo(InventoryTargetInteractionState.Choice));
             Assert.That(
-                cat.GetPromptKeyAt(7.499f),
+                controller.SelectedChoice,
+                Is.EqualTo(InventoryTargetInteractionChoice.Talk));
+            Assert.That(player.Motor.InputEnabled, Is.False);
+            Assert.That(player.Interactor.InputEnabled, Is.False);
+
+            Assert.That(controller.Confirm(), Is.True);
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+            Assert.That(prompt.IsFeedbackVisible, Is.True);
+            Assert.That(
+                prompt.PromptKey,
                 Is.EqualTo(
                     StairwellCatInteraction.ResponsePromptKey));
-            Assert.That(
-                cat.GetPromptKeyAt(7.5f),
-                Is.EqualTo(
-                    StairwellCatInteraction.DefaultPromptKey));
+            Assert.That(prompt.IsClickable, Is.False);
         }
 
         [Test]
-        public void Interaction_RejectsUnavailableStatesWithoutLockingPlayer()
+        public void InteractWithoutStew_ShowsMissingRequirementFeedback()
         {
-            cat.Initialize(Vector3.zero);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.False);
+            Assert.That(
+                catInteraction.TryOpen(player.Interactor),
+                Is.True);
+            Assert.That(
+                controller.SelectChoice(
+                    InventoryTargetInteractionChoice.Interact),
+                Is.True);
+
+            Assert.That(controller.Confirm(), Is.True);
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(
+                prompt.PromptKey,
+                Is.EqualTo(
+                    StairwellCatInteraction
+                        .MissingStewResponsePromptKey));
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+        }
+
+        [Test]
+        public void InteractWithStew_DefaultNoReturnsToChoiceWithoutConsumption()
+        {
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            Assert.That(
+                catInteraction.TryOpen(player.Interactor),
+                Is.True);
+            controller.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+
+            Assert.That(controller.Confirm(), Is.True);
+            Assert.That(
+                controller.State,
+                Is.EqualTo(
+                    InventoryTargetInteractionState.Confirmation));
+            Assert.That(controller.ConfirmationYesSelected, Is.False);
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+
+            Assert.That(controller.Confirm(), Is.True);
 
             Assert.That(
-                cat.InteractAt(null, 1f),
-                Is.False);
-
-            cat.enabled = false;
+                controller.State,
+                Is.EqualTo(InventoryTargetInteractionState.Choice));
             Assert.That(
-                cat.InteractAt(interactor, 2f),
-                Is.False);
-            cat.enabled = true;
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+            Assert.That(controller.Cancel(), Is.True);
+        }
 
-            interactor.enabled = false;
+        [Test]
+        public void OwnedTargetClose_RestoresInput()
+        {
             Assert.That(
-                cat.InteractAt(interactor, 2.25f),
-                Is.False);
-            interactor.enabled = true;
+                catInteraction.TryOpen(player.Interactor),
+                Is.True);
 
-            interactor.SetInputEnabled(false);
             Assert.That(
-                cat.InteractAt(interactor, 2.5f),
-                Is.False);
-            interactor.SetInputEnabled(true);
+                controller.CloseForHandler(catInteraction),
+                Is.True);
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
 
             SetTransitioning(true);
             Assert.That(
-                cat.InteractAt(interactor, 3f),
+                catInteraction.CanInteract(player.Interactor),
                 Is.False);
-            SetTransitioning(false);
+        }
 
-            Assert.That(interactor.InputEnabled, Is.True);
-            Assert.That(motor.InputEnabled, Is.True);
+        [Test]
+        public void DisabledPlayerAnimation_DoesNotConsumePreparedItem()
+        {
             Assert.That(
-                cat.GetPromptKeyAt(3f),
-                Is.EqualTo(
-                    StairwellCatInteraction.DefaultPromptKey));
-
-            Assert.That(
-                cat.InteractAt(interactor, 4f),
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
                 Is.True);
-            Assert.That(interactor.InputEnabled, Is.True);
-            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(
+                catInteraction.TryOpen(player.Interactor),
+                Is.True);
+            controller.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+            controller.Confirm();
+            controller.SelectConfirmation(true);
+            animation.enabled = false;
+
+            Assert.That(controller.Confirm(), Is.True);
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+            Assert.That(catActor.IsFeedingPrepared, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+        }
+
+        [Test]
+        public void CleanupWithoutOwnership_DoesNotCancelExternalCatPreparation()
+        {
+            Assert.That(catActor.TryPrepareFeeding(), Is.True);
+
+            catInteraction.CancelInventoryInteractionPreparation();
+
+            Assert.That(catActor.IsFeedingPrepared, Is.True);
+            catActor.CancelFeedingPreparation();
         }
 
         private static void SetTransitioning(bool value)
@@ -169,11 +330,11 @@ namespace BarPromenade.Tests.EditMode
             setter.Invoke(null, new object[] { value });
         }
 
-        private static void Destroy(GameObject gameObject)
+        private static void Destroy(Object value)
         {
-            if (gameObject != null)
+            if (value != null)
             {
-                Object.DestroyImmediate(gameObject);
+                Object.DestroyImmediate(value);
             }
         }
     }

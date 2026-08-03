@@ -293,8 +293,25 @@ The vertical slice contains:
   variants keep its head turned toward the player. The point-filtered
   `512x256` `Resources/Stairwell/Cat/StairwellCatAtlas` supplies an `8x4`
   grid for ordinary idle motion and a rare eight-frame grooming sequence
-  roughly every 36 seconds, while the shared `IInteractable` path exposes a
-  localized temporary text placeholder without blocking movement;
+  roughly every 36 seconds. Activating the shared `IInteractable` path now
+  opens a localized default-Talk `Talk`/`Interact` target menu: Talk preserves
+  the existing temporary cat response, while Interact checks the run inventory
+  for one open stew can and either shows a localized missing-item thought or
+  opens a default-No `Feed the cat?` confirmation;
+- one reusable inventory-backed target-interaction model and controller own the
+  pure item requirement, `Choice -> Confirmation -> Executing -> Closed`
+  states, pointer/keyboard/gamepad choices, shared modal lock, temporary prompt
+  feedback and lifecycle cleanup. A confirmed handler prepares every visual
+  resource before `GameSessionState` atomically removes the required stack;
+  failed preparation or a stale requirement consumes nothing. The stairwell
+  cat is the first adapter: accepting the feed consumes exactly one
+  `OpenStewCan`, docks the hero inside the middle fixed-camera shot and pairs
+  the `1024x768` `Resources/Player/PlayerCatFeedingAtlas` (`8x8`, 64 frames)
+  with the cat's point-filtered `512x128`
+  `Resources/Stairwell/Cat/StairwellCatFeedingAtlas` (`8x2`, 16 frames at
+  `6 fps`). The cat track starts with the player's action loop, pauses the
+  ordinary cat idle/look state and restores both actors, shadows, input, HUD,
+  camera and modal ownership after normal completion or abnormal cleanup;
 - one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
   zones and four validated circulation paths; its long layered counter,
   bottle-backed mirrors, three booths, four high tables, stage, entrance
@@ -340,8 +357,9 @@ The vertical slice contains:
   model into the center of the camera, fades in a dark camera-facing backdrop,
   rotates it slowly and presents a localized title, short description and
   `Take`/`Use`/`Back` actions. `Take` atomically commits the stable world-item
-  source and inventory stack before removing the model; `Use` remains an
-  unavailable placeholder until food/drink item-use rules exist. `Back`
+  source and inventory stack before removing the model; `Use` remains
+  unavailable inside refrigerator inspection, while target-owned uses such as
+  feeding the stairwell cat begin at that world target. `Back`
   returns an untaken item before the refrigerator can close. Normal return, cancel,
   disable and destroy restore the exact parent, sibling index, local transform,
   selection collider and original renderer colors without acquiring a second

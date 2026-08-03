@@ -225,6 +225,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Combine and Drop commands are deliberately absent. Pause executes before
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
+- **Accepted — Reusable inventory-backed target interaction:** A target-specific
+  adapter supplies one validated `InventoryItemRequirement`, localized Talk,
+  confirmation and missing-item keys, and an idempotent
+  `IInventoryTargetInteractionHandler`. The pure model owns only
+  `Closed/Choice/Confirmation/Executing` state, defaults to Talk and No, and
+  cannot execute twice. The shared scene-local controller owns pointer,
+  keyboard and gamepad input, captures the existing modal lock, disables the
+  ordinary prompt and restores exact player/camera/HUD state. A Yes path first
+  calls the handler's preparation boundary, then rechecks and atomically removes
+  the required stack through `GameSessionState`, then begins presentation;
+  failed preparation or a stale stack consumes nothing, and a thrown startup
+  refunds the just-committed stack before cleanup. Normal completion and
+  abnormal cancel/disable/destroy use separate controller exits but the same
+  handler cleanup contract. Each adapter tracks the presentation resources it
+  actually acquired and restores only that owned prepared/active work before
+  modal input returns. This first version intentionally supports
+  one item stack per definition; multi-item recipes require a later atomic
+  inventory transaction rather than sequential removal.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
@@ -251,10 +269,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   toward the player. The point-filtered
   `Resources/Stairwell/Cat/StairwellCatAtlas` is exactly `512x256`, an `8x4`
   grid used for ordinary idle motion and a rare eight-frame grooming sequence
-  roughly every 36 seconds. `StairwellCatInteraction` reuses
-  `IInteractable`; activating it does not lock movement and temporarily
-  replaces the localized prompt with an explicit future-interaction text
-  placeholder.
+  roughly every 36 seconds. `StairwellCatInteraction` remains the
+  `IInteractable` adapter but now opens the reusable inventory-target menu.
+  Talk closes the modal and emits the original localized response. Interact
+  requires `OpenStewCan x1`; absence emits bounded localized feedback, while
+  presence opens default-No confirmation. Yes uses the two-phase preparation
+  boundary before the controller atomically removes one can. The adapter docks
+  the player at the validated middle-shot point and begins a point-filtered
+  `1024x768` player atlas with 24 present frames at `12 fps`, 16 action frames
+  at `6 fps` and 24 return frames at `12 fps`. On the player loop boundary it
+  begins the cat's independent top-first `512x128`, `8x2`, 16-frame track at
+  `6 fps`; ordinary cat idle/look is paused and restored afterward. Player
+  rig/shadows, cat presentation, modal ownership, camera, HUD and input restore
+  on normal completion and every lifecycle abort. The keyed source sheets and
+  contracts live under `ArtSource/Player/CatFeeding` and
+  `ArtSource/Stairwell/Cat/Feeding`; deterministic validation/packing is owned
+  by `tools/build-player-cat-feeding-atlas.py` and
+  `tools/build-stairwell-cat-feeding-atlas.py`.
 - **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
   a real window and open glazed door connected to a walkable balcony at
   `4.7 m` street elevation. The room threshold and deck extend the same

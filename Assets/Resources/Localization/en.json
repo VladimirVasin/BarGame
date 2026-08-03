@@ -45,6 +45,22 @@
       "value": "NO"
     },
     {
+      "key": "common.yes",
+      "value": "Yes"
+    },
+    {
+      "key": "common.no",
+      "value": "No"
+    },
+    {
+      "key": "interaction.choice.talk",
+      "value": "Talk"
+    },
+    {
+      "key": "interaction.choice.interact",
+      "value": "Interact"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — enter the bar"
     },
@@ -147,6 +163,14 @@
     {
       "key": "stairwell.cat.placeholder",
       "value": "The cat watches."
+    },
+    {
+      "key": "stairwell.cat.feed.confirm",
+      "value": "Feed the cat?"
+    },
+    {
+      "key": "stairwell.cat.feed.missing",
+      "value": "You look hungry… If only I had something to feed you."
     },
     {
       "key": "interaction.order_drinks",
