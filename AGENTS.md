@@ -33,6 +33,10 @@ These instructions apply to the entire repository.
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
 - Reuse shared materials and assets; avoid per-instance material creation.
+- Every future contextual interaction that replaces the ordinary player rig
+  with a sprite/atlas animation must follow
+  `ai/contextual-animation-standard.md`. A deviation requires an explicit user
+  decision recorded as an accepted architecture exception.
 
 ## Quality and documentation
 

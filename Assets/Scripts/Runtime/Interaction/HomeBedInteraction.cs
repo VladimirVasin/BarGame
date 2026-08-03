@@ -101,6 +101,10 @@ namespace BarPromenade
                 controller == null ||
                 !controller.IsInitialized ||
                 !controller.isActiveAndEnabled ||
+                playerRoot == null ||
+                Mathf.Abs(playerRoot.position.y -
+                          plan.EntryRootPosition.y) >
+                    PlayerMotor.InteractionVerticalTolerance ||
                 SceneTransitionService.IsTransitioning)
             {
                 return false;
@@ -163,31 +167,58 @@ namespace BarPromenade
                 surfaceClutter != null &&
                 surfaceClutter.activeSelf;
             Vector3 previousPosition = playerRoot.position;
-            motor?.Teleport(plan.ApproachRootPosition);
+            Quaternion previousRotation = playerRoot.rotation;
             bool accepted;
             try
             {
-                accepted = startSleeping
-                    ? controller.BeginLooping(
+                if (startSleeping)
+                {
+                    motor?.Teleport(plan.EntryRootPosition);
+                    playerRoot.rotation = plan.EntryRotation;
+                    Physics.SyncTransforms();
+                    accepted = controller.BeginLooping(
                         definition,
-                        plan.StandHipPosition,
-                        plan.ActionHipPosition,
-                        plan.HeadToFootAxis)
-                    : controller.Begin(
-                        definition,
-                        plan.StandHipPosition,
+                        plan.EntryHipPosition,
                         plan.ActionHipPosition,
                         plan.HeadToFootAxis);
+                }
+                else
+                {
+                    accepted = controller.BeginPositioned(
+                        definition,
+                        new PlayerAnimatedInteractionPose(
+                            plan.EntryRootPosition,
+                            plan.EntryRotation,
+                            plan.EntryHipPosition),
+                        plan.ActionHipPosition,
+                        new PlayerAnimatedInteractionPose(
+                            plan.ExitRootPosition,
+                            plan.ExitRotation,
+                            plan.ExitHipPosition),
+                        plan.HeadToFootAxis);
+                }
             }
             catch
             {
-                motor?.Teleport(previousPosition);
+                if (startSleeping)
+                {
+                    motor?.Teleport(previousPosition);
+                    playerRoot.rotation = previousRotation;
+                    Physics.SyncTransforms();
+                }
+
                 throw;
             }
 
             if (!accepted)
             {
-                motor?.Teleport(previousPosition);
+                if (startSleeping)
+                {
+                    motor?.Teleport(previousPosition);
+                    playerRoot.rotation = previousRotation;
+                    Physics.SyncTransforms();
+                }
+
                 return false;
             }
 

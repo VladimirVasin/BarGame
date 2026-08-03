@@ -135,7 +135,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.InteractionLocalPosition,
                 Is.EqualTo(
-                    new Vector3(-1.55f, 1.74f, 1.78f)));
+                    new Vector3(-1.55f, 1.64f, 1.78f)));
             Assert.That(
                 walkable.Contains(
                     plan.InteractionLocalPosition,
@@ -284,7 +284,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void FeedingPlan_StagesPlayerSafelyUnderMiddleShot()
+        public void FeedingPlan_StagesEntryAndExitSafelyFacingCat()
         {
             StairwellLayoutPlan stairwell =
                 StairwellLayoutPlanner.Generate();
@@ -301,26 +301,47 @@ namespace BarPromenade.Tests.EditMode
                     .CreateDefaultShots(stairwell));
 
             Assert.That(
-                feeding.PlayerRootLocalPosition,
+                feeding.EntryRootLocalPosition,
                 Is.EqualTo(cat.InteractionLocalPosition));
             Assert.That(
                 walkable.Contains(
-                    feeding.PlayerRootLocalPosition,
+                    feeding.EntryRootLocalPosition,
                     StairwellLayoutValidator.PlayerRadius),
                 Is.True);
             Assert.That(
+                walkable.Contains(
+                    feeding.ExitRootLocalPosition,
+                    StairwellLayoutValidator.PlayerRadius),
+                Is.True);
+            AssertFinite(feeding.EntryRootLocalPosition);
+            AssertFinite(feeding.ExitRootLocalPosition);
+            Assert.That(
+                feeding.ExitRootLocalPosition,
+                Is.EqualTo(feeding.EntryRootLocalPosition));
+            Assert.That(
                 selector.Select(
-                    feeding.PlayerRootLocalPosition).Kind,
+                    feeding.EntryRootLocalPosition).Kind,
                 Is.EqualTo(
                     StairwellCatFeedingPlan
                         .RequiredCameraShotKind));
             Assert.That(
-                feeding.StandHipLocalPosition,
+                selector.Select(
+                    feeding.ExitRootLocalPosition).Kind,
+                Is.EqualTo(
+                    StairwellCatFeedingPlan
+                        .RequiredCameraShotKind));
+            Assert.That(
+                feeding.EntryHipLocalPosition,
                 Is.EqualTo(feeding.ActionHipLocalPosition));
             Assert.That(
-                feeding.StandHipLocalPosition.y,
+                feeding.ExitHipLocalPosition,
+                Is.EqualTo(feeding.EntryHipLocalPosition));
+            AssertFinite(feeding.EntryHipLocalPosition);
+            AssertFinite(feeding.ExitHipLocalPosition);
+            Assert.That(
+                feeding.EntryHipLocalPosition.y,
                 Is.EqualTo(
-                    feeding.PlayerRootLocalPosition.y +
+                    feeding.EntryRootLocalPosition.y +
                     (PlayerAnimatedInteractionController
                         .HipPivotYPixels -
                      PlayerSpriteRig.FeetPivotPixels) /
@@ -330,17 +351,62 @@ namespace BarPromenade.Tests.EditMode
                         .UprightVisualOffset)
                     .Within(0.0001f));
             Assert.That(
-                feeding.FacingLocalDirection.y,
+                feeding.EntryFacingLocalDirection.y,
                 Is.Zero.Within(0.0001f));
             Assert.That(
-                feeding.FacingLocalDirection.magnitude,
+                feeding.ExitFacingLocalDirection.y,
+                Is.Zero.Within(0.0001f));
+            Assert.That(
+                feeding.EntryFacingLocalDirection.magnitude,
                 Is.EqualTo(1f).Within(0.0001f));
             Assert.That(
+                feeding.ExitFacingLocalDirection.magnitude,
+                Is.EqualTo(1f).Within(0.0001f));
+            AssertFinite(feeding.EntryFacingLocalDirection);
+            AssertFinite(feeding.ExitFacingLocalDirection);
+            Assert.That(
                 Vector3.Dot(
-                    feeding.FacingLocalDirection,
+                    feeding.EntryFacingLocalDirection,
                     cat.VisualLocalPosition -
-                    feeding.PlayerRootLocalPosition),
+                    feeding.EntryRootLocalPosition),
                 Is.GreaterThan(0f));
+            Assert.That(
+                Vector3.Dot(
+                    feeding.ExitFacingLocalDirection,
+                    cat.VisualLocalPosition -
+                    feeding.ExitRootLocalPosition),
+                Is.GreaterThan(0f));
+            Assert.That(
+                Vector3.Angle(
+                    feeding.EntryFacingLocalRotation *
+                    Vector3.forward,
+                    feeding.EntryFacingLocalDirection),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Angle(
+                    feeding.ExitFacingLocalRotation *
+                    Vector3.forward,
+                    feeding.ExitFacingLocalDirection),
+                Is.LessThan(0.001f));
+
+            Assert.That(
+                feeding.PlayerRootLocalPosition,
+                Is.EqualTo(feeding.EntryRootLocalPosition));
+            Assert.That(
+                feeding.StandHipLocalPosition,
+                Is.EqualTo(feeding.EntryHipLocalPosition));
+            Assert.That(
+                feeding.FacingLocalDirection,
+                Is.EqualTo(feeding.EntryFacingLocalDirection));
+            Assert.That(
+                feeding.FacingLocalRotation,
+                Is.EqualTo(feeding.EntryFacingLocalRotation));
+            Assert.That(
+                feeding.EntryLocalRotation,
+                Is.EqualTo(feeding.EntryFacingLocalRotation));
+            Assert.That(
+                feeding.ExitLocalRotation,
+                Is.EqualTo(feeding.ExitFacingLocalRotation));
         }
 
         [Test]
@@ -637,6 +703,19 @@ namespace BarPromenade.Tests.EditMode
             var gameObject = new GameObject(name);
             gameObjects.Add(gameObject);
             return gameObject;
+        }
+
+        private static void AssertFinite(Vector3 value)
+        {
+            Assert.That(IsFinite(value.x), Is.True);
+            Assert.That(IsFinite(value.y), Is.True);
+            Assert.That(IsFinite(value.z), Is.True);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
         }
     }
 }

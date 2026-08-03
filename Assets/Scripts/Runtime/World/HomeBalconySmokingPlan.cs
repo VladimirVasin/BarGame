@@ -18,7 +18,6 @@ namespace BarPromenade
         public const float LoopFramesPerSecond = 6f;
         public const int ExitFrameCount = 16;
         public const float ExitFramesPerSecond = 8f;
-        public const float VisualCrossfadeDurationSeconds = 0.35f;
 
         public const int RestHoldLoopFrame = 3;
         public const float RestHoldSeconds = 2f;
@@ -34,7 +33,8 @@ namespace BarPromenade
         public const float TriggerDepth = 1.20f;
         public const float DockRailInset = 0.70f;
         public const float TriggerRearOffset = 0.10f;
-        public const float InteractionHeightTolerance = 0.36f;
+        public const float InteractionHeightTolerance =
+            PlayerMotor.InteractionVerticalTolerance;
         public const float UprightVisualOffset = 0.005f;
 
         public const float CameraFieldOfView = 38f;
@@ -45,14 +45,23 @@ namespace BarPromenade
             Vector3.right;
 
         private HomeBalconySmokingPlan(
-            Vector3 dockRootPosition,
+            Vector3 entryRootPosition,
+            Vector3 exitRootPosition,
+            Vector3 entryHipPosition,
+            Vector3 exitHipPosition,
+            Vector3 entryFacingDirection,
+            Vector3 exitFacingDirection,
             Vector3 actionHipPosition,
             Vector3 triggerCenter,
             Vector3 triggerSize,
             Vector3 cameraLookAt)
         {
-            DockRootPosition = dockRootPosition;
-            StandHipPosition = actionHipPosition;
+            EntryRootPosition = entryRootPosition;
+            ExitRootPosition = exitRootPosition;
+            EntryHipPosition = entryHipPosition;
+            ExitHipPosition = exitHipPosition;
+            EntryFacingDirection = entryFacingDirection;
+            ExitFacingDirection = exitFacingDirection;
             ActionHipPosition = actionHipPosition;
             TriggerCenter = triggerCenter;
             TriggerSize = triggerSize;
@@ -64,15 +73,30 @@ namespace BarPromenade
                 triggerSize.z);
         }
 
-        public Vector3 DockRootPosition { get; }
-        public Vector3 StandHipPosition { get; }
+        public Vector3 EntryRootPosition { get; }
+        public Vector3 ExitRootPosition { get; }
+        public Vector3 EntryHipPosition { get; }
+        public Vector3 ExitHipPosition { get; }
+        public Vector3 EntryFacingDirection { get; }
+        public Vector3 ExitFacingDirection { get; }
+        public Quaternion EntryFacingRotation =>
+            Quaternion.LookRotation(
+                EntryFacingDirection,
+                Vector3.up);
+        public Quaternion ExitFacingRotation =>
+            Quaternion.LookRotation(
+                ExitFacingDirection,
+                Vector3.up);
+        public Quaternion EntryRotation => EntryFacingRotation;
+        public Quaternion ExitRotation => ExitFacingRotation;
+        public Vector3 DockRootPosition => EntryRootPosition;
+        public Vector3 StandHipPosition => EntryHipPosition;
         public Vector3 ActionHipPosition { get; }
         public Vector3 TriggerCenter { get; }
         public Vector3 TriggerSize { get; }
         public Rect InteractionBounds { get; }
         public Vector3 CameraLookAt { get; }
-        public Quaternion FacingRotation =>
-            Quaternion.LookRotation(FacingDirection, Vector3.up);
+        public Quaternion FacingRotation => EntryFacingRotation;
 
         public static HomeBalconySmokingPlan Create(
             HomeInteriorLayoutPlan interior,
@@ -89,19 +113,24 @@ namespace BarPromenade
             }
 
             Rect bounds = balcony.BalconyBounds;
-            Vector3 dockRoot = new Vector3(
+            Vector3 entryRoot = new Vector3(
                 bounds.xMax - DockRailInset,
-                interior.PlayerSpawn.y,
+                PlayerFactory.GroundedRootOffset,
                 bounds.center.y);
+            Vector3 exitRoot = entryRoot;
             var walkable = new RoadWalkableArea(
                 balcony.WalkableRectangles);
             if (!walkable.Contains(
-                    dockRoot,
+                    entryRoot,
+                    HomeInteriorLayoutValidator.PlayerClearanceRadius) ||
+                !walkable.Contains(
+                    exitRoot,
                     HomeInteriorLayoutValidator.PlayerClearanceRadius))
             {
                 throw new InvalidOperationException(
-                    "The balcony smoking dock must preserve player " +
-                    "clearance inside the walkable balcony.");
+                    "The balcony smoking entry and exit docks must " +
+                    "preserve player clearance inside the walkable " +
+                    "balcony.");
             }
 
             float hipHeight =
@@ -109,22 +138,30 @@ namespace BarPromenade
                  PlayerSpriteRig.FeetPivotPixels) /
                 PlayerAnimatedInteractionController.PixelsPerUnit +
                 UprightVisualOffset;
-            Vector3 actionHip =
-                dockRoot + Vector3.up * hipHeight;
+            Vector3 entryHip =
+                entryRoot + Vector3.up * hipHeight;
+            Vector3 exitHip =
+                exitRoot + Vector3.up * hipHeight;
+            Vector3 actionHip = entryHip;
             Vector3 triggerSize = new Vector3(
                 TriggerWidth,
                 TriggerHeight,
                 TriggerDepth);
             Vector3 triggerCenter = new Vector3(
-                dockRoot.x - TriggerRearOffset,
+                entryRoot.x - TriggerRearOffset,
                 TriggerHeight * 0.5f,
-                dockRoot.z);
+                entryRoot.z);
             Vector3 cameraLookAt =
                 actionHip +
                 new Vector3(CameraCityLookOffset, 0.50f, 0f);
 
             return new HomeBalconySmokingPlan(
-                dockRoot,
+                entryRoot,
+                exitRoot,
+                entryHip,
+                exitHip,
+                FacingDirection,
+                FacingDirection,
                 actionHip,
                 triggerCenter,
                 triggerSize,
@@ -135,7 +172,7 @@ namespace BarPromenade
         {
             return IsFinite(localRootPosition) &&
                    Mathf.Abs(
-                       localRootPosition.y - DockRootPosition.y) <=
+                       localRootPosition.y - EntryRootPosition.y) <=
                    InteractionHeightTolerance &&
                    localRootPosition.x >= InteractionBounds.xMin &&
                    localRootPosition.x <= InteractionBounds.xMax &&
@@ -158,8 +195,7 @@ namespace BarPromenade
                 loopFrameExtraHoldSeconds:
                     CreateLoopFrameHolds(),
                 textureFlipX: false,
-                visualCrossfadeDurationSeconds:
-                    VisualCrossfadeDurationSeconds,
+                visualCrossfadeDurationSeconds: 0f,
                 alignBillboardToCameraPlane: false);
         }
 

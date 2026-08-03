@@ -234,6 +234,8 @@ namespace BarPromenade
         private PlayerFallAnimationPhase fallAnimationPhase;
         private float fallAnimationProgress;
         private bool detailedFallPresented;
+        private bool interactionHandoffLocked;
+        private bool releaseInteractionHandoffAfterLateUpdate;
         private float footPlantAmount = 1f;
         private Vector3 upperBodyOffset;
 
@@ -264,6 +266,8 @@ namespace BarPromenade
                 fallAnimationProgress);
         public bool IsDetailedFallActive =>
             fallAnimationPhase != PlayerFallAnimationPhase.None;
+        public bool InteractionHandoffLocked =>
+            interactionHandoffLocked;
         public Vector3 UpperBodyOffset => upperBodyOffset;
         public Vector3 LeftFootContactWorldPosition =>
             GetFootContactWorldPosition(true);
@@ -291,6 +295,24 @@ namespace BarPromenade
             motionSpeed = speed;
             motionAmount = Mathf.Clamp01(
                 speed / Mathf.Max(0.1f, fullAnimationSpeed));
+        }
+
+        public void SetInteractionHandoffLocked(bool locked)
+        {
+            if (!locked)
+            {
+                releaseInteractionHandoffAfterLateUpdate =
+                    interactionHandoffLocked;
+                return;
+            }
+
+            interactionHandoffLocked = true;
+            releaseInteractionHandoffAfterLateUpdate = false;
+            motionSpeed = 0f;
+            motionAmount = 0f;
+            footPlantAmount = 1f;
+            RefreshDirection(snapToNearest: true);
+            ApplyInteractionHandoffPose();
         }
 
         public void SetIntoxication(float intensity)
@@ -499,6 +521,19 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            if (interactionHandoffLocked)
+            {
+                RefreshDirection(snapToNearest: true);
+                ApplyInteractionHandoffPose();
+                if (releaseInteractionHandoffAfterLateUpdate)
+                {
+                    releaseInteractionHandoffAfterLateUpdate = false;
+                    interactionHandoffLocked = false;
+                }
+
+                return;
+            }
+
             RefreshDirection();
             AnimatePuppet(Time.deltaTime);
             facialAnimationState.Advance(
@@ -520,6 +555,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            interactionHandoffLocked = false;
+            releaseInteractionHandoffAfterLateUpdate = false;
             fallAnimationPhase = PlayerFallAnimationPhase.None;
             fallAnimationProgress = 0f;
             fallAmountTarget = 0f;
@@ -887,7 +924,12 @@ namespace BarPromenade
             }
         }
 
-        private void RefreshDirection()
+        public void SnapDirectionToCurrentView()
+        {
+            RefreshDirection(snapToNearest: true);
+        }
+
+        private void RefreshDirection(bool snapToNearest = false)
         {
             EnsurePresentationExists();
             Camera camera = targetCamera != null
@@ -915,9 +957,44 @@ namespace BarPromenade
                 actorForward,
                 toCamera,
                 Vector3.up);
-            PlayerViewDirection direction =
-                directionSelector.Select(signedAngle);
+            PlayerViewDirection direction;
+            if (snapToNearest)
+            {
+                direction = PlayerViewDirectionSelector
+                    .GetNearestDirection(signedAngle);
+                directionSelector.Reset(direction);
+            }
+            else
+            {
+                direction = directionSelector.Select(signedAngle);
+            }
+
             ApplyDirection(direction);
+        }
+
+        private void ApplyInteractionHandoffPose()
+        {
+            if (poseRoot == null)
+            {
+                return;
+            }
+
+            upperBodyOffset = Vector3.zero;
+            poseRoot.localPosition = Vector3.zero;
+            poseRoot.localRotation = Quaternion.identity;
+            poseRoot.localScale = Vector3.one;
+            for (int index = 0; index < PartCount; index++)
+            {
+                partTransforms[index].localRotation =
+                    Quaternion.identity;
+                partTransforms[index].localScale = Vector3.one;
+            }
+
+            RestoreDetailedFallPresentation();
+            ApplyDirection(CurrentDirection);
+            BodyRenderer.sprite = GetPartSprite(
+                PlayerPuppetPart.Body,
+                CurrentDirection);
         }
 
         private void ApplyDirection(PlayerViewDirection direction)

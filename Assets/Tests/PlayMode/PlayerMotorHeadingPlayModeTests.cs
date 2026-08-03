@@ -399,6 +399,146 @@ namespace BarPromenade.Tests.PlayMode
                 queueEventOnly: true);
         }
 
+        [Test]
+        public void InteractionPoseMove_ApproachesWithoutOvershootAndAligns()
+        {
+            motor.SetInputEnabled(false);
+            Vector3 start = playerObject.transform.position;
+            Vector3 target = start + new Vector3(0.52f, 0f, 0.18f);
+            Quaternion targetRotation =
+                Quaternion.LookRotation(Vector3.left, Vector3.up);
+            float previousDistance = PlanarDistance(start, target);
+            bool completed = false;
+
+            for (int step = 0; step < 20 && !completed; step++)
+            {
+                Vector3 before = playerObject.transform.position;
+                completed = motor.MoveTowardsInteractionPose(
+                    target,
+                    targetRotation,
+                    0.05f);
+                float travelled = PlanarDistance(
+                    before,
+                    playerObject.transform.position);
+                float distance = PlanarDistance(
+                    playerObject.transform.position,
+                    target);
+
+                Assert.That(
+                    travelled,
+                    Is.LessThanOrEqualTo(2.6f * 0.05f + 0.0001f),
+                    "A guided interaction step must not teleport or " +
+                    "overshoot its authored entry point.");
+                Assert.That(
+                    distance,
+                    Is.LessThanOrEqualTo(previousDistance + 0.0001f));
+                previousDistance = distance;
+            }
+
+            Assert.That(completed, Is.True);
+            Assert.That(
+                PlanarDistance(playerObject.transform.position, target),
+                Is.LessThanOrEqualTo(
+                    PlayerMotor.InteractionPositionTolerance));
+            Assert.That(
+                Quaternion.Angle(
+                    playerObject.transform.rotation,
+                    targetRotation),
+                Is.LessThanOrEqualTo(
+                    PlayerMotor.InteractionRotationToleranceDegrees));
+            Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(motor.InputEnabled, Is.False);
+        }
+
+        [Test]
+        public void InteractionPoseMove_ZeroDeltaDoesNotTeleportOrRotate()
+        {
+            motor.SetInputEnabled(false);
+            Vector3 start = playerObject.transform.position;
+            Quaternion startRotation = playerObject.transform.rotation;
+            Vector3 target = start + new Vector3(0.52f, 0f, 0.18f);
+            Quaternion targetRotation =
+                Quaternion.LookRotation(Vector3.left, Vector3.up);
+
+            bool completed = motor.MoveTowardsInteractionPose(
+                target,
+                targetRotation,
+                0f);
+
+            Assert.That(completed, Is.False);
+            Assert.That(playerObject.transform.position, Is.EqualTo(start));
+            Assert.That(
+                playerObject.transform.rotation,
+                Is.EqualTo(startRotation));
+            Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(motor.InteractionPoseMoveActive, Is.True);
+            Assert.That(motor.InputEnabled, Is.False);
+        }
+
+        [Test]
+        public void InteractionPoseMove_VerticalMismatchDoesNotComplete()
+        {
+            motor.SetInputEnabled(false);
+            Vector3 start = playerObject.transform.position;
+            Vector3 target = start +
+                Vector3.up *
+                (PlayerMotor.InteractionVerticalTolerance + 0.1f);
+
+            bool completed = motor.MoveTowardsInteractionPose(
+                target,
+                playerObject.transform.rotation,
+                0.05f);
+
+            Assert.That(
+                completed,
+                Is.False,
+                "Matching the planar pose must not hide an authored " +
+                "vertical mismatch.");
+            Assert.That(playerObject.transform.position, Is.EqualTo(start));
+            Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(motor.InteractionPoseMoveActive, Is.True);
+            Assert.That(motor.InteractionPoseMoveStalled, Is.False);
+        }
+
+        [Test]
+        public void InteractionPoseMove_BlockedPathStallsWithoutMoving()
+        {
+            var area = new ToggleWalkableArea
+            {
+                Blocked = true
+            };
+            motor.Initialize(movementCamera, area, null);
+            motor.SetInputEnabled(false);
+            Vector3 start = playerObject.transform.position;
+            Vector3 target = start + Vector3.right * 0.5f;
+            bool completed = false;
+
+            for (int step = 0;
+                 step < 10 && !motor.InteractionPoseMoveStalled;
+                 step++)
+            {
+                completed = motor.MoveTowardsInteractionPose(
+                    target,
+                    Quaternion.LookRotation(Vector3.right, Vector3.up),
+                    0.25f);
+                Assert.That(completed, Is.False);
+                Assert.That(
+                    playerObject.transform.position,
+                    Is.EqualTo(start),
+                    "A blocked guided approach must not tunnel or " +
+                    "teleport through its walkable constraint.");
+                Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            }
+
+            Assert.That(
+                motor.InteractionPoseMoveStalled,
+                Is.True,
+                "A blocked authored approach must eventually terminate " +
+                "through the shared no-progress guard.");
+            Assert.That(motor.InteractionPoseMoveActive, Is.False);
+            Assert.That(playerObject.transform.position, Is.EqualTo(start));
+        }
+
         private IEnumerator WaitForMovement()
         {
             yield return WaitForSpeed(MinimumMovingSpeed);
@@ -468,6 +608,15 @@ namespace BarPromenade.Tests.PlayMode
                     expectedYaw)),
                 Is.LessThan(0.1f),
                 "Stopping must preserve the player's yaw.");
+        }
+
+        private static float PlanarDistance(
+            Vector3 first,
+            Vector3 second)
+        {
+            first.y = 0f;
+            second.y = 0f;
+            return Vector3.Distance(first, second);
         }
     }
 }

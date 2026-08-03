@@ -2,7 +2,9 @@
 
 This directory owns the approved player contact sheet for feeding the
 stairwell cat. The deterministic builder validates and packs authored art; it
-does not create poses, in-betweens or placeholder assets.
+does not create poses, in-betweens, blends or placeholder assets. Logical
+frames `001-062` remain source-derived, while frames `000` and `063` are exact
+ordinary-rig endpoints described below.
 
 ## Expected source
 
@@ -24,9 +26,10 @@ Every source cell uses the same normalized pivot as a runtime `128 x 96`
 interaction cell: Unity bottom-origin hip `(64, 40)`, equivalently 50 percent
 from the left and `56/96` from the top. The builder applies the same nearest-
 neighbour contain rule to all 64 complete source cells, then aligns that
-normalized hip. Cells can differ by one source pixel when the sheet dimensions
-do not divide evenly. This preserves proportions and avoids clipping rather
-than stretching a square cell to `128 x 96`.
+normalized hip. The normalized results for logical frames `001-062` are packed
+unchanged. Cells can differ by one source pixel when the sheet dimensions do
+not divide evenly. This preserves proportions and avoids clipping rather than
+stretching a square cell to `128 x 96`.
 
 Eight-connected foreground components below
 `max(4 pixels, 0.04 percent of the inset source-cell area)` are discarded as
@@ -41,10 +44,19 @@ the diagonal satchel strap. Do not mirror frames. The can/bowl handoff must be
 authored consistently with the cat sheet so the same prop does not appear in
 both tracks at once.
 
-The approved source faces image-right and remains unmodified here. The
-MiddleFlight runtime shot places the cat camera-left, so
+The approved source faces image-right and remains unmodified for frames
+`001-062`. The MiddleFlight runtime shot places the cat camera-left, so
 `StairwellCatInteraction` presents this atlas with `TextureFlipX = true`; this
-puts the hero's face and the can toward the cat without altering source art.
+puts the hero's face and the can toward the cat without altering those source
+poses.
+
+After source normalization, the builder replaces logical frames `000` and
+`063` with exact copies of `PlayerDirectionalAtlas.png` FrontLeft cell index
+`7`. The `64 x 96` ordinary idle is horizontally preflipped, then centered at
+PNG `(32, 0)` inside the `128 x 96` interaction cell. The runtime
+`TextureFlipX = true` therefore flips it back to the ordinary FrontLeft
+silhouette at both handoffs. No source pixels, dither, alpha crossfade or
+interpolated bridge are mixed into either endpoint.
 
 ## Source ordering and phases
 
@@ -65,9 +77,9 @@ The logical animation ranges are inclusive:
 
 | Frames | Phase |
 | --- | --- |
-| `000-023` | Present/place the open can |
+| `000-023` | Exact idle endpoint, then present/place the open can |
 | `024-039` | Feeding action/hold poses |
-| `040-063` | Return to the ordinary interaction stance |
+| `040-063` | Authored return, then exact idle endpoint |
 
 Runtime timing and any repeated action frames are code-owned. The authored
 sheet always supplies all 64 logical frames.
@@ -82,6 +94,11 @@ It is a `1024 x 768` RGBA PNG containing `8 x 8` point-sampled `128 x 96`
 cells. The builder reverses source row placement so logical frame `0` is the
 lower-left PNG cell and subsequent logical rows advance upward. This is the
 exact layout consumed by `PlayerAnimatedInteractionController`.
+
+The default endpoint input is
+`Assets/Resources/Player/PlayerDirectionalAtlas.png`. Both runtime endpoint
+cells are pixel-identical after the required preflip and padding; every frame
+from `001` through `062` remains the corresponding normalized source pose.
 
 ```text
 visible PNG top     56 57 58 59 60 61 62 63
@@ -108,10 +125,12 @@ Custom paths are available for isolated tooling checks:
 ```powershell
 python tools/build-player-cat-feeding-atlas.py `
   --source C:\path\to\PlayerCatFeedingSource-alpha.png `
+  --idle-atlas C:\path\to\PlayerDirectionalAtlas.png `
   --output C:\path\to\PlayerCatFeedingAtlas.png
 ```
 
-The builder reads the source without changing it, validates every cell, packs
-in memory, verifies exact frame order and binary alpha, and writes the chosen
-output through an atomic PNG round trip. `--validate-only` never writes or
-creates the output.
+The builder reads both inputs without changing them, validates every source
+cell, installs and hashes the two exact endpoints, hashes the source-derived
+`001-062` range, packs in memory, verifies exact frame order and binary alpha,
+and writes the chosen output through an atomic PNG round trip.
+`--validate-only` never writes or creates the output.

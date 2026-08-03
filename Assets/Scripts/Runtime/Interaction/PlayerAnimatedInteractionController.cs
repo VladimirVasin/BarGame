@@ -6,10 +6,10 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// Temporarily replaces the articulated player visual with a camera-facing
-    /// frame sequence while leaving the physical player root at its stand
-    /// position. Each interaction selects exact camera-plane or world-up
-    /// alignment.
+    /// Guides the ordinary player rig into an authored entry root, replaces it
+    /// with an atlas sequence at the resolved hip, then restores the rig at an
+    /// independently authored exit root. Each interaction selects exact
+    /// camera-plane or world-up alignment.
     /// </summary>
     [DefaultExecutionOrder(220)]
     [DisallowMultipleComponent]
@@ -45,8 +45,14 @@ namespace BarPromenade
         private string loadedResourcePath;
         private Vector3 standHip;
         private Vector3 actionHip;
+        private Vector3 exitHip;
+        private PlayerAnimatedInteractionPose entryPose;
+        private PlayerAnimatedInteractionPose exitPose;
         private Vector3 actionRightAxis;
         private bool hasActionRightAxis;
+        private bool isPositioning;
+        private bool entryPoseSettled;
+        private bool placeAtExitOnCompletion;
         private bool stateCaptured;
         private bool previousMotorInput;
         private bool previousInteractorInput;
@@ -57,45 +63,30 @@ namespace BarPromenade
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
 
         public bool IsInitialized { get; private set; }
-        public PlayerAnimatedInteractionPhase Phase =>
-            timeline != null
-                ? timeline.Phase
-                : PlayerAnimatedInteractionPhase.Idle;
-        public int FrameIndex =>
-            timeline != null ? timeline.FrameIndex : -1;
-        public bool IsActive =>
-            timeline != null && timeline.IsActive;
-        public float ExitDurationMultiplier =>
-            timeline != null
-                ? timeline.ExitDurationMultiplier
-                : 1f;
-        public double ExitDurationSeconds =>
-            timeline != null
-                ? timeline.ExitDurationSeconds
-                : 0d;
-        public SpriteRenderer AnimationRenderer =>
-            animationRenderer;
-        public bool CameraPlaneAlignmentEnabled =>
-            billboard != null &&
-            billboard.CameraPlaneAlignmentEnabled;
+        public PlayerAnimatedInteractionPhase Phase => isPositioning
+            ? PlayerAnimatedInteractionPhase.Positioning
+            : timeline != null
+            ? timeline.Phase
+            : PlayerAnimatedInteractionPhase.Idle;
+        public int FrameIndex => timeline != null ? timeline.FrameIndex : -1;
+        public bool IsActive => isPositioning ||
+                                (timeline != null && timeline.IsActive);
+        public float ExitDurationMultiplier => timeline != null
+            ? timeline.ExitDurationMultiplier
+            : 1f;
+        public double ExitDurationSeconds => timeline != null
+            ? timeline.ExitDurationSeconds
+            : 0d;
+        public SpriteRenderer AnimationRenderer => animationRenderer;
+        public bool CameraPlaneAlignmentEnabled => billboard != null &&
+                                                    billboard.CameraPlaneAlignmentEnabled;
         public float RigVisualOpacity { get; private set; } = 1f;
         public float AnimationVisualOpacity { get; private set; }
-        public Transform AnimationVisualRoot =>
-            animationVisualRoot;
-        public bool HasActionRightAxis =>
-            hasActionRightAxis;
-        public Vector3 ActionRightAxis =>
-            actionRightAxis;
-        public float TargetCameraPlaneRollDegrees
-        {
-            get;
-            private set;
-        }
-        public float CurrentCameraPlaneRollDegrees
-        {
-            get;
-            private set;
-        }
+        public Transform AnimationVisualRoot => animationVisualRoot;
+        public bool HasActionRightAxis => hasActionRightAxis;
+        public Vector3 ActionRightAxis => actionRightAxis;
+        public float TargetCameraPlaneRollDegrees { get; private set; }
+        public float CurrentCameraPlaneRollDegrees { get; private set; }
 
         public void Initialize(
             PlayerRuntime playerRuntime,
@@ -126,18 +117,44 @@ namespace BarPromenade
             PlayerAnimatedInteractionDefinition definition,
             Vector3 standHipPosition,
             Vector3 actionHipPosition)
-        {
-            return TryPrepare(
-                definition,
-                standHipPosition,
-                actionHipPosition,
-                Vector3.zero);
-        }
+            => TryPrepare(definition, standHipPosition,
+                actionHipPosition, Vector3.zero);
 
         public bool TryPrepare(
             PlayerAnimatedInteractionDefinition definition,
             Vector3 standHipPosition,
             Vector3 actionHipPosition,
+            Vector3 worldActionRightAxis)
+        {
+            return TryPrepareInternal(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                standHipPosition,
+                worldActionRightAxis);
+        }
+
+        public bool TryPrepare(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose)
+        {
+            authoredEntryPose.Validate(nameof(authoredEntryPose));
+            authoredExitPose.Validate(nameof(authoredExitPose));
+            return TryPrepareInternal(
+                definition,
+                authoredEntryPose.HipPosition,
+                actionHipPosition,
+                authoredExitPose.HipPosition,
+                Vector3.zero);
+        }
+
+        private bool TryPrepareInternal(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 entryHipPosition,
+            Vector3 actionHipPosition,
+            Vector3 exitHipPosition,
             Vector3 worldActionRightAxis)
         {
             if (!IsInitialized)
@@ -157,8 +174,9 @@ namespace BarPromenade
             }
 
             ValidateAnchors(
-                standHipPosition,
-                actionHipPosition);
+                entryHipPosition,
+                actionHipPosition,
+                exitHipPosition);
             ValidateActionRightAxis(
                 worldActionRightAxis,
                 nameof(worldActionRightAxis),
@@ -174,13 +192,8 @@ namespace BarPromenade
             PlayerAnimatedInteractionDefinition definition,
             Vector3 standHipPosition,
             Vector3 actionHipPosition)
-        {
-            return Begin(
-                definition,
-                standHipPosition,
-                actionHipPosition,
-                Vector3.zero);
-        }
+            => Begin(definition, standHipPosition,
+                actionHipPosition, Vector3.zero);
 
         public bool Begin(
             PlayerAnimatedInteractionDefinition definition,
@@ -194,6 +207,75 @@ namespace BarPromenade
                 actionHipPosition,
                 worldActionRightAxis,
                 false);
+        }
+
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose)
+            => BeginPositioned(definition, authoredEntryPose,
+                actionHipPosition, authoredExitPose, Vector3.zero);
+
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            Vector3 worldActionRightAxis)
+        {
+            authoredEntryPose.Validate(nameof(authoredEntryPose));
+            authoredExitPose.Validate(nameof(authoredExitPose));
+            if (!TryPrepareInternal(
+                    definition,
+                    authoredEntryPose.HipPosition,
+                    actionHipPosition,
+                    authoredExitPose.HipPosition,
+                    worldActionRightAxis))
+            {
+                return false;
+            }
+
+            if (Mathf.Abs(player.GameObject.transform.position.y -
+                          authoredEntryPose.RootPosition.y) >
+                PlayerMotor.InteractionVerticalTolerance)
+            {
+                return false;
+            }
+
+            ValidateActionRightAxis(
+                worldActionRightAxis,
+                nameof(worldActionRightAxis),
+                out bool useActionRightAxis,
+                out Vector3 normalizedActionRightAxis);
+
+            entryPose = authoredEntryPose;
+            exitPose = authoredExitPose;
+            standHip = authoredEntryPose.HipPosition;
+            actionHip = actionHipPosition;
+            exitHip = authoredExitPose.HipPosition;
+            hasActionRightAxis = useActionRightAxis;
+            actionRightAxis = normalizedActionRightAxis;
+            timeline =
+                new PlayerAnimatedInteractionTimeline(definition);
+            placeAtExitOnCompletion = true;
+            isPositioning = true;
+            entryPoseSettled = false;
+            CapturePlayerState();
+            ApplyInputForPhase(
+                PlayerAnimatedInteractionPhase.Positioning);
+            animationRenderer.enabled = false;
+            animationRenderer.sprite = null;
+            RigVisualOpacity = 1f;
+            AnimationVisualOpacity = 0f;
+
+            PhaseChanged?.Invoke(PlayerAnimatedInteractionPhase.Positioning);
+            if (IsAtEntryPose())
+            {
+                SettleAtEntryPose();
+            }
+
+            return true;
         }
 
         public bool BeginLooping(
@@ -257,10 +339,15 @@ namespace BarPromenade
 
             standHip = standHipPosition;
             actionHip = actionHipPosition;
+            exitHip = standHipPosition;
             hasActionRightAxis = useActionRightAxis;
             actionRightAxis = normalizedActionRightAxis;
             timeline = nextTimeline;
+            isPositioning = false;
+            placeAtExitOnCompletion = false;
             CapturePlayerState();
+            player.Visual.SetInteractionHandoffLocked(true);
+            HidePlayerShadows();
             ApplyInputForPhase(Phase);
             animationRenderer.enabled = true;
             ApplyCurrentPresentation();
@@ -285,6 +372,30 @@ namespace BarPromenade
             ApplyCurrentPresentation();
             PhaseChanged?.Invoke(Phase);
             return true;
+        }
+
+        private void StartPreparedTimeline()
+        {
+            if (!isPositioning || !entryPoseSettled || timeline == null)
+            {
+                return;
+            }
+
+            SnapRootToPose(entryPose);
+            isPositioning = false;
+            entryPoseSettled = false;
+            bool began = timeline.Begin();
+            if (!began)
+            {
+                CompleteInteraction();
+                return;
+            }
+
+            HidePlayerShadows();
+            ApplyInputForPhase(timeline.Phase);
+            animationRenderer.enabled = true;
+            ApplyCurrentPresentation();
+            PhaseChanged?.Invoke(timeline.Phase);
         }
 
         public bool CancelActiveInteraction()
@@ -560,12 +671,42 @@ namespace BarPromenade
                 return;
             }
 
+            if (SceneTransitionService.IsTransitioning)
+            {
+                CompleteInteraction();
+                return;
+            }
+
+            if (isPositioning)
+            {
+                if (entryPoseSettled)
+                {
+                    StartPreparedTimeline();
+                }
+                else if (player.Motor.MoveTowardsInteractionPose(
+                        entryPose.RootPosition,
+                        entryPose.RootRotation,
+                        Time.deltaTime))
+                {
+                    SettleAtEntryPose();
+                }
+                else if (player.Motor.InteractionPoseMoveStalled)
+                {
+                    Debug.LogWarning($"Animated interaction entry was blocked; " +
+                                     $"current={player.GameObject.transform.position}, " +
+                                     $"target={entryPose.RootPosition}.", this);
+                    CompleteInteraction();
+                }
+
+                return;
+            }
+
             PlayerAnimatedInteractionPhase previousPhase =
                 timeline.Phase;
             timeline.Advance(Time.deltaTime);
             if (!timeline.IsActive)
             {
-                CompleteInteraction();
+                CompleteInteraction(placeAtExitPose: true);
                 return;
             }
 
@@ -581,12 +722,14 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (IsActive)
+            if (!isPositioning &&
+                timeline != null &&
+                timeline.IsActive)
             {
+                animationRoot.position = GetCurrentHipPosition();
                 ApplyVisualCrossfade();
             }
         }
-
         private void OnDisable()
         {
             CompleteInteraction();
@@ -630,6 +773,11 @@ namespace BarPromenade
 
             player.Motor.SetInputEnabled(false);
             player.Interactor.SetInputEnabled(false);
+            stateCaptured = true;
+        }
+
+        private void HidePlayerShadows()
+        {
             if (player.Shadow != null)
             {
                 player.Shadow.enabled = false;
@@ -639,8 +787,6 @@ namespace BarPromenade
             {
                 player.ContactShadow.enabled = false;
             }
-
-            stateCaptured = true;
         }
 
         private void RestorePlayerState()
@@ -835,7 +981,7 @@ namespace BarPromenade
             {
                 case PlayerAnimatedInteractionPhase.Entering:
                     return Vector3.LerpUnclamped(
-                        standHip,
+                        timeline.Definition.ResolveHandoffHip(standHip, targetCamera),
                         actionHip,
                         SmoothProgress(timeline.PhaseProgress));
                 case PlayerAnimatedInteractionPhase.Looping:
@@ -843,19 +989,34 @@ namespace BarPromenade
                 case PlayerAnimatedInteractionPhase.Exiting:
                     return Vector3.LerpUnclamped(
                         actionHip,
-                        standHip,
+                        timeline.Definition.ResolveHandoffHip(exitHip, targetCamera),
                         SmoothProgress(timeline.PhaseProgress));
                 default:
                     return standHip;
             }
         }
 
-        private void CompleteInteraction()
+        private void CompleteInteraction(
+            bool placeAtExitPose = false)
         {
             bool shouldNotify =
+                isPositioning ||
                 (timeline != null && timeline.IsActive) ||
                 stateCaptured;
+            bool shouldPlaceAtExit =
+                placeAtExitPose &&
+                placeAtExitOnCompletion &&
+                stateCaptured;
+            player.Motor?.CancelInteractionPoseMove();
+            isPositioning = false;
+            entryPoseSettled = false;
             timeline?.Reset();
+            if (shouldPlaceAtExit)
+            {
+                SnapRootToPose(exitPose);
+                player.Visual?.SetInteractionHandoffLocked(true);
+            }
+
             if (animationRenderer != null)
             {
                 animationRenderer.enabled = false;
@@ -865,7 +1026,9 @@ namespace BarPromenade
             }
 
             ResetOrientation();
+            player.Visual?.SetInteractionHandoffLocked(false);
             RestorePlayerState();
+            placeAtExitOnCompletion = false;
             if (shouldNotify)
             {
                 PhaseChanged?.Invoke(
@@ -1109,14 +1272,15 @@ namespace BarPromenade
         }
 
         private static void ValidateAnchors(
-            Vector3 standHipPosition,
-            Vector3 actionHipPosition)
+            Vector3 entryHipPosition,
+            Vector3 actionHipPosition,
+            Vector3 exitHipPosition)
         {
-            if (!IsFinite(standHipPosition))
+            if (!IsFinite(entryHipPosition))
             {
                 throw new ArgumentException(
-                    "The stand hip position must be finite.",
-                    nameof(standHipPosition));
+                    "The entry hip position must be finite.",
+                    nameof(entryHipPosition));
             }
 
             if (!IsFinite(actionHipPosition))
@@ -1124,6 +1288,13 @@ namespace BarPromenade
                 throw new ArgumentException(
                     "The action hip position must be finite.",
                     nameof(actionHipPosition));
+            }
+
+            if (!IsFinite(exitHipPosition))
+            {
+                throw new ArgumentException(
+                    "The exit hip position must be finite.",
+                    nameof(exitHipPosition));
             }
         }
 
@@ -1153,6 +1324,60 @@ namespace BarPromenade
                     "The vector must be finite.",
                     parameterName);
             }
+        }
+
+        private bool IsAtEntryPose()
+        {
+            if (player.GameObject == null)
+            {
+                return false;
+            }
+
+            Transform playerRoot = player.GameObject.transform;
+            Vector3 current = playerRoot.position;
+            Vector3 target = entryPose.RootPosition;
+            current.y = 0f;
+            target.y = 0f;
+            return Vector3.Distance(current, target) <=
+                       PlayerMotor.InteractionPositionTolerance &&
+                   Mathf.Abs(playerRoot.position.y -
+                             entryPose.RootPosition.y) <=
+                       PlayerMotor.InteractionVerticalTolerance &&
+                   Quaternion.Angle(
+                       playerRoot.rotation,
+                       entryPose.RootRotation) <=
+                       PlayerMotor
+                           .InteractionRotationToleranceDegrees;
+        }
+
+        private void SettleAtEntryPose()
+        {
+            SnapRootToPose(entryPose);
+            player.Visual.SetInteractionHandoffLocked(true);
+            entryPoseSettled = true;
+        }
+
+        private void SnapRootToPose(
+            PlayerAnimatedInteractionPose pose)
+        {
+            if (player.GameObject == null)
+            {
+                return;
+            }
+
+            if (player.Motor != null)
+            {
+                player.Motor.Teleport(pose.RootPosition);
+            }
+            else
+            {
+                player.GameObject.transform.position =
+                    pose.RootPosition;
+            }
+
+            player.GameObject.transform.rotation =
+                pose.RootRotation;
+            Physics.SyncTransforms();
         }
 
         private void ResetOrientation()

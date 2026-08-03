@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+### 2026-08-03 — Natural entry and exit for contextual animations
+
+- Pressing `E` for bed sleep or balcony smoking, and confirming cat feeding,
+  now enters a visible `Positioning` step: the ordinary hero walks through the
+  real grounded movement constraint and turns into the authored direction
+  before the special animation begins. An unreachable height, blocked
+  no-progress route or scene/lifecycle interruption cancels cleanly instead of
+  teleporting the hero into place.
+- Contextual animations now own separate entry and exit poses. The ordinary
+  hero returns at the exact authored exit point and facing after the final
+  frame instead of relying on one shared hidden teleport location.
+- At exact entry, the ordinary puppet settles into one neutral rendered
+  handoff frame before the atlas appears. Bed sleep and cat feeding match the
+  camera-plane `FrontLeft` endpoint; balcony smoking stays upright in world-up
+  mode and matches `BackRight`. MainRoom and Bathroom retain camera-plane
+  player sprites, while the Balcony shot uses world-up yaw.
+- Bed sleep, balcony smoking and cat feeding now change visibility directly at
+  their matching endpoints with no sprite alpha fade. The smoking atlas also
+  no longer uses dissolve bridge frames.
+- The last exit frame is always presented before the interaction becomes idle.
+  The restored neutral puppet stays stable through its final render handoff,
+  avoiding a one-frame gait, facial-expression or direction pop.
+- Camera-plane sequences resolve the upright endpoint hip from the live camera
+  up axis and correct the atlas pivot again during `LateUpdate`, keeping feet
+  and hips aligned while the camera settles.
+
 ### 2026-08-03 — Feed the stairwell cat
 
 - Interacting with the cat now offers `Talk` or `Interact`. Talking keeps the

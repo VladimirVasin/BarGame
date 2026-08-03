@@ -6,7 +6,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class HomeBalconySmokingPlanTests
     {
         [Test]
-        public void Create_DerivesDockTriggerAndCameraFromBalcony()
+        public void Create_DerivesEntryExitPosesTriggerAndCameraFromBalcony()
         {
             HomeInteriorLayoutPlan interior =
                 HomeInteriorLayoutPlanner.Generate();
@@ -17,12 +17,34 @@ namespace BarPromenade.Tests.EditMode
                 HomeBalconySmokingPlan.Create(
                     interior,
                     balcony);
+            var walkable = new RoadWalkableArea(
+                balcony.WalkableRectangles);
 
             Assert.That(
                 Vector3.Distance(
-                    plan.DockRootPosition,
-                    new Vector3(6.60f, 0.12f, -1.45f)),
+                    plan.EntryRootPosition,
+                    new Vector3(
+                        6.60f,
+                        PlayerFactory.GroundedRootOffset,
+                        -1.45f)),
                 Is.LessThan(0.0001f));
+            AssertFinite(plan.EntryRootPosition);
+            AssertFinite(plan.ExitRootPosition);
+            Assert.That(
+                walkable.Contains(
+                    plan.EntryRootPosition,
+                    HomeInteriorLayoutValidator
+                        .PlayerClearanceRadius),
+                Is.True);
+            Assert.That(
+                walkable.Contains(
+                    plan.ExitRootPosition,
+                    HomeInteriorLayoutValidator
+                        .PlayerClearanceRadius),
+                Is.True);
+            Assert.That(
+                plan.ExitRootPosition,
+                Is.EqualTo(plan.EntryRootPosition));
             Assert.That(
                 Vector3.Distance(
                     plan.TriggerCenter,
@@ -33,11 +55,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     new Vector3(0.70f, 1.80f, 1.20f)));
             Assert.That(
-                plan.StandHipPosition,
+                plan.EntryHipPosition,
                 Is.EqualTo(plan.ActionHipPosition));
             Assert.That(
+                plan.ExitHipPosition,
+                Is.EqualTo(plan.EntryHipPosition));
+            AssertFinite(plan.EntryHipPosition);
+            AssertFinite(plan.ExitHipPosition);
+            Assert.That(
                 plan.ActionHipPosition.y,
-                Is.EqualTo(0.875f).Within(0.0001f));
+                Is.EqualTo(0.795f).Within(0.0001f));
             float animatedFeetY =
                 plan.ActionHipPosition.y +
                 (PlayerSpriteRig.FeetPivotPixels -
@@ -46,7 +73,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 animatedFeetY,
                 Is.EqualTo(
-                        plan.DockRootPosition.y +
+                        plan.EntryRootPosition.y +
                         HomeBalconySmokingPlan.UprightVisualOffset)
                     .Within(0.0001f));
             Assert.That(
@@ -68,16 +95,51 @@ namespace BarPromenade.Tests.EditMode
                 "+X so the city receives more of the frame.");
             Assert.That(
                 Vector3.Angle(
-                    plan.FacingRotation * Vector3.forward,
+                    plan.EntryFacingRotation * Vector3.forward,
                     Vector3.right),
                 Is.LessThan(0.001f));
             Assert.That(
-                plan.CanInteractAt(plan.DockRootPosition),
+                Vector3.Angle(
+                    plan.ExitFacingRotation * Vector3.forward,
+                    Vector3.right),
+                Is.LessThan(0.001f));
+            Assert.That(
+                plan.EntryFacingDirection,
+                Is.EqualTo(Vector3.right));
+            Assert.That(
+                plan.ExitFacingDirection,
+                Is.EqualTo(Vector3.right));
+            AssertFinite(plan.EntryFacingDirection);
+            AssertFinite(plan.ExitFacingDirection);
+            Assert.That(
+                plan.DockRootPosition,
+                Is.EqualTo(plan.EntryRootPosition));
+            Assert.That(
+                plan.StandHipPosition,
+                Is.EqualTo(plan.EntryHipPosition));
+            Assert.That(
+                plan.FacingRotation,
+                Is.EqualTo(plan.EntryFacingRotation));
+            Assert.That(
+                plan.EntryRotation,
+                Is.EqualTo(plan.EntryFacingRotation));
+            Assert.That(
+                plan.ExitRotation,
+                Is.EqualTo(plan.ExitFacingRotation));
+            Assert.That(
+                plan.CanInteractAt(plan.EntryRootPosition),
                 Is.True);
             Assert.That(
                 plan.CanInteractAt(
-                    plan.DockRootPosition +
+                    plan.EntryRootPosition +
                     Vector3.left * 0.50f),
+                Is.False);
+            Assert.That(
+                plan.CanInteractAt(
+                    plan.EntryRootPosition +
+                    Vector3.up *
+                    (PlayerMotor.InteractionVerticalTolerance +
+                     0.001f)),
                 Is.False);
         }
 
@@ -120,10 +182,8 @@ namespace BarPromenade.Tests.EditMode
                 "not receive the shared bed-atlas mirror.");
             Assert.That(
                 definition.VisualCrossfadeDurationSeconds,
-                Is.EqualTo(
-                        HomeBalconySmokingPlan
-                            .VisualCrossfadeDurationSeconds)
-                    .Within(0.0001f));
+                Is.Zero.Within(0.0001f),
+                "The rig and atlas handoff must not fade the player sprite.");
             Assert.That(
                 definition.AlignBillboardToCameraPlane,
                 Is.False,
@@ -144,6 +204,19 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 definition.GetLoopFrameExtraHoldSeconds(23),
                 Is.EqualTo(2.30f));
+        }
+
+        private static void AssertFinite(Vector3 value)
+        {
+            Assert.That(IsFinite(value.x), Is.True);
+            Assert.That(IsFinite(value.y), Is.True);
+            Assert.That(IsFinite(value.z), Is.True);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
         }
     }
 }

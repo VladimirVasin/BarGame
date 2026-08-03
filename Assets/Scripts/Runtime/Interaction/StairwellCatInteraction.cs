@@ -141,7 +141,7 @@ namespace BarPromenade
                     // middle-flight shot places the cat camera-left. Mirror
                     // the runtime sprite so both the hero and can face cat.
                     textureFlipX: true,
-                    visualCrossfadeDurationSeconds: 0.25f,
+                    visualCrossfadeDurationSeconds: 0f,
                     alignBillboardToCameraPlane: true);
             animatedInteraction.PhaseChanged +=
                 HandlePlayerAnimationPhaseChanged;
@@ -167,7 +167,8 @@ namespace BarPromenade
                    !ownsCatPreparation &&
                    !ownsCatFeeding &&
                    !ownsExecution &&
-                   !SceneTransitionService.IsTransitioning;
+                   !SceneTransitionService.IsTransitioning &&
+                   IsPlayerAtReachableEntryHeight();
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -201,19 +202,19 @@ namespace BarPromenade
                 !animatedInteraction.isActiveAndEnabled ||
                 animatedInteraction.IsActive ||
                 cat.IsFeeding ||
-                cat.IsFeedingPrepared)
+                cat.IsFeedingPrepared ||
+                !IsPlayerAtReachableEntryHeight())
             {
                 return false;
             }
 
-            Vector3 worldStandHip = stairwellRoot.TransformPoint(
-                feedingPlan.StandHipLocalPosition);
             Vector3 worldActionHip = stairwellRoot.TransformPoint(
                 feedingPlan.ActionHipLocalPosition);
             if (!animatedInteraction.TryPrepare(
                     playerFeedingDefinition,
-                    worldStandHip,
-                    worldActionHip))
+                    CreateWorldEntryPose(),
+                    worldActionHip,
+                    CreateWorldExitPose()))
             {
                 return false;
             }
@@ -241,16 +242,6 @@ namespace BarPromenade
             Transform playerTransform = player.GameObject.transform;
             Vector3 previousPosition = playerTransform.position;
             Quaternion previousRotation = playerTransform.rotation;
-            Vector3 worldPlayerRoot = stairwellRoot.TransformPoint(
-                feedingPlan.PlayerRootLocalPosition);
-            Quaternion worldPlayerRotation =
-                stairwellRoot.rotation *
-                feedingPlan.FacingLocalRotation;
-
-            player.Motor.Teleport(worldPlayerRoot);
-            playerTransform.rotation = worldPlayerRotation;
-            Physics.SyncTransforms();
-
             ownsExecution = true;
             ownsPlayerPresentation = true;
             catFeedingStarted = false;
@@ -258,12 +249,12 @@ namespace BarPromenade
             exitPhaseObserved = false;
             try
             {
-                bool began = animatedInteraction.Begin(
+                bool began = animatedInteraction.BeginPositioned(
                     playerFeedingDefinition,
+                    CreateWorldEntryPose(),
                     stairwellRoot.TransformPoint(
-                        feedingPlan.StandHipLocalPosition),
-                    stairwellRoot.TransformPoint(
-                        feedingPlan.ActionHipLocalPosition));
+                        feedingPlan.ActionHipLocalPosition),
+                    CreateWorldExitPose());
                 if (!began)
                 {
                     throw new InvalidOperationException(
@@ -278,6 +269,42 @@ namespace BarPromenade
                 Physics.SyncTransforms();
                 throw;
             }
+        }
+
+        private PlayerAnimatedInteractionPose CreateWorldEntryPose()
+        {
+            return new PlayerAnimatedInteractionPose(
+                stairwellRoot.TransformPoint(
+                    feedingPlan.EntryRootLocalPosition),
+                stairwellRoot.rotation *
+                    feedingPlan.EntryLocalRotation,
+                stairwellRoot.TransformPoint(
+                    feedingPlan.EntryHipLocalPosition));
+        }
+
+        private PlayerAnimatedInteractionPose CreateWorldExitPose()
+        {
+            return new PlayerAnimatedInteractionPose(
+                stairwellRoot.TransformPoint(
+                    feedingPlan.ExitRootLocalPosition),
+                stairwellRoot.rotation *
+                    feedingPlan.ExitLocalRotation,
+                stairwellRoot.TransformPoint(
+                    feedingPlan.ExitHipLocalPosition));
+        }
+
+        private bool IsPlayerAtReachableEntryHeight()
+        {
+            if (stairwellRoot == null || player.GameObject == null)
+            {
+                return false;
+            }
+
+            float playerLocalY = stairwellRoot.InverseTransformPoint(
+                player.GameObject.transform.position).y;
+            return Mathf.Abs(playerLocalY -
+                             feedingPlan.EntryRootLocalPosition.y) <=
+                   PlayerMotor.InteractionVerticalTolerance;
         }
 
         public void CancelInventoryInteractionPreparation()

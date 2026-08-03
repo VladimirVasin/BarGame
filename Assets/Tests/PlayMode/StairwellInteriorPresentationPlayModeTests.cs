@@ -579,9 +579,46 @@ namespace BarPromenade.Tests.PlayMode
                 () => root.IsInitialized,
                 "Stairwell root did not initialize.");
 
-            root.Player.Motor.Teleport(
+            StairwellCatFeedingPlan feedingPlan =
+                root.CatFeedingPlan;
+            Vector3 positioningStartLocal =
+                feedingPlan.EntryRootLocalPosition -
+                (feedingPlan.EntryFacingLocalDirection * 0.30f);
+            Vector3 positioningStartWorld =
+                root.transform.TransformPoint(positioningStartLocal);
+            Quaternion positioningStartRotation =
+                root.transform.rotation *
+                Quaternion.LookRotation(
+                    -feedingPlan.EntryFacingLocalDirection,
+                    Vector3.up);
+            Vector3 entryWorldPosition =
                 root.transform.TransformPoint(
-                    root.CatPlan.InteractionLocalPosition));
+                    feedingPlan.EntryRootLocalPosition);
+            Quaternion entryWorldRotation =
+                root.transform.rotation *
+                feedingPlan.EntryLocalRotation;
+            Vector3 exitWorldPosition =
+                root.transform.TransformPoint(
+                    feedingPlan.ExitRootLocalPosition);
+            Quaternion exitWorldRotation =
+                root.transform.rotation *
+                feedingPlan.ExitLocalRotation;
+
+            root.Player.Motor.Teleport(
+                entryWorldPosition +
+                Vector3.up *
+                (PlayerMotor.InteractionVerticalTolerance + 0.01f));
+            Physics.SyncTransforms();
+            Assert.That(
+                root.CatInteraction.CanInteract(
+                    root.Player.Interactor),
+                Is.False,
+                "The feeding UI must not open from a height the guided " +
+                "entry cannot reach.");
+
+            root.Player.Motor.Teleport(positioningStartWorld);
+            root.Player.GameObject.transform.rotation =
+                positioningStartRotation;
             Physics.SyncTransforms();
             yield return WaitUntil(
                 () => ReferenceEquals(
@@ -610,6 +647,10 @@ namespace BarPromenade.Tests.PlayMode
                     InventoryItemId.OpenStewCan),
                 Is.EqualTo(1));
 
+            Vector3 positionBeforeConfirmation =
+                root.Player.GameObject.transform.position;
+            Quaternion rotationBeforeConfirmation =
+                root.Player.GameObject.transform.rotation;
             root.TargetInteraction.SelectConfirmation(true);
             Assert.That(
                 root.TargetInteraction.Confirm(),
@@ -618,20 +659,114 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.TargetInteraction.IsExecuting, Is.True);
             Assert.That(root.AnimatedInteraction.IsActive, Is.True);
             Assert.That(
+                root.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Positioning));
+            Assert.That(
                 GameSessionState.GetInventoryItemCount(
                     InventoryItemId.OpenStewCan),
                 Is.Zero);
             Assert.That(
                 Vector3.Distance(
                     root.Player.GameObject.transform.position,
-                    root.transform.TransformPoint(
-                        root.CatFeedingPlan
-                            .PlayerRootLocalPosition)),
-                Is.LessThan(0.02f));
+                    positionBeforeConfirmation),
+                Is.LessThan(0.001f),
+                "Confirming feeding must not teleport the ordinary player " +
+                "to the authored entry point.");
+            Assert.That(
+                Quaternion.Angle(
+                    root.Player.GameObject.transform.rotation,
+                    rotationBeforeConfirmation),
+                Is.LessThan(0.01f),
+                "Confirming feeding must preserve the non-target facing " +
+                "until visible positioning begins.");
+            Assert.That(
+                Vector3.Distance(
+                    root.Player.GameObject.transform.position,
+                    entryWorldPosition),
+                Is.GreaterThan(0.20f),
+                "The test must observe a material automatic approach.");
+            Assert.That(
+                Quaternion.Angle(
+                    root.Player.GameObject.transform.rotation,
+                    entryWorldRotation),
+                Is.GreaterThan(90f),
+                "The test must begin with a materially non-target facing.");
+            AssertRigRendererState(root, true);
+            Assert.That(root.Player.Shadow.enabled, Is.True);
+            Assert.That(root.Player.ContactShadow.enabled, Is.True);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.False);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.sprite,
+                Is.Null);
+            Assert.That(
+                root.AnimatedInteraction.RigVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                root.AnimatedInteraction.AnimationVisualOpacity,
+                Is.Zero.Within(0.001f));
             Assert.That(
                 root.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
                     StairwellCameraShotKind.MiddleFlight));
+
+            yield return WaitUntil(
+                () => root.AnimatedInteraction.Phase ==
+                    PlayerAnimatedInteractionPhase.Entering,
+                "The player did not finish automatic cat-feeding " +
+                "positioning.");
+
+            Assert.That(
+                Vector3.Distance(
+                    root.Player.GameObject.transform.position,
+                    entryWorldPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Quaternion.Angle(
+                    root.Player.GameObject.transform.rotation,
+                    entryWorldRotation),
+                Is.LessThan(0.01f));
+            Assert.That(
+                root.Player.Visual.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.FrontLeft),
+                "The rig handoff view must match the cat atlas's exact " +
+                "FrontLeft endpoint.");
+            float handoffFootOffset =
+                (PlayerSpriteRig.FeetPivotPixels -
+                 PlayerAnimatedInteractionController.HipPivotYPixels) /
+                PlayerAnimatedInteractionController.PixelsPerUnit;
+            Vector3 handoffFoot = root.AnimatedInteraction
+                .AnimationVisualRoot.TransformPoint(
+                    Vector3.up * handoffFootOffset);
+            Vector3 expectedHandoffFoot = root.transform.TransformPoint(
+                feedingPlan.EntryHipLocalPosition +
+                Vector3.up * handoffFootOffset);
+            Assert.That(
+                Vector3.Distance(handoffFoot, expectedHandoffFoot),
+                Is.LessThan(0.01f),
+                "The camera-plane atlas endpoint must preserve the " +
+                "ordinary rig's exact foot anchor.");
+            AssertRigRendererState(root, false);
+            Assert.That(root.Player.Shadow.enabled, Is.False);
+            Assert.That(root.Player.ContactShadow.enabled, Is.False);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.True);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.sprite,
+                Is.Not.Null);
+            Assert.That(
+                root.AnimatedInteraction.RigVisualOpacity,
+                Is.Zero.Within(0.001f));
+            Assert.That(
+                root.AnimatedInteraction.AnimationVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                root.Cat.IsFeeding,
+                Is.False,
+                "The cat track must wait for the player's loop boundary.");
 
             yield return WaitUntil(
                 () => root.Cat.IsFeeding,
@@ -684,6 +819,34 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.CatInteraction.OwnsExecution, Is.False);
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
             Assert.That(root.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    root.Player.GameObject.transform.position,
+                    exitWorldPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Quaternion.Angle(
+                    root.Player.GameObject.transform.rotation,
+                    exitWorldRotation),
+                Is.LessThan(0.01f));
+            Assert.That(
+                root.Player.Visual.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.FrontLeft));
+            AssertRigRendererState(root, true);
+            Assert.That(root.Player.Shadow.enabled, Is.True);
+            Assert.That(root.Player.ContactShadow.enabled, Is.True);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.False);
+            Assert.That(
+                root.AnimatedInteraction.AnimationRenderer.sprite,
+                Is.Null);
+            Assert.That(
+                root.AnimatedInteraction.RigVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                root.AnimatedInteraction.AnimationVisualOpacity,
+                Is.Zero.Within(0.001f));
         }
 
         private static void AssertPracticalSources(
@@ -793,6 +956,29 @@ namespace BarPromenade.Tests.PlayMode
                 occluded && hit.collider != null
                     ? $"Cat is hidden by {hit.collider.name}."
                     : "Cat is hidden in its fixed-camera shot.");
+        }
+
+        private static void AssertRigRendererState(
+            StairwellInteriorRoot root,
+            bool expectedEnabled)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Player.Visual, Is.Not.Null);
+            Assert.That(
+                root.Player.Visual.Renderers,
+                Has.Count.EqualTo(PlayerSpriteRig.PartCount));
+            for (int index = 0;
+                 index < root.Player.Visual.Renderers.Count;
+                 index++)
+            {
+                SpriteRenderer renderer =
+                    root.Player.Visual.Renderers[index];
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(
+                    renderer.enabled,
+                    Is.EqualTo(expectedEnabled),
+                    $"Player rig renderer {index} has the wrong state.");
+            }
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(

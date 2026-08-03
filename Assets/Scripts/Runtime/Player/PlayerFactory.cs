@@ -30,6 +30,8 @@ namespace BarPromenade
 
     public static class PlayerFactory
     {
+        public const float GroundedRootOffset = 0.04f;
+
         public static PlayerRuntime Create(
             Transform parent,
             Vector3 position,
@@ -47,7 +49,7 @@ namespace BarPromenade
             controller.center = new Vector3(0f, 0.85f, 0f);
             controller.stepOffset = 0.28f;
             controller.slopeLimit = 45f;
-            controller.skinWidth = 0.04f;
+            controller.skinWidth = GroundedRootOffset;
 
             GameObject visualObject =
                 new GameObject("8-Direction Jointed Sprite Visual");

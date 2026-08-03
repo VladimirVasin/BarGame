@@ -15,25 +15,48 @@ namespace BarPromenade
             StairwellCameraShotKind.MiddleFlight;
 
         private StairwellCatFeedingPlan(
-            Vector3 playerRootLocalPosition,
-            Vector3 standHipLocalPosition,
+            Vector3 entryRootLocalPosition,
+            Vector3 exitRootLocalPosition,
+            Vector3 entryHipLocalPosition,
+            Vector3 exitHipLocalPosition,
             Vector3 actionHipLocalPosition,
-            Vector3 facingLocalDirection)
+            Vector3 entryFacingLocalDirection,
+            Vector3 exitFacingLocalDirection)
         {
-            PlayerRootLocalPosition = playerRootLocalPosition;
-            StandHipLocalPosition = standHipLocalPosition;
+            EntryRootLocalPosition = entryRootLocalPosition;
+            ExitRootLocalPosition = exitRootLocalPosition;
+            EntryHipLocalPosition = entryHipLocalPosition;
+            ExitHipLocalPosition = exitHipLocalPosition;
             ActionHipLocalPosition = actionHipLocalPosition;
-            FacingLocalDirection = facingLocalDirection;
+            EntryFacingLocalDirection = entryFacingLocalDirection;
+            ExitFacingLocalDirection = exitFacingLocalDirection;
         }
 
-        public Vector3 PlayerRootLocalPosition { get; }
-        public Vector3 StandHipLocalPosition { get; }
+        public Vector3 EntryRootLocalPosition { get; }
+        public Vector3 ExitRootLocalPosition { get; }
+        public Vector3 EntryHipLocalPosition { get; }
+        public Vector3 ExitHipLocalPosition { get; }
         public Vector3 ActionHipLocalPosition { get; }
-        public Vector3 FacingLocalDirection { get; }
-        public Quaternion FacingLocalRotation =>
+        public Vector3 EntryFacingLocalDirection { get; }
+        public Vector3 ExitFacingLocalDirection { get; }
+        public Quaternion EntryFacingLocalRotation =>
             Quaternion.LookRotation(
-                FacingLocalDirection,
+                EntryFacingLocalDirection,
                 Vector3.up);
+        public Quaternion ExitFacingLocalRotation =>
+            Quaternion.LookRotation(
+                ExitFacingLocalDirection,
+                Vector3.up);
+        public Quaternion EntryLocalRotation =>
+            EntryFacingLocalRotation;
+        public Quaternion ExitLocalRotation =>
+            ExitFacingLocalRotation;
+        public Vector3 PlayerRootLocalPosition => EntryRootLocalPosition;
+        public Vector3 StandHipLocalPosition => EntryHipLocalPosition;
+        public Vector3 FacingLocalDirection =>
+            EntryFacingLocalDirection;
+        public Quaternion FacingLocalRotation =>
+            EntryFacingLocalRotation;
 
         public static StairwellCatFeedingPlan Create(
             StairwellLayoutPlan stairwell,
@@ -44,15 +67,20 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(stairwell));
             }
 
-            Vector3 playerRoot = cat.InteractionLocalPosition;
+            Vector3 entryRoot = cat.InteractionLocalPosition;
+            Vector3 exitRoot = cat.InteractionLocalPosition;
             var walkable = new RoadWalkableArea(
                 stairwell.WalkableRectangles);
             if (!walkable.Contains(
-                    playerRoot,
+                    entryRoot,
+                    StairwellLayoutValidator.PlayerRadius) ||
+                !walkable.Contains(
+                    exitRoot,
                     StairwellLayoutValidator.PlayerRadius))
             {
                 throw new InvalidOperationException(
-                    "The cat feeding dock must preserve player " +
+                    "The cat feeding entry and exit docks must preserve " +
+                    "player " +
                     "clearance on the middle landing.");
             }
 
@@ -60,24 +88,23 @@ namespace BarPromenade
                 new StairwellCameraShotSelector(
                     StairwellFixedCameraController
                         .CreateDefaultShots(stairwell));
-            if (shotSelector.Select(playerRoot).Kind !=
-                RequiredCameraShotKind)
+            if (shotSelector.Select(entryRoot).Kind !=
+                    RequiredCameraShotKind ||
+                shotSelector.Select(exitRoot).Kind !=
+                    RequiredCameraShotKind)
             {
                 throw new InvalidOperationException(
-                    "The cat feeding dock must select the middle " +
+                    "The cat feeding entry and exit docks must select " +
+                    "the middle " +
                     "stairwell camera shot.");
             }
 
-            Vector3 facing =
-                cat.VisualLocalPosition - playerRoot;
-            facing.y = 0f;
-            if (facing.sqrMagnitude <= 0.000001f)
-            {
-                throw new InvalidOperationException(
-                    "The cat feeding dock must face the cat.");
-            }
-
-            facing.Normalize();
+            Vector3 entryFacing = CreateFacingDirection(
+                entryRoot,
+                cat.VisualLocalPosition);
+            Vector3 exitFacing = CreateFacingDirection(
+                exitRoot,
+                cat.VisualLocalPosition);
             float hipHeight =
                 (PlayerAnimatedInteractionController
                     .HipPivotYPixels -
@@ -85,13 +112,34 @@ namespace BarPromenade
                 PlayerAnimatedInteractionController
                     .PixelsPerUnit +
                 UprightVisualOffset;
-            Vector3 actionHip =
-                playerRoot + (Vector3.up * hipHeight);
+            Vector3 entryHip =
+                entryRoot + (Vector3.up * hipHeight);
+            Vector3 exitHip =
+                exitRoot + (Vector3.up * hipHeight);
+            Vector3 actionHip = entryHip;
             return new StairwellCatFeedingPlan(
-                playerRoot,
+                entryRoot,
+                exitRoot,
+                entryHip,
+                exitHip,
                 actionHip,
-                actionHip,
-                facing);
+                entryFacing,
+                exitFacing);
+        }
+
+        private static Vector3 CreateFacingDirection(
+            Vector3 rootPosition,
+            Vector3 targetPosition)
+        {
+            Vector3 facing = targetPosition - rootPosition;
+            facing.y = 0f;
+            if (facing.sqrMagnitude <= 0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "The cat feeding dock must face the cat.");
+            }
+
+            return facing.normalized;
         }
     }
 }

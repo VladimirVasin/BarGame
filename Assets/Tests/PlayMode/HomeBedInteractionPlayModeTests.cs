@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +12,8 @@ namespace BarPromenade.Tests.PlayMode
     {
         private const float TimeoutSeconds = 15f;
         private const float FastTimeScale = 20f;
+        private const float GuidedMoveSpeed = 2.6f;
+        private const float GuidedStartOffset = 0.22f;
 
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
@@ -20,6 +23,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            SetSceneTransitionStateForTest(false);
             previousTimeScale = Time.timeScale;
             Time.timeScale = 1f;
             inputFixture = new InputTestFixture();
@@ -36,6 +40,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            SetSceneTransitionStateForTest(false);
             Time.timeScale = previousTimeScale;
             Scene homeScene =
                 SceneManager.GetSceneByName(
@@ -126,12 +131,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(surfaceClutter, Is.Not.Null);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
 
-            home.Player.Motor.Teleport(
-                home.BedInteractionPlan
-                    .ApproachRootPosition);
+            Vector3 entryPosition =
+                home.BedInteractionPlan.EntryRootPosition;
+            Quaternion entryRotation =
+                home.BedInteractionPlan.EntryRotation;
+            Vector3 guidedStart =
+                entryPosition + Vector3.right * GuidedStartOffset;
+            home.Player.Motor.Teleport(guidedStart);
+            home.Player.GameObject.transform.rotation =
+                Quaternion.LookRotation(Vector3.right, Vector3.up);
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
 
+            Time.timeScale = 0.25f;
             keyboard.MakeCurrent();
             inputFixture.Press(
                 keyboard.eKey,
@@ -141,45 +153,132 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Entering));
+                    PlayerAnimatedInteractionPhase.Positioning));
             Assert.That(
                 home.Player.Motor.InputEnabled,
                 Is.False);
             Assert.That(
                 home.Player.Interactor.InputEnabled,
                 Is.False);
-            Assert.That(home.Player.Shadow.enabled, Is.False);
-            Assert.That(home.Player.ContactShadow.enabled, Is.False);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.False);
-            AssertRigRendererState(home, false);
-            Vector3 lockedPosition =
-                home.Player.GameObject.transform.position;
+            AssertGuidedApproachPresentation(home);
+            AssertBoundedGuidedStep(
+                guidedStart,
+                home.Player.GameObject.transform.position,
+                entryPosition,
+                Time.deltaTime);
 
             inputFixture.Release(
                 keyboard.eKey,
                 queueEventOnly: true);
-            yield return null;
+            InputSystem.Update();
             inputFixture.Press(
                 keyboard.dKey,
                 queueEventOnly: true);
-            for (int frame = 0; frame < 5; frame++)
+            InputSystem.Update();
+            Assert.That(keyboard.dKey.isPressed, Is.True);
+
+            bool madeGuidedProgress = false;
+            bool sawSettledRenderFrame = false;
+            int positioningFrames = 0;
+            float positioningDeadline =
+                Time.realtimeSinceStartup + 3f;
+            while (home.AnimatedInteraction.Phase ==
+                       PlayerAnimatedInteractionPhase.Positioning &&
+                   Time.realtimeSinceStartup < positioningDeadline)
             {
+                AssertGuidedApproachPresentation(home);
+                Vector3 previousPosition =
+                    home.Player.GameObject.transform.position;
+                float previousDistance =
+                    PlanarDistance(previousPosition, entryPosition);
                 yield return null;
+                Vector3 currentPosition =
+                    home.Player.GameObject.transform.position;
+                AssertBoundedGuidedStep(
+                    previousPosition,
+                    currentPosition,
+                    entryPosition,
+                    Time.deltaTime);
+                AssertOnGuidedSegment(
+                    guidedStart,
+                    entryPosition,
+                    currentPosition);
+                float currentDistance =
+                    PlanarDistance(currentPosition, entryPosition);
                 Assert.That(
-                    home.Player.Motor.PlanarVelocity,
-                    Is.EqualTo(Vector3.zero));
-                AssertPlanarPosition(
-                    home.Player.GameObject.transform.position,
-                    lockedPosition);
+                    currentDistance,
+                    Is.LessThanOrEqualTo(previousDistance + 0.001f),
+                    "WASD input must not redirect the scripted bed " +
+                    "approach away from its entry point.");
+                madeGuidedProgress |=
+                    currentDistance + 0.0001f < previousDistance;
+                if (home.AnimatedInteraction.Phase ==
+                        PlayerAnimatedInteractionPhase.Positioning &&
+                    home.Player.Visual.InteractionHandoffLocked &&
+                    currentDistance < 0.001f &&
+                    Quaternion.Angle(
+                        home.Player.GameObject.transform.rotation,
+                        entryRotation) < 0.01f)
+                {
+                    Assert.That(
+                        home.Player.Visual.InteractionHandoffLocked,
+                        Is.True,
+                        "The exact entry pose must be held by the shared " +
+                        "handoff lock for one rendered frame before atlas " +
+                        "Entering begins.");
+                    AssertGuidedApproachPresentation(home);
+                    sawSettledRenderFrame = true;
+                }
+
+                positioningFrames++;
             }
 
             inputFixture.Release(
                 keyboard.dKey,
                 queueEventOnly: true);
             InputSystem.Update();
-            yield return null;
+            Time.timeScale = 1f;
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Entering));
+            Assert.That(positioningFrames, Is.GreaterThan(1));
+            Assert.That(madeGuidedProgress, Is.True);
+            Assert.That(
+                sawSettledRenderFrame,
+                Is.True,
+                "Positioning must expose one settled ordinary-rig frame " +
+                "before the atlas handoff.");
+            AssertExactPose(
+                home.Player.GameObject.transform,
+                entryPosition,
+                entryRotation);
+            Assert.That(
+                home.Player.Visual.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.FrontLeft),
+                "The rig handoff view must match the bed atlas's exact " +
+                "FrontLeft endpoint.");
+            float handoffFootOffset =
+                (PlayerSpriteRig.FeetPivotPixels -
+                 PlayerAnimatedInteractionController.HipPivotYPixels) /
+                PlayerAnimatedInteractionController.PixelsPerUnit;
+            Vector3 handoffFoot = home.AnimatedInteraction
+                .AnimationVisualRoot.TransformPoint(
+                    Vector3.up * handoffFootOffset);
+            Vector3 expectedHandoffFoot =
+                home.BedInteractionPlan.EntryHipPosition +
+                Vector3.up * handoffFootOffset;
+            Assert.That(
+                Vector3.Distance(handoffFoot, expectedHandoffFoot),
+                Is.LessThan(0.01f),
+                "The camera-plane atlas endpoint must preserve the " +
+                "ordinary rig's exact foot anchor.");
+            AssertAtlasOnlyPresentation(home);
+            Vector3 lockedPosition = entryPosition;
+
             Time.timeScale = FastTimeScale;
-            yield return WaitForPhase(
+            yield return WaitForAtlasPhaseCompletion(
                 home,
                 PlayerAnimatedInteractionPhase.Looping);
 
@@ -255,6 +354,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForPhase(
                 home,
                 PlayerAnimatedInteractionPhase.Exiting);
+            AssertAtlasOnlyPresentation(home);
             Assert.That(
                 home.Player.Motor.InputEnabled,
                 Is.False);
@@ -267,7 +367,7 @@ namespace BarPromenade.Tests.PlayMode
                 queueEventOnly: true);
             yield return null;
             Time.timeScale = FastTimeScale;
-            yield return WaitForPhase(
+            yield return WaitForAtlasPhaseCompletion(
                 home,
                 PlayerAnimatedInteractionPhase.Idle);
             Time.timeScale = 1f;
@@ -286,6 +386,12 @@ namespace BarPromenade.Tests.PlayMode
                 home.AnimatedInteraction.AnimationRenderer.enabled,
                 Is.False);
             Assert.That(
+                home.AnimatedInteraction.RigVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                home.AnimatedInteraction.AnimationVisualOpacity,
+                Is.EqualTo(0f).Within(0.001f));
+            Assert.That(
                 home.Bed.PromptKey,
                 Is.EqualTo(HomeBedInteraction.SleepPromptKey));
             Assert.That(
@@ -296,6 +402,14 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
             AssertRigRendererState(home, true);
+            AssertRigRendererOpacity(home, 1f);
+            AssertExactPose(
+                home.Player.GameObject.transform,
+                home.BedInteractionPlan.ExitRootPosition,
+                home.BedInteractionPlan.ExitRotation);
+            Assert.That(
+                home.Player.Visual.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.FrontLeft));
 
             Vector3 wakePosition =
                 home.Player.GameObject.transform.position;
@@ -355,7 +469,9 @@ namespace BarPromenade.Tests.PlayMode
             surfaceClutter.gameObject.SetActive(false);
             home.Player.Motor.Teleport(
                 home.BedInteractionPlan
-                    .ApproachRootPosition);
+                    .EntryRootPosition);
+            home.Player.GameObject.transform.rotation =
+                home.BedInteractionPlan.EntryRotation;
             Physics.SyncTransforms();
             yield return WaitForActiveBed(home);
 
@@ -403,6 +519,67 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            Bed_SceneTransitionCancelsPositioningWithoutFurtherMovement()
+        {
+            yield return LoadHome();
+
+            Vector3 entryPosition =
+                home.BedInteractionPlan.EntryRootPosition;
+            Vector3 startPosition =
+                entryPosition + Vector3.right * 0.42f;
+            home.Player.Motor.Teleport(startPosition);
+            home.Player.GameObject.transform.rotation =
+                Quaternion.LookRotation(Vector3.right, Vector3.up);
+            Physics.SyncTransforms();
+            yield return WaitForActiveBed(home);
+
+            home.Bed.Interact(home.Player.Interactor);
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Positioning));
+            yield return null;
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Positioning));
+            Assert.That(home.Player.Motor.InteractionPoseMoveActive, Is.True);
+            Vector3 positionAtTransition =
+                home.Player.GameObject.transform.position;
+
+            SetSceneTransitionStateForTest(true);
+            yield return null;
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(home.AnimatedInteraction.IsActive, Is.False);
+            Assert.That(home.Player.Motor.InteractionPoseMoveActive, Is.False);
+            Assert.That(home.Player.Motor.InteractionPoseMoveStalled, Is.False);
+            Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.False);
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            Assert.That(home.Player.Interactor.InputEnabled, Is.True);
+            Assert.That(
+                PlanarDistance(
+                    home.Player.GameObject.transform.position,
+                    positionAtTransition),
+                Is.LessThan(0.0001f));
+
+            yield return null;
+            Assert.That(
+                PlanarDistance(
+                    home.Player.GameObject.transform.position,
+                    positionAtTransition),
+                Is.LessThan(0.0001f),
+                "A cancelled Positioning move must not resume while the " +
+                "scene transition flag remains active.");
+            Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.False);
+            SetSceneTransitionStateForTest(false);
+        }
+
+        [UnityTest]
+        public IEnumerator
             Bed_ProgrammaticSleepStartsInLoopAndWakeRestoresPlayer()
         {
             yield return LoadHome();
@@ -427,7 +604,12 @@ namespace BarPromenade.Tests.PlayMode
                 home.Player.GameObject.transform.position,
                 Is.EqualTo(
                     home.BedInteractionPlan
-                        .ApproachRootPosition));
+                        .EntryRootPosition));
+            Assert.That(
+                Quaternion.Angle(
+                    home.Player.GameObject.transform.rotation,
+                    home.BedInteractionPlan.EntryRotation),
+                Is.LessThan(0.001f));
             Assert.That(
                 home.Player.Motor.InputEnabled,
                 Is.False);
@@ -545,6 +727,17 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(home.Bed));
         }
 
+        private static void SetSceneTransitionStateForTest(bool value)
+        {
+            PropertyInfo property = typeof(SceneTransitionService).GetProperty(
+                nameof(SceneTransitionService.IsTransitioning),
+                BindingFlags.Public | BindingFlags.Static);
+            Assert.That(property, Is.Not.Null);
+            MethodInfo setter = property.GetSetMethod(true);
+            Assert.That(setter, Is.Not.Null);
+            setter.Invoke(null, new object[] { value });
+        }
+
         private static IEnumerator WaitForPhase(
             HomeInteriorRoot home,
             PlayerAnimatedInteractionPhase expected)
@@ -560,6 +753,147 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(expected));
+        }
+
+        private static IEnumerator WaitForAtlasPhaseCompletion(
+            HomeInteriorRoot home,
+            PlayerAnimatedInteractionPhase expected)
+        {
+            PlayerAnimatedInteractionPhase activePhase =
+                expected == PlayerAnimatedInteractionPhase.Looping
+                    ? PlayerAnimatedInteractionPhase.Entering
+                    : PlayerAnimatedInteractionPhase.Exiting;
+            float deadline =
+                Time.realtimeSinceStartup + 3f;
+            while (home.AnimatedInteraction.Phase != expected &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                Assert.That(
+                    home.AnimatedInteraction.Phase,
+                    Is.EqualTo(activePhase));
+                AssertAtlasOnlyPresentation(home);
+                yield return null;
+            }
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(expected));
+            if (expected != PlayerAnimatedInteractionPhase.Idle)
+            {
+                AssertAtlasOnlyPresentation(home);
+            }
+        }
+
+        private static void AssertGuidedApproachPresentation(
+            HomeInteriorRoot home)
+        {
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(
+                    PlayerAnimatedInteractionPhase.Positioning));
+            Assert.That(
+                home.AnimatedInteraction.RigVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                home.AnimatedInteraction.AnimationVisualOpacity,
+                Is.EqualTo(0f).Within(0.001f));
+            Assert.That(
+                home.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.False);
+            Assert.That(home.Player.Shadow.enabled, Is.True);
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            AssertRigRendererState(home, true);
+            for (int index = 0;
+                 index < home.Player.Visual.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    home.Player.Visual.Renderers[index].color.a,
+                    Is.EqualTo(1f).Within(0.001f));
+            }
+        }
+
+        private static void AssertAtlasOnlyPresentation(
+            HomeInteriorRoot home)
+        {
+            Assert.That(
+                home.AnimatedInteraction.RigVisualOpacity,
+                Is.EqualTo(0f).Within(0.001f));
+            Assert.That(
+                home.AnimatedInteraction.AnimationVisualOpacity,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                home.AnimatedInteraction.AnimationRenderer.enabled,
+                Is.True);
+            Assert.That(
+                home.AnimatedInteraction.AnimationRenderer.color.a,
+                Is.EqualTo(1f).Within(0.001f));
+            Assert.That(home.Player.Shadow.enabled, Is.False);
+            Assert.That(home.Player.ContactShadow.enabled, Is.False);
+            AssertRigRendererState(home, false);
+            for (int index = 0;
+                 index < home.Player.Visual.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    home.Player.Visual.Renderers[index].color.a,
+                    Is.EqualTo(0f).Within(0.001f));
+            }
+        }
+
+        private static void AssertBoundedGuidedStep(
+            Vector3 previous,
+            Vector3 current,
+            Vector3 target,
+            float deltaTime)
+        {
+            float step = PlanarDistance(previous, current);
+            Assert.That(
+                step,
+                Is.LessThanOrEqualTo(
+                    GuidedMoveSpeed * Mathf.Max(0f, deltaTime) +
+                    0.005f),
+                "The authored approach must advance by a bounded walk " +
+                "step instead of teleporting.");
+            Assert.That(
+                PlanarDistance(current, target),
+                Is.LessThanOrEqualTo(
+                    PlanarDistance(previous, target) + 0.001f));
+        }
+
+        private static void AssertOnGuidedSegment(
+            Vector3 start,
+            Vector3 end,
+            Vector3 current)
+        {
+            start.y = 0f;
+            end.y = 0f;
+            current.y = 0f;
+            Vector3 segment = end - start;
+            float progress = Vector3.Dot(
+                current - start,
+                segment) / segment.sqrMagnitude;
+            Vector3 closest = start +
+                segment * Mathf.Clamp01(progress);
+            Assert.That(progress, Is.InRange(-0.01f, 1.01f));
+            Assert.That(
+                Vector3.Distance(current, closest),
+                Is.LessThan(0.01f),
+                "Movement input must not steer the player away from the " +
+                "authored entry segment.");
+        }
+
+        private static void AssertExactPose(
+            Transform root,
+            Vector3 expectedPosition,
+            Quaternion expectedRotation)
+        {
+            Assert.That(
+                Vector3.Distance(root.position, expectedPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Quaternion.Angle(root.rotation, expectedRotation),
+                Is.LessThan(0.001f));
         }
 
         private static void AssertPlanarPosition(
@@ -583,6 +917,20 @@ namespace BarPromenade.Tests.PlayMode
                     home.Player.Visual.Renderers[index].enabled,
                     Is.EqualTo(expected),
                     $"Unexpected rig renderer state at index {index}.");
+            }
+        }
+
+        private static void AssertRigRendererOpacity(
+            HomeInteriorRoot home,
+            float expected)
+        {
+            for (int index = 0;
+                 index < home.Player.Visual.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    home.Player.Visual.Renderers[index].color.a,
+                    Is.EqualTo(expected).Within(0.001f));
             }
         }
 

@@ -243,6 +243,37 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   modal input returns. This first version intentionally supports
   one item stack per definition; multi-item recipes require a later atomic
   inventory transaction rather than sequential removal.
+- **Accepted — Grounded endpoint handoff for contextual sprite animation:**
+  This is the mandatory project-wide authoring and runtime contract for every
+  future interaction in this class; the normative checklist lives in
+  `ai/contextual-animation-standard.md`, and deviations require an explicit
+  user-approved accepted exception here.
+  Interactive bed sleep, balcony smoking and cat feeding share a visible
+  `Positioning` phase before `Entering -> Looping -> Exiting`. Each adapter
+  provides independent entry root/hip/facing, action hip and exit
+  root/hip/facing data. `PlayerMotor` advances the ordinary rig with its real
+  `CharacterController`, walkable constraint, gait, facing and footsteps;
+  manual input cannot redirect that approach. The authored Y level must already
+  be reachable from the current grounded root, so a vertical mismatch refuses
+  startup rather than teleporting. A constrained move with no measurable root
+  or rotation progress for `1.5 s` marks the approach stalled and restores the
+  captured state; scene transition, disable and destroy boundaries cancel it
+  through the same ownership cleanup.
+  Exact entry alignment activates `PlayerSpriteRig`'s handoff lock. It bypasses
+  angular hysteresis for the nearest eight-way direction, freezes the neutral
+  rest transforms and neutral body sprite, and keeps the ordinary rig visible
+  for one rendered frame before atlas visibility takes over. Bed and cat
+  feeding use `FrontLeft` endpoint cells; smoking uses `BackRight`. All three
+  installed definitions use zero sprite alpha crossfade. The timeline also
+  guarantees that its terminal exit frame is presented before becoming idle;
+  the physical root is then placed at the independent exit pose and the neutral
+  ordinary rig stays locked until its final `LateUpdate` handoff frame has
+  rendered.
+  Exact camera-plane definitions resolve upright entry and exit hips by the
+  live `(camera.up - Vector3.up)` feet-to-hip offset and refresh the atlas root
+  again in `LateUpdate`, preventing a one-frame foot/pivot slip after camera
+  movement. World-up definitions keep their upright hip unchanged. Bed and cat
+  feeding select camera-plane presentation; balcony smoking selects world-up.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
@@ -274,8 +305,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Talk closes the modal and emits the original localized response. Interact
   requires `OpenStewCan x1`; absence emits bounded localized feedback, while
   presence opens default-No confirmation. Yes uses the two-phase preparation
-  boundary before the controller atomically removes one can. The adapter docks
-  the player at the validated middle-shot point and begins a point-filtered
+  boundary before the controller atomically removes one can. The adapter
+  visibly guides the player to a grounded, validated middle-shot entry point,
+  settles the neutral `FrontLeft` handoff frame and begins a point-filtered
   `1024x768` player atlas with 24 present frames at `12 fps`, 16 action frames
   at `6 fps` and 24 return frames at `12 fps`. On the player loop boundary it
   begins the cat's independent top-first `512x128`, `8x2`, 16-frame track at
@@ -298,9 +330,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the Home opening and default `8.8 m` City facade balcony aligned.
 - **Accepted — Modal city-facing balcony-smoking vignette:** A data-first
   `HomeBalconySmokingPlan` derives one walkable Home-local dock around
-  `(6.60, 0.12, -1.45)` from the balcony bounds. On the first `E`, modal
-  ownership docks the player there and faces the physical root along `+X`, out
-  toward the reconstructed city. The Balcony view's projected handedness
+  `(6.60, 0.04, -1.45)` from the balcony bounds. On the first `E`, modal
+  ownership disables manual input but keeps the ordinary rig and both shadows
+  visible while `PlayerMotor` walks the physical root through the existing
+  CharacterController/walkable constraint to the explicit entry point and
+  turns it along `+X`, out toward the reconstructed city. Only exact entry
+  alignment begins atlas playback. A separately authored exit root, hip and
+  facing receive the ordinary rig before control returns; entry and exit may
+  currently coincide without sharing one implicit stand anchor. The Balcony
+  view's projected handedness
   requires the smoking definition to set `TextureFlipX = false`; the
   texture-left authored pose therefore reads outward in the final shot, while
   the shared default remains `true` for existing interactions such as the bed.
@@ -312,15 +350,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   camera-plane alignment to avoid fixed-shot foreshortening. The
   dedicated point-filtered `8 x 8` atlas is exactly 64 frames: 24 enter and
   24 loop frames at `6 fps`, followed by 16 exit frames at `8 fps`. Frame `0`
-  and frame `63` are exact copies of the ordinary right-direction idle at the
-  same hip/foot pivot. Deterministic `8 x 8` Bayer/RGB bridges on frames `1-7`
-  and `58-62` join those endpoints to the authored smoking silhouette without
-  a scale or pose cut. The controller simultaneously crossfades the ordinary
-  nine-part rig to the atlas over the first `0.35 s` of Entering and reverses
-  that handoff over the final `0.35 s` of Exiting. Dynamic and contact shadows
-  remain disabled for the complete active interaction because their renderers
-  have no matching alpha handoff; their captured states restore only when the
-  interaction completes. Extra holds on
+  and frame `63` are exact copies of the ordinary `BackRight` idle at the
+  same hip/foot pivot. Frames `1-62` are the normalized keyed authored motion;
+  the former Bayer/RGB dissolve edges are absent. The controller changes
+  visibility directly at the matching first/last endpoints and all installed
+  contextual definitions use zero sprite alpha-crossfade duration. Dynamic and
+  contact shadows remain visible during automatic positioning, disable for the
+  atlas phases and restore at the direct exit handoff. Extra holds on
   loop-local frames `3`, `11`, `14` and `23` produce the `9.5 s`
   rest/drag/breath/exhale cadence without duplicate art. A second `E` queues
   immediately but reaches the exit sequence only at calm loop-local frames
@@ -348,7 +384,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `HomeSmokingMusicPlayer` loads only the optional user-supplied
   `Resources/Audio/SmokingMusic/smoking_theme`, fades from zero over `3.2 s`,
   fades with the exit and treats a missing clip as a silent no-op.
-- **Accepted — Diegetic Home practicals and fixed sprite plane:** The Home
+- **Accepted — Diegetic Home practicals and shot-specific sprite plane:** The Home
   atmosphere retains exactly two shadowless practical realtime lights. A
   visible HDR emitter and depth-tested halo are physically co-located with
   each practical so the warm hanging lamp and cold bathroom tube read as
@@ -359,12 +395,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ajar door toward the apartment exit. One separate cold shadowed cookie Spot
   projects through the window, and window/door panes reuse one shared
   transparent glass
-  shader/material. During Home fixed-camera ownership only,
-  `BillboardSprite` aligns to
-  `-camera.forward` and `camera.up` instead of a yaw-only billboard, preserving
-  the authored `64 x 96` aspect across the main-room, bathroom and third
-  balcony shots; disabling or destroying the controller restores the shared
-  default billboard behavior.
+  shader/material. During Home fixed-camera ownership, `BillboardSprite`
+  aligns to `-camera.forward` and `camera.up` in MainRoom and Bathroom,
+  preserving the authored `64 x 96` aspect in their steep views. Balcony uses
+  a world-up yaw billboard so the standing ordinary rig and smoking endpoint
+  stay vertical on the deck; disabling or destroying the controller restores
+  the shared default billboard behavior.
 - **Accepted — Explicit Home foreground cutaway:** Runtime Home builders
   register logical renderer groups for furniture and its attached dressing,
   bathroom and balcony doors, soft bathroom dressing and the visible balcony

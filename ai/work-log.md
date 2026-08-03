@@ -2,6 +2,71 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Mandatory future contextual-animation standard
+
+- Added `ai/contextual-animation-standard.md` as the normative contract for
+  every future `E`/area/prompt interaction that replaces the ordinary player
+  rig with a bespoke sprite atlas. It requires independent authored entry,
+  action and exit data; visible constrained positioning; exact neutral endpoint
+  frames; a direct zero-fade handoff; terminal-frame presentation; camera-plane
+  or world-up pivot correctness; owned lifecycle cleanup; and deterministic
+  asset, timeline, EditMode and PlayMode coverage.
+- Linked the standard from the project entry point, AI memory index, repository
+  Unity rules, accepted architecture decision and player art specification so a
+  future implementation cannot treat the current bed/smoking/cat behavior as a
+  one-off. Deviations now require an explicit user decision recorded as an
+  accepted architecture exception.
+
+Verification:
+
+- Documentation links and scope were reviewed against the implemented shared
+  interaction pipeline; `git diff --check` passed. No runtime files or Unity
+  assets changed in this documentation-only follow-up.
+
+## 2026-08-03 — Authored entry and exit for contextual animations
+
+- Added a shared visible `Positioning` phase for the bed, balcony-smoking and
+  cat-feeding interactions. Pressing `E` now captures modal ownership while the
+  ordinary articulated hero walks and turns through `PlayerMotor` to a grounded
+  authored entry root; manual movement cannot redirect the approach. Separate
+  entry/action/exit root, hip and facing data replace the former implicit stand
+  anchor, and unreachable height, stalled motion, scene transition, disable or
+  destroy paths cancel through the same state-restoring cleanup.
+- Added a deterministic ordinary-rig handoff lock. Exact entry alignment selects
+  the nearest eight-way direction without hysteresis, clears gait/breath/face
+  offsets, holds one neutral rendered frame, then switches directly to the atlas.
+  Bed and cat use exact preflipped `FrontLeft` endpoints; smoking uses the actual
+  Balcony-view `BackRight` endpoint. All three installed definitions now use zero
+  sprite alpha crossfade. Exit holds the atlas's terminal frame, restores the
+  separately authored exit pose and defers rig unlock through its final
+  `LateUpdate` render frame.
+- Kept camera-plane and world-up handoffs physically aligned. Bed and cat resolve
+  their upright hip references against live camera up and refresh after camera
+  `LateUpdate`; Balcony ordinary and smoking sprites stay world-up. The grounded
+  player-root offset is explicit in all three plans, and Cat interaction
+  availability rejects a player on another stairwell level.
+- Rebuilt and locked the three 64-frame player atlases, source contracts and
+  hashes. Smoking frames `000/063` now match ordinary `BackRight` cell `3` exactly
+  without the retired endpoint dissolve; bed and cat endpoints match ordinary
+  `FrontLeft` cell `7`. Updated plans, runtime lifecycle tests and AI system docs.
+
+Verification:
+
+- All smoking extractor/packer, bed-atlas and cat-atlas validators passed. Runtime,
+  EditModeTests and PlayModeTests projects compiled with zero errors; the final
+  sequential EditModeTests and PlayModeTests builds had zero warnings.
+- Complete Unity EditMode coverage passed `777/777`. Complete PlayMode coverage
+  passed `162/164`; every changed bed/smoking/cat positioning, hard-handoff,
+  cancellation and paired-feeding scenario passed. The two unrelated suite
+  failures were existing timing-sensitive checks: the bar arrival was already
+  not playing at its full-suite assertion and passed on the immediate isolated
+  retry;
+  the hungry-cat prompt's gameplay state passed but its batchmode-only
+  `HasRenderedLayout` assertion still did not receive an `OnGUI` event.
+- The Windows player built successfully at `226,017,372` bytes with zero warnings.
+  A hidden 15-second D3D11 startup smoke stayed alive and logged no error,
+  exception, assertion or crash before its exact launched PID was stopped.
+
 ## 2026-08-03 — Inventory-backed cat feeding
 
 - Added a reusable single-stack inventory-target definition, pure

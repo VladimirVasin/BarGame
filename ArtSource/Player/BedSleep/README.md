@@ -14,8 +14,10 @@ python tools/extract-player-bed-sleep-frames.py
 The extraction schedule uses all 16 primary lie-down poses plus eight
 additional in-betweens, all 16 authored sleeping-loop poses, and all 16
 primary wake-up poses plus eight additional in-betweens. It aligns every
-sprite around the shared Unity hip without baking the bed-space translation
-into individual cells.
+authored sprite around the shared Unity hip without baking the bed-space
+translation into individual cells. After normalization, frames `000` and
+`063` are replaced with one exact ordinary-rig endpoint; frames `001-062`
+remain the complete keyed poses.
 
 ## Source contract
 
@@ -34,18 +36,26 @@ into individual cells.
 - Alpha is made binary after resampling: values below `128` become transparent
   black and values from `128` upward become fully opaque.
 - Every processed frame must contain at least one opaque pixel.
-- Preserve the character lock in every applicable pose: dark-burgundy
+- Preserve the character lock in every applicable authored pose: dark-burgundy
   overshirt, desaturated navy trousers, black boots, pale bandage on the
   physical left forearm, ochre patch on the physical right shoulder and the
-  diagonal satchel strap. Do not mirror frames.
+  diagonal satchel strap. Do not mirror authored frames `001-062`.
+- Frames `000` and `063` must be pixel-identical exact endpoints derived from
+  `PlayerDirectionalAtlas` direction cell `FrontLeft` (`7`). The extractor
+  horizontally preflips that `64x96` cell, then centers it at `(32, 0)` in the
+  `128x96` canvas. This is intentional: the bed definition applies
+  `TextureFlipX = true` at runtime, restoring the visible endpoint to the
+  ordinary `FrontLeft` orientation without a fade or blended pixels.
 
 Logical animation ranges are inclusive:
 
 | Frames | Phase |
 | --- | --- |
-| `000-023` | Lie down |
+| `000` | Exact preflipped ordinary `FrontLeft` entry endpoint |
+| `001-023` | Lie down |
 | `024-039` | Sleeping loop |
-| `040-063` | Wake up |
+| `040-062` | Wake up |
+| `063` | Exact preflipped ordinary `FrontLeft` exit endpoint |
 
 At runtime, the sleeping range plays at `4 fps` with an extra `0.25 s` hold
 on full-inhale frame `034` and an extra `0.75 s` rest on post-exhale frame

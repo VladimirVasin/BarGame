@@ -63,6 +63,8 @@ namespace BarPromenade
                 return exitQueued ||
                        controller == null ||
                        controller.Phase ==
+                       PlayerAnimatedInteractionPhase.Positioning ||
+                       controller.Phase ==
                        PlayerAnimatedInteractionPhase.Exiting
                     ? string.Empty
                     : StopSmokingPromptKey;
@@ -161,55 +163,45 @@ namespace BarPromenade
             Quaternion previousRotation = playerRoot.rotation;
             try
             {
-                Vector3 dockWorldPosition =
+                Vector3 entryRootWorldPosition =
                     home.transform.TransformPoint(
-                        plan.DockRootPosition);
-                home.Player.Motor.Teleport(dockWorldPosition);
-                playerRoot.rotation =
+                        plan.EntryRootPosition);
+                Quaternion entryWorldRotation =
                     home.transform.rotation *
-                    plan.FacingRotation;
-                Physics.SyncTransforms();
-
-                home.FixedCamera.ReapplyActiveShot();
-                if (home.FixedCamera.ActiveShotKind !=
-                    HomeCameraShotKind.Balcony)
-                {
-                    throw new InvalidOperationException(
-                        "The smoking dock must select the Home balcony " +
-                        "camera shot.");
-                }
-
-                CaptureCameraPath();
-                if (!timeline.Begin())
-                {
-                    RestoreFailedBegin(
-                        previousPosition,
-                        previousRotation);
-                    return false;
-                }
+                    plan.EntryRotation;
+                Vector3 exitRootWorldPosition =
+                    home.transform.TransformPoint(
+                        plan.ExitRootPosition);
+                Quaternion exitWorldRotation =
+                    home.transform.rotation *
+                    plan.ExitRotation;
 
                 Vector3 actionHipWorld =
                     home.transform.TransformPoint(
                         plan.ActionHipPosition);
-                if (!controller.Begin(
+                ownsInteraction = true;
+                exitQueued = false;
+                exitInputArmed = false;
+                if (!controller.BeginPositioned(
                         definition,
+                        new PlayerAnimatedInteractionPose(
+                            entryRootWorldPosition,
+                            entryWorldRotation,
+                            home.transform.TransformPoint(
+                                plan.EntryHipPosition)),
                         actionHipWorld,
-                        actionHipWorld))
+                        new PlayerAnimatedInteractionPose(
+                            exitRootWorldPosition,
+                            exitWorldRotation,
+                            home.transform.TransformPoint(
+                                plan.ExitHipPosition))))
                 {
-                    timeline.Reset();
                     RestoreFailedBegin(
                         previousPosition,
                         previousRotation);
                     return false;
                 }
 
-                ownsInteraction = true;
-                exitQueued = false;
-                exitInputArmed = false;
-                exitInputArmTime =
-                    Time.unscaledTime +
-                    ExitInputDebounceSeconds;
-                music?.BeginFromStart();
                 ApplyPresentation();
                 return true;
             }
@@ -434,6 +426,9 @@ namespace BarPromenade
 
             switch (phase)
             {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    BeginAnimatedPresentation();
+                    break;
                 case PlayerAnimatedInteractionPhase.Looping:
                     timeline.EnterLooping();
                     TryBeginSafeExit();
@@ -446,6 +441,38 @@ namespace BarPromenade
                     CompleteOwnedInteraction();
                     break;
             }
+        }
+
+        private void BeginAnimatedPresentation()
+        {
+            home.FixedCamera.ReapplyActiveShot();
+            if (home.FixedCamera.ActiveShotKind !=
+                HomeCameraShotKind.Balcony)
+            {
+                Debug.LogError(
+                    "The smoking entry point must select the Home " +
+                    "balcony camera shot.",
+                    this);
+                CancelOwnedInteraction();
+                return;
+            }
+
+            CaptureCameraPath();
+            if (!timeline.Begin())
+            {
+                Debug.LogError(
+                    "The smoking presentation timeline could not begin.",
+                    this);
+                CancelOwnedInteraction();
+                return;
+            }
+
+            exitInputArmed = false;
+            exitInputArmTime =
+                Time.unscaledTime +
+                ExitInputDebounceSeconds;
+            music?.BeginFromStart();
+            ApplyPresentation();
         }
 
         private void CompleteOwnedInteraction()

@@ -524,7 +524,8 @@ namespace BarPromenade
                 shot.Position,
                 shot.Rotation,
                 shot.FieldOfView);
-            targetBillboard?.FaceCameraNow();
+            targetBillboard?.SetCameraPlaneAlignment(
+                shot.Kind != HomeCameraShotKind.Balcony);
         }
     }
 }

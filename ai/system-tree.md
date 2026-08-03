@@ -63,7 +63,7 @@ Assets/
       PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
       PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
-      PlayerBalconySmokingAtlas.png      8x8 sequence with idle-matched/dithered edges
+      PlayerBalconySmokingAtlas.png      8x8 sequence with exact-idle endpoints, keyed motion
       PlayerCatFeedingAtlas.png          8x8 present/feed/return interaction sequence
       Falls/                             16 no-mirror fall atlases
         PlayerDetailedFall*Atlas.png     8 views x 2 sides, 10x8 cells at 128x96
@@ -116,8 +116,8 @@ Assets/
         HomeExteriorContextPlan.cs  bounded same-seed street view descriptors
         HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
-        HomeBedInteractionPlan.cs  open-side trigger plus stand/action hip anchors
-        HomeBalconySmokingPlan.cs  dock/trigger/facing/camera + 24/24/16 timing
+        HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
+        HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
         HomeRefrigeratorWorldBuilder.cs  worn hollow cabinet, shelves, bins and contents
         HomeRefrigeratorView.cs  animated door/handle/emissive interior presentation
@@ -131,11 +131,13 @@ Assets/
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
       Stairwell/Cat/ deterministic perch, idle/look and feeding presentation
-        StairwellCatFeedingPlan.cs          safe middle-shot dock and hip anchors
+        StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
+        PlayerMotor.cs             grounded guided approach + no-progress cancellation
+        PlayerSpriteRig.cs         nearest-view neutral render-frame handoff lock
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
@@ -148,7 +150,7 @@ Assets/
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
-        PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
+        PlayerAnimatedInteraction*.cs  grounded positioning, neutral handoff + terminal exit hold
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
@@ -161,7 +163,7 @@ Assets/
         HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
-        HomeFixedCameraController.cs  three authored shots and sprite-plane alignment
+        HomeFixedCameraController.cs  camera-plane Main/Bath + world-up Balcony shots
         HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog, grade and lights
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
@@ -218,7 +220,7 @@ Assets/
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
-      HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/fade + restore
+      HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/direct handoff + restore
       HomeSmokingMusicPlayerPlayModeTests.cs optional clip and mixer-safe lifecycle
       HomeMusicPlayerPlayModeTests.cs      missing-track and Balcony-zone lifecycle
       SceneMusicPlayerPlayModeTests.cs     fade, pause/resume and scene-exit contracts
@@ -228,7 +230,7 @@ ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
     BedSleep/                    64 source frames plus keyed/generated sheets
-    BalconySmoking/              generated/keyed art + exact-idle dither handoff
+    BalconySmoking/              generated/keyed art + exact-idle direct endpoints
     CatFeeding/                  raw/keyed 8x8 player source + packing contract
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
@@ -236,7 +238,7 @@ tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
   extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
   build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
-  extract-player-balcony-smoking-frames.py  align art + build exact-idle dither bridges
+  extract-player-balcony-smoking-frames.py  align keyed art + exact-idle endpoints
   build-player-balcony-smoking-atlas.py  validate and pack the 8x8 smoking atlas
   build-player-cat-feeding-atlas.py  validate and pack the 8x8 feeding atlas
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
@@ -327,7 +329,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                  or default-No Feed confirmation
                                     -> prepare player/cat resources
                                     -> atomically remove one can
-                                    -> middle-shot paired player/cat animation
+                                    -> grounded guided entry or clean cancellation
+                                    -> neutral FrontLeft render-frame handoff
+                                    -> middle-shot paired player/cat animation, no sprite fade
+                                    -> terminal exit-frame hold + separate exit pose
                                     -> exact modal/presentation restoration
        -> StairwellAmbiencePlayer -> steady concrete room bed
        -> StairwellSoundscape -> spatial ventilation + electrical buzz
@@ -371,7 +376,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                           -> indoor same-sample resume + fade-in
        -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
                                     -> PlayerCameraFollow fixed pose
-                                    -> BillboardSprite camera-plane opt-in
+                                    -> MainRoom/Bathroom camera-plane billboard
+                                    -> Balcony world-up yaw billboard
                                        -> reset when fixed control ends
        -> HomeOcclusionRegistry -> furniture/dressing/door/rail renderer groups
                                 -> HomePlayerOcclusionController
@@ -382,22 +388,28 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> HomeBedInteractionPlan -> reachable open-side trigger
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
-                                       -> Idle/Entering/Looping/Exiting timeline
+                                       -> visible Positioning -> Entering/Looping/Exiting
+                                       -> separate root/hip/facing entry + exit poses
                                        -> PlayerBedSleepAtlas exact camera-plane billboard
+                                       -> camera-up handoff hip + LateUpdate pivot correction
                                        -> projected bed axis + preserved handedness
-                                       -> lock motor; hide/restore rig + shadows
-                                       -> owner cancel -> complete restoration
-       -> HomeBalconySmokingPlan -> dock at (6.60, 0.12, -1.45)
-                                  -> first E -> face city +X
+                                       -> grounded guided walk/turn or stalled cancel
+                                       -> neutral FrontLeft rendered handoff frame
+                                       -> direct rig/atlas endpoint handoff; zero sprite fade
+                                       -> terminal exit frame -> independent exit pose
+                                       -> owner/transition cancel -> complete restoration
+       -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
+                                  -> first E -> guided walk + face city +X
                                      -> smoking TextureFlipX false
                                      -> world-up yaw billboard (camera-plane mode off)
-                                     -> 0.35 s rig-to-atlas crossfade
-                                     -> idle-matched/dithered 24-frame enter
+                                     -> neutral BackRight render-frame handoff
+                                     -> exact-idle direct rig-to-atlas handoff; zero fade
+                                     -> keyed 24-frame enter without dissolve
                                      -> held 24-frame drag/exhale loop
                                   -> second E -> queued calm-boundary exit
-                                     -> 16-frame discard + dithered idle handoff
-                                     -> final 0.35 s atlas-to-rig crossfade
-                                  -> shadows off until complete, then restored
+                                     -> 16-frame discard + held terminal endpoint
+                                     -> direct atlas-to-rig exit-pose handoff
+                                  -> shadows visible on approach; restored at exit
                                   -> quadratic city-biased push to 38-degree FOV
                                      -> 0.33 m Home-local +X look offset
                                      -> hero near 0.37 viewport X; city visible right

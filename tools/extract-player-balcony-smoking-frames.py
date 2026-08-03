@@ -11,11 +11,11 @@ planted-foot center and baseline so the hip stays at the runtime pivot instead
 of wandering with arm or smoke bounds. The generated three-quarter figure is
 compressed horizontally to the proportions of the ordinary side-profile rig.
 
-Frames 000 and 063 are exact copies of the ordinary ``Right`` idle composite.
-The adjacent enter/exit frames use a deterministic ordered-dither blend so the
-game never cuts directly between two unrelated silhouettes. The contact sheets
-already face texture-left, which is the user-approved balcony direction. The
-smoking definition therefore applies no runtime mirror.
+Frames 000 and 063 are exact copies of the ordinary ``BackRight`` idle composite.
+Frames 001 through 062 remain complete normalized poses from the approved keyed
+contact sheets: the extractor never mixes their pixels with the ordinary idle.
+The contact sheets already face texture-left, which is the user-approved
+balcony direction. The smoking definition therefore applies no runtime mirror.
 """
 
 from __future__ import annotations
@@ -99,12 +99,12 @@ MIN_SOURCE_COMPONENT_PIXELS = 1500
 MIN_OUTPUT_OPAQUE_PIXELS = 256
 TRANSPARENT = (0, 0, 0, 0)
 
-# The ordinary rig selects PlayerViewDirection.Right for this dock and camera.
-# In the source atlas that is direction cell 2 and it visibly faces texture-
-# left. User playtesting established that this unmirrored screen direction is
-# the city-facing one. Keep all three toggles explicit so a later accidental
-# mirror fails validation instead of silently reversing the character again.
-IDLE_DIRECTION_INDEX = 2
+# The ordinary rig selects PlayerViewDirection.BackRight for this dock and
+# camera. In the source atlas that is direction cell 3 and it is the exact
+# three-quarter city-facing handoff pose. Keep all three toggles explicit so a
+# later accidental mirror fails validation instead of silently reversing the
+# authored smoking sequence again.
+IDLE_DIRECTION_INDEX = 3
 IDLE_FRAME_WIDTH = 64
 IDLE_FRAME_HEIGHT = 96
 SOURCE_FACES_SCREEN_RIGHT = False
@@ -112,23 +112,11 @@ EXTRACTOR_FLIP_X = False
 RUNTIME_FLIP_X = False
 FINAL_FACES_SCREEN_RIGHT = False
 
-# Inclusive logical frames participating in each exact-idle handoff. Frame 0
-# and frame 63 are exact. Intermediate alpha coverage uses an 8x8 Bayer matrix
-# and overlapping colors use linear interpolation; no random state is involved.
-ENTER_HANDOFF_LAST_FRAME = 7
-EXIT_HANDOFF_FIRST_FRAME = 58
-MAX_HANDOFF_ALPHA_XOR = 0.13
-MAX_HANDOFF_RGBA_MAE = 0.08
-BAYER_8X8 = (
-    (0, 32, 8, 40, 2, 34, 10, 42),
-    (48, 16, 56, 24, 50, 18, 58, 26),
-    (12, 44, 4, 36, 14, 46, 6, 38),
-    (60, 28, 52, 20, 62, 30, 54, 22),
-    (3, 35, 11, 43, 1, 33, 9, 41),
-    (51, 19, 59, 27, 49, 17, 57, 25),
-    (15, 47, 7, 39, 13, 45, 5, 37),
-    (63, 31, 55, 23, 61, 29, 53, 21),
-)
+# Bounds for the authored adjacent steps surrounding the former blended edge
+# ranges. The intentional ordinary-rig cuts at 000 -> 001 and 062 -> 063 are
+# reported separately and are not required to masquerade as in-betweens.
+MAX_AUTHORED_EDGE_ALPHA_XOR = 0.13
+MAX_AUTHORED_EDGE_RGBA_MAE = 0.08
 
 
 class ExtractionError(RuntimeError):
@@ -274,31 +262,30 @@ def validate_static_contract() -> None:
             "Orientation contract is invalid: the texture-left source must "
             "reach the smoking renderer without extractor or runtime mirror."
         )
-    if IDLE_DIRECTION_INDEX != 2:
+    if IDLE_DIRECTION_INDEX != 3:
         raise ExtractionError(
-            "The exact balcony idle handoff must use Right direction cell 2."
+            "The exact balcony idle handoff must use BackRight direction cell 3."
         )
     if not (
-        0 < ENTER_HANDOFF_LAST_FRAME < 24
-        and 48 <= EXIT_HANDOFF_FIRST_FRAME < 63
+        0.0 < MAX_AUTHORED_EDGE_ALPHA_XOR < 1.0
+        and 0.0 < MAX_AUTHORED_EDGE_RGBA_MAE < 1.0
     ):
         raise ExtractionError(
-            "Idle handoff ranges must remain inside enter and exit phases."
+            "Authored edge difference limits must be normalized fractions."
         )
-    if not (
-        0.0 < MAX_HANDOFF_ALPHA_XOR < 1.0
-        and 0.0 < MAX_HANDOFF_RGBA_MAE < 1.0
-    ):
+    if schedule[1:8] != [
+        (SHEET_NAMES[0], index)
+        for index in range(1, 8)
+    ]:
         raise ExtractionError(
-            "Idle handoff difference limits must be normalized fractions."
+            "Logical frames 001..007 must retain keyed enter cells 1..7."
         )
-    if len(BAYER_8X8) != 8 or any(
-        len(row) != 8 for row in BAYER_8X8
-    ):
-        raise ExtractionError("Ordered-dither matrix must remain 8x8.")
-    if sorted(value for row in BAYER_8X8 for value in row) != list(range(64)):
+    if schedule[58:63] != [
+        (SHEET_NAMES[3], index)
+        for index in range(10, 15)
+    ]:
         raise ExtractionError(
-            "Ordered-dither matrix must contain each threshold 0..63 once."
+            "Logical frames 058..062 must retain keyed exit cells 10..14."
         )
 
 
@@ -454,7 +441,7 @@ def load_exact_idle_frame(idle_atlas_path: Path) -> Image.Image:
         )
     if idle_cell.getchannel("A").getbbox() is None:
         raise ExtractionError(
-            "Ordinary Right idle reference cell is empty."
+            "Ordinary BackRight idle reference cell is empty."
         )
 
     canvas = Image.new("RGBA", CANVAS_SIZE, TRANSPARENT)
@@ -800,91 +787,18 @@ def validate_output_names(output_dir: Path) -> None:
         )
 
 
-def smoothstep(value: float) -> float:
-    clamped = max(0.0, min(1.0, value))
-    return clamped * clamped * (3.0 - 2.0 * clamped)
-
-
-def ordered_dither_transition(
-    first: Image.Image,
-    second: Image.Image,
-    second_weight: float,
-) -> Image.Image:
-    """Blend two pixel frames while retaining binary alpha coverage."""
-    if first.size != CANVAS_SIZE or second.size != CANVAS_SIZE:
-        raise ExtractionError(
-            "Idle handoff inputs must both use the 128x96 canvas."
-        )
-    weight = max(0.0, min(1.0, second_weight))
-    first_pixels = list(first.get_flattened_data())
-    second_pixels = list(second.get_flattened_data())
-    output_pixels = []
-
-    for index, (left, right) in enumerate(
-        zip(first_pixels, second_pixels)
-    ):
-        left_opaque = left[3] >= ANCHOR_ALPHA_THRESHOLD
-        right_opaque = right[3] >= ANCHOR_ALPHA_THRESHOLD
-        if not left_opaque and not right_opaque:
-            output_pixels.append(TRANSPARENT)
-            continue
-
-        if left_opaque and right_opaque:
-            output_pixels.append((
-                round(left[0] + (right[0] - left[0]) * weight),
-                round(left[1] + (right[1] - left[1]) * weight),
-                round(left[2] + (right[2] - left[2]) * weight),
-                255,
-            ))
-            continue
-
-        x = index % CANVAS_WIDTH
-        y = index // CANVAS_WIDTH
-        threshold = (BAYER_8X8[y % 8][x % 8] + 0.5) / 64.0
-        chosen = right if threshold < weight else left
-        if chosen[3] >= ANCHOR_ALPHA_THRESHOLD:
-            output_pixels.append((chosen[0], chosen[1], chosen[2], 255))
-        else:
-            output_pixels.append(TRANSPARENT)
-
-    output = Image.new("RGBA", CANVAS_SIZE, TRANSPARENT)
-    output.putdata(output_pixels)
-    clear_transparent_rgb(output)
-    return output
-
-
-def apply_exact_idle_handoffs(
+def apply_exact_idle_endpoints(
     generated_frames: Sequence[Image.Image],
     exact_idle: Image.Image,
 ) -> list[Image.Image]:
     if len(generated_frames) != FRAME_COUNT:
         raise ExtractionError(
-            f"Idle handoff expected {FRAME_COUNT} generated frames, got "
+            f"Idle endpoint pass expected {FRAME_COUNT} generated frames, got "
             f"{len(generated_frames)}."
         )
 
     frames = [frame.copy() for frame in generated_frames]
     frames[0] = exact_idle.copy()
-    enter_denominator = ENTER_HANDOFF_LAST_FRAME + 1
-    for frame_index in range(1, ENTER_HANDOFF_LAST_FRAME + 1):
-        weight = smoothstep(frame_index / enter_denominator)
-        frames[frame_index] = ordered_dither_transition(
-            exact_idle,
-            generated_frames[frame_index],
-            weight,
-        )
-
-    exit_denominator = FRAME_COUNT - EXIT_HANDOFF_FIRST_FRAME
-    for frame_index in range(EXIT_HANDOFF_FIRST_FRAME, FRAME_COUNT - 1):
-        weight = smoothstep(
-            (frame_index - EXIT_HANDOFF_FIRST_FRAME + 1) /
-            exit_denominator
-        )
-        frames[frame_index] = ordered_dither_transition(
-            generated_frames[frame_index],
-            exact_idle,
-            weight,
-        )
     frames[-1] = exact_idle.copy()
 
     for frame_index, frame in enumerate(frames):
@@ -928,70 +842,64 @@ def transition_difference(
     )
 
 
-def validate_idle_handoffs(
+def validate_idle_endpoints(
     frames: Sequence[Image.Image],
     generated_frames: Sequence[Image.Image],
     exact_idle: Image.Image,
 ) -> dict[str, object]:
     if frames[0].tobytes() != exact_idle.tobytes():
         raise ExtractionError(
-            "Logical frame 000 must be pixel-identical to ordinary Right idle."
+            "Logical frame 000 must be pixel-identical to ordinary BackRight idle."
         )
     if frames[63].tobytes() != exact_idle.tobytes():
         raise ExtractionError(
-            "Logical frame 063 must be pixel-identical to ordinary Right idle."
+            "Logical frame 063 must be pixel-identical to ordinary BackRight idle."
         )
     if frames[0].tobytes() != frames[63].tobytes():
         raise ExtractionError(
-            "Start and end handoff frames must be pixel-identical."
+            "Start and end idle endpoint frames must be pixel-identical."
         )
 
-    raw_enter_cut = transition_difference(
-        exact_idle,
-        generated_frames[0],
-    )
-    raw_exit_cut = transition_difference(
-        generated_frames[63],
-        exact_idle,
-    )
+    for frame_index in range(1, FRAME_COUNT - 1):
+        if frames[frame_index].tobytes() != generated_frames[
+            frame_index
+        ].tobytes():
+            raise ExtractionError(
+                f"Logical frame {frame_index:03d} must remain the complete "
+                "normalized keyed source pose without idle-pixel blending."
+            )
+
+    enter_cut = transition_difference(frames[0], frames[1])
+    exit_cut = transition_difference(frames[62], frames[63])
     enter_steps = [
         transition_difference(frames[index], frames[index + 1])
-        for index in range(0, ENTER_HANDOFF_LAST_FRAME + 1)
+        for index in range(1, 8)
     ]
     exit_steps = [
         transition_difference(frames[index], frames[index + 1])
-        for index in range(EXIT_HANDOFF_FIRST_FRAME - 1, 63)
+        for index in range(57, 62)
     ]
-
-    if enter_steps[0][0] >= raw_enter_cut[0]:
-        raise ExtractionError(
-            "First enter handoff step does not improve the raw idle cut."
-        )
-    if exit_steps[-1][0] >= raw_exit_cut[0]:
-        raise ExtractionError(
-            "Final exit handoff step does not improve the raw idle cut."
-        )
 
     all_steps = enter_steps + exit_steps
     maximum_alpha_xor = max(value[0] for value in all_steps)
     maximum_rgba_mae = max(value[1] for value in all_steps)
     if (
-        maximum_alpha_xor > MAX_HANDOFF_ALPHA_XOR
-        or maximum_rgba_mae > MAX_HANDOFF_RGBA_MAE
+        maximum_alpha_xor > MAX_AUTHORED_EDGE_ALPHA_XOR
+        or maximum_rgba_mae > MAX_AUTHORED_EDGE_RGBA_MAE
     ):
         raise ExtractionError(
-            "Idle handoff contains an abrupt adjacent step: "
+            "Authored edge motion contains an abrupt adjacent step: "
             f"alpha XOR={maximum_alpha_xor:.6f} (limit "
-            f"{MAX_HANDOFF_ALPHA_XOR:.6f}), RGBA MAE="
+            f"{MAX_AUTHORED_EDGE_ALPHA_XOR:.6f}), RGBA MAE="
             f"{maximum_rgba_mae:.6f} (limit "
-            f"{MAX_HANDOFF_RGBA_MAE:.6f})."
+            f"{MAX_AUTHORED_EDGE_RGBA_MAE:.6f})."
         )
 
     idle_hash = hashlib.sha256(exact_idle.tobytes()).hexdigest().upper()
     return {
         "idle_hash": idle_hash,
-        "raw_enter_cut": raw_enter_cut,
-        "raw_exit_cut": raw_exit_cut,
+        "enter_cut": enter_cut,
+        "exit_cut": exit_cut,
         "enter_steps": enter_steps,
         "exit_steps": exit_steps,
         "enter_max": (
@@ -1083,11 +991,11 @@ def run(args: argparse.Namespace) -> None:
         for cell in cells
     ]
     exact_idle = load_exact_idle_frame(args.idle_atlas)
-    frames = apply_exact_idle_handoffs(
+    frames = apply_exact_idle_endpoints(
         generated_frames,
         exact_idle,
     )
-    handoff_metrics = validate_idle_handoffs(
+    endpoint_metrics = validate_idle_endpoints(
         frames,
         generated_frames,
         exact_idle,
@@ -1116,23 +1024,23 @@ def run(args: argparse.Namespace) -> None:
         f"alpha XOR={inhale_difference[0]:.6f}, "
         f"RGBA MAE={inhale_difference[1]:.6f}."
     )
-    raw_enter = handoff_metrics["raw_enter_cut"]
-    raw_exit = handoff_metrics["raw_exit_cut"]
-    enter_max = handoff_metrics["enter_max"]
-    exit_max = handoff_metrics["exit_max"]
-    assert isinstance(raw_enter, tuple)
-    assert isinstance(raw_exit, tuple)
+    enter_cut = endpoint_metrics["enter_cut"]
+    exit_cut = endpoint_metrics["exit_cut"]
+    enter_max = endpoint_metrics["enter_max"]
+    exit_max = endpoint_metrics["exit_max"]
+    assert isinstance(enter_cut, tuple)
+    assert isinstance(exit_cut, tuple)
     assert isinstance(enter_max, tuple)
     assert isinstance(exit_max, tuple)
     print(
-        "Exact idle handoff: frame 000 == frame 063 == ordinary Right; "
-        f"idle pixel SHA256={handoff_metrics['idle_hash']}."
+        "Exact idle endpoints: frame 000 == frame 063 == ordinary BackRight; "
+        f"idle pixel SHA256={endpoint_metrics['idle_hash']}."
     )
     print(
-        "Handoff alpha-XOR/RGBA-MAE: raw cuts "
-        f"enter={raw_enter[0]:.6f}/{raw_enter[1]:.6f}, "
-        f"exit={raw_exit[0]:.6f}/{raw_exit[1]:.6f}; "
-        f"max stepped enter={enter_max[0]:.6f}/{enter_max[1]:.6f}, "
+        "Endpoint alpha-XOR/RGBA-MAE: intentional hard cuts "
+        f"enter={enter_cut[0]:.6f}/{enter_cut[1]:.6f}, "
+        f"exit={exit_cut[0]:.6f}/{exit_cut[1]:.6f}; "
+        f"max authored enter={enter_max[0]:.6f}/{enter_max[1]:.6f}, "
         f"exit={exit_max[0]:.6f}/{exit_max[1]:.6f}."
     )
     print(

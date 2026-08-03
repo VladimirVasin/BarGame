@@ -3,8 +3,9 @@
 
 The builder consumes one transparent 8x8 RGBA contact sheet in top-left
 row-major logical order.  It maps every source cell through one shared
-nearest-neighbour contain transform into a 128x96 interaction cell and packs
-the 64 binary-alpha frames into the layout expected by
+nearest-neighbour contain transform into a 128x96 interaction cell, replaces
+logical frames 0 and 63 with one exact preflipped ordinary-idle endpoint, and
+packs the 64 binary-alpha frames into the layout expected by
 PlayerAnimatedInteractionController: logical frame zero is in the lower PNG
 row and logical rows advance upward.
 
@@ -46,6 +47,13 @@ DEFAULT_OUTPUT = (
     / "Player"
     / "PlayerCatFeedingAtlas.png"
 )
+DEFAULT_IDLE_ATLAS = (
+    ROOT
+    / "Assets"
+    / "Resources"
+    / "Player"
+    / "PlayerDirectionalAtlas.png"
+)
 
 SOURCE_COLUMNS = 8
 SOURCE_ROWS = 8
@@ -65,6 +73,10 @@ MIN_OPAQUE_PIXELS = 64
 TRANSPARENT = (0, 0, 0, 0)
 SOURCE_CELL_INSET = 3
 MIN_COMPONENT_AREA_RATIO = 0.0004
+IDLE_DIRECTION_INDEX = 7
+IDLE_FRAME_WIDTH = 64
+IDLE_FRAME_HEIGHT = 96
+IDLE_ENDPOINT_PASTE = (32, 0)
 
 PHASE_RANGES = (
     ("present-can", 0, 23),
@@ -106,6 +118,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--idle-atlas",
+        type=Path,
+        default=DEFAULT_IDLE_ATLAS,
+        help=(
+            "Ordinary directional-idle atlas used for exact frames 0 and 63 "
+            f"(default: {DEFAULT_IDLE_ATLAS})."
+        ),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT,
@@ -130,6 +151,15 @@ def validate_static_contract() -> None:
     if (ATLAS_WIDTH, ATLAS_HEIGHT) != (1024, 768):
         raise PlayerCatFeedingAtlasError(
             "Internal runtime atlas must be exactly 1024x768."
+        )
+    if IDLE_DIRECTION_INDEX != 7:
+        raise PlayerCatFeedingAtlasError(
+            "The cat-feeding endpoint must use FrontLeft direction cell 7."
+        )
+    if IDLE_ENDPOINT_PASTE != (32, 0):
+        raise PlayerCatFeedingAtlasError(
+            "The 64x96 idle endpoint must remain centered in its 128x96 "
+            "interaction cell at (32, 0)."
         )
     covered: list[int] = []
     for label, first, last in PHASE_RANGES:
@@ -187,6 +217,69 @@ def load_source(path: Path) -> Image.Image:
         raise PlayerCatFeedingAtlasError(
             f"Cannot read {path}: {exc}"
         ) from exc
+
+
+def load_exact_idle_endpoint(path: Path) -> Image.Image:
+    if not path.exists():
+        raise PlayerCatFeedingAtlasError(
+            f"Missing ordinary directional idle atlas: {path}"
+        )
+    if not path.is_file():
+        raise PlayerCatFeedingAtlasError(
+            f"Idle atlas path is not a file: {path}"
+        )
+
+    expected_size = (IDLE_FRAME_WIDTH * 8, IDLE_FRAME_HEIGHT)
+    try:
+        with Image.open(path) as opened:
+            if opened.format != "PNG" or opened.mode != "RGBA":
+                raise PlayerCatFeedingAtlasError(
+                    f"{path.name} must be an RGBA PNG, got "
+                    f"{opened.format or 'unknown'} {opened.mode!r}."
+                )
+            if opened.size != expected_size:
+                raise PlayerCatFeedingAtlasError(
+                    f"{path.name} must be {expected_size[0]}x"
+                    f"{expected_size[1]}, got {opened.width}x{opened.height}."
+                )
+            opened.load()
+            left = IDLE_DIRECTION_INDEX * IDLE_FRAME_WIDTH
+            idle = opened.crop((
+                left,
+                0,
+                left + IDLE_FRAME_WIDTH,
+                IDLE_FRAME_HEIGHT,
+            ))
+    except PlayerCatFeedingAtlasError:
+        raise
+    except OSError as exc:
+        raise PlayerCatFeedingAtlasError(
+            f"Cannot read ordinary idle atlas {path}: {exc}"
+        ) from exc
+
+    alpha_values = set(idle.getchannel("A").get_flattened_data())
+    invalid_alpha = sorted(alpha_values - {0, 255})
+    if invalid_alpha:
+        raise PlayerCatFeedingAtlasError(
+            "Ordinary FrontLeft idle must use binary alpha; found: "
+            + ", ".join(str(value) for value in invalid_alpha[:8])
+        )
+    if idle.getchannel("A").getbbox() is None:
+        raise PlayerCatFeedingAtlasError(
+            "Ordinary FrontLeft idle cell 7 is empty."
+        )
+
+    # The runtime definition applies TextureFlipX=true. Preflipping the stored
+    # endpoint makes that final runtime flip restore the ordinary FrontLeft
+    # silhouette at both hard handoffs.
+    preflipped = idle.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    endpoint = Image.new(
+        "RGBA",
+        (CELL_WIDTH, CELL_HEIGHT),
+        TRANSPARENT,
+    )
+    endpoint.alpha_composite(preflipped, IDLE_ENDPOINT_PASTE)
+    return endpoint
 
 
 def make_fit_plan(source_cell_size: tuple[int, int]) -> FitPlan:
@@ -405,6 +498,62 @@ def extract_frames(
     return frames, ordered_plans, removed_artifact_pixels
 
 
+def apply_exact_idle_endpoints(
+    source_frames: list[Image.Image],
+    exact_idle_endpoint: Image.Image,
+) -> list[Image.Image]:
+    if len(source_frames) != FRAME_COUNT:
+        raise PlayerCatFeedingAtlasError(
+            f"Endpoint normalization expected {FRAME_COUNT} source-derived "
+            f"frames, got {len(source_frames)}."
+        )
+    if exact_idle_endpoint.mode != "RGBA" or exact_idle_endpoint.size != (
+        CELL_WIDTH,
+        CELL_HEIGHT,
+    ):
+        raise PlayerCatFeedingAtlasError(
+            "Exact idle endpoint must be one 128x96 RGBA interaction cell."
+        )
+
+    frames = [frame.copy() for frame in source_frames]
+    frames[0] = exact_idle_endpoint.copy()
+    frames[-1] = exact_idle_endpoint.copy()
+    validate_exact_idle_endpoints(
+        frames,
+        source_frames,
+        exact_idle_endpoint,
+    )
+    return frames
+
+
+def validate_exact_idle_endpoints(
+    frames: list[Image.Image],
+    source_frames: list[Image.Image],
+    exact_idle_endpoint: Image.Image,
+) -> None:
+    if frames[0].tobytes() != exact_idle_endpoint.tobytes():
+        raise PlayerCatFeedingAtlasError(
+            "Logical frame 0 must exactly match the preflipped FrontLeft idle."
+        )
+    if frames[63].tobytes() != exact_idle_endpoint.tobytes():
+        raise PlayerCatFeedingAtlasError(
+            "Logical frame 63 must exactly match the preflipped FrontLeft idle."
+        )
+    if frames[0].tobytes() != frames[63].tobytes():
+        raise PlayerCatFeedingAtlasError(
+            "Logical cat-feeding endpoints 0 and 63 must be pixel-identical."
+        )
+
+    for logical_index in range(1, FRAME_COUNT - 1):
+        if frames[logical_index].tobytes() != source_frames[
+            logical_index
+        ].tobytes():
+            raise PlayerCatFeedingAtlasError(
+                f"Logical frame {logical_index:02d} must remain the complete "
+                "source-derived normalized pose."
+            )
+
+
 def atlas_png_position(logical_index: int) -> tuple[int, int]:
     if logical_index < 0 or logical_index >= FRAME_COUNT:
         raise PlayerCatFeedingAtlasError(
@@ -463,11 +612,19 @@ def build_atlas(frames: list[Image.Image]) -> Image.Image:
     return atlas
 
 
-def validate_output_path(source: Path, output: Path) -> None:
+def validate_output_path(
+    source: Path,
+    idle_atlas: Path,
+    output: Path,
+) -> None:
     try:
         if source.resolve() == output.resolve():
             raise PlayerCatFeedingAtlasError(
                 "Output path must not overwrite the approved source sheet."
+            )
+        if idle_atlas.resolve() == output.resolve():
+            raise PlayerCatFeedingAtlasError(
+                "Output path must not overwrite the ordinary idle atlas."
             )
     except OSError as exc:
         raise PlayerCatFeedingAtlasError(
@@ -534,11 +691,25 @@ def write_png_atomic(image: Image.Image, destination: Path) -> str:
 
 def run(args: argparse.Namespace) -> None:
     validate_static_contract()
-    validate_output_path(args.source, args.output)
+    validate_output_path(args.source, args.idle_atlas, args.output)
     source = load_source(args.source)
-    frames, fit_plans, removed_artifact_pixels = extract_frames(source)
+    exact_idle_endpoint = load_exact_idle_endpoint(args.idle_atlas)
+    source_frames, fit_plans, removed_artifact_pixels = extract_frames(source)
+    frames = apply_exact_idle_endpoints(
+        source_frames,
+        exact_idle_endpoint,
+    )
     atlas = build_atlas(frames)
     pixel_hash = hashlib.sha256(atlas.tobytes()).hexdigest().upper()
+    endpoint_hash = hashlib.sha256(
+        exact_idle_endpoint.tobytes()
+    ).hexdigest().upper()
+    source_derived_hash = hashlib.sha256(
+        b"".join(
+            source_frames[index].tobytes()
+            for index in range(1, FRAME_COUNT - 1)
+        )
+    ).hexdigest().upper()
 
     print(
         f"Validated {args.source} as an 8x8 top-left row-major RGBA sheet "
@@ -561,6 +732,15 @@ def run(args: argparse.Namespace) -> None:
     print(
         "Runtime layout: 8x8 cells at 128x96; logical frames 0..7 are "
         "in the lower PNG row and logical rows advance upward."
+    )
+    print(
+        "Exact endpoints: logical 0 == 63 == preflipped ordinary FrontLeft "
+        f"cell 7 centered at {IDLE_ENDPOINT_PASTE}; "
+        f"pixel SHA256={endpoint_hash}."
+    )
+    print(
+        "Source-derived normalized frames 1..62 pixel SHA256="
+        f"{source_derived_hash}."
     )
     print(f"Atlas pixel SHA256={pixel_hash}")
 

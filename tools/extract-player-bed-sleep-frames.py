@@ -5,6 +5,13 @@ The source sheets are four-by-four RGBA contact sheets after chroma-key
 removal.  This tool selects the authored primary poses plus extra in-betweens,
 normalizes every character around the shared Unity hip pivot, and writes the
 64 source frames consumed by ``build-player-bed-sleep-atlas.py``.
+
+Frames 000 and 063 are exact copies of the ordinary ``FrontLeft`` idle cell,
+horizontally preflipped and centered in the interaction canvas.  The bed
+renderer flips the complete atlas at runtime, so this source-side preflip makes
+both discrete endpoint handoffs match the visible ordinary rig.  Frames 001
+through 062 remain the complete normalized authored poses without idle-pixel
+mixing.
 """
 
 from __future__ import annotations
@@ -30,6 +37,10 @@ DEFAULT_SHEETS = (
     ROOT / "ArtSource" / "Player" / "BedSleep" / "Keyed"
 )
 DEFAULT_OUTPUT = ROOT / "ArtSource" / "Player" / "BedSleep"
+DEFAULT_IDLE_ATLAS = (
+    ROOT / "Assets" / "Resources" / "Player" /
+    "PlayerDirectionalAtlas.png"
+)
 
 GRID_SIZE = 4
 CANVAS_SIZE = (128, 96)
@@ -37,6 +48,10 @@ HIP_PNG = (64, 56)
 MAX_SUBJECT_SIZE = (116, 84)
 TRANSPARENT = (0, 0, 0, 0)
 EXTRA_INDICES = frozenset((1, 3, 5, 7, 9, 11, 13, 14))
+FRAME_COUNT = 64
+IDLE_DIRECTION_INDEX = 7
+IDLE_FRAME_SIZE = (64, 96)
+IDLE_CANVAS_OFFSET = (32, 0)
 
 
 class ExtractionError(RuntimeError):
@@ -56,6 +71,16 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_OUTPUT,
         help=f"Destination for frame-000..063.png (default: {DEFAULT_OUTPUT}).",
+    )
+    parser.add_argument(
+        "--idle-atlas",
+        type=Path,
+        default=DEFAULT_IDLE_ATLAS,
+        help=(
+            "Ordinary 8-direction 64x96 idle atlas used for the exact "
+            "preflipped start/end handoff "
+            f"(default: {DEFAULT_IDLE_ATLAS})."
+        ),
     )
     return parser.parse_args()
 
@@ -124,6 +149,57 @@ def load_sheets(
         except OSError as exc:
             raise ExtractionError(f"Cannot read {path}: {exc}") from exc
     return sheets
+
+
+def load_exact_idle_endpoint(idle_atlas_path: Path) -> Image.Image:
+    """Load and preflip the exact ordinary FrontLeft endpoint composite."""
+    try:
+        with Image.open(idle_atlas_path) as opened:
+            expected_size = (
+                IDLE_FRAME_SIZE[0] * 8,
+                IDLE_FRAME_SIZE[1],
+            )
+            if opened.format != "PNG" or opened.mode != "RGBA":
+                raise ExtractionError(
+                    "Idle atlas must be an RGBA PNG, got "
+                    f"{opened.format or 'unknown'} {opened.mode!r}."
+                )
+            if opened.size != expected_size:
+                raise ExtractionError(
+                    f"Idle atlas must be {expected_size[0]}x"
+                    f"{expected_size[1]}, got {opened.width}x"
+                    f"{opened.height}."
+                )
+
+            opened.load()
+            left = IDLE_DIRECTION_INDEX * IDLE_FRAME_SIZE[0]
+            idle_cell = opened.crop((
+                left,
+                0,
+                left + IDLE_FRAME_SIZE[0],
+                IDLE_FRAME_SIZE[1],
+            ))
+    except ExtractionError:
+        raise
+    except OSError as exc:
+        raise ExtractionError(
+            f"Cannot read ordinary idle atlas {idle_atlas_path}: {exc}"
+        ) from exc
+
+    alpha_values = set(idle_cell.getchannel("A").get_flattened_data())
+    if not alpha_values or alpha_values - {0, 255}:
+        raise ExtractionError(
+            "Ordinary FrontLeft idle reference must use binary alpha."
+        )
+    if idle_cell.getchannel("A").getbbox() is None:
+        raise ExtractionError(
+            "Ordinary FrontLeft idle reference cell is empty."
+        )
+
+    preflipped = idle_cell.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    canvas = Image.new("RGBA", CANVAS_SIZE, TRANSPARENT)
+    canvas.paste(preflipped, IDLE_CANVAS_OFFSET)
+    return canvas
 
 
 def occupied_ranges(
@@ -265,6 +341,40 @@ def normalize_subject(subject: Image.Image) -> Image.Image:
     return canvas
 
 
+def apply_exact_idle_endpoints(
+    generated_frames: list[Image.Image],
+    exact_idle_endpoint: Image.Image,
+) -> list[Image.Image]:
+    if len(generated_frames) != FRAME_COUNT:
+        raise ExtractionError(
+            f"Idle endpoint pass expected {FRAME_COUNT} generated frames, "
+            f"got {len(generated_frames)}."
+        )
+    if (
+        exact_idle_endpoint.mode != "RGBA"
+        or exact_idle_endpoint.size != CANVAS_SIZE
+    ):
+        raise ExtractionError(
+            "Exact idle endpoint must be a 128x96 RGBA image."
+        )
+
+    frames = [frame.copy() for frame in generated_frames]
+    frames[0] = exact_idle_endpoint.copy()
+    frames[-1] = exact_idle_endpoint.copy()
+    if frames[0].tobytes() != frames[-1].tobytes():
+        raise ExtractionError(
+            "Bed start and end idle endpoints must be pixel-identical."
+        )
+    for frame_index in range(1, FRAME_COUNT - 1):
+        if frames[frame_index].tobytes() != generated_frames[
+            frame_index
+        ].tobytes():
+            raise ExtractionError(
+                f"frame-{frame_index:03d} changed during the endpoint pass."
+            )
+    return frames
+
+
 def write_png_atomic(image: Image.Image, destination: Path) -> str:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
@@ -293,7 +403,7 @@ def run(args: argparse.Namespace) -> None:
         name: detect_subject_cells(sheet, name)
         for name, sheet in sheets.items()
     }
-    hashes: list[str] = []
+    generated_frames: list[Image.Image] = []
     for logical_index, (sheet_name, cell_index) in enumerate(schedule):
         label = f"{sheet_name} cell {cell_index}"
         subject = trim_subject(
@@ -302,7 +412,15 @@ def run(args: argparse.Namespace) -> None:
             label,
             cells_by_sheet[sheet_name],
         )
-        frame = normalize_subject(subject)
+        generated_frames.append(normalize_subject(subject))
+
+    exact_idle_endpoint = load_exact_idle_endpoint(args.idle_atlas)
+    frames = apply_exact_idle_endpoints(
+        generated_frames,
+        exact_idle_endpoint,
+    )
+    hashes: list[str] = []
+    for logical_index, frame in enumerate(frames):
         destination = args.output_dir / f"frame-{logical_index:03d}.png"
         hashes.append(write_png_atomic(frame, destination))
 
@@ -310,6 +428,17 @@ def run(args: argparse.Namespace) -> None:
         f"Wrote 64 aligned RGBA frames to {args.output_dir}; "
         f"canvas={CANVAS_SIZE[0]}x{CANVAS_SIZE[1]}, "
         f"Unity hip=(64,40)."
+    )
+    endpoint_hash = hashlib.sha256(
+        exact_idle_endpoint.tobytes()
+    ).hexdigest().upper()
+    print(
+        "Exact idle endpoints: frame 000 == frame 063 == preflipped "
+        f"ordinary FrontLeft; pixel SHA256={endpoint_hash}."
+    )
+    print(
+        "Frames 001..062 remain the normalized keyed poses; runtime "
+        "TextureFlipX=true restores the endpoint's ordinary orientation."
     )
     sequence_hash = hashlib.sha256(
         "".join(hashes).encode("ascii")

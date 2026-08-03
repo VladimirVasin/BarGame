@@ -305,7 +305,8 @@ The vertical slice contains:
   resource before `GameSessionState` atomically removes the required stack;
   failed preparation or a stale requirement consumes nothing. The stairwell
   cat is the first adapter: accepting the feed consumes exactly one
-  `OpenStewCan`, docks the hero inside the middle fixed-camera shot and pairs
+  `OpenStewCan`, visibly walks the ordinary hero to an authored middle-shot
+  entry pose and pairs
   the `1024x768` `Resources/Player/PlayerCatFeedingAtlas` (`8x8`, 64 frames)
   with the cat's point-filtered `512x128`
   `Resources/Stairwell/Cat/StairwellCatFeedingAtlas` (`8x2`, 16 frames at
@@ -391,22 +392,25 @@ The vertical slice contains:
   visibility and lighting for MainRoom, Bathroom, disable and destroy. It
   never creates a second City root, player or camera;
 - one modal balcony-smoking vignette at the Home-local dock around
-  `(6.60, 0.12, -1.45)`: the first `E` settles the hero at the rail facing the
-  city along `+X`. The smoking definition uses `TextureFlipX = false` because
+  `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary
+  rig walks to the entry point and turns toward the city along `+X`; only then
+  does the smoking atlas begin. Its separate authored exit pose receives the
+  ordinary rig after the final frame. The smoking definition uses
+  `TextureFlipX = false` because
   the Balcony view projects the authored profile with the opposite apparent
   handedness; this is an interaction-specific override, not the shared
   animated-renderer default. It also sets
   `AlignBillboardToCameraPlane = false`, so the smoking billboard faces the
   camera with yaw only and retains world up through the pitched close shot.
-  The bed/default mode still uses the exact camera plane because its reclining
-  silhouette must remain uncompressed in the fixed view.
+  Bed and cat feeding instead use the exact camera plane because their
+  authored silhouettes must remain uncompressed in their fixed views.
   Its point-filtered 64-frame atlas starts and ends on the exact ordinary
-  right-direction idle with the same hip/foot pivot. Deterministic Bayer/RGB
-  bridge frames lead into and out of the narrower authored smoking silhouette,
-  while a simultaneous `0.35 s` alpha crossfade hands visibility between the
-  ordinary nine-part rig and the atlas at both ends. Dynamic and contact
-  shadows stay off throughout the active vignette and restore at completion,
-  avoiding an unsupported double-shadow fade. The atlas plays a slow 24-frame
+  `BackRight` idle with the same hip/foot pivot; frames `1-62` retain the
+  authored keyed motion without Bayer/RGB dissolve frames. Visibility changes
+  directly between the ordinary nine-part rig and atlas at those matching
+  endpoints, with no sprite alpha crossfade. Dynamic and contact shadows stay
+  visible during the approach, turn off only for atlas playback and restore at
+  the exit handoff. The atlas plays a slow 24-frame
   draw/light/first-drag entrance at `6 fps`, then a 24-frame melancholic
   `9.5 s` drag, breath-hold and side-exhale loop at `6 fps` with deliberate
   `2.00 s`, `0.65 s`, `0.55 s` and `2.30 s` frame holds. A second `E` is
@@ -427,24 +431,47 @@ The vertical slice contains:
   separate optional `smoking_theme` music starts from silence and fades with
   the camera; without a supplied clip, the complete interaction remains
   playable and silent;
-- one reusable animated-interaction timeline and player controller with
-  `Idle -> Entering -> Looping -> Exiting` phases; its outer presentation root
-  can face the camera either with a world-up yaw billboard or with exact
-  camera-plane alignment selected per definition, while an inner visual
+- one reusable animated-interaction timeline and player controller with a
+  visible `Positioning` pre-phase followed by
+  `Entering -> Looping -> Exiting`; each interaction supplies separate entry
+  root/hip/facing, action hip and exit root/hip/facing poses. The ordinary rig
+  uses the normal constrained motor, gait, turn and footsteps to reach entry;
+  atlas playback starts only after exact grounded alignment. A shared handoff
+  lock snaps the ordinary puppet to the deterministic nearest eight-way view,
+  clears gait, idle, intoxication and facial offsets to its neutral rest pose,
+  and presents that endpoint for one render frame before `Entering`. Bed and
+  cat feeding use matching `FrontLeft` endpoints; smoking uses `BackRight`.
+  The terminal exit frame is likewise presented before the physical root is
+  placed at the separate exit pose, and the neutral ordinary puppet remains
+  locked through its final `LateUpdate` restoration frame. Its outer
+  presentation root can face the camera either with a world-up yaw billboard
+  or with exact camera-plane alignment selected per definition, while an inner visual
   preserves authored handedness and can perspective-project a contextual
   world axis into the presentation plane,
-  supports a per-definition horizontal flip and an optional edge-only visual
-  crossfade between the captured nine-part rig and interaction atlas,
-  can opt into a dedicated depth-independent shared sprite material,
-  supports optional extra holds on individual loop frames and a validated
+  supports a per-definition horizontal flip. Camera-plane definitions resolve
+  their upright entry/exit hip against live `camera.up`, then refresh the atlas
+  root again in `LateUpdate` so camera motion cannot leave a one-frame pivot
+  mismatch; world-up definitions retain the authored upright hip unchanged.
+  Bed, smoking and cat feeding all use a hard endpoint-matched handoff with
+  zero sprite alpha fading. The controller can opt into a dedicated
+  depth-independent shared sprite material, supports optional extra holds on
+  individual loop frames and a validated
   per-request exit-duration multiplier that resets after each interaction,
-  interpolates between stand/action hip anchors while preserving the physical
-  player root, locks movement through the complete interaction, allows
+  interpolates entry/action/exit hip anchors while keeping the physical player
+  root at its aligned dock during atlas playback, locks manual movement through
+  the complete interaction, allows
   interaction input again only in the persistent loop, and safely restores
   the nine-layer rig plus realtime and contact shadows on completion or
-  cleanup;
+  cleanup. Entry must remain at the authored grounded height: a vertical
+  mismatch is rejected without teleporting, while a constrained approach that
+  makes no position or rotation progress times out and cancels cleanly. Scene
+  transition, disable and destroy boundaries also stop `Positioning`, release
+  the handoff lock and restore captured control/presentation state;
 - one reachable bed interaction on the open `xMax` side of the Home bed:
-  the first `E` plays 24 lie-down frames at `12 fps`, 16 sleeping frames loop
+  the first `E` first walks and turns the ordinary hero to the open-side entry
+  pose, settles on the matching neutral `FrontLeft` endpoint for one rendered
+  frame, then directly hands off with zero sprite fade to 24 lie-down frames at
+  `12 fps`; 16 sleeping frames loop
   indefinitely at `4 fps` with a short full-inhale hold and a longer
   post-exhale rest for one `5 s` breath cycle, and the second `E` plays 24
   wake-up frames at `12 fps`; the sleep pose follows the bed's
@@ -497,10 +524,10 @@ The vertical slice contains:
   orbit/follow input and retains only quarter-strength intoxication, balance
   and fall rotation;
 - while the Home fixed-camera controller is active, the nine-layer
-  `BillboardSprite` opts into exact camera-plane alignment using
-  `-camera.forward` and `camera.up`; this preserves the authored `64 x 96`
-  aspect instead of compressing the sprite in steep views, and the mode is
-  reset when the controller releases the camera;
+  `BillboardSprite` uses exact `-camera.forward`/`camera.up` plane alignment in
+  MainRoom and Bathroom, preserving the authored `64 x 96` aspect in their
+  steep views. Balcony deliberately switches the ordinary rig to a world-up
+  yaw billboard, and the shared default is restored when fixed control ends;
 - a deterministic 12-person bar crowd with bartender, booth patrons,
   performer, standing groups and one bounded walker; six shared point-filtered
   pixel characters use lightweight billboards, centralized `8 Hz` decisions,
@@ -603,8 +630,8 @@ The vertical slice contains:
 - Full multi-frame eight-direction locomotion animation; the current vertical
   prototype uses one authored view per direction plus runtime joint walking,
   procedural living-idle motion and body-sprite blink variants, while the
-  implemented bed and balcony-smoking interactions use their own contextual
-  64-frame sequences.
+  implemented bed, balcony-smoking and cat-feeding interactions use their own
+  contextual 64-frame sequences.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, income/jobs, a broader
   economy, dialogue, quests, combat, save slots, and online features.

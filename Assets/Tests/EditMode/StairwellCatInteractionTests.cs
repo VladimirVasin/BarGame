@@ -61,6 +61,8 @@ namespace BarPromenade.Tests.EditMode
                 StairwellCatPlan.Create(layout);
             StairwellCatFeedingPlan feedingPlan =
                 StairwellCatFeedingPlan.Create(layout, catPlan);
+            playerObject.transform.localPosition =
+                feedingPlan.EntryRootLocalPosition;
             GameObject catObject = new GameObject("Cat");
             catObject.transform.SetParent(rootObject.transform, false);
             catObject.transform.localPosition =
@@ -153,6 +155,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(animation.ExitFrameCount, Is.EqualTo(24));
             Assert.That(animation.LoopFramesPerSecond, Is.EqualTo(6f));
             Assert.That(
+                animation.VisualCrossfadeDurationSeconds,
+                Is.Zero,
+                "Cat feeding must hand off at its authored entry and " +
+                "exit poses without fading either player presentation.");
+            Assert.That(
                 animation.TextureFlipX,
                 Is.True,
                 "The image-right feeding sheet must mirror toward the " +
@@ -160,6 +167,35 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 catInteraction.CanInteract(player.Interactor),
                 Is.True);
+        }
+
+        [Test]
+        public void BeginPositioned_DefaultPoseIsRejectedBeforeInputCapture()
+        {
+            var validPose = new PlayerAnimatedInteractionPose(
+                Vector3.zero,
+                Quaternion.identity,
+                Vector3.up);
+
+            Assert.Throws<System.ArgumentException>(
+                () => animation.BeginPositioned(
+                    catInteraction.PlayerFeedingDefinition,
+                    default,
+                    Vector3.up,
+                    validPose));
+            Assert.That(animation.IsActive, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+
+            Assert.Throws<System.ArgumentException>(
+                () => animation.BeginPositioned(
+                    catInteraction.PlayerFeedingDefinition,
+                    validPose,
+                    Vector3.up,
+                    default));
+            Assert.That(animation.IsActive, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
         }
 
         [Test]

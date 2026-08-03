@@ -3,10 +3,10 @@
 This directory owns the authored source sequence for the player's balcony
 smoking interaction. The deterministic extractor registers the approved
 contact-sheet poses, matches their proportions to the ordinary side-profile
-rig and creates the exact idle handoff described below. The packer does not
-draw, invent, mirror or repair animation art: it only validates the complete
-source sequence, applies one shared nearest-neighbour fit/crop, normalizes
-alpha and packs the runtime atlas.
+rig and installs the two exact idle endpoints described below. The packer does
+not draw, invent, mirror, blend or repair animation art: it only validates the
+complete source sequence, applies one shared nearest-neighbour fit/crop,
+normalizes alpha and packs the runtime atlas.
 
 Do not commit draft contact sheets or generated placeholders as
 `frame-*.png`. A frame filename means that the corresponding pose below is
@@ -47,15 +47,15 @@ the animation contract:
 - the lighter is handled by the physical right hand.
 
 The balcony dock and its camera select the ordinary rig's
-`PlayerViewDirection.Right` reference (direction cell `2`). That cell visibly
-faces **texture-left**, and user playtesting established that this is the
-correct city-facing screen direction. Frames `000` and `063` copy that exact
-cell without mirroring. All generated smoking poses use the same texture-left
-orientation, the extractor mirror is off, and the smoking animation definition
-uses `flipX == false` at runtime. Do not pre-mirror the sequence, do not
-alternate mirrored frames and do not swap the bandage, shoulder patch,
-cigarette or lighter between hands to compensate frame by frame. The packer
-never mirrors pixels.
+`PlayerViewDirection.BackRight` reference (direction cell `3`). That exact
+three-quarter pose is the city-facing ordinary-rig handoff selected at the
+authored root rotation. Frames `000` and `063` copy the cell without mirroring.
+All generated smoking poses retain their approved texture-left orientation,
+the extractor mirror is off, and the smoking animation definition uses
+`flipX == false` at runtime. Do not pre-mirror the sequence, do not alternate
+mirrored frames and do not swap the bandage, shoulder patch, cigarette or
+lighter between hands to compensate frame by frame. The packer never mirrors
+pixels.
 
 ## Exact 64-frame animation contract
 
@@ -65,21 +65,21 @@ Logical animation ranges are inclusive and contiguous:
 | --- | --- | --- |
 | `000-023` | Enter | Slow preparation, cigarette, lighter and first drag |
 | `024-047` | Loop | Melancholic rest, drag, breath hold and side exhale |
-| `048-063` | Exit | Safe neutral bridge, discard, lingering look and idle |
+| `048-063` | Exit | Discard, lingering look, authored neutral return and exact idle endpoint |
 
 Every logical frame has an authored purpose:
 
 | Frame | Pose and change from the preceding frame |
 | --- | --- |
 | `000` | Exact balcony-facing ordinary idle match: grounded hips, relaxed arms, no cigarette visible. |
-| `001` | First ordered-dither bridge from exact idle; gaze begins to settle. |
-| `002` | Idle colors and silhouette continue blending into the tired stance. |
+| `001` | First complete authored keyed pose; the neutral gaze begins to settle without any idle-pixel blend. |
+| `002` | The complete authored stance shifts its weight subtly while both hands stay low. |
 | `003` | Weight transfer becomes readable while feet stay on the shared baseline. |
-| `004` | The generated stance becomes dominant without a one-frame scale pop. |
-| `005` | Shoulders finish dropping as the exact-idle bridge continues. |
-| `006` | Physical left elbow separates while the last idle pixels recede. |
-| `007` | Final bridge frame; bandaged left forearm starts crossing inward. |
-| `008` | First wholly generated pose; fingertips reach the pocket opening. |
+| `004` | The authored tired stance settles further with both planted feet unchanged. |
+| `005` | Shoulders finish dropping as the physical left arm prepares to move. |
+| `006` | Physical left elbow separates in one complete authored pose. |
+| `007` | Bandaged left forearm starts crossing inward toward the pocket. |
+| `008` | Fingertips reach the pocket opening as the authored motion continues. |
 | `009` | Left hand enters the pocket and the shirt fabric compresses subtly. |
 | `010` | Left hand begins withdrawing with the cigarette barely visible. |
 | `011` | Cigarette clears the pocket between the left fingers. |
@@ -129,12 +129,12 @@ Every logical frame has an authored purpose:
 | `055` | Cigarette begins falling; left hand remains suspended. |
 | `056` | Falling ember dims below the hand while the gaze follows it. |
 | `057` | Ember disappears; gaze lingers down for one last beat. |
-| `058` | Empty left hand starts returning and the reverse idle bridge begins. |
-| `059` | Left elbow folds back while exact-idle colors start replacing the smoking pose. |
-| `060` | Hand drops alongside the body as the silhouette narrows toward ordinary idle. |
-| `061` | Shoulders and weight ease into the exact ordinary-rig registration. |
-| `062` | Final ordered-dither bridge: no cigarette, ember, lighter or smoke remains. |
-| `063` | Exact ordinary idle-rig silhouette match for a seamless visual handoff. |
+| `058` | Empty left hand starts returning in the complete authored keyed pose. |
+| `059` | Left elbow folds back with no cigarette, ember, lighter or smoke remaining. |
+| `060` | Hand drops alongside the body as the authored silhouette settles. |
+| `061` | Shoulders and weight ease toward a neutral standing pose. |
+| `062` | Final complete authored return pose before the discrete idle endpoint. |
+| `063` | Exact ordinary idle-rig silhouette used for the exit-point handoff. |
 
 The intended timing is `6 fps` for frames `000-047` and `8 fps` for frames
 `048-063`. Loop holds are authored by runtime timing, not by inserting extra
@@ -189,15 +189,17 @@ its planted-foot center to pivot x-coordinate `64` and planted-foot baseline
 `y=92`; the shared anatomy/scale keeps the hip at the intended top-left PNG
 y-coordinate `56` (Unity bottom-origin `(64,40)`).
 
-The extractor reads `PlayerDirectionalAtlas.png`, copies ordinary direction
-cell `2` into frames `000` and `063` pixel-for-pixel, and keeps the same feet
-and hip registration. Frames `001-007` use a deterministic `8x8` Bayer
-ordered-dither/RGB bridge from that idle to their corresponding generated
-poses; frame `008` is wholly generated. Frames `058-062` apply the inverse
-bridge, ending on exact idle at `063`. This turns the former direct idle cut
-into several bounded pixel-art steps at both ends. No random state or
-generative rerun is involved. The extractor and runtime smoking definition
-both leave `flipX` off, preserving the approved texture-left orientation.
+The extractor reads `PlayerDirectionalAtlas.png` and copies ordinary
+direction cell `3` into frames `000` and `063` pixel-for-pixel with the same
+feet and hip registration. Every frame from `001` through `062` remains its
+complete normalized keyed source pose. In particular, frames `001-007` map
+directly to cells `1-7` of `Keyed/enter-000-015.png`, while frames `058-062`
+map directly to cells `10-14` of `Keyed/exit-048-063.png`. The extractor does
+not dither, crossfade, interpolate colors or mix idle pixels into those poses;
+the switches at `000 -> 001` and `062 -> 063` are intentional discrete
+endpoint handoffs. No random state or generative rerun is involved. The
+extractor and runtime smoking definition both leave `flipX` off, preserving
+the approved texture-left orientation.
 
 Re-extract all 64 source frames, or validate the result entirely in memory:
 

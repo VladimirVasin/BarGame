@@ -11,14 +11,17 @@ namespace BarPromenade
         private const float TriggerInset = 0.12f;
         internal const float BedSurfaceClearance = 0.045f;
         internal const float ActionHipFootwardOffset = 0.135f;
-        private const float UprightHipPivotPixels = 40f;
         private const float UprightVisualOffset = 0.005f;
 
         private HomeBedInteractionPlan(
             Rect bedBounds,
             Vector3 interactionPosition,
-            Vector3 approachRootPosition,
-            Vector3 standHipPosition,
+            Vector3 entryRootPosition,
+            Vector3 exitRootPosition,
+            Vector3 entryHipPosition,
+            Vector3 exitHipPosition,
+            Vector3 entryFacingDirection,
+            Vector3 exitFacingDirection,
             Vector3 actionHipPosition,
             Vector3 headToFootAxis,
             Vector3 triggerCenter,
@@ -26,8 +29,12 @@ namespace BarPromenade
         {
             BedBounds = bedBounds;
             InteractionPosition = interactionPosition;
-            ApproachRootPosition = approachRootPosition;
-            StandHipPosition = standHipPosition;
+            EntryRootPosition = entryRootPosition;
+            ExitRootPosition = exitRootPosition;
+            EntryHipPosition = entryHipPosition;
+            ExitHipPosition = exitHipPosition;
+            EntryFacingDirection = entryFacingDirection;
+            ExitFacingDirection = exitFacingDirection;
             ActionHipPosition = actionHipPosition;
             HeadToFootAxis = headToFootAxis;
             TriggerCenter = triggerCenter;
@@ -36,8 +43,24 @@ namespace BarPromenade
 
         public Rect BedBounds { get; }
         public Vector3 InteractionPosition { get; }
-        public Vector3 ApproachRootPosition { get; }
-        public Vector3 StandHipPosition { get; }
+        public Vector3 EntryRootPosition { get; }
+        public Vector3 ExitRootPosition { get; }
+        public Vector3 EntryHipPosition { get; }
+        public Vector3 ExitHipPosition { get; }
+        public Vector3 EntryFacingDirection { get; }
+        public Vector3 ExitFacingDirection { get; }
+        public Quaternion EntryFacingRotation =>
+            Quaternion.LookRotation(
+                EntryFacingDirection,
+                Vector3.up);
+        public Quaternion ExitFacingRotation =>
+            Quaternion.LookRotation(
+                ExitFacingDirection,
+                Vector3.up);
+        public Quaternion EntryRotation => EntryFacingRotation;
+        public Quaternion ExitRotation => ExitFacingRotation;
+        public Vector3 ApproachRootPosition => EntryRootPosition;
+        public Vector3 StandHipPosition => EntryHipPosition;
         public Vector3 ActionHipPosition { get; }
         public Vector3 HeadToFootAxis { get; }
         public Vector3 TriggerCenter { get; }
@@ -62,16 +85,35 @@ namespace BarPromenade
             Rect bounds = bed.Bounds;
             float accessibleEdge = bounds.xMax;
             float centerZ = bounds.center.y;
-            Vector3 approachRoot = new Vector3(
+            Vector3 entryRoot = new Vector3(
                 accessibleEdge + ApproachOffset,
-                layout.PlayerSpawn.y,
+                PlayerFactory.GroundedRootOffset,
                 centerZ);
-            Vector3 standHip =
-                approachRoot +
-                (Vector3.up *
-                 ((UprightHipPivotPixels /
-                   PlayerSpriteRig.PixelsPerUnit) +
-                  UprightVisualOffset));
+            Vector3 exitRoot = entryRoot;
+            var walkable = new RoadWalkableArea(
+                new[] { layout.WalkableBounds });
+            if (!walkable.Contains(
+                    entryRoot,
+                    HomeInteriorLayoutValidator.PlayerClearanceRadius) ||
+                !walkable.Contains(
+                    exitRoot,
+                    HomeInteriorLayoutValidator.PlayerClearanceRadius))
+            {
+                throw new InvalidOperationException(
+                    "The bed entry and exit docks must preserve player " +
+                    "clearance inside the walkable room.");
+            }
+
+            float uprightHipHeight =
+                (PlayerAnimatedInteractionController.HipPivotYPixels -
+                 PlayerSpriteRig.FeetPivotPixels) /
+                PlayerAnimatedInteractionController.PixelsPerUnit +
+                UprightVisualOffset;
+            Vector3 entryHip =
+                entryRoot + (Vector3.up * uprightHipHeight);
+            Vector3 exitHip =
+                exitRoot + (Vector3.up * uprightHipHeight);
+            Vector3 dockFacingDirection = Vector3.left;
             Vector3 headToFootAxis = Vector3.right;
             Vector3 actionHip = new Vector3(
                 bounds.center.x +
@@ -91,9 +133,13 @@ namespace BarPromenade
 
             return new HomeBedInteractionPlan(
                 bounds,
-                approachRoot,
-                approachRoot,
-                standHip,
+                entryRoot,
+                entryRoot,
+                exitRoot,
+                entryHip,
+                exitHip,
+                dockFacingDirection,
+                dockFacingDirection,
                 actionHip,
                 headToFootAxis,
                 triggerCenter,

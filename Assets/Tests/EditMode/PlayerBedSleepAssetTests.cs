@@ -1,4 +1,6 @@
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +11,23 @@ namespace BarPromenade.Tests
     {
         private const string AtlasResourcePath =
             "Player/PlayerBedSleepAtlas";
+        private const string IdleAtlasResourcePath =
+            "Player/PlayerDirectionalAtlas";
+        private const string AtlasAssetPath =
+            "Assets/Resources/Player/PlayerBedSleepAtlas.png";
+        private const string SourceFrameDirectory =
+            "ArtSource/Player/BedSleep";
+        private const string ExpectedAtlasFileSha256 =
+            "80B08BA6782019C12DE87B5D57130D34B5D13CD350428864D7BBB2747B612572";
+        private const string ExpectedSourceFrameSequenceSha256 =
+            "741D4BDFB51163FF039DBD4B7CD996310477203706232F898BF65380F2FD0507";
+        private const string ExpectedAuthoredMiddleSequenceSha256 =
+            "6182B5AD8FFE02DFCF8B20532BD4C16EB2009844F9C82E2E9B8CCB29B28BDECF";
+        private const int IdleDirectionIndex =
+            (int)PlayerViewDirection.FrontLeft;
+        private const int EnterFirstFrame = 0;
+        private const int ExitLastFrame =
+            PlayerAnimatedInteractionController.AtlasFrameCount - 1;
         private const string OverlayShaderAssetPath =
             "Assets/Resources/Shaders/" +
             "PlayerAnimatedInteractionOverlay.shader";
@@ -127,6 +146,80 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void Atlas_StartAndEndMatchPreflippedOrdinaryFrontLeftExactly()
+        {
+            Texture2D importedSleep = Resources.Load<Texture2D>(
+                AtlasResourcePath);
+            Texture2D importedIdle = Resources.Load<Texture2D>(
+                IdleAtlasResourcePath);
+            Texture2D sleep = LoadReadableCopy(importedSleep);
+            Texture2D idle = LoadReadableCopy(importedIdle);
+
+            try
+            {
+                Assert.That(
+                    IdleDirectionIndex,
+                    Is.EqualTo(7),
+                    "The bed dock handoff must use FrontLeft cell 7.");
+                AssertFrameMatchesPreflippedIdle(
+                    sleep,
+                    idle,
+                    EnterFirstFrame);
+                AssertFrameMatchesPreflippedIdle(
+                    sleep,
+                    idle,
+                    ExitLastFrame);
+            }
+            finally
+            {
+                Object.DestroyImmediate(sleep);
+                Object.DestroyImmediate(idle);
+            }
+        }
+
+        [Test]
+        public void GeneratedFiles_MatchEndpointOnlyAuthoredSequence()
+        {
+            Assert.That(
+                HashFile(AtlasAssetPath),
+                Is.EqualTo(ExpectedAtlasFileSha256),
+                "The runtime bed atlas must be rebuilt from the exact " +
+                "preflipped idle endpoints and untouched authored middle.");
+
+            var allFrameHashes = new StringBuilder();
+            var authoredMiddleHashes = new StringBuilder();
+            for (int frameIndex = 0;
+                 frameIndex <
+                 PlayerAnimatedInteractionController.AtlasFrameCount;
+                 frameIndex++)
+            {
+                string framePath = Path.Combine(
+                    SourceFrameDirectory,
+                    $"frame-{frameIndex:000}.png");
+                string frameHash = HashFile(framePath);
+                allFrameHashes.Append(frameHash);
+                if (frameIndex > EnterFirstFrame &&
+                    frameIndex < ExitLastFrame)
+                {
+                    authoredMiddleHashes.Append(frameHash);
+                }
+            }
+
+            Assert.That(
+                HashBytes(
+                    Encoding.ASCII.GetBytes(
+                        allFrameHashes.ToString())),
+                Is.EqualTo(ExpectedSourceFrameSequenceSha256));
+            Assert.That(
+                HashBytes(
+                    Encoding.ASCII.GetBytes(
+                        authoredMiddleHashes.ToString())),
+                Is.EqualTo(ExpectedAuthoredMiddleSequenceSha256),
+                "Source frames 001..062 must stay byte-identical while " +
+                "only endpoints 000 and 063 use ordinary idle.");
+        }
+
+        [Test]
         public void InteractionOverlay_IsSharedAndIgnoresSceneDepth()
         {
             Shader shader = Resources.Load<Shader>(
@@ -189,6 +282,76 @@ namespace BarPromenade.Tests
                 $"Could not decode {assetPath}.");
             Assert.That(readable.isReadable, Is.True);
             return readable;
+        }
+
+        private static string HashFile(string projectRelativePath)
+        {
+            return HashBytes(
+                File.ReadAllBytes(
+                    Path.GetFullPath(projectRelativePath)));
+        }
+
+        private static string HashBytes(byte[] bytes)
+        {
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(bytes);
+            }
+
+            return System.BitConverter
+                .ToString(hash)
+                .Replace("-", string.Empty);
+        }
+
+        private static void AssertFrameMatchesPreflippedIdle(
+            Texture2D sleep,
+            Texture2D idle,
+            int frameIndex)
+        {
+            Color32[] sleepPixels = sleep.GetPixels32();
+            Color32[] idlePixels = idle.GetPixels32();
+            RectInt frame = GetFrameRect(frameIndex);
+            int idleX = IdleDirectionIndex * PlayerSpriteRig.FrameWidth;
+            int canvasOffsetX =
+                (PlayerAnimatedInteractionController.FrameWidth -
+                 PlayerSpriteRig.FrameWidth) / 2;
+
+            for (int localY = 0;
+                 localY < PlayerSpriteRig.FrameHeight;
+                 localY++)
+            {
+                for (int localX = 0;
+                     localX <
+                     PlayerAnimatedInteractionController.FrameWidth;
+                     localX++)
+                {
+                    int sleepIndex =
+                        (frame.y + localY) * sleep.width +
+                        frame.x + localX;
+                    bool insideIdle =
+                        localX >= canvasOffsetX &&
+                        localX <
+                            canvasOffsetX +
+                            PlayerSpriteRig.FrameWidth;
+                    int idleLocalX = localX - canvasOffsetX;
+                    Color32 expected = insideIdle
+                        ? idlePixels[
+                            localY * idle.width +
+                            idleX +
+                            PlayerSpriteRig.FrameWidth - 1 -
+                            idleLocalX]
+                        : new Color32(0, 0, 0, 0);
+
+                    if (!sleepPixels[sleepIndex].Equals(expected))
+                    {
+                        Assert.Fail(
+                            $"Bed frame {frameIndex} does not match " +
+                            "preflipped ordinary FrontLeft idle at " +
+                            $"({localX}, {localY}).");
+                    }
+                }
+            }
         }
 
         private static RectInt GetFrameRect(int frameIndex)

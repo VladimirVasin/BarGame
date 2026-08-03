@@ -44,5 +44,8 @@ Never report a planned system as implemented without verifying the code, scenes,
 
 - Use the canonical workflow matching the task in `ai/prompt-templates.md`.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
+- All future contextual player sprite/atlas interactions must follow the
+  mandatory `ai/contextual-animation-standard.md`; do not add one-off teleport
+  or sprite-fade handoffs.
 - Update the maps and work log when implementation changes project reality.
 - Keep documentation concise and mark uncertainty directly.

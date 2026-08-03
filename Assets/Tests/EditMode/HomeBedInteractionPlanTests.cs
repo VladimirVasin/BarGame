@@ -11,7 +11,7 @@ namespace BarPromenade.Tests.EditMode
         private const float SleepLoopFootExtent = 51f / 48f;
 
         [Test]
-        public void Create_DerivesTriggerAndAnchorsFromBed()
+        public void Create_DerivesTriggerAndEntryExitPosesFromBed()
         {
             HomeInteriorLayoutPlan home =
                 HomeInteriorLayoutPlanner.Generate();
@@ -23,22 +23,41 @@ namespace BarPromenade.Tests.EditMode
 
             HomeBedInteractionPlan plan =
                 HomeBedInteractionPlan.Create(home);
+            var walkable = new RoadWalkableArea(
+                new[] { home.WalkableBounds });
 
             Assert.That(plan.BedBounds, Is.EqualTo(bed.Bounds));
             AssertVector(
                 plan.InteractionPosition,
-                plan.ApproachRootPosition);
+                plan.EntryRootPosition);
             Assert.That(
-                plan.ApproachRootPosition.x,
+                plan.EntryRootPosition.x,
                 Is.GreaterThan(bed.Bounds.xMax));
             Assert.That(
-                plan.ApproachRootPosition.z,
+                plan.EntryRootPosition.z,
                 Is.EqualTo(bed.Bounds.center.y)
                     .Within(Tolerance));
             Assert.That(
-                plan.ApproachRootPosition.y,
-                Is.EqualTo(home.PlayerSpawn.y)
+                plan.EntryRootPosition.y,
+                Is.EqualTo(PlayerFactory.GroundedRootOffset)
                     .Within(Tolerance));
+            AssertFinite(plan.EntryRootPosition);
+            AssertFinite(plan.ExitRootPosition);
+            Assert.That(
+                walkable.Contains(
+                    plan.EntryRootPosition,
+                    HomeInteriorLayoutValidator
+                        .PlayerClearanceRadius),
+                Is.True);
+            Assert.That(
+                walkable.Contains(
+                    plan.ExitRootPosition,
+                    HomeInteriorLayoutValidator
+                        .PlayerClearanceRadius),
+                Is.True);
+            AssertVector(
+                plan.ExitRootPosition,
+                plan.EntryRootPosition);
 
             float triggerMinX =
                 plan.TriggerCenter.x -
@@ -68,30 +87,68 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0f)
                     .And.LessThan(bed.Bounds.height));
             Assert.That(
-                plan.ApproachRootPosition.x,
+                plan.EntryRootPosition.x,
                 Is.InRange(
                     triggerMinX,
                     triggerMinX + plan.TriggerSize.x));
 
             Assert.That(
-                plan.StandHipPosition.x,
-                Is.EqualTo(plan.ApproachRootPosition.x)
+                plan.EntryHipPosition.x,
+                Is.EqualTo(plan.EntryRootPosition.x)
                     .Within(Tolerance));
             Assert.That(
-                plan.StandHipPosition.z,
-                Is.EqualTo(plan.ApproachRootPosition.z)
+                plan.EntryHipPosition.z,
+                Is.EqualTo(plan.EntryRootPosition.z)
                     .Within(Tolerance));
             float expectedStandHipY =
-                plan.ApproachRootPosition.y +
-                (PlayerAnimatedInteractionController
-                    .HipPivotYPixels /
+                plan.EntryRootPosition.y +
+                ((PlayerAnimatedInteractionController
+                    .HipPivotYPixels -
+                  PlayerSpriteRig.FeetPivotPixels) /
                  PlayerAnimatedInteractionController
                     .PixelsPerUnit) +
                 0.005f;
             Assert.That(
-                plan.StandHipPosition.y,
+                plan.EntryHipPosition.y,
                 Is.EqualTo(expectedStandHipY)
                     .Within(Tolerance));
+            AssertFinite(plan.EntryHipPosition);
+            AssertFinite(plan.ExitHipPosition);
+            AssertVector(
+                plan.ExitHipPosition,
+                plan.EntryHipPosition);
+
+            AssertFinite(plan.EntryFacingDirection);
+            AssertFinite(plan.ExitFacingDirection);
+            AssertVector(
+                plan.EntryFacingDirection,
+                Vector3.left);
+            AssertVector(
+                plan.ExitFacingDirection,
+                Vector3.left);
+            Assert.That(
+                Vector3.Angle(
+                    plan.EntryFacingRotation * Vector3.forward,
+                    Vector3.left),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Angle(
+                    plan.ExitFacingRotation * Vector3.forward,
+                    Vector3.left),
+                Is.LessThan(0.001f));
+            Assert.That(
+                plan.EntryRotation,
+                Is.EqualTo(plan.EntryFacingRotation));
+            Assert.That(
+                plan.ExitRotation,
+                Is.EqualTo(plan.ExitFacingRotation));
+
+            AssertVector(
+                plan.ApproachRootPosition,
+                plan.EntryRootPosition);
+            AssertVector(
+                plan.StandHipPosition,
+                plan.EntryHipPosition);
 
             Assert.That(
                 plan.ActionHipPosition.x,
@@ -155,6 +212,19 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Distance(actual, expected),
                 Is.LessThan(Tolerance));
+        }
+
+        private static void AssertFinite(Vector3 value)
+        {
+            Assert.That(IsFinite(value.x), Is.True);
+            Assert.That(IsFinite(value.y), Is.True);
+            Assert.That(IsFinite(value.z), Is.True);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
         }
     }
 }

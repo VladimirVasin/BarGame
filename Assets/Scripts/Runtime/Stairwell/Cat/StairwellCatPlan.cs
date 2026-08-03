@@ -50,7 +50,8 @@ namespace BarPromenade
                 railZ);
             Vector3 interaction = new Vector3(
                 approachX,
-                stairwell.MiddleElevation + 0.14f,
+                stairwell.MiddleElevation +
+                PlayerFactory.GroundedRootOffset,
                 railZ - 0.54f);
             Vector3 triggerCenter = new Vector3(
                 0f,

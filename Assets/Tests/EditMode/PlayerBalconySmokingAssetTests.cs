@@ -1,4 +1,6 @@
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -12,10 +14,16 @@ namespace BarPromenade.Tests
         private const string AtlasAssetPath =
             "Assets/Resources/Player/" +
             "PlayerBalconySmokingAtlas.png";
+        private const string SourceFrameDirectory =
+            "ArtSource/Player/BalconySmoking";
+        private const string ExpectedSourceFrameSequenceSha256 =
+            "8401B729B85E9C6E5D6BD766DBA0BEAFDC2D0E9C0B46609A07335E5E32E4EA55";
+        private const string ExpectedAtlasFileSha256 =
+            "FDF40A07AC6C3BCC366E9A71B09A5F875F76F2BB358AB6CADF544E23504D09DA";
         private const string IdleAtlasResourcePath =
             "Player/PlayerDirectionalAtlas";
         private const int IdleDirectionIndex =
-            (int)PlayerViewDirection.Right;
+            (int)PlayerViewDirection.BackRight;
         private const int EnterFirstFrame = 0;
         private const int EnterLastFrame = 23;
         private const int LoopFirstFrame = 24;
@@ -193,7 +201,7 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void Atlas_StartAndEndMatchOrdinaryRightIdleExactly()
+        public void Atlas_StartAndEndMatchOrdinaryBackRightIdleExactly()
         {
             Texture2D importedSmoking = Resources.Load<Texture2D>(
                 AtlasResourcePath);
@@ -227,6 +235,37 @@ namespace BarPromenade.Tests
             }
         }
 
+        [Test]
+        public void GeneratedFiles_MatchEndpointOnlyAuthoredSequence()
+        {
+            Assert.That(
+                HashFile(AtlasAssetPath),
+                Is.EqualTo(ExpectedAtlasFileSha256),
+                "The runtime atlas must be regenerated from the exact idle " +
+                "endpoints and complete authored keyed poses without the " +
+                "retired dither blend.");
+
+            var frameHashes = new StringBuilder();
+            for (int frameIndex = 0;
+                 frameIndex <
+                 PlayerAnimatedInteractionController.AtlasFrameCount;
+                 frameIndex++)
+            {
+                string framePath = Path.Combine(
+                    SourceFrameDirectory,
+                    $"frame-{frameIndex:000}.png");
+                frameHashes.Append(HashFile(framePath));
+            }
+
+            string sequenceHash = HashBytes(
+                Encoding.ASCII.GetBytes(frameHashes.ToString()));
+            Assert.That(
+                sequenceHash,
+                Is.EqualTo(ExpectedSourceFrameSequenceSha256),
+                "Source frames 001..062 must remain the normalized keyed " +
+                "poses while only 000 and 063 use exact ordinary idle.");
+        }
+
         private static Texture2D LoadReadableCopy(
             Texture2D imported,
             int expectedWidth = 1024,
@@ -255,6 +294,26 @@ namespace BarPromenade.Tests
             Assert.That(readable.width, Is.EqualTo(expectedWidth));
             Assert.That(readable.height, Is.EqualTo(expectedHeight));
             return readable;
+        }
+
+        private static string HashFile(string projectRelativePath)
+        {
+            return HashBytes(
+                File.ReadAllBytes(
+                    Path.GetFullPath(projectRelativePath)));
+        }
+
+        private static string HashBytes(byte[] bytes)
+        {
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(bytes);
+            }
+
+            return System.BitConverter
+                .ToString(hash)
+                .Replace("-", string.Empty);
         }
 
         private static void AssertFrameMatchesIdle(
@@ -303,7 +362,7 @@ namespace BarPromenade.Tests
                     {
                         Assert.Fail(
                             $"Smoking frame {frameIndex} does not match " +
-                            $"ordinary Right idle at ({localX}, " +
+                            $"ordinary BackRight idle at ({localX}, " +
                             $"{localY}).");
                     }
                 }

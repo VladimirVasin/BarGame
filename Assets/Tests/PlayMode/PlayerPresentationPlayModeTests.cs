@@ -332,6 +332,110 @@ namespace BarPromenade.Tests
         }
 
         [UnityTest]
+        public IEnumerator
+            InteractionHandoffLock_SnapsNearestNeutralRestPoseAndHolds()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject actor = CreateObject("Interaction Handoff Actor");
+            actor.transform.position = new Vector3(0f, 20f, 0f);
+            PlaceCameraAtRelativeYaw(camera, actor.transform, 24f);
+
+            GameObject rigObject =
+                CreateObject("Interaction Handoff Rig");
+            rigObject.transform.SetParent(actor.transform, false);
+            PlayerSpriteRig rig =
+                rigObject.AddComponent<PlayerSpriteRig>();
+            rig.Initialize(camera, actor.transform);
+            yield return null;
+
+            Assert.That(
+                rig.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.Front),
+                "The ordinary selector must retain Front inside its " +
+                "hysteresis band so the handoff snap is observable.");
+
+            FieldInfo facialStateField = typeof(PlayerSpriteRig).GetField(
+                "facialAnimationState",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(facialStateField, Is.Not.Null);
+            var facialState =
+                (PlayerFacialAnimationState)facialStateField.GetValue(rig);
+            Assert.That(
+                facialState.Advance(1.7f),
+                Is.EqualTo(PlayerFacialExpression.Watchful));
+            rig.BodyRenderer.sprite = rig.GetFacialExpressionSprite(
+                PlayerFacialExpression.Watchful,
+                PlayerViewDirection.Front);
+
+            CorruptInteractionHandoffPose(rig);
+            rig.SetMotion(Vector3.forward * 5.2f);
+            rig.SetInteractionHandoffLocked(true);
+
+            Assert.That(rig.InteractionHandoffLocked, Is.True);
+            Assert.That(
+                rig.CurrentDirection,
+                Is.EqualTo(PlayerViewDirection.FrontRight),
+                "The handoff must bypass direction hysteresis and choose " +
+                "the mathematically nearest authored view.");
+            AssertInteractionHandoffPose(
+                rig,
+                PlayerViewDirection.FrontRight);
+            Assert.That(
+                rig.CurrentFacialExpression,
+                Is.EqualTo(PlayerFacialExpression.Watchful),
+                "The test requires a non-neutral facial state behind the " +
+                "neutral handoff body sprite.");
+
+            for (int frame = 0; frame < 3; frame++)
+            {
+                CorruptInteractionHandoffPose(rig);
+                rig.SetMotion(Vector3.forward * 5.2f);
+                yield return null;
+
+                Assert.That(rig.InteractionHandoffLocked, Is.True);
+                AssertInteractionHandoffPose(
+                    rig,
+                    PlayerViewDirection.FrontRight);
+            }
+
+            rig.SetInteractionHandoffLocked(false);
+            Assert.That(
+                rig.InteractionHandoffLocked,
+                Is.True,
+                "Unlocking must retain the exact ordinary pose through " +
+                "the next LateUpdate/render handoff.");
+            rig.SetMotion(Vector3.forward * 5.2f);
+            yield return null;
+            Assert.That(rig.InteractionHandoffLocked, Is.False);
+            AssertInteractionHandoffPose(
+                rig,
+                PlayerViewDirection.FrontRight);
+            bool animationResumed = false;
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (!animationResumed &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                animationResumed =
+                    Quaternion.Angle(
+                        Quaternion.identity,
+                        rig.PoseRoot.localRotation) > 0.05f ||
+                    Quaternion.Angle(
+                        Quaternion.identity,
+                        rig.GetPartTransform(
+                            PlayerPuppetPart.LeftUpperLeg)
+                            .localRotation) > 0.1f;
+            }
+
+            Assert.That(
+                animationResumed,
+                Is.True,
+                "Unlocking the handoff must return pose ownership to the " +
+                "ordinary puppet animator.");
+            Assert.That(rig.InteractionHandoffLocked, Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator SetMotion_AnimatesEveryJointWithBobAndRockThenSettles()
         {
             Camera camera = CreateCamera(new Vector3(0f, 7f, -10f));
@@ -1570,6 +1674,108 @@ namespace BarPromenade.Tests
                     rig.GetPartRenderer(part).sprite,
                     Is.SameAs(rig.GetPartSprite(part, direction)));
             }
+        }
+
+        private static void CorruptInteractionHandoffPose(
+            PlayerSpriteRig rig)
+        {
+            rig.PoseRoot.localPosition = new Vector3(0.4f, 0.3f, 0.2f);
+            rig.PoseRoot.localRotation = Quaternion.Euler(12f, 8f, 17f);
+            rig.PoseRoot.localScale = new Vector3(1.2f, 0.8f, 1.1f);
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part =
+                    (PlayerPuppetPart)partIndex;
+                Transform partTransform = rig.GetPartTransform(part);
+                partTransform.localPosition +=
+                    new Vector3(0.1f, -0.1f, 0.05f);
+                partTransform.localRotation =
+                    Quaternion.Euler(9f, 7f, 13f);
+                partTransform.localScale =
+                    new Vector3(0.8f, 1.2f, 0.9f);
+            }
+
+            rig.BodyRenderer.sprite = rig.GetFacialExpressionSprite(
+                PlayerFacialExpression.Watchful,
+                PlayerViewDirection.FrontRight);
+        }
+
+        private static void AssertInteractionHandoffPose(
+            PlayerSpriteRig rig,
+            PlayerViewDirection expectedDirection)
+        {
+            Assert.That(rig.CurrentDirection, Is.EqualTo(expectedDirection));
+            Assert.That(
+                Vector3.Distance(
+                    rig.PoseRoot.localPosition,
+                    Vector3.zero),
+                Is.LessThan(0.00001f));
+            Assert.That(
+                Quaternion.Angle(
+                    rig.PoseRoot.localRotation,
+                    Quaternion.identity),
+                Is.LessThan(0.001f));
+            Assert.That(rig.PoseRoot.localScale, Is.EqualTo(Vector3.one));
+            Assert.That(
+                Vector3.Distance(rig.UpperBodyOffset, Vector3.zero),
+                Is.LessThan(0.00001f));
+            Assert.That(rig.FootPlantAmount, Is.EqualTo(1f));
+
+            MethodInfo restPositionMethod =
+                typeof(PlayerSpriteRig).GetMethod(
+                    "GetPartPoseLocalPosition",
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    null,
+                    new[]
+                    {
+                        typeof(PlayerPuppetPart),
+                        typeof(PlayerViewDirection)
+                    },
+                    null);
+            Assert.That(restPositionMethod, Is.Not.Null);
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                PlayerPuppetPart part =
+                    (PlayerPuppetPart)partIndex;
+                Transform partTransform = rig.GetPartTransform(part);
+                Vector3 expectedPosition = (Vector3)
+                    restPositionMethod.Invoke(
+                        rig,
+                        new object[] { part, expectedDirection });
+
+                Assert.That(
+                    Vector3.Distance(
+                        partTransform.localPosition,
+                        expectedPosition),
+                    Is.LessThan(0.00001f),
+                    $"{part} did not return to its authored rest point.");
+                Assert.That(
+                    Quaternion.Angle(
+                        partTransform.localRotation,
+                        Quaternion.identity),
+                    Is.LessThan(0.001f),
+                    $"{part} retained animation rotation during handoff.");
+                Assert.That(
+                    partTransform.localScale,
+                    Is.EqualTo(Vector3.one),
+                    $"{part} retained animation scale during handoff.");
+                Assert.That(
+                    rig.GetPartRenderer(part).sprite,
+                    Is.SameAs(rig.GetPartSprite(part, expectedDirection)),
+                    $"{part} did not use its neutral direction sprite.");
+            }
+
+            Assert.That(
+                rig.BodyRenderer.sprite,
+                Is.SameAs(rig.GetPartSprite(
+                    PlayerPuppetPart.Body,
+                    expectedDirection)),
+                "The handoff body must be neutral even while a facial " +
+                "expression state is active.");
         }
 
         private static Sprite[] CaptureDisplayedSprites(

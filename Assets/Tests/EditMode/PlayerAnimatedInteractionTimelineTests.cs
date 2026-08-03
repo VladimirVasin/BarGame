@@ -282,6 +282,8 @@ namespace BarPromenade.Tests.EditMode
                 typeof(PlayerAnimatedInteractionController);
             Type definitionType =
                 typeof(PlayerAnimatedInteractionDefinition);
+            Type poseType =
+                typeof(PlayerAnimatedInteractionPose);
 
             Assert.That(
                 controllerType.GetMethod(
@@ -331,6 +333,64 @@ namespace BarPromenade.Tests.EditMode
                         typeof(Vector3)
                     }),
                 Is.Not.Null);
+            Assert.That(
+                controllerType.GetMethod(
+                    nameof(
+                        PlayerAnimatedInteractionController
+                            .BeginPositioned),
+                    new[]
+                    {
+                        definitionType,
+                        poseType,
+                        typeof(Vector3),
+                        poseType
+                    }),
+                Is.Not.Null);
+            Assert.That(
+                controllerType.GetMethod(
+                    nameof(
+                        PlayerAnimatedInteractionController
+                            .BeginPositioned),
+                    new[]
+                    {
+                        definitionType,
+                        poseType,
+                        typeof(Vector3),
+                        poseType,
+                        typeof(Vector3)
+                    }),
+                Is.Not.Null);
+        }
+
+        [Test]
+        public void InteractionPose_ValidatesAndNormalizesRootHandoff()
+        {
+            var pose = new PlayerAnimatedInteractionPose(
+                new Vector3(1f, 2f, 3f),
+                new Quaternion(0f, 2f, 0f, 2f),
+                new Vector3(1f, 2.8f, 3f));
+
+            Assert.That(
+                pose.RootRotation.x * pose.RootRotation.x +
+                pose.RootRotation.y * pose.RootRotation.y +
+                pose.RootRotation.z * pose.RootRotation.z +
+                pose.RootRotation.w * pose.RootRotation.w,
+                Is.EqualTo(1f).Within(Tolerance));
+            Assert.Throws<ArgumentException>(
+                () => new PlayerAnimatedInteractionPose(
+                    new Vector3(float.NaN, 0f, 0f),
+                    Quaternion.identity,
+                    Vector3.zero));
+            Assert.Throws<ArgumentException>(
+                () => new PlayerAnimatedInteractionPose(
+                    Vector3.zero,
+                    new Quaternion(0f, 0f, 0f, 0f),
+                    Vector3.zero));
+            Assert.Throws<ArgumentException>(
+                () => new PlayerAnimatedInteractionPose(
+                    Vector3.zero,
+                    Quaternion.identity,
+                    new Vector3(0f, float.PositiveInfinity, 0f)));
         }
 
         [Test]
@@ -528,9 +588,40 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 timeline.Phase,
                 Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Idle));
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(63));
+            Assert.That(timeline.PhaseProgress, Is.EqualTo(1f));
+
+            timeline.Advance(Tolerance);
+
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
             Assert.That(timeline.FrameIndex, Is.EqualTo(-1));
             Assert.That(timeline.IsActive, Is.False);
+        }
+
+        [Test]
+        public void Timeline_ExitHitchStillPresentsLastFrameBeforeIdle()
+        {
+            PlayerAnimatedInteractionTimeline timeline = CreateTimeline();
+            timeline.BeginLooping();
+            Assert.That(timeline.RequestExit(), Is.True);
+
+            timeline.Advance(100f);
+
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(63));
+            Assert.That(timeline.PhaseProgress, Is.EqualTo(1f));
+            Assert.That(timeline.IsActive, Is.True);
+
+            timeline.Advance(Tolerance);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(-1));
         }
 
         [Test]
@@ -565,7 +656,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 ordinary.Phase,
                 Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Idle));
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(ordinary.FrameIndex, Is.EqualTo(63));
             Assert.That(
                 cinematic.Phase,
                 Is.EqualTo(
@@ -574,12 +666,21 @@ namespace BarPromenade.Tests.EditMode
                 cinematic.PhaseProgress,
                 Is.EqualTo(1f / durationMultiplier)
                     .Within(Tolerance));
+            ordinary.Advance(Tolerance);
+            Assert.That(
+                ordinary.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
 
             cinematic.Advance(4f);
             Assert.That(
                 cinematic.Phase,
                 Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Idle));
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(cinematic.FrameIndex, Is.EqualTo(63));
+            cinematic.Advance(Tolerance);
+            Assert.That(
+                cinematic.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
             Assert.That(
                 cinematic.ExitDurationMultiplier,
                 Is.EqualTo(1f));
@@ -631,7 +732,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 timeline.Phase,
                 Is.EqualTo(
-                    PlayerAnimatedInteractionPhase.Idle));
+                    PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timeline.FrameIndex, Is.EqualTo(5));
+            Assert.That(timeline.IsActive, Is.True);
+
+            timeline.Advance(Tolerance);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
             Assert.That(timeline.FrameIndex, Is.EqualTo(-1));
             Assert.That(timeline.IsActive, Is.False);
         }

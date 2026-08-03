@@ -15,6 +15,9 @@
 
 ## Atlas contracts
 
+- Every bespoke contextual player atlas that replaces the ordinary rig must
+  also follow the endpoint, handedness, pivot and no-fade rules in
+  `ai/contextual-animation-standard.md`.
 - Visual reference:
   `Assets/Resources/Player/PlayerDirectionalAtlas.png`.
   It is `512x96`, with eight `64x96` columns at PPU 48.
