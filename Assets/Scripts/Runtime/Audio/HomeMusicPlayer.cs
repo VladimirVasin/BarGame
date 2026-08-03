@@ -15,6 +15,7 @@ namespace BarPromenade
         public const string TrackName = "home_theme";
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
+        public const float ThemeOutputVolume = 0.35f;
         public const float BalconyFadeDurationSeconds = 1f;
 
         private HomeFixedCameraController cameraController;
@@ -26,6 +27,7 @@ namespace BarPromenade
             cameraController;
 
         protected override string TrackResourcePath => ResourcePath;
+        protected override float OutputVolume => ThemeOutputVolume;
 
         public void Initialize(
             HomeFixedCameraController homeCameraController)

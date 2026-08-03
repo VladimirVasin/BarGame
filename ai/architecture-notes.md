@@ -213,12 +213,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   neither. `InventoryController` is installed beside pause in all four gameplay
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
-  close or lifecycle cleanup. Its `640x360` IMGUI view uses generated
-  point-filtered icons and portrait art, status/cash, a bounded five-column
-  grid and Examine/Close only; unsupported Use, Equip, Combine and Drop commands
-  are deliberately absent. Pause executes before inventory so Escape sees the
-  occupied lock, then inventory closes later in the same frame without leaking
-  that press into pause.
+  close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
+  point-filtered icons in the bounded five-column grid, crops the hero portrait
+  directly from the neutral front cell of the canonical directional atlas and
+  shows the selected item through a live point-filtered 3D render in both the
+  lower description and Examine views. The preview reuses the same procedural
+  models as physical refrigerator contents, adds matching keys and lighter,
+  rotates on unscaled time and owns a hidden camera/light/RenderTexture stage
+  that is inactive outside the inventory. Status cash is consistently shown in
+  dollars. Examine/Close remain the only commands; unsupported Use, Equip,
+  Combine and Drop commands are deliberately absent. Pause executes before
+  inventory so Escape sees the occupied lock, then inventory closes later in
+  the same frame without leaking that press into pause.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment

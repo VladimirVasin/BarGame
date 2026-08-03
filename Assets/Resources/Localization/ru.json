@@ -810,7 +810,7 @@
     },
     {
       "key": "inventory.cash",
-      "value": "НАЛИЧНЫЕ: ₽{0}"
+      "value": "НАЛИЧНЫЕ: ${0}"
     },
     {
       "key": "inventory.empty",

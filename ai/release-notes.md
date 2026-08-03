@@ -2,13 +2,22 @@
 
 ## Unreleased
 
+### 2026-08-03 — Quieter apartment music
+
+- The apartment's background theme now sits noticeably lower in the mix,
+  without changing music volume in the city, bars, stairwell or the dedicated
+  balcony-smoking sequence.
+
 ### 2026-08-03 — Inventory in your coat pockets
 
 - Press `I` or gamepad North during free gameplay to open a fullscreen
   PS1-style inventory in the city, bars, apartment or stairwell.
-- The screen shows the hero's condition, intoxication level, cash and carried
-  items through crisp point-filtered portrait and item art. Items can be
-  selected and examined with keyboard, mouse or gamepad.
+- The screen shows the hero's condition, intoxication level, dollar cash and
+  carried items. Slot icons remain crisp and visible, while the selected item
+  now appears as a lit, slowly rotating low-poly 3D model in the lower panel
+  and the larger Examine view.
+- The portrait now crops the actual neutral front player sprite, so its face,
+  hair and clothing are the same authored pixels seen on the character.
 - New runs begin with apartment keys and a lighter. Taking the vodka, egg or
   open stew from the refrigerator now moves it into the inventory, and the item
   stays gone from that refrigerator after leaving and returning home.

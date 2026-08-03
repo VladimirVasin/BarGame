@@ -321,6 +321,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 valuesByKey["drink_shop.preview"],
                 Does.Contain("{3}"));
+            Assert.That(valuesByKey["inventory.cash"], Does.Contain("$"));
+            Assert.That(
+                valuesByKey["inventory.cash"],
+                Does.Not.Contain("₽"));
         }
 
         [TestCase("Localization/ru")]

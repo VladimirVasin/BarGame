@@ -139,6 +139,7 @@ Assets/
         InventoryTypes.cs           stable IDs, definitions and stack values
         InventoryState.cs           atomic bounded stack mutations + starters
         InventoryMenuModel.cs       wrapping selection and examine state
+        InventoryItemModelFactory.cs shared low-poly world/preview item models
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
@@ -175,7 +176,8 @@ Assets/
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      I/North shared-lock input and time ownership
         InventoryView.cs            640x360 status/grid/description/command UI
-        InventoryIconLibrary.cs     generated point-filtered item/portrait pixels
+        InventoryIconLibrary.cs     point-filtered icons + canonical atlas crop
+        InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -186,6 +188,7 @@ Assets/
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
+      InventoryPresentationTests.cs       icons, atlas portrait and 3D models
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation

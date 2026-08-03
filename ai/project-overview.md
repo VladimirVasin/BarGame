@@ -89,7 +89,8 @@ The vertical slice contains:
   `StairwellInterior`; Home adds an optional
   `Resources/Audio/HomeMusic/home_theme` loop. Every scene theme starts at
   zero gain, waits for its background-streamed clip data and fades in over one
-  unscaled second. Before a Single-load
+  unscaled second. The apartment theme alone caps its source volume at `0.35`
+  instead of the shared `0.65` scene-music level. Before a Single-load
   activates, the destination preloads while the current scene remains alive
   long enough for its theme to fade fully out. Home pauses `home_theme` after
   its fade-out whenever the Balcony shot owns the doorway-hysteresis zone,
@@ -350,12 +351,16 @@ The vertical slice contains:
   modal lock, freezes scaled time, hides the gameplay HUD and preserves the
   ambient audio bed; Escape, the same toggle or gamepad East restores the exact
   prior input, camera, HUD and time-scale state without opening pause on the
-  same frame. The logical `640x360` screen combines a generated point-filtered
-  hero portrait, intoxication status, cash, a five-column item grid, selected
-  item description and contextual Examine/Close commands. A pure catalog and
-  ordered stack state begin every new run with apartment keys and a lighter,
-  persist across scene loads and reset with the session; only commands backed
-  by implemented rules are shown;
+  same frame. The logical `640x360` screen combines a hero portrait cropped
+  directly from the canonical neutral front player sprite, intoxication
+  status, dollar cash, a five-column point-filtered icon grid, selected item
+  description and contextual Examine/Close commands. The selected item is a
+  live low-resolution 3D model in both the lower panel and Examine view; its
+  hidden preview stage rotates on unscaled time and reuses the same procedural
+  bottle, egg and open-can geometry as the refrigerator, alongside inventory
+  key and lighter models. A pure catalog and ordered stack state begin every
+  new run with apartment keys and a lighter, persist across scene loads and
+  reset with the session; only commands backed by implemented rules are shown;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the

@@ -105,6 +105,7 @@ namespace BarPromenade
             model.Open(GameSessionState.InventoryItems.Count);
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
+            View.RefreshPreview();
             Time.timeScale = 0f;
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
@@ -133,6 +134,7 @@ namespace BarPromenade
             }
 
             RetroAudio.Play(RetroSfxId.UiMove);
+            View.RefreshPreview();
             return true;
         }
 
@@ -147,6 +149,7 @@ namespace BarPromenade
             }
 
             RetroAudio.Play(RetroSfxId.UiMove);
+            View.RefreshPreview();
             return true;
         }
 
@@ -267,6 +270,7 @@ namespace BarPromenade
             modalLock.Restore();
             IsOpen = false;
             model.CancelExamine();
+            View?.HidePreview();
             if (activeController == this)
             {
                 activeController = null;

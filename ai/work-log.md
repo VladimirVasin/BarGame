@@ -2,6 +2,53 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Quieter apartment music
+
+- Reduced only the looping Home theme's source-volume ceiling from the shared
+  `0.65` scene-music level to `0.35`, leaving City, Bar, Stairwell and the
+  separate balcony-smoking vignette mix unchanged.
+- Added focused coverage for the final Home source volume after fade-in.
+
+Verification:
+
+- Unity runtime, EditMode and PlayMode assemblies compiled successfully.
+- Focused `HomeMusicPlayerPlayModeTests` passed `3/3`; `git diff --check`
+  passed.
+
+## 2026-08-03 — Inventory presentation fidelity
+
+- Moved the clickable slot hit target behind inventory contents so all five
+  generated point-filtered item icons remain visible above interaction state.
+- Replaced the separately painted inventory portrait with a direct upper-body
+  crop from the canonical neutral front player atlas cell and standardized the
+  Russian cash label on the session's dollar currency.
+- Added one hidden lifecycle-owned `160x128` orthographic RenderTexture stage
+  with warm/cool local lighting and unscaled rotation. The lower selected-item
+  panel and Examine screen now show the live 3D model while gameplay is paused.
+- Extracted the refrigerator's vodka, egg and open-stew geometry into a shared
+  collider-free item factory and added matching low-poly apartment keys and
+  lighter models. The refrigerator retains its exact roots, dimensions,
+  selection colliders and shared-material contract.
+- Added presentation coverage for visible icon pixels, canonical portrait
+  provenance, all five finite collider-free models, dollar localization,
+  selection/model synchronization, paused-time rotation, GPU-visible preview
+  pixels and preview cleanup.
+
+Verification:
+
+- Unity runtime, EditMode and PlayMode assemblies compiled successfully.
+- Focused inventory presentation/localization EditMode passed `19/19`.
+- Focused inventory/refrigerator PlayMode passed `7/7`, including a direct GPU
+  RenderTexture readback of the selected model.
+- Full EditMode passed `741/741`; full PlayMode passed `156/156` with no
+  failed, skipped or inconclusive tests.
+- A Windows x64 release player built successfully at
+  `Build/Windows/BarPromenade.exe` (`222,570,079` bytes). The only build warning
+  was the package-owned URP `Hidden/Core/DebugOccluder` D3D11 truncation
+  warning. A hidden D3D12 smoke reached a ready `MainMenu` at `1280x720` and
+  emitted no runtime warning, assertion, error or exception; the direct
+  PlayMode GPU check covers the actual open inventory preview path.
+
 ## 2026-08-03 — Static decorative UI labels
 
 - Corrected the shared retro label style so decorative `GUI.Label` text keeps

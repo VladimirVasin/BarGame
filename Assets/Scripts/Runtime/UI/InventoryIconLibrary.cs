@@ -7,7 +7,15 @@ namespace BarPromenade
     {
         private static readonly Dictionary<InventoryItemId, Texture2D> Icons =
             new Dictionary<InventoryItemId, Texture2D>();
-        private static Texture2D heroPortrait;
+        private static Texture2D heroPortraitAtlas;
+
+        internal static readonly Rect HeroPortraitUv = new Rect(
+            13f / (PlayerSpriteRig.FrameWidth *
+                   PlayerSpriteRig.DirectionCount),
+            44f / PlayerSpriteRig.FrameHeight,
+            39f / (PlayerSpriteRig.FrameWidth *
+                   PlayerSpriteRig.DirectionCount),
+            52f / PlayerSpriteRig.FrameHeight);
 
         public static Texture2D GetIcon(InventoryItemId itemId)
         {
@@ -24,12 +32,19 @@ namespace BarPromenade
 
         public static Texture2D GetHeroPortrait()
         {
-            if (heroPortrait == null)
+            if (heroPortraitAtlas == null)
             {
-                heroPortrait = CreateHeroPortrait();
+                heroPortraitAtlas = Resources.Load<Texture2D>(
+                    PlayerSpriteRig.ReferenceAtlasResourcePath);
+                if (heroPortraitAtlas == null)
+                {
+                    throw new System.InvalidOperationException(
+                        "Missing player reference atlas at Resources/" +
+                        PlayerSpriteRig.ReferenceAtlasResourcePath + ".");
+                }
             }
 
-            return heroPortrait;
+            return heroPortraitAtlas;
         }
 
         private static Texture2D CreateItemIcon(InventoryItemId itemId)
@@ -82,29 +97,6 @@ namespace BarPromenade
             return painter.CreateTexture("Inventory Icon " + itemId);
         }
 
-        private static Texture2D CreateHeroPortrait()
-        {
-            var painter = new PixelPainter(48, 64);
-            Color32 outline = new Color32(19, 21, 22, 255);
-            Color32 coat = new Color32(65, 77, 73, 255);
-            Color32 coatLight = new Color32(92, 104, 95, 255);
-            Color32 skin = new Color32(153, 134, 111, 255);
-            Color32 shadow = new Color32(92, 76, 70, 255);
-            painter.FillRect(8, 0, 32, 23, coat);
-            painter.FillRect(4, 0, 8, 13, coat);
-            painter.FillRect(36, 0, 8, 13, coat);
-            painter.FillRect(18, 20, 12, 9, shadow);
-            painter.Ellipse(24, 38, 13, 17, skin);
-            painter.FillRect(11, 42, 26, 9, outline);
-            painter.FillRect(14, 47, 20, 7, outline);
-            painter.FillRect(17, 32, 4, 3, outline);
-            painter.FillRect(28, 32, 4, 3, outline);
-            painter.FillRect(21, 26, 8, 2, shadow);
-            painter.FillRect(12, 7, 24, 3, coatLight);
-            painter.OutlineRect(1, 1, 46, 62, outline);
-            return painter.CreateTexture("Inventory Hero Portrait");
-        }
-
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetResources()
@@ -115,8 +107,7 @@ namespace BarPromenade
             }
 
             Icons.Clear();
-            DestroyTexture(heroPortrait);
-            heroPortrait = null;
+            heroPortraitAtlas = null;
         }
 
         private static void DestroyTexture(Texture2D texture)
@@ -257,7 +248,7 @@ namespace BarPromenade
                     hideFlags = HideFlags.DontSave
                 };
                 texture.SetPixels32(pixels);
-                texture.Apply(false, true);
+                texture.Apply(false, false);
                 return texture;
             }
         }

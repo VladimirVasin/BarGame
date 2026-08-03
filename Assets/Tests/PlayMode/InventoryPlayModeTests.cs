@@ -111,6 +111,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cameraFollow.OrbitInputEnabled, Is.False);
             Assert.That(cameraFollow.CinematicMotionEnabled, Is.False);
             Assert.That(hud.Visible, Is.False);
+            Assert.That(inventory.View.PreviewRenderer, Is.Not.Null);
+            Assert.That(
+                inventory.View.PreviewRenderer.IsRendering,
+                Is.True);
+            Assert.That(
+                inventory.View.PreviewRenderer.CurrentItemId,
+                Is.EqualTo(InventoryItemId.ApartmentKeys));
+            Assert.That(
+                inventory.View.PreviewRenderer.Texture,
+                Is.Not.Null);
 
             inputFixture.Release(keyboard.iKey, queueEventOnly: true);
             yield return null;
@@ -126,6 +136,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
+            Assert.That(
+                inventory.View.PreviewRenderer.IsRendering,
+                Is.False);
         }
 
         [UnityTest]
@@ -140,12 +153,85 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.SelectedItemIndex, Is.Zero);
             Assert.That(inventory.MoveSelection(1), Is.True);
             Assert.That(inventory.SelectedItemIndex, Is.EqualTo(1));
+            Assert.That(
+                inventory.View.PreviewRenderer.CurrentItemId,
+                Is.EqualTo(InventoryItemId.Lighter));
+            Assert.That(inventory.MoveSelection(1), Is.True);
+            Assert.That(inventory.SelectedItemIndex, Is.EqualTo(2));
+            Assert.That(
+                inventory.View.PreviewRenderer.CurrentItemId,
+                Is.EqualTo(InventoryItemId.ChickenEgg));
             Assert.That(inventory.ExamineSelected(), Is.True);
             Assert.That(inventory.IsExamining, Is.True);
+            Assert.That(
+                inventory.View.PreviewRenderer.IsRendering,
+                Is.True);
             Assert.That(inventory.Cancel(), Is.True);
             Assert.That(inventory.IsExamining, Is.False);
             Assert.That(inventory.IsOpen, Is.True);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Preview_RendersVisiblePixelsAndRotatesWhilePaused()
+        {
+            Assert.That(inventory.Open(), Is.True);
+            InventoryItemPreviewRenderer preview =
+                inventory.View.PreviewRenderer;
+            Assert.That(preview.PreviewCamera, Is.Not.Null);
+            Assert.That(preview.Texture, Is.TypeOf<RenderTexture>());
+            Assert.That(preview.ModelRoot, Is.Not.Null);
+            float rotationBefore = preview.RotationDegrees;
+
+            yield return null;
+            yield return null;
+
+            Assert.That(Time.timeScale, Is.Zero);
+            Assert.That(
+                preview.RotationDegrees,
+                Is.GreaterThan(rotationBefore));
+
+            RenderTexture target = (RenderTexture)preview.Texture;
+            preview.PreviewCamera.Render();
+            var readback = new Texture2D(
+                target.width,
+                target.height,
+                TextureFormat.RGBA32,
+                false,
+                true);
+            try
+            {
+                RenderTexture previous = RenderTexture.active;
+                RenderTexture.active = target;
+                readback.ReadPixels(
+                    new Rect(0f, 0f, target.width, target.height),
+                    0,
+                    0,
+                    false);
+                readback.Apply(false, false);
+                RenderTexture.active = previous;
+
+                Color32[] pixels = readback.GetPixels32();
+                int visiblePixels = 0;
+                for (int index = 0; index < pixels.Length; index++)
+                {
+                    Color32 pixel = pixels[index];
+                    if (pixel.a > 32 &&
+                        pixel.r + pixel.g + pixel.b > 30)
+                    {
+                        visiblePixels++;
+                    }
+                }
+
+                Assert.That(
+                    visiblePixels,
+                    Is.GreaterThan(24),
+                    "The live 3D preview must render visible model pixels.");
+            }
+            finally
+            {
+                Object.Destroy(readback);
+            }
         }
 
         [UnityTest]
@@ -179,6 +265,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
             Assert.That(motor.InputEnabled, Is.True);
             Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(
+                inventory.View.PreviewRenderer.IsRendering,
+                Is.False);
             yield return null;
         }
 

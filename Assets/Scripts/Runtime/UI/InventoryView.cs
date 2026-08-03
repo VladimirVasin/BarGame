@@ -27,12 +27,37 @@ namespace BarPromenade
         private GUIStyle transparentButtonStyle;
         private GUIStyle emptyStyle;
 
+        public InventoryItemPreviewRenderer PreviewRenderer
+        {
+            get;
+            private set;
+        }
+
         public void Initialize(InventoryController inventoryController)
         {
             controller = inventoryController != null
                 ? inventoryController
                 : throw new ArgumentNullException(
                     nameof(inventoryController));
+            PreviewRenderer = GetComponent<
+                InventoryItemPreviewRenderer>();
+            if (PreviewRenderer == null)
+            {
+                PreviewRenderer = gameObject.AddComponent<
+                    InventoryItemPreviewRenderer>();
+            }
+
+            PreviewRenderer.Initialize(controller);
+        }
+
+        public void RefreshPreview()
+        {
+            PreviewRenderer?.RefreshNow();
+        }
+
+        public void HidePreview()
+        {
+            PreviewRenderer?.Hide();
         }
 
         private void OnGUI()
@@ -111,10 +136,10 @@ namespace BarPromenade
                 true,
                 2f,
                 1f);
-            GUI.DrawTexture(
-                new Rect(31f, 50f, 48f, 64f),
+            GUI.DrawTextureWithTexCoords(
+                new Rect(29f, 48f, 52f, 69f),
                 InventoryIconLibrary.GetHeroPortrait(),
-                ScaleMode.ScaleToFit,
+                InventoryIconLibrary.HeroPortraitUv,
                 true);
 
             IntoxicationProfile profile =
@@ -180,6 +205,15 @@ namespace BarPromenade
                     selected = true;
                 }
 
+                if (GUI.Button(
+                        slot,
+                        string.Empty,
+                        transparentButtonStyle))
+                {
+                    controller.SelectItem(index);
+                    selected = index == controller.SelectedItemIndex;
+                }
+
                 RetroUiTheme.DrawPanel(
                     slot,
                     selected
@@ -213,11 +247,6 @@ namespace BarPromenade
                         "x" + stack.Count,
                         selectedItemStyle);
                 }
-
-                if (GUI.Button(slot, string.Empty, transparentButtonStyle))
-                {
-                    controller.SelectItem(index);
-                }
             }
         }
 
@@ -234,17 +263,13 @@ namespace BarPromenade
 
             InventoryItemDefinition definition =
                 controller.SelectedDefinition;
-            GUI.DrawTexture(
-                new Rect(28f, 236f, 78f, 78f),
-                InventoryIconLibrary.GetIcon(definition.Id),
-                ScaleMode.ScaleToFit,
-                true);
+            DrawPreview(new Rect(25f, 226f, 94f, 108f));
             GUI.Label(
-                new Rect(120f, 231f, 342f, 25f),
+                new Rect(128f, 231f, 334f, 25f),
                 LocalizationService.Get(definition.NameLocalizationKey),
                 selectedItemStyle);
             GUI.Label(
-                new Rect(120f, 258f, 342f, 67f),
+                new Rect(128f, 258f, 334f, 67f),
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
                 descriptionStyle);
@@ -285,11 +310,7 @@ namespace BarPromenade
                 new Rect(92f, 54f, 456f, 30f),
                 LocalizationService.Get(definition.NameLocalizationKey),
                 headingStyle);
-            GUI.DrawTexture(
-                new Rect(112f, 102f, 128f, 128f),
-                InventoryIconLibrary.GetIcon(definition.Id),
-                ScaleMode.ScaleToFit,
-                true);
+            DrawPreview(new Rect(96f, 92f, 160f, 156f));
             GUI.Label(
                 new Rect(270f, 106f, 250f, 119f),
                 LocalizationService.Get(
@@ -300,6 +321,32 @@ namespace BarPromenade
                 "inventory.action.back",
                 true,
                 controller.Cancel);
+        }
+
+        private void DrawPreview(Rect rect)
+        {
+            RetroUiTheme.DrawPanel(
+                rect,
+                new Color32(7, 12, 13, 255),
+                RetroUiTheme.BorderMuted,
+                true,
+                2f,
+                1f);
+            Texture texture = PreviewRenderer != null
+                ? PreviewRenderer.Texture
+                : null;
+            if (texture != null && PreviewRenderer.IsRendering)
+            {
+                GUI.DrawTexture(
+                    new Rect(
+                        rect.x + 2f,
+                        rect.y + 2f,
+                        rect.width - 4f,
+                        rect.height - 4f),
+                    texture,
+                    ScaleMode.ScaleToFit,
+                    true);
+            }
         }
 
         private void DrawCommandButton(

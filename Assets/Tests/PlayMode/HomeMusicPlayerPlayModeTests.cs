@@ -40,6 +40,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 music.NormalizedGain,
                 hasTheme ? Is.EqualTo(1f) : Is.Zero);
+            Assert.That(
+                music.Source.volume,
+                hasTheme
+                    ? Is.EqualTo(
+                        HomeMusicPlayer.ThemeOutputVolume).Within(0.001f)
+                    : Is.Zero);
             Assert.That(music.Source.loop, Is.True);
             Assert.That(
                 music.Source.outputAudioMixerGroup,
