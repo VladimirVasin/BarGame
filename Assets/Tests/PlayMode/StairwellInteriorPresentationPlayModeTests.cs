@@ -62,6 +62,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.StairwellInterior));
+            Assert.That(root.PauseMenu, Is.Not.Null);
+            Assert.That(root.PauseMenu.IsInitialized, Is.True);
             Assert.That(
                 GameAudioMixer.CurrentProfile,
                 Is.EqualTo(GameAudioProfile.Stairwell));

@@ -44,6 +44,7 @@ namespace BarPromenade
             private set;
         }
         public BoxCollider CatTrigger { get; private set; }
+        public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
         {
@@ -153,6 +154,11 @@ namespace BarPromenade
                 intoxicationHud,
                 balanceView);
             BuildExits();
+            PauseMenu = ui.AddComponent<PauseMenuController>();
+            PauseMenu.Initialize(
+                Player,
+                CameraFollow,
+                intoxicationHud);
 
             IsInitialized = true;
             timer.Stop();

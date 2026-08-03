@@ -66,6 +66,13 @@ The vertical slice contains:
   the map and minigame views; every active contextual prompt is a full pointer
   click target routed through the same guarded action as keyboard/gamepad
   interaction;
+- a localized PS1-style pause menu in City, Bar, Home and Stairwell gameplay:
+  Escape or gamepad Start captures the shared modal lock, freezes scaled time,
+  pauses non-UI audio, hides gameplay HUD/input and offers only Resume, Start
+  Over and Quit Game. Restart and quit require an explicit default-No warning
+  because no save/load system exists; child modals retain first ownership of
+  Escape, the Home opening stays exclusive and the bar arrival reveal cannot
+  be skipped by opening pause;
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;

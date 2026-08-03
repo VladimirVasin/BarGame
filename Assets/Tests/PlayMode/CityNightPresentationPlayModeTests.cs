@@ -23,6 +23,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(city.IsInitialized, Is.True);
+            Assert.That(city.PauseMenu, Is.Not.Null);
+            Assert.That(city.PauseMenu.IsInitialized, Is.True);
             Assert.That(
                 GameAudioMixer.CurrentProfile,
                 Is.EqualTo(GameAudioProfile.City));
@@ -494,6 +496,15 @@ namespace BarPromenade.Tests.PlayMode
                 root => interior = root);
 
             Assert.That(interior.IsInitialized, Is.True);
+            Assert.That(interior.PauseMenu, Is.Not.Null);
+            Assert.That(interior.PauseMenu.IsInitialized, Is.True);
+            if (interior.ArrivalPresentation.IsPlaying)
+            {
+                Assert.That(
+                    interior.PauseMenu.Open(),
+                    Is.False,
+                    "The pause menu must not skip the arrival reveal.");
+            }
             Assert.That(
                 GameAudioMixer.CurrentProfile,
                 Is.EqualTo(GameAudioProfile.Bar));

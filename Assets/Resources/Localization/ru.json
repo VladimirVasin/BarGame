@@ -13,6 +13,38 @@
       "value": "\u0412\u042b\u0419\u0422\u0418"
     },
     {
+      "key": "pause.title",
+      "value": "\u041f\u0410\u0423\u0417\u0410"
+    },
+    {
+      "key": "pause.resume",
+      "value": "\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u0422\u042c"
+    },
+    {
+      "key": "pause.restart",
+      "value": "\u041d\u0410\u0427\u0410\u0422\u042c \u0417\u0410\u041d\u041e\u0412\u041e"
+    },
+    {
+      "key": "pause.quit",
+      "value": "\u0412\u042b\u0419\u0422\u0418 \u0418\u0417 \u0418\u0413\u0420\u042b"
+    },
+    {
+      "key": "pause.restart_confirm",
+      "value": "\u041d\u0430\u0447\u0430\u0442\u044c \u0437\u0430\u043d\u043e\u0432\u043e? \u041d\u0435\u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d."
+    },
+    {
+      "key": "pause.quit_confirm",
+      "value": "\u0412\u044b\u0439\u0442\u0438 \u0438\u0437 \u0438\u0433\u0440\u044b? \u041d\u0435\u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d."
+    },
+    {
+      "key": "pause.yes",
+      "value": "\u0414\u0410"
+    },
+    {
+      "key": "pause.no",
+      "value": "\u041d\u0415\u0422"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — войти в бар"
     },

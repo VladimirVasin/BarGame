@@ -69,6 +69,7 @@ namespace BarPromenade
             private set;
         }
         public MinigameDebugWindow DebugWindow { get; private set; }
+        public PauseMenuController PauseMenu { get; private set; }
         public CocktailMinigameController CocktailMinigame
         {
             get;
@@ -233,6 +234,13 @@ namespace BarPromenade
             BuildNpcCrowd(camera);
             IsInitialized = true;
             BuildArrivalPresentation(camera, follow);
+            PauseMenu = ui.AddComponent<PauseMenuController>();
+            PauseMenu.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                () => ArrivalPresentation == null ||
+                      !ArrivalPresentation.IsPlaying);
             ReportPhase("activity_and_crowd", phaseTimer);
             totalTimer.Stop();
             GameLog.Info(

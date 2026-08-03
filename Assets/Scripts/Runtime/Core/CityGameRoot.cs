@@ -21,6 +21,7 @@ namespace BarPromenade
         }
         public CityMapController Map { get; private set; }
         public MinigameDebugWindow DebugWindow { get; private set; }
+        public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
         {
@@ -214,6 +215,11 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 Map);
+            PauseMenu = ui.AddComponent<PauseMenuController>();
+            PauseMenu.Initialize(
+                Player,
+                follow,
+                intoxicationHud);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
             ReportPhase("player_and_ui", phaseTimer);

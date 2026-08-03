@@ -13,6 +13,38 @@
       "value": "QUIT"
     },
     {
+      "key": "pause.title",
+      "value": "PAUSED"
+    },
+    {
+      "key": "pause.resume",
+      "value": "RESUME"
+    },
+    {
+      "key": "pause.restart",
+      "value": "START OVER"
+    },
+    {
+      "key": "pause.quit",
+      "value": "QUIT GAME"
+    },
+    {
+      "key": "pause.restart_confirm",
+      "value": "Start over? Unsaved progress will be lost."
+    },
+    {
+      "key": "pause.quit_confirm",
+      "value": "Quit the game? Unsaved progress will be lost."
+    },
+    {
+      "key": "pause.yes",
+      "value": "YES"
+    },
+    {
+      "key": "pause.no",
+      "value": "NO"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — enter the bar"
     },

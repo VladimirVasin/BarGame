@@ -359,6 +359,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   marker shapes plus a localized name legend. POIs are map context only: they
   are not route stops, do not enter the visited set or count, and do not change
   bar selection or pathfinding.
+- **Accepted — Shared-lock gameplay pause:** City, BarInterior, HomeInterior
+  and StairwellInterior each attach one runtime `PauseMenuController` to their
+  existing UI root. Escape or gamepad Start can open it only when no other
+  `BarMinigameModalLock` or scene transition owns gameplay; pause therefore
+  never steals Escape from maps, refrigerator inspection or minigames, remains
+  unavailable during the Home opening, and uses a Bar-specific gate rather
+  than skipping the arrival reveal. Opening captures the prior time scale,
+  listener-pause flag, motor/interactor/orbit/cinematic/HUD state, then sets
+  scaled time to zero and pauses listener-owned gameplay audio. UI-pool sources
+  alone ignore listener pause. Resume restores captured state after a one-frame
+  input guard; disable, destroy, restart and quit restore it immediately.
+  The localized `640x360` menu exposes only Resume, Start Over and Quit Game;
+  restart and quit require explicit default-No confirmation, while save/load,
+  settings and a visible main-menu destination remain unimplemented.
 - **Accepted — Independent player heading:** The motor rotates the player root
   only toward non-zero actual planar movement and preserves that heading while
   idle. The chase camera orbits independently and never writes player yaw.

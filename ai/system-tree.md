@@ -162,10 +162,12 @@ Assets/
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
-      UI/            retro UI, segmented HUD, district/public-place map and F9 debug
+      UI/            retro UI, pause menu, segmented HUD, district/public-place map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
         CityMapController.cs        canonical layout POIs plus bar-route state
         CityMapView.cs              open public lots, four marker shapes and legend
+        PauseMenuModel.cs           pure main/confirmation navigation and actions
+        PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -174,6 +176,7 @@ Assets/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
+      PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
@@ -187,6 +190,7 @@ Assets/
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
+      PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration

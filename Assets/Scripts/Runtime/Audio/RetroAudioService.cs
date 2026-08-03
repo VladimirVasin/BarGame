@@ -40,6 +40,8 @@ namespace BarPromenade
                     source.minDistance = 1.2f;
                     source.maxDistance = 13f;
                     source.bypassReverbZones = true;
+                    source.ignoreListenerPause =
+                        outputGroup == GameAudioGroup.Ui;
                     GameAudioMixer.Route(source, outputGroup);
                     sources[index] = source;
                 }

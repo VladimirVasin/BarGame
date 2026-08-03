@@ -305,6 +305,10 @@ namespace BarPromenade.Tests.PlayMode
                     source.outputAudioMixerGroup,
                     Is.SameAs(expectedGroup),
                     $"'{sourceTransform.name}' has the wrong route.");
+                Assert.That(
+                    source.ignoreListenerPause,
+                    Is.EqualTo(poolName == "UI"),
+                    $"'{sourceTransform.name}' has the wrong pause policy.");
             }
         }
     }

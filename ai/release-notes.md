@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-08-03 — Pause menu
+
+- Escape and gamepad Start now open a localized pause menu throughout City,
+  bars, the apartment and the stairwell.
+- Pause stops gameplay time and non-UI audio while preserving existing modal
+  ownership, so Escape still backs out of maps, activities and refrigerator
+  inspection first.
+- Resume restores the exact captured control state. Starting over or quitting
+  requires an explicit confirmation that unsaved progress will be lost;
+  save/load and settings entries are intentionally absent for now.
+
 ### 2026-08-03 — Detailed falls from every side
 
 - Failed drunken balance checks now use a long hand-detailed sprite sequence

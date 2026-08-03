@@ -2,6 +2,35 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Shared-lock gameplay pause menu
+
+- Added one localized PS1-style Pause/Resume/Start Over/Quit interface to the
+  runtime UI roots in City, BarInterior, HomeInterior and StairwellInterior.
+  Restart and quit use a separate default-No confirmation page; save/load and
+  settings remain absent.
+- Pause captures the existing fullscreen modal lock, exact input/camera/HUD
+  state, time scale and listener-pause flag. It freezes scaled gameplay and
+  non-UI audio while the UI SFX pool remains audible, restores safely after a
+  one-frame resume guard and restores immediately on lifecycle/destructive
+  paths.
+- Existing child modals keep first ownership of Escape, the Home opening keeps
+  its exclusive lock and the Bar-specific gate prevents pause from skipping
+  the arrival reveal.
+
+Verification:
+
+- Unity 6000.5.5f1 imported and compiled Runtime, EditModeTests and
+  PlayModeTests; direct .NET builds completed with zero warnings and errors.
+- Focused pause tests passed `5/5` EditMode and `5/5` PlayMode.
+- Full EditMode passed `721/721`.
+- Full PlayMode passed `144` active tests with the five existing ignored tests;
+  one unrelated existing motor-inertia test failed because its queued key
+  release was not processed before the first braking sample. The same failure
+  reproduced in an isolated rerun; every pause and four-scene installation
+  check passed.
+- A Windows x64 player build completed successfully at
+  `Temp/PauseMenuBuild/BarPromenade.exe`.
+
 ## 2026-08-03 — Silent automated test runs
 
 - Added one shared Unity Test Framework run callback used by both EditMode and
