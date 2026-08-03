@@ -8,31 +8,50 @@ namespace BarPromenade.Tests
     {
         private static readonly object[] definitions =
         {
-            new object[] { DrinkId.LightBeer, DrinkFamily.Beer, 8 },
-            new object[] { DrinkId.DarkBeer, DrinkFamily.Beer, 10 },
-            new object[] { DrinkId.WhiteWine, DrinkFamily.Wine, 11 },
-            new object[] { DrinkId.RedWine, DrinkFamily.Wine, 13 },
-            new object[] { DrinkId.Vodka, DrinkFamily.Vodka, 18 },
-            new object[] { DrinkId.PepperVodka, DrinkFamily.Vodka, 20 },
-            new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 16 },
-            new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 18 },
-            new object[] { DrinkId.Water, DrinkFamily.Water, 0 },
-            new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24 }
+            new object[] { DrinkId.LightBeer, DrinkFamily.Beer, 8, 6 },
+            new object[] { DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8 },
+            new object[] { DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10 },
+            new object[] { DrinkId.RedWine, DrinkFamily.Wine, 13, 12 },
+            new object[] { DrinkId.Vodka, DrinkFamily.Vodka, 18, 12 },
+            new object[] { DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14 },
+            new object[] { DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16 },
+            new object[] { DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20 },
+            new object[] { DrinkId.Water, DrinkFamily.Water, 0, 0 },
+            new object[] { DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8 }
         };
 
         [TestCaseSource(nameof(definitions))]
-        public void Definitions_HaveExpectedFamilyAndGain(
+        public void Definitions_HaveExpectedFamilyGainAndStressRelief(
             DrinkId id,
             DrinkFamily expectedFamily,
-            int expectedGain)
+            int expectedGain,
+            int expectedStressRelief)
         {
             DrinkDefinition definition = DrinkRules.GetDefinition(id);
 
             Assert.That(definition.Id, Is.EqualTo(id));
             Assert.That(definition.Family, Is.EqualTo(expectedFamily));
             Assert.That(definition.IntoxicationGain, Is.EqualTo(expectedGain));
+            Assert.That(
+                definition.StressRelief,
+                Is.EqualTo(expectedStressRelief));
             Assert.That(DrinkRules.GetFamily(id), Is.EqualTo(expectedFamily));
             Assert.That(DrinkRules.GetIntoxicationGain(id), Is.EqualTo(expectedGain));
+            Assert.That(
+                DrinkRules.GetStressRelief(id),
+                Is.EqualTo(expectedStressRelief));
+        }
+
+        [Test]
+        public void None_HasNoNeedOrIntoxicationEffect()
+        {
+            DrinkDefinition definition =
+                DrinkRules.GetDefinition(DrinkId.None);
+
+            Assert.That(definition.Id, Is.EqualTo(DrinkId.None));
+            Assert.That(definition.Family, Is.EqualTo(DrinkFamily.None));
+            Assert.That(definition.IntoxicationGain, Is.Zero);
+            Assert.That(definition.StressRelief, Is.Zero);
         }
 
         [Test]

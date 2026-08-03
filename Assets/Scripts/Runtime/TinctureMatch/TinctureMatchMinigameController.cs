@@ -750,10 +750,12 @@ namespace BarPromenade
             currentDrinksConsumed++;
             if (persistSessionProgress)
             {
-                GameSessionState.UpdateDrinkingProgress(
+                GameSessionState.CommitDrinkingProgress(
                     currentIntoxication,
                     DrinkId.Moonshine,
-                    currentDrinksConsumed);
+                    currentDrinksConsumed,
+                    DrinkRules.GetStressRelief(
+                        DrinkId.Moonshine));
             }
 
             GameLog.Info(

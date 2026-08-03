@@ -401,16 +401,22 @@ The vertical slice contains:
   and preserves the ambient audio bed; Escape, the same toggle or gamepad East
   restores the exact prior input, camera, HUD and time-scale state without
   opening pause on the same frame. The logical `640x360` screen combines a hero portrait cropped
-  directly from the canonical neutral front player sprite, intoxication
-  status, dollar cash, a five-column point-filtered icon grid, selected item
-  description and contextual Examine/Close commands. The selected item is a
+  directly from the canonical neutral front player sprite, three compact
+  intoxication/hunger/stress bars, dollar cash, a five-column point-filtered
+  icon grid, selected item description and contextual Eat/Drink, Examine and
+  Close commands. Hunger and stress are session-owned `0-100` values that both
+  start at zero and currently have no passive increase. The selected item is a
   live low-resolution 3D model in both the lower panel and Examine view; its
   hidden preview stage rotates on unscaled time and reuses the same procedural
   bottle, egg and open-can geometry as the refrigerator, plus the supermarket's
   closed can, noodles and loaf, alongside inventory key and lighter models. A
   pure catalog and ordered stack state begin every new run with apartment keys
-  and a lighter, persist across scene loads and reset with the session; only
-  commands backed by implemented rules are shown;
+  and a lighter, persist across scene loads and reset with the session. Current
+  food has explicit relief but cannot reduce hunger below `20`; food with no
+  effect remains in its stack. Alcohol has separate stress-relief values, and
+  the inventory vodka bottle commits four servings atomically while maximum
+  intoxication leaves it untouched. Only commands backed by implemented rules
+  are shown;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
@@ -621,10 +627,12 @@ The vertical slice contains:
 - mouse click/drag, keyboard and gamepad controls, a point-filtered `640x360`
   backdrop, transparent 4x4 shot/effect atlas, interpolated swap/gravity/refill
   motion, RU/EN interface and generated swap, match and moonshine-burst cues;
-- session-persistent intoxication, last-alcohol context and consumed-drink
-  count plus the deterministic balance-check delay/sequence; every beer-pong
+- session-persistent intoxication, stress relief, last-alcohol context and
+  consumed-drink count plus the deterministic balance-check delay/sequence;
+  alcohol value is independent from price and intoxication. Every beer-pong
   miss consumes a light beer, each Split the G attempt records the actual
-  dark-beer fraction, and only an activated `XXX` in Tinctures in a Row
+  dark-beer fraction and proportional stress relief, cocktails count only the
+  alcohol actually served, and only an activated `XXX` in Tinctures in a Row
   immediately consumes `Moonshine` for 24 intoxication; reaching `100`
   terminates the applicable minigame at maximum intoxication without creating
   a separate timed status;

@@ -7,16 +7,16 @@ namespace BarPromenade
     {
         private static readonly DrinkDefinition[] definitions =
         {
-            new DrinkDefinition(DrinkId.LightBeer, DrinkFamily.Beer, 8),
-            new DrinkDefinition(DrinkId.DarkBeer, DrinkFamily.Beer, 10),
-            new DrinkDefinition(DrinkId.WhiteWine, DrinkFamily.Wine, 11),
-            new DrinkDefinition(DrinkId.RedWine, DrinkFamily.Wine, 13),
-            new DrinkDefinition(DrinkId.Vodka, DrinkFamily.Vodka, 18),
-            new DrinkDefinition(DrinkId.PepperVodka, DrinkFamily.Vodka, 20),
-            new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 16),
-            new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 18),
-            new DrinkDefinition(DrinkId.Water, DrinkFamily.Water, 0),
-            new DrinkDefinition(DrinkId.Moonshine, DrinkFamily.Vodka, 24)
+            new DrinkDefinition(DrinkId.LightBeer, DrinkFamily.Beer, 8, 6),
+            new DrinkDefinition(DrinkId.DarkBeer, DrinkFamily.Beer, 10, 8),
+            new DrinkDefinition(DrinkId.WhiteWine, DrinkFamily.Wine, 11, 10),
+            new DrinkDefinition(DrinkId.RedWine, DrinkFamily.Wine, 13, 12),
+            new DrinkDefinition(DrinkId.Vodka, DrinkFamily.Vodka, 18, 12),
+            new DrinkDefinition(DrinkId.PepperVodka, DrinkFamily.Vodka, 20, 14),
+            new DrinkDefinition(DrinkId.CognacVs, DrinkFamily.Cognac, 16, 16),
+            new DrinkDefinition(DrinkId.CognacVsop, DrinkFamily.Cognac, 18, 20),
+            new DrinkDefinition(DrinkId.Water, DrinkFamily.Water, 0, 0),
+            new DrinkDefinition(DrinkId.Moonshine, DrinkFamily.Vodka, 24, 8)
         };
 
         private static readonly IReadOnlyList<DrinkDefinition> readOnlyDefinitions =
@@ -33,6 +33,7 @@ namespace BarPromenade
                     return new DrinkDefinition(
                         DrinkId.None,
                         DrinkFamily.None,
+                        0,
                         0);
                 case DrinkId.LightBeer:
                     return definitions[0];
@@ -67,6 +68,11 @@ namespace BarPromenade
         public static int GetIntoxicationGain(DrinkId id)
         {
             return GetDefinition(id).IntoxicationGain;
+        }
+
+        public static int GetStressRelief(DrinkId id)
+        {
+            return GetDefinition(id).StressRelief;
         }
 
         public static bool IsAlcoholic(DrinkId id)

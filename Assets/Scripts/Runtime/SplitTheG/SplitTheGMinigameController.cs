@@ -458,10 +458,16 @@ namespace BarPromenade
                 currentDrinksConsumed++;
                 if (persistSessionProgress)
                 {
-                    GameSessionState.UpdateDrinkingProgress(
+                    int requestedStressRelief =
+                        PlayerNeedsRules.ScaleRelief(
+                            DrinkRules.GetStressRelief(
+                                DrinkId.DarkBeer),
+                            consumedFraction);
+                    GameSessionState.CommitDrinkingProgress(
                         currentIntoxication,
                         DrinkId.DarkBeer,
-                        currentDrinksConsumed);
+                        currentDrinksConsumed,
+                        requestedStressRelief);
                 }
             }
 

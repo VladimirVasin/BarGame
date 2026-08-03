@@ -837,6 +837,18 @@
       "value": "STATUS"
     },
     {
+      "key": "inventory.status.intoxication",
+      "value": "BUZZ"
+    },
+    {
+      "key": "inventory.status.hunger",
+      "value": "HUNGER"
+    },
+    {
+      "key": "inventory.status.stress",
+      "value": "STRESS"
+    },
+    {
       "key": "inventory.items",
       "value": "IN POCKETS"
     },
@@ -851,6 +863,46 @@
     {
       "key": "inventory.cash",
       "value": "CASH: ${0}"
+    },
+    {
+      "key": "inventory.action.use",
+      "value": "USE"
+    },
+    {
+      "key": "inventory.action.eat",
+      "value": "EAT -{0}"
+    },
+    {
+      "key": "inventory.action.drink",
+      "value": "DRINK -{0}"
+    },
+    {
+      "key": "inventory.use.success.food",
+      "value": "Hunger -{0}."
+    },
+    {
+      "key": "inventory.use.success.alcohol",
+      "value": "Stress -{0}; buzz +{1}."
+    },
+    {
+      "key": "inventory.use.failure.not_consumable",
+      "value": "This cannot be consumed."
+    },
+    {
+      "key": "inventory.use.failure.missing_item",
+      "value": "That item is no longer there."
+    },
+    {
+      "key": "inventory.use.failure.no_effect",
+      "value": "That would change nothing right now."
+    },
+    {
+      "key": "inventory.use.failure.maximum_intoxication",
+      "value": "You are already too drunk."
+    },
+    {
+      "key": "inventory.use.failure.generic",
+      "value": "The item could not be consumed."
     },
     {
       "key": "inventory.empty",

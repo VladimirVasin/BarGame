@@ -666,10 +666,11 @@ namespace BarPromenade
             ActivePourIngredient = CocktailIngredientId.None;
             if (persistSessionProgress)
             {
-                GameSessionState.UpdateDrinkingProgress(
+                GameSessionState.CommitDrinkingProgress(
                     session.Intoxication,
                     session.LastAlcoholicDrink,
-                    session.CocktailsConsumed);
+                    session.CocktailsConsumed,
+                    CalculateStressRelief(lastRound.Value));
             }
 
             LogRoundServed(lastRound.Value);
@@ -678,6 +679,26 @@ namespace BarPromenade
             BeginPhase(
                 CocktailPresentationPhase.Serving,
                 ServingDuration);
+        }
+
+        private static int CalculateStressRelief(
+            CocktailRoundResult result)
+        {
+            int stressRelief = 0;
+            foreach (CocktailIngredientId ingredientId in result.Ingredients)
+            {
+                CocktailIngredientDefinition definition =
+                    CocktailRules.GetDefinition(ingredientId);
+                if (!definition.IsAlcoholic)
+                {
+                    continue;
+                }
+
+                stressRelief += DrinkRules.GetStressRelief(
+                    definition.PersistentDrinkId);
+            }
+
+            return stressRelief;
         }
 
         private void CompleteRoundResult()

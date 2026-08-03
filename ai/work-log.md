@@ -2,6 +2,36 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Hunger, stress and usable provisions
+
+- Added session-owned hunger and stress scales with explicit `0/100` defaults
+  for every new run. This MVP adds no passive or event-driven growth yet.
+- Added data-first consumable values and one atomic inventory-use boundary.
+  Cheap supermarket food relieves hunger only down to `20/100`; a vodka
+  bottle represents four servings and applies its intoxication, drink count
+  and stress relief together without consuming the item on a failed use.
+- Routed actual alcoholic servings from direct purchases, cocktails, Beer
+  Pong, Split the G and Tincture Match through the shared stress-relief commit,
+  including fractional Split the G consumption and duplicate-snapshot guards.
+- Kept the existing compact status card and added hunger/stress bars beside
+  the portrait, while removing the redundant textual intoxication-stage label.
+  Inventory now exposes localized contextual Eat/Drink actions, `U`/gamepad-
+  West input, disabled no-effect food and inline result feedback.
+- Added bounded hunger/stress diagnostics, focused domain/session/UI coverage
+  and updated the current architecture, system and release documentation.
+
+Verification:
+
+- Focused EditMode coverage for needs rules, consumable/drink catalogs, session
+  transactions and localization passed `102/102`.
+- Review-driven stale/duplicate snapshot and saturated-counter regressions in
+  `GameSessionStateTests` passed `39/39` after the final guard was tightened.
+- Focused PlayMode
+  `InventoryPlayModeTests.UKey_DrinksAtZeroStressAndKeepsMenuOpen` passed
+  `1/1` with the graphics device required by the existing inventory preview.
+- `git diff --check` passed. Full suites, player build, startup smoke and manual
+  rendered review were intentionally not run under the fast-mode policy.
+
 ## 2026-08-04 — Optional supermarket music slot
 
 - Added the optional `Resources/Audio/SupermarketMusic/supermarket_theme`

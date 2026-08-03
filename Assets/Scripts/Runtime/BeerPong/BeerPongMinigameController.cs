@@ -520,12 +520,15 @@ namespace BarPromenade
             BeerPongThrowResult throwResult =
                 session.CompleteThrow(flightResult);
             lastThrow = throwResult;
-            if (persistSessionProgress)
+            if (persistSessionProgress &&
+                throwResult.ConsumedDrink == DrinkId.LightBeer)
             {
-                GameSessionState.UpdateDrinkingProgress(
+                GameSessionState.CommitDrinkingProgress(
                     session.Intoxication,
                     session.LastAlcoholicDrink,
-                    session.DrinksConsumed);
+                    session.DrinksConsumed,
+                    DrinkRules.GetStressRelief(
+                        throwResult.ConsumedDrink));
             }
 
             LogThrowResolved(flightResult, throwResult);

@@ -32,6 +32,9 @@ namespace BarPromenade
         public bool IsExamining => model.IsExamining;
         public int SelectedItemIndex => model.SelectedItemIndex;
         public InventoryView View { get; private set; }
+        public string UseFeedbackMessage { get; private set; } =
+            string.Empty;
+        public bool UseFeedbackSucceeded { get; private set; }
 
         public bool HasSelection =>
             SelectedItemIndex >= 0 &&
@@ -46,6 +49,44 @@ namespace BarPromenade
             HasSelection
                 ? InventoryItemCatalog.Get(SelectedStack.ItemId)
                 : default;
+
+        public InventoryItemUseResult SelectedUseEvaluation =>
+            HasSelection
+                ? GameSessionState.EvaluateInventoryItemUse(
+                    SelectedStack.ItemId)
+                : default;
+
+        public bool CanUseSelected =>
+            HasSelection && SelectedUseEvaluation.Succeeded;
+
+        public string SelectedUseActionLabel
+        {
+            get
+            {
+                if (!HasSelection ||
+                    !InventoryConsumableCatalog.TryGet(
+                        SelectedStack.ItemId,
+                        out _))
+                {
+                    return LocalizationService.Get(
+                        "inventory.action.use");
+                }
+
+                InventoryItemUseResult evaluation =
+                    SelectedUseEvaluation;
+                if (evaluation.Kind == InventoryConsumableKind.Alcohol)
+                {
+                    return string.Format(
+                        LocalizationService.Get(
+                            "inventory.action.drink"),
+                        evaluation.ActualStressRelief);
+                }
+
+                return string.Format(
+                    LocalizationService.Get("inventory.action.eat"),
+                    evaluation.ActualHungerRelief);
+            }
+        }
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -103,6 +144,7 @@ namespace BarPromenade
             ownsTimeState = true;
             activeController = this;
             model.Open(GameSessionState.InventoryItems.Count);
+            ClearUseFeedback();
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             View.RefreshPreview();
@@ -134,6 +176,7 @@ namespace BarPromenade
             }
 
             RetroAudio.Play(RetroSfxId.UiMove);
+            ClearUseFeedback();
             View.RefreshPreview();
             return true;
         }
@@ -149,6 +192,7 @@ namespace BarPromenade
             }
 
             RetroAudio.Play(RetroSfxId.UiMove);
+            ClearUseFeedback();
             View.RefreshPreview();
             return true;
         }
@@ -162,6 +206,30 @@ namespace BarPromenade
                 return false;
             }
 
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            ClearUseFeedback();
+            return true;
+        }
+
+        public bool UseSelected()
+        {
+            if (!IsOpen || IsExamining || !HasSelection)
+            {
+                return false;
+            }
+
+            InventoryItemId itemId = SelectedStack.ItemId;
+            InventoryItemUseResult result =
+                GameSessionState.TryConsumeInventoryItem(itemId);
+            SetUseFeedback(result);
+            if (!result.Succeeded)
+            {
+                RetroAudio.Play(RetroSfxId.UiCancel);
+                return false;
+            }
+
+            model.Open(GameSessionState.InventoryItems.Count);
+            View.RefreshPreview();
             RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
@@ -248,6 +316,12 @@ namespace BarPromenade
                 MoveSelection(delta);
             }
 
+            if (WasUsePressed())
+            {
+                UseSelected();
+                return;
+            }
+
             if (WasConfirmPressed())
             {
                 ExamineSelected();
@@ -270,6 +344,7 @@ namespace BarPromenade
             modalLock.Restore();
             IsOpen = false;
             model.CancelExamine();
+            ClearUseFeedback();
             View?.HidePreview();
             if (activeController == this)
             {
@@ -339,6 +414,74 @@ namespace BarPromenade
             Gamepad gamepad = Gamepad.current;
             return gamepad != null &&
                    gamepad.buttonSouth.wasPressedThisFrame;
+        }
+
+        private static bool WasUsePressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.uKey.wasPressedThisFrame)
+            {
+                return true;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            return gamepad != null &&
+                   gamepad.buttonWest.wasPressedThisFrame;
+        }
+
+        private void SetUseFeedback(InventoryItemUseResult result)
+        {
+            UseFeedbackSucceeded = result.Succeeded;
+            if (result.Succeeded)
+            {
+                if (result.Kind == InventoryConsumableKind.Alcohol)
+                {
+                    UseFeedbackMessage = string.Format(
+                        LocalizationService.Get(
+                            "inventory.use.success.alcohol"),
+                        result.ActualStressRelief,
+                        result.ActualIntoxicationGain);
+                    return;
+                }
+
+                UseFeedbackMessage = string.Format(
+                    LocalizationService.Get(
+                        "inventory.use.success.food"),
+                    result.ActualHungerRelief);
+                return;
+            }
+
+            string localizationKey;
+            switch (result.Status)
+            {
+                case InventoryItemUseStatus.NotConsumable:
+                    localizationKey =
+                        "inventory.use.failure.not_consumable";
+                    break;
+                case InventoryItemUseStatus.MissingItem:
+                    localizationKey =
+                        "inventory.use.failure.missing_item";
+                    break;
+                case InventoryItemUseStatus.NoEffect:
+                    localizationKey =
+                        "inventory.use.failure.no_effect";
+                    break;
+                case InventoryItemUseStatus.MaximumIntoxication:
+                    localizationKey =
+                        "inventory.use.failure.maximum_intoxication";
+                    break;
+                default:
+                    localizationKey = "inventory.use.failure.generic";
+                    break;
+            }
+
+            UseFeedbackMessage = LocalizationService.Get(localizationKey);
+        }
+
+        private void ClearUseFeedback()
+        {
+            UseFeedbackMessage = string.Empty;
+            UseFeedbackSucceeded = false;
         }
 
         private static int ReadSelectionDelta()

@@ -30,16 +30,19 @@ namespace BarPromenade
         public DrinkDefinition(
             DrinkId id,
             DrinkFamily family,
-            int intoxicationGain)
+            int intoxicationGain,
+            int stressRelief)
         {
             Id = id;
             Family = family;
             IntoxicationGain = intoxicationGain;
+            StressRelief = stressRelief;
         }
 
         public DrinkId Id { get; }
         public DrinkFamily Family { get; }
         public int IntoxicationGain { get; }
+        public int StressRelief { get; }
     }
 
 }

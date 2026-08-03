@@ -37,14 +37,27 @@ namespace BarPromenade.Tests.EditMode
             "home.refrigerator.action.back",
             "home.refrigerator.action.unavailable",
             "inventory.status",
+            "inventory.status.intoxication",
+            "inventory.status.hunger",
+            "inventory.status.stress",
             "inventory.items",
             "inventory.selected_item",
             "inventory.command",
             "inventory.cash",
             "inventory.empty",
+            "inventory.action.use",
+            "inventory.action.eat",
+            "inventory.action.drink",
             "inventory.action.examine",
             "inventory.action.close",
             "inventory.action.back",
+            "inventory.use.success.food",
+            "inventory.use.success.alcohol",
+            "inventory.use.failure.not_consumable",
+            "inventory.use.failure.missing_item",
+            "inventory.use.failure.no_effect",
+            "inventory.use.failure.maximum_intoxication",
+            "inventory.use.failure.generic",
             "inventory.item.apartment_keys.name",
             "inventory.item.apartment_keys.description",
             "inventory.item.lighter.name",
@@ -354,6 +367,21 @@ namespace BarPromenade.Tests.EditMode
                 valuesByKey["drink_shop.preview"],
                 Does.Contain("{3}"));
             Assert.That(valuesByKey["inventory.cash"], Does.Contain("$"));
+            Assert.That(
+                valuesByKey["inventory.action.eat"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["inventory.action.drink"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["inventory.use.success.food"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["inventory.use.success.alcohol"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["inventory.use.success.alcohol"],
+                Does.Contain("{1}"));
             Assert.That(
                 valuesByKey["supermarket.shop.balance"],
                 Does.Contain("{0}"));

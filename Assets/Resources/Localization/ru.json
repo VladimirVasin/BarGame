@@ -837,6 +837,18 @@
       "value": "СОСТОЯНИЕ"
     },
     {
+      "key": "inventory.status.intoxication",
+      "value": "ХМЕЛЬ"
+    },
+    {
+      "key": "inventory.status.hunger",
+      "value": "ГОЛОД"
+    },
+    {
+      "key": "inventory.status.stress",
+      "value": "СТРЕСС"
+    },
+    {
       "key": "inventory.items",
       "value": "В КАРМАНАХ"
     },
@@ -851,6 +863,46 @@
     {
       "key": "inventory.cash",
       "value": "НАЛИЧНЫЕ: ${0}"
+    },
+    {
+      "key": "inventory.action.use",
+      "value": "ИСПОЛЬЗОВАТЬ"
+    },
+    {
+      "key": "inventory.action.eat",
+      "value": "СЪЕСТЬ -{0}"
+    },
+    {
+      "key": "inventory.action.drink",
+      "value": "ВЫПИТЬ -{0}"
+    },
+    {
+      "key": "inventory.use.success.food",
+      "value": "Голод -{0}."
+    },
+    {
+      "key": "inventory.use.success.alcohol",
+      "value": "Стресс -{0}; хмель +{1}."
+    },
+    {
+      "key": "inventory.use.failure.not_consumable",
+      "value": "Это нельзя употребить."
+    },
+    {
+      "key": "inventory.use.failure.missing_item",
+      "value": "Этого предмета больше нет."
+    },
+    {
+      "key": "inventory.use.failure.no_effect",
+      "value": "Сейчас это ничего не изменит."
+    },
+    {
+      "key": "inventory.use.failure.maximum_intoxication",
+      "value": "Ты уже слишком пьян."
+    },
+    {
+      "key": "inventory.use.failure.generic",
+      "value": "Не удалось употребить предмет."
     },
     {
       "key": "inventory.empty",

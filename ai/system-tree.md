@@ -148,6 +148,7 @@ Assets/
       Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerSpriteRig.cs         nearest-view neutral render-frame handoff lock
+        PlayerNeedsRules.cs        clamped hunger/stress relief + fractional scaling
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
@@ -155,6 +156,7 @@ Assets/
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
         InventoryState.cs           atomic bounded stack mutations + starters
+        InventoryConsumableCatalog.cs food floors, relief and bottled servings
         InventoryMenuModel.cs       wrapping selection and examine state
         InventoryItemModelFactory.cs shared low-poly world/preview item models
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
@@ -197,8 +199,8 @@ Assets/
         CityMapView.cs              shop/POI markers, hover names and POI legend
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
-        InventoryController.cs      I/North shared-lock input and time ownership
-        InventoryView.cs            640x360 status/grid/description/command UI
+        InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
+        InventoryView.cs            640x360 three-bar status/grid/description/command UI
         InventoryIconLibrary.cs     point-filtered icons + canonical atlas crop
         InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
@@ -212,6 +214,8 @@ Assets/
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
+      PlayerNeedsRulesTests.cs        relief floors, clamping and fraction scaling
+      InventoryConsumableCatalogTests.cs current food/alcohol value table
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, atlas portrait and 3D models
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach

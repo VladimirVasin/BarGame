@@ -11,10 +11,76 @@ namespace BarPromenade
         OpeningSleep = 1
     }
 
+    public enum InventoryItemUseStatus
+    {
+        Success = 0,
+        NotConsumable,
+        MissingItem,
+        NoEffect,
+        MaximumIntoxication
+    }
+
+    public readonly struct InventoryItemUseResult
+    {
+        internal InventoryItemUseResult(
+            InventoryItemUseStatus status,
+            InventoryItemId itemId,
+            InventoryConsumableKind kind,
+            int itemCountBefore,
+            int itemCountAfter,
+            int hungerBefore,
+            int hungerAfter,
+            int stressBefore,
+            int stressAfter,
+            int intoxicationBefore,
+            int intoxicationAfter,
+            int drinksConsumedBefore,
+            int drinksConsumedAfter,
+            int requestedStressRelief)
+        {
+            Status = status;
+            ItemId = itemId;
+            Kind = kind;
+            ItemCountBefore = itemCountBefore;
+            ItemCountAfter = itemCountAfter;
+            HungerBefore = hungerBefore;
+            HungerAfter = hungerAfter;
+            StressBefore = stressBefore;
+            StressAfter = stressAfter;
+            IntoxicationBefore = intoxicationBefore;
+            IntoxicationAfter = intoxicationAfter;
+            DrinksConsumedBefore = drinksConsumedBefore;
+            DrinksConsumedAfter = drinksConsumedAfter;
+            RequestedStressRelief = requestedStressRelief;
+        }
+
+        public bool Succeeded => Status == InventoryItemUseStatus.Success;
+        public InventoryItemUseStatus Status { get; }
+        public InventoryItemId ItemId { get; }
+        public InventoryConsumableKind Kind { get; }
+        public int ItemCountBefore { get; }
+        public int ItemCountAfter { get; }
+        public int HungerBefore { get; }
+        public int HungerAfter { get; }
+        public int ActualHungerRelief => HungerBefore - HungerAfter;
+        public int StressBefore { get; }
+        public int StressAfter { get; }
+        public int ActualStressRelief => StressBefore - StressAfter;
+        public int IntoxicationBefore { get; }
+        public int IntoxicationAfter { get; }
+        public int ActualIntoxicationGain =>
+            IntoxicationAfter - IntoxicationBefore;
+        public int DrinksConsumedBefore { get; }
+        public int DrinksConsumedAfter { get; }
+        public int RequestedStressRelief { get; }
+    }
+
     public static class GameSessionState
     {
         public const int DefaultCitySeed = 20260727;
         public const int DefaultCash = 999;
+        public const int DefaultHunger = 0;
+        public const int DefaultStress = 0;
 
         private static readonly List<string> plannedBarRoute =
             new List<string>();
@@ -46,6 +112,8 @@ namespace BarPromenade
             private set;
         } = HomeArrivalKind.Normal;
         public static int IntoxicationLevel { get; private set; }
+        public static int HungerLevel { get; private set; } = DefaultHunger;
+        public static int StressLevel { get; private set; } = DefaultStress;
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
         public static int CashBalance { get; private set; } = DefaultCash;
@@ -73,6 +141,8 @@ namespace BarPromenade
                 "new_game_started",
                 GameLog.Field("city_seed", CitySeed),
                 GameLog.Field("cash_balance", CashBalance),
+                GameLog.Field("hunger", HungerLevel),
+                GameLog.Field("stress", StressLevel),
                 GameLog.Field(
                     "home_arrival",
                     HomeArrival.ToString()));
@@ -87,6 +157,8 @@ namespace BarPromenade
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
             IntoxicationLevel = 0;
+            HungerLevel = DefaultHunger;
+            StressLevel = DefaultStress;
             intoxicationRecoveryElapsed = 0f;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -152,6 +224,167 @@ namespace BarPromenade
             }
 
             return removed;
+        }
+
+        public static void UpdateNeeds(int hunger, int stress)
+        {
+            int nextHunger = Mathf.Clamp(
+                hunger,
+                PlayerNeedsRules.MinimumLevel,
+                PlayerNeedsRules.MaximumLevel);
+            int nextStress = Mathf.Clamp(
+                stress,
+                PlayerNeedsRules.MinimumLevel,
+                PlayerNeedsRules.MaximumLevel);
+            if (HungerLevel == nextHunger && StressLevel == nextStress)
+            {
+                return;
+            }
+
+            int previousHunger = HungerLevel;
+            int previousStress = StressLevel;
+            HungerLevel = nextHunger;
+            StressLevel = nextStress;
+            GameLog.Info(
+                "needs",
+                "levels_changed",
+                GameLog.Field("previous_hunger", previousHunger),
+                GameLog.Field("hunger", HungerLevel),
+                GameLog.Field("previous_stress", previousStress),
+                GameLog.Field("stress", StressLevel));
+        }
+
+        public static InventoryItemUseResult EvaluateInventoryItemUse(
+            InventoryItemId itemId)
+        {
+            int itemCount = inventory.GetCount(itemId);
+            if (!InventoryConsumableCatalog.TryGet(
+                    itemId,
+                    out InventoryConsumableDefinition definition))
+            {
+                return CreateInventoryItemUseResult(
+                    InventoryItemUseStatus.NotConsumable,
+                    itemId,
+                    default,
+                    itemCount,
+                    itemCount);
+            }
+
+            if (itemCount <= 0)
+            {
+                return CreateInventoryItemUseResult(
+                    InventoryItemUseStatus.MissingItem,
+                    itemId,
+                    definition.Kind,
+                    itemCount,
+                    itemCount);
+            }
+
+            if (definition.Kind == InventoryConsumableKind.Food)
+            {
+                PlayerNeedReliefResult relief =
+                    PlayerNeedsRules.ApplyFoodRelief(
+                        HungerLevel,
+                        definition.HungerRelief,
+                        definition.MinimumHungerAfterUse);
+                return new InventoryItemUseResult(
+                    relief.Changed
+                        ? InventoryItemUseStatus.Success
+                        : InventoryItemUseStatus.NoEffect,
+                    itemId,
+                    definition.Kind,
+                    itemCount,
+                    relief.Changed ? itemCount - 1 : itemCount,
+                    HungerLevel,
+                    relief.LevelAfter,
+                    StressLevel,
+                    StressLevel,
+                    IntoxicationLevel,
+                    IntoxicationLevel,
+                    DrinksConsumed,
+                    DrinksConsumed,
+                    0);
+            }
+
+            if (IntoxicationLevel >= IntoxicationStageRules.MaximumLevel)
+            {
+                return CreateInventoryItemUseResult(
+                    InventoryItemUseStatus.MaximumIntoxication,
+                    itemId,
+                    definition.Kind,
+                    itemCount,
+                    itemCount);
+            }
+
+            int requestedStressRelief = definition.StressRelief;
+            PlayerNeedReliefResult stressRelief =
+                PlayerNeedsRules.ApplyStressRelief(
+                    StressLevel,
+                    requestedStressRelief);
+            int intoxicationGain = PlayerNeedsRules.ScaleRelief(
+                DrinkRules.GetIntoxicationGain(definition.DrinkId),
+                definition.Servings);
+            int servingCount = PlayerNeedsRules.ScaleRelief(
+                1,
+                definition.Servings);
+            int intoxicationAfter = Math.Min(
+                IntoxicationStageRules.MaximumLevel,
+                IntoxicationLevel + intoxicationGain);
+            int drinksAfter = DrinksConsumed <= int.MaxValue - servingCount
+                ? DrinksConsumed + servingCount
+                : int.MaxValue;
+            return new InventoryItemUseResult(
+                InventoryItemUseStatus.Success,
+                itemId,
+                definition.Kind,
+                itemCount,
+                itemCount - 1,
+                HungerLevel,
+                HungerLevel,
+                StressLevel,
+                stressRelief.LevelAfter,
+                IntoxicationLevel,
+                intoxicationAfter,
+                DrinksConsumed,
+                drinksAfter,
+                requestedStressRelief);
+        }
+
+        public static InventoryItemUseResult TryConsumeInventoryItem(
+            InventoryItemId itemId)
+        {
+            InventoryItemUseResult result =
+                EvaluateInventoryItemUse(itemId);
+            if (!result.Succeeded)
+            {
+                LogInventoryItemUse(result);
+                return result;
+            }
+
+            if (!inventory.TryRemove(itemId))
+            {
+                result = EvaluateInventoryItemUse(itemId);
+                LogInventoryItemUse(result);
+                return result;
+            }
+
+            InventoryConsumableDefinition definition =
+                InventoryConsumableCatalog.Get(itemId);
+            if (definition.Kind == InventoryConsumableKind.Food)
+            {
+                UpdateNeeds(result.HungerAfter, result.StressAfter);
+            }
+            else
+            {
+                CommitAcceptedDrinkingProgress(
+                    result.IntoxicationAfter,
+                    definition.DrinkId,
+                    result.DrinksConsumedAfter,
+                    result.RequestedStressRelief);
+            }
+
+            LogInventoryItemUse(result);
+            return result;
         }
 
         public static bool TryCollectWorldItem(
@@ -698,6 +931,73 @@ namespace BarPromenade
                     resetBalanceDelay));
         }
 
+        public static void CommitDrinkingProgress(
+            int intoxication,
+            DrinkId lastDrink,
+            int drinksConsumed,
+            int requestedStressRelief)
+        {
+            int normalizedDrinksConsumed = Math.Max(0, drinksConsumed);
+            if (normalizedDrinksConsumed <= DrinksConsumed)
+            {
+                GameLog.Info(
+                    "needs",
+                    "alcohol_stress_relief_ignored",
+                    GameLog.Field("drink", lastDrink.ToString()),
+                    GameLog.Field(
+                        "current_drinks_consumed",
+                        DrinksConsumed),
+                    GameLog.Field(
+                        "snapshot_drinks_consumed",
+                        normalizedDrinksConsumed),
+                    GameLog.Field("reason", "stale_or_duplicate"));
+                return;
+            }
+
+            CommitAcceptedDrinkingProgress(
+                intoxication,
+                lastDrink,
+                normalizedDrinksConsumed,
+                requestedStressRelief);
+        }
+
+        private static void CommitAcceptedDrinkingProgress(
+            int intoxication,
+            DrinkId lastDrink,
+            int drinksConsumed,
+            int requestedStressRelief)
+        {
+            int previousDrinksConsumed = DrinksConsumed;
+            UpdateDrinkingProgress(
+                intoxication,
+                lastDrink,
+                drinksConsumed);
+            int normalizedRelief = Math.Max(0, requestedStressRelief);
+            PlayerNeedReliefResult relief =
+                PlayerNeedsRules.ApplyStressRelief(
+                    StressLevel,
+                    normalizedRelief);
+            if (relief.Changed)
+            {
+                UpdateNeeds(HungerLevel, relief.LevelAfter);
+            }
+
+            GameLog.Info(
+                "needs",
+                "alcohol_stress_relief_committed",
+                GameLog.Field("drink", lastDrink.ToString()),
+                GameLog.Field(
+                    "drink_count_delta",
+                    DrinksConsumed - previousDrinksConsumed),
+                GameLog.Field(
+                    "requested_stress_relief",
+                    normalizedRelief),
+                GameLog.Field(
+                    "actual_stress_relief",
+                    relief.ActualRelief),
+                GameLog.Field("stress", StressLevel));
+        }
+
         public static void AdvanceIntoxicationRecovery(
             float unscaledDeltaTime)
         {
@@ -770,10 +1070,11 @@ namespace BarPromenade
             if (result.Succeeded)
             {
                 CashBalance = result.CashAfter;
-                UpdateDrinkingProgress(
+                CommitDrinkingProgress(
                     result.IntoxicationAfter,
                     result.LastAlcoholicDrinkAfter,
-                    result.DrinksConsumedAfter);
+                    result.DrinksConsumedAfter,
+                    DrinkRules.GetStressRelief(drinkId));
             }
 
             LogDrinkPurchase(result);
@@ -872,6 +1173,57 @@ namespace BarPromenade
             BarActivityKind barActivity)
         {
             return BarMinigameCatalog.NormalizeActivity(barActivity);
+        }
+
+        private static InventoryItemUseResult CreateInventoryItemUseResult(
+            InventoryItemUseStatus status,
+            InventoryItemId itemId,
+            InventoryConsumableKind kind,
+            int itemCountBefore,
+            int itemCountAfter)
+        {
+            return new InventoryItemUseResult(
+                status,
+                itemId,
+                kind,
+                itemCountBefore,
+                itemCountAfter,
+                HungerLevel,
+                HungerLevel,
+                StressLevel,
+                StressLevel,
+                IntoxicationLevel,
+                IntoxicationLevel,
+                DrinksConsumed,
+                DrinksConsumed,
+                0);
+        }
+
+        private static void LogInventoryItemUse(
+            InventoryItemUseResult result)
+        {
+            GameLog.Info(
+                "inventory",
+                "item_use_resolved",
+                GameLog.Field("accepted", result.Succeeded),
+                GameLog.Field("status", result.Status.ToString()),
+                GameLog.Field("item_id", result.ItemId.ToString()),
+                GameLog.Field("kind", result.Kind.ToString()),
+                GameLog.Field(
+                    "item_count_before",
+                    result.ItemCountBefore),
+                GameLog.Field(
+                    "item_count_after",
+                    result.ItemCountAfter),
+                GameLog.Field(
+                    "hunger_relief",
+                    result.ActualHungerRelief),
+                GameLog.Field(
+                    "stress_relief",
+                    result.ActualStressRelief),
+                GameLog.Field(
+                    "intoxication_gain",
+                    result.ActualIntoxicationGain));
         }
 
         private static void LogDrinkPurchase(

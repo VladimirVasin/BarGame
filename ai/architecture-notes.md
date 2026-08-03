@@ -233,11 +233,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lower description and Examine views. The preview reuses the same procedural
   models as physical refrigerator contents, adds matching keys and lighter,
   rotates on unscaled time and owns a hidden camera/light/RenderTexture stage
-  that is inactive outside the inventory. Status cash is consistently shown in
-  dollars. Examine/Close remain the only commands; unsupported Use, Equip,
-  Combine and Drop commands are deliberately absent. Pause executes before
+  that is inactive outside the inventory. Status keeps the portrait and cash,
+  then fits intoxication, hunger and stress into three compact `0-100` bars.
+  Consumables expose a contextual Eat/Drink command through pointer, `U` and
+  gamepad West; unsupported Equip, Combine and Drop commands remain absent.
+  Pause executes before
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
+- **Accepted — Session hunger, stress and atomic inventory consumption:** Hunger
+  and stress are clamped integer `0-100` session values where higher is worse.
+  Both start at `0`, survive ordinary scene loads and reset to `0` with a new
+  game; no current runtime system raises either value. A data-first consumable
+  catalog gives all present food an explicit relief value plus a poor-food
+  minimum hunger of `20`, so repeated cheap food can never fully satisfy the
+  hero and food at or below its floor is not consumed. The supermarket vodka
+  bottle is one atomic four-serving use. `GameSessionState` preflights every
+  use, removes exactly one stack only after success is known, then commits food
+  relief or drinking, stress and intoxication together. Maximum intoxication,
+  a stale stack or a no-effect food use mutates nothing. Refrigerator `Use`
+  remains unavailable; items are taken into the hero inventory first.
 - **Accepted — Separate finite-stock supermarket interior:**
   `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` runtime-composed
   room with protected aisles, three shelf sections, a stockroom facade and a
@@ -792,10 +806,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Reaching 100 finishes after that cascade without adding a separate timed
   state. F9 launches use the same factory with persistence disabled.
 - **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
-  drink and total consumed-drink count are committed through
+  drink, total consumed-drink count and explicit alcohol-value stress relief
+  are committed through
   `GameSessionState` after every cocktail serving, beer-pong miss and completed
   Split the G sip, plus every activated tincture `XXX`; they survive scene
-  loads and reset when the application subsystem restarts. The remaining
+  loads and reset when the application subsystem restarts. Cocktails sum only
+  alcohol actually served, Split the G scales relief by the consumed fraction,
+  water relieves no stress and bad-mix penalties add no relief. Aggregate debug
+  state changes do not simulate a drink. The remaining
   balance-check delay and consumed deterministic sequence share that
   scene-persistent session lifetime.
 - **Accepted — Physical first-person bar retail:** Every generated bar derives

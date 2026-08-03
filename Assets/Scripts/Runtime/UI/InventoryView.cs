@@ -20,6 +20,8 @@ namespace BarPromenade
         private InventoryController controller;
         private GUIStyle headingStyle;
         private GUIStyle statusStyle;
+        private GUIStyle statusCaptionStyle;
+        private GUIStyle statusValueStyle;
         private GUIStyle itemNameStyle;
         private GUIStyle selectedItemStyle;
         private GUIStyle descriptionStyle;
@@ -142,23 +144,65 @@ namespace BarPromenade
                 InventoryIconLibrary.HeroPortraitUv,
                 true);
 
-            IntoxicationProfile profile =
-                IntoxicationStageRules.Evaluate(
-                    GameSessionState.IntoxicationLevel);
+            DrawStatusBar(
+                new Rect(94f, 43f, 58f, 19f),
+                "inventory.status.intoxication",
+                GameSessionState.IntoxicationLevel,
+                new Color32(189, 151, 85, 255));
+            DrawStatusBar(
+                new Rect(94f, 66f, 58f, 19f),
+                "inventory.status.hunger",
+                GameSessionState.HungerLevel,
+                new Color32(184, 119, 72, 255));
+            DrawStatusBar(
+                new Rect(94f, 89f, 58f, 19f),
+                "inventory.status.stress",
+                GameSessionState.StressLevel,
+                new Color32(171, 82, 77, 255));
             GUI.Label(
-                new Rect(94f, 46f, 58f, 34f),
-                LocalizationService.Get(profile.StageNameKey),
-                statusStyle);
-            GUI.Label(
-                new Rect(94f, 83f, 58f, 18f),
-                GameSessionState.IntoxicationLevel + "/100",
-                statusStyle);
-            GUI.Label(
-                new Rect(23f, 137f, 128f, 25f),
+                new Rect(23f, 137f, 128f, 24f),
                 string.Format(
                     LocalizationService.Get("inventory.cash"),
                     GameSessionState.CashBalance),
                 statusStyle);
+        }
+
+        private void DrawStatusBar(
+            Rect rect,
+            string captionLocalizationKey,
+            int level,
+            Color fillColor)
+        {
+            GUI.Label(
+                new Rect(rect.x, rect.y, rect.width, 9f),
+                LocalizationService.Get(captionLocalizationKey),
+                statusCaptionStyle);
+            Rect track = new Rect(
+                rect.x,
+                rect.y + 10f,
+                rect.width,
+                9f);
+            RetroUiTheme.DrawPanel(
+                track,
+                new Color32(7, 12, 13, 255),
+                RetroUiTheme.BorderMuted,
+                false,
+                1f,
+                1f);
+            Rect fill = new Rect(
+                track.x + 2f,
+                track.y + 2f,
+                Mathf.Round(
+                    (track.width - 4f) *
+                    Mathf.Clamp01(level / 100f)),
+                track.height - 4f);
+            if (fill.width > 0f)
+            {
+                RetroUiTheme.FillRect(fill, fillColor);
+            }
+
+            GUI.Label(track, Mathf.Clamp(level, 0, 100).ToString(),
+                statusValueStyle);
         }
 
         private void DrawItems()
@@ -269,24 +313,55 @@ namespace BarPromenade
                 LocalizationService.Get(definition.NameLocalizationKey),
                 selectedItemStyle);
             GUI.Label(
-                new Rect(128f, 258f, 334f, 67f),
+                new Rect(
+                    128f,
+                    258f,
+                    334f,
+                    string.IsNullOrEmpty(
+                        controller.UseFeedbackMessage)
+                        ? 67f
+                        : 45f),
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
                 descriptionStyle);
+            DrawUseFeedback();
         }
 
         private void DrawCommands()
         {
+            DrawCommandButtonLabel(
+                new Rect(506f, 229f, 108f, 29f),
+                controller.SelectedUseActionLabel,
+                controller.CanUseSelected,
+                controller.UseSelected);
             DrawCommandButton(
-                new Rect(506f, 232f, 108f, 31f),
+                new Rect(506f, 268f, 108f, 29f),
                 "inventory.action.examine",
                 controller.HasSelection,
                 controller.ExamineSelected);
             DrawCommandButton(
-                new Rect(506f, 273f, 108f, 31f),
+                new Rect(506f, 307f, 108f, 29f),
                 "inventory.action.close",
                 true,
                 controller.Close);
+        }
+
+        private void DrawUseFeedback()
+        {
+            if (string.IsNullOrEmpty(controller.UseFeedbackMessage))
+            {
+                return;
+            }
+
+            Color previousColor = GUI.color;
+            GUI.color = controller.UseFeedbackSucceeded
+                ? RetroUiTheme.AccentPale
+                : new Color32(224, 136, 116, 255);
+            GUI.Label(
+                new Rect(128f, 307f, 334f, 28f),
+                controller.UseFeedbackMessage,
+                descriptionStyle);
+            GUI.color = previousColor;
         }
 
         private void DrawExamine()
@@ -355,6 +430,19 @@ namespace BarPromenade
             bool enabled,
             Func<bool> action)
         {
+            DrawCommandButtonLabel(
+                rect,
+                LocalizationService.Get(localizationKey),
+                enabled,
+                action);
+        }
+
+        private void DrawCommandButtonLabel(
+            Rect rect,
+            string label,
+            bool enabled,
+            Func<bool> action)
+        {
             bool previousEnabled = GUI.enabled;
             GUI.enabled = enabled;
             RetroUiTheme.DrawPanel(
@@ -370,7 +458,7 @@ namespace BarPromenade
                 1f);
             if (GUI.Button(
                     rect,
-                    LocalizationService.Get(localizationKey),
+                    label,
                     commandStyle))
             {
                 action();
@@ -396,6 +484,16 @@ namespace BarPromenade
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.AccentPale,
                 true,
+                true);
+            statusCaptionStyle = RetroUiTheme.CreateLabelStyle(
+                7,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Muted,
+                true);
+            statusValueStyle = RetroUiTheme.CreateLabelStyle(
+                7,
+                TextAnchor.MiddleCenter,
+                new Color32(231, 236, 224, 255),
                 true);
             itemNameStyle = RetroUiTheme.CreateLabelStyle(
                 7,

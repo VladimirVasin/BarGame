@@ -173,6 +173,46 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator UKey_DrinksAtZeroStressAndKeepsMenuOpen()
+        {
+            Assert.That(GameSessionState.StressLevel, Is.Zero);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.VodkaBottle),
+                Is.True);
+            Assert.That(inventory.Open(), Is.True);
+            Assert.That(inventory.MoveSelection(1), Is.True);
+            Assert.That(inventory.MoveSelection(1), Is.True);
+            Assert.That(
+                inventory.SelectedStack.ItemId,
+                Is.EqualTo(InventoryItemId.VodkaBottle));
+            Assert.That(inventory.CanUseSelected, Is.True);
+
+            yield return null;
+            inputFixture.Press(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+
+            Assert.That(inventory.IsOpen, Is.True);
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.VodkaBottle),
+                Is.Zero);
+            Assert.That(GameSessionState.StressLevel, Is.Zero);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.GreaterThan(0));
+            Assert.That(inventory.SelectedItemIndex, Is.EqualTo(1));
+            Assert.That(
+                inventory.View.PreviewRenderer.CurrentItemId,
+                Is.EqualTo(InventoryItemId.Lighter));
+            Assert.That(inventory.UseFeedbackSucceeded, Is.True);
+            Assert.That(
+                inventory.UseFeedbackMessage,
+                Is.Not.Null.And.Not.Empty);
+
+            inputFixture.Release(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator Preview_RendersVisiblePixelsAndRotatesWhilePaused()
         {
             Assert.That(inventory.Open(), Is.True);

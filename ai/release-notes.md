@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### 2026-08-04 — Hunger, stress and usable provisions
+
+- The inventory Status panel now shows compact intoxication, hunger and stress
+  bars alongside the hero portrait and cash, without a redundant textual
+  intoxication-stage label. Fresh runs start at zero hunger and zero stress;
+  neither value rises on its own yet.
+- Existing food can be eaten from the inventory when it has an effect. All
+  current cheap food leaves at least `20` hunger, while a no-effect use keeps
+  the item.
+- Alcohol now relieves stress according to its own value while retaining its
+  intoxication. Bar service and every drinking minigame use the same committed
+  rule, including proportional Split-the-G sips; the supermarket vodka bottle
+  is consumed as four servings.
+
 ### 2026-08-04 — A music slot for the supermarket
 
 - The supermarket now supports its own looping `supermarket_theme`, routed

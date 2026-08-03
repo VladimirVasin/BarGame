@@ -419,6 +419,193 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void NewGame_StartsHungerAndStressAtZero()
+        {
+            GameSessionState.UpdateNeeds(73, 81);
+
+            GameSessionState.BeginNewGame();
+
+            Assert.That(GameSessionState.DefaultHunger, Is.Zero);
+            Assert.That(GameSessionState.DefaultStress, Is.Zero);
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.StressLevel, Is.Zero);
+        }
+
+        [TestCase(-5, 0, 130, 100)]
+        [TestCase(44, 44, 67, 67)]
+        public void UpdateNeeds_ClampsPublicValues(
+            int hunger,
+            int expectedHunger,
+            int stress,
+            int expectedStress)
+        {
+            GameSessionState.UpdateNeeds(hunger, stress);
+
+            Assert.That(
+                GameSessionState.HungerLevel,
+                Is.EqualTo(expectedHunger));
+            Assert.That(
+                GameSessionState.StressLevel,
+                Is.EqualTo(expectedStress));
+        }
+
+        [Test]
+        public void CheapFoodUse_StopsAtFloorAndKeepsUnusedItem()
+        {
+            GameSessionState.UpdateNeeds(60, 40);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    3),
+                Is.True);
+
+            InventoryItemUseResult first =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan);
+            InventoryItemUseResult second =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan);
+            InventoryItemUseResult blocked =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan);
+
+            Assert.That(first.Succeeded, Is.True);
+            Assert.That(first.ActualHungerRelief, Is.EqualTo(35));
+            Assert.That(second.Succeeded, Is.True);
+            Assert.That(second.ActualHungerRelief, Is.EqualTo(5));
+            Assert.That(blocked.Succeeded, Is.False);
+            Assert.That(
+                blocked.Status,
+                Is.EqualTo(InventoryItemUseStatus.NoEffect));
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(20));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void VodkaBottleUse_CommitsFourServingsAtomically()
+        {
+            GameSessionState.UpdateNeeds(0, 60);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.VodkaBottle),
+                Is.True);
+
+            InventoryItemUseResult result =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.VodkaBottle);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(result.ActualStressRelief, Is.EqualTo(48));
+            Assert.That(result.ActualIntoxicationGain, Is.EqualTo(72));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(12));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(72));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.Vodka));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.VodkaBottle),
+                Is.Zero);
+        }
+
+        [Test]
+        public void VodkaBottleAtMaximumIntoxication_MutatesNothing()
+        {
+            GameSessionState.UpdateNeeds(0, 60);
+            GameSessionState.UpdateDrinkingProgress(
+                100,
+                DrinkId.RedWine,
+                2);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.VodkaBottle),
+                Is.True);
+
+            InventoryItemUseResult result =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.VodkaBottle);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(
+                result.Status,
+                Is.EqualTo(
+                    InventoryItemUseStatus.MaximumIntoxication));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(60));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(100));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.VodkaBottle),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DuplicateDrinkCommit_DoesNotRelieveStressTwice()
+        {
+            GameSessionState.UpdateNeeds(0, 60);
+
+            GameSessionState.CommitDrinkingProgress(
+                8,
+                DrinkId.LightBeer,
+                1,
+                DrinkRules.GetStressRelief(DrinkId.LightBeer));
+            GameSessionState.CommitDrinkingProgress(
+                80,
+                DrinkId.Vodka,
+                1,
+                DrinkRules.GetStressRelief(DrinkId.Vodka));
+            GameSessionState.CommitDrinkingProgress(
+                0,
+                DrinkId.None,
+                0,
+                DrinkRules.GetStressRelief(DrinkId.CognacVsop));
+
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(54));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(8));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void VodkaBottleAtSaturatedDrinkCount_CommitsOtherEffects()
+        {
+            GameSessionState.UpdateNeeds(0, 60);
+            GameSessionState.UpdateDrinkingProgress(
+                0,
+                DrinkId.None,
+                int.MaxValue);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.VodkaBottle),
+                Is.True);
+
+            InventoryItemUseResult result =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.VodkaBottle);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(12));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(72));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.Vodka));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(int.MaxValue));
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.VodkaBottle),
+                Is.Zero);
+        }
+
+        [Test]
         public void BarReturnLifecycle_PreservesDrinkingProgress()
         {
             const DrinkId drink = DrinkId.CognacVs;
@@ -523,6 +710,7 @@ namespace BarPromenade.Tests.EditMode
                 91,
                 DrinkId.RedWine,
                 2);
+            GameSessionState.UpdateNeeds(0, 20);
 
             DrinkPurchaseResult result =
                 GameSessionState.TryPurchaseDrink(
@@ -541,6 +729,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.LightBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(14));
 
             DrinkPurchaseResult clamped =
                 GameSessionState.TryPurchaseDrink(
@@ -554,6 +743,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.DarkBeer));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(4));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(6));
         }
 
         [Test]
@@ -618,6 +808,7 @@ namespace BarPromenade.Tests.EditMode
                 100,
                 DrinkId.CognacVsop,
                 7);
+            GameSessionState.UpdateNeeds(0, 30);
 
             DrinkPurchaseResult result =
                 GameSessionState.TryPurchaseDrink(DrinkId.Water);
@@ -631,6 +822,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.CognacVsop));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(8));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(30));
         }
 
         [Test]
