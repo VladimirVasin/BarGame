@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### 2026-08-03 — Detailed falls from every side
+
+- Failed drunken balance checks now use a long hand-detailed sprite sequence
+  for falling, lying on the floor and getting back up.
+- Every one of the hero's eight viewing directions has separate left- and
+  right-fall artwork, so his bandage, shoulder patch and satchel never flip to
+  the wrong physical side.
+- The authored silhouette also drives the directional shadow while the
+  physical player remains safely upright and stationary.
+
+### 2026-08-03 — Balance checks in motion
+
+- Drunken balance warnings and active checks no longer stop the hero. Movement
+  remains live while directional input also steers the balance arrow.
+- A failed check still stops the motor for the visible fall, down and recovery
+  sequence, then restores the exact captured control state.
+
+### 2026-08-02 — Accelerating sobriety
+
+- Intoxication now falls automatically during free gameplay. Recovery starts
+  slowly at roughly one point per `12 s` at level `100` and accelerates toward
+  one point per `3 s` near sober.
+- Modal interactions pause recovery so a minigame cannot restore an older
+  intoxication snapshot when it commits a drink result.
+
 ### 2026-08-02 — Fog restored in Windows builds
 
 - The gray-green City and balcony fog now survives shader stripping in a

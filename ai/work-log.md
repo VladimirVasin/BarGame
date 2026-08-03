@@ -2,6 +2,67 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Eight-direction detailed fall animations
+
+- Added 16 transparent detailed fall atlases: all eight existing player views
+  with separately authored screen-left and screen-right variants. Each atlas
+  exposes 80 `128x96` cells, for 1280 runtime sprites without mirroring the
+  physical left-arm bandage or right-shoulder patch.
+- Added an explicit unscaled `14`-frame fall, `36`-frame down and `30`-frame
+  rise mapping. The rig lazily slices only requested atlases, reuses its body
+  renderer, hides the other eight layers and restores the ordinary puppet.
+  Dynamic shadows use the matching full-body frame without adding renderers.
+- Added a deterministic importer for Point/Clamp, no mipmaps and uncompressed
+  Standalone texture data.
+
+Verification:
+
+- Validated all 16 RGBA files at `1280x768`: all 1280 cells contain visible
+  pixels, transparent corners are clean and no green fringe remains.
+- Runtime, EditMode and PlayMode C# projects built with zero warnings/errors.
+- Focused fall tests passed `14/14` EditMode and `2/2` PlayMode.
+- Full suites passed `715/715` EditMode and `139/139` active PlayMode tests;
+  the existing five ignored PlayMode cases remained ignored. No player build
+  was produced.
+
+## 2026-08-03 — Moving balance checks
+
+- Added a motor-input policy to the shared modal lock. Fullscreen presentations
+  still stop locomotion, while the balance-specific option preserves it during
+  warning and active challenge phases.
+- A failed balance check now disables the motor only when the fall begins and
+  restores the captured input state after rising or cancellation.
+- Updated the focused PlayMode contract to require movement during the check
+  and movement blocking during the actual fall.
+
+Verification:
+
+- Runtime and PlayMode-test C# projects compiled with zero warnings or errors;
+  Unity script compilation completed with `Tundra build success`.
+- The focused intoxication PlayMode class passed `3/3`, covering movement in
+  Warning/Active, motor stop on failure and exact restoration after recovery.
+- Full PlayMode and player-build checks were intentionally deferred in fast
+  mode.
+
+## 2026-08-02 — Accelerating intoxication recovery
+
+- Added session-owned fractional recovery that lowers the integer intoxication
+  level during free gameplay on unscaled time and persists across gameplay
+  scene changes.
+- Recovery takes about `12 s` per point at level `100` and accelerates
+  continuously to `3 s` per point near sober. It clamps at zero, preserves the
+  last-drink and consumed-drink context, and clears balance scheduling at the
+  existing threshold.
+- Paused recovery while a modal lock owns gameplay because the current bar
+  minigames commit absolute intoxication snapshots.
+
+Verification:
+
+- Runtime and EditMode-test C# projects compiled with zero warnings or errors.
+- Focused intoxication rules/session EditMode tests passed `51/51`.
+- Full PlayMode and player-build checks were intentionally deferred in fast
+  mode.
+
 ## 2026-08-02 — Runtime fog shader variant retained
 
 - Traced the Editor/player mismatch to built-in shader stripping: every build

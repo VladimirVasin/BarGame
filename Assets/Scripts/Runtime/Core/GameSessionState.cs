@@ -22,6 +22,7 @@ namespace BarPromenade
             plannedBarRoute.AsReadOnly();
         private static readonly HashSet<string> visitedBars =
             new HashSet<string>(StringComparer.Ordinal);
+        private static float intoxicationRecoveryElapsed;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static string ActiveBarId { get; private set; } = string.Empty;
@@ -78,6 +79,7 @@ namespace BarPromenade
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
             IntoxicationLevel = 0;
+            intoxicationRecoveryElapsed = 0f;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
@@ -461,6 +463,11 @@ namespace BarPromenade
             DrinkId previousDrink = LastAlcoholicDrink;
             int previousDrinksConsumed = DrinksConsumed;
             IntoxicationLevel = nextIntoxication;
+            if (IntoxicationLevel != previousIntoxication)
+            {
+                intoxicationRecoveryElapsed = 0f;
+            }
+
             LastAlcoholicDrink = lastDrink;
             DrinksConsumed = nextDrinksConsumed;
             if (IntoxicationLevel <=
@@ -493,6 +500,65 @@ namespace BarPromenade
                 GameLog.Field(
                     "balance_delay_reset",
                     resetBalanceDelay));
+        }
+
+        public static void AdvanceIntoxicationRecovery(
+            float unscaledDeltaTime)
+        {
+            float remainingTime = Mathf.Max(0f, unscaledDeltaTime);
+            if (IntoxicationLevel <= 0 || remainingTime <= 0f)
+            {
+                return;
+            }
+
+            int previousIntoxication = IntoxicationLevel;
+            while (IntoxicationLevel > 0)
+            {
+                float secondsPerPoint =
+                    IntoxicationStageRules.GetRecoverySecondsPerPoint(
+                        IntoxicationLevel);
+                float timeUntilNextPoint = Mathf.Max(
+                    0f,
+                    secondsPerPoint - intoxicationRecoveryElapsed);
+                if (remainingTime < timeUntilNextPoint)
+                {
+                    intoxicationRecoveryElapsed += remainingTime;
+                    break;
+                }
+
+                remainingTime -= timeUntilNextPoint;
+                intoxicationRecoveryElapsed = 0f;
+                IntoxicationLevel--;
+                if (remainingTime <= 0f)
+                {
+                    break;
+                }
+            }
+
+            if (IntoxicationLevel == 0)
+            {
+                intoxicationRecoveryElapsed = 0f;
+            }
+
+            if (IntoxicationLevel <=
+                IntoxicationStageRules.BalanceThreshold)
+            {
+                BalanceCheckDelayRemaining = 0f;
+            }
+
+            if (IntoxicationLevel != previousIntoxication)
+            {
+                GameLog.Debug(
+                    "intoxication",
+                    "recovered",
+                    GameLog.Field(
+                        "previous_level",
+                        previousIntoxication),
+                    GameLog.Field("level", IntoxicationLevel),
+                    GameLog.Field(
+                        "recovered_points",
+                        previousIntoxication - IntoxicationLevel));
+            }
         }
 
         public static DrinkPurchaseResult TryPurchaseDrink(
@@ -574,6 +640,7 @@ namespace BarPromenade
             int previousIntoxication = IntoxicationLevel;
             int previousDrinksConsumed = DrinksConsumed;
             IntoxicationLevel = 0;
+            intoxicationRecoveryElapsed = 0f;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             BalanceCheckDelayRemaining = 0f;

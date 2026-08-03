@@ -129,7 +129,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator BalanceCheck_AboveSixtyLocksMovementAndCancelsAtThreshold()
+        public IEnumerator BalanceCheck_AboveSixtyKeepsMovementAndCancelsAtThreshold()
         {
             GameSessionState.UpdateDrinkingProgress(
                 80,
@@ -154,11 +154,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(status.IsBalanceCheckActive, Is.True);
             Assert.That(balanceView.Visible, Is.True);
             Assert.That(balanceView.IsWarning, Is.True);
-            Assert.That(motor.InputEnabled, Is.False);
+            Assert.That(motor.InputEnabled, Is.True);
             Assert.That(interactor.InputEnabled, Is.False);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.False);
             Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
+
+            float activeDeadline = Time.realtimeSinceStartup + 1.5f;
+            while (status.BalanceStateName != "Active" &&
+                   Time.realtimeSinceStartup < activeDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(status.BalanceStateName, Is.EqualTo("Active"));
+            Assert.That(motor.InputEnabled, Is.True);
 
             GameSessionState.UpdateDrinkingProgress(
                 60,
@@ -200,6 +210,8 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(motor.IsGrounded, Is.True);
             Assert.That(status.TryStartBalanceCheck(), Is.True);
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.False);
 
             float fallDeadline =
                 Time.realtimeSinceStartup + 6f;

@@ -25,6 +25,13 @@
   `Assets/Resources/Player/PlayerDirectionalBodyExpressionsAtlas.png`.
   It is `512x480`: the same eight columns and five full-body rows in Unity
   order: `Neutral`, `HalfBlink`, `ClosedBlink`, `Watchful`, `Tense`.
+- Detailed balance falls:
+  `Assets/Resources/Player/Falls/PlayerDetailedFall*Atlas.png` contains 16
+  atlases: all eight `PlayerViewDirection` views times separately authored
+  screen-left and screen-right variants. Every atlas is `1280x768`, arranged
+  as 10 columns by 8 chronological rows of `128x96` cells at PPU 48. Logical
+  frame zero is the top-left cell; frames read left-to-right, top-to-bottom.
+  The 80-frame runtime budget is `14` falling, `36` down and `30` rising.
 - Layer order:
   `Body`, `LeftUpperArm`, `LeftLowerArm`, `RightUpperArm`,
   `RightLowerArm`, `LeftUpperLeg`, `LeftLowerLeg`, `RightUpperLeg`,
@@ -58,10 +65,13 @@ visible-face directions, plus watchful and tense expressions after sustained
 idle. Locomotion, intoxication above `0.35`, an active balance lean or a fall
 cancels those two idle-only expressions while ordinary blink timing continues.
 Percentage-driven intoxication reuses the same nine-part puppet: procedural
-body sway, arm spread and knee bend intensify continuously, the balance arrow
-adds signed lean, and failure lowers and rolls only the visual hierarchy toward
-the failed side. No extra sprite, renderer or authored fall frame is required;
-the physical player root remains upright.
+body sway, arm spread and knee bend intensify continuously and the balance
+arrow adds signed lean. Failure reuses the existing body renderer for one
+authored full-body fall frame, hides the other eight visible layers and keeps
+the physical player root upright. The matching directional-light shadow does
+the same with its existing body caster. Atlases load and slice lazily, and the
+nine-part puppet is restored when recovery completes or presentation is
+disabled; no tenth renderer is introduced.
 A future frame-animation pass should preserve the column/layer order and pivot
 positions while adding consistent idle/walk frames.
 

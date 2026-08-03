@@ -143,6 +143,25 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Recovery_LowerLevelsLosePointsFaster()
+        {
+            float nearSober =
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(1);
+            float middle =
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(50);
+            float maximum =
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(100);
+
+            Assert.That(nearSober, Is.LessThan(middle));
+            Assert.That(middle, Is.LessThan(maximum));
+            Assert.That(
+                maximum,
+                Is.EqualTo(
+                    IntoxicationStageRules
+                        .RecoverySecondsPerPointAtMaximumLevel));
+        }
+
+        [Test]
         public void BalanceModel_FixedStepIsIndependentOfFrameChunking()
         {
             BalanceChallengeSettings settings =

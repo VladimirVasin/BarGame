@@ -64,6 +64,8 @@ Assets/
       PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
       PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
       PlayerBalconySmokingAtlas.png      8x8 sequence with idle-matched/dithered edges
+      Falls/                             16 no-mirror fall atlases
+        PlayerDetailedFall*Atlas.png     8 views x 2 sides, 10x8 cells at 128x96
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -132,6 +134,7 @@ Assets/
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
+        PlayerFallAnimationTimeline.cs  14/36/30 authored frame mapping
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
@@ -416,7 +419,7 @@ GameSessionState intoxication -> IntoxicationStageRules
                               -> IntoxicationRenderState -> PS1 world composite
                               -> above 60 -> balance scheduler/model
                                  -> BalanceCheckView
-                                 -> success or visual fall/recovery
+                                 -> success or 16-atlas detailed fall/recovery
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record

@@ -401,8 +401,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   states require sustained idle below strong intoxication and outside a
   balance/fall state, runtime swaps only the existing body renderer, and all
   rear variants remain neutral. The same joint hierarchy accepts continuous
-  intoxication sway, arm spread, knee bend, balance lean and side-specific
-  visual fall poses without adding renderers or authored frames.
+  intoxication sway, arm spread, knee bend and balance lean. A failed balance
+  check temporarily reuses its body renderer for a full-body `128x96` frame,
+  disables the other eight visible layers and lazily slices one of 16
+  point-filtered `10x8` fall atlases. Eight camera-relative views each own
+  separately authored screen-left and screen-right variants, so the physical
+  bandage/patch asymmetry never relies on mirroring. Explicit
+  `Falling`/`Down`/`Rising` progress maps to `14`/`36`/`30` frames and restores
+  the original nine-part puppet without changing renderer count.
 - **Accepted — Camera-independent player shadow:** One collider-free
   nine-part `ShadowsOnly` puppet reuses the directional part sprites and a
   shared alpha-clipped URP shadow-caster material. It selects its authored view
@@ -719,13 +725,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   increases arrow disturbance/frequency and risk gain, and reduces player
   authority.
 - **Accepted — State-preserving balance modal and fall:** A balance-specific
-  modal lock stops motor, interaction and camera orbit but keeps the
-  intoxication HUD and cinematic camera motion visible. Scene transitions,
+  modal lock leaves motor input live during warning and active play while
+  stopping interaction and camera orbit; the intoxication HUD and cinematic
+  camera motion remain visible. Scene transitions,
   fullscreen modals, disabled controls or ungrounded movement prevent a check;
   returning from an external block grants at least `3 s` before it can start.
-  Success schedules the next normal interval. Failure chooses the arrow side
-  and drives only the visual puppet through `0.45 s` falling, `1.2 s` down and
-  `1.0 s` rising while the upright `CharacterController` root remains fixed;
+  Success schedules the next normal interval. Failure stops the motor,
+  chooses the arrow side and drives the explicit 80-frame authored sequence
+  through `0.45 s` falling, `1.2 s` down and `1.0 s` rising while the upright
+  `CharacterController` root remains fixed;
   the contact shadow expands and offsets with the pose. Recovery adds `6 s`
   to the next normal interval. Dropping intoxication to `60` or below safely
   cancels the challenge and clears its delay.

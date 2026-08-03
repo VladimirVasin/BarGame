@@ -267,6 +267,12 @@ namespace BarPromenade
         private void SynchronizeParts(
             PlayerViewDirection direction)
         {
+            if (sourceVisual.IsDetailedFallActive)
+            {
+                SynchronizeDetailedFall(direction);
+                return;
+            }
+
             for (int partIndex = 0;
                  partIndex < PlayerSpriteRig.PartCount;
                  partIndex++)
@@ -301,6 +307,41 @@ namespace BarPromenade
                 renderer.sprite =
                     sourceVisual.GetPartSprite(part, direction);
                 renderer.enabled = true;
+            }
+        }
+
+        private void SynchronizeDetailedFall(
+            PlayerViewDirection direction)
+        {
+            for (int partIndex = 0;
+                 partIndex < PlayerSpriteRig.PartCount;
+                 partIndex++)
+            {
+                Transform shadowTransform =
+                    partTransforms[partIndex];
+                shadowTransform.localPosition = Vector3.zero;
+                shadowTransform.localRotation = Quaternion.identity;
+                shadowTransform.localScale = Vector3.one;
+
+                SpriteRenderer renderer =
+                    partRenderers[partIndex];
+                if (renderer.sharedMaterial == null)
+                {
+                    renderer.sharedMaterial =
+                        PlayerShadowResources.ShadowCasterMaterial;
+                }
+
+                bool isBody =
+                    partIndex == (int)PlayerPuppetPart.Body;
+                renderer.enabled = isBody;
+                if (isBody)
+                {
+                    renderer.sprite =
+                        sourceVisual.GetDetailedFallSprite(
+                            direction,
+                            sourceVisual.FallDirection,
+                            sourceVisual.DetailedFallFrameIndex);
+                }
             }
         }
 

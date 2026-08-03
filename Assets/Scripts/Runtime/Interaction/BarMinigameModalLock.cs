@@ -5,21 +5,24 @@ namespace BarPromenade
     public readonly struct BarMinigameModalLockOptions
     {
         private BarMinigameModalLockOptions(
+            bool disableMotorInput,
             bool disableCinematicMotion,
             bool hideHud)
         {
+            DisableMotorInput = disableMotorInput;
             DisableCinematicMotion = disableCinematicMotion;
             HideHud = hideHud;
         }
 
+        public bool DisableMotorInput { get; }
         public bool DisableCinematicMotion { get; }
         public bool HideHud { get; }
 
         public static BarMinigameModalLockOptions Fullscreen =>
-            new BarMinigameModalLockOptions(true, true);
+            new BarMinigameModalLockOptions(true, true, true);
 
         public static BarMinigameModalLockOptions BalanceCheck =>
-            new BarMinigameModalLockOptions(false, false);
+            new BarMinigameModalLockOptions(false, false, false);
     }
 
     public sealed class BarMinigameModalLock
@@ -94,7 +97,11 @@ namespace BarPromenade
             IsLocked = true;
             activeLock = this;
 
-            motor?.SetInputEnabled(false);
+            if (options.DisableMotorInput)
+            {
+                motor?.SetInputEnabled(false);
+            }
+
             interactor.SetInputEnabled(false);
             cameraFollow?.SetOrbitInputEnabled(false);
             if (options.DisableCinematicMotion)

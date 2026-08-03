@@ -40,6 +40,23 @@ namespace BarPromenade
         public const float PixelsPerUnit = 48f;
         public const float FeetPivotXPixels = 32f;
         public const float FeetPivotPixels = 4f;
+        public const int FallSideCount = 2;
+        public const int FallColumns = 10;
+        public const int FallRows = 8;
+        public const int FallFrameWidth = 128;
+        public const int FallFrameHeight = 96;
+
+        private static readonly string[] FallDirectionNames =
+        {
+            "Front",
+            "FrontRight",
+            "Right",
+            "BackRight",
+            "Back",
+            "BackLeft",
+            "Left",
+            "FrontLeft"
+        };
 
         private const float MovingThreshold = 0.02f;
         private const float DepthSortingThreshold = 0.005f;
@@ -190,6 +207,8 @@ namespace BarPromenade
             new Sprite[PartCount, DirectionCount];
         private readonly Sprite[,] expressionSprites =
             new Sprite[ExpressionCount, DirectionCount];
+        private readonly Sprite[][] fallSprites =
+            new Sprite[DirectionCount * FallSideCount][];
         private readonly PlayerFacialAnimationState facialAnimationState =
             new PlayerFacialAnimationState();
 
@@ -212,6 +231,9 @@ namespace BarPromenade
         private float fallAmountTarget;
         private float fallAmount;
         private float fallDirection = 1f;
+        private PlayerFallAnimationPhase fallAnimationPhase;
+        private float fallAnimationProgress;
+        private bool detailedFallPresented;
         private float footPlantAmount = 1f;
         private Vector3 upperBodyOffset;
 
@@ -234,6 +256,14 @@ namespace BarPromenade
         public float BalanceLean => balanceLean;
         public float FallAmount => fallAmount;
         public float FallDirection => fallDirection;
+        public PlayerFallAnimationPhase FallAnimationPhase =>
+            fallAnimationPhase;
+        public int DetailedFallFrameIndex =>
+            PlayerFallAnimationTimeline.EvaluateFrame(
+                fallAnimationPhase,
+                fallAnimationProgress);
+        public bool IsDetailedFallActive =>
+            fallAnimationPhase != PlayerFallAnimationPhase.None;
         public Vector3 UpperBodyOffset => upperBodyOffset;
         public Vector3 LeftFootContactWorldPosition =>
             GetFootContactWorldPosition(true);
@@ -286,6 +316,81 @@ namespace BarPromenade
             }
 
             fallAmountTarget = Mathf.Clamp01(amount);
+        }
+
+        public void SetFallAnimation(
+            PlayerFallAnimationPhase phase,
+            float normalizedProgress)
+        {
+            fallAnimationPhase = phase;
+            fallAnimationProgress = Mathf.Clamp01(
+                normalizedProgress);
+            if (phase == PlayerFallAnimationPhase.None)
+            {
+                fallAmount = fallAmountTarget;
+            }
+        }
+
+        public Sprite GetDetailedFallSprite(
+            PlayerViewDirection direction,
+            float signedDirection,
+            int frameIndex)
+        {
+            ValidateDirection(direction);
+            if (frameIndex < 0 ||
+                frameIndex >= PlayerFallAnimationTimeline.FrameCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(frameIndex),
+                    frameIndex,
+                    "Fall frame must be in the authored 0-79 range.");
+            }
+
+            int sideIndex = signedDirection < 0f ? 0 : 1;
+            int cacheIndex =
+                (int)direction * FallSideCount + sideIndex;
+            if (fallSprites[cacheIndex] == null)
+            {
+                fallSprites[cacheIndex] = CreateFallSprites(
+                    direction,
+                    sideIndex);
+            }
+
+            return fallSprites[cacheIndex][frameIndex];
+        }
+
+        public static string GetFallAtlasResourcePath(
+            PlayerViewDirection direction,
+            float signedDirection)
+        {
+            ValidateDirection(direction);
+            string sideName = signedDirection < 0f
+                ? "ScreenLeft"
+                : "ScreenRight";
+            return $"Player/Falls/PlayerDetailedFall" +
+                   $"{FallDirectionNames[(int)direction]}" +
+                   $"{sideName}Atlas";
+        }
+
+        public static Rect GetFallAtlasFrameRect(int frameIndex)
+        {
+            if (frameIndex < 0 ||
+                frameIndex >= PlayerFallAnimationTimeline.FrameCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(frameIndex),
+                    frameIndex,
+                    "Fall frame must be in the authored 0-79 range.");
+            }
+
+            int column = frameIndex % FallColumns;
+            int topRow = frameIndex / FallColumns;
+            int bottomRow = FallRows - 1 - topRow;
+            return new Rect(
+                column * FallFrameWidth,
+                bottomRow * FallFrameHeight,
+                FallFrameWidth,
+                FallFrameHeight);
         }
 
         public Sprite GetDirectionSprite(PlayerViewDirection direction)
@@ -402,7 +507,30 @@ namespace BarPromenade
                 intoxicationBlend <= 0.35f &&
                 Mathf.Abs(balanceLean) <= 0.05f &&
                 fallAmount <= 0.01f);
-            ApplyFacialExpression(CurrentDirection);
+            if (IsDetailedFallActive)
+            {
+                ApplyDetailedFallPresentation();
+            }
+            else
+            {
+                RestoreDetailedFallPresentation();
+                ApplyFacialExpression(CurrentDirection);
+            }
+        }
+
+        private void OnDisable()
+        {
+            fallAnimationPhase = PlayerFallAnimationPhase.None;
+            fallAnimationProgress = 0f;
+            fallAmountTarget = 0f;
+            fallAmount = 0f;
+            if (visualRoot == null || partRenderers.Count != PartCount)
+            {
+                return;
+            }
+
+            RestoreDetailedFallPresentation();
+            ApplyDirection(CurrentDirection);
         }
 
         private void OnDestroy()
@@ -428,6 +556,7 @@ namespace BarPromenade
                 expressionSprites,
                 0,
                 expressionSprites.Length);
+            Array.Clear(fallSprites, 0, fallSprites.Length);
         }
 
         private Transform ResolveDefaultFacingTransform()
@@ -593,6 +722,106 @@ namespace BarPromenade
             }
         }
 
+        private Sprite[] CreateFallSprites(
+            PlayerViewDirection direction,
+            int sideIndex)
+        {
+            float signedDirection = sideIndex == 0 ? -1f : 1f;
+            string resourcePath = GetFallAtlasResourcePath(
+                direction,
+                signedDirection);
+            Texture2D atlas = Resources.Load<Texture2D>(resourcePath);
+            ValidateFallAtlas(atlas, resourcePath);
+            atlas.filterMode = FilterMode.Point;
+            atlas.wrapMode = TextureWrapMode.Clamp;
+
+            var sprites = new Sprite[
+                PlayerFallAnimationTimeline.FrameCount];
+            Vector2 normalizedPivot = new Vector2(
+                0.5f,
+                FeetPivotPixels / FallFrameHeight);
+            for (int frameIndex = 0;
+                 frameIndex < sprites.Length;
+                 frameIndex++)
+            {
+                Sprite sprite = Sprite.Create(
+                    atlas,
+                    GetFallAtlasFrameRect(frameIndex),
+                    normalizedPivot,
+                    PixelsPerUnit,
+                    0,
+                    SpriteMeshType.FullRect);
+                sprite.name =
+                    $"PlayerDetailedFall{direction}" +
+                    $"{(sideIndex == 0 ? "Left" : "Right")}" +
+                    $"{frameIndex:00}";
+                sprite.hideFlags = HideFlags.DontSave;
+                sprites[frameIndex] = sprite;
+                generatedSprites.Add(sprite);
+            }
+
+            return sprites;
+        }
+
+        private void ApplyDetailedFallPresentation()
+        {
+            int frameIndex = DetailedFallFrameIndex;
+            SpriteRenderer bodyRenderer = BodyRenderer;
+            bodyRenderer.enabled = true;
+            bodyRenderer.sprite = GetDetailedFallSprite(
+                CurrentDirection,
+                fallDirection,
+                frameIndex);
+            bodyRenderer.color = Color.white;
+            bodyRenderer.flipX = false;
+            bodyRenderer.flipY = false;
+            bodyRenderer.sortingOrder = GetSortingOrder(
+                PlayerPuppetPart.Body);
+
+            poseRoot.localPosition = Vector3.zero;
+            poseRoot.localRotation = Quaternion.identity;
+            poseRoot.localScale = Vector3.one;
+            Transform bodyTransform =
+                partTransforms[(int)PlayerPuppetPart.Body];
+            bodyTransform.localPosition = Vector3.zero;
+            bodyTransform.localRotation = Quaternion.identity;
+            bodyTransform.localScale = Vector3.one;
+
+            for (int partIndex = 1;
+                 partIndex < PartCount;
+                 partIndex++)
+            {
+                partRenderers[partIndex].enabled = false;
+            }
+
+            upperBodyOffset = Vector3.zero;
+            footPlantAmount = 0f;
+            detailedFallPresented = true;
+        }
+
+        private void RestoreDetailedFallPresentation()
+        {
+            if (!detailedFallPresented)
+            {
+                return;
+            }
+
+            poseRoot.localPosition = Vector3.zero;
+            poseRoot.localRotation = Quaternion.identity;
+            poseRoot.localScale = Vector3.one;
+            SetRestPositions(DirectionPoses[(int)CurrentDirection]);
+            for (int partIndex = 0;
+                 partIndex < PartCount;
+                 partIndex++)
+            {
+                partRenderers[partIndex].enabled = true;
+            }
+
+            upperBodyOffset = Vector3.zero;
+            footPlantAmount = 1f;
+            detailedFallPresented = false;
+        }
+
         private static void ValidateAtlas(Texture2D atlas)
         {
             if (atlas == null)
@@ -632,6 +861,29 @@ namespace BarPromenade
                     $"Player facial atlas must be {expectedWidth}x" +
                     $"{expectedHeight}, but is {atlas.width}x" +
                     $"{atlas.height}.");
+            }
+        }
+
+        private static void ValidateFallAtlas(
+            Texture2D atlas,
+            string resourcePath)
+        {
+            if (atlas == null)
+            {
+                throw new InvalidOperationException(
+                    "Player fall atlas was not found at Resources/" +
+                    $"{resourcePath}.");
+            }
+
+            int expectedWidth = FallColumns * FallFrameWidth;
+            int expectedHeight = FallRows * FallFrameHeight;
+            if (atlas.width != expectedWidth ||
+                atlas.height != expectedHeight)
+            {
+                throw new InvalidOperationException(
+                    $"Player fall atlas at Resources/{resourcePath} " +
+                    $"must be {expectedWidth}x{expectedHeight}, but is " +
+                    $"{atlas.width}x{atlas.height}.");
             }
         }
 
@@ -866,7 +1118,7 @@ namespace BarPromenade
                     intoxicationPhase,
                     balanceLean,
                     fallDirection,
-                    fallAmount);
+                    IsDetailedFallActive ? 0f : fallAmount);
 
             PlayerPuppetPose activePose =
                 DirectionPoses[(int)CurrentDirection];

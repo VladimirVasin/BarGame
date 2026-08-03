@@ -218,7 +218,10 @@ The vertical slice contains:
   HomeInterior and StairwellInterior:
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
   `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
-  Very Drunk / «В стельку»; `0` is Sober and hides the HUD;
+  Very Drunk / «В стельку»; `0` is Sober and hides the HUD. Free gameplay
+  continuously lowers the session level on unscaled time, from about `12 s`
+  per point at `100` to `3 s` per point near sober; modal interactions pause
+  this recovery so their committed drinking snapshots remain authoritative;
 - continuously escalating movement slowdown, puppet sway, arm spread, knee
   bend, camera roll and world-image distortion within those ranges, with the
   HUD rendered as five independently filling 20-point segments; presentation
@@ -227,11 +230,16 @@ The vertical slice contains:
   above the player with a green center sector, moving arrow and red risk
   meter; arrows, A/D, D-pad or left stick counter the arrow, while higher
   intoxication narrows the safe sector, strengthens disturbances and makes
-  checks longer and more frequent;
-- a failed balance check visually drops the jointed puppet to the arrow
-  side, keeps the upright player root stationary, expands and offsets the
-  contact shadow, then recovers through `0.45 s` falling, `1.2 s` down and
-  `1.0 s` rising states before restoring movement;
+  checks longer and more frequent. Warning and active checks keep locomotion
+  enabled, so those same directional controls move the hero while steering
+  the balance arrow;
+- a failed balance check switches the existing body renderer from the jointed
+  puppet to one of 16 detailed no-mirror fall atlases: eight camera-relative
+  views times separate screen-left/screen-right trajectories, with 80
+  `128x96` frames per atlas. The upright player root remains stationary, the
+  contact shadow expands and offsets, the light-facing shadow uses the same
+  authored frame, and the sequence recovers through `0.45 s` falling,
+  `1.2 s` down and `1.0 s` rising before restoring all nine puppet layers;
 - a full-screen city map with district colors and labels, distinct park land
   and paths, player/bar markers, a dedicated labeled home icon and four
   non-interactive, kind-specific public-place markers with a localized legend.

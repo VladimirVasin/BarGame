@@ -65,6 +65,8 @@ namespace BarPromenade
         public const int MaximumLevel = 100;
         public const int StageSize = 20;
         public const int BalanceThreshold = 60;
+        public const float RecoverySecondsPerPointAtMinimumLevel = 3f;
+        public const float RecoverySecondsPerPointAtMaximumLevel = 12f;
 
         public static IntoxicationProfile Evaluate(int level)
         {
@@ -165,6 +167,18 @@ namespace BarPromenade
             int stageIndex = Mathf.CeilToInt(
                 clampedLevel / (float)StageSize);
             return (IntoxicationStage)Mathf.Clamp(stageIndex, 1, 5);
+        }
+
+        public static float GetRecoverySecondsPerPoint(int level)
+        {
+            float normalizedLevel = Mathf.InverseLerp(
+                1f,
+                MaximumLevel,
+                Mathf.Clamp(level, 1, MaximumLevel));
+            return Mathf.Lerp(
+                RecoverySecondsPerPointAtMinimumLevel,
+                RecoverySecondsPerPointAtMaximumLevel,
+                normalizedLevel);
         }
 
         public static string GetStageNameKey(

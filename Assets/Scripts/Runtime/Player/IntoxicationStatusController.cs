@@ -203,6 +203,13 @@ namespace BarPromenade
             }
 
             float deltaTime = Time.unscaledDeltaTime;
+            if (!SceneTransitionService.IsTransitioning &&
+                !BarMinigameModalLock.IsAnyLocked)
+            {
+                GameSessionState.AdvanceIntoxicationRecovery(
+                    deltaTime);
+            }
+
             UpdatePresentationLevel(deltaTime);
             UpdateBalance(deltaTime);
             ApplyPresentation();
@@ -445,6 +452,7 @@ namespace BarPromenade
 
         private void BeginFall()
         {
+            motor?.SetInputEnabled(false);
             fallDirection = Mathf.Sign(
                 Mathf.Approximately(
                     challengeModel.Position,
@@ -689,6 +697,9 @@ namespace BarPromenade
             spriteRig?.SetFallPose(
                 fallDirection,
                 fallAmount);
+            spriteRig?.SetFallAnimation(
+                GetFallAnimationPhase(),
+                GetFallAnimationProgress());
             cameraFollow?.SetIntoxication(
                 currentProfile.Normalized);
             cameraFollow?.SetBalanceReaction(
@@ -716,6 +727,39 @@ namespace BarPromenade
             return 0f;
         }
 
+        private PlayerFallAnimationPhase GetFallAnimationPhase()
+        {
+            switch (balanceState)
+            {
+                case BalanceState.Falling:
+                    return PlayerFallAnimationPhase.Falling;
+                case BalanceState.Down:
+                    return PlayerFallAnimationPhase.Down;
+                case BalanceState.Rising:
+                    return PlayerFallAnimationPhase.Rising;
+                default:
+                    return PlayerFallAnimationPhase.None;
+            }
+        }
+
+        private float GetFallAnimationProgress()
+        {
+            switch (balanceState)
+            {
+                case BalanceState.Falling:
+                    return Mathf.Clamp01(
+                        balanceStateElapsed / FallDuration);
+                case BalanceState.Down:
+                    return Mathf.Clamp01(
+                        balanceStateElapsed / DownDuration);
+                case BalanceState.Rising:
+                    return Mathf.Clamp01(
+                        balanceStateElapsed / RisingDuration);
+                default:
+                    return 0f;
+            }
+        }
+
         private void Shutdown()
         {
             if (!initialized)
@@ -734,6 +778,9 @@ namespace BarPromenade
             spriteRig?.SetIntoxication(0f);
             spriteRig?.SetBalancePose(0f);
             spriteRig?.SetFallPose(0f, 0f);
+            spriteRig?.SetFallAnimation(
+                PlayerFallAnimationPhase.None,
+                0f);
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
             IntoxicationRenderState.Clear();

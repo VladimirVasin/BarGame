@@ -464,6 +464,35 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void IntoxicationRecovery_ConsumesTimeAndStopsAtSober()
+        {
+            GameSessionState.UpdateDrinkingProgress(
+                2,
+                DrinkId.LightBeer,
+                1);
+            float firstInterval =
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(2);
+
+            GameSessionState.AdvanceIntoxicationRecovery(
+                firstInterval - 0.01f);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(2));
+
+            GameSessionState.AdvanceIntoxicationRecovery(0.01f);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(1));
+
+            GameSessionState.AdvanceIntoxicationRecovery(
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(1));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+
+            GameSessionState.AdvanceIntoxicationRecovery(60f);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(1));
+        }
+
+        [Test]
         public void TryPurchaseDrink_FailureDoesNotMutateSession()
         {
             GameSessionState.UpdateDrinkingProgress(
