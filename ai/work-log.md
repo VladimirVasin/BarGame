@@ -2,6 +2,24 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Silent automated test runs
+
+- Added one shared Unity Test Framework run callback used by both EditMode and
+  PlayMode assemblies. It captures the current global listener volume, keeps
+  output at zero throughout the run and restores the captured value afterward.
+- Muting uses `AudioListener.volume` rather than pausing audio, so source play
+  state, samples, fades, scheduling and DSP-dependent assertions keep their
+  ordinary semantics. The callback is preserved for standalone player tests.
+
+Verification:
+
+- Unity script compilation completed with `Tundra build success`.
+- Focused EditMode mute registration passed `1/1`.
+- Focused PlayMode mute plus existing scene/Home music lifecycle coverage
+  passed `13/13`.
+- TestSupport, EditModeTests and PlayModeTests projects built with zero
+  warnings and zero errors.
+
 ## 2026-08-03 — Eight-direction detailed fall animations
 
 - Added 16 transparent detailed fall atlases: all eight existing player views

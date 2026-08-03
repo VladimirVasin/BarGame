@@ -171,7 +171,9 @@ Assets/
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
   Tests/
+    Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+      AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
@@ -184,6 +186,7 @@ Assets/
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
+      AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration

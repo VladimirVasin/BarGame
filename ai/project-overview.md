@@ -17,8 +17,10 @@
   `Assets/Scenes/StairwellInterior.unity` and
   `Assets/Scenes/HomeInterior.unity`.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Test assemblies: `BarPromenade.EditModeTests` and
-  `BarPromenade.PlayModeTests`.
+- Test assemblies: shared `BarPromenade.TestSupport` infrastructure plus
+  `BarPromenade.EditModeTests` and `BarPromenade.PlayModeTests`. A run-level
+  callback silences listener output for every automated test and restores the
+  previous listener volume when the run finishes.
 
 ## Implemented MVP
 
