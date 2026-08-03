@@ -482,9 +482,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   motion and the HUD. It consumes `CityLayout.DistrictPointsOfInterest`
   directly, draws those lots as open public ground and gives the waterworks,
   drying yard, weighbridge and last-route island distinct non-interactive
-  marker shapes plus a localized name legend. POIs are map context only: they
-  are not route stops, do not enter the visited set or count, and do not change
-  bar selection or pathfinding.
+  marker shapes plus a localized name legend. The same overlay reads the
+  canonical `CityLayout.Supermarket`, draws it as a non-route grocery-shop
+  landmark and resolves pointer hover across bars, home, shop and POIs by
+  nearest marker, with deterministic priority ties. Localized hover names use
+  one high-contrast tooltip that flips and clamps inside the map. Shop and POIs
+  are map context only: they are not route stops, do not enter the visited set
+  or count, and do not change bar selection or pathfinding.
 - **Accepted — Shared-lock gameplay pause:** City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad

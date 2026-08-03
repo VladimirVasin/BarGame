@@ -157,6 +157,142 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void DefaultMapSupermarket_MirrorsCanonicalLayoutLandmark()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                58021);
+            var mapObject = new GameObject("City Map Supermarket Test");
+            var previousRoute = new List<string>(
+                GameSessionState.PlannedBarRoute);
+            try
+            {
+                CityMapController controller =
+                    mapObject.AddComponent<CityMapController>();
+                controller.Initialize(
+                    layout,
+                    default,
+                    null,
+                    null);
+
+                Assert.That(layout.Supermarket, Is.Not.Null);
+                Assert.That(
+                    controller.Supermarket,
+                    Is.SameAs(layout.Supermarket));
+                Assert.That(
+                    controller.GetSupermarketLabel(),
+                    Is.Not.Empty);
+            }
+            finally
+            {
+                GameSessionState.ClearRoute();
+                for (int index = 0; index < previousRoute.Count; index++)
+                {
+                    GameSessionState.TryAddRouteStop(previousRoute[index]);
+                }
+
+                UnityEngine.Object.DestroyImmediate(mapObject);
+            }
+        }
+
+        [Test]
+        public void HoverResolution_PrefersNearestMarkerThenPriority()
+        {
+            var sharedHitbox = new Rect(90f, 90f, 24f, 20f);
+            var targets = new[]
+            {
+                new CityMapView.MapHoverTarget(
+                    sharedHitbox,
+                    new Vector2(96f, 100f),
+                    "far",
+                    30),
+                new CityMapView.MapHoverTarget(
+                    sharedHitbox,
+                    new Vector2(104f, 100f),
+                    "near-low-priority",
+                    10),
+                new CityMapView.MapHoverTarget(
+                    sharedHitbox,
+                    new Vector2(104f, 100f),
+                    "near-landmark",
+                    30)
+            };
+
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(
+                    targets,
+                    new Vector2(103f, 100f)),
+                Is.EqualTo("near-landmark"));
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(
+                    targets,
+                    new Vector2(130f, 100f)),
+                Is.Empty);
+
+            var marginalTargets = new[]
+            {
+                new CityMapView.MapHoverTarget(
+                    sharedHitbox,
+                    new Vector2(103.01f, 100f),
+                    "marginally-far",
+                    30),
+                new CityMapView.MapHoverTarget(
+                    sharedHitbox,
+                    new Vector2(103.005f, 100f),
+                    "marginally-near",
+                    10)
+            };
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(
+                    marginalTargets,
+                    new Vector2(103f, 100f)),
+                Is.EqualTo("marginally-near"));
+        }
+
+        [Test]
+        public void HoverTooltip_StaysInsideMapAtEveryCorner()
+        {
+            var bounds = new Rect(20f, 40f, 420f, 280f);
+            var requestedSize = new Vector2(188f, 42f);
+            Vector2[] pointers =
+            {
+                new Vector2(bounds.xMin + 1f, bounds.yMin + 1f),
+                new Vector2(bounds.xMax - 1f, bounds.yMin + 1f),
+                new Vector2(bounds.xMin + 1f, bounds.yMax - 1f),
+                new Vector2(bounds.xMax - 1f, bounds.yMax - 1f)
+            };
+
+            for (int index = 0; index < pointers.Length; index++)
+            {
+                Rect tooltip = CityMapView.CreateTooltipRect(
+                    pointers[index],
+                    requestedSize,
+                    bounds);
+
+                Assert.That(
+                    tooltip.xMin,
+                    Is.GreaterThanOrEqualTo(bounds.xMin),
+                    index.ToString());
+                Assert.That(
+                    tooltip.xMax,
+                    Is.LessThanOrEqualTo(bounds.xMax),
+                    index.ToString());
+                Assert.That(
+                    tooltip.yMin,
+                    Is.GreaterThanOrEqualTo(bounds.yMin),
+                    index.ToString());
+                Assert.That(
+                    tooltip.yMax,
+                    Is.LessThanOrEqualTo(bounds.yMax),
+                    index.ToString());
+                Assert.That(
+                    tooltip.Contains(pointers[index]),
+                    Is.False,
+                    index.ToString());
+            }
+        }
+
+        [Test]
         public void PublicPlaceLot_UsesOpenGroundInsteadOfDistrictBuildingFill()
         {
             Color publicPlace = InvokePrivate<Color>(

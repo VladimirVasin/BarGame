@@ -7,6 +7,10 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityMapView : MonoBehaviour
     {
+        private const int PointOfInterestHoverPriority = 10;
+        private const int BarHoverPriority = 20;
+        private const int LandmarkHoverPriority = 30;
+
         private readonly struct MapProjection
         {
             public MapProjection(
@@ -51,6 +55,26 @@ namespace BarPromenade
             }
         }
 
+        internal readonly struct MapHoverTarget
+        {
+            internal MapHoverTarget(
+                Rect hitbox,
+                Vector2 anchor,
+                string label,
+                int priority)
+            {
+                Hitbox = hitbox;
+                Anchor = anchor;
+                Label = label ?? string.Empty;
+                Priority = priority;
+            }
+
+            public Rect Hitbox { get; }
+            public Vector2 Anchor { get; }
+            public string Label { get; }
+            public int Priority { get; }
+        }
+
         private static readonly Color Backdrop =
             RetroUiTheme.WithAlpha(RetroUiTheme.Backdrop, 0.96f);
         private static readonly Color MapGround =
@@ -89,6 +113,13 @@ namespace BarPromenade
             RetroUiTheme.Cyan;
         private static readonly Color PlayerHome =
             RetroUiTheme.AccentPale;
+        private static readonly Color Supermarket =
+            new Color32(224, 194, 91, 255);
+        private static readonly Color TooltipBackdrop =
+            new Color32(19, 15, 25, 250);
+
+        private readonly List<MapHoverTarget> hoverTargets =
+            new List<MapHoverTarget>(8);
 
         private CityMapController controller;
         private GUIStyle titleStyle;
@@ -102,6 +133,7 @@ namespace BarPromenade
         private GUIStyle districtLabelStyle;
         private GUIStyle pointOfInterestTitleStyle;
         private GUIStyle pointOfInterestItemStyle;
+        private GUIStyle tooltipStyle;
 
         public void Initialize(CityMapController mapController)
         {
@@ -125,6 +157,8 @@ namespace BarPromenade
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
+            Vector2 logicalPointer =
+                RetroUiTheme.LogicalMousePosition(canvas);
 
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
@@ -178,8 +212,12 @@ namespace BarPromenade
                     content.height);
 
                 MapProjection projection = CreateProjection(mapArea);
+                hoverTargets.Clear();
                 DrawMap(projection);
                 DrawRoutePanel(routePanel);
+                DrawHoverTooltip(
+                    projection.ScreenRect,
+                    logicalPointer);
             }
             finally
             {
@@ -201,6 +239,7 @@ namespace BarPromenade
             DrawDistrictLabels(projection);
             DrawRoute(projection);
             DrawPointsOfInterest(projection);
+            DrawSupermarket(projection);
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
@@ -385,6 +424,11 @@ namespace BarPromenade
                     position.y - markerSize * 0.5f,
                     markerSize,
                     markerSize);
+                RegisterHoverTarget(
+                    marker,
+                    position,
+                    controller.GetBarLabel(index),
+                    BarHoverPriority);
 
                 if (focused)
                 {
@@ -453,7 +497,62 @@ namespace BarPromenade
                     6f,
                     4f,
                     2f);
+                RegisterHoverTarget(
+                    CreateCenteredRect(position, 17f, 17f),
+                    position,
+                    controller.GetPointOfInterestLabel(index),
+                    PointOfInterestHoverPriority);
             }
+        }
+
+        private void DrawSupermarket(MapProjection projection)
+        {
+            BuildingLot supermarket = controller.Supermarket;
+            if (supermarket == null)
+            {
+                return;
+            }
+
+            Vector2 position =
+                projection.WorldToScreen(supermarket.Center);
+            Rect hitbox = CreateCenteredRect(position, 19f, 19f);
+            RegisterHoverTarget(
+                hitbox,
+                position,
+                controller.GetSupermarketLabel(),
+                LandmarkHoverPriority);
+
+            Rect bagBody = new Rect(
+                position.x - 6f,
+                position.y - 3f,
+                12f,
+                11f);
+            DrawSolidRect(
+                new Rect(
+                    bagBody.x - 2f,
+                    bagBody.y - 2f,
+                    bagBody.width + 4f,
+                    bagBody.height + 4f),
+                RetroUiTheme.Ink);
+            DrawSolidRect(bagBody, Supermarket);
+            DrawLine(
+                new Vector2(position.x - 4f, bagBody.y),
+                new Vector2(position.x - 4f, position.y - 7f),
+                2f,
+                Supermarket);
+            DrawLine(
+                new Vector2(position.x - 4f, position.y - 7f),
+                new Vector2(position.x + 4f, position.y - 7f),
+                2f,
+                Supermarket);
+            DrawLine(
+                new Vector2(position.x + 4f, position.y - 7f),
+                new Vector2(position.x + 4f, bagBody.y),
+                2f,
+                Supermarket);
+            DrawSolidRect(
+                new Rect(position.x - 1f, position.y, 2f, 5f),
+                RetroUiTheme.Ink);
         }
 
         private void DrawPlayer(MapProjection projection)
@@ -513,6 +612,15 @@ namespace BarPromenade
                 position.y - 2f,
                 bodyWidth,
                 bodyHeight);
+            RegisterHoverTarget(
+                Rect.MinMaxRect(
+                    body.xMin - 2f,
+                    body.yMin - 6f,
+                    body.xMax + 2f,
+                    body.yMax),
+                position,
+                LocalizationService.Get("map.home"),
+                LandmarkHoverPriority);
             DrawSolidRect(body, PlayerHome);
             Vector2 roofLeft =
                 new Vector2(body.x - 2f, body.y + 1f);
@@ -545,6 +653,163 @@ namespace BarPromenade
                     14f),
                 LocalizationService.Get("map.home"),
                 routeItemStyle);
+        }
+
+        private void RegisterHoverTarget(
+            Rect hitbox,
+            Vector2 anchor,
+            string label,
+            int priority)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return;
+            }
+
+            hoverTargets.Add(
+                new MapHoverTarget(
+                    hitbox,
+                    anchor,
+                    label,
+                    priority));
+        }
+
+        private void DrawHoverTooltip(
+            Rect mapBounds,
+            Vector2 logicalPointer)
+        {
+            string label = ResolveHoveredLabel(
+                hoverTargets,
+                logicalPointer);
+            if (string.IsNullOrEmpty(label))
+            {
+                return;
+            }
+
+            var content = new GUIContent(label);
+            float maximumTextWidth = Mathf.Max(
+                48f,
+                Mathf.Min(176f, mapBounds.width - 20f));
+            float naturalTextWidth =
+                tooltipStyle.CalcSize(content).x;
+            float textWidth = Mathf.Clamp(
+                naturalTextWidth,
+                48f,
+                maximumTextWidth);
+            float textHeight = Mathf.Max(
+                12f,
+                tooltipStyle.CalcHeight(content, textWidth));
+            Rect tooltip = CreateTooltipRect(
+                logicalPointer,
+                new Vector2(textWidth + 12f, textHeight + 8f),
+                mapBounds);
+
+            RetroUiTheme.DrawPanel(
+                tooltip,
+                TooltipBackdrop,
+                RetroUiTheme.AccentPale,
+                true,
+                2f,
+                1f);
+            GUI.Label(
+                new Rect(
+                    tooltip.x + 6f,
+                    tooltip.y + 4f,
+                    tooltip.width - 12f,
+                    tooltip.height - 8f),
+                content,
+                tooltipStyle);
+        }
+
+        internal static string ResolveHoveredLabel(
+            IReadOnlyList<MapHoverTarget> targets,
+            Vector2 pointer)
+        {
+            if (targets == null)
+            {
+                return string.Empty;
+            }
+
+            string bestLabel = string.Empty;
+            float bestDistance = float.PositiveInfinity;
+            int bestPriority = int.MinValue;
+            for (int index = 0; index < targets.Count; index++)
+            {
+                MapHoverTarget target = targets[index];
+                if (string.IsNullOrEmpty(target.Label) ||
+                    !target.Hitbox.Contains(pointer))
+                {
+                    continue;
+                }
+
+                float distance =
+                    (target.Anchor - pointer).sqrMagnitude;
+                if (distance < bestDistance ||
+                    (Mathf.Approximately(distance, bestDistance) &&
+                     target.Priority > bestPriority))
+                {
+                    bestLabel = target.Label;
+                    bestDistance = distance;
+                    bestPriority = target.Priority;
+                }
+            }
+
+            return bestLabel;
+        }
+
+        internal static Rect CreateTooltipRect(
+            Vector2 pointer,
+            Vector2 requestedSize,
+            Rect bounds)
+        {
+            const float edgePadding = 3f;
+            const float pointerGap = 10f;
+            Rect safeBounds = new Rect(
+                bounds.x + edgePadding,
+                bounds.y + edgePadding,
+                Mathf.Max(1f, bounds.width - edgePadding * 2f),
+                Mathf.Max(1f, bounds.height - edgePadding * 2f));
+            float width = Mathf.Min(
+                Mathf.Max(1f, requestedSize.x),
+                safeBounds.width);
+            float height = Mathf.Min(
+                Mathf.Max(1f, requestedSize.y),
+                safeBounds.height);
+            float x = pointer.x + pointerGap;
+            float y = pointer.y + pointerGap;
+
+            if (x + width > safeBounds.xMax)
+            {
+                x = pointer.x - pointerGap - width;
+            }
+
+            if (y + height > safeBounds.yMax)
+            {
+                y = pointer.y - pointerGap - height;
+            }
+
+            x = Mathf.Clamp(
+                x,
+                safeBounds.xMin,
+                safeBounds.xMax - width);
+            y = Mathf.Clamp(
+                y,
+                safeBounds.yMin,
+                safeBounds.yMax - height);
+            return RetroUiTheme.SnapRect(
+                new Rect(x, y, width, height));
+        }
+
+        internal static Rect CreateCenteredRect(
+            Vector2 center,
+            float width,
+            float height)
+        {
+            return new Rect(
+                center.x - width * 0.5f,
+                center.y - height * 0.5f,
+                width,
+                height);
         }
 
         private void DrawRoutePanel(Rect panel)
@@ -1216,6 +1481,12 @@ namespace BarPromenade
                 7,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
+                true);
+            tooltipStyle = RetroUiTheme.CreateLabelStyle(
+                9,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text,
+                true,
                 true);
         }
     }

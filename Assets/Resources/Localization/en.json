@@ -777,6 +777,10 @@
       "value": "Home"
     },
     {
+      "key": "map.supermarket",
+      "value": "Grocery shop"
+    },
+    {
       "key": "map.clear",
       "value": "Clear route"
     },

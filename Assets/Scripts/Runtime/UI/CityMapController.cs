@@ -83,6 +83,7 @@ namespace BarPromenade
         public IReadOnlyList<CityMapPointOfInterest> PointsOfInterest =>
             pointsOfInterest;
         public BuildingLot PlayerHome => Layout?.PlayerHome;
+        public BuildingLot Supermarket => Layout?.Supermarket;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
         public int VisitedBarCount
         {
@@ -402,6 +403,11 @@ namespace BarPromenade
                     out string key)
                 ? LocalizationService.Get(key)
                 : string.Empty;
+        }
+
+        public string GetSupermarketLabel()
+        {
+            return LocalizationService.Get("map.supermarket");
         }
 
         internal static bool TryGetPointOfInterestLocalizationKey(

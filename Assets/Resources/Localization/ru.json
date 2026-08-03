@@ -777,6 +777,10 @@
       "value": "\u0414\u043e\u043c"
     },
     {
+      "key": "map.supermarket",
+      "value": "\u041f\u0440\u043e\u0434\u0443\u043a\u0442\u043e\u0432\u044b\u0439 \u043c\u0430\u0433\u0430\u0437\u0438\u043d"
+    },
+    {
       "key": "map.clear",
       "value": "Очистить маршрут"
     },

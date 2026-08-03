@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-04 — Clearer city-map landmarks
+
+- The city map now marks the grocery shop with its own shopping-bag symbol.
+- Hovering a bar, home, grocery shop or public place shows its localized name
+  in a high-contrast tooltip that stays inside the map, including near edges
+  and tightly grouped landmarks.
+
 ### 2026-08-04 — A supermarket with stock that stays gone
 
 - The city now contains one deterministic street-front supermarket. Entering

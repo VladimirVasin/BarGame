@@ -2,6 +2,26 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Grocery-shop marker and map hover names
+
+- Added the canonical `CityLayout.Supermarket` to the city map as a distinct
+  high-contrast shopping-bag marker without making it a bar route stop.
+- Registered bars, the player home, supermarket and district public places as
+  localized hover targets. Overlapping hitboxes resolve by nearest marker and
+  deterministic priority, while one wrapped retro tooltip flips and clamps to
+  remain inside the map.
+- Added RU/EN grocery-shop map text and focused coverage for canonical layout
+  integration, hover arbitration, edge-safe tooltip placement and localization.
+
+Verification:
+
+- Focused EditMode `CityMapDistrictPresentationTests` and
+  `LocalizationCatalogTests` passed `28/28` in the primary Unity invocation.
+- The review-driven nearest-marker edge-case regression passed `1/1` in one
+  narrow follow-up invocation.
+- Full suites, player build, startup smoke and manual rendered review were
+  intentionally not run under the fast-mode verification policy.
+
 ## 2026-08-04 — Product-centered cross-shelf supermarket browsing
 
 - Kept the shelf browser under one modal ownership while extending previous/

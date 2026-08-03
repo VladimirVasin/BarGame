@@ -257,13 +257,15 @@ The vertical slice contains:
   authored frame, and the sequence recovers through `0.45 s` falling,
   `1.2 s` down and `1.0 s` rising before restoring all nine puppet layers;
 - a full-screen city map with district colors and labels, distinct park land
-  and paths, player/bar markers, a dedicated labeled home icon and four
-  non-interactive, kind-specific public-place markers with a localized legend.
-  Public lots are drawn as open ground rather than buildings, and both lot
-  cells and markers come directly from the canonical validated layout used by
-  the world builder. Bar visits, ordered route editing and deterministic
-  shortest paths remain separate from the POI presentation and are constrained
-  to the generated road graph;
+  and paths, player/bar markers, a dedicated labeled home icon, a distinct
+  grocery-shop marker and four non-interactive, kind-specific public-place
+  markers with a localized legend. Hovering a bar, home, shop or public-place
+  marker shows its localized name in a bounded high-contrast tooltip. Public
+  lots are drawn as open ground rather than buildings, and all landmark data
+  comes directly from the canonical validated layout used by the world
+  builder. Bar visits, ordered route editing and deterministic shortest paths
+  remain separate from the shop/POI presentation and are constrained to the
+  generated road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent seed/bar/route/visited

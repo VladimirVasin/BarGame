@@ -232,6 +232,7 @@ namespace BarPromenade.Tests.EditMode
             "map.bar_name",
             "map.player",
             "map.home",
+            "map.supermarket",
             "map.clear",
             "map.visited_count",
             "map.distance",

@@ -189,8 +189,8 @@ Assets/
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, pause/inventory, segmented HUD, district/public-place map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
-        CityMapController.cs        canonical layout POIs plus bar-route state
-        CityMapView.cs              open public lots, four marker shapes and legend
+        CityMapController.cs        canonical shop/POIs plus bar-route state
+        CityMapView.cs              shop/POI markers, hover names and POI legend
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      I/North shared-lock input and time ownership
