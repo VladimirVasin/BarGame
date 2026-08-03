@@ -57,10 +57,17 @@ namespace BarPromenade.Tests.EditMode
         {
             var state = new InventoryState();
 
+            Assert.That(state.CanAdd(InventoryItemId.None), Is.False);
             Assert.That(state.TryAdd(InventoryItemId.None), Is.False);
+            Assert.That(
+                state.CanAdd(InventoryItemId.VodkaBottle, 9),
+                Is.True);
             Assert.That(
                 state.TryAdd(InventoryItemId.VodkaBottle, 9),
                 Is.True);
+            Assert.That(
+                state.CanAdd(InventoryItemId.VodkaBottle),
+                Is.False);
             Assert.That(
                 state.TryAdd(InventoryItemId.VodkaBottle),
                 Is.False);

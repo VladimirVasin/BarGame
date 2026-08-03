@@ -79,6 +79,7 @@ namespace BarPromenade
 
             var bars = new List<BarEntrance>(settings.BarCount);
             HomeEntrance playerHome = null;
+            SupermarketEntrance supermarket = null;
             for (int i = 0; i < layout.BuildingLots.Count; i++)
             {
                 BuildBuilding(
@@ -88,7 +89,8 @@ namespace BarPromenade
                     emissiveMaterial,
                     walkableArea,
                     bars,
-                    ref playerHome);
+                    ref playerHome,
+                    ref supermarket);
             }
 
             GameObject decorationRoot =
@@ -102,6 +104,7 @@ namespace BarPromenade
                 walkableArea,
                 bars,
                 playerHome,
+                supermarket,
                 fencePlan,
                 parkRoot,
                 districtPointOfInterestRoot,
@@ -457,7 +460,8 @@ namespace BarPromenade
             Material emissiveMaterial,
             RoadWalkableArea walkableArea,
             IList<BarEntrance> bars,
-            ref HomeEntrance playerHome)
+            ref HomeEntrance playerHome,
+            ref SupermarketEntrance supermarket)
         {
             if (!lot.HasBuilding)
             {
@@ -469,7 +473,9 @@ namespace BarPromenade
                     ? $"Bar {lot.BarId}"
                     : lot.IsPlayerHome
                         ? "Player Home"
-                        : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
+                        : lot.IsSupermarket
+                            ? "Supermarket"
+                            : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
             building.SetParent(parent, false);
 
             Color facadeColor =
@@ -499,6 +505,16 @@ namespace BarPromenade
                     emissiveMaterial,
                     walkableArea,
                     ref playerHome);
+                return;
+            }
+
+            if (lot.IsSupermarket)
+            {
+                BuildSupermarketFront(
+                    building,
+                    lot,
+                    walkableArea,
+                    ref supermarket);
                 return;
             }
 
@@ -602,6 +618,11 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(lot));
             }
 
+            if (lot.IsSupermarket && centerY < 2.30f)
+            {
+                return false;
+            }
+
             if (!lot.IsPlayerHome ||
                 !PlayerHomeBalconyGeometry.SupportsThirdFloor(
                     lot.Height))
@@ -646,7 +667,9 @@ namespace BarPromenade
             float paneLength =
                 (rowLength - ((paneCount - 1) * gap)) / paneCount;
             float paneHeight =
-                lot.IsBar || lot.IsPlayerHome
+                lot.IsBar ||
+                lot.IsPlayerHome ||
+                lot.IsSupermarket
                     ? 0.60f
                     : 0.48f;
 
@@ -739,6 +762,61 @@ namespace BarPromenade
                 lot.BarActivity,
                 lot.ReturnPosition + (Vector3.up * 0.12f));
             bars.Add(entrance);
+        }
+
+        private static void BuildSupermarketFront(
+            Transform parent,
+            BuildingLot lot,
+            RoadWalkableArea walkableArea,
+            ref SupermarketEntrance supermarket)
+        {
+            Vector3 direction = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y);
+            CitySupermarketFacadeWorldBuilder.BuildCity(parent, lot);
+
+            Vector3 apronCenter =
+                (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
+            float apronLength = Vector3.Distance(
+                lot.DoorPosition,
+                lot.ReturnPosition);
+            Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
+                ? new Vector3(
+                    apronLength,
+                    0.08f,
+                    SupermarketEntranceGeometry.WalkwayWidth)
+                : new Vector3(
+                    SupermarketEntranceGeometry.WalkwayWidth,
+                    0.08f,
+                    apronLength);
+            RuntimePrimitiveFactory.CreateBox(
+                "Supermarket Entrance Walkway",
+                parent,
+                apronCenter + Vector3.up * 0.10f,
+                apronSize,
+                Sidewalk);
+            walkableArea.Add(
+                RectFromCenter(
+                    apronCenter,
+                    apronSize.x,
+                    apronSize.z));
+
+            GameObject entranceObject = new GameObject(
+                "Interactive Supermarket Entrance");
+            entranceObject.transform.SetParent(parent, false);
+            entranceObject.transform.position =
+                lot.DoorPosition +
+                direction * 0.82f +
+                Vector3.up * 0.82f;
+            SphereCollider trigger =
+                entranceObject.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = 1.05f;
+            supermarket =
+                entranceObject.AddComponent<SupermarketEntrance>();
+            supermarket.Configure(
+                lot.ReturnPosition + Vector3.up * 0.12f);
         }
 
         private static void BuildHomeFront(

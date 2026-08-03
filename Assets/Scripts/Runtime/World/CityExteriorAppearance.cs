@@ -25,6 +25,8 @@ namespace BarPromenade
             new Color(1.35f, 0.72f, 0.28f);
         public static readonly Color HomeWindow =
             new Color(0.82f, 1.10f, 1.22f);
+        public static readonly Color SupermarketWindow =
+            new Color(0.50f, 0.82f, 0.66f);
 
         public static Color CreateNightFacadeColor(
             BuildingLot lot)
@@ -44,6 +46,15 @@ namespace BarPromenade
                     lot.Color.r * 0.72f,
                     lot.Color.g * 0.78f,
                     lot.Color.b * 0.80f,
+                    1f);
+            }
+
+            if (lot.IsSupermarket)
+            {
+                return new Color(
+                    lot.Color.r * 0.68f,
+                    lot.Color.g * 0.74f,
+                    lot.Color.b * 0.62f,
                     1f);
             }
 
@@ -81,6 +92,12 @@ namespace BarPromenade
             {
                 emissive = true;
                 return HomeWindow;
+            }
+
+            if (lot.IsSupermarket)
+            {
+                emissive = true;
+                return SupermarketWindow;
             }
 
             uint hash = StableHash(

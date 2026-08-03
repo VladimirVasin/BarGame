@@ -48,6 +48,10 @@ namespace BarPromenade
             {
                 EnsureInteriorInstalled();
             }
+            else if (scene.name == SceneIds.SupermarketInterior)
+            {
+                EnsureSupermarketInteriorInstalled();
+            }
             else if (scene.name == SceneIds.HomeInterior)
             {
                 EnsureHomeInteriorInstalled();
@@ -117,6 +121,29 @@ namespace BarPromenade
             {
                 GameObject root = new GameObject("[Bar Promenade] Bar Interior Runtime");
                 return root.AddComponent<BarInteriorRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static SupermarketInteriorRoot
+            EnsureSupermarketInteriorInstalled()
+        {
+            SupermarketInteriorRoot existing =
+                Object.FindAnyObjectByType<SupermarketInteriorRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Supermarket Interior Runtime");
+                return root.AddComponent<SupermarketInteriorRoot>();
             }
             finally
             {

@@ -7,7 +7,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in six explicit build scenes.
+  in seven explicit build scenes.
 
 ## MVP decisions
 
@@ -32,6 +32,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `8.8 m` tall and its City facade uses the shared third-floor
   balcony/window/door geometry. A fresh city starts on that home's frontage
   node. Bar-free custom layouts retain the central-road fallback and no home.
+- **Accepted — One deterministic city supermarket:** After bars, the player
+  home, district public places and primary landmarks are reserved, the default
+  layout chooses exactly one remaining street-front building lot. Selection
+  prefers Residential, then the shortest traversable route from the home, then
+  a stable seeded rank. The supermarket cannot also be a bar, home, public
+  place or primary landmark; a tiny custom layout may omit it when no ordinary
+  eligible lot remains. Its branded storefront, walkable apron, interaction
+  trigger, fence opening and return point derive from the canonical lot and
+  frontage data.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ street, entrance-apron and
   park-lawn rectangles plus district-public-ground and street-approach
@@ -41,7 +50,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Entrance-aware visual road boundary:** A pure planner derives
   the exposed perimeter of street rectangles only, including dead-end caps,
   and subtracts wider openings around every bar frontage, player-home frontage
-  and park gate. A district-public-place access subtracts its complete
+  supermarket frontage and park gate. A district-public-place access subtracts its complete
   block-side interval rather than creating a narrow gate, so no rail encloses
   a public lot from an adjacent street.
   Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
@@ -78,7 +87,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   consumes the validated layout plus fence and night-fixture plans and emits a
   stable ordered plan without using Unity global random state. Every ordinary
   building lot receives exactly one district silhouette/facade descriptor;
-  public-place lots are excluded because they have no building. Every urban
+  supermarket and public-place lots are excluded because they own a dedicated
+  facade or have no building. Every urban
   district retains one primary building landmark, and the enabled park still
   receives a fountain/statue plus bandstand.
   Optional frontage, roadside and park clusters use per-kind footprint
@@ -93,10 +103,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `SpriteRenderer` components: body plus upper/lower segments for both arms
   and legs.
 - **Accepted — Explicit scene allow-list:** Only `MainMenu`, `City`,
-  `DoorTransition`, `BarInterior`, `HomeInterior` and `StairwellInterior`
-  install their matching roots. Directly opening `DoorTransition` installs an
-  idle presentation root; only the transition service initializes and plays
-  it.
+  `DoorTransition`, `BarInterior`, `SupermarketInterior`, `HomeInterior` and
+  `StairwellInterior` install their matching roots. Directly opening
+  `DoorTransition` installs an idle presentation root; only the transition
+  service initializes and plays it.
 - **Accepted — Black startup boundary and one-shot Home opening:**
   `MainMenu` is build index `0` and owns only a black launch camera. After one
   frame it resets the complete run, prepares `HomeArrivalKind.OpeningSleep`
@@ -120,8 +130,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
   override for PlayMode tests and restores it after returning to Edit Mode.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
-  state carries the seed, active bar context, explicit bar-or-home city return
-  kind, the next stairwell arrival side and one consumed Home arrival kind
+  state carries the seed, active bar context, explicit
+  bar/home/supermarket city return kind, the next stairwell arrival side and
+  one consumed Home arrival kind
   between Single-mode scene loads. `BeginNewGame` restores all of those values
   together with route, visits, wallet, drinking and balance state.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
@@ -132,7 +143,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and development runs default to verbose, release players to basic, and
   batch/command-line tests to off. Files rotate at 5 MiB with three retained
   archives, while `F8` writes and flushes a manual state snapshot.
-- **Accepted — Separate classic door transition:** Bar, home and stairwell doors
+- **Accepted — Separate classic door transition:** Bar, supermarket, home and
+  stairwell doors
   reserve one transition guard for the complete
   `source -> DoorTransition -> destination` chain. The intermediate scene
   runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
@@ -206,11 +218,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   scale, selection-collider state and original renderer colors, then clear the
   temporary presentation state.
 - **Accepted — Session hero inventory:** One pure ordered stack model and code
-  catalog own the current run's apartment keys, lighter and collected Home food
-  or drink items. `GameSessionState` exposes read-only stacks plus atomic add,
+  catalog own the current run's apartment keys, lighter and collected Home or
+  purchased supermarket food and drink items. `GameSessionState` exposes
+  read-only stacks plus atomic add,
   remove and world-source collection operations; `BeginNewGame` resets starter
   possessions and every collected source, while ordinary scene transitions do
-  neither. `InventoryController` is installed beside pause in all four gameplay
+  neither. `InventoryController` is installed beside pause in all five gameplay
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
   close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
@@ -225,6 +238,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Combine and Drop commands are deliberately absent. Pause executes before
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
+- **Accepted — Separate finite-stock supermarket interior:**
+  `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` runtime-composed
+  room with protected aisles, three shelf sections, a stockroom facade and a
+  decorative checkout plus cashier. The cashier and register do not process
+  sales. Each shelf owns an authored fixed camera and one interaction station;
+  its modal browser selects the actual physical products by pointer, keyboard
+  or gamepad without replacing or fading the player sprite.
+  `SupermarketProductCatalog` offers exactly one physical chicken egg, vodka
+  bottle, closed stew can, instant noodles and day-old loaf. Each product has a
+  stable source ID. `GameSessionState.TryPurchaseWorldItem` is the sole commit
+  boundary: pure rules validate source, offer, cash and stack capacity, then
+  the transaction records the source, adds one inventory item and deducts cash,
+  rolling the source back if inventory insertion fails. Success immediately
+  removes the shelf model and collider; scene rebuilding filters committed
+  sources, so sold products stay gone until `BeginNewGame`. Failure mutates no
+  cash, source or inventory state. `ClosedStewCan` is deliberately distinct
+  from the refrigerator's `OpenStewCan`, so buying sealed stew cannot satisfy
+  the cat-feeding requirement. Entry and exit use the shared DoorTransition and
+  restore the supermarket's own City return point.
 - **Accepted — Reusable inventory-backed target interaction:** A target-specific
   adapter supplies one validated `InventoryItemRequirement`, localized Talk,
   confirmation and missing-item keys, and an idempotent
@@ -447,9 +479,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   marker shapes plus a localized name legend. POIs are map context only: they
   are not route stops, do not enter the visited set or count, and do not change
   bar selection or pathfinding.
-- **Accepted — Shared-lock gameplay pause:** City, BarInterior, HomeInterior
-  and StairwellInterior each attach one runtime `PauseMenuController` to their
-  existing UI root. Escape or gamepad Start can open it only when no other
+- **Accepted — Shared-lock gameplay pause:** City, BarInterior,
+  SupermarketInterior, HomeInterior and StairwellInterior each attach one
+  runtime `PauseMenuController` to their existing UI root. Escape or gamepad
+  Start can open it only when no other
   `BarMinigameModalLock` or scene transition owns gameplay; pause therefore
   never steals Escape from maps, refrigerator inspection or minigames, remains
   unavailable during the Home opening, and uses a Bar-specific gate rather
@@ -783,7 +816,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   repeated orders until the explicit camera return finishes.
 - **Accepted — Session wallet and immediate bar purchases:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
-  city/bar scene loads and city-seed changes. Every bar owns one separate
+  city/bar/supermarket scene loads and city-seed changes. Every bar owns one separate
   counter station and localized nine-item retail modal. Pure purchase rules
   validate the offer, affordability and maximum intoxication before one
   `GameSessionState` transaction deducts cash and immediately records the
@@ -791,8 +824,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `$2`, increments consumed drinks, does not sober the player and preserves
   the last alcoholic drink. `None` and the Tinctures-only `Moonshine` are not
   sold. Purchased drinks are consumed at the counter instead of being added to
-  the hero inventory. Earnings and long-term wallet/save persistence remain
-  deferred, and a purchase never completes a bar visit or changes its route.
+  the hero inventory. Supermarket purchases use the same wallet but add their
+  finite physical item to inventory rather than consuming it. Earnings and
+  long-term wallet/save persistence remain deferred, and a purchase never
+  completes a bar visit or changes its route.
 - **Accepted — Five percentage-driven intoxication ranges:** `0` is Sober.
   Positive values map through `IntoxicationStageRules` as `1–20` Light Buzz /
   «Лёгкий хмель», `21–40` Tipsy / «Навеселе», `41–60` Drunk / «Подшофе»,

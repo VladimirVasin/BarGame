@@ -160,6 +160,26 @@ namespace BarPromenade
                         "return_home_missing");
                 }
             }
+            else if (
+                GameSessionState.TryGetCityReturnKind(
+                    out CityReturnKind supermarketReturnKind) &&
+                supermarketReturnKind ==
+                CityReturnKind.Supermarket)
+            {
+                if (World.Supermarket != null)
+                {
+                    spawnPosition =
+                        World.Supermarket.ReturnPosition;
+                    spawnSource = "supermarket_return";
+                }
+                else
+                {
+                    spawnSource = "missing_supermarket_return";
+                    GameLog.Warning(
+                        "city",
+                        "return_supermarket_missing");
+                }
+            }
 
             spawnPosition.y = 0.12f;
             bool spawnIsWalkable =

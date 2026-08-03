@@ -41,56 +41,68 @@ These instructions apply to the entire repository.
 ## Quality and documentation
 
 - Make the smallest coherent change and preserve unrelated user work.
-- Add or update tests for behavior that can be tested deterministically.
-- Verify compilation and relevant EditMode/PlayMode behavior before declaring work complete.
+- Prefer reusing or extending focused/parameterized coverage. Add a new test
+  only for a distinct contract or regression that existing coverage cannot
+  express.
+- Follow the minimal verification policy below. Prefer one focused test that
+  also compiles its dependencies; do not require compilation plus both Unity
+  test layers for every change.
 - Update `ai/project-overview.md`, `ai/system-tree.md`, or `ai/systems-map.md` when their facts change.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
 
 ## Interactive fast iteration
 
-Choose verification mode autonomously for each task, while preserving the
-user's explicit choice:
+Use **fast mode by default for every ordinary request**, including shared,
+cross-system and lifecycle changes. Risk changes which focused check is most
+valuable; it does not automatically authorize a broad regression run.
 
-- Use **fast mode** for clear, isolated, reversible iteration where one focused
-  compile or targeted test gives useful confidence.
-- Use **full mode** when uncertainty is material, the change crosses important
-  systems, release confidence is needed, or a missed regression would be costly.
-- Briefly state the selected mode at the start of non-trivial work so the user
-  can override it immediately.
-- An explicit request such as "быстро", "без полного прогона", or equivalent
-  forces fast mode. An explicit request for "финал", "полная проверка",
-  "release", or a completed build forces full mode.
-- In fast mode, make the requested change first and run only the fastest relevant
-  check. Do not run full suites, player builds, or broad cross-review. Report
-  deferred verification honestly.
+- Briefly state fast mode at the start of non-trivial work so the user can
+  override it.
+- Use release verification only when the user explicitly requests a full
+  regression, complete EditMode/PlayMode run or release validation. Words such
+  as "finish" or "final" by themselves do not request broad verification.
+- A request to create a player build authorizes that build only. Add a smoke
+  check only when the user asks for it or the task specifically changes packaged
+  startup behavior. It does not imply EditMode or PlayMode suites.
+- Make the requested change first, then run only the smallest relevant check.
+  Do not run full suites, player builds, smoke checks or broad cross-review by
+  default. Report what was intentionally not run in one short sentence.
 - In either mode, treat 30 seconds without useful progress as a soft timeout:
   inspect the process immediately instead of repeating long polling cycles.
+- Do not start a check already known to take several minutes unless it is the
+  only practical way to validate the changed behavior or the user requested it.
 - Prefer direct local work. Use parallel agents only when they materially reduce
   ambiguity or total completion time.
 - If the user says they will build or test manually, stop any matching automated
   process immediately and hand off the exact changed setting or file.
 
-## Risk-based verification
+## Minimal verification policy
 
-When full mode is selected, classify each coherent change by its blast radius
-and use the highest applicable risk level. If the impact is unclear, raise the
-classification by one level.
+For a normal request, use one primary check. A shared-framework change may use
+one additional focused check. Stop once they provide sufficient evidence; the
+default cap is one Unity invocation, or two narrowly filtered invocations for a
+shared framework.
 
-- **Low risk:** documentation, comments, test-only edits, or isolated visual/data
-  changes with no runtime contract change. Review the diff and run only the
-  directly relevant checks; documentation-only changes do not require Unity
-  tests.
-- **Medium risk:** behavior changes contained within one system, including its
-  public methods or data. Verify compilation and run the affected system's
-  EditMode and/or PlayMode tests.
-- **High risk:** shared contracts or services; scenes, prefabs, ScriptableObjects,
-  or serialization; save/load; assembly, package, project, or build settings;
-  Unity lifecycle behavior; cross-system or cross-scene changes. Verify
-  compilation, run the full EditMode and PlayMode suites, and perform a relevant
-  build or manual smoke check when the changed path requires it.
+- Documentation/comments: review the diff and run `git diff --check`; no Unity
+  test or build.
+- Deterministic tooling, data or atlas art: run the directly affected validator.
+  Do not also run general Unity suites when the validator covers the contract.
+- C# runtime/editor/test code: if a suitable focused EditMode or PlayMode test
+  exists, run that one selection; Unity compiles its dependencies, so skip a
+  separate build. If no suitable test exists, build only the highest affected
+  project because its dependencies compile transitively.
+- Bug fix: rerun the concrete reproduction or its single focused regression
+  test. Do not run neighboring fixtures merely because they exist.
+- Scene, serialization or build-setting change: choose one proof matching the
+  change—an affected scene test, a manual smoke or a player build. Do not stack
+  them by default.
 
-Run checks after a coherent batch rather than after every edited line. Always run
-targeted tests for changed behavior, reserve the full suite for high-risk changes
-and release or milestone validation, and report exactly which checks ran and
-which could not be completed.
+Never run Runtime, EditModeTests and PlayModeTests builds redundantly. Never run
+complete EditMode/PlayMode suites, a Windows player build and a startup smoke in
+the same ordinary task. Existing tests remain in the repository for targeted or
+explicit release use; test count is not a reason to execute all of them.
+
+If a focused check exposes an unrelated known failure, do not start a broad
+rerun or repair it outside scope. Record it briefly and continue with the
+requested task.

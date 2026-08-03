@@ -14,6 +14,7 @@ namespace BarPromenade
             CityLandUseKind landUse,
             bool isBar,
             bool isPlayerHome,
+            bool isSupermarket,
             string barId,
             BarActivityKind barActivity,
             Vector2Int frontageDirection,
@@ -29,6 +30,7 @@ namespace BarPromenade
             LandUse = landUse;
             IsBar = isBar;
             IsPlayerHome = isPlayerHome;
+            IsSupermarket = isSupermarket;
             BarId = barId ?? string.Empty;
             BarActivity = barActivity;
             FrontageDirection = frontageDirection;
@@ -54,6 +56,7 @@ namespace BarPromenade
             LandUse == CityLandUseKind.DistrictPointOfInterest;
         public bool IsBar { get; }
         public bool IsPlayerHome { get; }
+        public bool IsSupermarket { get; }
         public string BarId { get; }
         public BarActivityKind BarActivity { get; }
         public Vector2Int FrontageDirection { get; }

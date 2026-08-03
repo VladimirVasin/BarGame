@@ -14,6 +14,7 @@
   `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
   `Assets/Scenes/BarInterior.unity`,
+  `Assets/Scenes/SupermarketInterior.unity`,
   `Assets/Scenes/StairwellInterior.unity` and
   `Assets/Scenes/HomeInterior.unity`.
 - Runtime assembly: `BarPromenade.Runtime`.
@@ -25,8 +26,8 @@
 ## Implemented MVP
 
 A runtime-composed 3D city in which a sprite-based player walks along roads,
-approaches interactive bars and their nearby home, enters separate interiors,
-and returns to the matching exterior entrance.
+approaches interactive bars, a supermarket and their nearby home, enters
+separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
@@ -66,7 +67,8 @@ The vertical slice contains:
   the map and minigame views; every active contextual prompt is a full pointer
   click target routed through the same guarded action as keyboard/gamepad
   interaction;
-- a localized PS1-style pause menu in City, Bar, Home and Stairwell gameplay:
+- a localized PS1-style pause menu in City, Bar, Supermarket, Home and
+  Stairwell gameplay:
   Escape or gamepad Start captures the shared modal lock, freezes scaled time,
   pauses non-UI audio, hides gameplay HUD/input and offers only Resume, Start
   Over and Quit Game. Restart and quit require an explicit default-No warning
@@ -163,14 +165,17 @@ The vertical slice contains:
   instead of letting the puppet intersect raised surfaces;
 - deterministic collider-free ochre guard rails, batched into `48 m` spatial
   chunks, that trace only street boundaries, close dead ends and leave clear
-  openings around every bar approach and park gate, while removing the full
-  fence interval from every public-place side that meets a street;
+  openings around every bar, supermarket and park-gate approach, while
+  removing the full fence interval from every public-place side that meets a
+  street;
 - 144 land-use lots by default, including 16 park cells, 4 open district points
   of interest, exactly 4 reachable bars in four different urban districts and
-  one non-bar player home beside one bar street; every bar pair is at
-  least `120 m` apart by traversable graph distance, while stable row-major
-  order assigns cocktail mixing, beer pong, Split the G and Tinctures in a
-  Row;
+  one non-bar player home beside one bar street, plus exactly one ordinary
+  street-front supermarket. Its deterministic selection prefers Residential,
+  then the shortest traversable route from the home, without consuming a bar,
+  public-place or primary-landmark lot. Every bar pair is at least `120 m`
+  apart by traversable graph distance, while stable row-major order assigns
+  cocktail mixing, beer pong, Split the G and Tinctures in a Row;
 - a default `8.8 m` player-home mass with a recognizable third-floor balcony,
   open door and window; the City facade uses the same balcony geometry as the
   Home interior's exterior opening;
@@ -178,7 +183,8 @@ The vertical slice contains:
   node beside the deterministic player home and its neighboring bar, `12 m`
   from their shared street approach under default spacing; custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
-  and returning from either interior restores that entrance's own return point;
+  and returning from a bar, home or supermarket interior restores that
+  entrance's own return point;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one nine-layer billboard puppet with a body plus upper/lower segments for
@@ -192,9 +198,9 @@ The vertical slice contains:
 - one camera-independent realtime player shadow that mirrors all nine
   articulated puppet parts in the authored view relative to the main light,
   faces them toward that light and reproduces live gait, compression and
-  whole-puppet sway in City, BarInterior, HomeInterior and StairwellInterior,
-  plus one small light-independent analytic contact patch fixed to the
-  grounded player root;
+  whole-puppet sway in City, BarInterior, SupermarketInterior, HomeInterior and
+  StairwellInterior, plus one small light-independent analytic contact patch
+  fixed to the grounded player root;
   neither changes the nine visible renderers;
 - one deterministic five-state body-expression atlas that swaps the existing
   body sprite for stronger half/closed blinks plus watchful and tense idle
@@ -225,7 +231,7 @@ The vertical slice contains:
   glass, lights or the room shell, and restores full opacity while the opening,
   refrigerator or animated Home interactions own presentation;
 - one percentage-driven intoxication profile shared by City, BarInterior,
-  HomeInterior and StairwellInterior:
+  SupermarketInterior, HomeInterior and StairwellInterior:
   `1–20` Light Buzz / «Лёгкий хмель», `21–40` Tipsy / «Навеселе»,
   `41–60` Drunk / «Подшофе», `61–80` Unsteady / «Шатает» and `81–100`
   Very Drunk / «В стельку»; `0` is Sober and hides the HUD. Free gameplay
@@ -261,9 +267,9 @@ The vertical slice contains:
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent seed/bar/route/visited
-  context for the current city, with an explicit bar-or-home return kind, a
-  separate stairwell-arrival side and a consumed `Normal`/`OpeningSleep` Home
-  arrival value;
+  context for the current city, with an explicit bar/home/supermarket return
+  kind, a separate stairwell-arrival side and a consumed
+  `Normal`/`OpeningSleep` Home arrival value;
 - a dedicated `3.15 s` `DoorTransition` scene between connected locations:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
@@ -322,6 +328,22 @@ The vertical slice contains:
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
   contract or the fog-free `220 m` bar range;
+- one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
+  protected aisles, three shelf sections, a stockroom facade and a decorative
+  checkout staffed by one decorative cashier. The checkout is not a purchase
+  station: activating a shelf opens its authored fixed product view and lets
+  mouse, keyboard or gamepad selection operate directly on the shelf's
+  physical goods;
+- the three supermarket shelves contain exactly one finite physical unit of
+  five catalog products: instant noodles and a day-old loaf, vodka and a closed
+  stew can, plus one chicken egg on the cold shelf. Confirming a purchase
+  atomically deducts its integer price, adds one matching inventory item and
+  commits the product's stable world-source ID. The bought model and collider
+  disappear immediately, and the source filter keeps that shelf position empty
+  after leaving and re-entering until `BeginNewGame`. Failures for insufficient
+  cash, a full stack or an already-bought source mutate nothing. Closed stew is
+  a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
+  therefore cannot satisfy the stairwell cat's feeding requirement;
 - one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
   and bathroom zones, clear entry/main/bathroom paths, six main-room furniture
   groups and separate toilet, shower and sink footprints; its runtime-built
@@ -366,20 +388,21 @@ The vertical slice contains:
   selection collider and original renderer colors without acquiring a second
   modal lock;
 - one localized fullscreen PS1-style hero inventory in City, BarInterior,
-  HomeInterior and StairwellInterior. `I` or gamepad North captures the shared
-  modal lock, freezes scaled time, hides the gameplay HUD and preserves the
-  ambient audio bed; Escape, the same toggle or gamepad East restores the exact
-  prior input, camera, HUD and time-scale state without opening pause on the
-  same frame. The logical `640x360` screen combines a hero portrait cropped
+  SupermarketInterior, HomeInterior and StairwellInterior. `I` or gamepad North
+  captures the shared modal lock, freezes scaled time, hides the gameplay HUD
+  and preserves the ambient audio bed; Escape, the same toggle or gamepad East
+  restores the exact prior input, camera, HUD and time-scale state without
+  opening pause on the same frame. The logical `640x360` screen combines a hero portrait cropped
   directly from the canonical neutral front player sprite, intoxication
   status, dollar cash, a five-column point-filtered icon grid, selected item
   description and contextual Examine/Close commands. The selected item is a
   live low-resolution 3D model in both the lower panel and Examine view; its
   hidden preview stage rotates on unscaled time and reuses the same procedural
-  bottle, egg and open-can geometry as the refrigerator, alongside inventory
-  key and lighter models. A pure catalog and ordered stack state begin every
-  new run with apartment keys and a lighter, persist across scene loads and
-  reset with the session; only commands backed by implemented rules are shown;
+  bottle, egg and open-can geometry as the refrigerator, plus the supermarket's
+  closed can, noodles and loaf, alongside inventory key and lighter models. A
+  pure catalog and ordered stack state begin every new run with apartment keys
+  and a lighter, persist across scene loads and reset with the session; only
+  commands backed by implemented rules are shown;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
@@ -597,7 +620,8 @@ The vertical slice contains:
   immediately consumes `Moonshine` for 24 intoxication; reaching `100`
   terminates the applicable minigame at maximum intoxication without creating
   a separate timed status;
-- a session-only cash wallet starting at `$999` and a localized physical
+- a session-only cash wallet starting at `$999`, shared by finite supermarket
+  stock and a localized physical
   nine-item counter menu in every bar. Interaction glides into a seated
   first-person shot with procedural low-poly arms and a full-width row of nine
   individually selectable 3D bottle objects; every bottle owns a solid

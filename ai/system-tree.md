@@ -9,6 +9,7 @@ Assets/
     City.unity
     DoorTransition.unity
     BarInterior.unity
+    SupermarketInterior.unity
     HomeInterior.unity
     StairwellInterior.unity
   Settings/
@@ -79,7 +80,7 @@ Assets/
       en.json
   Scripts/
     Runtime/
-      Core/          six-scene bootstrap, city root, session, transitions
+      Core/          seven-scene bootstrap, city root, session, transitions
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
@@ -92,7 +93,7 @@ Assets/
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model and heap pathfinding
-      World/         city plus validated bar/home layout plans and builders
+      World/         city plus validated bar/home/supermarket plans and builders
         CityDistrict.cs          district/path/land-use enums and district/park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
@@ -105,7 +106,9 @@ Assets/
         CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
         CityExteriorAppearance.cs    shared City/Home ground, facade and window recipe
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity
-        RoadFencePlan.cs         typed bar/home/park/public-place openings
+        CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
+        SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
+        RoadFencePlan.cs         typed bar/home/supermarket/park/public-place openings
         RoadFencePlanner.cs      exposed street boundary minus complete public sides
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         RoadWalkableArea.cs      street/park/public XZ union; surfaces own height
@@ -127,6 +130,9 @@ Assets/
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
+        SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
+        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, checkout/cashier
+        Supermarket{Shelf,Product}View.cs  registered physical stock and source IDs
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
@@ -148,7 +154,9 @@ Assets/
         InventoryMenuModel.cs       wrapping selection and examine state
         InventoryItemModelFactory.cs shared low-poly world/preview item models
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
-      Interaction/   contract, minigames and bar/home/stairwell entrances/exits
+        SupermarketProductCatalog.cs five offers with localized metadata/prices
+        SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
+      Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  grounded positioning, neutral handoff + terminal exit hold
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
@@ -157,7 +165,9 @@ Assets/
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
-      Scenes/        startup/bar/home/stairwell roots, atmosphere/reveal and transition
+        Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
+        SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
+      Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
         HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
@@ -171,6 +181,7 @@ Assets/
         HomeBathroomLight*.cs         synchronized tube/halo/point/spill flicker
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
+        SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Cocktails/     compatibility, deterministic shelves and 3-round session
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
@@ -199,6 +210,9 @@ Assets/
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, atlas portrait and 3D models
+      SupermarketCityPlanningTests.cs     one eligible lot + open street approach
+      SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
+      SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
       CatFeedingAnimationAssetTests.cs    player/cat atlas import and binary-alpha contract
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
@@ -216,6 +230,7 @@ Assets/
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
+      SupermarketPurchasePersistencePlayModeTests.cs  buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
@@ -258,6 +273,9 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                            -> four urban districts + central park
                                            -> distant bars via CityTravelDistance
                                            -> player home beside one bar street
+                                           -> nearest eligible Residential supermarket
+                                              -> branded facade + walkable apron
+                                              -> stable City return point
                                            -> four first-class public lots
                                               -> only at >= 18 m lot width and depth
                                               -> waterworks court
@@ -272,8 +290,8 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                               -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
-                                          -> RoadFencePlanner
-                                             -> bar/home/park openings
+                                           -> RoadFencePlanner
+                                              -> bar/home/supermarket/park openings
                                              -> full public-place sides remain open
                                           -> CityNightFixturePlanner
                                              -> public reservations stay clear
@@ -300,6 +318,8 @@ player + seed -> CityFogField
 player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> BarEntrance/BarExit -> SceneTransitionService
+                         or SupermarketEntrance/Exit -> SupermarketInterior
+                            -> matching City supermarket return
                          or HomeEntrance -> StairwellInterior
                             -> StairwellApartmentEntrance -> HomeInterior
                             -> HomeExit -> StairwellInterior
@@ -461,7 +481,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                   -> 7x7 swaps + cascades + XXX
                              -> drinking progress -> GameSessionState
                              -> completed visit -> CityMap
-       -> BarCounterStation -> BarDrinkShop
+        -> BarCounterStation -> BarDrinkShop
                             -> retail catalog + atomic cash/drink transaction
                             -> BarDrinkServicePlan -> nine physical bottle slots
                             -> BarDrinkServiceWorldBuilder
@@ -470,7 +490,19 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                -> seated camera + low-poly first-person arms
                                -> pickup -> pour -> 3 s drink -> vessel return
                                -> persistent browser -> explicit camera exit
-                            -> GameSessionState wallet + drinking progress
+                             -> GameSessionState wallet + drinking progress
+       -> SupermarketInteriorLayoutPlanner -> validated 16x11x3.6 shop
+                                             -> three physical shelf views
+                                                -> noodles + day-old loaf
+                                                -> vodka + closed stew
+                                                -> chicken egg
+                                             -> decorative checkout + cashier
+       -> SupermarketShelfStation -> authored fixed shelf camera
+                                   -> pointer/keyboard/gamepad product selection
+                                   -> SupermarketPurchaseRules
+                                      -> atomic cash + inventory + source commit
+                                      -> remove physical product immediately
+                                      -> filter source on scene re-entry
 GameSessionState intoxication -> IntoxicationStageRules
                               -> motor + puppet + camera
                               -> IntoxicationRenderState -> PS1 world composite

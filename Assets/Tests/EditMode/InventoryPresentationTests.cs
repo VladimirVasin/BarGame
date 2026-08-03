@@ -10,6 +10,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(InventoryItemId.VodkaBottle)]
         [TestCase(InventoryItemId.ChickenEgg)]
         [TestCase(InventoryItemId.OpenStewCan)]
+        [TestCase(InventoryItemId.ClosedStewCan)]
+        [TestCase(InventoryItemId.InstantNoodles)]
+        [TestCase(InventoryItemId.DayOldLoaf)]
         public void ItemIcon_HasVisiblePointFilteredPixels(
             InventoryItemId itemId)
         {
@@ -62,6 +65,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(InventoryItemId.VodkaBottle)]
         [TestCase(InventoryItemId.ChickenEgg)]
         [TestCase(InventoryItemId.OpenStewCan)]
+        [TestCase(InventoryItemId.ClosedStewCan)]
+        [TestCase(InventoryItemId.InstantNoodles)]
+        [TestCase(InventoryItemId.DayOldLoaf)]
         public void PreviewModel_HasFiniteGeometryAndNoColliders(
             InventoryItemId itemId)
         {

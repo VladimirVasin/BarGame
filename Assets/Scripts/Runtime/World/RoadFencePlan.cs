@@ -10,7 +10,8 @@ namespace BarPromenade
         BarEntrance = 0,
         ParkGate = 1,
         PlayerHomeEntrance = 2,
-        DistrictPointOfInterest = 3
+        DistrictPointOfInterest = 3,
+        SupermarketEntrance = 4
     }
 
     public readonly struct RoadFenceSegmentDescriptor :
@@ -125,6 +126,10 @@ namespace BarPromenade
             Kind == RoadFenceOpeningKind.DistrictPointOfInterest
                 ? Id
                 : string.Empty;
+        public string SupermarketId =>
+            Kind == RoadFenceOpeningKind.SupermarketEntrance
+                ? Id
+                : string.Empty;
         public Vector3 Center { get; }
         public Vector3 OutwardNormal { get; }
         public float Width { get; }
@@ -204,6 +209,8 @@ namespace BarPromenade
                 new List<RoadFenceOpeningDescriptor>();
             var publicSpaceOpenings =
                 new List<RoadFenceOpeningDescriptor>();
+            var supermarketOpenings =
+                new List<RoadFenceOpeningDescriptor>();
             for (int index = 0; index < allOpenings.Count; index++)
             {
                 RoadFenceOpeningDescriptor opening =
@@ -228,6 +235,11 @@ namespace BarPromenade
                 {
                     publicSpaceOpenings.Add(opening);
                 }
+                else if (opening.Kind ==
+                         RoadFenceOpeningKind.SupermarketEntrance)
+                {
+                    supermarketOpenings.Add(opening);
+                }
             }
 
             Openings =
@@ -245,6 +257,9 @@ namespace BarPromenade
             PublicSpaceOpenings =
                 new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
                     publicSpaceOpenings);
+            SupermarketOpenings =
+                new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
+                    supermarketOpenings);
         }
 
         public IReadOnlyList<RoadFenceSegmentDescriptor> Segments { get; }
@@ -262,6 +277,10 @@ namespace BarPromenade
             get;
         }
         public IReadOnlyList<RoadFenceOpeningDescriptor> PublicSpaceOpenings
+        {
+            get;
+        }
+        public IReadOnlyList<RoadFenceOpeningDescriptor> SupermarketOpenings
         {
             get;
         }

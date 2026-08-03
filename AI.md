@@ -7,9 +7,10 @@ Read this file first, then use [`ai/README.md`](ai/README.md) as the documentati
 The Unity 6 URP vertical slice is implemented. It generates a finite connected
 `12 x 12`-block city with four urban districts, a traversable central park and
 four graph-separated bars, places one visually distinct player home beside a
-bar street, creates an atlas-backed eight-direction jointed sprite player,
-loads separate bar and home interiors, and restores the same seed and matching
-exterior return point.
+bar street and one deterministic street-front supermarket, creates an
+atlas-backed eight-direction jointed sprite player, loads separate bar,
+supermarket, stairwell and home interiors, and restores the same seed and
+matching exterior return point.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds
@@ -25,7 +26,9 @@ wakes retain their two-second timing.
 Startup truth begins at `Assets/Scripts/Runtime/Scenes/MainMenuRoot.cs` and
 `Assets/Scripts/Runtime/Scenes/HomeOpeningController.cs`; generated-city truth
 continues from `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
-`Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`.
+`Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; supermarket truth starts
+at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
+`Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`.
 
 Runtime support diagnostics are written as bounded NDJSON through
 `Assets/Scripts/Runtime/Diagnostics/`; see `ai/debug-log.md` for profiles,
@@ -38,11 +41,16 @@ paths and event boundaries.
 3. `ai/architecture-notes.md` for accepted decisions.
 4. Planning documents for intended work.
 
-Never report a planned system as implemented without verifying the code, scenes, and tests.
+Never report a planned system as implemented without inspecting relevant
+repository evidence. This does not require running every test layer.
 
 ## Working agreement
 
 - Use the canonical workflow matching the task in `ai/prompt-templates.md`.
+- Fast targeted verification is the default. Complete suites require an
+  explicit release/full-regression request. Create a player build only when it
+  is the requested deliverable or release gate; add a smoke only when requested
+  or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
 - All future contextual player sprite/atlas interactions must follow the
   mandatory `ai/contextual-animation-standard.md`; do not add one-off teleport

@@ -10,7 +10,10 @@ namespace BarPromenade
         Lighter = 2,
         VodkaBottle = 3,
         ChickenEgg = 4,
-        OpenStewCan = 5
+        OpenStewCan = 5,
+        ClosedStewCan = 6,
+        InstantNoodles = 7,
+        DayOldLoaf = 8
     }
 
     public enum InventoryItemCategory
@@ -74,20 +77,38 @@ namespace BarPromenade
             new InventoryItemDefinition(
                 InventoryItemId.VodkaBottle,
                 InventoryItemCategory.Consumable,
-                "home.refrigerator.item.vodka.name",
-                "home.refrigerator.item.vodka.description",
+                "inventory.item.vodka_bottle.name",
+                "inventory.item.vodka_bottle.description",
                 9),
             new InventoryItemDefinition(
                 InventoryItemId.ChickenEgg,
                 InventoryItemCategory.Consumable,
-                "home.refrigerator.item.egg.name",
-                "home.refrigerator.item.egg.description",
+                "inventory.item.chicken_egg.name",
+                "inventory.item.chicken_egg.description",
                 9),
             new InventoryItemDefinition(
                 InventoryItemId.OpenStewCan,
                 InventoryItemCategory.Consumable,
-                "home.refrigerator.item.stew_can.name",
-                "home.refrigerator.item.stew_can.description",
+                "inventory.item.open_stew_can.name",
+                "inventory.item.open_stew_can.description",
+                9),
+            new InventoryItemDefinition(
+                InventoryItemId.ClosedStewCan,
+                InventoryItemCategory.Consumable,
+                "inventory.item.closed_stew_can.name",
+                "inventory.item.closed_stew_can.description",
+                9),
+            new InventoryItemDefinition(
+                InventoryItemId.InstantNoodles,
+                InventoryItemCategory.Consumable,
+                "inventory.item.instant_noodles.name",
+                "inventory.item.instant_noodles.description",
+                9),
+            new InventoryItemDefinition(
+                InventoryItemId.DayOldLoaf,
+                InventoryItemCategory.Consumable,
+                "inventory.item.day_old_loaf.name",
+                "inventory.item.day_old_loaf.description",
                 9)
         };
 

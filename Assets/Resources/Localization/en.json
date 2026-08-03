@@ -69,6 +69,18 @@
       "value": "E — return to the city"
     },
     {
+      "key": "interaction.enter_supermarket",
+      "value": "E — enter the shop"
+    },
+    {
+      "key": "interaction.exit_supermarket",
+      "value": "E — leave the shop"
+    },
+    {
+      "key": "interaction.browse_supermarket_shelf",
+      "value": "E — browse the shelf"
+    },
+    {
       "key": "interaction.enter_home",
       "value": "E \u2014 enter home"
     },
@@ -867,6 +879,94 @@
     {
       "key": "inventory.item.lighter.description",
       "value": "A cheap metal lighter. It smells faintly of tobacco."
+    },
+    {
+      "key": "inventory.item.vodka_bottle.name",
+      "value": "Vodka bottle"
+    },
+    {
+      "key": "inventory.item.vodka_bottle.description",
+      "value": "Half a litre of cheap vodka under a screw cap."
+    },
+    {
+      "key": "inventory.item.chicken_egg.name",
+      "value": "Small chicken egg"
+    },
+    {
+      "key": "inventory.item.chicken_egg.description",
+      "value": "One small egg, sold individually without ceremony."
+    },
+    {
+      "key": "inventory.item.open_stew_can.name",
+      "value": "Open can of stew"
+    },
+    {
+      "key": "inventory.item.open_stew_can.description",
+      "value": "An opened can of stew. Cold fat has set around the meat."
+    },
+    {
+      "key": "inventory.item.closed_stew_can.name",
+      "value": "Meat Product stew can"
+    },
+    {
+      "key": "inventory.item.closed_stew_can.description",
+      "value": "A sealed tin that promises there might be meat inside."
+    },
+    {
+      "key": "inventory.item.instant_noodles.name",
+      "value": "Minute chicken noodles"
+    },
+    {
+      "key": "inventory.item.instant_noodles.description",
+      "value": "A dry brick in a thin packet. The seasoning seems to be there."
+    },
+    {
+      "key": "inventory.item.day_old_loaf.name",
+      "value": "Half a day-old loaf"
+    },
+    {
+      "key": "inventory.item.day_old_loaf.description",
+      "value": "Half a stale white loaf held by a grey paper band."
+    },
+    {
+      "key": "supermarket.shop.title",
+      "value": "GROCERY SHOP"
+    },
+    {
+      "key": "supermarket.shop.balance",
+      "value": "CASH: ${0}"
+    },
+    {
+      "key": "supermarket.shop.price",
+      "value": "PRICE: ${0}"
+    },
+    {
+      "key": "supermarket.shop.buy",
+      "value": "BUY"
+    },
+    {
+      "key": "supermarket.shop.back",
+      "value": "BACK"
+    },
+    {
+      "key": "supermarket.failure.invalid_source",
+      "value": "This package has no price tag."
+    },
+    {
+      "key": "supermarket.failure.not_offered",
+      "value": "This item is not for sale."
+    },
+    {
+      "key": "supermarket.failure.already_purchased",
+      "value": "That spot on the shelf is already empty."
+    },
+    {
+      "key": "supermarket.failure.insufficient_funds",
+      "value": "Not enough cash."
+    },
+    {
+      "key": "supermarket.failure.inventory_full",
+      "value": "There is nowhere left to put it."
     },
     {
       "key": "debug.minigames.title",

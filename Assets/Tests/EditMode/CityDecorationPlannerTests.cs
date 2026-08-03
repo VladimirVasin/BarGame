@@ -88,7 +88,10 @@ namespace BarPromenade.Tests.EditMode
                  index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
-                if (!lot.HasBuilding || lot.IsBar || lot.IsPlayerHome)
+                if (!lot.HasBuilding ||
+                    lot.IsBar ||
+                    lot.IsPlayerHome ||
+                    lot.IsSupermarket)
                 {
                     continue;
                 }
@@ -236,7 +239,11 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(
                         descriptor.TryResolveLot(layout, out BuildingLot lot),
                         Is.True);
-                    Assert.That(lot.IsBar || lot.IsPlayerHome, Is.False);
+                    Assert.That(
+                        lot.IsBar ||
+                        lot.IsPlayerHome ||
+                        lot.IsSupermarket,
+                        Is.False);
                 }
             }
 

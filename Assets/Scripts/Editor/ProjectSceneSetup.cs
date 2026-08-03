@@ -16,6 +16,8 @@ namespace BarPromenade.Editor
         private const string DoorTransitionScenePath =
             "Assets/Scenes/DoorTransition.unity";
         private const string BarInteriorScenePath = "Assets/Scenes/BarInterior.unity";
+        private const string SupermarketInteriorScenePath =
+            "Assets/Scenes/SupermarketInterior.unity";
         private const string StairwellInteriorScenePath =
             "Assets/Scenes/StairwellInterior.unity";
         private const string HomeInteriorScenePath =
@@ -49,6 +51,7 @@ namespace BarPromenade.Editor
             EnsureCityScene();
             EnsureDoorTransitionScene();
             EnsureInteriorScene();
+            EnsureSupermarketInteriorScene();
             EnsureStairwellInteriorScene();
             EnsureHomeInteriorScene();
             ConfigureBuildScenes();
@@ -71,6 +74,7 @@ namespace BarPromenade.Editor
                     CityScenePath,
                     DoorTransitionScenePath,
                     BarInteriorScenePath,
+                    SupermarketInteriorScenePath,
                     StairwellInteriorScenePath,
                     HomeInteriorScenePath
                 },
@@ -267,6 +271,26 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void EnsureSupermarketInteriorScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                    SupermarketInteriorScenePath) != null)
+            {
+                return;
+            }
+
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                NewSceneMode.Single);
+            if (!EditorSceneManager.SaveScene(
+                    scene,
+                    SupermarketInteriorScenePath))
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create '{SupermarketInteriorScenePath}'.");
+            }
+        }
+
         private static void EnsureHomeInteriorScene()
         {
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(
@@ -317,6 +341,9 @@ namespace BarPromenade.Editor
                 new EditorBuildSettingsScene(CityScenePath, true),
                 new EditorBuildSettingsScene(DoorTransitionScenePath, true),
                 new EditorBuildSettingsScene(BarInteriorScenePath, true),
+                new EditorBuildSettingsScene(
+                    SupermarketInteriorScenePath,
+                    true),
                 new EditorBuildSettingsScene(
                     StairwellInteriorScenePath,
                     true),

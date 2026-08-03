@@ -292,11 +292,13 @@ namespace BarPromenade
 
                 if (descriptor.AnchorKind !=
                         CityDecorationAnchorKind.UrbanLandmark &&
-                    (lot.IsBar || lot.IsPlayerHome))
+                    (lot.IsBar ||
+                     lot.IsPlayerHome ||
+                     lot.IsSupermarket))
                 {
                     throw new InvalidOperationException(
                         $"Ordinary decoration '{descriptor.StableId}' " +
-                        "cannot replace a bar or player-home visual.");
+                        "cannot replace a special-building visual.");
                 }
 
                 if (descriptor.District ==
@@ -456,7 +458,10 @@ namespace BarPromenade
                  index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
-                if (!lot.HasBuilding || lot.IsBar || lot.IsPlayerHome)
+                if (!lot.HasBuilding ||
+                    lot.IsBar ||
+                    lot.IsPlayerHome ||
+                    lot.IsSupermarket)
                 {
                     continue;
                 }

@@ -116,7 +116,8 @@ namespace BarPromenade
                 BuildingLot lot = layout.BuildingLots[index];
                 if (lot.HasBuilding &&
                     !lot.IsBar &&
-                    !lot.IsPlayerHome)
+                    !lot.IsPlayerHome &&
+                    !lot.IsSupermarket)
                 {
                     result.Add(lot);
                 }
@@ -284,7 +285,11 @@ namespace BarPromenade
                     LandmarkLotSalt);
                 candidates.Add(new RankedLot(
                     lot,
-                    lot.IsBar || lot.IsPlayerHome ? 1 : 0,
+                    lot.IsBar ||
+                    lot.IsPlayerHome ||
+                    lot.IsSupermarket
+                        ? 1
+                        : 0,
                     rank));
             }
 

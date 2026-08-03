@@ -53,10 +53,15 @@ namespace BarPromenade
                 new List<BuildingLot>(buildingLots));
             for (int index = 0; index < BuildingLots.Count; index++)
             {
-                if (BuildingLots[index]?.IsPlayerHome == true)
+                BuildingLot lot = BuildingLots[index];
+                if (lot?.IsPlayerHome == true)
                 {
-                    PlayerHome = BuildingLots[index];
-                    break;
+                    PlayerHome = lot;
+                }
+
+                if (lot?.IsSupermarket == true)
+                {
+                    Supermarket = lot;
                 }
             }
 
@@ -129,6 +134,7 @@ namespace BarPromenade
         public IReadOnlyList<BuildingLot> BuildingLots { get; }
         public IReadOnlyList<BuildingLot> Lots => BuildingLots;
         public BuildingLot PlayerHome { get; }
+        public BuildingLot Supermarket { get; }
         public IReadOnlyList<CityDistrictDescriptor> Districts { get; }
         public CityParkPlan Park { get; }
         public IReadOnlyList<CityDistrictPointOfInterestDescriptor>
@@ -404,6 +410,7 @@ namespace BarPromenade
             var barIds = new HashSet<string>(StringComparer.Ordinal);
             var bars = new List<BuildingLot>();
             BuildingLot playerHome = null;
+            BuildingLot supermarket = null;
             for (int index = 0; index < BuildingLots.Count; index++)
             {
                 BuildingLot lot = BuildingLots[index];
@@ -456,6 +463,44 @@ namespace BarPromenade
                             $"Non-bar lot {lot.Cell} cannot define a bar activity.");
                     }
 
+                    if (lot.IsSupermarket)
+                    {
+                        if (lot.IsPlayerHome ||
+                            supermarket != null ||
+                            !lot.HasBuilding ||
+                            lot.District ==
+                            CityDistrictKind.CentralPark)
+                        {
+                            throw new InvalidOperationException(
+                                "The city can contain at most one " +
+                                "supermarket on ordinary urban land.");
+                        }
+
+                        if (!TryGetFrontageEdge(
+                                lot,
+                                out RoadEdge supermarketFrontage) ||
+                            GetPathKind(supermarketFrontage) !=
+                            CityPathKind.Street)
+                        {
+                            throw new InvalidOperationException(
+                                "The supermarket must face a city street.");
+                        }
+
+                        Rect supermarketRoad =
+                            GetRoadRect(supermarketFrontage);
+                        if (!ContainsInclusive(
+                                supermarketRoad,
+                                lot.ReturnPosition))
+                        {
+                            throw new InvalidOperationException(
+                                "The supermarket return point must lie on " +
+                                "its frontage road.");
+                        }
+
+                        supermarket = lot;
+                        continue;
+                    }
+
                     if (!lot.IsPlayerHome)
                     {
                         continue;
@@ -495,11 +540,11 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (lot.IsPlayerHome)
+                if (lot.IsPlayerHome || lot.IsSupermarket)
                 {
                     throw new InvalidOperationException(
-                        "A building lot cannot be both a bar and " +
-                        "the player home.");
+                        "A building lot cannot combine a bar with " +
+                        "another special building role.");
                 }
 
                 if (!lot.HasBuilding ||
@@ -553,6 +598,12 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The player home descriptor is inconsistent.");
+            }
+
+            if (!ReferenceEquals(Supermarket, supermarket))
+            {
+                throw new InvalidOperationException(
+                    "The supermarket descriptor is inconsistent.");
             }
 
             if (playerHome != null)
@@ -670,7 +721,8 @@ namespace BarPromenade
                         cell,
                         out BuildingLot lot) ||
                     !lot.HasBuilding ||
-                    lot.District != district)
+                    lot.District != district ||
+                    lot.IsSupermarket)
                 {
                     throw new InvalidOperationException(
                         $"District '{district}' must reserve one " +
@@ -686,7 +738,8 @@ namespace BarPromenade
                         pair.Value,
                         out BuildingLot lot) ||
                     lot.District != pair.Key ||
-                    !lot.HasBuilding)
+                    !lot.HasBuilding ||
+                    lot.IsSupermarket)
                 {
                     throw new InvalidOperationException(
                         "Primary landmark reservations must reference " +
@@ -727,6 +780,7 @@ namespace BarPromenade
                     lot.IsPark ||
                     lot.IsBar ||
                     lot.IsPlayerHome ||
+                    lot.IsSupermarket ||
                     lot.District != point.District ||
                     ResolvePointOfInterestKind(point.District) != point.Kind)
                 {

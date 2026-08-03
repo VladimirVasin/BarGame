@@ -4,7 +4,7 @@ This directory is the concise, versioned memory for Bar Promenade.
 
 | File | Purpose |
 | --- | --- |
-| `prompt-templates.md` | Canonical FULL, PLAN, BUGFIX, and REFACTOR workflows |
+| `prompt-templates.md` | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
 | `project-overview.md` | Product intent, current baseline, MVP scope |
 | `system-tree.md` | Current and target repository/system structure |
 | `systems-map.md` | System ownership, dependencies, and implementation status |

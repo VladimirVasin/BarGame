@@ -298,6 +298,25 @@ namespace BarPromenade
                     PlayerHomeEntranceGeometry.FenceOpeningWidth));
             }
 
+            BuildingLot supermarket = layout.Supermarket;
+            if (supermarket != null)
+            {
+                Vector3 frontage = new Vector3(
+                    supermarket.FrontageDirection.x,
+                    0f,
+                    supermarket.FrontageDirection.y);
+                Vector3 outward = -frontage;
+                Vector3 center =
+                    supermarket.ReturnPosition +
+                    (outward * (layout.RoadWidth * 0.5f));
+                openings.Add(new RoadFenceOpeningDescriptor(
+                    RoadFenceOpeningKind.SupermarketEntrance,
+                    "supermarket",
+                    center,
+                    outward,
+                    SupermarketEntranceGeometry.FenceOpeningWidth));
+            }
+
             for (int index = 0;
                  index < layout.Park.Gates.Count;
                  index++)

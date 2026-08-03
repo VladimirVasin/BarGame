@@ -244,6 +244,12 @@ namespace BarPromenade
                     return Quaternion.Euler(10f, -24f, -6f);
                 case InventoryItemId.OpenStewCan:
                     return Quaternion.Euler(8f, 22f, -4f);
+                case InventoryItemId.ClosedStewCan:
+                    return Quaternion.Euler(8f, -20f, -3f);
+                case InventoryItemId.InstantNoodles:
+                    return Quaternion.Euler(24f, -18f, -8f);
+                case InventoryItemId.DayOldLoaf:
+                    return Quaternion.Euler(12f, -28f, -5f);
                 default:
                     return Quaternion.identity;
             }

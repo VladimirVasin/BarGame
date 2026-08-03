@@ -64,6 +64,23 @@ namespace BarPromenade
             return camera;
         }
 
+        public static Camera EnsureSupermarketInterior()
+        {
+            Camera camera = EnsureCamera(
+                new Color(0.055f, 0.070f, 0.060f));
+            SetPostProcessing(camera, true);
+            ConfigureDirectionalLighting(
+                new Color(0.70f, 0.82f, 0.72f),
+                0.48f,
+                new Color(0.070f, 0.090f, 0.075f),
+                0.58f);
+
+            RenderSettings.fog = false;
+            RenderSettings.reflectionIntensity = 0.38f;
+            DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
         public static Camera EnsureHomeInterior()
         {
             Camera camera = EnsureCamera(HomeBackgroundColor);

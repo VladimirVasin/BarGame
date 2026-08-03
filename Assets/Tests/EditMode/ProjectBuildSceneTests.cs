@@ -24,6 +24,7 @@ namespace BarPromenade.Tests.EditMode
                 "Assets/Scenes/City.unity",
                 "Assets/Scenes/DoorTransition.unity",
                 "Assets/Scenes/BarInterior.unity",
+                "Assets/Scenes/SupermarketInterior.unity",
                 "Assets/Scenes/StairwellInterior.unity",
                 "Assets/Scenes/HomeInterior.unity"
             };

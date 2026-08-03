@@ -2,6 +2,68 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Finite-stock supermarket
+
+- Added `SupermarketInterior` as a seventh build scene and registered its
+  runtime root. The default city now reserves one deterministic eligible
+  street-front supermarket, preferring Residential and the shortest traversable
+  route from the home; its dedicated facade, apron, fence opening, interaction
+  trigger and return point use the canonical lot/frontage data.
+- Added a validated `16 x 11 x 3.6 m` shop plan and runtime world with protected
+  circulation, three shelf sections, a stockroom facade, a decorative checkout
+  and one decorative cashier. The cashier/register remain scenery; purchases
+  begin at a shelf and use its authored fixed product view.
+- Added five localized finite product offers and shared inventory models/icons:
+  chicken egg, vodka bottle, closed stew can, instant noodles and day-old loaf.
+  The sealed `ClosedStewCan` remains a distinct inventory ID from the cat-ready
+  refrigerator `OpenStewCan`.
+- Added one atomic world-item purchase boundary for source validity, catalog
+  membership, affordability and stack capacity. Success records the stable
+  source, adds one inventory item, deducts cash and immediately removes the
+  physical shelf product; rebuilding the scene filters purchased sources until
+  `BeginNewGame`. Every failure leaves cash, inventory and shelf persistence
+  unchanged.
+- Added shelf pointer/keyboard/gamepad selection, localized price/balance/error
+  UI, exact modal/camera/player restoration, supermarket inventory/pause/status
+  installation and the separate City round-trip context.
+
+Verification:
+
+- Targeted EditMode passed `21/21` across
+  `SupermarketPurchaseRulesTests`, `SupermarketInteriorLayoutTests`,
+  `SupermarketCityPlanningTests` and `ProjectBuildSceneTests`.
+- Focused PlayMode `SupermarketPurchasePersistencePlayModeTests` passed `1/1`.
+  Full suites, player build and startup smoke were intentionally not run under
+  the fast-mode verification policy.
+
+## 2026-08-03 — Minimal verification by default
+
+- Audited the canonical workflows and repository instructions after ordinary
+  feature work expanded into `777` EditMode tests, `164` PlayMode tests, three
+  redundant project builds, a Windows player build and a startup smoke. The
+  delay came from automatic release-style verification, not from retaining the
+  tests themselves.
+- Made FAST verification the default even for shared and cross-system changes.
+  A normal request now gets one primary check; only a shared-framework change
+  may add one focused check. Documentation uses diff-check only; deterministic
+  art/data uses its validator; C# uses one narrow EditMode/PlayMode selection,
+  or the highest affected project build when no suitable test exists.
+- Full suites now require an explicit full-regression/release request. A player
+  build runs only when requested as the deliverable or gate; smoke is reserved
+  for an explicit request or changed packaged-startup behavior. Existing tests
+  remain available for targeted and release use instead of being deleted.
+- Clarified that the contextual-animation standard defines coverage that must
+  exist, not a list that must be executed on every animation change. Generic
+  stall/cancel/hitch/handoff cases remain owned by the shared pipeline; each new
+  animation now extends its unique validator and adds at most one happy-path
+  PlayMode interaction when existing parameterized coverage cannot represent
+  its scene wiring, plus atomicity coverage only for a new resource contract.
+
+Verification:
+
+- Documentation-only policy change: reviewed the instruction diff and ran
+  `git diff --check`; no Unity test, project build or player smoke was run.
+
 ## 2026-08-03 — Mandatory future contextual-animation standard
 
 - Added `ai/contextual-animation-standard.md` as the normative contract for

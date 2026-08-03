@@ -477,6 +477,17 @@ namespace BarPromenade
                 out districtPointsOfInterest);
             var districtPointLotIndices = new HashSet<int>(
                 districtPointLots.Values);
+            int supermarketLotIndex = SelectSupermarketLot(
+                settings,
+                seed,
+                origin,
+                nodes,
+                roads,
+                frontages,
+                barLots,
+                homeLotIndex,
+                districtPointLotIndices,
+                primaryLandmarkCells);
 
             var lots = new List<BuildingLot>(lotCount);
             int barOrdinal = 0;
@@ -487,6 +498,8 @@ namespace BarPromenade
                     int lotIndex = ToLotIndex(x, z, settings.BlocksX);
                     bool isBar = barLots.Contains(lotIndex);
                     bool isPlayerHome = lotIndex == homeLotIndex;
+                    bool isSupermarket =
+                        lotIndex == supermarketLotIndex;
                     bool isDistrictPointOfInterest =
                         districtPointLotIndices.Contains(lotIndex);
                     BarActivityKind barActivity = BarActivityKind.None;
@@ -505,12 +518,145 @@ namespace BarPromenade
                         frontages[lotIndex],
                         isBar,
                         isPlayerHome,
+                        isSupermarket,
                         isDistrictPointOfInterest,
                         barActivity));
                 }
             }
 
             return lots;
+        }
+
+        private static int SelectSupermarketLot(
+            CityGenerationSettings settings,
+            int seed,
+            Vector3 origin,
+            IReadOnlyList<Vector2Int> nodes,
+            IReadOnlyList<RoadEdge> roads,
+            IReadOnlyList<Vector2Int> frontages,
+            ISet<int> barLots,
+            int homeLotIndex,
+            ISet<int> districtPointLots,
+            IReadOnlyDictionary<CityDistrictKind, Vector2Int>
+                primaryLandmarkCells)
+        {
+            var primaryLandmarkLots = new HashSet<int>();
+            foreach (Vector2Int cell in primaryLandmarkCells.Values)
+            {
+                primaryLandmarkLots.Add(
+                    ToLotIndex(
+                        cell.x,
+                        cell.y,
+                        settings.BlocksX));
+            }
+
+            bool hasHome = homeLotIndex >= 0 &&
+                           homeLotIndex < frontages.Count &&
+                           frontages[homeLotIndex] != Vector2Int.zero;
+            RoadEdge homeFrontage = default;
+            Vector3 homeReturn = default;
+            if (hasHome)
+            {
+                Vector2Int homeCell = new Vector2Int(
+                    homeLotIndex % settings.BlocksX,
+                    homeLotIndex / settings.BlocksX);
+                homeFrontage = RoadEdge.ForCellFrontage(
+                    homeCell,
+                    frontages[homeLotIndex]);
+                homeReturn = GetReturnPosition(
+                    settings,
+                    origin,
+                    homeCell,
+                    frontages[homeLotIndex]);
+            }
+
+            bool found = false;
+            int bestLotIndex = -1;
+            int bestDistrictPenalty = int.MaxValue;
+            float bestDistance = float.PositiveInfinity;
+            uint bestRank = uint.MaxValue;
+            for (int lotIndex = 0;
+                 lotIndex < frontages.Count;
+                 lotIndex++)
+            {
+                Vector2Int frontage = frontages[lotIndex];
+                if (frontage == Vector2Int.zero ||
+                    lotIndex == homeLotIndex ||
+                    barLots.Contains(lotIndex) ||
+                    districtPointLots.Contains(lotIndex) ||
+                    primaryLandmarkLots.Contains(lotIndex))
+                {
+                    continue;
+                }
+
+                Vector2Int cell = new Vector2Int(
+                    lotIndex % settings.BlocksX,
+                    lotIndex / settings.BlocksX);
+                if (settings.IsParkCell(cell))
+                {
+                    continue;
+                }
+
+                float facadeWidth = frontage.x != 0
+                    ? settings.BlockDepth -
+                      settings.BuildingInset * 2f
+                    : settings.BlockWidth -
+                      settings.BuildingInset * 2f;
+                if (facadeWidth <
+                    SupermarketEntranceGeometry.CanopyWidth + 0.20f)
+                {
+                    continue;
+                }
+
+                CityDistrictKind district =
+                    ResolveDistrict(settings, cell);
+                int districtPenalty =
+                    district == CityDistrictKind.Residential
+                        ? 0
+                        : 1;
+                Vector3 candidateReturn = GetReturnPosition(
+                    settings,
+                    origin,
+                    cell,
+                    frontage);
+                float distance = 0f;
+                if (hasHome)
+                {
+                    distance = CityTravelDistance.BetweenAnchors(
+                        nodes,
+                        roads,
+                        node => GetNodeWorldPosition(
+                            settings,
+                            origin,
+                            node),
+                        homeFrontage,
+                        homeReturn,
+                        RoadEdge.ForCellFrontage(cell, frontage),
+                        candidateReturn);
+                }
+
+                uint rank = StableHash(
+                    seed,
+                    cell.x,
+                    cell.y,
+                    0x53555052u);
+                if (!found ||
+                    districtPenalty < bestDistrictPenalty ||
+                    (districtPenalty == bestDistrictPenalty &&
+                     distance < bestDistance - 0.001f) ||
+                    (districtPenalty == bestDistrictPenalty &&
+                     Mathf.Abs(distance - bestDistance) <= 0.001f &&
+                     rank < bestRank))
+                {
+                    found = true;
+                    bestLotIndex = lotIndex;
+                    bestDistrictPenalty = districtPenalty;
+                    bestDistance = distance;
+                    bestRank = rank;
+                }
+            }
+
+            return bestLotIndex;
         }
 
         private static int SelectHomeLot(
@@ -884,6 +1030,7 @@ namespace BarPromenade
             Vector2Int frontage,
             bool isBar,
             bool isPlayerHome,
+            bool isSupermarket,
             bool isDistrictPointOfInterest,
             BarActivityKind barActivity)
         {
@@ -903,6 +1050,10 @@ namespace BarPromenade
                     ? new Vector2(
                         Mathf.Min(13f, maximumWidth),
                         Mathf.Min(12f, maximumDepth))
+                : isSupermarket
+                    ? new Vector2(
+                        maximumWidth,
+                        maximumDepth)
                 : CreateBuildingSize(
                     district,
                     maximumWidth,
@@ -913,6 +1064,11 @@ namespace BarPromenade
                 : isPlayerHome
                     ? PlayerHomeBalconyGeometry.ResolveBuildingHeight(
                         settings)
+                : isSupermarket
+                    ? Mathf.Clamp(
+                        6.4f,
+                        settings.MinimumBuildingHeight,
+                        settings.MaximumBuildingHeight)
                 : CreateBuildingHeight(settings, district, ref random);
             Vector3 center = GetLotCenter(settings, origin, cell);
 
@@ -929,6 +1085,7 @@ namespace BarPromenade
                 ref random,
                 isBar,
                 isPlayerHome,
+                isSupermarket,
                 district);
             string barId = isBar
                 ? $"bar-{unchecked((uint)seed):x8}-{cell.x:D2}-{cell.y:D2}"
@@ -944,6 +1101,7 @@ namespace BarPromenade
                 landUse,
                 isBar,
                 isPlayerHome,
+                isSupermarket,
                 barId,
                 barActivity,
                 frontage,
@@ -955,6 +1113,7 @@ namespace BarPromenade
             ref DeterministicRandom random,
             bool isBar,
             bool isPlayerHome,
+            bool isSupermarket,
             CityDistrictKind district)
         {
             if (isBar)
@@ -972,6 +1131,15 @@ namespace BarPromenade
                     random.Range(0.28f, 0.36f),
                     random.Range(0.48f, 0.58f),
                     random.Range(0.52f, 0.64f),
+                    1f);
+            }
+
+            if (isSupermarket)
+            {
+                return new Color(
+                    random.Range(0.30f, 0.38f),
+                    random.Range(0.34f, 0.42f),
+                    random.Range(0.27f, 0.34f),
                     1f);
             }
 

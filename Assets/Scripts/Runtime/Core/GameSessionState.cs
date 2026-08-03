@@ -184,6 +184,58 @@ namespace BarPromenade
             return true;
         }
 
+        public static SupermarketPurchaseResult TryPurchaseWorldItem(
+            string sourceId,
+            InventoryItemId itemId)
+        {
+            string normalizedSourceId = string.IsNullOrWhiteSpace(sourceId)
+                ? string.Empty
+                : sourceId.Trim();
+            int itemCountBefore = inventory.GetCount(itemId);
+            SupermarketPurchaseResult result =
+                SupermarketPurchaseRules.Evaluate(
+                    normalizedSourceId,
+                    itemId,
+                    normalizedSourceId.Length > 0 &&
+                    collectedWorldItems.Contains(normalizedSourceId),
+                    CashBalance,
+                    itemCountBefore);
+            if (!result.Succeeded)
+            {
+                LogWorldItemPurchase(result);
+                return result;
+            }
+
+            if (!collectedWorldItems.Add(normalizedSourceId))
+            {
+                result = SupermarketPurchaseRules.Evaluate(
+                    normalizedSourceId,
+                    itemId,
+                    true,
+                    CashBalance,
+                    itemCountBefore);
+                LogWorldItemPurchase(result);
+                return result;
+            }
+
+            if (!inventory.TryAdd(itemId))
+            {
+                collectedWorldItems.Remove(normalizedSourceId);
+                result = SupermarketPurchaseRules.Evaluate(
+                    normalizedSourceId,
+                    itemId,
+                    false,
+                    CashBalance,
+                    inventory.GetCount(itemId));
+                LogWorldItemPurchase(result);
+                return result;
+            }
+
+            CashBalance = result.CashAfter;
+            LogWorldItemPurchase(result);
+            return result;
+        }
+
         public static bool IsWorldItemCollected(string sourceId)
         {
             return !string.IsNullOrWhiteSpace(sourceId) &&
@@ -447,6 +499,16 @@ namespace BarPromenade
                 "home_entered");
         }
 
+        public static void EnterSupermarket()
+        {
+            ActiveBarId = string.Empty;
+            ActiveBarActivity = BarActivityKind.None;
+            ReturnKind = CityReturnKind.None;
+            GameLog.Info(
+                "session",
+                "supermarket_entered");
+        }
+
         public static void PrepareHomeReturn()
         {
             if (ReturnKind == CityReturnKind.PlayerHome)
@@ -455,6 +517,23 @@ namespace BarPromenade
             }
 
             ReturnKind = CityReturnKind.PlayerHome;
+            GameLog.Info(
+                "session",
+                "city_return_prepared",
+                GameLog.Field(
+                    "return_kind",
+                    ReturnKind.ToString()),
+                GameLog.Field("is_returning", true));
+        }
+
+        public static void PrepareSupermarketReturn()
+        {
+            if (ReturnKind == CityReturnKind.Supermarket)
+            {
+                return;
+            }
+
+            ReturnKind = CityReturnKind.Supermarket;
             GameLog.Info(
                 "session",
                 "city_return_prepared",
@@ -824,6 +903,29 @@ namespace BarPromenade
                 GameLog.Field(
                     "drinks_after",
                     result.DrinksConsumedAfter));
+        }
+
+        private static void LogWorldItemPurchase(
+            SupermarketPurchaseResult result)
+        {
+            GameLog.Info(
+                "session",
+                "world_item_purchase_resolved",
+                GameLog.Field("accepted", result.Succeeded),
+                GameLog.Field("status", result.Status.ToString()),
+                GameLog.Field("source_id", result.SourceId),
+                GameLog.Field(
+                    "item_id",
+                    result.RequestedItemId.ToString()),
+                GameLog.Field("price", result.Offer.Price),
+                GameLog.Field("cash_before", result.CashBefore),
+                GameLog.Field("cash_after", result.CashAfter),
+                GameLog.Field(
+                    "item_count_before",
+                    result.ItemCountBefore),
+                GameLog.Field(
+                    "item_count_after",
+                    result.ItemCountAfter));
         }
 
         private static string FormatRoute()

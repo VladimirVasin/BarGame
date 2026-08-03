@@ -29,6 +29,18 @@ namespace BarPromenade
                 "Inventory Preview");
         }
 
+        public static Transform BuildWorldModel(
+            InventoryItemId itemId,
+            Transform parent,
+            Vector3 availableSize)
+        {
+            return Build(
+                itemId,
+                parent,
+                availableSize,
+                "World Item");
+        }
+
         public static Transform BuildRefrigeratorModel(
             HomeRefrigeratorItemKind kind,
             Transform parent,
@@ -87,6 +99,21 @@ namespace BarPromenade
                         rootPrefix);
                 case InventoryItemId.OpenStewCan:
                     return BuildOpenStewCan(
+                        parent,
+                        availableSize,
+                        rootPrefix);
+                case InventoryItemId.ClosedStewCan:
+                    return BuildClosedStewCan(
+                        parent,
+                        availableSize,
+                        rootPrefix);
+                case InventoryItemId.InstantNoodles:
+                    return BuildInstantNoodles(
+                        parent,
+                        availableSize,
+                        rootPrefix);
+                case InventoryItemId.DayOldLoaf:
+                    return BuildDayOldLoaf(
                         parent,
                         availableSize,
                         rootPrefix);
@@ -525,6 +552,186 @@ namespace BarPromenade
             pullTab.transform.localRotation =
                 Quaternion.Euler(58f, 0f, 0f);
             return can;
+        }
+
+        private static Transform BuildClosedStewCan(
+            Transform parent,
+            Vector3 availableSize,
+            string rootPrefix)
+        {
+            Transform can = CreateRoot(
+                rootPrefix + " Closed Stew Can",
+                parent);
+            float height = Mathf.Min(
+                0.17f,
+                availableSize.y * 0.58f);
+            float diameter = Mathf.Min(
+                0.21f,
+                Mathf.Min(
+                    availableSize.x * 0.65f,
+                    availableSize.z * 0.67f));
+            const float floor = 0.012f;
+            float centerY = floor + height * 0.5f;
+
+            CreateCylinder(
+                "Closed Stew Can Tin Body",
+                can,
+                new Vector3(0f, centerY, 0f),
+                new Vector3(diameter, height * 0.5f, diameter),
+                new Color(0.40f, 0.41f, 0.36f));
+            CreateCylinder(
+                "Closed Stew Can Paper Label",
+                can,
+                new Vector3(0f, centerY, 0f),
+                new Vector3(
+                    diameter * 1.018f,
+                    height * 0.31f,
+                    diameter * 1.018f),
+                new Color(0.43f, 0.17f, 0.08f));
+            CreateBox(
+                "Closed Stew Can Meat Product Mark",
+                can,
+                new Vector3(0f, centerY, -diameter * 0.512f),
+                new Vector3(
+                    diameter * 0.62f,
+                    height * 0.17f,
+                    0.008f),
+                new Color(0.73f, 0.62f, 0.33f));
+            CreateCylinder(
+                "Closed Stew Can Sealed Lid",
+                can,
+                new Vector3(0f, floor + height + 0.008f, 0f),
+                new Vector3(
+                    diameter * 1.08f,
+                    0.010f,
+                    diameter * 1.08f),
+                new Color(0.48f, 0.50f, 0.47f));
+            CreateCylinder(
+                "Closed Stew Can Bottom Rim",
+                can,
+                new Vector3(0f, floor, 0f),
+                new Vector3(
+                    diameter * 1.06f,
+                    0.008f,
+                    diameter * 1.06f),
+                Metal);
+            CreateBox(
+                "Closed Stew Can Pull Tab",
+                can,
+                new Vector3(
+                    0f,
+                    floor + height + 0.021f,
+                    -diameter * 0.16f),
+                new Vector3(
+                    diameter * 0.24f,
+                    0.012f,
+                    diameter * 0.11f),
+                DeepRust);
+            return can;
+        }
+
+        private static Transform BuildInstantNoodles(
+            Transform parent,
+            Vector3 availableSize,
+            string rootPrefix)
+        {
+            Transform packet = CreateRoot(
+                rootPrefix + " Instant Noodles",
+                parent);
+            float width = Mathf.Min(0.34f, availableSize.x * 0.86f);
+            float height = Mathf.Min(0.075f, availableSize.y * 0.20f);
+            float depth = Mathf.Min(0.26f, availableSize.z * 0.78f);
+            const float floor = 0.012f;
+
+            CreateBox(
+                "Instant Noodles Crumpled Packet",
+                packet,
+                new Vector3(0f, floor + height * 0.5f, 0f),
+                new Vector3(width, height, depth),
+                new Color(0.72f, 0.31f, 0.075f));
+            CreateBox(
+                "Instant Noodles Pale Label",
+                packet,
+                new Vector3(0f, floor + height + 0.004f, 0f),
+                new Vector3(width * 0.68f, 0.008f, depth * 0.68f),
+                new Color(0.78f, 0.70f, 0.45f));
+            CreateBox(
+                "Instant Noodles Chicken Stripe",
+                packet,
+                new Vector3(0f, floor + height + 0.009f, -depth * 0.10f),
+                new Vector3(width * 0.55f, 0.006f, depth * 0.10f),
+                new Color(0.38f, 0.16f, 0.055f));
+            CreateBox(
+                "Instant Noodles Left Crimp",
+                packet,
+                new Vector3(-width * 0.47f, floor + height * 0.5f, 0f),
+                new Vector3(width * 0.07f, height * 1.12f, depth),
+                new Color(0.54f, 0.19f, 0.045f));
+            CreateBox(
+                "Instant Noodles Right Crimp",
+                packet,
+                new Vector3(width * 0.47f, floor + height * 0.5f, 0f),
+                new Vector3(width * 0.07f, height * 1.12f, depth),
+                new Color(0.54f, 0.19f, 0.045f));
+            return packet;
+        }
+
+        private static Transform BuildDayOldLoaf(
+            Transform parent,
+            Vector3 availableSize,
+            string rootPrefix)
+        {
+            Transform loaf = CreateRoot(
+                rootPrefix + " Day Old Loaf",
+                parent);
+            float width = Mathf.Min(0.34f, availableSize.x * 0.84f);
+            float height = Mathf.Min(0.17f, availableSize.y * 0.38f);
+            float depth = Mathf.Min(0.20f, availableSize.z * 0.68f);
+            const float floor = 0.012f;
+
+            CreateBox(
+                "Day Old Loaf Dark Crust",
+                loaf,
+                new Vector3(0f, floor + height * 0.42f, 0f),
+                new Vector3(width, height * 0.84f, depth),
+                new Color(0.43f, 0.23f, 0.085f));
+            CreateBox(
+                "Day Old Loaf Raised Crust",
+                loaf,
+                new Vector3(0f, floor + height * 0.86f, 0f),
+                new Vector3(width * 0.86f, height * 0.28f, depth * 0.92f),
+                new Color(0.58f, 0.34f, 0.13f));
+            CreateBox(
+                "Day Old Loaf Cut End",
+                loaf,
+                new Vector3(-width * 0.505f, floor + height * 0.46f, 0f),
+                new Vector3(0.009f, height * 0.70f, depth * 0.82f),
+                new Color(0.69f, 0.54f, 0.31f));
+            for (int index = 0; index < 3; index++)
+            {
+                GameObject score = CreateBox(
+                    $"Day Old Loaf Score {index + 1}",
+                    loaf,
+                    new Vector3(
+                        -width * 0.22f + index * width * 0.22f,
+                        floor + height * 1.015f,
+                        0f),
+                    new Vector3(
+                        width * 0.055f,
+                        0.009f,
+                        depth * 0.72f),
+                    new Color(0.30f, 0.14f, 0.045f));
+                score.transform.localRotation =
+                    Quaternion.Euler(0f, 0f, -18f);
+            }
+
+            CreateBox(
+                "Day Old Loaf Paper Band",
+                loaf,
+                new Vector3(width * 0.31f, floor + height * 0.50f, 0f),
+                new Vector3(width * 0.19f, height * 1.02f, depth * 1.03f),
+                new Color(0.55f, 0.49f, 0.35f));
+            return loaf;
         }
 
         private static void CreateStewChunks(

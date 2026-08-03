@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-08-04 — A supermarket with stock that stays gone
+
+- The city now contains one deterministic street-front supermarket. Entering
+  it loads a separate worn shop interior with three shelf sections, a
+  decorative checkout and a cashier behind the register.
+- The five cheap shelf goods are a chicken egg, vodka bottle, closed stew can,
+  instant noodles and a day-old loaf. Activate a shelf, select the physical
+  product with mouse, keyboard or gamepad, and buy it with the same session cash
+  shown in the inventory.
+- A successful purchase adds one item to the hero's inventory and removes that
+  exact model from the shelf immediately. It stays gone after leaving and
+  returning to the shop, and stock resets only when a new game begins.
+- The sealed stew is a separate item from the already-open refrigerator can,
+  so it cannot be used to feed the stairwell cat.
+
 ### 2026-08-03 — Natural entry and exit for contextual animations
 
 - Pressing `E` for bed sleep or balcony smoking, and confirming cat feeding,

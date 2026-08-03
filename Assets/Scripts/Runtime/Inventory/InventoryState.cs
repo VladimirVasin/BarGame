@@ -29,7 +29,7 @@ namespace BarPromenade
             items.Clear();
         }
 
-        public bool TryAdd(InventoryItemId itemId, int count = 1)
+        public bool CanAdd(InventoryItemId itemId, int count = 1)
         {
             if (count <= 0 ||
                 !InventoryItemCatalog.TryGet(
@@ -41,11 +41,18 @@ namespace BarPromenade
 
             int index = FindIndex(itemId);
             int currentCount = index >= 0 ? items[index].Count : 0;
-            if (currentCount > definition.MaximumStack - count)
+            return currentCount <= definition.MaximumStack - count;
+        }
+
+        public bool TryAdd(InventoryItemId itemId, int count = 1)
+        {
+            if (!CanAdd(itemId, count))
             {
                 return false;
             }
 
+            int index = FindIndex(itemId);
+            int currentCount = index >= 0 ? items[index].Count : 0;
             InventoryItemStack next =
                 new InventoryItemStack(itemId, currentCount + count);
             if (index >= 0)

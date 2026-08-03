@@ -260,7 +260,9 @@ namespace BarPromenade
                     new GameObject(
                         lot.IsBar
                             ? $"Exterior Bar {lot.BarId}"
-                            : $"Exterior Building {lot.Cell.x}-{lot.Cell.y}")
+                            : lot.IsSupermarket
+                                ? "Exterior Supermarket"
+                                : $"Exterior Building {lot.Cell.x}-{lot.Cell.y}")
                         .transform;
                 building.SetParent(buildings, false);
                 RuntimePrimitiveFactory.CreateBox(
@@ -309,6 +311,14 @@ namespace BarPromenade
                 if (lot.IsBar)
                 {
                     CityBarFacadeWorldBuilder
+                        .BuildHomeExterior(
+                            building,
+                            context,
+                            lot);
+                }
+                else if (lot.IsSupermarket)
+                {
+                    CitySupermarketFacadeWorldBuilder
                         .BuildHomeExterior(
                             building,
                             context,
@@ -394,14 +404,17 @@ namespace BarPromenade
                         0.035f);
                 }
 
-                BuildWindowRow(
-                    parent,
-                    context,
-                    lot,
-                    frontPosition,
-                    rowSize,
-                    floor,
-                    0);
+                if (!lot.IsSupermarket || floor > 0)
+                {
+                    BuildWindowRow(
+                        parent,
+                        context,
+                        lot,
+                        frontPosition,
+                        rowSize,
+                        floor,
+                        0);
+                }
                 BuildWindowRow(
                     parent,
                     context,
@@ -438,7 +451,9 @@ namespace BarPromenade
                  (paneCount - 1) * gap) /
                 paneCount;
             float paneHeight =
-                lot.IsBar || lot.IsPlayerHome
+                lot.IsBar ||
+                lot.IsPlayerHome ||
+                lot.IsSupermarket
                     ? 0.60f
                     : 0.48f;
 

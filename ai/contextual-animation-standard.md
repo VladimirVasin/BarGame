@@ -69,22 +69,33 @@ pressure or implementation convenience are not exceptions.
    pose/timeline/handoff path, or extend that path generically. Do not add a
    one-off interaction that bypasses this standard.
 
-## Required verification for every new animation
+## Required coverage, not a per-request run list
 
-- Plan/EditMode tests validate independent entry/action/exit data, grounded
-  height, walkable clearance, facing and definition-level zero fade.
-- Deterministic asset tooling validates import settings, frame order, pivots,
-  binary alpha where applicable, source/output hashes and exact visible first
-  and terminal endpoint matches to the ordinary rig.
-- Timeline tests prove the terminal exit frame is presented under normal steps,
-  a single-frame exit and a timing hitch.
-- PlayMode tests prove visible bounded positioning without teleport, resistance
-  to held movement input, the exact entry direction/feet, one neutral rendered
-  settle frame, direct rig/atlas opacity, the independent exit pose and final
-  deferred unlock.
-- PlayMode coverage includes repeated use plus blocked, wrong-height,
-  scene-transition and disable/destroy cleanup. Test the selected camera-plane
-  or world-up behavior and atomic resource consumption when the interaction
-  uses inventory or another committed requirement.
+The following contracts must exist for this animation class, but they are split
+between shared-pipeline coverage and per-animation coverage. During ordinary
+iteration, run only the smallest relevant selection under
+`ai/prompt-templates.md`. Do not run full suites, a player build or smoke merely
+because this checklist exists.
 
-An animation in this scope is not complete until this checklist is satisfied.
+Shared `PlayerAnimatedInteraction` coverage owns bounded positioning, held-input
+resistance, wrong-height/stall rejection, transition/disable/destroy cleanup,
+neutral settle and deferred unlock, direct opacity, camera-plane/world-up pivot
+resolution and terminal-frame behavior under normal, single-frame and hitch
+steps. Do not duplicate all of those cases for every new animation. Run these
+shared tests only when the shared pipeline changes.
+
+Each new animation needs only its unique evidence:
+
+- extend one deterministic/parameterized plan or asset validator to cover its
+  independent entry/action/exit data, grounded dock, facing, configured
+  billboard mode, pivots, import/frame order, endpoint match and zero fade;
+- reuse parameterized happy-path integration coverage where possible; add at
+  most one focused PlayMode interaction only when unique scene wiring cannot be
+  represented by the existing coverage;
+- one adapter-specific atomicity test only when the animation introduces a new
+  inventory or other committed-resource contract.
+
+Do not clone shared failure, timing or lifecycle cases for every animation.
+Ordinary implementation runs the validator and, only when scene/runtime wiring
+changed, the single happy-path integration at most. Broader shared tests are
+release gates or evidence for a change to the shared pipeline itself.

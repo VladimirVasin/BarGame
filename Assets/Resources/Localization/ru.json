@@ -69,6 +69,18 @@
       "value": "E — выйти в город"
     },
     {
+      "key": "interaction.enter_supermarket",
+      "value": "E — войти в магазин"
+    },
+    {
+      "key": "interaction.exit_supermarket",
+      "value": "E — выйти из магазина"
+    },
+    {
+      "key": "interaction.browse_supermarket_shelf",
+      "value": "E — осмотреть полку"
+    },
+    {
       "key": "interaction.enter_home",
       "value": "E \u2014 \u0432\u043e\u0439\u0442\u0438 \u0434\u043e\u043c\u043e\u0439"
     },
@@ -867,6 +879,94 @@
     {
       "key": "inventory.item.lighter.description",
       "value": "Дешёвая металлическая зажигалка. Слабо пахнет табаком."
+    },
+    {
+      "key": "inventory.item.vodka_bottle.name",
+      "value": "Бутылка водки"
+    },
+    {
+      "key": "inventory.item.vodka_bottle.description",
+      "value": "Пол-литра дешёвой водки под винтовой крышкой."
+    },
+    {
+      "key": "inventory.item.chicken_egg.name",
+      "value": "Куриное яйцо С2"
+    },
+    {
+      "key": "inventory.item.chicken_egg.description",
+      "value": "Одно небольшое яйцо. Продаётся поштучно, без лишних церемоний."
+    },
+    {
+      "key": "inventory.item.open_stew_can.name",
+      "value": "Открытая тушёнка"
+    },
+    {
+      "key": "inventory.item.open_stew_can.description",
+      "value": "Открытая банка тушёнки. Холодный жир застыл вокруг мяса."
+    },
+    {
+      "key": "inventory.item.closed_stew_can.name",
+      "value": "Тушёнка «Мясной продукт»"
+    },
+    {
+      "key": "inventory.item.closed_stew_can.description",
+      "value": "Жестяная банка, в которой обещают найти мясо. Крышка пока цела."
+    },
+    {
+      "key": "inventory.item.instant_noodles.name",
+      "value": "Лапша «Минутка», курица"
+    },
+    {
+      "key": "inventory.item.instant_noodles.description",
+      "value": "Сухой брикет в тонком пакете. Пакетик приправы вроде бы на месте."
+    },
+    {
+      "key": "inventory.item.day_old_loaf.name",
+      "value": "Вчерашний батон, половинка"
+    },
+    {
+      "key": "inventory.item.day_old_loaf.description",
+      "value": "Подсохшая половина батона в серой бумажной ленте."
+    },
+    {
+      "key": "supermarket.shop.title",
+      "value": "ПРОДУКТОВЫЙ"
+    },
+    {
+      "key": "supermarket.shop.balance",
+      "value": "НАЛИЧНЫЕ: ${0}"
+    },
+    {
+      "key": "supermarket.shop.price",
+      "value": "ЦЕНА: ${0}"
+    },
+    {
+      "key": "supermarket.shop.buy",
+      "value": "КУПИТЬ"
+    },
+    {
+      "key": "supermarket.shop.back",
+      "value": "НАЗАД"
+    },
+    {
+      "key": "supermarket.failure.invalid_source",
+      "value": "На этой упаковке нет ценника."
+    },
+    {
+      "key": "supermarket.failure.not_offered",
+      "value": "Этот товар не продаётся."
+    },
+    {
+      "key": "supermarket.failure.already_purchased",
+      "value": "На этом месте уже пусто."
+    },
+    {
+      "key": "supermarket.failure.insufficient_funds",
+      "value": "Не хватает наличных."
+    },
+    {
+      "key": "supermarket.failure.inventory_full",
+      "value": "Больше некуда класть."
     },
     {
       "key": "debug.minigames.title",

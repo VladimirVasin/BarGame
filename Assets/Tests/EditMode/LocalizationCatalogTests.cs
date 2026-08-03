@@ -11,6 +11,9 @@ namespace BarPromenade.Tests.EditMode
         {
             "interaction.enter_bar",
             "interaction.exit_bar",
+            "interaction.enter_supermarket",
+            "interaction.exit_supermarket",
+            "interaction.browse_supermarket_shelf",
             "interaction.enter_home",
             "interaction.exit_home",
             "interaction.enter_building",
@@ -46,6 +49,28 @@ namespace BarPromenade.Tests.EditMode
             "inventory.item.apartment_keys.description",
             "inventory.item.lighter.name",
             "inventory.item.lighter.description",
+            "inventory.item.vodka_bottle.name",
+            "inventory.item.vodka_bottle.description",
+            "inventory.item.chicken_egg.name",
+            "inventory.item.chicken_egg.description",
+            "inventory.item.open_stew_can.name",
+            "inventory.item.open_stew_can.description",
+            "inventory.item.closed_stew_can.name",
+            "inventory.item.closed_stew_can.description",
+            "inventory.item.instant_noodles.name",
+            "inventory.item.instant_noodles.description",
+            "inventory.item.day_old_loaf.name",
+            "inventory.item.day_old_loaf.description",
+            "supermarket.shop.title",
+            "supermarket.shop.balance",
+            "supermarket.shop.price",
+            "supermarket.shop.buy",
+            "supermarket.shop.back",
+            "supermarket.failure.invalid_source",
+            "supermarket.failure.not_offered",
+            "supermarket.failure.already_purchased",
+            "supermarket.failure.insufficient_funds",
+            "supermarket.failure.inventory_full",
             "interaction.cat",
             "stairwell.cat.placeholder",
             "stairwell.cat.feed.confirm",
@@ -328,6 +353,12 @@ namespace BarPromenade.Tests.EditMode
                 valuesByKey["drink_shop.preview"],
                 Does.Contain("{3}"));
             Assert.That(valuesByKey["inventory.cash"], Does.Contain("$"));
+            Assert.That(
+                valuesByKey["supermarket.shop.balance"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["supermarket.shop.price"],
+                Does.Contain("{0}"));
             Assert.That(
                 valuesByKey["inventory.cash"],
                 Does.Not.Contain("₽"));

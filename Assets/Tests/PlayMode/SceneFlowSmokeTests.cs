@@ -562,6 +562,7 @@ namespace BarPromenade.Tests.PlayMode
                 BuildingLot lot = cityRoot.Layout.BuildingLots[index];
                 if (lot.IsBar ||
                     lot.IsPlayerHome ||
+                    lot.IsSupermarket ||
                     !lot.HasBuilding)
                 {
                     continue;

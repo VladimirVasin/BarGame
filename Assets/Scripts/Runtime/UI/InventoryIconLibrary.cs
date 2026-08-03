@@ -92,6 +92,31 @@ namespace BarPromenade
                     painter.FillRect(9, 23, 14, 2, pale);
                     painter.FillRect(9, 7, 14, 2, pale);
                     break;
+                case InventoryItemId.ClosedStewCan:
+                    painter.FillRect(8, 8, 16, 16, metal);
+                    painter.OutlineRect(7, 7, 18, 18, ink);
+                    painter.FillRect(9, 12, 14, 7, amber);
+                    painter.FillRect(9, 23, 14, 2, pale);
+                    painter.FillRect(9, 7, 14, 2, pale);
+                    painter.OutlineRect(12, 20, 8, 3, ink);
+                    break;
+                case InventoryItemId.InstantNoodles:
+                    painter.FillRect(5, 8, 22, 16, amber);
+                    painter.OutlineRect(4, 7, 24, 18, ink);
+                    painter.FillRect(8, 11, 16, 9, pale);
+                    painter.FillRect(10, 14, 12, 2, ink);
+                    painter.FillRect(6, 8, 2, 16, metal);
+                    painter.FillRect(24, 8, 2, 16, metal);
+                    break;
+                case InventoryItemId.DayOldLoaf:
+                    painter.FillRect(6, 9, 20, 14, amber);
+                    painter.FillRect(8, 22, 16, 3, pale);
+                    painter.OutlineRect(5, 8, 22, 16, ink);
+                    painter.FillRect(11, 21, 2, 4, ink);
+                    painter.FillRect(16, 21, 2, 4, ink);
+                    painter.FillRect(21, 21, 2, 4, ink);
+                    painter.FillRect(19, 9, 4, 14, metal);
+                    break;
             }
 
             return painter.CreateTexture("Inventory Icon " + itemId);
