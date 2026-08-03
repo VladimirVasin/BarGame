@@ -49,6 +49,7 @@ namespace BarPromenade
         public Transform Room => World != null ? World.Root : null;
         public PlayerRuntime Player { get; private set; }
         public RetroAudioService Audio { get; private set; }
+        public SupermarketMusicPlayer Music { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public InteractionPromptView InteractionPrompt
         {
@@ -104,6 +105,12 @@ namespace BarPromenade
                 camera,
                 sourceId =>
                     !GameSessionState.IsWorldItemCollected(sourceId));
+
+            GameObject musicObject =
+                new GameObject("Supermarket Music");
+            musicObject.transform.SetParent(transform, false);
+            Music =
+                musicObject.AddComponent<SupermarketMusicPlayer>();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

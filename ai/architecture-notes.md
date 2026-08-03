@@ -648,6 +648,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Scene-local music with guarded fades:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
   `bar_theme` from `Resources/Audio/BarMusic` and
+  `SupermarketMusicPlayer` optionally loads only `supermarket_theme` from
+  `Resources/Audio/SupermarketMusic`;
   `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
   `Resources/Audio/StairwellMusic`; `HomeMusicPlayer` optionally loads only
   `home_theme` from `Resources/Audio/HomeMusic`. Each clip background-streams

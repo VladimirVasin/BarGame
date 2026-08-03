@@ -2,6 +2,27 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Optional supermarket music slot
+
+- Added the optional `Resources/Audio/SupermarketMusic/supermarket_theme`
+  composition slot and installed its scene-owned player under the runtime
+  supermarket root.
+- Reused the shared music mixer route, mild low-pass treatment, background
+  loading, one-second unscaled fade envelope and scene-transition fade gate;
+  the shop remains silent-safe if its track is unavailable.
+- Added the supplied `supermarket_theme.mp3` with streaming, background-load
+  and no-preload import settings.
+- Added the resource-folder handoff instructions and focused scene-bootstrap
+  coverage that works both before and after the clip is supplied.
+
+Verification:
+
+- Focused PlayMode
+  `SupermarketPurchasePersistencePlayModeTests.Scene_BootstrapsOptionalMusicThroughSharedMixer`
+  passed `1/1`.
+- Full suites, player build, startup smoke and manual audio review were
+  intentionally not run under the fast-mode verification policy.
+
 ## 2026-08-04 — Grocery-shop marker and map hover names
 
 - Added the canonical `CityLayout.Supermarket` to the city map as a distinct

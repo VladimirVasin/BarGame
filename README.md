@@ -14,6 +14,7 @@
 - `City` — процедурный город;
 - `DoorTransition` — общий дверной переход;
 - `BarInterior` — общий интерьер бара;
+- `SupermarketInterior` — интерьер супермаркета;
 - `HomeInterior` — интерьер квартиры героя;
 - `StairwellInterior` — лестничная площадка между квартирой и улицей.
 
@@ -23,6 +24,9 @@
   `Assets/Resources/Audio/CityMusic` и играет петлёй только в `City`.
 - Барная тема `bar_theme` хранится в
   `Assets/Resources/Audio/BarMusic` и играет петлёй только в `BarInterior`.
+- Тема супермаркета должна называться `supermarket_theme` и лежать в
+  `Assets/Resources/Audio/SupermarketMusic`; она играет только в
+  `SupermarketInterior`.
 - Тема лестничной клетки должна называться `stairwell_theme` и лежать в
   `Assets/Resources/Audio/StairwellMusic`; она играет только в
   `StairwellInterior`.

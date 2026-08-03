@@ -28,6 +28,58 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_BootstrapsOptionalMusicThroughSharedMixer()
+        {
+            SupermarketInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Supermarket runtime root did not finish initialization.");
+
+            Assert.That(root.Music, Is.Not.Null);
+            Assert.That(
+                root.Music.transform.IsChildOf(root.transform),
+                Is.True);
+            Assert.That(
+                SupermarketMusicPlayer.ResourcePath,
+                Is.EqualTo(
+                    "Audio/SupermarketMusic/supermarket_theme"));
+            Assert.That(root.Music.Source, Is.Not.Null);
+            Assert.That(root.Music.Source.loop, Is.True);
+            Assert.That(root.Music.Source.playOnAwake, Is.False);
+            Assert.That(root.Music.Source.spatialBlend, Is.Zero);
+            Assert.That(root.Music.ToneFilter, Is.Not.Null);
+            Assert.That(
+                root.Music.Source.outputAudioMixerGroup,
+                Is.SameAs(GameAudioMixer.MusicGroup));
+            Assert.That(
+                GameAudioMixer.CurrentProfile,
+                Is.EqualTo(GameAudioProfile.Home));
+
+            SupermarketMusicPlayer[] players =
+                UnityEngine.Object.FindObjectsByType<
+                    SupermarketMusicPlayer>(
+                    FindObjectsInactive.Exclude);
+            Assert.That(players, Has.Length.EqualTo(1));
+
+            AudioClip expectedClip = Resources.Load<AudioClip>(
+                SupermarketMusicPlayer.ResourcePath);
+            Assert.That(root.Music.ActiveClip, Is.SameAs(expectedClip));
+            if (expectedClip == null)
+            {
+                Assert.That(
+                    root.Music.PlaybackState,
+                    Is.EqualTo(SceneMusicPlaybackState.Unavailable));
+            }
+            else
+            {
+                Assert.That(
+                    expectedClip.name,
+                    Is.EqualTo(SupermarketMusicPlayer.TrackName));
+            }
+        }
+
+        [UnityTest]
         public IEnumerator ClosedStewPurchase_RemovesProductAndPersistsAcrossReload()
         {
             SupermarketInteriorRoot firstRoot = null;

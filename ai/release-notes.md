@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-04 — A music slot for the supermarket
+
+- The supermarket now supports its own looping `supermarket_theme`, routed
+  through the shared music mix with smooth scene-entry and scene-exit fades.
+- The supplied supermarket track is included; the shop remains fully playable
+  if that optional resource is unavailable.
+
 ### 2026-08-04 — Clearer city-map landmarks
 
 - The city map now marks the grocery shop with its own shopping-bag symbol.

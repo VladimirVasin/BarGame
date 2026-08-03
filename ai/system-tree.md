@@ -39,6 +39,9 @@ Assets/
       BarMusic/
         bar_theme.*   looping BarInterior theme
         README.txt
+      SupermarketMusic/
+        supermarket_theme.*  optional looping SupermarketInterior theme
+        README.txt
       StairwellMusic/
         stairwell_theme.*  optional looping StairwellInterior theme
         README.txt
@@ -85,6 +88,7 @@ Assets/
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
         SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
+        SupermarketMusicPlayer.cs          optional SupermarketInterior theme
         HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
         HomeSmokingMusicPlayer.cs          optional interaction-local loop + gain envelope
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
@@ -230,7 +234,7 @@ Assets/
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
-      SupermarketPurchasePersistencePlayModeTests.cs  buy/remove/re-enter contract
+      SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
@@ -520,6 +524,7 @@ scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
 scene transition -> preload -> outgoing theme fade-out -> activate destination
 City root -> CityMusicPlayer -> city_theme + entry/exit fades ----> Music
 Bar root -> BarMusicPlayer -> bar_theme + entry/exit fades ------> Music
+Supermarket root -> SupermarketMusicPlayer -> optional supermarket_theme + fades -> Music
 Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme + fades -> Music
 Home root -> HomeMusicPlayer -> optional home_theme + Balcony pause/resume -> Music
 Home smoking interaction -> optional smoking_theme + gain envelope -> Music

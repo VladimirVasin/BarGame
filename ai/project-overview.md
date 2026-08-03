@@ -86,9 +86,11 @@ The vertical slice contains:
   amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
-  `Resources/Audio/BarMusic` in `BarInterior` and the optional
-  `stairwell_theme` slot loads only from `Resources/Audio/StairwellMusic` in
-  `StairwellInterior`; Home adds an optional
+  `Resources/Audio/BarMusic` in `BarInterior`; the optional
+  `supermarket_theme` slot loads only from
+  `Resources/Audio/SupermarketMusic` in `SupermarketInterior`, and the
+  optional `stairwell_theme` slot loads only from
+  `Resources/Audio/StairwellMusic` in `StairwellInterior`; Home adds an optional
   `Resources/Audio/HomeMusic/home_theme` loop. Every scene theme starts at
   zero gain, waits for its background-streamed clip data and fades in over one
   unscaled second. The apartment theme alone caps its source volume at `0.35`
