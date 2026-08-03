@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-08-03 — Inventory in your coat pockets
+
+- Press `I` or gamepad North during free gameplay to open a fullscreen
+  PS1-style inventory in the city, bars, apartment or stairwell.
+- The screen shows the hero's condition, intoxication level, cash and carried
+  items through crisp point-filtered portrait and item art. Items can be
+  selected and examined with keyboard, mouse or gamepad.
+- New runs begin with apartment keys and a lighter. Taking the vodka, egg or
+  open stew from the refrigerator now moves it into the inventory, and the item
+  stays gone from that refrigerator after leaving and returning home.
+- Inventory freezes gameplay and safely owns input until closed; Escape returns
+  directly to play without accidentally opening pause.
+- Decorative labels, including the yellow opening title, now ignore pointer
+  hover and press states instead of revealing a second tinted shadow copy.
+
 ### 2026-08-03 — Pause menu
 
 - Escape and gamepad Start now open a localized pause menu throughout City,

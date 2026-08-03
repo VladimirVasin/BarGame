@@ -793,6 +793,58 @@
       "value": "Central Park"
     },
     {
+      "key": "inventory.status",
+      "value": "STATUS"
+    },
+    {
+      "key": "inventory.items",
+      "value": "IN POCKETS"
+    },
+    {
+      "key": "inventory.selected_item",
+      "value": "SELECTED ITEM"
+    },
+    {
+      "key": "inventory.command",
+      "value": "COMMAND"
+    },
+    {
+      "key": "inventory.cash",
+      "value": "CASH: ${0}"
+    },
+    {
+      "key": "inventory.empty",
+      "value": "Nothing here."
+    },
+    {
+      "key": "inventory.action.examine",
+      "value": "EXAMINE"
+    },
+    {
+      "key": "inventory.action.close",
+      "value": "CLOSE"
+    },
+    {
+      "key": "inventory.action.back",
+      "value": "BACK"
+    },
+    {
+      "key": "inventory.item.apartment_keys.name",
+      "value": "Apartment keys"
+    },
+    {
+      "key": "inventory.item.apartment_keys.description",
+      "value": "A worn ring with two keys. One is slightly bent."
+    },
+    {
+      "key": "inventory.item.lighter.name",
+      "value": "Lighter"
+    },
+    {
+      "key": "inventory.item.lighter.description",
+      "value": "A cheap metal lighter. It smells faintly of tobacco."
+    },
+    {
       "key": "debug.minigames.title",
       "value": "DEBUG: MINIGAMES"
     },

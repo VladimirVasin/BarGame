@@ -725,8 +725,9 @@ namespace BarPromenade
                 RetroUiTheme.AccentPale,
                 true);
             titleShadowStyle = new GUIStyle(titleStyle);
-            titleShadowStyle.normal.textColor =
-                new Color(0f, 0f, 0f, 0.92f);
+            RetroUiTheme.SetStaticTextColor(
+                titleShadowStyle,
+                new Color(0f, 0f, 0f, 0.92f));
             selectedStyle = RetroUiTheme.CreateButtonStyle(
                 13,
                 TextAnchor.MiddleLeft,

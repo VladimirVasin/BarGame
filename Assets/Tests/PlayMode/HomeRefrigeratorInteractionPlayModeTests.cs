@@ -21,6 +21,7 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
             mouse = InputSystem.AddDevice<Mouse>();
+            GameSessionState.ResetInventoryState();
             GameSessionState.EnterHome();
             GameSessionState.ClearRoute();
             GameSessionState.ClearVisitedBars();
@@ -59,6 +60,7 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.ResetInventoryState();
             inputFixture?.TearDown();
             inputFixture = null;
             yield return null;
@@ -366,15 +368,6 @@ namespace BarPromenade.Tests.PlayMode
                     HomeRefrigeratorItemKind.VodkaBottle,
                     out HomeRefrigeratorItemView item),
                 Is.True);
-            Transform originalParent = item.OriginalRoot.parent;
-            int originalSiblingIndex =
-                item.OriginalRoot.GetSiblingIndex();
-            Vector3 originalLocalPosition =
-                item.OriginalRoot.localPosition;
-            Quaternion originalLocalRotation =
-                item.OriginalRoot.localRotation;
-            Vector3 originalLocalScale =
-                item.OriginalRoot.localScale;
             Renderer hoverRenderer = item.Renderers[0];
             Material originalSharedMaterial =
                 hoverRenderer.sharedMaterial;
@@ -490,52 +483,28 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 itemInspection.FeedbackKey,
-                Is.EqualTo(
-                    HomeRefrigeratorItemInspectionController
-                        .UnavailableFeedbackKey));
+                Is.Empty);
             Assert.That(
                 home.Refrigerator.Items,
+                Has.Count.EqualTo(2));
+            Assert.That(
+                GameSessionState.IsWorldItemCollected(
+                    HomeRefrigeratorInventoryAdapter.GetSourceId(
+                        item.SlotId)),
+                Is.True);
+            Assert.That(
+                GameSessionState.InventoryItems,
                 Has.Count.EqualTo(3));
-
-            Assert.That(interaction.RequestClose(), Is.False);
             Assert.That(
-                itemInspection.Timeline.Phase,
-                Is.EqualTo(
-                    HomeRefrigeratorItemInspectionPhase.FlyingOut));
-            Assert.That(
-                interaction.Phase,
-                Is.EqualTo(
-                    HomeRefrigeratorInteractionPhase.Inspecting));
-            interaction.AdvanceInteraction(
-                HomeRefrigeratorItemInspectionTimeline
-                    .FlyingOutDurationSeconds);
+                GameSessionState.InventoryItems[2].ItemId,
+                Is.EqualTo(InventoryItemId.VodkaBottle));
+            Assert.That(item.gameObject.activeSelf, Is.False);
 
+            Assert.That(interaction.RequestClose(), Is.True);
             Assert.That(itemInspection.IsActive, Is.False);
-            Assert.That(item.OriginalRoot.parent, Is.SameAs(originalParent));
-            Assert.That(
-                item.OriginalRoot.GetSiblingIndex(),
-                Is.EqualTo(originalSiblingIndex));
-            Assert.That(
-                item.OriginalRoot.localPosition,
-                Is.EqualTo(originalLocalPosition));
-            Assert.That(
-                Quaternion.Angle(
-                    item.OriginalRoot.localRotation,
-                    originalLocalRotation),
-                Is.LessThan(0.001f));
-            Assert.That(
-                item.OriginalRoot.localScale,
-                Is.EqualTo(originalLocalScale));
-            Assert.That(item.SelectionCollider.enabled, Is.True);
             Assert.That(
                 itemInspection.BackdropRenderer.gameObject.activeSelf,
                 Is.False);
-            Assert.That(
-                home.InteractionPrompt.PromptKey,
-                Is.EqualTo(
-                    HomeRefrigeratorInteraction.ClosePromptKey));
-
-            Assert.That(interaction.RequestClose(), Is.True);
             interaction.CancelInteraction();
             yield return null;
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);

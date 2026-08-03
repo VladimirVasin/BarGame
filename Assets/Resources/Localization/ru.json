@@ -793,6 +793,58 @@
       "value": "Центральный парк"
     },
     {
+      "key": "inventory.status",
+      "value": "СОСТОЯНИЕ"
+    },
+    {
+      "key": "inventory.items",
+      "value": "В КАРМАНАХ"
+    },
+    {
+      "key": "inventory.selected_item",
+      "value": "ВЫБРАННЫЙ ПРЕДМЕТ"
+    },
+    {
+      "key": "inventory.command",
+      "value": "КОМАНДА"
+    },
+    {
+      "key": "inventory.cash",
+      "value": "НАЛИЧНЫЕ: ₽{0}"
+    },
+    {
+      "key": "inventory.empty",
+      "value": "Здесь ничего нет."
+    },
+    {
+      "key": "inventory.action.examine",
+      "value": "ОСМОТРЕТЬ"
+    },
+    {
+      "key": "inventory.action.close",
+      "value": "ЗАКРЫТЬ"
+    },
+    {
+      "key": "inventory.action.back",
+      "value": "НАЗАД"
+    },
+    {
+      "key": "inventory.item.apartment_keys.name",
+      "value": "Ключи от квартиры"
+    },
+    {
+      "key": "inventory.item.apartment_keys.description",
+      "value": "Потёртое кольцо с двумя ключами. Один немного погнут."
+    },
+    {
+      "key": "inventory.item.lighter.name",
+      "value": "Зажигалка"
+    },
+    {
+      "key": "inventory.item.lighter.description",
+      "value": "Дешёвая металлическая зажигалка. Слабо пахнет табаком."
+    },
+    {
       "key": "debug.minigames.title",
       "value": "DEBUG: МИНИ-ИГРЫ"
     },

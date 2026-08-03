@@ -323,6 +323,8 @@ namespace BarPromenade
             switch (action)
             {
                 case HomeRefrigeratorItemAction.Take:
+                    selectedActionIndex = (int)action;
+                    return TakeActiveItem();
                 case HomeRefrigeratorItemAction.Use:
                     feedbackKey = UnavailableFeedbackKey;
                     selectedActionIndex = (int)action;
@@ -336,6 +338,52 @@ namespace BarPromenade
                         action,
                         "Unknown refrigerator item action.");
             }
+        }
+
+        private bool TakeActiveItem()
+        {
+            if (activeItem == null || refrigerator == null ||
+                !HomeRefrigeratorInventoryAdapter.TryGetInventoryItem(
+                    activeItem.Kind,
+                    out InventoryItemId inventoryItemId))
+            {
+                feedbackKey = UnavailableFeedbackKey;
+                return true;
+            }
+
+            string sourceId =
+                HomeRefrigeratorInventoryAdapter.GetSourceId(
+                    activeItem.SlotId);
+            if (!GameSessionState.TryCollectWorldItem(
+                    sourceId,
+                    inventoryItemId))
+            {
+                feedbackKey = UnavailableFeedbackKey;
+                return true;
+            }
+
+            HomeRefrigeratorItemView takenItem = activeItem;
+            if (!refrigerator.RemoveItem(takenItem))
+            {
+                throw new InvalidOperationException(
+                    "The inspected refrigerator item was not registered.");
+            }
+
+            timeline.Cancel();
+            activeItem = null;
+            activeDefinition = default;
+            savedParent = null;
+            feedbackKey = string.Empty;
+            selectedActionIndex = 0;
+            keyboardItemIndex = -1;
+            keyboardSelectionActive = false;
+            hasPointerPosition = false;
+            HideBackdrop();
+            takenItem.gameObject.SetActive(false);
+            DestroyOwnedObject(takenItem.gameObject);
+            CaptureRendererColors();
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            return true;
         }
 
         public bool CancelAndRestore()

@@ -172,9 +172,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stable slot IDs initially place one vodka bottle, chicken egg and open stew
   can. `HomeRefrigeratorItemCatalog` owns each occupant's localized name,
   description and preview transform, while `HomeRefrigeratorItemView` registers
-  its original root, renderers and tight trigger collider. These slots remain a
-  data/storage contract only and do not introduce the deferred global inventory
-  or pickup persistence.
+  its original root, renderers and tight trigger collider. Stable slot IDs now
+  map to session-owned world-item IDs; collected slots remain physically empty
+  when Home is rebuilt after a scene round trip.
   `HomeRefrigeratorInteraction` owns a separate unscaled
   `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
   Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
@@ -198,12 +198,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the model through a camera-relative pivot, eases it to a centered preview,
   rotates it at `18°/s` and reveals a dark camera-facing backdrop. Crisp
   post-composite UI shows the localized title, short description and
-  `Take`/`Use`/`Back`; the first two only show an unavailable placeholder and
-  never mutate slots or session state. Back or an outer close request returns
-  the active item before the door can close. Normal return, cancel, disable and
+  `Take`/`Use`/`Back`. `Take` atomically adds the matching inventory item and
+  stable collected-source marker, unregisters the refrigerator item and removes
+  its physical model; `Use` remains unavailable. Back or an outer close request
+  returns an untaken item before the door can close. Normal return, cancel, disable and
   destroy restore its exact parent, sibling index, local position/rotation/
   scale, selection-collider state and original renderer colors, then clear the
   temporary presentation state.
+- **Accepted — Session hero inventory:** One pure ordered stack model and code
+  catalog own the current run's apartment keys, lighter and collected Home food
+  or drink items. `GameSessionState` exposes read-only stacks plus atomic add,
+  remove and world-source collection operations; `BeginNewGame` resets starter
+  possessions and every collected source, while ordinary scene transitions do
+  neither. `InventoryController` is installed beside pause in all four gameplay
+  roots, opens on `I` or gamepad North only during free input, captures the
+  existing fullscreen modal lock and exact time scale, and restores both on
+  close or lifecycle cleanup. Its `640x360` IMGUI view uses generated
+  point-filtered icons and portrait art, status/cash, a bounded five-column
+  grid and Examine/Close only; unsupported Use, Equip, Combine and Drop commands
+  are deliberately absent. Pause executes before inventory so Escape sees the
+  occupied lock, then inventory closes later in the same frame without leaking
+  that press into pause.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
@@ -702,8 +717,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   drink; failures mutate nothing and cash cannot become negative. Water costs
   `$2`, increments consumed drinks, does not sober the player and preserves
   the last alcoholic drink. `None` and the Tinctures-only `Moonshine` are not
-  sold. Inventory, earnings and long-term wallet persistence remain deferred,
-  and a purchase never completes a bar visit or changes its route.
+  sold. Purchased drinks are consumed at the counter instead of being added to
+  the hero inventory. Earnings and long-term wallet/save persistence remain
+  deferred, and a purchase never completes a bar visit or changes its route.
 - **Accepted — Five percentage-driven intoxication ranges:** `0` is Sober.
   Positive values map through `IntoxicationStageRules` as `1–20` Light Buzz /
   «Лёгкий хмель», `21–40` Tipsy / «Навеселе», `41–60` Drunk / «Подшофе»,

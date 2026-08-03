@@ -307,7 +307,7 @@ namespace BarPromenade
                     : FontStyle.Normal,
                 wordWrap = wordWrap
             };
-            SetTextColors(style, color);
+            SetStaticTextColor(style, color);
             return style;
         }
 
@@ -333,7 +333,7 @@ namespace BarPromenade
             style.onHover.background = null;
             style.onActive.background = null;
             style.onFocused.background = null;
-            SetTextColors(style, color);
+            SetInteractiveTextColors(style, color);
             return style;
         }
 
@@ -439,7 +439,26 @@ namespace BarPromenade
                 color);
         }
 
-        private static void SetTextColors(
+        internal static void SetStaticTextColor(
+            GUIStyle style,
+            Color color)
+        {
+            if (style == null)
+            {
+                throw new System.ArgumentNullException(nameof(style));
+            }
+
+            style.normal.textColor = color;
+            style.hover.textColor = color;
+            style.active.textColor = color;
+            style.focused.textColor = color;
+            style.onNormal.textColor = color;
+            style.onHover.textColor = color;
+            style.onActive.textColor = color;
+            style.onFocused.textColor = color;
+        }
+
+        private static void SetInteractiveTextColors(
             GUIStyle style,
             Color color)
         {

@@ -873,7 +873,12 @@ namespace BarPromenade
                     slotRoot.gameObject.AddComponent<HomeRefrigeratorSlotView>();
                 marker.Initialize(slot);
                 slotRoots.Add(slot.Id, slotRoot);
-                if (slot.IsOccupied)
+                bool alreadyCollected =
+                    slot.IsOccupied &&
+                    GameSessionState.IsWorldItemCollected(
+                        HomeRefrigeratorInventoryAdapter.GetSourceId(
+                            slot.Id));
+                if (slot.IsOccupied && !alreadyCollected)
                 {
                     Transform itemRoot = BuildOccupant(slotRoot, slot);
                     Renderer[] renderers =

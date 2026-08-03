@@ -255,6 +255,43 @@ namespace BarPromenade
             return false;
         }
 
+        public bool RemoveItem(HomeRefrigeratorItemView item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            int removedIndex = -1;
+            for (int index = 0; index < items.Count; index++)
+            {
+                if (ReferenceEquals(items[index], item))
+                {
+                    removedIndex = index;
+                    break;
+                }
+            }
+
+            if (removedIndex < 0)
+            {
+                return false;
+            }
+
+            var remaining =
+                new HomeRefrigeratorItemView[items.Count - 1];
+            int destination = 0;
+            for (int index = 0; index < items.Count; index++)
+            {
+                if (index != removedIndex)
+                {
+                    remaining[destination++] = items[index];
+                }
+            }
+
+            items = Array.AsReadOnly(remaining);
+            return true;
+        }
+
         public void ResetPresentation()
         {
             if (!initialized)

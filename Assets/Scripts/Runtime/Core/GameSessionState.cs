@@ -22,6 +22,10 @@ namespace BarPromenade
             plannedBarRoute.AsReadOnly();
         private static readonly HashSet<string> visitedBars =
             new HashSet<string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> collectedWorldItems =
+            new HashSet<string>(StringComparer.Ordinal);
+        private static readonly InventoryState inventory =
+            new InventoryState();
         private static float intoxicationRecoveryElapsed;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
@@ -50,6 +54,10 @@ namespace BarPromenade
         public static IReadOnlyList<string> PlannedBarRoute =>
             plannedBarRouteView;
         public static int VisitedBarCount => visitedBars.Count;
+        public static IReadOnlyList<InventoryItemStack> InventoryItems =>
+            inventory.Items;
+        public static int CollectedWorldItemCount =>
+            collectedWorldItems.Count;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -87,7 +95,102 @@ namespace BarPromenade
             BalanceCheckSequence = 0;
             plannedBarRoute.Clear();
             visitedBars.Clear();
+            collectedWorldItems.Clear();
+            inventory.ResetWithStarterItems();
             GameLog.SetCitySeed(CitySeed);
+        }
+
+        public static bool TryAddInventoryItem(
+            InventoryItemId itemId,
+            int count = 1)
+        {
+            bool added = inventory.TryAdd(itemId, count);
+            if (added)
+            {
+                GameLog.Info(
+                    "inventory",
+                    "item_added",
+                    GameLog.Field("item_id", itemId.ToString()),
+                    GameLog.Field("count", count),
+                    GameLog.Field(
+                        "total_count",
+                        inventory.GetCount(itemId)));
+            }
+
+            return added;
+        }
+
+        public static bool TryRemoveInventoryItem(
+            InventoryItemId itemId,
+            int count = 1)
+        {
+            bool removed = inventory.TryRemove(itemId, count);
+            if (removed)
+            {
+                GameLog.Info(
+                    "inventory",
+                    "item_removed",
+                    GameLog.Field("item_id", itemId.ToString()),
+                    GameLog.Field("count", count),
+                    GameLog.Field(
+                        "remaining_count",
+                        inventory.GetCount(itemId)));
+            }
+
+            return removed;
+        }
+
+        public static bool TryCollectWorldItem(
+            string sourceId,
+            InventoryItemId itemId,
+            int count = 1)
+        {
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                return false;
+            }
+
+            string normalizedSourceId = sourceId.Trim();
+            if (collectedWorldItems.Contains(normalizedSourceId) ||
+                !inventory.TryAdd(itemId, count))
+            {
+                return false;
+            }
+
+            collectedWorldItems.Add(normalizedSourceId);
+            GameLog.Info(
+                "inventory",
+                "world_item_collected",
+                GameLog.Field("source_id", normalizedSourceId),
+                GameLog.Field("item_id", itemId.ToString()),
+                GameLog.Field("count", count),
+                GameLog.Field(
+                    "collected_world_item_count",
+                    collectedWorldItems.Count));
+            return true;
+        }
+
+        public static bool IsWorldItemCollected(string sourceId)
+        {
+            return !string.IsNullOrWhiteSpace(sourceId) &&
+                   collectedWorldItems.Contains(sourceId.Trim());
+        }
+
+        public static void ResetInventoryState()
+        {
+            int previousStackCount = inventory.Items.Count;
+            int previousCollectedCount = collectedWorldItems.Count;
+            collectedWorldItems.Clear();
+            inventory.ResetWithStarterItems();
+            GameLog.Info(
+                "inventory",
+                "inventory_reset",
+                GameLog.Field(
+                    "previous_stack_count",
+                    previousStackCount),
+                GameLog.Field(
+                    "previous_collected_world_item_count",
+                    previousCollectedCount));
         }
 
         public static void SetCitySeed(int seed)

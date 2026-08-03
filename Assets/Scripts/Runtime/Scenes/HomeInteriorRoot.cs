@@ -111,6 +111,7 @@ namespace BarPromenade
         }
         public HomeOpeningController Opening { get; private set; }
         public HomeExit Exit { get; private set; }
+        public InventoryController Inventory { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -296,6 +297,11 @@ namespace BarPromenade
 
             BuildPlayerOcclusion(camera);
 
+            Inventory = ui.AddComponent<InventoryController>();
+            Inventory.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud);
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(
                 Player,

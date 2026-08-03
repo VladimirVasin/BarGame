@@ -135,6 +135,11 @@ Assets/
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
         PlayerFallAnimationTimeline.cs  14/36/30 authored frame mapping
+      Inventory/     pure item catalog, ordered session stacks and menu state
+        InventoryTypes.cs           stable IDs, definitions and stack values
+        InventoryState.cs           atomic bounded stack mutations + starters
+        InventoryMenuModel.cs       wrapping selection and examine state
+        HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
       Interaction/   contract, minigames and bar/home/stairwell entrances/exits
         PlayerAnimatedInteraction*.cs  enter/loop/exit + per-definition flip/crossfade/plane
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
@@ -162,12 +167,15 @@ Assets/
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
-      UI/            retro UI, pause menu, segmented HUD, district/public-place map and F9 debug
+      UI/            retro UI, pause/inventory, segmented HUD, district/public-place map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
         CityMapController.cs        canonical layout POIs plus bar-route state
         CityMapView.cs              open public lots, four marker shapes and legend
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
+        InventoryController.cs      I/North shared-lock input and time ownership
+        InventoryView.cs            640x360 status/grid/description/command UI
+        InventoryIconLibrary.cs     generated point-filtered item/portrait pixels
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -177,6 +185,7 @@ Assets/
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
+      Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       HomeAlarmClockPlanTests.cs            clock placement and circulation
@@ -191,6 +200,7 @@ Assets/
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
+      InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
       HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration

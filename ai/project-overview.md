@@ -317,8 +317,9 @@ The vertical slice contains:
   door bins. Six cavity slots and two door slots form the storage contract;
   the initial occupied slots hold a vodka bottle, one chicken egg and an open
   can of stew. Each occupant owns stable catalog metadata, registered
-  renderers and a tight non-blocking selection trigger, while global inventory
-  and item transfer remain deferred;
+  renderers and a tight non-blocking selection trigger. A successful `Take`
+  now transfers the item into the run inventory, removes the physical model
+  and persists the stable collected slot across scene round trips;
 - one localized modal refrigerator interaction: the Home camera follows an
   unscaled first-person Bezier approach while the ordinary puppet remains
   visible, then hides its rig and shadows in the same frame that a low-poly
@@ -337,12 +338,24 @@ The vertical slice contains:
   confirm provide the same selection path. Click or confirm flies the chosen
   model into the center of the camera, fades in a dark camera-facing backdrop,
   rotates it slowly and presents a localized title, short description and
-  `Take`/`Use`/`Back` actions. `Take` and `Use` currently return a localized
-  unavailable placeholder without changing slots or session state; `Back`
-  returns the item before the refrigerator can close. Normal return, cancel,
+  `Take`/`Use`/`Back` actions. `Take` atomically commits the stable world-item
+  source and inventory stack before removing the model; `Use` remains an
+  unavailable placeholder until food/drink item-use rules exist. `Back`
+  returns an untaken item before the refrigerator can close. Normal return, cancel,
   disable and destroy restore the exact parent, sibling index, local transform,
   selection collider and original renderer colors without acquiring a second
   modal lock;
+- one localized fullscreen PS1-style hero inventory in City, BarInterior,
+  HomeInterior and StairwellInterior. `I` or gamepad North captures the shared
+  modal lock, freezes scaled time, hides the gameplay HUD and preserves the
+  ambient audio bed; Escape, the same toggle or gamepad East restores the exact
+  prior input, camera, HUD and time-scale state without opening pause on the
+  same frame. The logical `640x360` screen combines a generated point-filtered
+  hero portrait, intoxication status, cash, a five-column item grid, selected
+  item description and contextual Examine/Close commands. A pure catalog and
+  ordered stack state begin every new run with apartment keys and a lighter,
+  persist across scene loads and reset with the session; only commands backed
+  by implemented rules are shown;
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
@@ -570,7 +583,7 @@ The vertical slice contains:
   implemented bed and balcony-smoking interactions use their own contextual
   64-frame sequences.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
-- Sobering mechanics, long-term save data, income/jobs, inventory, a broader
+- Sobering mechanics, long-term save data, income/jobs, a broader
   economy, dialogue, quests, combat, save slots, and online features.
 - Final bespoke art and audio masters, accessibility, localization coverage,
   and platform release work.

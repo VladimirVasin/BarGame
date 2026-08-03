@@ -10,6 +10,12 @@ namespace BarPromenade.Tests.PlayMode
     {
         private GameObject owner;
 
+        [SetUp]
+        public void SetUp()
+        {
+            GameSessionState.ResetInventoryState();
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
@@ -18,6 +24,7 @@ namespace BarPromenade.Tests.PlayMode
                 Object.Destroy(owner);
             }
 
+            GameSessionState.ResetInventoryState();
             yield return null;
         }
 
@@ -231,6 +238,36 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.01f));
             Assert.That(view.InteriorLightStrip.enabled, Is.False);
             Assert.That(view.InteriorHalo.IsVisible, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator Build_OmitsPreviouslyCollectedWorldItem()
+        {
+            const string slotId = "shelf-upper-left";
+            Assert.That(
+                GameSessionState.TryCollectWorldItem(
+                    HomeRefrigeratorInventoryAdapter.GetSourceId(slotId),
+                    InventoryItemId.VodkaBottle),
+                Is.True);
+            owner = new GameObject(
+                "Persistent Refrigerator Builder Test Owner");
+            HomeRefrigeratorPlan plan =
+                HomeRefrigeratorPlan.Create(
+                    HomeInteriorLayoutPlanner.Generate());
+
+            HomeRefrigeratorView view =
+                HomeRefrigeratorWorldBuilder.Build(
+                    owner.transform,
+                    plan);
+            yield return null;
+
+            Assert.That(view.SlotRoots, Has.Count.EqualTo(8));
+            Assert.That(view.Items, Has.Count.EqualTo(2));
+            Assert.That(
+                view.TryGetItem(
+                    HomeRefrigeratorItemKind.VodkaBottle,
+                    out _),
+                Is.False);
         }
 
         private static Transform AssertRequiredChild(

@@ -2,6 +2,54 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-03 — Static decorative UI labels
+
+- Corrected the shared retro label style so decorative `GUI.Label` text keeps
+  its authored color through normal, hover, active and focused pointer states.
+  The yellow Home-opening title remains yellow, while its black offset shadow
+  can no longer turn yellow on hover and appear as a duplicate title.
+- Interactive button styles retain their existing hover and pressed colors.
+
+Verification:
+
+- Runtime and EditMode test assemblies built with zero warnings and errors.
+- Focused `RetroUiThemeTests` passed `12/12`; `git diff --check` passed.
+
+## 2026-08-03 — PS1 hero inventory and refrigerator pickup
+
+- Added one localized fullscreen `640x360` inventory to City, BarInterior,
+  HomeInterior and StairwellInterior. `I` or gamepad North captures the shared
+  modal lock, freezes scaled time, hides movement/interaction/camera/HUD input
+  and restores the exact captured state on toggle, cancel, transition, disable
+  or destroy. Pause executes first, so Escape closes inventory without opening
+  pause in the same frame.
+- Added a pure item catalog, ordered bounded stack state and menu model. Fresh
+  sessions begin with apartment keys and a lighter; status shows the current
+  intoxication stage/level and cash. The IMGUI presentation uses generated
+  point-filtered portrait/item textures and exposes only working Examine and
+  Close commands.
+- Replaced the refrigerator `Take` placeholder with an atomic stable-source
+  transfer for vodka, egg and open stew. A taken item is removed from the live
+  refrigerator registry/model, added to the session inventory and omitted when
+  Home is reconstructed after a scene round trip. `Use` remains unavailable
+  until item-use rules exist.
+
+Verification:
+
+- Unity 6000.5.5f1 compiled Runtime, EditModeTests and PlayModeTests; direct
+  `dotnet build Assembly-CSharp.csproj` completed with zero warnings/errors.
+- Focused inventory/session/localization EditMode passed `43/43`; focused
+  inventory/refrigerator PlayMode passed `12/12`, followed by the updated
+  inventory controller lifecycle set at `4/4`.
+- Full EditMode passed `728/728`; full PlayMode passed `155/155` with no failed,
+  skipped or inconclusive tests.
+- A Windows x64 player built successfully at
+  `Builds/InventorySmoke/BarPromenade.exe`. A hidden D3D12 release-player smoke
+  reached `MainMenu -> HomeInterior`, initialized Home in about `1.2 s` and
+  emitted no runtime exception. Null-GPU `-nographics` remains unsupported by
+  the project's packaged URP material contract and was not used for the valid
+  smoke result.
+
 ## 2026-08-03 — Shared-lock gameplay pause menu
 
 - Added one localized PS1-style Pause/Resume/Start Over/Quit interface to the

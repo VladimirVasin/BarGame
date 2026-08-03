@@ -21,6 +21,7 @@ namespace BarPromenade
         }
         public CityMapController Map { get; private set; }
         public MinigameDebugWindow DebugWindow { get; private set; }
+        public InventoryController Inventory { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -215,6 +216,11 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 Map);
+            Inventory = ui.AddComponent<InventoryController>();
+            Inventory.Initialize(
+                Player,
+                follow,
+                intoxicationHud);
             PauseMenu = ui.AddComponent<PauseMenuController>();
             PauseMenu.Initialize(
                 Player,

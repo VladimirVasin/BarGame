@@ -220,6 +220,11 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             GameSessionState.SetBalanceCheckDelay(14f);
             GameSessionState.ConsumeBalanceCheckSequence();
+            Assert.That(
+                GameSessionState.TryCollectWorldItem(
+                    "home.refrigerator.test",
+                    InventoryItemId.ChickenEgg),
+                Is.True);
 
             GameSessionState.BeginNewGame();
 
@@ -269,6 +274,51 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.IsBarVisited("bar-visited"),
                 Is.False);
+            Assert.That(
+                GameSessionState.InventoryItems,
+                Has.Count.EqualTo(2));
+            Assert.That(
+                GameSessionState.InventoryItems[0].ItemId,
+                Is.EqualTo(InventoryItemId.ApartmentKeys));
+            Assert.That(
+                GameSessionState.InventoryItems[1].ItemId,
+                Is.EqualTo(InventoryItemId.Lighter));
+            Assert.That(
+                GameSessionState.CollectedWorldItemCount,
+                Is.Zero);
+            Assert.That(
+                GameSessionState.IsWorldItemCollected(
+                    "home.refrigerator.test"),
+                Is.False);
+        }
+
+        [Test]
+        public void CollectWorldItem_IsAtomicAndRejectsDuplicateSource()
+        {
+            const string sourceId =
+                "home.refrigerator.shelf-middle-left";
+
+            Assert.That(
+                GameSessionState.TryCollectWorldItem(
+                    sourceId,
+                    InventoryItemId.ChickenEgg),
+                Is.True);
+            Assert.That(
+                GameSessionState.TryCollectWorldItem(
+                    sourceId,
+                    InventoryItemId.OpenStewCan),
+                Is.False);
+
+            Assert.That(
+                GameSessionState.IsWorldItemCollected(sourceId),
+                Is.True);
+            Assert.That(
+                GameSessionState.InventoryItems,
+                Has.Count.EqualTo(3));
+            Assert.That(
+                GameSessionState.InventoryItems[2].ItemId,
+                Is.EqualTo(InventoryItemId.ChickenEgg));
+            Assert.That(GameSessionState.CollectedWorldItemCount, Is.EqualTo(1));
         }
 
         [TestCase(null)]

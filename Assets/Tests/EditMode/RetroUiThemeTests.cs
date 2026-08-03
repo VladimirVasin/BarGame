@@ -111,6 +111,31 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void StaticTextColor_DoesNotChangeForPointerStates()
+        {
+            var style = new GUIStyle();
+            var expected = new Color(0.93f, 0.71f, 0.37f, 0.82f);
+
+            RetroUiTheme.SetStaticTextColor(style, expected);
+
+            GUIStyleState[] states =
+            {
+                style.normal,
+                style.hover,
+                style.active,
+                style.focused,
+                style.onNormal,
+                style.onHover,
+                style.onActive,
+                style.onFocused
+            };
+            foreach (GUIStyleState state in states)
+            {
+                Assert.That(state.textColor, Is.EqualTo(expected));
+            }
+        }
+
+        [Test]
         public void CityMapLine_ComposesInsideScaledLogicalCanvas()
         {
             MethodInfo createLineMatrix = typeof(CityMapView).GetMethod(

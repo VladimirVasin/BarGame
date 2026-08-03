@@ -25,6 +25,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.IsInitialized, Is.True);
             Assert.That(city.PauseMenu, Is.Not.Null);
             Assert.That(city.PauseMenu.IsInitialized, Is.True);
+            Assert.That(city.Inventory, Is.Not.Null);
+            Assert.That(city.Inventory.IsInitialized, Is.True);
             Assert.That(
                 GameAudioMixer.CurrentProfile,
                 Is.EqualTo(GameAudioProfile.City));
@@ -498,6 +500,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interior.IsInitialized, Is.True);
             Assert.That(interior.PauseMenu, Is.Not.Null);
             Assert.That(interior.PauseMenu.IsInitialized, Is.True);
+            Assert.That(interior.Inventory, Is.Not.Null);
+            Assert.That(interior.Inventory.IsInitialized, Is.True);
             if (interior.ArrivalPresentation.IsPlaying)
             {
                 Assert.That(
