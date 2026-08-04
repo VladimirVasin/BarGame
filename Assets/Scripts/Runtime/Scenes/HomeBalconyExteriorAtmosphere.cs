@@ -21,6 +21,8 @@ namespace BarPromenade
         private VisibilitySnapshot homeVisibility;
         private LightingSnapshot homeLighting;
         private VolumeProfile runtimeCityProfile;
+        private DayNightVisualSample exteriorLightingSample;
+        private bool hasExteriorLightingSample;
 
         public bool IsInitialized { get; private set; }
         public bool IsBalconyVisibilityActive { get; private set; }
@@ -91,6 +93,19 @@ namespace BarPromenade
             {
                 RefreshVisibility(true);
             }
+        }
+
+        public void ApplyExteriorLighting(
+            DayNightVisualSample sample)
+        {
+            exteriorLightingSample = sample;
+            hasExteriorLightingSample = true;
+            if (!IsInitialized || !IsBalconyVisibilityActive)
+            {
+                return;
+            }
+
+            RuntimeSceneSetup.ApplyCityExteriorLighting(sample);
         }
 
         private void OnEnable()
@@ -210,8 +225,16 @@ namespace BarPromenade
             {
                 RuntimeSceneSetup.ApplyCityExteriorVisibility(
                     targetCamera);
-                RuntimeSceneSetup.ApplyCityExteriorLighting();
                 SetExteriorLightingEnabled(true);
+                if (hasExteriorLightingSample)
+                {
+                    RuntimeSceneSetup.ApplyCityExteriorLighting(
+                        exteriorLightingSample);
+                }
+                else
+                {
+                    RuntimeSceneSetup.ApplyCityExteriorLighting();
+                }
                 FogField.FogRenderer.enabled = true;
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;

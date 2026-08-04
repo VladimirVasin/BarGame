@@ -84,6 +84,9 @@ Assets/
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
+        GameTimeState.cs          frozen 05:59 -> running 06:00, 1.0 min/s
+        GameTimeRuntime.cs        persistent scaled-delta driver
+        GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
@@ -115,6 +118,7 @@ Assets/
         RoadFencePlan.cs         typed bar/home/supermarket/park/public-place openings
         RoadFencePlanner.cs      exposed street boundary minus complete public sides
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
+        CityDayNightController.cs   session lighting + exterior night factor
         RoadWalkableArea.cs      street/park/public XZ union; surfaces own height
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
@@ -176,7 +180,8 @@ Assets/
       Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
-        HomeAlarmClock.cs              mutable 28-segment time, spatial ring and rattle
+        HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
+        HomeDayNightController.cs      window and balcony time-of-day lighting
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  camera-plane Main/Bath + world-up Balcony shots
@@ -200,7 +205,7 @@ Assets/
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
-        InventoryView.cs            640x360 three-bar status/grid/description/command UI
+        InventoryView.cs            640x360 status + HH:MM/grid/description/command UI
         InventoryIconLibrary.cs     point-filtered icons + canonical atlas crop
         InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
@@ -225,6 +230,8 @@ Assets/
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
+      GameTimeStateTests.cs                 freeze/start/1440 s day/midnight/reset
+      GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, world-up yaw, timing, drift + safe exit
@@ -240,7 +247,8 @@ Assets/
       InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
-      HomeOpeningPlayModeTests.cs           launch, wake, normal Home and cleanup
+      HomeOpeningPlayModeTests.cs           launch, wake, running clock and cleanup
+      HomeBalconyPresentationPlayModeTests.cs  time lighting + fog invariants
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
       HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/direct handoff + restore
@@ -277,6 +285,12 @@ Cross-system flow:
 build index 0 -> MainMenuRoot -> BeginNewGame
                               -> HomeArrival.OpeningSleep
                               -> Single-load HomeInterior
+                              -> time frozen at 05:59
+startup Wake -> session time 06:00 -> GameTimeRuntime scaled delta
+                                  -> 1440 real seconds per game day
+                                  -> HomeAlarmClock HH:MM
+                                  -> CityDayNightController
+                                  -> HomeDayNightController
 seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                            -> four urban districts + central park
                                            -> distant bars via CityTravelDistance
@@ -321,8 +335,11 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                           -> Home exterior context
                                              -> nearby canonical public places
                                              -> local-space visual reconstruction
-player + lamp anchors -> CityNightAtmosphere -> CityLightHalo
-player + seed -> CityFogField
+session time -> GameTimeDayNightRules -> CityDayNightController
+                                     -> directional/ambient/reflection lighting
+                                     -> CityNightAtmosphere night factor
+                                        -> bounded lights + CityLightHalo
+player + seed -> CityFogField (unchanged by time of day)
 player + main directional light -> PlayerDynamicShadow -> world receivers
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> BarEntrance/BarExit -> SceneTransitionService
@@ -384,15 +401,18 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> shared City exterior appearance + passive bar facade
                     -> no second City root/player/camera
                     -> Balcony-only City visibility, fog field and light pool
-                       -> exact City fog/background/48 m cap/moonlight/grade
-                       -> at most 12 street/bar lights; inactive indoors
+                       -> exact City fog/background/48 m cap/current light/grade
+                       -> at most 12 street/bar lights scaled by night factor
                        -> captured Home render state restored on exit/disable
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> synchronized cold shadowed bathroom-spill Spot
-                                 -> cold shadowed window cookie Spot
+                                 -> shadowed time-of-day window cookie Spot
                                  -> at most four owned local realtime lights
                                     + separate scene Directional light
                                  -> shared transparent glass + grade + sparse dust
+       -> HomeDayNightController -> window night/day blend
+                                 -> Balcony current City lighting sample
+                                 -> exterior fixtures scaled by night factor
        -> HomeAmbiencePlayer -> calm steady room bed
        -> HomeSoundscape -> synchronized closed/open refrigerator loops
                           -> equal-power crossfade from current door amount
@@ -461,12 +481,13 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> HomeAlarmClockPlan -> HomeAlarmClockBuilder
                              -> silent clock/nightstand room dressing
                              -> reusable flickering 05:59 / Wake-only solid 06:00
+                             -> then persistent session HH:MM
                              -> HomeAlarmClockSynthesis -> spatial SFX/World ring
        -> consumed HomeArrival.OpeningSleep -> HomeOpeningController
                                              -> direct sleeping loop + modal lock
                                              -> 5 s locked flickering 05:59 shot
                                              -> silent 05:59 + Wake Up/Quit
-                                             -> Wake -> solid 06:00 + 3 s ring
+                                             -> Wake -> solid 06:00 + start time + 3 s ring
                                              -> ring stops -> wake + smooth camera arc
                                              -> 3x exit + continuous gameplay settle
                                              -> existing wake frames

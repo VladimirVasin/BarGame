@@ -82,6 +82,7 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeDayNightController DayNight { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public HomeFixedCameraController FixedCamera { get; private set; }
         public HomeOcclusionRegistry OcclusionRegistry
@@ -171,6 +172,10 @@ namespace BarPromenade
                     Room,
                     AlarmClockPlan,
                     OcclusionRegistry);
+            if (Arrival != HomeArrivalKind.OpeningSleep)
+            {
+                AlarmClock.FollowSessionTime();
+            }
             Balcony = Room.Find("Home Balcony");
             ExteriorView =
                 Room.Find("Home Exterior View");
@@ -274,6 +279,15 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 BalconyLayout,
                 GameSessionState.CitySeed);
+            GameObject dayNightObject =
+                new GameObject("Home Day Night");
+            dayNightObject.transform.SetParent(transform, false);
+            DayNight =
+                dayNightObject.AddComponent<HomeDayNightController>();
+            DayNight.Initialize(
+                Atmosphere,
+                ExteriorAtmosphere,
+                ExteriorNight);
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
             BuildBalconySmokingInteraction();

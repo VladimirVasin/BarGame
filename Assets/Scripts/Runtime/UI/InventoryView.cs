@@ -34,6 +34,9 @@ namespace BarPromenade
             get;
             private set;
         }
+        public string CurrentGameTimeText =>
+            $"{GameSessionState.GameHour:00}:" +
+            $"{GameSessionState.GameMinute:00}";
 
         public void Initialize(InventoryController inventoryController)
         {
@@ -160,10 +163,16 @@ namespace BarPromenade
                 GameSessionState.StressLevel,
                 new Color32(171, 82, 77, 255));
             GUI.Label(
-                new Rect(23f, 137f, 128f, 24f),
+                new Rect(23f, 130f, 128f, 18f),
                 string.Format(
                     LocalizationService.Get("inventory.cash"),
                     GameSessionState.CashBalance),
+                statusStyle);
+            GUI.Label(
+                new Rect(23f, 151f, 128f, 18f),
+                string.Format(
+                    LocalizationService.Get("inventory.time"),
+                    CurrentGameTimeText),
                 statusStyle);
         }
 

@@ -865,6 +865,10 @@
       "value": "НАЛИЧНЫЕ: ${0}"
     },
     {
+      "key": "inventory.time",
+      "value": "ВРЕМЯ: {0}"
+    },
+    {
       "key": "inventory.action.use",
       "value": "ИСПОЛЬЗОВАТЬ"
     },

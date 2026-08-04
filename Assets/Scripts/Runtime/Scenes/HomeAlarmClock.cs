@@ -50,6 +50,7 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool IsRinging { get; private set; }
+        public bool IsFollowingSessionTime { get; private set; }
         public AudioSource Source => ringSource;
         public AudioClip ActiveClip => generatedClip;
         public Vector3 RestLocalPosition => restLocalPosition;
@@ -105,6 +106,11 @@ namespace BarPromenade
 
         private void OnEnable()
         {
+            if (IsFollowingSessionTime)
+            {
+                SyncSessionTime();
+            }
+
             if (IsRinging &&
                 ringSource != null &&
                 !ringSource.isPlaying)
@@ -115,6 +121,11 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (IsFollowingSessionTime)
+            {
+                SyncSessionTime();
+            }
+
             AdvanceRattle(Time.unscaledDeltaTime);
         }
 
@@ -207,6 +218,18 @@ namespace BarPromenade
             DisplayedHour = hour;
             DisplayedMinute = minute;
             ApplyDisplayTime();
+        }
+
+        public void FollowSessionTime()
+        {
+            IsFollowingSessionTime = true;
+            SetDisplayVisible(true);
+            SyncSessionTime();
+        }
+
+        public void StopFollowingSessionTime()
+        {
+            IsFollowingSessionTime = false;
         }
 
         public void SetDisplayVisible(bool visible)
@@ -430,6 +453,14 @@ namespace BarPromenade
                                 segment]);
                 }
             }
+        }
+
+        private void SyncSessionTime()
+        {
+            SetDisplayVisible(true);
+            SetDisplayTime(
+                GameSessionState.GameHour,
+                GameSessionState.GameMinute);
         }
 
         private void ApplyDisplayVisibility()

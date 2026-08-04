@@ -42,19 +42,29 @@ The vertical slice contains:
   long intervals while no menu input exists for five seconds. A localized
   PS1-style `ПРОСНУТЬСЯ / WAKE UP` or `ВЫЙТИ / QUIT` menu then appears over
   the same held shot while the silent display keeps flickering `05:59`. Wake
-  Up alone switches it to solid `06:00`, starts the alarm and hides the menu.
-  After three more unscaled seconds on the clock and sleeping loop, the alarm
-  stops; only then does the six-second, three-times-slower opening wake begin,
-  gliding to the sleeper over `2.25 s` and easing onward into the active
-  gameplay shot without a cut;
+  Up alone switches it to solid `06:00`, starts the session clock and alarm,
+  and hides the menu. After three more unscaled seconds on the clock and
+  sleeping loop, the alarm stops; only then does the six-second,
+  three-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
+  and easing onward into the active gameplay shot without a cut;
+- one session-owned in-game clock that starts every fresh run frozen at
+  `05:59`, advances only after the successful startup Wake sets it to `06:00`,
+  and persists through Single-mode scene loads. It advances on scaled time at
+  `1.0` game minute per real second, so a full `24 h` cycle takes exactly
+  `1440` real seconds (`24` minutes), crosses midnight with a day index and
+  naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
+  and inventory Status panel both show its current `HH:MM`;
 - a finite, seed-reproducible connected `12 x 12`-block city spanning roughly
   `288 x 288 m`;
-- a fixed atmospheric noir night with `0.070` exponential-squared luminous
-  gray-green fog, a fog-matched terminal camera backdrop and a City-only
-  `48 m` camera visibility cap. The Windows player explicitly retains the
-  runtime-only Exp2 shader variant instead of relying on build-scene scanning,
-  plus lifted geometry values, cold moonlight and a retuned
-  Bloom/ColorAdjustments/Vignette/FilmGrain profile;
+- one shared MVP day/night lighting cycle for City, the Home window and the
+  Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
+  `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.
+  It blends directional/ambient/reflection lighting and the bounded City/Home
+  exterior night fixtures; Bar, Supermarket and Stairwell lighting remain
+  unchanged. The `0.070` exponential-squared luminous gray-green fog,
+  fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
+  `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
+  Windows player explicitly retains the runtime-only Exp2 shader variant;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
   without a screen-space dither grid, point upscaling and percentage-driven
@@ -424,10 +434,11 @@ The vertical slice contains:
   lots, windows, lamps and signals. City and Home share the exterior ground,
   road, facade, window and passive bar-front appearance recipe. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
-  background, `48 m` visibility cap, moonlight, grading, local fog field and
-  bounded `12`-light street/bar pool, then restores the captured Home
-  visibility and lighting for MainRoom, Bathroom, disable and destroy. It
-  never creates a second City root, player or camera;
+  background, `48 m` visibility cap, current time-of-day lighting, grading,
+  local fog field and bounded `12`-light street/bar pool, then restores the
+  captured Home visibility and lighting for MainRoom, Bathroom, disable and
+  destroy. Fog and the City grade remain identical at every hour. It never
+  creates a second City root, player or camera;
 - one modal balcony-smoking vignette at the Home-local dock around
   `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary
   rig walks to the entry point and turns toward the city along `+X`; only then
@@ -524,9 +535,11 @@ The vertical slice contains:
   one-shot opening at `05:59` and flickers all digits and punctuation briefly
   at long intervals. After a silent five-second input lock it reveals the menu
   without changing the time or starting the alarm. Choosing Wake Up changes
-  the display to solid `06:00`, generates a looping mono `22050 Hz` mechanical
-  ring, rattles visibly and routes its fully spatial source through
-  `SFX/World`. The clock shot and sleeping loop remain fixed for three
+  the display to solid `06:00`, starts the shared session time, generates a
+  looping mono `22050 Hz` mechanical ring, rattles visibly and routes its fully
+  spatial source through `SFX/World`. From that handoff onward the display
+  follows the persistent session hour/minute, including after leaving and
+  returning Home. The clock shot and sleeping loop remain fixed for three
   unscaled seconds; the ring then stops and only then does the camera glide to
   the sleeper and smoothly settle into the active Home shot while the existing
   24-frame wake sequence plays over six seconds instead of the ordinary two,
@@ -545,7 +558,8 @@ The vertical slice contains:
   rendered factor change. One separate cold shadowed ForcePixel Spot starts just inside the
   bathroom threshold, shares the same flicker and projects through the ajar
   door onto the apartment exit area; another cold shadowed cookie Spot casts
-  night light through the window. These remain capped at four
+  time-of-day light through the window, blending from the existing cold night
+  shaft to a warm daylight shaft. These remain capped at four
   atmosphere-owned local realtime lights; the scene Directional light is
   separate. The atmosphere also owns a shared transparent glass
   shader/material, a restrained Bloom/color/exposure/vignette/film-grain
@@ -662,7 +676,8 @@ The vertical slice contains:
 ## Deferred
 
 - Infinite streaming world and floating origin.
-- Dynamic day/night, weather, rain, puddles and volumetric light shafts.
+- Weather, rain, puddles and volumetric light shafts beyond the implemented
+  MVP day/night lighting cycle.
 - Vehicle or skating physics.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project

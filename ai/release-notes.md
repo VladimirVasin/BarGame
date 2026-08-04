@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### 2026-08-04 — A 24-minute day and working room clock
+
+- A fresh run now holds at `05:59` until Wake Up is chosen. That choice starts
+  the room clock from `06:00`; it then shows the real in-game time and keeps
+  the same time after moving between scenes. The inventory Status panel also
+  shows the current in-game `HH:MM`.
+- A complete in-game day lasts exactly 24 real minutes on gameplay time. City,
+  apartment-window and balcony lighting move through dawn, day, dusk and night,
+  while Bar, Supermarket and Stairwell keep their existing interior look.
+- The city's gray-green fog, matching horizon, `48 m` visibility, drifting fog
+  field and noir color grade remain unchanged throughout the cycle.
+
 ### 2026-08-04 — Hunger, stress and usable provisions
 
 - The inventory Status panel now shows compact intoxication, hunger and stress

@@ -36,6 +36,13 @@ namespace BarPromenade
                 return;
             }
 
+            if (!IsAllowListedScene(scene.name))
+            {
+                return;
+            }
+
+            EnsureGameTimeRuntimeInstalled();
+
             if (scene.name == SceneIds.MainMenu)
             {
                 EnsureMainMenuInstalled();
@@ -63,6 +70,39 @@ namespace BarPromenade
             else if (scene.name == SceneIds.DoorTransition)
             {
                 EnsureDoorTransitionInstalled();
+            }
+        }
+
+        private static bool IsAllowListedScene(string sceneName)
+        {
+            return sceneName == SceneIds.MainMenu ||
+                   sceneName == SceneIds.City ||
+                   sceneName == SceneIds.BarInterior ||
+                   sceneName == SceneIds.SupermarketInterior ||
+                   sceneName == SceneIds.HomeInterior ||
+                   sceneName == SceneIds.StairwellInterior ||
+                   sceneName == SceneIds.DoorTransition;
+        }
+
+        public static GameTimeRuntime EnsureGameTimeRuntimeInstalled()
+        {
+            GameTimeRuntime existing =
+                Object.FindAnyObjectByType<GameTimeRuntime>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Game Time Runtime");
+                return root.AddComponent<GameTimeRuntime>();
+            }
+            finally
+            {
+                creating = false;
             }
         }
 

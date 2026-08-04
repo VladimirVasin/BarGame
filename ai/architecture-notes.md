@@ -117,7 +117,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   For five seconds no menu choice or input path exists; the localized
   PS1-style Wake Up/Quit menu then appears without changing the silent,
   flickering `05:59` display or leaving the clock shot. Wake Up alone switches
-  the clock to solid `06:00`, starts its mechanical ring and hides the menu.
+  the clock to solid `06:00`, starts the session clock and mechanical ring,
+  and hides the menu.
   The camera and persistent sleep loop hold for three more unscaled seconds;
   only when the ring stops does the existing 24-frame exit begin with a `3x`
   duration multiplier (`6 s` instead of the ordinary `2 s`). The camera then
@@ -132,9 +133,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Persistent transition context:** Static subsystem-reset session
   state carries the seed, active bar context, explicit
   bar/home/supermarket city return kind, the next stairwell arrival side and
-  one consumed Home arrival kind
+  the consumed Home arrival kind plus current game time/day index
   between Single-mode scene loads. `BeginNewGame` restores all of those values
   together with route, visits, wallet, drinking and balance state.
+- **Accepted — Wake-started scaled session clock:** `GameTimeState` resets to
+  frozen `05:59`. Only the successful startup Wake atomically moves it to
+  `06:00` and starts it; later bed interactions do not reset or pause it.
+  `GameTimeRuntime` persists across Single-mode loads and advances through
+  `Time.deltaTime` at `1.0` game minute per real second, making one full `24 h`
+  day exactly `1440` real seconds (`24` minutes). Midnight increments a
+  session day index, and any owner that sets `timeScale` to zero naturally
+  freezes this clock.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
   sequence, session/scene/seed context and explicit transition/minigame
@@ -167,9 +176,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   just inside the bathroom threshold and projects through the ajar door onto
   the existing apartment exit area. It shares one deterministic unscaled
   fluorescent-failure flicker with the bathroom point pool, HDR tube and halo;
-  the main practical and cold window-cookie Spot remain, for at most four
-  atmosphere-owned local realtime lights in addition to the scene Directional
-  light. The exit door's
+  the main practical and time-of-day window-cookie Spot remain, for at most
+  four atmosphere-owned local realtime lights in addition to the scene
+  Directional light. The exit door's
   geometry and material remain unchanged. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
@@ -444,10 +453,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unscaled `6.4 s` cycle with a separate cold hard-shadow Spot staged just
   inside the bathroom threshold; the group remains steady for most of the
   cycle, then stutters together briefly while the Spot projects through the
-  ajar door toward the apartment exit. One separate cold shadowed cookie Spot
-  projects through the window, and window/door panes reuse one shared
-  transparent glass
-  shader/material. During Home fixed-camera ownership, `BillboardSprite`
+  ajar door toward the apartment exit. One separate shadowed cookie Spot
+  projects through the window; only its color and intensity blend from the
+  existing cold night shaft to warm daylight under `HomeDayNightController`,
+  while the room practicals retain their existing behavior. Window/door panes
+  reuse one shared transparent glass shader/material. During Home fixed-camera
+  ownership, `BillboardSprite`
   aligns to `-camera.forward` and `camera.up` in MainRoom and Bathroom,
   preserving the authored `64 x 96` aspect in their steep views. Balcony uses
   a world-up yaw billboard so the standing ordinary rig and smoking endpoint
@@ -612,16 +623,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the stock visual mesh with one cached flat-shaded 8-sided mesh while
   preserving the primitive collider contract. No per-instance mesh or
   material is created.
-- **Accepted — Fixed noir exterior:** `City` applies a lifted blue-green camera,
-  `0.070` luminous gray-green exponential-squared fog, a `48 m` far clip, hard
-  directional shadows, disabled camera MSAA, cold moon/ambient lighting and a
-  dedicated Bloom/ColorAdjustments/Vignette/FilmGrain
-  `CityNoirVolumeProfile`. Its solid camera clear color exactly matches the fog
-  color, so empty pixels beyond the finite geometry resolve to terminal haze
-  instead of a dark world edge. Graphics shader stripping is Custom and keeps
-  the Exp2 fog variant because every authored build scene serializes fog off
-  and `RuntimeSceneSetup` enables it only at runtime. `BarInterior` explicitly
-  disables exterior fog and restores the default `220 m` camera range.
+- **Accepted — Shared MVP exterior day/night lighting:**
+  `GameTimeDayNightRules` returns night before `06:00`, a smooth dawn from
+  `06:00-07:00`, day through `18:00`, a smooth dusk from `18:00-19:00`, and
+  night from `19:00`. `CityDayNightController` applies its directional color,
+  intensity/rotation, ambient, reflection and shadow sample, while
+  `CityNightAtmosphere` scales the bounded lamps, bar lights, emissive bulbs
+  and halos with the sample's night factor. `HomeDayNightController` applies
+  the same sample to the apartment window shaft and reconstructed Balcony
+  exterior. Bar, Supermarket and Stairwell visual profiles remain unchanged.
+  This cycle does not own visibility: `0.070` luminous gray-green Exp2 fog,
+  the matching terminal camera color, `48 m` far clip, `CityFogField` and
+  dedicated `CityNoirVolumeProfile` stay unchanged at every hour. Custom fog
+  stripping still retains the runtime Exp2 variant, and interiors keep their
+  existing fog/range contracts.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles
   and a bounded `0.120` peak alpha. It reuses the shared atmosphere material
@@ -694,9 +709,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   geometry, plus one generated looping mono `22050 Hz` mechanical ring on a fully
   spatial `SFX/World` source and applies a bounded visual rattle while active.
   The menu remains silent; choosing Wake Up starts the ring together with
-  `06:00`, keeps the clock shot and sleeping loop for exactly three unscaled
-  seconds, then stops the ring before camera motion and the wake animation
-  begin. Later or direct Home visits keep the clock silent at `06:00`.
+  `06:00` and the session clock, keeps the clock shot and sleeping loop for
+  exactly three unscaled seconds, then stops the ring before camera motion and
+  the wake animation begin. The display follows current session hours/minutes
+  thereafter and on later Home visits while remaining silent.
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
   to `Ambience/Beds`. Home additionally owns five spatial

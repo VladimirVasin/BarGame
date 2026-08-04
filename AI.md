@@ -18,17 +18,30 @@ on a silent `05:59` alarm clock whose complete display flickers briefly at
 long intervals. For five seconds there is no menu input; then the localized
 PS1-style `WAKE UP`/`QUIT` menu appears while the clock stays silent and keeps
 showing and flickering `05:59`. Only Wake Up switches it to solid `06:00` and
-starts the alarm. The clock shot and sleeping loop hold for three more
-unscaled seconds; when the alarm stops, the continuous six-second camera and
-wake animation begin and settle into the normal Home shot. Ordinary later bed
-wakes retain their two-second timing.
+starts both the alarm and the session clock. The clock shot and sleeping loop
+hold for three more unscaled seconds; when the alarm stops, the continuous
+six-second camera and wake animation begin and settle into the normal Home
+shot. Ordinary later bed wakes retain their two-second timing.
+
+Fresh-session time is frozen at `05:59` until that successful startup Wake,
+then advances from `06:00` on scaled time at `1.0` game minute per real second.
+The clock persists across scene loads and drives the Home display, inventory
+time readout and shared City/Home window and balcony lighting; one complete
+in-game day is exactly
+`1440` real seconds (`24` minutes). Night is before
+`06:00`, dawn is `06:00-07:00`, day is `07:00-18:00`, dusk is
+`18:00-19:00`, and night resumes at `19:00`. City fog, its matching
+background, `48 m` far clip, `CityFogField` and `CityNoirVolumeProfile` do not
+change with time; Bar, Supermarket and Stairwell visuals remain unchanged.
 
 Startup truth begins at `Assets/Scripts/Runtime/Scenes/MainMenuRoot.cs` and
 `Assets/Scripts/Runtime/Scenes/HomeOpeningController.cs`; generated-city truth
 continues from `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
 `Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
-`Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`.
+`Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
+truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,
+`GameTimeRuntime.cs` and `GameTimeDayNightRules.cs`.
 
 Runtime support diagnostics are written as bounded NDJSON through
 `Assets/Scripts/Runtime/Diagnostics/`; see `ai/debug-log.md` for profiles,

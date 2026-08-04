@@ -2,6 +2,33 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Wake-started session clock and MVP day/night
+
+- Added session-owned game time that resets frozen at `05:59`; a successful
+  startup Wake sets `06:00` and starts the only persistent scaled-time driver.
+  It advances at `1.0` game minute per real second, so one in-game day is
+  exactly `1440` real seconds (`24` minutes), including midnight/day-index
+  rollover and continuity across scene loads.
+- Made the Home alarm clock follow current session hours and minutes after the
+  opening handoff and on later Home visits; the inventory Status panel now
+  exposes the same current `HH:MM`.
+- Added shared night/dawn/day/dusk lighting samples for City, the Home window
+  and the reconstructed Balcony exterior. City/Home exterior lamps, bar lights
+  and halos fade with the night factor; Bar, Supermarket and Stairwell visuals
+  remain unchanged.
+- Kept City fog settings, matching background, `48 m` far clip,
+  `CityFogField` and `CityNoirVolumeProfile` outside the time-of-day system.
+
+Verification:
+
+- Focused EditMode game-time/day-night rules: `13/13` passed.
+- Focused PlayMode wake/clock, Home balcony and City fog-invariant paths:
+  `4/4` passed; the repaired post-Wake cancellation path also passed its
+  focused rerun `1/1`.
+- After adding the inventory `HH:MM`, the PlayMode test project build passed
+  with `0` warnings/errors and both localization catalogs parsed as valid JSON.
+- `git diff --check` passed. Full suites and a player build were not run.
+
 ## 2026-08-04 — Hunger, stress and usable provisions
 
 - Added session-owned hunger and stress scales with explicit `0/100` defaults

@@ -10,6 +10,7 @@ namespace BarPromenade
         public CityLayout Layout { get; private set; }
         public CityWorldResult World { get; private set; }
         public CityNightWorldResult Night { get; private set; }
+        public CityDayNightController DayNight { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
         public CityAmbiencePlayer Ambience { get; private set; }
@@ -202,6 +203,8 @@ namespace BarPromenade
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed);
+            DayNight = gameObject.AddComponent<CityDayNightController>();
+            DayNight.Initialize(Night);
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 

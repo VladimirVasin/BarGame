@@ -11,6 +11,9 @@ namespace BarPromenade
 
         private const float ReassignmentInterval = 0.35f;
         private const float ReassignmentDistance = 1.25f;
+        private const float StreetLightIntensity = 12f;
+        private const float BarLightIntensity = 8f;
+        private const float VisibleFactorThreshold = 0.0001f;
 
         private static readonly Color StreetLightColor =
             new Color(1f, 0.72f, 0.42f);
@@ -29,14 +32,20 @@ namespace BarPromenade
         private Transform[] lampAnchors = Array.Empty<Transform>();
         private Light[] streetLightPool = Array.Empty<Light>();
         private Light[] barLights = Array.Empty<Light>();
+        private CityLightHalo[] streetLightHalos =
+            Array.Empty<CityLightHalo>();
+        private CityLightHalo[] barLightHalos =
+            Array.Empty<CityLightHalo>();
         private int[] selectedAnchorIndices = Array.Empty<int>();
         private float[] selectedAnchorDistances = Array.Empty<float>();
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
+        private float nightFactor = 1f;
 
         public IReadOnlyList<Transform> LampAnchors => lampAnchors;
         public IReadOnlyList<Light> StreetLightPool => streetLightPool;
         public IReadOnlyList<Light> BarLights => barLights;
+        public float NightFactor => nightFactor;
         public int RealtimeLightCount =>
             streetLightPool.Length + barLights.Length;
 
@@ -63,6 +72,7 @@ namespace BarPromenade
                 barLightPositions.Count,
                 MaximumRealtimeLights);
             barLights = new Light[barLightCount];
+            barLightHalos = new CityLightHalo[barLightCount];
             for (int index = 0; index < barLightCount; index++)
             {
                 barLights[index] = CreateLight(
@@ -70,18 +80,20 @@ namespace BarPromenade
                     barLightPositions[index],
                     BarLightColor,
                     LightType.Point,
-                    8f,
+                    BarLightIntensity,
                     7.5f,
                     1.05f,
                     2.85f,
                     BarHaloInner,
-                    BarHaloOuter);
+                    BarHaloOuter,
+                    out barLightHalos[index]);
             }
 
             int streetLightCount = Mathf.Min(
                 lampAnchors.Length,
                 MaximumRealtimeLights - barLightCount);
             streetLightPool = new Light[streetLightCount];
+            streetLightHalos = new CityLightHalo[streetLightCount];
             selectedAnchorIndices = new int[streetLightCount];
             selectedAnchorDistances = new float[streetLightCount];
             for (int index = 0; index < streetLightCount; index++)
@@ -91,15 +103,16 @@ namespace BarPromenade
                     transform.position,
                     StreetLightColor,
                     LightType.Spot,
-                    12f,
+                    StreetLightIntensity,
                     10.5f,
                     0.80f,
                     2.20f,
                     StreetHaloInner,
-                    StreetHaloOuter);
+                    StreetHaloOuter,
+                    out streetLightHalos[index]);
             }
 
-            RefreshStreetLights(true);
+            SetNightFactor(nightFactor);
         }
 
         private void Update()
@@ -109,6 +122,28 @@ namespace BarPromenade
 
         public void RefreshImmediate()
         {
+            RefreshStreetLights(true);
+        }
+
+        public void SetNightFactor(float factor)
+        {
+            nightFactor = Mathf.Clamp01(factor);
+            bool visible = nightFactor > VisibleFactorThreshold;
+            for (int index = 0; index < barLights.Length; index++)
+            {
+                barLights[index].intensity =
+                    BarLightIntensity * nightFactor;
+                barLights[index].enabled = visible;
+                barLightHalos[index].SetIntensityFactor(nightFactor);
+            }
+
+            for (int index = 0; index < streetLightPool.Length; index++)
+            {
+                streetLightPool[index].intensity =
+                    StreetLightIntensity * nightFactor;
+                streetLightHalos[index].SetIntensityFactor(nightFactor);
+            }
+
             RefreshStreetLights(true);
         }
 
@@ -156,7 +191,11 @@ namespace BarPromenade
                     anchorIndex >= 0 &&
                     anchorIndex < lampAnchors.Length &&
                     lampAnchors[anchorIndex] != null;
-                light.enabled = hasAnchor;
+                bool visible =
+                    hasAnchor &&
+                    nightFactor > VisibleFactorThreshold;
+                light.enabled = visible;
+                streetLightHalos[index].SetVisible(visible);
                 if (hasAnchor)
                 {
                     Transform anchor = lampAnchors[anchorIndex];
@@ -205,7 +244,8 @@ namespace BarPromenade
             float innerHaloSize,
             float outerHaloSize,
             Color innerHaloColor,
-            Color outerHaloColor)
+            Color outerHaloColor,
+            out CityLightHalo halo)
         {
             GameObject lightObject = new GameObject(lightName);
             lightObject.transform.SetParent(transform, true);
@@ -227,8 +267,7 @@ namespace BarPromenade
 
             GameObject haloObject = new GameObject("Fog Light Halo");
             haloObject.transform.SetParent(lightObject.transform, false);
-            CityLightHalo halo =
-                haloObject.AddComponent<CityLightHalo>();
+            halo = haloObject.AddComponent<CityLightHalo>();
             halo.Initialize(
                 CityNightResources.AtmosphereMaterial,
                 innerHaloSize,

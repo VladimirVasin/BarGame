@@ -26,11 +26,17 @@ namespace BarPromenade
 
         private readonly ParticleSystem.Particle[] haloParticles =
             new ParticleSystem.Particle[ParticleCount];
+        private float innerSize;
+        private float outerSize;
+        private Color innerColor;
+        private Color outerColor;
+        private float intensityFactor = 1f;
 
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer HaloRenderer => haloRenderer;
         public bool IsVisible =>
             haloRenderer != null && haloRenderer.enabled;
+        public float IntensityFactor => intensityFactor;
 
         public void Initialize(
             Material sharedMaterial,
@@ -54,12 +60,24 @@ namespace BarPromenade
             EnsureComponents();
             ConfigureParticleSystem();
             ConfigureRenderer(sharedMaterial);
-            SetHaloParticles(
-                innerSize,
-                outerSize,
-                innerColor,
-                outerColor);
-            SetVisible(true);
+            this.innerSize = innerSize;
+            this.outerSize = outerSize;
+            this.innerColor = innerColor;
+            this.outerColor = outerColor;
+            ApplyIntensity();
+            SetVisible(intensityFactor > 0.0001f);
+        }
+
+        public void SetIntensityFactor(float factor)
+        {
+            intensityFactor = Mathf.Clamp01(factor);
+            if (particles == null || haloRenderer == null)
+            {
+                return;
+            }
+
+            ApplyIntensity();
+            haloRenderer.enabled = intensityFactor > 0.0001f;
         }
 
         public void SetVisible(bool visible)
@@ -161,6 +179,24 @@ namespace BarPromenade
 
             particles.Play(false);
             particles.SetParticles(haloParticles, ParticleCount);
+        }
+
+        private void ApplyIntensity()
+        {
+            SetHaloParticles(
+                innerSize,
+                outerSize,
+                ScaleColor(innerColor, intensityFactor),
+                ScaleColor(outerColor, intensityFactor));
+        }
+
+        private static Color ScaleColor(Color color, float factor)
+        {
+            return new Color(
+                color.r * factor,
+                color.g * factor,
+                color.b * factor,
+                color.a * factor);
         }
 
         private static ParticleSystem.Particle CreateParticle(

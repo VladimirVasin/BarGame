@@ -865,6 +865,10 @@
       "value": "CASH: ${0}"
     },
     {
+      "key": "inventory.time",
+      "value": "TIME: {0}"
+    },
+    {
       "key": "inventory.action.use",
       "value": "USE"
     },

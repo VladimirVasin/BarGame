@@ -15,6 +15,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            GameSessionState.BeginNewGame();
             GameSessionState.EnterHome();
             GameSessionState.ClearRoute();
             GameSessionState.ClearVisitedBars();
@@ -54,6 +55,11 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             HomeScene_BuildsWalkableBalconyOnSeededStreet()
         {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+
             AsyncOperation load =
                 SceneManager.LoadSceneAsync(
                     SceneIds.HomeInterior,
@@ -91,6 +97,21 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Empty);
             Assert.That(home.Balcony, Is.Not.Null);
             Assert.That(home.ExteriorView, Is.Not.Null);
+            Assert.That(home.DayNight, Is.Not.Null);
+            Assert.That(home.DayNight.IsInitialized, Is.True);
+            Assert.That(
+                home.DayNight.WindowDayFactor,
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(
+                home.Atmosphere.WindowLight.color,
+                Is.EqualTo(
+                    HomeDayNightController.DayWindowLightColor));
+            Assert.That(
+                home.Atmosphere.WindowLight.intensity,
+                Is.EqualTo(
+                        HomeDayNightController
+                            .DayWindowLightIntensity)
+                    .Within(0.001f));
             AssertExteriorAtmosphere(home);
             AssertRenderedExteriorBarFacade(home);
             AssertRenderedExteriorDecorations(home.ExteriorView);
@@ -286,7 +307,39 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                         RuntimeSceneSetup.CityFarClipPlane)
                     .Within(0.001f));
-            AssertCityLighting(homeSun);
+            AssertCityLighting(
+                homeSun,
+                home.DayNight.CurrentSample);
+
+            bool dayFog = RenderSettings.fog;
+            FogMode dayFogMode = RenderSettings.fogMode;
+            Color dayFogColor = RenderSettings.fogColor;
+            float dayFogDensity = RenderSettings.fogDensity;
+            Color dayBackgroundColor = camera.backgroundColor;
+            float dayFarClipPlane = camera.farClipPlane;
+            GameSessionState.AdvanceGameTime(720f);
+            home.DayNight.RefreshImmediate();
+            Assert.That(RenderSettings.fog, Is.EqualTo(dayFog));
+            Assert.That(RenderSettings.fogMode, Is.EqualTo(dayFogMode));
+            Assert.That(RenderSettings.fogColor, Is.EqualTo(dayFogColor));
+            Assert.That(
+                RenderSettings.fogDensity,
+                Is.EqualTo(dayFogDensity));
+            Assert.That(
+                camera.backgroundColor,
+                Is.EqualTo(dayBackgroundColor));
+            Assert.That(
+                camera.farClipPlane,
+                Is.EqualTo(dayFarClipPlane));
+            Assert.That(
+                home.DayNight.CurrentSample.NightFactor,
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(
+                home.ExteriorNight.NightFactor,
+                Is.EqualTo(1f).Within(0.0001f));
+            AssertCityLighting(
+                homeSun,
+                home.DayNight.CurrentSample);
             home.ExteriorAtmosphere.enabled = false;
             Assert.That(RenderSettings.fog, Is.False);
             Assert.That(
@@ -336,7 +389,9 @@ namespace BarPromenade.Tests.PlayMode
             AssertExteriorLightsActive(
                 home.ExteriorAtmosphere,
                 true);
-            AssertCityLighting(homeSun);
+            AssertCityLighting(
+                homeSun,
+                home.DayNight.CurrentSample);
             yield return AssertBalconyOcclusionPresentation(home);
             AssertPlayerVisible(
                 camera,
@@ -430,34 +485,42 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void AssertCityLighting(
-            Light expectedSun)
+            Light expectedSun,
+            DayNightVisualSample expectedSample)
         {
             Assert.That(RenderSettings.sun, Is.SameAs(expectedSun));
             Assert.That(
                 expectedSun.color,
-                Is.EqualTo(RuntimeSceneSetup.MoonlightColor));
+                Is.EqualTo(
+                    expectedSample.DirectionalLightColor));
             Assert.That(
                 expectedSun.intensity,
                 Is.EqualTo(
-                        RuntimeSceneSetup.CityMoonlightIntensity)
+                        expectedSample.DirectionalLightIntensity)
                     .Within(0.001f));
+            Assert.That(
+                Quaternion.Angle(
+                    expectedSun.transform.rotation,
+                    expectedSample.DirectionalLightRotation),
+                Is.LessThan(0.001f));
             Assert.That(
                 expectedSun.shadows,
                 Is.EqualTo(LightShadows.Hard));
             Assert.That(
                 expectedSun.shadowStrength,
                 Is.EqualTo(
-                        RuntimeSceneSetup.CityShadowStrength)
+                        expectedSample.ShadowStrength)
                     .Within(0.001f));
             Assert.That(
                 RenderSettings.ambientMode,
                 Is.EqualTo(AmbientMode.Flat));
             Assert.That(
                 RenderSettings.ambientLight,
-                Is.EqualTo(RuntimeSceneSetup.CityAmbientColor));
+                Is.EqualTo(expectedSample.AmbientLightColor));
             Assert.That(
                 RenderSettings.reflectionIntensity,
-                Is.EqualTo(0.50f).Within(0.001f));
+                Is.EqualTo(expectedSample.ReflectionIntensity)
+                    .Within(0.001f));
         }
 
         private static void AssertHomeLightingRestored(

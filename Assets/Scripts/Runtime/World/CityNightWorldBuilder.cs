@@ -64,10 +64,13 @@ namespace BarPromenade
                 AddStreetLampGeometry(lampChunks, descriptor);
             }
 
+            var streetLampBulbRenderers =
+                new List<Renderer>(lampChunks.Count);
             BuildStreetLampChunks(
                 root,
                 lampChunks,
-                emissiveMaterial);
+                emissiveMaterial,
+                streetLampBulbRenderers);
             var trafficSignals = BuildTrafficSignals(
                 root,
                 plan.TrafficSignals,
@@ -85,7 +88,9 @@ namespace BarPromenade
                 plan,
                 lampAnchors,
                 trafficSignals,
-                barLightPositions);
+                barLightPositions,
+                streetLampBulbRenderers,
+                LampGlow);
         }
 
         private static Transform CreateStreetLampAnchor(
@@ -174,7 +179,8 @@ namespace BarPromenade
         private static void BuildStreetLampChunks(
             Transform parent,
             IDictionary<LampChunkCoordinate, LampChunkGeometry> chunks,
-            Material emissiveMaterial)
+            Material emissiveMaterial,
+            ICollection<Renderer> bulbRenderers)
         {
             var coordinates =
                 new List<LampChunkCoordinate>(chunks.Keys);
@@ -194,12 +200,14 @@ namespace BarPromenade
                     chunk,
                     geometry.FixtureBoxes,
                     FixtureColor);
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Street Lamp Bulbs",
-                    chunk,
-                    geometry.BulbBoxes,
-                    LampGlow,
-                    emissiveMaterial);
+                GameObject bulbs =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Street Lamp Bulbs",
+                        chunk,
+                        geometry.BulbBoxes,
+                        LampGlow,
+                        emissiveMaterial);
+                bulbRenderers.Add(bulbs.GetComponent<Renderer>());
             }
         }
 

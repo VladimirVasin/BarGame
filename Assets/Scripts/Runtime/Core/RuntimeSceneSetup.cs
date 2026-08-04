@@ -16,6 +16,8 @@ namespace BarPromenade
             new Color(0.260f, 0.295f, 0.280f);
         public static readonly Color MoonlightColor =
             new Color(0.72f, 0.79f, 0.77f);
+        public static readonly Quaternion CityMoonlightRotation =
+            Quaternion.Euler(48f, -34f, 0f);
 
         public const float CityFogDensity = 0.070f;
         public const float CityFarClipPlane = 48f;
@@ -23,6 +25,7 @@ namespace BarPromenade
         public const float DefaultFarClipPlane = 220f;
         public const float CityShadowStrength = 0.38f;
         public const float CityMoonlightIntensity = 0.72f;
+        public const float CityNightReflectionIntensity = 0.50f;
 
         public static Camera EnsureCityNight()
         {
@@ -126,12 +129,23 @@ namespace BarPromenade
 
         public static void ApplyCityExteriorLighting()
         {
+            ApplyCityExteriorLighting(
+                GameTimeDayNightRules.Evaluate(
+                    GameSessionState.GameTimeOfDayMinutes));
+        }
+
+        public static void ApplyCityExteriorLighting(
+            DayNightVisualSample sample)
+        {
             ConfigureDirectionalLighting(
-                MoonlightColor,
-                CityMoonlightIntensity,
-                CityAmbientColor,
-                CityShadowStrength);
-            RenderSettings.reflectionIntensity = 0.50f;
+                sample.DirectionalLightColor,
+                sample.DirectionalLightIntensity,
+                sample.AmbientLightColor,
+                sample.ShadowStrength);
+            RenderSettings.sun.transform.rotation =
+                sample.DirectionalLightRotation;
+            RenderSettings.reflectionIntensity =
+                sample.ReflectionIntensity;
             DynamicGI.UpdateEnvironment();
         }
 
@@ -249,7 +263,7 @@ namespace BarPromenade
                 directional.type = LightType.Directional;
             }
 
-            directional.transform.rotation = Quaternion.Euler(48f, -34f, 0f);
+            directional.transform.rotation = CityMoonlightRotation;
             directional.color = color;
             directional.intensity = intensity;
             directional.shadows = LightShadows.Hard;

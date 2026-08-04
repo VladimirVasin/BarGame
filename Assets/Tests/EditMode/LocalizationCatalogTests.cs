@@ -44,6 +44,7 @@ namespace BarPromenade.Tests.EditMode
             "inventory.selected_item",
             "inventory.command",
             "inventory.cash",
+            "inventory.time",
             "inventory.empty",
             "inventory.action.use",
             "inventory.action.eat",
@@ -367,6 +368,9 @@ namespace BarPromenade.Tests.EditMode
                 valuesByKey["drink_shop.preview"],
                 Does.Contain("{3}"));
             Assert.That(valuesByKey["inventory.cash"], Does.Contain("$"));
+            Assert.That(
+                valuesByKey["inventory.time"],
+                Does.Contain("{0}"));
             Assert.That(
                 valuesByKey["inventory.action.eat"],
                 Does.Contain("{0}"));

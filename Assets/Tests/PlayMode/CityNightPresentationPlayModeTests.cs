@@ -16,6 +16,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator CityNight_CreatesFogSharedGlowAndBudgetedFixtures()
         {
+            GameSessionState.BeginNewGame();
             CityGameRoot city = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
                 SceneIds.City,
@@ -274,6 +275,154 @@ namespace BarPromenade.Tests.PlayMode
                     signal.AmberHalos[index].IsVisible,
                     Is.False);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator CityDayNight_ChangesLightingWithoutChangingFog()
+        {
+            Time.timeScale = 0f;
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+
+            CityGameRoot city = null;
+            yield return LoadSceneAndWaitForRoot<CityGameRoot>(
+                SceneIds.City,
+                root => city = root);
+            yield return null;
+
+            Assert.That(city.DayNight, Is.Not.Null);
+            Assert.That(city.DayNight.IsInitialized, Is.True);
+            Assert.That(city.Night.FogField, Is.Not.Null);
+            CityFogField fogField = city.Night.FogField;
+            ParticleSystem fogParticles = fogField.Particles;
+            Material fogMaterial = fogField.FogRenderer.sharedMaterial;
+            bool fogEnabled = RenderSettings.fog;
+            Color fogColor = RenderSettings.fogColor;
+            FogMode fogMode = RenderSettings.fogMode;
+            float fogDensity = RenderSettings.fogDensity;
+            Camera cityCamera = Camera.main;
+            Color backgroundColor = cityCamera.backgroundColor;
+            float farClipPlane = cityCamera.farClipPlane;
+            Light directional = RenderSettings.sun;
+            float nightIntensity = directional.intensity;
+            Color nightAmbient = RenderSettings.ambientLight;
+            float nightReflection =
+                RenderSettings.reflectionIntensity;
+            Material bulbSharedMaterial =
+                city.Night.StreetLampBulbRenderers[0].sharedMaterial;
+
+            GameSessionState.AdvanceGameTime(360f);
+            city.DayNight.ApplyCurrentTime();
+
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(12));
+            Assert.That(GameSessionState.GameMinute, Is.EqualTo(0));
+            Assert.That(
+                directional.intensity,
+                Is.GreaterThan(nightIntensity));
+            Assert.That(
+                RenderSettings.ambientLight,
+                Is.Not.EqualTo(nightAmbient));
+            Assert.That(
+                RenderSettings.reflectionIntensity,
+                Is.GreaterThan(nightReflection));
+            Assert.That(city.Night.NightFactor, Is.EqualTo(0f));
+            Assert.That(
+                city.Night.Atmosphere.NightFactor,
+                Is.EqualTo(0f));
+            Light[] dayNightLights = city.Night.Root
+                .GetComponentsInChildren<Light>(true);
+            Assert.That(
+                dayNightLights,
+                Has.Length.EqualTo(
+                    city.Night.Atmosphere.RealtimeLightCount));
+            for (int index = 0; index < dayNightLights.Length; index++)
+            {
+                Light light = dayNightLights[index];
+                Assert.That(light.intensity, Is.EqualTo(0f));
+                Assert.That(light.enabled, Is.False);
+                CityLightHalo halo =
+                    light.GetComponentInChildren<CityLightHalo>(true);
+                Assert.That(halo.IntensityFactor, Is.EqualTo(0f));
+                Assert.That(halo.IsVisible, Is.False);
+            }
+
+            Renderer bulb = city.Night.StreetLampBulbRenderers[0];
+            Assert.That(
+                bulb.sharedMaterial,
+                Is.SameAs(bulbSharedMaterial));
+            var bulbProperties = new MaterialPropertyBlock();
+            bulb.GetPropertyBlock(bulbProperties);
+            Color dayBulbColor = bulbProperties.GetColor(
+                Shader.PropertyToID("_BaseColor"));
+            Assert.That(
+                dayBulbColor.maxColorComponent,
+                Is.LessThan(0.001f));
+
+            TrafficSignalController signal =
+                city.Night.TrafficSignals[0];
+            signal.ApplyTime(-signal.PhaseOffset);
+            Assert.That(signal.IsLit, Is.True);
+            Assert.That(signal.AmberHalos[0].IsVisible, Is.True);
+            AssertCityFogUnchanged(
+                city,
+                fogField,
+                fogParticles,
+                fogMaterial,
+                fogEnabled,
+                fogColor,
+                fogMode,
+                fogDensity,
+                cityCamera,
+                backgroundColor,
+                farClipPlane);
+
+            GameSessionState.AdvanceGameTime(480f);
+            city.DayNight.ApplyCurrentTime();
+
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(20));
+            Assert.That(GameSessionState.GameMinute, Is.EqualTo(0));
+            Assert.That(
+                directional.intensity,
+                Is.EqualTo(nightIntensity).Within(0.0001f));
+            Assert.That(
+                RenderSettings.ambientLight,
+                Is.EqualTo(nightAmbient));
+            Assert.That(
+                RenderSettings.reflectionIntensity,
+                Is.EqualTo(nightReflection).Within(0.0001f));
+            Assert.That(city.Night.NightFactor, Is.EqualTo(1f));
+            Assert.That(
+                city.Night.Atmosphere.NightFactor,
+                Is.EqualTo(1f));
+            Assert.That(
+                city.Night.Atmosphere.BarLights[0].enabled,
+                Is.True);
+            CityLightHalo restoredBarHalo =
+                city.Night.Atmosphere.BarLights[0]
+                    .GetComponentInChildren<CityLightHalo>(true);
+            Assert.That(restoredBarHalo.IntensityFactor, Is.EqualTo(1f));
+            Assert.That(restoredBarHalo.IsVisible, Is.True);
+            AssertCityFogUnchanged(
+                city,
+                fogField,
+                fogParticles,
+                fogMaterial,
+                fogEnabled,
+                fogColor,
+                fogMode,
+                fogDensity,
+                cityCamera,
+                backgroundColor,
+                farClipPlane);
+        }
+
+        [UnityTearDown]
+        public IEnumerator RestoreTimeScale()
+        {
+            Time.timeScale = 1f;
+            yield return null;
         }
 
         [UnityTest]
@@ -565,6 +714,39 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.Fail(
                 $"Scene '{sceneName}' did not create {typeof(T).Name}.");
+        }
+
+        private static void AssertCityFogUnchanged(
+            CityGameRoot city,
+            CityFogField fogField,
+            ParticleSystem fogParticles,
+            Material fogMaterial,
+            bool fogEnabled,
+            Color fogColor,
+            FogMode fogMode,
+            float fogDensity,
+            Camera cityCamera,
+            Color backgroundColor,
+            float farClipPlane)
+        {
+            Assert.That(city.Night.FogField, Is.SameAs(fogField));
+            Assert.That(fogField.Particles, Is.SameAs(fogParticles));
+            Assert.That(
+                fogField.FogRenderer.sharedMaterial,
+                Is.SameAs(fogMaterial));
+            Assert.That(RenderSettings.fog, Is.EqualTo(fogEnabled));
+            Assert.That(RenderSettings.fogColor, Is.EqualTo(fogColor));
+            Assert.That(RenderSettings.fogMode, Is.EqualTo(fogMode));
+            Assert.That(
+                RenderSettings.fogDensity,
+                Is.EqualTo(fogDensity).Within(0.0001f));
+            Assert.That(Camera.main, Is.SameAs(cityCamera));
+            Assert.That(
+                cityCamera.backgroundColor,
+                Is.EqualTo(backgroundColor));
+            Assert.That(
+                cityCamera.farClipPlane,
+                Is.EqualTo(farClipPlane).Within(0.0001f));
         }
 
         private static void AssertPlayerShadow(PlayerRuntime player)

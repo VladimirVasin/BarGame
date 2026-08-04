@@ -19,6 +19,10 @@ namespace BarPromenade
             MaximumWindowLights +
             MaximumBathroomSpillLights;
         public const int MaximumDustParticles = 12;
+        public const float NightWindowLightIntensity = 5.25f;
+
+        public static readonly Color NightWindowLightColor =
+            new Color(0.43f, 0.58f, 0.84f);
 
         internal static readonly Vector3 MainEmitterPosition =
             new Vector3(-2.35f, 2.05f, 0.45f);
@@ -181,9 +185,8 @@ namespace BarPromenade
 
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Spot;
-            light.color =
-                new Color(0.43f, 0.58f, 0.84f);
-            light.intensity = 5.25f;
+            light.color = NightWindowLightColor;
+            light.intensity = NightWindowLightIntensity;
             light.range = 10.0f;
             light.spotAngle = 58f;
             light.innerSpotAngle = 34f;

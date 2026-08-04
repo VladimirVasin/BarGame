@@ -115,6 +115,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AlarmClock.DisplayedTime,
                 Is.EqualTo("05:59"));
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(
+                GameSessionState.GameTimeOfDayMinutes,
+                Is.EqualTo(359d));
+            Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.False);
+            GameSessionState.AdvanceGameTime(30f);
+            yield return null;
+            Assert.That(
+                home.AlarmClock.DisplayedTime,
+                Is.EqualTo("05:59"),
+                "The opening clock must stay frozen until Wake Up is accepted.");
+            Assert.That(
+                GameSessionState.GameTimeOfDayMinutes,
+                Is.EqualTo(359d));
             Assert.That(
                 home.AlarmClock.ConfiguredDisplaySegmentCount,
                 Is.EqualTo(HomeAlarmClock.DisplaySegmentCount));
@@ -347,6 +363,10 @@ namespace BarPromenade.Tests.PlayMode
                 home.AlarmClock.LitDisplaySegmentCount,
                 Is.EqualTo(24));
             Assert.That(home.AlarmClock.DisplayVisible, Is.True);
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.True);
             Assert.That(
                 digitRenderer.gameObject,
                 Is.SameAs(displayObject));
@@ -379,6 +399,23 @@ namespace BarPromenade.Tests.PlayMode
                     clockCameraRotation),
                 Is.LessThan(0.001f));
             Assert.That(home.Opening.IsCameraTransitioning, Is.False);
+
+            GameSessionState.AdvanceGameTime(1f);
+            yield return null;
+            Assert.That(
+                home.Opening.Phase,
+                Is.EqualTo(HomeOpeningPhase.AlarmRinging));
+            Assert.That(home.AlarmClock.IsRinging, Is.True);
+            Assert.That(
+                home.AlarmClock.DisplayedTime,
+                Is.EqualTo("06:01"),
+                "Session time must already advance during the alarm hold.");
+            Assert.That(
+                home.AlarmClock.DisplayedHour,
+                Is.EqualTo(GameSessionState.GameHour));
+            Assert.That(
+                home.AlarmClock.DisplayedMinute,
+                Is.EqualTo(GameSessionState.GameMinute));
 
             Time.timeScale = 0f;
             const float alarmBoundaryOffset = 0.001f;
@@ -639,6 +676,13 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             DirectHomeLoad_RemainsNormalAndKeepsClockAsRoomDressing()
         {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(12));
+            Assert.That(GameSessionState.GameMinute, Is.Zero);
+
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.HomeInterior,
                 LoadSceneMode.Single);
@@ -667,7 +711,18 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.AlarmClock.IsRinging, Is.False);
             Assert.That(
                 home.AlarmClock.DisplayedTime,
-                Is.EqualTo("06:00"));
+                Is.EqualTo(
+                    $"{GameSessionState.GameHour:00}:" +
+                    $"{GameSessionState.GameMinute:00}"));
+            Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.True);
+            Assert.That(
+                home.AlarmClock.DisplayedHour,
+                Is.EqualTo(GameSessionState.GameHour));
+            Assert.That(
+                home.AlarmClock.DisplayedMinute,
+                Is.EqualTo(GameSessionState.GameMinute));
             Assert.That(home.AlarmClock.DisplayVisible, Is.True);
             Assert.That(
                 Vector3.Distance(
@@ -816,6 +871,14 @@ namespace BarPromenade.Tests.PlayMode
                 home.AlarmClock.DisplayedTime,
                 Is.EqualTo("06:00"));
             Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.True);
+            GameSessionState.AdvanceGameTime(1f);
+            yield return null;
+            Assert.That(
+                home.AlarmClock.DisplayedTime,
+                Is.EqualTo("06:01"));
+            Assert.That(
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(
                     PlayerAnimatedInteractionPhase.Looping));
@@ -837,7 +900,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.AlarmClock.IsRinging, Is.False);
             Assert.That(
                 home.AlarmClock.DisplayedTime,
-                Is.EqualTo("06:00"));
+                Is.EqualTo("06:01"));
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.True);
             Assert.That(home.AlarmClock.DisplayVisible, Is.True);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(

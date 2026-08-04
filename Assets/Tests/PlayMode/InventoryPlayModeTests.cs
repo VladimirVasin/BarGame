@@ -142,6 +142,27 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Open_ShowsCurrentGameTimeAndFreezesIt()
+        {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(394f);
+
+            Assert.That(inventory.Open(), Is.True);
+            Assert.That(Time.timeScale, Is.Zero);
+            Assert.That(
+                inventory.View.CurrentGameTimeText,
+                Is.EqualTo("12:34"));
+
+            yield return null;
+
+            Assert.That(
+                inventory.View.CurrentGameTimeText,
+                Is.EqualTo("12:34"));
+        }
+
+        [UnityTest]
         public IEnumerator SelectionAndExamine_UsePureMenuState()
         {
             Assert.That(

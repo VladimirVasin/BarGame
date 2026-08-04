@@ -156,6 +156,8 @@ namespace BarPromenade
             }
 
             ApplyClockDisplay();
+            GameSessionState.TryStartGameTimeFromWake();
+            home.AlarmClock.FollowSessionTime();
             home.AlarmClock.StartRinging();
             return true;
         }
@@ -506,7 +508,8 @@ namespace BarPromenade
         {
             if (home == null ||
                 home.AlarmClock == null ||
-                timeline == null)
+                timeline == null ||
+                home.AlarmClock.IsFollowingSessionTime)
             {
                 return;
             }
@@ -526,6 +529,7 @@ namespace BarPromenade
             }
 
             home.AlarmClock.StopRinging();
+            home.AlarmClock.FollowSessionTime();
             modalLock.Restore();
             home.FixedCamera.ReapplyActiveShot();
             restored = true;
@@ -542,6 +546,7 @@ namespace BarPromenade
 
             timeline?.Cancel();
             ApplyClockDisplay();
+            RestoreSessionClockDisplay();
             home?.AlarmClock?.StopRinging();
             home?.AnimatedInteraction?
                 .CancelActiveInteraction();
@@ -570,6 +575,7 @@ namespace BarPromenade
                 .CancelActiveInteraction();
             timeline?.Cancel();
             ApplyClockDisplay();
+            RestoreSessionClockDisplay();
             modalLock.Restore();
             if (home != null &&
                 home.FixedCamera != null &&
@@ -584,6 +590,16 @@ namespace BarPromenade
         private void OnDestroy()
         {
             OnDisable();
+        }
+
+        private void RestoreSessionClockDisplay()
+        {
+            if (home != null &&
+                home.AlarmClock != null &&
+                home.AlarmClock.IsFollowingSessionTime)
+            {
+                home.AlarmClock.FollowSessionTime();
+            }
         }
 
         private void OnGUI()

@@ -92,6 +92,8 @@ namespace BarPromenade
             new HashSet<string>(StringComparer.Ordinal);
         private static readonly InventoryState inventory =
             new InventoryState();
+        private static readonly GameTimeState gameTime =
+            new GameTimeState();
         private static float intoxicationRecoveryElapsed;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
@@ -126,6 +128,14 @@ namespace BarPromenade
             inventory.Items;
         public static int CollectedWorldItemCount =>
             collectedWorldItems.Count;
+        public static bool IsGameTimeRunning => gameTime.IsRunning;
+        public static int GameDayIndex => gameTime.DayIndex;
+        public static int GameHour => gameTime.Hour;
+        public static int GameMinute => gameTime.Minute;
+        public static int GameMinuteOfDay => gameTime.MinuteOfDay;
+        public static double GameTimeOfDayMinutes =>
+            gameTime.TimeOfDayMinutes;
+        public static double GameDayFraction => gameTime.DayFraction;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -148,6 +158,16 @@ namespace BarPromenade
                     HomeArrival.ToString()));
         }
 
+        public static bool TryStartGameTimeFromWake()
+        {
+            return gameTime.TryStartFromWake();
+        }
+
+        public static void AdvanceGameTime(float scaledDelta)
+        {
+            gameTime.Advance(scaledDelta);
+        }
+
         private static void ResetToDefaults()
         {
             CitySeed = DefaultCitySeed;
@@ -163,6 +183,7 @@ namespace BarPromenade
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
+            gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
             plannedBarRoute.Clear();
