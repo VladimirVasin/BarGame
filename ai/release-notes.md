@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-08-04 — Walking and idle feel more natural
+
+- The hero now bends both elbows, knees and ankles through a complete walking
+  cycle instead of passing through a stiff neutral stance between steps.
+  Arms counter-swing with persistent elbow flex while each leg visibly loads,
+  passes and plants.
+- Standing still now has a longer, more readable breathing and weight-shift
+  loop with subtle movement through the torso, head, arms and knees.
+- Starting and releasing movement now eases between idle and walking; the gait
+  also slows with the visible blend instead of changing cadence abruptly.
+
 ### 2026-08-04 — The 3D hero now faces his movement
 
 - Corrected the imported model orientation so the hero walks face-first in

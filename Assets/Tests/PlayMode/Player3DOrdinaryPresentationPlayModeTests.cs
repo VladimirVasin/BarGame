@@ -102,29 +102,68 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.forward *
                 Player3DCharacterPresentation.FullWalkSpeed);
             float deadline = Time.realtimeSinceStartup + 1f;
+            float previousBlend = presentation.LocomotionBlend;
+            bool sawStartTransition = false;
             while (presentation.LocomotionBlend < 0.95f &&
                    Time.realtimeSinceStartup < deadline)
             {
                 yield return null;
+                float currentBlend = presentation.LocomotionBlend;
+                Assert.That(
+                    currentBlend,
+                    Is.GreaterThanOrEqualTo(previousBlend - 0.002f),
+                    "Idle-to-Walk blending must advance monotonically.");
+                sawStartTransition |= currentBlend > 0.02f &&
+                                      currentBlend < 0.94f;
+                previousBlend = currentBlend;
             }
 
             Assert.That(
                 presentation.CurrentLocomotionState,
                 Is.EqualTo(Player3DLocomotionState.Walk));
             Assert.That(presentation.LocomotionBlend, Is.GreaterThan(0.9f));
+            Assert.That(
+                sawStartTransition,
+                Is.True,
+                "Starting movement must visibly crossfade through an " +
+                "intermediate Idle/Walk weight.");
 
+            float visibleWalkWeight = presentation.LocomotionBlend;
             presentation.SetMotion(Vector3.zero);
+            Assert.That(
+                presentation.LocomotionBlend,
+                Is.EqualTo(visibleWalkWeight).Within(0.0001f),
+                "Releasing movement must not snap the visible Walk weight.");
             deadline = Time.realtimeSinceStartup + 1f;
+            previousBlend = presentation.LocomotionBlend;
+            bool sawStopTransition = false;
             while (presentation.LocomotionBlend > 0.05f &&
                    Time.realtimeSinceStartup < deadline)
             {
                 yield return null;
+                float currentBlend = presentation.LocomotionBlend;
+                Assert.That(
+                    currentBlend,
+                    Is.LessThanOrEqualTo(previousBlend + 0.002f),
+                    "Walk-to-Idle blending must recede monotonically.");
+                sawStopTransition |= currentBlend < visibleWalkWeight - 0.02f &&
+                                     currentBlend > 0.06f;
+                previousBlend = currentBlend;
             }
 
             Assert.That(
                 presentation.CurrentLocomotionState,
                 Is.EqualTo(Player3DLocomotionState.Idle));
             Assert.That(presentation.LocomotionBlend, Is.LessThan(0.1f));
+            Assert.That(
+                sawStopTransition,
+                Is.True,
+                "Stopping movement must visibly crossfade through an " +
+                "intermediate Walk/Idle weight.");
+
+            AssertAuthoredLocomotionJointRanges(
+                presentation,
+                presentation.Registry);
         }
 
         [UnityTest]
@@ -414,6 +453,108 @@ namespace BarPromenade.Tests.PlayMode
                    binding != null
                 ? binding.Bone
                 : null;
+        }
+
+        private static void AssertAuthoredLocomotionJointRanges(
+            Player3DCharacterPresentation presentation,
+            Player3DAssetRegistry registry)
+        {
+            Transform chest = registry.Anchors.Chest;
+            Transform head = registry.Anchors.Head;
+            Transform leftForearm = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.LeftForearm);
+            Transform rightForearm = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.RightForearm);
+            Transform leftShin = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.LeftShin);
+            Transform rightShin = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.RightShin);
+            Transform leftFoot = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.LeftFoot);
+            Transform rightFoot = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.RightFoot);
+            Assert.That(chest, Is.Not.Null);
+            Assert.That(head, Is.Not.Null);
+            Assert.That(leftForearm, Is.Not.Null);
+            Assert.That(rightForearm, Is.Not.Null);
+            Assert.That(leftShin, Is.Not.Null);
+            Assert.That(rightShin, Is.Not.Null);
+            Assert.That(leftFoot, Is.Not.Null);
+            Assert.That(rightFoot, Is.Not.Null);
+
+            Assert.That(presentation.TryBeginClip("Relaxed"), Is.True);
+            presentation.SampleActiveClip(0.5f);
+            Quaternion relaxedChest = chest.localRotation;
+            Quaternion relaxedHead = head.localRotation;
+            Quaternion relaxedLeftForearm = leftForearm.localRotation;
+            Quaternion relaxedRightForearm = rightForearm.localRotation;
+            Quaternion relaxedLeftShin = leftShin.localRotation;
+            Quaternion relaxedRightShin = rightShin.localRotation;
+            Quaternion relaxedLeftFoot = leftFoot.localRotation;
+            Quaternion relaxedRightFoot = rightFoot.localRotation;
+            presentation.EndClip();
+
+            Assert.That(presentation.TryBeginClip("Idle"), Is.True);
+            presentation.SampleActiveClip(0.16f);
+            Assert.That(
+                Quaternion.Angle(relaxedChest, chest.localRotation),
+                Is.GreaterThan(2f),
+                "Idle must visibly expand and settle the upper body.");
+            Assert.That(
+                Quaternion.Angle(relaxedHead, head.localRotation),
+                Is.GreaterThan(1f),
+                "Idle must include a readable head counter-motion.");
+            Assert.That(
+                Quaternion.Angle(
+                    relaxedLeftForearm,
+                    leftForearm.localRotation),
+                Is.GreaterThan(3f),
+                "Idle must not leave the arms frozen below the shoulder.");
+            presentation.EndClip();
+
+            Assert.That(presentation.TryBeginClip("Walk"), Is.True);
+            presentation.SampleActiveClip(0f);
+            Assert.That(
+                Quaternion.Angle(
+                    relaxedLeftForearm,
+                    leftForearm.localRotation),
+                Is.GreaterThan(10f),
+                "The rear-swing elbow must remain visibly bent.");
+            Assert.That(
+                Quaternion.Angle(
+                    relaxedRightForearm,
+                    rightForearm.localRotation),
+                Is.GreaterThan(18f),
+                "The forward-swing elbow must flex independently.");
+            Assert.That(
+                Quaternion.Angle(relaxedLeftFoot, leftFoot.localRotation),
+                Is.GreaterThan(7f),
+                "The leading boot must articulate at the ankle.");
+
+            presentation.SampleActiveClip(0.25f);
+            Assert.That(
+                Quaternion.Angle(relaxedRightShin, rightShin.localRotation),
+                Is.GreaterThan(35f),
+                "The right swing leg must flex clearly at the knee.");
+
+            presentation.SampleActiveClip(0.5f);
+            Assert.That(
+                Quaternion.Angle(relaxedRightFoot, rightFoot.localRotation),
+                Is.GreaterThan(7f),
+                "The opposite leading boot must articulate at the ankle.");
+
+            presentation.SampleActiveClip(0.75f);
+            Assert.That(
+                Quaternion.Angle(relaxedLeftShin, leftShin.localRotation),
+                Is.GreaterThan(35f),
+                "The left swing leg must flex clearly at the knee.");
+            presentation.EndClip();
         }
 
         private readonly struct FallSideCase

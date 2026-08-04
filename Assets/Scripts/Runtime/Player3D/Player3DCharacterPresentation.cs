@@ -26,7 +26,8 @@ namespace BarPromenade
     {
         public const float FullWalkSpeed = 2.6f;
 
-        private const float LocomotionBlendSpeed = 7.5f;
+        private const float LocomotionBlendInTime = 0.14f;
+        private const float LocomotionBlendOutTime = 0.20f;
         private const float MotionThreshold = 0.05f;
         private const float StatusBlendSpeed = 4.5f;
         private const float BodyRadius = 0.32f;
@@ -59,6 +60,7 @@ namespace BarPromenade
         private bool clipSpatialStateCaptured;
         private float targetLocomotionBlend;
         private float locomotionBlend;
+        private float locomotionBlendVelocity;
         private float planarSpeed;
         private float intoxicationTarget;
         private float intoxicationAmount;
@@ -198,6 +200,7 @@ namespace BarPromenade
             planarSpeed = 0f;
             targetLocomotionBlend = 0f;
             locomotionBlend = 0f;
+            locomotionBlendVelocity = 0f;
             footPlantAmount = 1f;
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
@@ -403,7 +406,7 @@ namespace BarPromenade
                 double speed = Mathf.Lerp(
                     0.78f,
                     1.12f,
-                    targetLocomotionBlend);
+                    locomotionBlend);
                 walkPlayable.SetSpeed(speed);
                 EvaluateGraph(deltaTime);
                 UpdateFootPlant();
@@ -451,6 +454,7 @@ namespace BarPromenade
             planarSpeed = 0f;
             targetLocomotionBlend = 0f;
             locomotionBlend = 0f;
+            locomotionBlendVelocity = 0f;
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
 
@@ -567,12 +571,31 @@ namespace BarPromenade
                 return;
             }
 
-            locomotionBlend = immediate
-                ? targetLocomotionBlend
-                : Mathf.MoveTowards(
+            if (immediate)
+            {
+                locomotionBlend = targetLocomotionBlend;
+                locomotionBlendVelocity = 0f;
+            }
+            else
+            {
+                float smoothTime = targetLocomotionBlend > locomotionBlend
+                    ? LocomotionBlendInTime
+                    : LocomotionBlendOutTime;
+                locomotionBlend = Mathf.SmoothDamp(
                     locomotionBlend,
                     targetLocomotionBlend,
-                    LocomotionBlendSpeed * Time.deltaTime);
+                    ref locomotionBlendVelocity,
+                    smoothTime,
+                    Mathf.Infinity,
+                    Mathf.Max(0f, Time.deltaTime));
+                if (Mathf.Abs(
+                        locomotionBlend - targetLocomotionBlend) < 0.0005f)
+                {
+                    locomotionBlend = targetLocomotionBlend;
+                    locomotionBlendVelocity = 0f;
+                }
+            }
+
             locomotionMixer.SetInputWeight(0, 1f - locomotionBlend);
             locomotionMixer.SetInputWeight(1, locomotionBlend);
         }

@@ -99,7 +99,7 @@ FBX export: `SOCKET_Grip.L`, `SOCKET_Grip.R`, `SOCKET_Cigarette.R`,
 ## Generated Action library
 
 All Actions animate bones only, keep the `root` bone fixed and store exact
-duration/loop/source-rate metadata as `bp_*` custom properties. The first-pass
+duration/loop/source-rate metadata as `bp_*` custom properties. The production
 library contains:
 
 - locomotion: `Relaxed`, `Idle`, `Walk`;
@@ -109,6 +109,14 @@ library contains:
 - bed: `BedEnter`, `BedSleepLoop`, `BedExit`;
 - smoking: `SmokeEnter`, `SmokeLoop`, `SmokeExit`;
 - cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`.
+
+`Idle` is a four-second loop with an exact `Relaxed` seam. Two asymmetric
+breaths shift weight through the pelvis and legs while the spine, chest, head,
+upper arms and forearms counter-move. `Walk` is a one-second eight-phase gait:
+each side passes through contact, down, passing and up poses with independent
+elbow, knee and ankle articulation and opposite arm swing. These two
+locomotion Actions alone use auto-clamped Bezier curves; contextual, facial
+and fall Actions plus `Relaxed` retain their authored linear timing.
 
 The Actions intentionally contain no gameplay events or root motion. Unity's
 deterministic interaction timelines own exact playback, terminal holds,

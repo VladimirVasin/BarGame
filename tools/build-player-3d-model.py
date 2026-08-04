@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "2.1.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -2064,6 +2064,7 @@ class CharacterBuilder:
         source_frame_count: int,
         source_fps: float,
         keys: Sequence[tuple[float, dict[str, BonePose]]],
+        interpolation: str = "LINEAR",
     ) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -2115,7 +2116,10 @@ class CharacterBuilder:
 
         for fcurve in iter_action_fcurves(action):
             for keyframe in fcurve.keyframe_points:
-                keyframe.interpolation = "LINEAR"
+                keyframe.interpolation = interpolation
+                if interpolation == "BEZIER":
+                    keyframe.handle_left_type = "AUTO_CLAMPED"
+                    keyframe.handle_right_type = "AUTO_CLAMPED"
         animation_data.action = None
         self._reset_pose()
         self.result.actions[name] = ActionRecord(
@@ -2128,15 +2132,91 @@ class CharacterBuilder:
         )
 
     def build_actions(self) -> None:
-        """Author deterministic, in-place first-pass production Actions."""
+        """Author deterministic, in-place production Actions."""
 
         relaxed = self.relaxed_pose()
-        idle_inhale = self.merge_pose(
+        idle_left_inhale = self.merge_pose(
             relaxed,
             {
-                "spine": BonePose(rotation_degrees=(-3.2, 0.0, 1.8)),
-                "chest": BonePose(rotation_degrees=(3.8, 0.0, -1.8)),
-                "head": BonePose(rotation_degrees=(0.5, 0.0, -0.3)),
+                "pelvis": BonePose(rotation_degrees=(0.8, 0.5, -1.8)),
+                "spine": BonePose(rotation_degrees=(-4.4, 0.0, 2.5)),
+                "chest": BonePose(rotation_degrees=(5.8, 0.0, -2.8)),
+                "neck": BonePose(rotation_degrees=(-2.8, 0.0, 1.2)),
+                "head": BonePose(rotation_degrees=(2.8, 0.0, -1.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.063, -0.018, -0.330)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.044, -0.004, -0.336)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-9.0, 4.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-11.0, -3.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-2.0, 0.0, 0.5)),
+                "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(1.0, 0.0, -0.5)),
+                "shin.R": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+            },
+        )
+        idle_left_settle = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(-0.5, 0.0, -2.4)),
+                "spine": BonePose(rotation_degrees=(-2.8, 0.0, 3.0)),
+                "chest": BonePose(rotation_degrees=(3.2, 0.0, -3.5)),
+                "neck": BonePose(rotation_degrees=(-1.5, 0.0, 1.6)),
+                "head": BonePose(rotation_degrees=(0.4, 0.0, -1.3)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.061, -0.010, -0.334)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.045, -0.002, -0.336)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-7.0, 4.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-9.0, -3.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-1.2, 0.0, 0.5)),
+                "shin.L": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+            },
+        )
+        idle_right_inhale = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.8, -0.5, 1.7)),
+                "spine": BonePose(rotation_degrees=(-4.2, 0.0, -0.3)),
+                "chest": BonePose(rotation_degrees=(5.6, 0.0, 0.2)),
+                "neck": BonePose(rotation_degrees=(-2.8, 0.0, -0.8)),
+                "head": BonePose(rotation_degrees=(2.6, 0.0, 0.9)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.047, -0.004, -0.336)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.061, -0.018, -0.331)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-10.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-9.0, -4.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(1.0, 0.0, 0.5)),
+                "shin.L": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-2.0, 0.0, -0.5)),
+                "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+            },
+        )
+        idle_right_settle = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(-0.4, 0.0, 2.2)),
+                "spine": BonePose(rotation_degrees=(-2.7, 0.0, -0.7)),
+                "chest": BonePose(rotation_degrees=(3.1, 0.0, 0.9)),
+                "neck": BonePose(rotation_degrees=(-1.4, 0.0, -0.8)),
+                "head": BonePose(rotation_degrees=(0.5, 0.0, 1.2)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.047, -0.002, -0.337)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.059, -0.010, -0.334)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-8.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-7.0, -4.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-1.2, 0.0, -0.5)),
+                "shin.R": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
             },
         )
         self._create_action(
@@ -2144,51 +2224,219 @@ class CharacterBuilder:
             ((0.0, relaxed), (1.0, relaxed)),
         )
         self._create_action(
-            "Idle", "locomotion", 2.0, True, 48, 24,
-            ((0.0, relaxed), (0.5, idle_inhale), (1.0, relaxed)),
+            "Idle", "locomotion", 4.0, True, 96, 24,
+            (
+                (0.0, relaxed),
+                (0.16, idle_left_inhale),
+                (0.34, idle_left_settle),
+                (0.50, relaxed),
+                (0.66, idle_right_inhale),
+                (0.84, idle_right_settle),
+                (1.0, relaxed),
+            ),
+            interpolation="BEZIER",
         )
 
-        walk_left = self.merge_pose(
+        walk_left_contact = self.merge_pose(
             relaxed,
             {
                 "upper_arm.L": BonePose(
-                    target_direction=(0.05, 0.16, -0.31)
+                    target_direction=(0.052, 0.145, -0.304)
                 ),
                 "upper_arm.R": BonePose(
-                    target_direction=(-0.05, -0.16, -0.31)
+                    target_direction=(-0.052, -0.135, -0.309)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
-                "thigh.R": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
-                "pelvis": BonePose(rotation_degrees=(0.0, 2.0, -2.0)),
+                "forearm.L": BonePose(rotation_degrees=(-17.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-27.0, -4.0, 3.0)),
+                "hand.L": BonePose(rotation_degrees=(4.0, -4.0, 2.0)),
+                "hand.R": BonePose(rotation_degrees=(5.0, 6.0, -2.0)),
+                "thigh.L": BonePose(rotation_degrees=(-26.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(1.0, 3.0, -2.2)),
+                "spine": BonePose(rotation_degrees=(-4.0, 0.0, 1.4)),
+                "chest": BonePose(rotation_degrees=(4.4, -1.5, -1.6)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, 0.6)),
             },
         )
-        walk_right = self.merge_pose(
+        walk_left_down = self.merge_pose(
+            walk_left_contact,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.052, 0.105, -0.321)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.052, -0.103, -0.322)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-19.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-26.0, -4.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(2.0, 1.0, -1.3)),
+                "spine": BonePose(rotation_degrees=(-4.8, 0.0, 0.8)),
+                "chest": BonePose(rotation_degrees=(5.0, -1.0, -1.0)),
+            },
+        )
+        walk_right_pass = self.merge_pose(
             relaxed,
             {
                 "upper_arm.L": BonePose(
-                    target_direction=(0.05, -0.16, -0.31)
+                    target_direction=(0.055, 0.035, -0.337)
                 ),
                 "upper_arm.R": BonePose(
-                    target_direction=(-0.05, 0.16, -0.31)
+                    target_direction=(-0.055, -0.030, -0.337)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
-                "shin.L": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "forearm.L": BonePose(rotation_degrees=(-21.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-24.0, -4.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(52.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(0.0, -1.0, 0.8)),
+                "spine": BonePose(rotation_degrees=(-3.8, 0.0, 0.2)),
+                "chest": BonePose(rotation_degrees=(4.2, -0.4, -0.2)),
+                "head": BonePose(rotation_degrees=(1.2, 0.0, -0.2)),
+            },
+        )
+        walk_right_up = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.052, -0.075, -0.329)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.052, 0.080, -0.328)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-25.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-20.0, -4.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(-1.0, -2.0, 1.5)),
+                "spine": BonePose(rotation_degrees=(-3.5, 0.0, -0.7)),
+                "chest": BonePose(rotation_degrees=(4.0, 0.8, 0.8)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, -0.5)),
+            },
+        )
+        walk_right_contact = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.052, -0.135, -0.309)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.052, 0.145, -0.304)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-27.0, 4.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-17.0, -3.0, 3.0)),
+                "hand.L": BonePose(rotation_degrees=(5.0, -6.0, 2.0)),
+                "hand.R": BonePose(rotation_degrees=(4.0, 4.0, -2.0)),
+                "thigh.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-26.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(1.0, -3.0, 2.2)),
+                "spine": BonePose(rotation_degrees=(-4.0, 0.0, -1.4)),
+                "chest": BonePose(rotation_degrees=(4.4, 1.5, 1.6)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, -0.6)),
+            },
+        )
+        walk_right_down = self.merge_pose(
+            walk_right_contact,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.052, -0.103, -0.322)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.052, 0.105, -0.321)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-26.0, 4.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-19.0, -3.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
                 "thigh.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
-                "pelvis": BonePose(rotation_degrees=(0.0, -2.0, 2.0)),
+                "shin.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(2.0, -1.0, 1.3)),
+                "spine": BonePose(rotation_degrees=(-4.8, 0.0, -0.8)),
+                "chest": BonePose(rotation_degrees=(5.0, 1.0, 1.0)),
+            },
+        )
+        walk_left_pass = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.055, -0.030, -0.337)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.055, 0.035, -0.337)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-24.0, 4.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-21.0, -3.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(52.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(0.0, 1.0, -0.8)),
+                "spine": BonePose(rotation_degrees=(-3.8, 0.0, -0.2)),
+                "chest": BonePose(rotation_degrees=(4.2, 0.4, 0.2)),
+                "head": BonePose(rotation_degrees=(1.2, 0.0, 0.2)),
+            },
+        )
+        walk_left_up = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.052, 0.080, -0.328)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.052, -0.075, -0.329)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-20.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-25.0, -4.0, 3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(-1.0, 2.0, -1.5)),
+                "spine": BonePose(rotation_degrees=(-3.5, 0.0, 0.7)),
+                "chest": BonePose(rotation_degrees=(4.0, -0.8, -0.8)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, 0.5)),
             },
         )
         self._create_action(
             "Walk", "locomotion", 1.0, True, 24, 24,
             (
-                (0.0, walk_left),
-                (0.25, relaxed),
-                (0.5, walk_right),
-                (0.75, relaxed),
-                (1.0, walk_left),
+                (0.0, walk_left_contact),
+                (0.125, walk_left_down),
+                (0.25, walk_right_pass),
+                (0.375, walk_right_up),
+                (0.5, walk_right_contact),
+                (0.625, walk_right_down),
+                (0.75, walk_left_pass),
+                (0.875, walk_left_up),
+                (1.0, walk_left_contact),
             ),
+            interpolation="BEZIER",
         )
 
         face_poses = {

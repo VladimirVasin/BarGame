@@ -2,6 +2,40 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Articulated 3D walk and stronger idle
+
+- Re-authored the production Blender locomotion Actions. Walk now uses eight
+  contact/down/passing/up phases with opposite arm swing and independent
+  forearm, hand, thigh, shin and foot rotation; both elbows remain flexed and
+  each swing knee reaches a readable passing pose. Idle is now a four-second
+  two-sided breathing and weight-shift loop that moves the pelvis, torso,
+  head, arms and softly loaded knees while retaining the exact Relaxed seam
+  required by contextual handoffs.
+- Limited auto-clamped Bezier interpolation to Idle and Walk, leaving Relaxed
+  plus all contextual, fall and facial Actions on their linear timing. Blender
+  regenerated the editable source, both production FBXs, manifest, preview
+  and portrait under generator `2.1.0`; Unity rebuilt the stamped runtime
+  prefab with the new four-second Idle binding.
+- Replaced the linear locomotion weight step with damped `0.14 s` start and
+  `0.20 s` stop envelopes. Walk playback speed now follows the visible blend,
+  so a hard release does not change cadence while the gait is still fading.
+  The focused ordinary-presentation regression now checks monotonic
+  intermediate weights and imported elbow, knee and ankle excursions.
+
+Verification:
+
+- Blender `5.0.1` regenerated and self-validated `73` separate meshes, `31`
+  bones, six sockets, `23` in-place Actions and `1,534` triangles. Eight Walk
+  phases were inspected from front/three-quarter and side views, together with
+  the strengthened Idle phases; no joint flip or blocking mesh separation was
+  found.
+- Focused Unity PlayMode verification passed `1/1`:
+  `Player3DOrdinaryPresentationPlayModeTests.FactoryCreatesModular3DPlayerAndDrivesLocomotion`.
+  The dedicated asset setup completed successfully and rebuilt the production
+  prefab at generator `2.1.0` with `Idle = 4.0 s`.
+- `git diff --check` passed. In fast mode, no complete Unity suite, player
+  build or startup smoke was run.
+
 ## 2026-08-04 — Correct 3D hero facing
 
 - Rotated the imported FBX model by `180°` at the generated runtime-prefab

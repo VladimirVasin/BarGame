@@ -231,10 +231,14 @@ The vertical slice contains:
   registered anatomical parts, the left-forearm bandage, right-shoulder patch
   and diagonal strap. One shared URP/Lit material plus per-mesh property blocks
   retain the palette without per-instance materials;
-- one manual PlayableGraph presentation that blends the in-place `Idle` and
-  `Walk` actions from actual planar speed, keeps root motion disabled and
-  drives registered face bones through neutral, half/closed blink, watchful and
-  tense states. Intoxication sway, arm spread, knee bend and balance lean are
+- one manual PlayableGraph presentation that damp-blends the in-place
+  four-second `Idle` and one-second `Walk` actions from actual planar speed.
+  Idle alternates readable breathing and weight shifts; Walk uses full
+  contact/down/passing/up phases with independently flexing elbows, knees and
+  ankles. Start and stop use `0.14 s`/`0.20 s` smooth envelopes, and visible
+  gait cadence follows the blended weight. Root motion stays disabled while
+  registered face bones drive neutral, half/closed blink, watchful and tense
+  states. Intoxication sway, arm spread, knee bend and balance lean are
   additive bone poses and reset through the same lifecycle cleanup;
 - ordinary URP mesh shadows cast from the real character geometry in every
   gameplay root, plus one small light-independent analytic contact patch fixed

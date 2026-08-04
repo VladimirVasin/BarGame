@@ -44,7 +44,13 @@
 
 ## Animation contract
 
-- `Relaxed`, `Idle` and `Walk` own ordinary in-place presentation.
+- `Relaxed`, the four-second `Idle` and the one-second `Walk` own ordinary
+  in-place presentation. Idle returns to the exact Relaxed seam while two
+  asymmetric breath/weight-shift phrases move the pelvis, spine, chest, head,
+  arms and softly loaded knees. Walk uses contact/down/passing/up phases for
+  both sides with independent elbow, knee and ankle articulation, opposite arm
+  swing and a closed neutral-root loop. Both locomotion clips use auto-clamped
+  Bezier interpolation; contextual and fall timing remains linear.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing on registered face bones.
 - Left and right balance failures use `FallLeft/Right`, `DownLeft/Right` and
@@ -60,6 +66,9 @@
 - Intoxication sway, arm spread, knee bend and signed balance lean are additive
   bone presentation over ordinary locomotion and reset to neutral through the
   shared lifecycle cleanup.
+- Runtime blends Idle and Walk from actual planar speed with damped `0.14 s`
+  start and `0.20 s` stop envelopes. Walk cadence follows that visible blend,
+  so releasing movement cannot abruptly slow a still-visible gait.
 
 ## Derived player representations
 
