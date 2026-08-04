@@ -41,11 +41,13 @@ namespace BarPromenade
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
         private float nightFactor = 1f;
+        private bool hasAppliedNightFactor;
 
         public IReadOnlyList<Transform> LampAnchors => lampAnchors;
         public IReadOnlyList<Light> StreetLightPool => streetLightPool;
         public IReadOnlyList<Light> BarLights => barLights;
         public float NightFactor => nightFactor;
+        public int ReassignmentCount { get; private set; }
         public int RealtimeLightCount =>
             streetLightPool.Length + barLights.Length;
 
@@ -125,9 +127,24 @@ namespace BarPromenade
             RefreshStreetLights(true);
         }
 
-        public void SetNightFactor(float factor)
+        public void SetNightFactor(
+            float factor,
+            bool force = false)
         {
-            nightFactor = Mathf.Clamp01(factor);
+            float clampedFactor = Mathf.Clamp01(factor);
+            if (!force &&
+                hasAppliedNightFactor &&
+                clampedFactor.Equals(nightFactor))
+            {
+                return;
+            }
+
+            bool wasVisible =
+                hasAppliedNightFactor &&
+                nightFactor > VisibleFactorThreshold;
+            bool firstApplication = !hasAppliedNightFactor;
+            nightFactor = clampedFactor;
+            hasAppliedNightFactor = true;
             bool visible = nightFactor > VisibleFactorThreshold;
             for (int index = 0; index < barLights.Length; index++)
             {
@@ -141,15 +158,29 @@ namespace BarPromenade
             {
                 streetLightPool[index].intensity =
                     StreetLightIntensity * nightFactor;
+                if (!visible)
+                {
+                    streetLightPool[index].enabled = false;
+                }
+
                 streetLightHalos[index].SetIntensityFactor(nightFactor);
+                streetLightHalos[index].SetVisible(
+                    visible && streetLightPool[index].enabled);
             }
 
-            RefreshStreetLights(true);
+            if (visible &&
+                isActiveAndEnabled &&
+                (force || firstApplication || !wasVisible))
+            {
+                RefreshStreetLights(true);
+            }
         }
 
         private void RefreshStreetLights(bool force)
         {
-            if (player == null || streetLightPool.Length == 0)
+            if (nightFactor <= VisibleFactorThreshold ||
+                player == null ||
+                streetLightPool.Length == 0)
             {
                 return;
             }
@@ -207,6 +238,7 @@ namespace BarPromenade
 
             lastAssignmentPosition = playerPosition;
             nextReassignmentTime = now + ReassignmentInterval;
+            ReassignmentCount++;
         }
 
         private void InsertNearest(int anchorIndex, float distance)

@@ -112,6 +112,13 @@ namespace BarPromenade.Tests.PlayMode
                         HomeDayNightController
                             .DayWindowLightIntensity)
                     .Within(0.001f));
+            int stableDayApplicationCount =
+                home.DayNight.VisualApplicationCount;
+            GameSessionState.AdvanceGameTime(1f);
+            yield return null;
+            Assert.That(
+                home.DayNight.VisualApplicationCount,
+                Is.EqualTo(stableDayApplicationCount));
             AssertExteriorAtmosphere(home);
             AssertRenderedExteriorBarFacade(home);
             AssertRenderedExteriorDecorations(home.ExteriorView);

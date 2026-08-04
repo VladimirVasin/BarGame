@@ -2,6 +2,28 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Day/night runtime optimization
+
+- Made City and Home day/night presentation change-driven: advancing through
+  a stable day or night sample now updates the observed minute without
+  reapplying identical lighting, bulb, halo or realtime-light state.
+- Reused the active `RenderSettings.sun`, removed recurring
+  `DynamicGI.UpdateEnvironment` calls from ordinary phase updates and retained
+  environment refreshes for forced setup and Balcony lifecycle boundaries.
+- Made night-factor writes idempotent, reused one bulb
+  `MaterialPropertyBlock`, kept forced refresh semantics and stopped the
+  disabled daytime street-light pool from rescanning the City's `438` lamp
+  anchors. A `0 -> visible` transition refreshes the pool once; inactive Home
+  exterior lighting waits for its existing Balcony activation refresh.
+
+Verification:
+
+- Focused EditMode day/night sample coverage passed `9/9`.
+- Focused City day/night and Home Balcony PlayMode coverage passed `2/2`;
+  after tightening the near-zero visibility guard, the final City regression
+  rerun passed `1/1`.
+- `git diff --check` passed. Full suites and a player build were not run.
+
 ## 2026-08-04 — Wake-started session clock and MVP day/night
 
 - Added session-owned game time that resets frozen at `05:59`; a successful

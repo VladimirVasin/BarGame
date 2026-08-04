@@ -30,6 +30,21 @@ namespace BarPromenade
         public float ShadowStrength { get; }
         public Quaternion DirectionalLightRotation { get; }
         public float NightFactor { get; }
+
+        public bool IsVisuallyEquivalentTo(DayNightVisualSample other)
+        {
+            return DirectionalLightColor.Equals(
+                       other.DirectionalLightColor) &&
+                   DirectionalLightIntensity.Equals(
+                       other.DirectionalLightIntensity) &&
+                   AmbientLightColor.Equals(other.AmbientLightColor) &&
+                   ReflectionIntensity.Equals(
+                       other.ReflectionIntensity) &&
+                   ShadowStrength.Equals(other.ShadowStrength) &&
+                   DirectionalLightRotation.Equals(
+                       other.DirectionalLightRotation) &&
+                   NightFactor.Equals(other.NightFactor);
+        }
     }
 
     public static class GameTimeDayNightRules

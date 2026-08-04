@@ -7,9 +7,17 @@ namespace BarPromenade
 {
     public sealed class CityNightWorldResult
     {
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId =
+            Shader.PropertyToID("_Color");
+
         private readonly IReadOnlyList<Vector3> barLightPositions;
         private readonly Color streetLampBulbNightColor;
+        private readonly MaterialPropertyBlock bulbColorProperties =
+            new MaterialPropertyBlock();
         private float nightFactor = 1f;
+        private bool hasAppliedNightFactor;
 
         internal CityNightWorldResult(
             GameObject root,
@@ -46,9 +54,20 @@ namespace BarPromenade
         public CityFogField FogField { get; private set; }
         public float NightFactor => nightFactor;
 
-        public void SetNightFactor(float factor)
+        public void SetNightFactor(
+            float factor,
+            bool force = false)
         {
-            nightFactor = Mathf.Clamp01(factor);
+            float clampedFactor = Mathf.Clamp01(factor);
+            if (!force &&
+                hasAppliedNightFactor &&
+                clampedFactor.Equals(nightFactor))
+            {
+                return;
+            }
+
+            nightFactor = clampedFactor;
+            hasAppliedNightFactor = true;
             Color displayedBulbColor = new Color(
                 streetLampBulbNightColor.r * nightFactor,
                 streetLampBulbNightColor.g * nightFactor,
@@ -58,14 +77,26 @@ namespace BarPromenade
                  index < StreetLampBulbRenderers.Count;
                  index++)
             {
-                RuntimePrimitiveFactory.SetColor(
-                    StreetLampBulbRenderers[index],
+                Renderer renderer = StreetLampBulbRenderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                bulbColorProperties.Clear();
+                renderer.GetPropertyBlock(bulbColorProperties);
+                bulbColorProperties.SetColor(
+                    BaseColorId,
                     displayedBulbColor);
+                bulbColorProperties.SetColor(
+                    ColorId,
+                    displayedBulbColor);
+                renderer.SetPropertyBlock(bulbColorProperties);
             }
 
             if (Atmosphere != null)
             {
-                Atmosphere.SetNightFactor(nightFactor);
+                Atmosphere.SetNightFactor(nightFactor, force);
             }
         }
 

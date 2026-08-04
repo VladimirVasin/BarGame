@@ -97,6 +97,12 @@ namespace BarPromenade.Tests.EditMode
                 noon.DirectionalLightColor,
                 Is.EqualTo(evening.DirectionalLightColor));
             Assert.That(
+                morning.IsVisuallyEquivalentTo(noon),
+                Is.True);
+            Assert.That(
+                noon.IsVisuallyEquivalentTo(evening),
+                Is.True);
+            Assert.That(
                 noon.DirectionalLightIntensity,
                 Is.GreaterThan(
                     RuntimeSceneSetup.CityMoonlightIntensity));
@@ -104,6 +110,11 @@ namespace BarPromenade.Tests.EditMode
                 noon.AmbientLightColor.maxColorComponent,
                 Is.GreaterThan(
                     RuntimeSceneSetup.CityAmbientColor.maxColorComponent));
+            Assert.That(
+                GameTimeDayNightRules.Evaluate(361d)
+                    .IsVisuallyEquivalentTo(
+                        GameTimeDayNightRules.Evaluate(362d)),
+                Is.False);
         }
 
         [Test]

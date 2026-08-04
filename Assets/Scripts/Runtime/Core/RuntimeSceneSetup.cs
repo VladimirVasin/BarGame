@@ -131,22 +131,27 @@ namespace BarPromenade
         {
             ApplyCityExteriorLighting(
                 GameTimeDayNightRules.Evaluate(
-                    GameSessionState.GameTimeOfDayMinutes));
+                    GameSessionState.GameTimeOfDayMinutes),
+                true);
         }
 
         public static void ApplyCityExteriorLighting(
-            DayNightVisualSample sample)
+            DayNightVisualSample sample,
+            bool updateEnvironment = true)
         {
-            ConfigureDirectionalLighting(
+            Light directional = ConfigureDirectionalLighting(
                 sample.DirectionalLightColor,
                 sample.DirectionalLightIntensity,
                 sample.AmbientLightColor,
                 sample.ShadowStrength);
-            RenderSettings.sun.transform.rotation =
+            directional.transform.rotation =
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
                 sample.ReflectionIntensity;
-            DynamicGI.UpdateEnvironment();
+            if (updateEnvironment)
+            {
+                DynamicGI.UpdateEnvironment();
+            }
         }
 
         public static VolumeProfile CreateCityNoirRuntimeProfile()
@@ -238,21 +243,26 @@ namespace BarPromenade
                 1f);
         }
 
-        private static void ConfigureDirectionalLighting(
+        private static Light ConfigureDirectionalLighting(
             Color color,
             float intensity,
             Color ambientColor,
             float shadowStrength)
         {
-            Light[] lights = Object.FindObjectsByType<Light>(
-                FindObjectsInactive.Exclude);
-            Light directional = null;
-            for (int i = 0; i < lights.Length; i++)
+            Light directional = RenderSettings.sun;
+            if (directional == null ||
+                directional.type != LightType.Directional)
             {
-                if (lights[i].type == LightType.Directional)
+                Light[] lights = Object.FindObjectsByType<Light>(
+                    FindObjectsInactive.Exclude);
+                directional = null;
+                for (int i = 0; i < lights.Length; i++)
                 {
-                    directional = lights[i];
-                    break;
+                    if (lights[i].type == LightType.Directional)
+                    {
+                        directional = lights[i];
+                        break;
+                    }
                 }
             }
 
@@ -272,6 +282,7 @@ namespace BarPromenade
 
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = ambientColor;
+            return directional;
         }
 
         private static void SetPostProcessing(

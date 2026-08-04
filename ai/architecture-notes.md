@@ -632,6 +632,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and halos with the sample's night factor. `HomeDayNightController` applies
   the same sample to the apartment window shaft and reconstructed Balcony
   exterior. Bar, Supermarket and Stairwell visual profiles remain unchanged.
+  Presentation updates are change-driven: stable day/night samples perform no
+  lighting work, ordinary dawn/dusk updates do not regenerate the environment
+  cubemap, and a zero-factor street-light pool does not scan lamp anchors.
+  Forced setup and Home Balcony entry/restore retain their complete refresh.
   This cycle does not own visibility: `0.070` luminous gray-green Exp2 fog,
   the matching terminal camera color, `48 m` far clip, `CityFogField` and
   dedicated `CityNoirVolumeProfile` stay unchanged at every hour. Custom fog

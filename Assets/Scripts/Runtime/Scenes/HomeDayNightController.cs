@@ -23,6 +23,7 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public DayNightVisualSample CurrentSample { get; private set; }
         public float WindowDayFactor { get; private set; }
+        public int VisualApplicationCount { get; private set; }
 
         public void Initialize(
             HomeInteriorAtmosphere homeInteriorAtmosphere,
@@ -75,6 +76,10 @@ namespace BarPromenade
             int minuteOfDay = GameSessionState.GameMinuteOfDay;
             bool balconyVisibilityActive =
                 exteriorAtmosphere.IsBalconyVisibilityActive;
+            bool balconyVisibilityChanged =
+                !hasAppliedSample ||
+                balconyVisibilityActive !=
+                lastBalconyVisibilityActive;
             if (!force &&
                 hasAppliedSample &&
                 dayIndex == lastDayIndex &&
@@ -85,14 +90,36 @@ namespace BarPromenade
                 return;
             }
 
+            DayNightVisualSample nextSample =
+                GameTimeDayNightRules.Evaluate(
+                GameSessionState.GameTimeOfDayMinutes);
+            bool shouldApplySample =
+                force ||
+                !hasAppliedSample ||
+                !CurrentSample.IsVisuallyEquivalentTo(nextSample);
+            CurrentSample = nextSample;
             lastDayIndex = dayIndex;
             lastMinuteOfDay = minuteOfDay;
             lastBalconyVisibilityActive =
                 balconyVisibilityActive;
             hasAppliedSample = true;
 
-            CurrentSample = GameTimeDayNightRules.Evaluate(
-                GameSessionState.GameTimeOfDayMinutes);
+            if (shouldApplySample)
+            {
+                ApplyVisualSample(force);
+                VisualApplicationCount++;
+            }
+
+            if (shouldApplySample || balconyVisibilityChanged)
+            {
+                exteriorAtmosphere.ApplyExteriorLighting(
+                    CurrentSample,
+                    force);
+            }
+        }
+
+        private void ApplyVisualSample(bool force)
+        {
             WindowDayFactor = 1f - CurrentSample.NightFactor;
 
             Light windowLight = interiorAtmosphere.WindowLight;
@@ -105,8 +132,9 @@ namespace BarPromenade
                 DayWindowLightIntensity,
                 WindowDayFactor);
 
-            exteriorNight.SetNightFactor(CurrentSample.NightFactor);
-            exteriorAtmosphere.ApplyExteriorLighting(CurrentSample);
+            exteriorNight.SetNightFactor(
+                CurrentSample.NightFactor,
+                force);
         }
 
         private void Update()

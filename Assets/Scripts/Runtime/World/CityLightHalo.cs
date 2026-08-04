@@ -70,13 +70,22 @@ namespace BarPromenade
 
         public void SetIntensityFactor(float factor)
         {
-            intensityFactor = Mathf.Clamp01(factor);
+            float clampedFactor = Mathf.Clamp01(factor);
+            bool intensityChanged =
+                !Mathf.Approximately(
+                    intensityFactor,
+                    clampedFactor);
+            intensityFactor = clampedFactor;
             if (particles == null || haloRenderer == null)
             {
                 return;
             }
 
-            ApplyIntensity();
+            if (intensityChanged)
+            {
+                ApplyIntensity();
+            }
+
             haloRenderer.enabled = intensityFactor > 0.0001f;
         }
 

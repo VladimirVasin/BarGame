@@ -96,7 +96,8 @@ namespace BarPromenade
         }
 
         public void ApplyExteriorLighting(
-            DayNightVisualSample sample)
+            DayNightVisualSample sample,
+            bool updateEnvironment = false)
         {
             exteriorLightingSample = sample;
             hasExteriorLightingSample = true;
@@ -105,7 +106,9 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimeSceneSetup.ApplyCityExteriorLighting(sample);
+            RuntimeSceneSetup.ApplyCityExteriorLighting(
+                sample,
+                updateEnvironment);
         }
 
         private void OnEnable()

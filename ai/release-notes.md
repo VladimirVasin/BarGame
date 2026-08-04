@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 2026-08-04 — Smoother day/night updates
+
+- City and Home no longer repeat unchanged global-lighting, environment and
+  lamp-pool work every in-game minute during stable day or night. Movement
+  remains responsive while the clock continues advancing normally.
+- Dawn, dusk, exterior lights, Home window lighting and Balcony restoration
+  retain their existing visual behavior.
+
 ### 2026-08-04 — A 24-minute day and working room clock
 
 - A fresh run now holds at `05:59` until Wake Up is chosen. That choice starts

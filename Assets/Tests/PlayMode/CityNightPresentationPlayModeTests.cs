@@ -360,6 +360,40 @@ namespace BarPromenade.Tests.PlayMode
                 dayBulbColor.maxColorComponent,
                 Is.LessThan(0.001f));
 
+            int stableDayApplicationCount =
+                city.DayNight.VisualApplicationCount;
+            int darkPoolReassignmentCount =
+                city.Night.Atmosphere.ReassignmentCount;
+            directional.transform.hasChanged = false;
+            GameSessionState.AdvanceGameTime(1f);
+            city.DayNight.ApplyCurrentTime();
+            city.Night.Atmosphere.RefreshImmediate();
+            Assert.That(
+                city.DayNight.AppliedMinute,
+                Is.EqualTo(12 * 60 + 1));
+            Assert.That(
+                city.DayNight.VisualApplicationCount,
+                Is.EqualTo(stableDayApplicationCount));
+            Assert.That(directional.transform.hasChanged, Is.False);
+            Assert.That(
+                city.Night.Atmosphere.ReassignmentCount,
+                Is.EqualTo(darkPoolReassignmentCount));
+
+            city.Night.SetNightFactor(0.000095f);
+            Assert.That(
+                city.Night.Atmosphere.BarLights[0].enabled,
+                Is.False);
+            int thresholdReassignmentCount =
+                city.Night.Atmosphere.ReassignmentCount;
+            city.Night.SetNightFactor(0.000104f);
+            Assert.That(
+                city.Night.Atmosphere.BarLights[0].enabled,
+                Is.True);
+            Assert.That(
+                city.Night.Atmosphere.ReassignmentCount,
+                Is.GreaterThan(thresholdReassignmentCount));
+            city.Night.SetNightFactor(0f, true);
+
             TrafficSignalController signal =
                 city.Night.TrafficSignals[0];
             signal.ApplyTime(-signal.PhaseOffset);
@@ -378,7 +412,7 @@ namespace BarPromenade.Tests.PlayMode
                 backgroundColor,
                 farClipPlane);
 
-            GameSessionState.AdvanceGameTime(480f);
+            GameSessionState.AdvanceGameTime(479f);
             city.DayNight.ApplyCurrentTime();
 
             Assert.That(GameSessionState.GameHour, Is.EqualTo(20));
@@ -399,6 +433,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 city.Night.Atmosphere.BarLights[0].enabled,
                 Is.True);
+            Assert.That(
+                city.Night.Atmosphere.ReassignmentCount,
+                Is.GreaterThan(darkPoolReassignmentCount));
             CityLightHalo restoredBarHalo =
                 city.Night.Atmosphere.BarLights[0]
                     .GetComponentInChildren<CityLightHalo>(true);
