@@ -9,6 +9,11 @@ namespace BarPromenade
         public const string DefaultBlueprintId = "default-coastal";
         public const string LegacyBlueprintId = "legacy-rectangular";
 
+        private const int EasternOpenAreaWidth = 4;
+        private const int DefaultLakeSize = 4;
+        private const int DefaultCemeteryWidth = 3;
+        private const int DefaultCemeteryDepth = 2;
+
         private static readonly Color OldTownMapColor =
             new Color32(113, 93, 72, 255);
         private static readonly Color ResidentialMapColor =
@@ -90,13 +95,14 @@ namespace BarPromenade
                     "central park.");
             }
 
+            AddEasternOpenAreas(builder, settings);
             CityAreaDefinition waterfront = CreateNorthWaterfront();
             builder.AddRectangle(
                 waterfront,
                 new RectInt(
                     0,
                     settings.BlocksZ,
-                    settings.BlocksX,
+                    settings.BlocksX + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.OpenLand);
             builder.AddRectangle(
@@ -104,7 +110,7 @@ namespace BarPromenade
                 new RectInt(
                     0,
                     settings.BlocksZ + 1,
-                    settings.BlocksX,
+                    settings.BlocksX + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.Water);
             return builder.Build(true, true);
@@ -295,6 +301,56 @@ namespace BarPromenade
             {
                 builder.AddCells(definition, cells, topology);
             }
+        }
+
+        private static void AddEasternOpenAreas(
+            CityBlueprintBuilder builder,
+            CityGenerationSettings settings)
+        {
+            CityAreaDefinition cemetery = CreateCemetery();
+            builder.AddRectangle(
+                cemetery,
+                new RectInt(
+                    settings.BlocksX,
+                    0,
+                    DefaultCemeteryWidth,
+                    DefaultCemeteryDepth),
+                CityCellTopologyKind.OpenLand);
+
+            CityAreaDefinition lake = CreateLake();
+            int lakeMinimumX = settings.BlocksX;
+            int lakeMinimumZ = settings.BlocksZ - DefaultLakeSize;
+            var shoreCells = new List<Vector2Int>();
+            for (int z = 0; z < DefaultLakeSize; z++)
+            {
+                for (int x = 0; x < DefaultLakeSize; x++)
+                {
+                    bool isShore =
+                        x == 0 ||
+                        x == DefaultLakeSize - 1 ||
+                        z == 0 ||
+                        z == DefaultLakeSize - 1;
+                    if (isShore)
+                    {
+                        shoreCells.Add(new Vector2Int(
+                            lakeMinimumX + x,
+                            lakeMinimumZ + z));
+                    }
+                }
+            }
+
+            builder.AddCells(
+                lake,
+                shoreCells,
+                CityCellTopologyKind.OpenLand);
+            builder.AddRectangle(
+                lake,
+                new RectInt(
+                    lakeMinimumX + 1,
+                    lakeMinimumZ + 1,
+                    DefaultLakeSize - 2,
+                    DefaultLakeSize - 2),
+                CityCellTopologyKind.Water);
         }
 
         private static CityAreaDefinition CreateCentralPark()

@@ -102,7 +102,7 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void DefaultCoastalBlueprint_CreatesCenteredParkReachableBeachAndBlockedWater()
+        public void DefaultCoastalBlueprint_CreatesReachableBeachLakeAndCemetery()
         {
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
@@ -129,6 +129,49 @@ namespace BarPromenade.Tests
                     layout.Park.Center,
                     layout.GetGridWorldPosition(blueprint.CenterNode)),
                 Is.LessThan(0.001f));
+
+            Assert.That(
+                blueprint.CellBounds.xMax,
+                Is.GreaterThan(settings.BlocksX));
+            Assert.That(
+                blueprint.TryGetArea("lake", out CityAreaPlacement lake),
+                Is.True);
+            Assert.That(
+                blueprint.TryGetArea(
+                    "cemetery",
+                    out CityAreaPlacement cemetery),
+                Is.True);
+            Assert.That(
+                lake.Cells.All(cell => cell.x >= settings.BlocksX),
+                Is.True);
+            Assert.That(
+                cemetery.Cells.All(cell => cell.x >= settings.BlocksX),
+                Is.True);
+            Assert.That(
+                lake.Cells.Count(cell =>
+                    lake.GetTopology(cell) == CityCellTopologyKind.Water),
+                Is.EqualTo(4));
+            Assert.That(
+                cemetery.Cells.All(cell =>
+                    cemetery.GetTopology(cell) ==
+                    CityCellTopologyKind.OpenLand),
+                Is.True);
+            Assert.That(
+                lake.Cells.Concat(cemetery.Cells).All(cell =>
+                    !blueprint.CreatesLot(cell)),
+                Is.True);
+            Assert.That(
+                layout.BuildingLots,
+                Has.Count.EqualTo(settings.BlocksX * settings.BlocksZ));
+            Assert.That(
+                layout.BuildingLots.Count(lot => lot.IsBar),
+                Is.EqualTo(settings.BarCount));
+            Assert.That(
+                layout.BuildingLots.Count(lot => lot.IsPlayerHome),
+                Is.EqualTo(1));
+            Assert.That(
+                layout.BuildingLots.Count(lot => lot.IsSupermarket),
+                Is.EqualTo(1));
 
             Assert.That(blueprint.NorthWaterfront, Is.Not.Null);
             int northernCellZ = blueprint.CellBounds.yMax - 1;
@@ -194,6 +237,53 @@ namespace BarPromenade.Tests
             Assert.That(layout.IsWater(water.Center), Is.True);
             Assert.That(layout.IsWater(beach.Center), Is.False);
             Assert.That(walkable.Contains(water.Center, 0.28f), Is.False);
+
+            foreach (CityAreaFeatureKind feature in new[]
+                     {
+                         CityAreaFeatureKind.Lake,
+                         CityAreaFeatureKind.Cemetery
+                     })
+            {
+                CityOpenAreaAccessDescriptor openAreaAccess =
+                    layout.OpenAreaAccesses.Single(candidate =>
+                        candidate.Feature == feature);
+                CitySurfaceDescriptor openAreaSurface =
+                    layout.Surfaces.Single(surface =>
+                        surface.Cell == openAreaAccess.Cell);
+                CitySurfaceKind expectedSurfaceKind =
+                    feature == CityAreaFeatureKind.Lake
+                        ? CitySurfaceKind.LakeShore
+                        : CitySurfaceKind.CemeteryGround;
+
+                Assert.That(
+                    layout.HasRoad(openAreaAccess.FrontageEdge),
+                    Is.True,
+                    feature.ToString());
+                Assert.That(
+                    layout.GetPathKind(openAreaAccess.FrontageEdge),
+                    Is.EqualTo(CityPathKind.Street),
+                    feature.ToString());
+                Assert.That(
+                    openAreaSurface.Kind,
+                    Is.EqualTo(expectedSurfaceKind));
+                Assert.That(openAreaSurface.IsWalkable, Is.True);
+                Assert.That(
+                    walkable.Contains(openAreaAccess.Center, 0.28f),
+                    Is.True,
+                    feature.ToString());
+                Assert.That(
+                    walkable.Contains(openAreaSurface.Center, 0.28f),
+                    Is.True,
+                    feature.ToString());
+            }
+
+            Assert.That(
+                layout.Surfaces.Any(surface =>
+                    surface.Feature == CityAreaFeatureKind.Lake &&
+                    surface.Kind == CitySurfaceKind.Water &&
+                    !surface.IsWalkable &&
+                    !walkable.Contains(surface.Center, 0.28f)),
+                Is.True);
             Assert.That(layout.IsRoadGraphConnected(), Is.True);
             Assert.DoesNotThrow(layout.ValidateOrThrow);
         }
@@ -294,7 +384,8 @@ namespace BarPromenade.Tests
         [Test]
         public void IrregularBlueprint_AddsLakeAndCemeteryWithoutFillingHole()
         {
-            CityBlueprint source = CityBlueprintCatalog.Default;
+            CityBlueprint source = CityBlueprintCatalog.CreateLegacy(
+                CityGenerationSettings.Default);
             Assert.That(
                 source.TryGetArea(
                     "industrial",

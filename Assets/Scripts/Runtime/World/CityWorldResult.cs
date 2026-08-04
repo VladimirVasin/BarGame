@@ -18,6 +18,8 @@ namespace BarPromenade
             RoadFencePlan fencePlan,
             GameObject parkRoot,
             GameObject districtPointOfInterestRoot,
+            CityOpenAreaDecorationPlan openAreaDecorationPlan,
+            GameObject openAreaDecorationRoot,
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
             Bounds bounds)
@@ -36,6 +38,13 @@ namespace BarPromenade
                     ? districtPointOfInterestRoot
                     : throw new ArgumentNullException(
                         nameof(districtPointOfInterestRoot));
+            OpenAreaDecorationPlan = openAreaDecorationPlan ??
+                throw new ArgumentNullException(
+                    nameof(openAreaDecorationPlan));
+            OpenAreaDecorationRoot = openAreaDecorationRoot != null
+                ? openAreaDecorationRoot
+                : throw new ArgumentNullException(
+                    nameof(openAreaDecorationRoot));
             DecorationPlan = decorationPlan ??
                 throw new ArgumentNullException(nameof(decorationPlan));
             DecorationRoot = decorationRoot != null
@@ -60,6 +69,8 @@ namespace BarPromenade
         public RoadFencePlan FencePlan { get; }
         public GameObject ParkRoot { get; }
         public GameObject DistrictPointOfInterestRoot { get; }
+        public CityOpenAreaDecorationPlan OpenAreaDecorationPlan { get; }
+        public GameObject OpenAreaDecorationRoot { get; }
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public Bounds Bounds { get; }

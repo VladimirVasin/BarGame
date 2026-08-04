@@ -23,10 +23,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Anchored coastal sparse city:** The default blueprint keeps a
   connected `12 x 12` road-and-lot core with four urban areas and a fixed
   central `4 x 4` park, then adds a full-width walkable northern beach and a
-  continuous non-walkable water row. Roads, ground, navigation and map drawing
-  consume only active cells, so connected holes and non-rectangular outlines
-  remain real voids. Lake and Cemetery are optional non-urban profiles using
-  the same surface/access contract; bespoke props are deferred.
+  continuous non-walkable water row. The playable default also extends east
+  with a `4 x 4` lake (walkable shore around blocked water) and a `3 x 2`
+  cemetery; both use the shared open-area street-access contract and own
+  deterministic runtime-composed landmarks. Roads, ground, navigation and map
+  drawing consume only active cells, so connected holes and non-rectangular
+  outlines remain real voids.
 - **Accepted — Graph-separated accessible bars:** Buildable lots get street
   frontage and bar return points are validated against it. The default four
   bars occupy different urban districts and every pair is separated by at

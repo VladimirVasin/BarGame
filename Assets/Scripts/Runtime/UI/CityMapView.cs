@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -10,6 +11,9 @@ namespace BarPromenade
         private const int PointOfInterestHoverPriority = 10;
         private const int BarHoverPriority = 20;
         private const int LandmarkHoverPriority = 30;
+        private const float MinimumMapCellPixels = 22f;
+        private const float KeyboardPanSpeed = 116f;
+        private const float MouseWheelStep = 18f;
 
         private readonly struct MapProjection
         {
@@ -130,8 +134,16 @@ namespace BarPromenade
 
         private readonly List<MapHoverTarget> hoverTargets =
             new List<MapHoverTarget>(160);
+        private readonly CityMapViewport mapViewport =
+            new CityMapViewport();
 
         private CityMapController controller;
+        private bool wasOpen;
+        private bool isPointerPanning;
+        private int pointerPanButton = -1;
+        private Vector2 previousPanPointer;
+        private Vector2 hoverCoordinateOffset;
+        private Rect hoverClipRect;
         private GUIStyle titleStyle;
         private GUIStyle subtitleStyle;
         private GUIStyle centeredStyle;
@@ -150,6 +162,25 @@ namespace BarPromenade
             controller = mapController;
         }
 
+        private void Update()
+        {
+            if (controller == null || !controller.IsOpen)
+            {
+                return;
+            }
+
+            Vector2 panInput = ReadPanInput();
+            if (panInput.sqrMagnitude <= 0.0001f)
+            {
+                return;
+            }
+
+            mapViewport.ScrollBy(
+                panInput.normalized *
+                KeyboardPanSpeed *
+                Time.unscaledDeltaTime);
+        }
+
         private void OnGUI()
         {
             if (controller == null || !controller.IsInitialized)
@@ -161,6 +192,9 @@ namespace BarPromenade
             GUI.depth = -90;
             if (!controller.IsOpen)
             {
+                wasOpen = false;
+                isPointerPanning = false;
+                pointerPanButton = -1;
                 return;
             }
 
@@ -221,12 +255,45 @@ namespace BarPromenade
                     routePanelWidth,
                     content.height);
 
-                MapProjection projection = CreateProjection(mapArea);
+                mapViewport.Configure(
+                    controller.Layout.MapWorldXZBounds,
+                    controller.Layout.NodeSpacing,
+                    mapArea.size,
+                    MinimumMapCellPixels);
+                if (!wasOpen)
+                {
+                    mapViewport.CenterOnWorld(
+                        controller.PlayerWorldPosition,
+                        controller.Layout.MapWorldXZBounds);
+                    wasOpen = true;
+                }
+
+                HandlePointerScrolling(mapArea, logicalPointer);
                 hoverTargets.Clear();
-                DrawMap(projection);
+                hoverCoordinateOffset = mapArea.position;
+                hoverClipRect = mapArea;
+                DrawSolidRect(mapArea, MapVoid);
+                GUI.BeginGroup(mapArea);
+                try
+                {
+                    MapProjection projection = CreateProjection(
+                        mapViewport.ContentRect);
+                    DrawMap(projection);
+                }
+                finally
+                {
+                    GUI.EndGroup();
+                    hoverCoordinateOffset = Vector2.zero;
+                }
+
+                RetroUiTheme.StrokeRect(
+                    mapArea,
+                    1f,
+                    RetroUiTheme.BorderMuted);
+                DrawScrollIndicators(mapArea);
                 DrawRoutePanel(routePanel);
                 DrawHoverTooltip(
-                    projection.ScreenRect,
+                    mapArea,
                     logicalPointer);
             }
             finally
@@ -254,6 +321,153 @@ namespace BarPromenade
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
+        }
+
+        private void HandlePointerScrolling(
+            Rect mapBounds,
+            Vector2 logicalPointer)
+        {
+            Event current = Event.current;
+            if (isPointerPanning)
+            {
+                if (current.type == EventType.MouseDrag &&
+                    current.button == pointerPanButton)
+                {
+                    mapViewport.ScrollBy(
+                        previousPanPointer - logicalPointer);
+                    previousPanPointer = logicalPointer;
+                    current.Use();
+                    return;
+                }
+
+                if (current.type == EventType.MouseUp &&
+                    current.button == pointerPanButton)
+                {
+                    isPointerPanning = false;
+                    pointerPanButton = -1;
+                    current.Use();
+                    return;
+                }
+            }
+
+            if (!mapBounds.Contains(logicalPointer))
+            {
+                return;
+            }
+
+            if (current.type == EventType.MouseDown &&
+                (current.button == 1 || current.button == 2) &&
+                (mapViewport.CanScrollHorizontal ||
+                 mapViewport.CanScrollVertical))
+            {
+                isPointerPanning = true;
+                pointerPanButton = current.button;
+                previousPanPointer = logicalPointer;
+                current.Use();
+                return;
+            }
+
+            if (current.type != EventType.ScrollWheel)
+            {
+                return;
+            }
+
+            Vector2 wheel = current.delta * MouseWheelStep;
+            Vector2 scrollDelta = Vector2.zero;
+            if (current.shift && mapViewport.CanScrollHorizontal)
+            {
+                scrollDelta.x = Mathf.Abs(wheel.x) > 0.01f
+                    ? wheel.x
+                    : wheel.y;
+            }
+            else if (mapViewport.CanScrollVertical)
+            {
+                scrollDelta.y = wheel.y;
+                if (mapViewport.CanScrollHorizontal &&
+                    Mathf.Abs(wheel.x) > 0.01f)
+                {
+                    scrollDelta.x = wheel.x;
+                }
+            }
+            else if (mapViewport.CanScrollHorizontal)
+            {
+                scrollDelta.x = Mathf.Abs(wheel.x) > 0.01f
+                    ? wheel.x
+                    : wheel.y;
+            }
+
+            if (mapViewport.ScrollBy(scrollDelta))
+            {
+                current.Use();
+            }
+        }
+
+        private void DrawScrollIndicators(Rect mapBounds)
+        {
+            const float edgeInset = 4f;
+            const float trackThickness = 4f;
+            const float otherAxisClearance = 7f;
+            Color trackColor = RetroUiTheme.WithAlpha(
+                RetroUiTheme.Ink,
+                0.72f);
+            Color thumbColor = RetroUiTheme.AccentPale;
+
+            if (mapViewport.CanScrollHorizontal)
+            {
+                float rightInset = mapViewport.CanScrollVertical
+                    ? edgeInset + otherAxisClearance
+                    : edgeInset;
+                Rect track = new Rect(
+                    mapBounds.x + edgeInset,
+                    mapBounds.yMax - edgeInset - trackThickness,
+                    mapBounds.width - edgeInset - rightInset,
+                    trackThickness);
+                DrawSolidRect(track, trackColor);
+                DrawSolidRect(
+                    mapViewport.CreateHorizontalThumb(track),
+                    thumbColor);
+            }
+
+            if (mapViewport.CanScrollVertical)
+            {
+                float bottomInset = mapViewport.CanScrollHorizontal
+                    ? edgeInset + otherAxisClearance
+                    : edgeInset;
+                Rect track = new Rect(
+                    mapBounds.xMax - edgeInset - trackThickness,
+                    mapBounds.y + edgeInset,
+                    trackThickness,
+                    mapBounds.height - edgeInset - bottomInset);
+                DrawSolidRect(track, trackColor);
+                DrawSolidRect(
+                    mapViewport.CreateVerticalThumb(track),
+                    thumbColor);
+            }
+        }
+
+        private static Vector2 ReadPanInput()
+        {
+            Vector2 input = Vector2.zero;
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                input.x += keyboard.dKey.isPressed ? 1f : 0f;
+                input.x -= keyboard.aKey.isPressed ? 1f : 0f;
+                input.y += keyboard.sKey.isPressed ? 1f : 0f;
+                input.y -= keyboard.wKey.isPressed ? 1f : 0f;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            if (gamepad != null)
+            {
+                Vector2 stick = gamepad.rightStick.ReadValue();
+                if (stick.sqrMagnitude >= 0.04f)
+                {
+                    input += new Vector2(stick.x, -stick.y);
+                }
+            }
+
+            return Vector2.ClampMagnitude(input, 1f);
         }
 
         private void DrawSurfaces(MapProjection projection)
@@ -777,12 +991,37 @@ namespace BarPromenade
                 return;
             }
 
+            Rect globalHitbox = new Rect(
+                hitbox.position + hoverCoordinateOffset,
+                hitbox.size);
+            Rect clippedHitbox = Intersect(
+                globalHitbox,
+                hoverClipRect);
+            if (clippedHitbox.width <= 0f ||
+                clippedHitbox.height <= 0f)
+            {
+                return;
+            }
+
             hoverTargets.Add(
                 new MapHoverTarget(
-                    hitbox,
-                    anchor,
+                    clippedHitbox,
+                    anchor + hoverCoordinateOffset,
                     label,
                     priority));
+        }
+
+        private static Rect Intersect(Rect left, Rect right)
+        {
+            float xMin = Mathf.Max(left.xMin, right.xMin);
+            float yMin = Mathf.Max(left.yMin, right.yMin);
+            float xMax = Mathf.Min(left.xMax, right.xMax);
+            float yMax = Mathf.Min(left.yMax, right.yMax);
+            return Rect.MinMaxRect(
+                xMin,
+                yMin,
+                Mathf.Max(xMin, xMax),
+                Mathf.Max(yMin, yMax));
         }
 
         private void DrawHoverTooltip(
@@ -1295,7 +1534,7 @@ namespace BarPromenade
             }
         }
 
-        private MapProjection CreateProjection(Rect available)
+        private MapProjection CreateProjection(Rect mapRect)
         {
             CityLayout layout = controller.Layout;
             Rect bounds = layout.MapWorldXZBounds;
@@ -1303,32 +1542,6 @@ namespace BarPromenade
             float maximumX = bounds.xMax;
             float minimumZ = bounds.yMin;
             float maximumZ = bounds.yMax;
-            float worldWidth = maximumX - minimumX;
-            float worldHeight = maximumZ - minimumZ;
-            float worldAspect =
-                worldWidth / Mathf.Max(0.01f, worldHeight);
-            float screenAspect =
-                available.width / Mathf.Max(0.01f, available.height);
-
-            Rect mapRect;
-            if (screenAspect > worldAspect)
-            {
-                float width = available.height * worldAspect;
-                mapRect = new Rect(
-                    available.center.x - width * 0.5f,
-                    available.y,
-                    width,
-                    available.height);
-            }
-            else
-            {
-                float height = available.width / worldAspect;
-                mapRect = new Rect(
-                    available.x,
-                    available.center.y - height * 0.5f,
-                    available.width,
-                    height);
-            }
 
             return new MapProjection(
                 mapRect,

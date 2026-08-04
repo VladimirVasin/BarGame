@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-08-04 — Eastern lake, cemetery and scrollable city map
+
+- The playable city now includes a reachable lake on its north-eastern edge
+  and a reachable cemetery on its south-eastern edge. The lake has a walkable
+  shore around blocked water; both areas have recognizable physical landmarks
+  and dedicated openings from the existing street network.
+- The city map keeps its details readable when the expanded territory exceeds
+  the frame. It can pan horizontally and vertically with WASD, the right stick,
+  mouse wheel gestures or middle/right-button dragging, and shows only the
+  scroll indicators that are needed.
+
 ### 2026-08-04 — City-map test teleport
 
 - The City F9 debug window can now enable test teleportation. While enabled,
@@ -20,8 +31,8 @@
   current position.
 - The city constructor can reuse built-district styles and includes generic
   lake and cemetery area profiles with suitable ground/water presentation and
-  street access. These optional areas are available to authored layouts but are
-  not added to the default city yet.
+  street access. They were introduced here as authored-layout foundations and
+  are now also used by the playable default city.
 - The selected city layout is stored with the session, so the City scene and
   the exterior seen from Home always use the same blueprint and seed.
 

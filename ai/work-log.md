@@ -2,6 +2,33 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Playable lake, cemetery and scrollable city map
+
+- Extended the playable `default-coastal` blueprint east without changing its
+  `12 x 12` road/lot core: a `4 x 4` Lake now surrounds `2 x 2` blocked water
+  with walkable shore, and a `3 x 2` walkable Cemetery occupies the
+  south-eastern edge. Both receive deterministic street approaches; the
+  northern beach/water pair now spans the complete `16`-cell city width.
+- Added one bounded data-first open-area decoration plan. Lake builds a stone
+  water edge, reeds, rocks and a weathered boat; Cemetery builds a clear entry
+  path, gated iron perimeter, ordered graves and sparse dark trees. Blocking
+  geometry is batched by eight shared styles in `48 m` chunks, stays out of
+  water and preserves each canonical access corridor.
+- Made the city-map viewport retain a readable `22 px/cell` logical scale,
+  clip overflow and pan independently on both axes. It focuses on the player
+  when opened and supports WASD, right stick, wheel/Shift+wheel and
+  middle/right-button dragging with per-axis scroll indicators.
+
+Verification:
+
+- `BarPromenade.EditModeTests.csproj` compiled the affected Runtime and
+  EditMode test assemblies successfully with `0` warnings and `0` errors,
+  including the new viewport and open-area planner sources.
+- Focused Unity EditMode verification passed `4/4`: the expanded coastal
+  blueprint, deterministic Lake/Cemetery decoration plan and both map viewport
+  overflow/clamping contracts.
+- `git diff --check` passed. Full suites and a player build were not run.
+
 ## 2026-08-04 — F9 city-map test teleport
 
 - Added a City-only test-teleport toggle to the existing F9 debug window while

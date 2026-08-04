@@ -159,10 +159,11 @@ The vertical slice contains:
   beach has a deterministic street approach and remains walkable to the water
   line, while the continuous northern water row is rendered and mapped but is
   excluded from player navigation and night-fixture placement;
-- reusable Lake and Cemetery non-urban profiles for custom blueprints. The
-  generic surface planner maps lake shore/water and cemetery ground, requires
-  one street-linked open-area approach and exposes the same data to world,
-  fence, navigation and map consumers; bespoke props are not part of this MVP;
+- reusable Lake and Cemetery non-urban profiles that are now present on the
+  default city's eastern edge. The `4 x 4` lake has a walkable shore around a
+  blocked `2 x 2` water center, while the `3 x 2` cemetery is walkable ground;
+  each requires one street-linked open-area approach and exposes the same data
+  to world, fence, navigation, map and deterministic landmark consumers;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24
@@ -200,8 +201,8 @@ The vertical slice contains:
   removing the full fence interval from every public-place side that meets a
   street;
 - 144 land-use lots in the default road-grid core, including 16 park cells and
-  4 open district points of interest, plus 24 northern beach/water surface
-  cells. The core still contains exactly 4 reachable bars in four different
+  4 open district points of interest, plus 32 northern beach/water surface
+  cells, 16 lake cells and 6 cemetery cells. The core still contains exactly 4 reachable bars in four different
   stable urban area IDs and one non-bar player home beside one bar street,
   plus exactly one ordinary
   street-front supermarket. Its deterministic selection prefers Residential,
@@ -302,7 +303,10 @@ The vertical slice contains:
   becomes selectable, the side panel asks for an explicit confirmation and a
   confirmed target moves the hero to that lot's street-front return point or
   its nearest generated route when no frontage edge exists.
-  Bar visits, ordinary ordered route editing and deterministic shortest paths
+  Keep at least `22` logical pixels per map cell; clip overflowing content and
+  pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
+  or middle/right-button dragging while drawing scroll indicators only for
+  overflowing axes. Bar visits, ordinary ordered route editing and deterministic shortest paths
   remain unchanged outside this debug mode and are constrained to the generated
   road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad

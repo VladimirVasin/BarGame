@@ -102,8 +102,10 @@ Assets/
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
-        CityBlueprintCatalog.cs  default coastal and legacy blueprints + Lake/Cemetery profiles
+        CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
         CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
+        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery landmark descriptors
+        CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
@@ -227,6 +229,8 @@ Assets/
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, atlas portrait and 3D models
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
+      CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
+      CityMapViewportTests.cs             independent overflow axes, focus and clamping
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
       CatFeedingAnimationAssetTests.cs    player/cat atlas import and binary-alpha contract
@@ -299,7 +303,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> sparse active-cell topology
                                           -> fixed centered park
                                           -> north-edge beach + water
-                                          -> optional Lake/Cemetery areas
+                                          -> default eastern Lake/Cemetery areas
                                           -> CityLayoutGenerator -> validated CityLayout
                                            -> 12x12 default road/lot core
                                            -> four UrbanBuilt areas + central park
@@ -325,6 +329,8 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                               -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
+                                                -> clipped readable viewport
+                                                -> independent X/Y pan when overflowing
                                            -> RoadFencePlanner
                                               -> bar/home/supermarket/park openings
                                              -> full public-place sides remain open
