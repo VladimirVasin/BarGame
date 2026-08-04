@@ -267,6 +267,7 @@ Assets/
 ArtSource/
   Player/
     PlayerDirectionalTurntable.png  locked 4x2 source turntable
+    Blender/                    experimental modular 3D authoring notes/output
     BedSleep/                    64 source frames plus keyed/generated sheets
     BalconySmoking/              generated/keyed art + exact-idle direct endpoints
     CatFeeding/                  raw/keyed 8x8 player source + packing contract
@@ -274,6 +275,7 @@ ArtSource/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
   build-player-puppet-atlas.py      deterministic reference/layers/blink build
+  build-player-3d-model.py          Blender 4+/5 modular low-poly authoring build
   extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
   build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
   extract-player-balcony-smoking-frames.py  align keyed art + exact-idle endpoints

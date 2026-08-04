@@ -2,6 +2,33 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Experimental modular Blender hero
+
+- Added a Blender-native low-poly generator for the locked player design. It
+  derives the `1.75 m` proportions and primary joint heights from the current
+  puppet, keeps the weary head-heavy silhouette and preserves the burgundy
+  overshirt, charcoal shirt, navy trousers, heavy boots, left-forearm bandage,
+  right-shoulder patch and diagonal strap without mirroring.
+- Kept 16 core anatomical meshes plus hair, clothes, facial pieces and
+  signature details independently editable. All 3D objects retain unique mesh
+  datablocks, rigid armature weights and an explicit mapping to the existing
+  nine `PlayerPuppetPart` groups; preview objects cannot enter FBX/GLB export.
+- Documented background generation, relaxed/A-pose, height/seed controls,
+  optional preview/manifest/FBX/GLB outputs and the anatomical side convention.
+  The experiment remains outside `Assets` and is not integrated into runtime.
+
+Verification:
+
+- Blender `5.0.1` generated, self-validated, rendered and saved the relaxed
+  model: `73` separate mesh objects, `1,534` triangles, ground contact at
+  `Z=0`, exact `1.750 m` hair-tip height, outward face winding and correct
+  bandage/patch sides. Temporary selection-only GLB and FBX exports also
+  completed successfully; a `1.60 m` A-pose/alternate-seed run reached its
+  requested height exactly under the same validator.
+- The generated validation `.blend`, PNG and JSON stayed under ignored
+  `TestResults`; Unity tests and a player build were not run for this isolated
+  authoring-tool change.
+
 ## 2026-08-04 — Playable lake, cemetery and scrollable city map
 
 - Extended the playable `default-coastal` blueprint east without changing its

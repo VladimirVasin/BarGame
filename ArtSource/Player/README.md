@@ -23,3 +23,16 @@ body-expression rows: neutral, half blink, closed blink, watchful and tense.
 It asserts that all nine neutral layers composite exactly to the corrected
 reference frame and that every facial edit stays on its direction-specific
 pixel whitelist while all rear views remain unchanged.
+
+An experimental, non-runtime 3D interpretation can be generated with Blender:
+
+```powershell
+& 'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe' `
+  --background --factory-startup `
+  --python tools\build-player-3d-model.py -- `
+  --output ArtSource\Player\Blender\PlayerCharacter3D.blend
+```
+
+It preserves independently rigged anatomical, clothing and signature-detail
+meshes. See `Blender/README.md` for the hierarchy, side convention, optional
+preview/manifest/export arguments and built-in validation.

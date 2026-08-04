@@ -78,10 +78,34 @@ disabled; no tenth renderer is introduced.
 A future frame-animation pass should preserve the column/layer order and pivot
 positions while adding consistent idle/walk frames.
 
+## Experimental 3D authoring model
+
+- `tools/build-player-3d-model.py` can construct a standalone low-poly Blender
+  interpretation of this same locked design. It is an authoring experiment and
+  does not replace or feed the current Unity sprite runtime.
+- The canonical visible height remains `1.75 m`; shoulder, elbow, hip and knee
+  heights derive from the current front puppet pivots. Blender uses Z-up, the
+  character faces `-Y`, and physical left is `+X` so the bandage remains `.L`
+  while the ochre shoulder patch remains `.R` without mirroring.
+- Head, neck, torso, pelvis, upper/lower limbs, hands and feet are independent
+  rigidly weighted mesh objects. Hair, clothes, facial pieces, bandage wraps,
+  patch, strap, pockets, cuffs and soles also remain separate. Every granular
+  object maps back to one of the existing nine puppet parts through
+  semantic `bp_sprite_part` metadata; this is not a per-view atlas import map,
+  because the 2D builder retains its stable image-space slots while Blender
+  `.L`/`.R` is always anatomical.
+- The generated armature, closed/outward-wound mesh checks, unique datablocks,
+  weights, exact requested height, triangle budget and signature asymmetry
+  validate inside Blender before the `.blend` or optional FBX/GLB is written.
+  Authoring instructions live in `ArtSource/Player/Blender/README.md`.
+
 ## Source and rebuild
 
 - Locked source: `ArtSource/Player/PlayerDirectionalTurntable.png`.
 - Deterministic builder: `python tools/build-player-puppet-atlas.py`.
+- Experimental 3D builder: run `tools/build-player-3d-model.py` through
+  Blender; it is deterministic for a given height, pose and hair seed but its
+  `.blend` bytes are not a locked runtime artifact.
 - The builder restores only pixels lost from the head and lower arms, derives
   the nine layers and five body-expression rows, and fails unless the neutral
   composites, exact facial edit whitelists, rear views, alpha and asymmetry
