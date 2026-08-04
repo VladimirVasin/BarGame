@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-04 — The 3D hero now faces his movement
+
+- Corrected the imported model orientation so the hero walks face-first in
+  City and every interior instead of appearing to move backwards. Physical
+  left/right details and all existing 3D animations remain on their intended
+  sides.
+
 ### 2026-08-04 — The hero is now fully 3D
 
 - The main character is now one continuous modular low-poly 3D model in the

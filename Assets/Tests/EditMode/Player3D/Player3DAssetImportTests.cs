@@ -140,6 +140,7 @@ namespace BarPromenade.Tests
                 AssertMeshBindings(registry, material);
                 AssertAnatomicalParts(registry);
                 AssertRegistryAnimations(registry, manifest);
+                AssertVisualFacing(registry);
                 AssertSignatureSides(registry);
             }
             finally
@@ -294,14 +295,41 @@ namespace BarPromenade.Tests
         {
             Renderer bandage = FindRenderer(registry, "CLO_Bandage.L");
             Renderer patch = FindRenderer(registry, "ACC_ShoulderPatch.R");
+            Vector3 forward = registry.transform.TransformDirection(
+                registry.Metrics.LocalForward).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            Vector3 center = registry.Anchors.Chest.position;
             Assert.That(
-                bandage.bounds.center.x,
-                Is.GreaterThan(0f),
-                "Bandage must remain on anatomical left (+X).");
-            Assert.That(
-                patch.bounds.center.x,
+                Vector3.Dot(bandage.bounds.center - center, right),
                 Is.LessThan(0f),
-                "Shoulder patch must remain on anatomical right (-X).");
+                "Bandage must remain on the character's physical left.");
+            Assert.That(
+                Vector3.Dot(patch.bounds.center - center, right),
+                Is.GreaterThan(0f),
+                "Shoulder patch must remain on the character's physical right.");
+        }
+
+        private static void AssertVisualFacing(
+            Player3DAssetRegistry registry)
+        {
+            Renderer head = FindRenderer(registry, "GEO_Head");
+            Renderer nose = FindRenderer(registry, "GEO_Nose");
+            Vector3 headToNose = Vector3.ProjectOnPlane(
+                nose.bounds.center - head.bounds.center,
+                Vector3.up);
+            Assert.That(
+                headToNose.sqrMagnitude,
+                Is.GreaterThan(0.0001f),
+                "The face marker must remain distinct from the head center.");
+
+            Vector3 declaredForward =
+                registry.transform.TransformDirection(
+                    registry.Metrics.LocalForward).normalized;
+            Assert.That(
+                Vector3.Dot(headToNose.normalized, declaredForward),
+                Is.GreaterThan(0.95f),
+                "The visible face must point along the runtime player's " +
+                "declared forward direction.");
         }
 
         private static Renderer FindRenderer(

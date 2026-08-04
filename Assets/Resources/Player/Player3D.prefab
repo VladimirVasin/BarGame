@@ -957,13 +957,13 @@ MonoBehaviour:
   metrics:
     canonicalHeight: 1.75
     localBounds:
-      m_Center: {x: 0.000000059604645, y: 0.875, z: -0.041450515}
-      m_Extent: {x: 0.77390814, y: 0.875, z: 0.18854944}
+      m_Center: {x: -0.00000011920929, y: 0.875, z: 0.04145053}
+      m_Extent: {x: 0.77390814, y: 0.875, z: 0.18854946}
     localForward: {x: 0, y: 0, z: 1}
   sourceGeneratorVersion: 2.0.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: fa00260c7f1f07b52242c42dd5328c00
+  buildSignature: d7c89d8d7ad6518f07a738e9e5dde6c2
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:
@@ -995,7 +995,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: -0.00000004371139
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
       propertyPath: m_LocalRotation.x
@@ -1003,7 +1003,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
       propertyPath: m_LocalRotation.z

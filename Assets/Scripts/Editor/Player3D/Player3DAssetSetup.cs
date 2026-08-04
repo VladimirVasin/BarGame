@@ -519,7 +519,12 @@ namespace BarPromenade.Editor
                 model.name = "Model";
                 model.transform.SetParent(prefabRoot.transform, false);
                 model.transform.localPosition = Vector3.zero;
-                model.transform.localRotation = Quaternion.identity;
+                // Blender authors the character facing -Y. After the FBX
+                // axis conversion that anatomical front is Unity-local -Z,
+                // so adapt the imported model once at the prefab boundary.
+                // The gameplay/prefab contract remains conventional +Z.
+                model.transform.localRotation =
+                    Quaternion.Euler(0f, 180f, 0f);
                 model.transform.localScale = Vector3.one;
 
                 Dictionary<string, Renderer> renderersByName =

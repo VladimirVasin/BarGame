@@ -2,6 +2,27 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Correct 3D hero facing
+
+- Rotated the imported FBX model by `180°` at the generated runtime-prefab
+  boundary, so the visible anatomical front now follows the authoritative
+  player root and its actual planar movement. `PlayerMotor`, camera-relative
+  controls, in-place clips and root motion remain unchanged.
+- Made the player asset regression compare the head-to-nose direction against
+  the prefab's declared forward vector and validate the bandage/shoulder patch
+  on physical left/right relative to that direction. The visual-capture helper
+  now frames the prefab-space forward direction instead of applying the model
+  adapter twice.
+
+Verification:
+
+- Unity rebuilt `Resources/Player/Player3D.prefab` successfully and compiled
+  Runtime, Editor, EditMode and PlayMode assemblies without errors.
+- Focused EditMode verification passed `1/1`:
+  `Player3DAssetImportTests.ProductionModel_HasDeterministicRuntimePrefabContract`.
+- `git diff --check` passed. In fast mode, no complete Unity suite, player
+  build or startup smoke was run.
+
 ## 2026-08-04 — Complete modular 3D hero migration
 
 - Promoted the Blender hero experiment into the production player asset path.

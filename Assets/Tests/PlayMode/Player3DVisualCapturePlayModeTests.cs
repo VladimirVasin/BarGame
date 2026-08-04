@@ -238,7 +238,7 @@ namespace BarPromenade.Tests.PlayMode
             Player3DAssetRegistry registry,
             Bounds bounds)
         {
-            Vector3 forward = registry.ModelRoot.TransformDirection(
+            Vector3 forward = registry.transform.TransformDirection(
                 registry.Metrics.LocalForward).normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
             float horizontalExtent = Mathf.Max(
