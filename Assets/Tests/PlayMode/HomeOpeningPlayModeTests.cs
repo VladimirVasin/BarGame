@@ -287,8 +287,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False);
             Assert.That(home.IntoxicationHud.Visible, Is.False);
             Assert.That(home.InteractionPrompt.PromptKey, Is.Empty);
-            Assert.That(home.Player.Shadow.enabled, Is.False);
-            Assert.That(home.Player.ContactShadow.enabled, Is.False);
+            AssertWorldPresentationEnabled(home.Player);
             Assert.That(home.AlarmClock.IsRinging, Is.False);
             Assert.That(
                 home.CameraFollow.FixedBaseFieldOfView,
@@ -630,8 +629,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.Player.Interactor.InputEnabled,
                 Is.True);
             Assert.That(home.IntoxicationHud.Visible, Is.True);
-            Assert.That(home.Player.Shadow.enabled, Is.True);
-            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            AssertWorldPresentationEnabled(home.Player);
             Assert.That(home.CameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(
                 home.CameraFollow.CinematicMotionEnabled,
@@ -994,6 +992,26 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     HomeAlarmClock.DisplaySegmentCount +
                     HomeAlarmClock.DisplayPunctuationCount));
+        }
+
+        private static void AssertWorldPresentationEnabled(
+            PlayerRuntime player)
+        {
+            Assert.That(player.Visual.Renderers, Is.Not.Empty);
+            for (int index = 0;
+                 index < player.Visual.Renderers.Count;
+                 index++)
+            {
+                Assert.That(
+                    player.Visual.Renderers[index].enabled,
+                    Is.True,
+                    $"World player renderer {index} was hidden.");
+            }
+
+            Assert.That(player.ContactShadow.enabled, Is.True);
+            Assert.That(
+                player.PresentationVisibility.IsHidden,
+                Is.False);
         }
 
         private static IEnumerator WaitUntil(

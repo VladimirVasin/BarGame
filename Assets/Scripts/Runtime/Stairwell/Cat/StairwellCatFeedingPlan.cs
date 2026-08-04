@@ -105,17 +105,14 @@ namespace BarPromenade
             Vector3 exitFacing = CreateFacingDirection(
                 exitRoot,
                 cat.VisualLocalPosition);
-            float hipHeight =
-                (PlayerAnimatedInteractionController
-                    .HipPivotYPixels -
-                 PlayerSpriteRig.FeetPivotPixels) /
-                PlayerAnimatedInteractionController
-                    .PixelsPerUnit +
-                UprightVisualOffset;
             Vector3 entryHip =
-                entryRoot + (Vector3.up * hipHeight);
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    entryRoot,
+                    UprightVisualOffset);
             Vector3 exitHip =
-                exitRoot + (Vector3.up * hipHeight);
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    exitRoot,
+                    UprightVisualOffset);
             Vector3 actionHip = entryHip;
             return new StairwellCatFeedingPlan(
                 entryRoot,

@@ -14,9 +14,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// One exact physical-root and upright hip-reference handoff pose. The hip
-    /// reference is resolved into the atlas billboard plane at presentation.
-    /// Entry and exit stay separate so their locations and facings can evolve
+    /// One exact physical-root and pelvis-reference handoff pose. Entry and
+    /// exit stay separate so their locations and facings can evolve
     /// independently.
     /// </summary>
     public readonly struct PlayerAnimatedInteractionPose
@@ -111,32 +110,34 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Describes the contiguous enter, loop and exit ranges in one atlas.
-    /// Frame indices are global and start at zero.
+    /// Describes the three required production clips and their deterministic
+    /// logical sampling ranges. Frame indices remain as stable gameplay timing
+    /// markers and start at zero; no texture atlas is involved.
     /// </summary>
     public sealed class PlayerAnimatedInteractionDefinition
     {
         public PlayerAnimatedInteractionDefinition(
-            string textureResourcePath,
+            string enterClipName,
+            string loopClipName,
+            string exitClipName,
             int enterFrameCount = 24,
             float enterFramesPerSecond = 12f,
             int loopFrameCount = 16,
             float loopFramesPerSecond = 8f,
             int exitFrameCount = 24,
             float exitFramesPerSecond = 12f,
-            bool renderAboveSceneDepth = false,
             IReadOnlyList<float>
-                loopFrameExtraHoldSeconds = null,
-            bool textureFlipX = true,
-            float visualCrossfadeDurationSeconds = 0f,
-            bool alignBillboardToCameraPlane = true)
+                loopFrameExtraHoldSeconds = null)
         {
-            if (string.IsNullOrWhiteSpace(textureResourcePath))
-            {
-                throw new ArgumentException(
-                    "A texture Resources path is required.",
-                    nameof(textureResourcePath));
-            }
+            EnterClipName = ValidateClipName(
+                enterClipName,
+                nameof(enterClipName));
+            LoopClipName = ValidateClipName(
+                loopClipName,
+                nameof(loopClipName));
+            ExitClipName = ValidateClipName(
+                exitClipName,
+                nameof(exitClipName));
 
             ValidateRange(
                 enterFrameCount,
@@ -157,31 +158,12 @@ namespace BarPromenade
                 CopyAndValidateLoopFrameHolds(
                     loopFrameExtraHoldSeconds,
                     loopFrameCount);
-            if (float.IsNaN(visualCrossfadeDurationSeconds) ||
-                float.IsInfinity(visualCrossfadeDurationSeconds) ||
-                visualCrossfadeDurationSeconds < 0f)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(visualCrossfadeDurationSeconds),
-                    visualCrossfadeDurationSeconds,
-                    "Visual crossfade duration must be finite and " +
-                    "non-negative.");
-            }
-
-            TextureResourcePath = textureResourcePath.Trim();
             EnterFrameCount = enterFrameCount;
             EnterFramesPerSecond = enterFramesPerSecond;
             LoopFrameCount = loopFrameCount;
             LoopFramesPerSecond = loopFramesPerSecond;
             ExitFrameCount = exitFrameCount;
             ExitFramesPerSecond = exitFramesPerSecond;
-            RenderAboveSceneDepth =
-                renderAboveSceneDepth;
-            TextureFlipX = textureFlipX;
-            VisualCrossfadeDurationSeconds =
-                visualCrossfadeDurationSeconds;
-            AlignBillboardToCameraPlane =
-                alignBillboardToCameraPlane;
             LoopDurationSeconds =
                 loopFrameCount /
                 (double)loopFramesPerSecond +
@@ -192,17 +174,15 @@ namespace BarPromenade
                 exitFrameCount);
         }
 
-        public string TextureResourcePath { get; }
         public int EnterFrameCount { get; }
         public float EnterFramesPerSecond { get; }
         public int LoopFrameCount { get; }
         public float LoopFramesPerSecond { get; }
         public int ExitFrameCount { get; }
         public float ExitFramesPerSecond { get; }
-        public bool RenderAboveSceneDepth { get; }
-        public bool TextureFlipX { get; }
-        public float VisualCrossfadeDurationSeconds { get; }
-        public bool AlignBillboardToCameraPlane { get; }
+        public string EnterClipName { get; }
+        public string LoopClipName { get; }
+        public string ExitClipName { get; }
         public double LoopDurationSeconds { get; }
         public int TotalFrameCount { get; }
         public int EnterStartFrame => 0;
@@ -210,23 +190,6 @@ namespace BarPromenade
         public int ExitStartFrame =>
             EnterFrameCount + LoopFrameCount;
         private readonly float[] loopFrameExtraHoldSeconds;
-
-        internal Vector3 ResolveHandoffHip(
-            Vector3 uprightHip,
-            Camera camera)
-        {
-            if (!AlignBillboardToCameraPlane || camera == null)
-            {
-                return uprightHip;
-            }
-
-            float feetToHip =
-                (PlayerAnimatedInteractionController.HipPivotYPixels -
-                 PlayerSpriteRig.FeetPivotPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit;
-            return uprightHip +
-                (camera.transform.up - Vector3.up) * feetToHip;
-        }
 
         public float GetLoopFrameExtraHoldSeconds(
             int localFrameIndex)
@@ -266,6 +229,20 @@ namespace BarPromenade
                     framesPerSecond,
                     "Frames per second must be finite and positive.");
             }
+        }
+
+        private static string ValidateClipName(
+            string clipName,
+            string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(clipName))
+            {
+                throw new ArgumentException(
+                    "A production Player 3D clip name is required.",
+                    parameterName);
+            }
+
+            return clipName.Trim();
         }
 
         private static float[] CopyAndValidateLoopFrameHolds(
@@ -333,8 +310,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Pure frame-rate-independent state for a three-range sprite sequence.
-    /// The loop persists until RequestExit succeeds.
+    /// Pure frame-rate-independent state for a three-range presentation
+    /// sequence. The loop persists until RequestExit succeeds.
     /// </summary>
     public sealed class PlayerAnimatedInteractionTimeline
     {
@@ -383,6 +360,10 @@ namespace BarPromenade
                 }
             }
         }
+        public float ClipProgress =>
+            Phase == PlayerAnimatedInteractionPhase.Looping
+                ? GetLoopClipProgress()
+                : PhaseProgress;
 
         public bool Begin()
         {
@@ -532,7 +513,6 @@ namespace BarPromenade
                 GetLocalFrameForDuration(
                     definition.ExitFrameCount,
                     duration);
-            exitEndpointPresented = FrameIndex == lastFrame;
         }
 
         private int GetLocalFrame(
@@ -590,6 +570,42 @@ namespace BarPromenade
             }
 
             return definition.LoopFrameCount - 1;
+        }
+
+        private float GetLoopClipProgress()
+        {
+            double cursor = 0d;
+            double baseFrameDuration =
+                1d / definition.LoopFramesPerSecond;
+            for (int frame = 0;
+                 frame < definition.LoopFrameCount;
+                 frame++)
+            {
+                double baseFrameEnd =
+                    cursor + baseFrameDuration;
+                if (phaseElapsedSeconds < baseFrameEnd)
+                {
+                    double local =
+                        (phaseElapsedSeconds - cursor) /
+                        baseFrameDuration;
+                    return Mathf.Clamp01(
+                        (float)((frame + local) /
+                                definition.LoopFrameCount));
+                }
+
+                double heldFrameEnd =
+                    baseFrameEnd +
+                    definition.GetLoopFrameExtraHoldSeconds(frame);
+                if (phaseElapsedSeconds < heldFrameEnd)
+                {
+                    return (frame + 1f) /
+                           definition.LoopFrameCount;
+                }
+
+                cursor = heldFrameEnd;
+            }
+
+            return 1f;
         }
 
         private static double GetDuration(

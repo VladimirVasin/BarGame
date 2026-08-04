@@ -185,7 +185,6 @@ namespace BarPromenade
     {
         private PlayerCameraFollow cameraFollow;
         private Transform target;
-        private BillboardSprite targetBillboard;
         private StairwellCameraShotSelector selector;
 
         public bool IsInitialized { get; private set; }
@@ -282,10 +281,6 @@ namespace BarPromenade
 
             cameraFollow = follow;
             target = cameraTarget;
-            targetBillboard =
-                cameraTarget.GetComponentInChildren<
-                    BillboardSprite>(true);
-            targetBillboard?.SetCameraPlaneAlignment(true);
             selector = nextSelector;
             ActiveShot = initialShot;
             IsInitialized = true;
@@ -316,7 +311,6 @@ namespace BarPromenade
                 return;
             }
 
-            targetBillboard?.SetCameraPlaneAlignment(true);
             RefreshSelection(true);
         }
 
@@ -366,7 +360,6 @@ namespace BarPromenade
                 shot.Position,
                 shot.Rotation,
                 shot.FieldOfView);
-            targetBillboard?.FaceCameraNow();
         }
 
         private void ReleaseCamera()
@@ -376,7 +369,6 @@ namespace BarPromenade
                 return;
             }
 
-            targetBillboard?.SetCameraPlaneAlignment(false);
             cameraFollow.ClearFixedPose();
         }
     }

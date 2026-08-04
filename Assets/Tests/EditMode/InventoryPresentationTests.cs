@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
@@ -40,24 +41,44 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void HeroPortrait_UsesFrontCropOfPlayerReferenceAtlas()
+        public void HeroPortrait_UsesDedicatedFull3DTexture()
         {
-            Texture2D atlas = Resources.Load<Texture2D>(
-                PlayerSpriteRig.ReferenceAtlasResourcePath);
+            Texture2D portrait = Resources.Load<Texture2D>(
+                InventoryIconLibrary.HeroPortraitResourcePath);
 
-            Assert.That(atlas, Is.Not.Null);
+            Assert.That(portrait, Is.Not.Null);
             Assert.That(
                 InventoryIconLibrary.GetHeroPortrait(),
-                Is.SameAs(atlas));
-            Assert.That(atlas.filterMode, Is.EqualTo(FilterMode.Point));
-            Rect crop = InventoryIconLibrary.HeroPortraitUv;
-            Assert.That(crop.xMin, Is.GreaterThanOrEqualTo(0f));
-            Assert.That(crop.yMin, Is.GreaterThanOrEqualTo(0f));
+                Is.SameAs(portrait));
+            Assert.That(portrait.width, Is.EqualTo(192));
+            Assert.That(portrait.height, Is.EqualTo(256));
             Assert.That(
-                crop.xMax,
-                Is.LessThanOrEqualTo(
-                    PlayerSpriteRig.FrameWidth / (float)atlas.width));
-            Assert.That(crop.yMax, Is.LessThanOrEqualTo(1f));
+                InventoryIconLibrary.HeroPortraitUv,
+                Is.EqualTo(new Rect(0f, 0f, 1f, 1f)));
+            Assert.That(portrait.filterMode, Is.EqualTo(FilterMode.Point));
+            Assert.That(portrait.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+
+            string assetPath = AssetDatabase.GetAssetPath(portrait);
+            Assert.That(
+                assetPath,
+                Is.EqualTo(
+                    "Assets/Resources/Player/Player3DPortrait.png"));
+            TextureImporter importer =
+                AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            Assert.That(importer, Is.Not.Null);
+            Assert.That(
+                importer.textureType,
+                Is.EqualTo(TextureImporterType.Default));
+            Assert.That(importer.sRGBTexture, Is.True);
+            Assert.That(
+                importer.alphaSource,
+                Is.EqualTo(TextureImporterAlphaSource.FromInput));
+            Assert.That(importer.alphaIsTransparency, Is.True);
+            Assert.That(importer.mipmapEnabled, Is.False);
+            Assert.That(importer.npotScale, Is.EqualTo(TextureImporterNPOTScale.None));
+            Assert.That(
+                importer.textureCompression,
+                Is.EqualTo(TextureImporterCompression.Uncompressed));
         }
 
         [TestCase(InventoryItemId.ApartmentKeys)]

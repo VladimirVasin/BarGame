@@ -24,15 +24,22 @@ It asserts that all nine neutral layers composite exactly to the corrected
 reference frame and that every facial edit stays on its direction-specific
 pixel whitelist while all rear views remain unchanged.
 
-An experimental, non-runtime 3D interpretation can be generated with Blender:
+The modular production 3D authoring source and Unity import FBXs can be rebuilt
+with Blender:
 
 ```powershell
 & 'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe' `
   --background --factory-startup `
   --python tools\build-player-3d-model.py -- `
-  --output ArtSource\Player\Blender\PlayerCharacter3D.blend
+  --output ArtSource\Player\Blender\PlayerCharacter3D.blend `
+  --preview ArtSource\Player\Blender\PlayerCharacter3D.png `
+  --portrait Assets\Resources\Player\Player3DPortrait.png `
+  --manifest Assets\Player3D\Models\PlayerCharacter3D.json `
+  --fbx Assets\Player3D\Models\PlayerCharacter3D.fbx `
+  --animation-fbx Assets\Player3D\Animations\PlayerCharacter3DAnimations.fbx
 ```
 
 It preserves independently rigged anatomical, clothing and signature-detail
-meshes. See `Blender/README.md` for the hierarchy, side convention, optional
-preview/manifest/export arguments and built-in validation.
+meshes, uses an A-pose bind skeleton, and emits 23 bone-only in-place Actions
+plus stable hand/mouth prop sockets. See `Blender/README.md` for the hierarchy,
+side convention, outputs and built-in validation.

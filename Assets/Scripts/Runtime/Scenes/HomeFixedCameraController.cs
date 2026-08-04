@@ -370,7 +370,6 @@ namespace BarPromenade
     {
         private PlayerCameraFollow cameraFollow;
         private Transform target;
-        private BillboardSprite targetBillboard;
         private HomeCameraShotSelector selector;
 
         public bool IsInitialized { get; private set; }
@@ -433,11 +432,6 @@ namespace BarPromenade
 
             cameraFollow = follow;
             target = cameraTarget;
-            targetBillboard =
-                cameraTarget.GetComponentInChildren<
-                    BillboardSprite>(true);
-            targetBillboard?
-                .SetCameraPlaneAlignment(true);
             selector = nextSelector;
             ActiveShot = initialShot;
             IsInitialized = true;
@@ -462,8 +456,6 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                targetBillboard?
-                    .SetCameraPlaneAlignment(true);
                 RefreshSelection(true);
             }
         }
@@ -480,8 +472,6 @@ namespace BarPromenade
         {
             if (IsInitialized && cameraFollow != null)
             {
-                targetBillboard?
-                    .SetCameraPlaneAlignment(false);
                 cameraFollow.ClearFixedPose();
             }
         }
@@ -490,8 +480,6 @@ namespace BarPromenade
         {
             if (IsInitialized && cameraFollow != null)
             {
-                targetBillboard?
-                    .SetCameraPlaneAlignment(false);
                 cameraFollow.ClearFixedPose();
             }
         }
@@ -524,8 +512,6 @@ namespace BarPromenade
                 shot.Position,
                 shot.Rotation,
                 shot.FieldOfView);
-            targetBillboard?.SetCameraPlaneAlignment(
-                shot.Kind != HomeCameraShotKind.Balcony);
         }
     }
 }

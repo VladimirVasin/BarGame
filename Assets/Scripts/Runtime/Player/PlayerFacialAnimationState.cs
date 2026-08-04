@@ -13,8 +13,8 @@ namespace BarPromenade
 
     /// <summary>
     /// Advances deterministic, frame-rate independent blink and idle
-    /// expression schedules. The state owns timing only; the sprite rig
-    /// chooses the matching direction-specific body frame.
+    /// expression schedules. The state owns timing only; the active player
+    /// presentation chooses how the expression is rendered.
     /// </summary>
     public sealed class PlayerFacialAnimationState
     {

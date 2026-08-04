@@ -64,12 +64,14 @@ namespace BarPromenade.Tests.EditMode
             AssertFinite(plan.ExitHipPosition);
             Assert.That(
                 plan.ActionHipPosition.y,
-                Is.EqualTo(0.795f).Within(0.0001f));
+                Is.EqualTo(
+                        plan.EntryRootPosition.y +
+                        PlayerCharacterDimensions.PelvisHeight +
+                        HomeBalconySmokingPlan.UprightVisualOffset)
+                    .Within(0.0001f));
             float animatedFeetY =
                 plan.ActionHipPosition.y +
-                (PlayerSpriteRig.FeetPivotPixels -
-                 PlayerAnimatedInteractionController.HipPivotYPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit;
+                -PlayerCharacterDimensions.PelvisHeight;
             Assert.That(
                 animatedFeetY,
                 Is.EqualTo(
@@ -158,9 +160,14 @@ namespace BarPromenade.Tests.EditMode
                 plan.CreateAnimationDefinition();
 
             Assert.That(
-                definition.TextureResourcePath,
-                Is.EqualTo(
-                    HomeBalconySmokingPlan.AtlasResourcePath));
+                definition.EnterClipName,
+                Is.EqualTo("SmokeEnter"));
+            Assert.That(
+                definition.LoopClipName,
+                Is.EqualTo("SmokeLoop"));
+            Assert.That(
+                definition.ExitClipName,
+                Is.EqualTo("SmokeExit"));
             Assert.That(definition.EnterFrameCount, Is.EqualTo(24));
             Assert.That(
                 definition.EnterFramesPerSecond,
@@ -174,21 +181,6 @@ namespace BarPromenade.Tests.EditMode
                 definition.ExitFramesPerSecond,
                 Is.EqualTo(8f));
             Assert.That(definition.TotalFrameCount, Is.EqualTo(64));
-            Assert.That(definition.RenderAboveSceneDepth, Is.False);
-            Assert.That(
-                definition.TextureFlipX,
-                Is.False,
-                "The smoking atlas already faces city-local +X and must " +
-                "not receive the shared bed-atlas mirror.");
-            Assert.That(
-                definition.VisualCrossfadeDurationSeconds,
-                Is.Zero.Within(0.0001f),
-                "The rig and atlas handoff must not fade the player sprite.");
-            Assert.That(
-                definition.AlignBillboardToCameraPlane,
-                Is.False,
-                "The upright balcony pose must preserve world up instead " +
-                "of inheriting the pitched close-camera plane.");
             Assert.That(
                 definition.LoopDurationSeconds,
                 Is.EqualTo(9.5d).Within(0.0001d));

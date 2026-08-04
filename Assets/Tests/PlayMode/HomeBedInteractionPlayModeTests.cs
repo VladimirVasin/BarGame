@@ -84,17 +84,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Bed, Is.Not.Null);
             Assert.That(home.AnimatedInteraction, Is.Not.Null);
             Assert.That(
-                home.Bed.Definition.RenderAboveSceneDepth,
-                Is.True);
+                home.Bed.Definition.EnterClipName,
+                Is.EqualTo("BedEnter"));
             Assert.That(
-                home.Bed.Definition.TextureFlipX,
-                Is.True,
-                "The smoking-specific mirror override must not change " +
-                "the bed atlas orientation.");
+                home.Bed.Definition.LoopClipName,
+                Is.EqualTo("BedSleepLoop"));
             Assert.That(
-                home.Bed.Definition.VisualCrossfadeDurationSeconds,
-                Is.Zero,
-                "Existing bed presentation keeps its established handoff.");
+                home.Bed.Definition.ExitClipName,
+                Is.EqualTo("BedExit"));
             Assert.That(
                 home.Bed.Definition.LoopFrameCount,
                 Is.EqualTo(
@@ -225,7 +222,7 @@ namespace BarPromenade.Tests.PlayMode
                         home.Player.Visual.InteractionHandoffLocked,
                         Is.True,
                         "The exact entry pose must be held by the shared " +
-                        "handoff lock for one rendered frame before atlas " +
+                        "handoff lock for one rendered frame before 3D " +
                         "Entering begins.");
                     AssertGuidedApproachPresentation(home);
                     sawSettledRenderFrame = true;
@@ -249,36 +246,16 @@ namespace BarPromenade.Tests.PlayMode
                 sawSettledRenderFrame,
                 Is.True,
                 "Positioning must expose one settled ordinary-rig frame " +
-                "before the atlas handoff.");
+                "before the contextual clip begins.");
             AssertExactPose(
                 home.Player.GameObject.transform,
                 entryPosition,
                 entryRotation);
-            Assert.That(
-                home.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.FrontLeft),
-                "The rig handoff view must match the bed atlas's exact " +
-                "FrontLeft endpoint.");
-            float handoffFootOffset =
-                (PlayerSpriteRig.FeetPivotPixels -
-                 PlayerAnimatedInteractionController.HipPivotYPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit;
-            Vector3 handoffFoot = home.AnimatedInteraction
-                .AnimationVisualRoot.TransformPoint(
-                    Vector3.up * handoffFootOffset);
-            Vector3 expectedHandoffFoot =
-                home.BedInteractionPlan.EntryHipPosition +
-                Vector3.up * handoffFootOffset;
-            Assert.That(
-                Vector3.Distance(handoffFoot, expectedHandoffFoot),
-                Is.LessThan(0.01f),
-                "The camera-plane atlas endpoint must preserve the " +
-                "ordinary rig's exact foot anchor.");
-            AssertAtlasOnlyPresentation(home);
+            AssertContinuous3DPresentation(home, "BedEnter");
             Vector3 lockedPosition = entryPosition;
 
             Time.timeScale = FastTimeScale;
-            yield return WaitForAtlasPhaseCompletion(
+            yield return WaitForPhaseCompletion(
                 home,
                 PlayerAnimatedInteractionPhase.Looping);
 
@@ -291,25 +268,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Bed.PromptKey,
                 Is.EqualTo(HomeBedInteraction.WakePromptKey));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.True);
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer
-                    .sharedMaterial,
-                Is.SameAs(
-                    PlayerAnimatedInteractionResources
-                        .OverlayMaterial));
-            Assert.That(
-                home.AnimatedInteraction.CameraPlaneAlignmentEnabled,
-                Is.True,
-                "The smoking-specific world-up override must not change " +
-                "the bed's established camera-plane alignment.");
-            AssertBedAxisAlignment(home);
-            Assert.That(home.Player.Shadow.enabled, Is.False);
-            Assert.That(home.Player.ContactShadow.enabled, Is.False);
+            AssertContinuous3DPresentation(home, "BedSleepLoop");
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.False);
-            AssertRigRendererState(home, false);
+            AssertRigRendererState(home, true);
             yield return WaitForActiveBed(home);
 
             int initialLoopFrame =
@@ -354,7 +316,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForPhase(
                 home,
                 PlayerAnimatedInteractionPhase.Exiting);
-            AssertAtlasOnlyPresentation(home);
+            AssertContinuous3DPresentation(home, "BedExit");
             Assert.That(
                 home.Player.Motor.InputEnabled,
                 Is.False);
@@ -367,7 +329,7 @@ namespace BarPromenade.Tests.PlayMode
                 queueEventOnly: true);
             yield return null;
             Time.timeScale = FastTimeScale;
-            yield return WaitForAtlasPhaseCompletion(
+            yield return WaitForPhaseCompletion(
                 home,
                 PlayerAnimatedInteractionPhase.Idle);
             Time.timeScale = 1f;
@@ -383,33 +345,21 @@ namespace BarPromenade.Tests.PlayMode
                 home.AnimatedInteraction.IsActive,
                 Is.False);
             Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.False);
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
                 home.Bed.PromptKey,
                 Is.EqualTo(HomeBedInteraction.SleepPromptKey));
-            Assert.That(
-                home.Player.Shadow.enabled,
-                Is.True);
             Assert.That(
                 home.Player.ContactShadow.enabled,
                 Is.True);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
             AssertRigRendererState(home, true);
-            AssertRigRendererOpacity(home, 1f);
+            Assert.That(
+                ((IPlayerClipPresentation)home.Player.Visual)
+                    .IsClipActive,
+                Is.False);
             AssertExactPose(
                 home.Player.GameObject.transform,
                 home.BedInteractionPlan.ExitRootPosition,
                 home.BedInteractionPlan.ExitRotation);
-            Assert.That(
-                home.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.FrontLeft));
 
             Vector3 wakePosition =
                 home.Player.GameObject.transform.position;
@@ -501,10 +451,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Player.Interactor.InputEnabled,
                 Is.True);
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.False);
-            Assert.That(home.Player.Shadow.enabled, Is.True);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
             Assert.That(
@@ -620,11 +566,11 @@ namespace BarPromenade.Tests.PlayMode
                 home.Bed.PromptKey,
                 Is.EqualTo(HomeBedInteraction.WakePromptKey));
             Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.True);
-            Assert.That(home.Player.Shadow.enabled, Is.False);
-            Assert.That(home.Player.ContactShadow.enabled, Is.False);
-            AssertRigRendererState(home, false);
+                ((IPlayerClipPresentation)home.Player.Visual)
+                    .ActiveClipName,
+                Is.EqualTo("BedSleepLoop"));
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            AssertRigRendererState(home, true);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.False);
             Assert.That(
                 home.Bed.BeginSleeping(),
@@ -665,12 +611,8 @@ namespace BarPromenade.Tests.PlayMode
                 home.Player.Interactor.InputEnabled,
                 Is.True);
             Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.False);
-            Assert.That(
                 home.Bed.PromptKey,
                 Is.EqualTo(HomeBedInteraction.SleepPromptKey));
-            Assert.That(home.Player.Shadow.enabled, Is.True);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
@@ -755,7 +697,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(expected));
         }
 
-        private static IEnumerator WaitForAtlasPhaseCompletion(
+        private static IEnumerator WaitForPhaseCompletion(
             HomeInteriorRoot home,
             PlayerAnimatedInteractionPhase expected)
         {
@@ -771,7 +713,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     home.AnimatedInteraction.Phase,
                     Is.EqualTo(activePhase));
-                AssertAtlasOnlyPresentation(home);
+                AssertContinuous3DPresentation(
+                    home,
+                    activePhase ==
+                        PlayerAnimatedInteractionPhase.Entering
+                        ? "BedEnter"
+                        : "BedExit");
                 yield return null;
             }
 
@@ -780,7 +727,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(expected));
             if (expected != PlayerAnimatedInteractionPhase.Idle)
             {
-                AssertAtlasOnlyPresentation(home);
+                AssertContinuous3DPresentation(
+                    home,
+                    "BedSleepLoop");
             }
         }
 
@@ -791,54 +740,24 @@ namespace BarPromenade.Tests.PlayMode
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(
                     PlayerAnimatedInteractionPhase.Positioning));
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.False);
-            Assert.That(home.Player.Shadow.enabled, Is.True);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
-            for (int index = 0;
-                 index < home.Player.Visual.Renderers.Count;
-                 index++)
-            {
-                Assert.That(
-                    home.Player.Visual.Renderers[index].color.a,
-                    Is.EqualTo(1f).Within(0.001f));
-            }
+            Assert.That(
+                ((IPlayerClipPresentation)home.Player.Visual)
+                    .IsClipActive,
+                Is.False);
         }
 
-        private static void AssertAtlasOnlyPresentation(
-            HomeInteriorRoot home)
+        private static void AssertContinuous3DPresentation(
+            HomeInteriorRoot home,
+            string expectedClip)
         {
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.True);
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.color.a,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(home.Player.Shadow.enabled, Is.False);
-            Assert.That(home.Player.ContactShadow.enabled, Is.False);
-            AssertRigRendererState(home, false);
-            for (int index = 0;
-                 index < home.Player.Visual.Renderers.Count;
-                 index++)
-            {
-                Assert.That(
-                    home.Player.Visual.Renderers[index].color.a,
-                    Is.EqualTo(0f).Within(0.001f));
-            }
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            AssertRigRendererState(home, true);
+            IPlayerClipPresentation clips =
+                (IPlayerClipPresentation)home.Player.Visual;
+            Assert.That(clips.IsClipActive, Is.True);
+            Assert.That(clips.ActiveClipName, Is.EqualTo(expectedClip));
         }
 
         private static void AssertBoundedGuidedStep(
@@ -918,114 +837,6 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(expected),
                     $"Unexpected rig renderer state at index {index}.");
             }
-        }
-
-        private static void AssertRigRendererOpacity(
-            HomeInteriorRoot home,
-            float expected)
-        {
-            for (int index = 0;
-                 index < home.Player.Visual.Renderers.Count;
-                 index++)
-            {
-                Assert.That(
-                    home.Player.Visual.Renderers[index].color.a,
-                    Is.EqualTo(expected).Within(0.001f));
-            }
-        }
-
-        private static void AssertBedAxisAlignment(
-            HomeInteriorRoot home)
-        {
-            PlayerAnimatedInteractionController controller =
-                home.AnimatedInteraction;
-            SpriteRenderer renderer =
-                controller.AnimationRenderer;
-            Transform visualRoot =
-                controller.AnimationVisualRoot;
-            Assert.That(controller.HasActionRightAxis, Is.True);
-            Assert.That(
-                Vector3.Angle(
-                    controller.ActionRightAxis,
-                    home.BedInteractionPlan.HeadToFootAxis),
-                Is.LessThan(0.01f));
-            Assert.That(visualRoot, Is.Not.Null);
-            Camera camera = Camera.main;
-            Assert.That(camera, Is.Not.Null);
-            Assert.That(
-                Vector3.Angle(
-                    visualRoot.forward,
-                    -camera.transform.forward),
-                Is.LessThan(0.1f));
-
-            Vector3 authoredTextureRight =
-                visualRoot.right *
-                (renderer.flipX ? -1f : 1f);
-            Vector2 projectedBedAxis =
-                ScreenDirection(
-                    camera,
-                    home.BedInteractionPlan.ActionHipPosition,
-                    home.BedInteractionPlan.ActionHipPosition +
-                    home.BedInteractionPlan.HeadToFootAxis);
-            Vector2 authoredScreenRight =
-                ScreenDirection(
-                    camera,
-                    visualRoot.position,
-                    visualRoot.position +
-                    authoredTextureRight);
-            Assert.That(
-                Vector2.Angle(
-                    authoredScreenRight,
-                    projectedBedAxis),
-                Is.LessThan(0.1f),
-                "Authored texture-right must follow the bed from head " +
-                "to feet after camera-plane projection and flipX.");
-
-            Transform pillow =
-                home.Room.Find("Home Pillow");
-            Assert.That(pillow, Is.Not.Null);
-            Vector3 pillowSideAtHipHeight =
-                pillow.position;
-            pillowSideAtHipHeight.y =
-                home.BedInteractionPlan.ActionHipPosition.y;
-            Vector2 projectedPillowDirection =
-                ScreenDirection(
-                    camera,
-                    home.BedInteractionPlan.ActionHipPosition,
-                    pillowSideAtHipHeight);
-            Vector2 authoredScreenLeft =
-                ScreenDirection(
-                    camera,
-                    visualRoot.position,
-                    visualRoot.position -
-                    authoredTextureRight);
-            Assert.That(
-                Vector2.Angle(
-                    authoredScreenLeft,
-                    projectedPillowDirection),
-                Is.LessThan(0.1f),
-                "Authored texture-left/head must remain on the xMin " +
-                "pillow side.");
-        }
-
-        private static Vector2 ScreenDirection(
-            Camera camera,
-            Vector3 worldStart,
-            Vector3 worldEnd)
-        {
-            Vector3 screenStart =
-                camera.WorldToScreenPoint(worldStart);
-            Vector3 screenEnd =
-                camera.WorldToScreenPoint(worldEnd);
-            Assert.That(screenStart.z, Is.GreaterThan(0f));
-            Assert.That(screenEnd.z, Is.GreaterThan(0f));
-            Vector2 direction = new Vector2(
-                screenEnd.x - screenStart.x,
-                screenEnd.y - screenStart.y);
-            Assert.That(
-                direction.sqrMagnitude,
-                Is.GreaterThan(0.0001f));
-            return direction.normalized;
         }
 
         private static float PlanarDistance(

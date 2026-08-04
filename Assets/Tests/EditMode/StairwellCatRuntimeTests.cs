@@ -342,11 +342,7 @@ namespace BarPromenade.Tests.EditMode
                 feeding.EntryHipLocalPosition.y,
                 Is.EqualTo(
                     feeding.EntryRootLocalPosition.y +
-                    (PlayerAnimatedInteractionController
-                        .HipPivotYPixels -
-                     PlayerSpriteRig.FeetPivotPixels) /
-                    PlayerAnimatedInteractionController
-                        .PixelsPerUnit +
+                    PlayerCharacterDimensions.PelvisHeight +
                     StairwellCatFeedingPlan
                         .UprightVisualOffset)
                     .Within(0.0001f));

@@ -579,6 +579,20 @@ namespace BarPromenade.Tests.PlayMode
                 () => root.IsInitialized,
                 "Stairwell root did not initialize.");
 
+            Assert.That(
+                root.CatInteraction.PlayerFeedingDefinition.EnterClipName,
+                Is.EqualTo("CatFeedEnter"));
+            Assert.That(
+                root.CatInteraction.PlayerFeedingDefinition.LoopClipName,
+                Is.EqualTo("CatFeedLoop"));
+            Assert.That(
+                root.CatInteraction.PlayerFeedingDefinition.ExitClipName,
+                Is.EqualTo("CatFeedExit"));
+            Assert.That(root.CatInteraction.FeedingCanProp, Is.Not.Null);
+            Assert.That(
+                root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
+                Is.False);
+
             StairwellCatFeedingPlan feedingPlan =
                 root.CatFeedingPlan;
             Vector3 positioningStartLocal =
@@ -693,20 +707,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(90f),
                 "The test must begin with a materially non-target facing.");
             AssertRigRendererState(root, true);
-            Assert.That(root.Player.Shadow.enabled, Is.True);
             Assert.That(root.Player.ContactShadow.enabled, Is.True);
             Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.enabled,
+                root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.False);
-            Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.sprite,
-                Is.Null);
-            Assert.That(
-                root.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                root.AnimatedInteraction.AnimationVisualOpacity,
-                Is.Zero.Within(0.001f));
             Assert.That(
                 root.FixedCamera.ActiveShotKind,
                 Is.EqualTo(
@@ -728,41 +732,12 @@ namespace BarPromenade.Tests.PlayMode
                     root.Player.GameObject.transform.rotation,
                     entryWorldRotation),
                 Is.LessThan(0.01f));
+            AssertContinuous3DPresentation(
+                root,
+                "CatFeedEnter");
             Assert.That(
-                root.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.FrontLeft),
-                "The rig handoff view must match the cat atlas's exact " +
-                "FrontLeft endpoint.");
-            float handoffFootOffset =
-                (PlayerSpriteRig.FeetPivotPixels -
-                 PlayerAnimatedInteractionController.HipPivotYPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit;
-            Vector3 handoffFoot = root.AnimatedInteraction
-                .AnimationVisualRoot.TransformPoint(
-                    Vector3.up * handoffFootOffset);
-            Vector3 expectedHandoffFoot = root.transform.TransformPoint(
-                feedingPlan.EntryHipLocalPosition +
-                Vector3.up * handoffFootOffset);
-            Assert.That(
-                Vector3.Distance(handoffFoot, expectedHandoffFoot),
-                Is.LessThan(0.01f),
-                "The camera-plane atlas endpoint must preserve the " +
-                "ordinary rig's exact foot anchor.");
-            AssertRigRendererState(root, false);
-            Assert.That(root.Player.Shadow.enabled, Is.False);
-            Assert.That(root.Player.ContactShadow.enabled, Is.False);
-            Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.enabled,
+                root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.True);
-            Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.sprite,
-                Is.Not.Null);
-            Assert.That(
-                root.AnimatedInteraction.RigVisualOpacity,
-                Is.Zero.Within(0.001f));
-            Assert.That(
-                root.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
             Assert.That(
                 root.Cat.IsFeeding,
                 Is.False,
@@ -776,16 +751,12 @@ namespace BarPromenade.Tests.PlayMode
                 root.AnimatedInteraction.Phase,
                 Is.EqualTo(
                     PlayerAnimatedInteractionPhase.Looping));
+            AssertContinuous3DPresentation(
+                root,
+                "CatFeedLoop");
             Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.enabled,
+                root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.True);
-            Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.sprite,
-                Is.Not.Null);
-            Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.flipX,
-                Is.True,
-                "The feeding hero must face the camera-left cat.");
             Assert.That(
                 root.Cat.CurrentFeedingFrame,
                 Is.InRange(
@@ -795,8 +766,8 @@ namespace BarPromenade.Tests.PlayMode
             AssertCatVisible(Camera.main, root.Cat);
             Vector3 playerViewport =
                 Camera.main.WorldToViewportPoint(
-                    root.AnimatedInteraction
-                        .AnimationRenderer.bounds.center);
+                    ((Player3DCharacterPresentation)root.Player.Visual)
+                        .Registry.Anchors.Pelvis.position);
             Assert.That(playerViewport.z, Is.GreaterThan(0f));
             Assert.That(playerViewport.x, Is.InRange(0.05f, 0.95f));
             Assert.That(playerViewport.y, Is.InRange(0.05f, 0.95f));
@@ -829,24 +800,15 @@ namespace BarPromenade.Tests.PlayMode
                     root.Player.GameObject.transform.rotation,
                     exitWorldRotation),
                 Is.LessThan(0.01f));
-            Assert.That(
-                root.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.FrontLeft));
             AssertRigRendererState(root, true);
-            Assert.That(root.Player.Shadow.enabled, Is.True);
             Assert.That(root.Player.ContactShadow.enabled, Is.True);
             Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.enabled,
+                ((IPlayerClipPresentation)root.Player.Visual)
+                    .IsClipActive,
                 Is.False);
             Assert.That(
-                root.AnimatedInteraction.AnimationRenderer.sprite,
-                Is.Null);
-            Assert.That(
-                root.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                root.AnimatedInteraction.AnimationVisualOpacity,
-                Is.Zero.Within(0.001f));
+                root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
+                Is.False);
         }
 
         private static void AssertPracticalSources(
@@ -966,12 +928,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Visual, Is.Not.Null);
             Assert.That(
                 root.Player.Visual.Renderers,
-                Has.Count.EqualTo(PlayerSpriteRig.PartCount));
+                Is.Not.Empty);
             for (int index = 0;
                  index < root.Player.Visual.Renderers.Count;
                  index++)
             {
-                SpriteRenderer renderer =
+                Renderer renderer =
                     root.Player.Visual.Renderers[index];
                 Assert.That(renderer, Is.Not.Null);
                 Assert.That(
@@ -979,6 +941,18 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(expectedEnabled),
                     $"Player rig renderer {index} has the wrong state.");
             }
+        }
+
+        private static void AssertContinuous3DPresentation(
+            StairwellInteriorRoot root,
+            string expectedClip)
+        {
+            Assert.That(root.Player.ContactShadow.enabled, Is.True);
+            AssertRigRendererState(root, true);
+            IPlayerClipPresentation clips =
+                (IPlayerClipPresentation)root.Player.Visual;
+            Assert.That(clips.IsClipActive, Is.True);
+            Assert.That(clips.ActiveClipName, Is.EqualTo(expectedClip));
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(

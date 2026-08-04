@@ -1,8 +1,9 @@
-# Experimental modular 3D player
+# Modular 3D player authoring source
 
 `tools/build-player-3d-model.py` generates a standalone low-poly Blender model
-from the locked player design. This is an authoring experiment and is not used
-by the Unity runtime.
+from the locked player design. The generated FBX and manifest are the source
+inputs for the Unity `Player3D` import pipeline; the `.blend` remains the
+editable authoring source.
 
 ## Design and coordinate contract
 
@@ -27,7 +28,10 @@ From the repository root in PowerShell:
   --python tools\build-player-3d-model.py -- `
   --output ArtSource\Player\Blender\PlayerCharacter3D.blend `
   --preview ArtSource\Player\Blender\PlayerCharacter3D.png `
-  --manifest ArtSource\Player\Blender\PlayerCharacter3D.json
+  --portrait Assets\Resources\Player\Player3DPortrait.png `
+  --manifest Assets\Player3D\Models\PlayerCharacter3D.json `
+  --fbx Assets\Player3D\Models\PlayerCharacter3D.fbx `
+  --animation-fbx Assets\Player3D\Animations\PlayerCharacter3DAnimations.fbx
 ```
 
 The script has no third-party Python dependencies. It was verified with
@@ -35,13 +39,17 @@ Blender `5.0.1` and avoids UI-only APIs so it can run in the background.
 
 Useful optional arguments:
 
-- `--pose relaxed|apose` selects the canonical resting stance or an animation-
-  friendly A-pose;
+- `--pose apose|relaxed` selects the bind pose. `apose` is the production
+  default; `relaxed` is retained only for compatibility previews;
 - `--height 1.75` scales geometry and armature together;
 - `--seed 7301` controls only millimetre-scale asymmetric hair variation;
 - `--glb path.glb` exports only the character hierarchy;
-- `--fbx path.fbx` exports only the character hierarchy;
+- `--fbx path.fbx` exports the character hierarchy with no animation;
+- `--animation-fbx path.fbx` exports the armature and every generated Action,
+  but no meshes;
 - `--preview path.png` renders the non-export presentation scene;
+- `--portrait path.png` renders a deterministic `192x256` transparent
+  head-and-upper-torso inventory portrait in the `Relaxed` Action;
 - `--manifest path.json` writes object, bone, material, bound and triangle data.
 
 Run `--help` after Blender's `--` separator for the complete CLI.
@@ -82,11 +90,37 @@ The generated `RIG_Player` uses Blender `.L`/`.R` anatomical naming. Preview
 camera, lights and ground live under `PRESENTATION_Player`, carry
 `bp_export = false` and are excluded from FBX/GLB selection.
 
+The production rest pose is a symmetric A-pose. `Relaxed` is an Action, so the
+same FBX bind skeleton can drive ordinary locomotion, first-person limb clones
+and every contextual animation. Six non-deforming attachment bones survive
+FBX export: `SOCKET_Grip.L`, `SOCKET_Grip.R`, `SOCKET_Cigarette.R`,
+`SOCKET_Bottle.R`, `SOCKET_Vessel.L` and `SOCKET_Mouth`.
+
+## Generated Action library
+
+All Actions animate bones only, keep the `root` bone fixed and store exact
+duration/loop/source-rate metadata as `bp_*` custom properties. The first-pass
+library contains:
+
+- locomotion: `Relaxed`, `Idle`, `Walk`;
+- face: `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`,
+  `Face_Watchful`, `Face_Tense`;
+- falls: `FallLeft/Right`, `DownLeft/Right`, `RiseLeft/Right`;
+- bed: `BedEnter`, `BedSleepLoop`, `BedExit`;
+- smoking: `SmokeEnter`, `SmokeLoop`, `SmokeExit`;
+- cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`.
+
+The Actions intentionally contain no gameplay events or root motion. Unity's
+deterministic interaction timelines own exact playback, terminal holds,
+inventory commits and cancellation.
+
 ## Built-in validation
 
 Before saving, the script fails with a non-zero Blender exit code unless:
 
 - every required body object and bone exists exactly once;
+- every required face control, socket and Action exists with the expected
+  deform/root-motion contract;
 - every body part has its own non-empty, closed, outward-wound mesh datablock;
 - every mesh is rigidly weighted to its declared bone and retains the matching
   armature modifier;
@@ -97,5 +131,6 @@ Before saving, the script fails with a non-zero Blender exit code unless:
   front strap crosses the torso centre line;
 - presentation-only objects cannot enter an export selection.
 
-The default model currently builds as 73 independent mesh objects and `1,534`
-triangles. Exact counts are reported by the script and optional manifest.
+The production model currently builds as 73 independent mesh objects, 31 bones
+(including six sockets), 23 Actions and `1,534` triangles. Exact counts are
+reported by the script and manifest.

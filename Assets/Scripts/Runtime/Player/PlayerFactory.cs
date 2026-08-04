@@ -8,24 +8,30 @@ namespace BarPromenade
             GameObject gameObject,
             PlayerMotor motor,
             PlayerInteractor interactor,
-            PlayerSpriteRig visual,
-            PlayerDynamicShadow shadow = null,
+            IPlayerPresentation visual,
             PlayerContactShadow contactShadow = null)
         {
             GameObject = gameObject;
             Motor = motor;
             Interactor = interactor;
             Visual = visual;
-            Shadow = shadow;
             ContactShadow = contactShadow;
+            PresentationVisibility = visual != null
+                ? new PlayerPresentationVisibility(
+                    visual,
+                    contactShadow)
+                : null;
         }
 
         public GameObject GameObject { get; }
         public PlayerMotor Motor { get; }
         public PlayerInteractor Interactor { get; }
-        public PlayerSpriteRig Visual { get; }
-        public PlayerDynamicShadow Shadow { get; }
+        public IPlayerPresentation Visual { get; }
         public PlayerContactShadow ContactShadow { get; }
+        public PlayerPresentationVisibility PresentationVisibility
+        {
+            get;
+        }
     }
 
     public static class PlayerFactory
@@ -39,7 +45,7 @@ namespace BarPromenade
             IWalkableArea walkableArea,
             InteractionPromptView promptView)
         {
-            GameObject player = new GameObject("Sprite Player");
+            GameObject player = new GameObject("Player");
             player.transform.SetParent(parent, false);
             player.transform.position = position;
 
@@ -51,21 +57,21 @@ namespace BarPromenade
             controller.slopeLimit = 45f;
             controller.skinWidth = GroundedRootOffset;
 
-            GameObject visualObject =
-                new GameObject("8-Direction Jointed Sprite Visual");
-            visualObject.transform.SetParent(player.transform, false);
-            visualObject.transform.localPosition =
-                new Vector3(0f, 0.005f, 0f);
-            PlayerSpriteRig visual = visualObject.AddComponent<PlayerSpriteRig>();
-            visual.Initialize(camera, player.transform);
+            Player3DAssetRegistry registry =
+                Player3DResources.Instantiate(player.transform);
+            Player3DCharacterPresentation visual =
+                registry.GetComponent<Player3DCharacterPresentation>();
+            if (visual == null)
+            {
+                visual = registry.gameObject.AddComponent<
+                    Player3DCharacterPresentation>();
+            }
+
+            visual.Initialize(player.transform, registry);
 
             PlayerContactShadow contactShadow =
                 player.AddComponent<PlayerContactShadow>();
             contactShadow.Initialize(player.transform, visual);
-
-            PlayerDynamicShadow shadow =
-                player.AddComponent<PlayerDynamicShadow>();
-            shadow.Initialize(player.transform, visual);
 
             PlayerMotor motor = player.AddComponent<PlayerMotor>();
             motor.Initialize(camera, walkableArea, visual);
@@ -77,7 +83,6 @@ namespace BarPromenade
                 motor,
                 interactor,
                 visual,
-                shadow,
                 contactShadow);
         }
     }

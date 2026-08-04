@@ -21,7 +21,6 @@ namespace BarPromenade.Tests.PlayMode
         private Renderer visibleSceneMarker;
         private Renderer hiddenSceneMarker;
         private bool[] initialRendererStates;
-        private bool initialShadowState;
         private bool initialContactShadowState;
 
         [UnitySetUp]
@@ -81,7 +80,7 @@ namespace BarPromenade.Tests.PlayMode
 
             yield return null;
 
-            IReadOnlyList<SpriteRenderer> renderers =
+            IReadOnlyList<Renderer> renderers =
                 player.Visual.Renderers;
             initialRendererStates = new bool[renderers.Count];
             for (int index = 0; index < renderers.Count; index++)
@@ -89,7 +88,6 @@ namespace BarPromenade.Tests.PlayMode
                 initialRendererStates[index] = renderers[index].enabled;
             }
 
-            initialShadowState = player.Shadow.enabled;
             initialContactShadowState = player.ContactShadow.enabled;
         }
 
@@ -553,20 +551,25 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertPlayerVisualHidden()
         {
-            IReadOnlyList<SpriteRenderer> renderers =
+            IReadOnlyList<Renderer> renderers =
                 player.Visual.Renderers;
             for (int index = 0; index < renderers.Count; index++)
             {
                 Assert.That(renderers[index].enabled, Is.False);
             }
 
-            Assert.That(player.Shadow.enabled, Is.False);
+            Assert.That(
+                player.PresentationVisibility.RenderersHidden,
+                Is.True);
+            Assert.That(
+                player.PresentationVisibility.ShadowsHidden,
+                Is.True);
             Assert.That(player.ContactShadow.enabled, Is.False);
         }
 
         private void AssertPlayerVisualRestored()
         {
-            IReadOnlyList<SpriteRenderer> renderers =
+            IReadOnlyList<Renderer> renderers =
                 player.Visual.Renderers;
             Assert.That(
                 renderers,
@@ -579,8 +582,8 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(
-                player.Shadow.enabled,
-                Is.EqualTo(initialShadowState));
+                player.PresentationVisibility.IsHidden,
+                Is.False);
             Assert.That(
                 player.ContactShadow.enabled,
                 Is.EqualTo(initialContactShadowState));

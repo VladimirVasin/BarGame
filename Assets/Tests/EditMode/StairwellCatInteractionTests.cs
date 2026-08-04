@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -39,8 +40,8 @@ namespace BarPromenade.Tests.EditMode
             interactor.Initialize(prompt);
             GameObject visualObject = new GameObject("Visual");
             visualObject.transform.SetParent(playerObject.transform, false);
-            PlayerSpriteRig visual =
-                visualObject.AddComponent<PlayerSpriteRig>();
+            var visual =
+                new TestPlayerPresentation(visualObject.transform);
             player = new PlayerRuntime(
                 playerObject,
                 motor,
@@ -145,25 +146,13 @@ namespace BarPromenade.Tests.EditMode
 
             PlayerAnimatedInteractionDefinition animation =
                 catInteraction.PlayerFeedingDefinition;
-            Assert.That(
-                animation.TextureResourcePath,
-                Is.EqualTo(
-                    StairwellCatInteraction
-                        .PlayerFeedingAtlasResourcePath));
             Assert.That(animation.EnterFrameCount, Is.EqualTo(24));
             Assert.That(animation.LoopFrameCount, Is.EqualTo(16));
             Assert.That(animation.ExitFrameCount, Is.EqualTo(24));
             Assert.That(animation.LoopFramesPerSecond, Is.EqualTo(6f));
-            Assert.That(
-                animation.VisualCrossfadeDurationSeconds,
-                Is.Zero,
-                "Cat feeding must hand off at its authored entry and " +
-                "exit poses without fading either player presentation.");
-            Assert.That(
-                animation.TextureFlipX,
-                Is.True,
-                "The image-right feeding sheet must mirror toward the " +
-                "camera-left cat.");
+            Assert.That(animation.EnterClipName, Is.EqualTo("CatFeedEnter"));
+            Assert.That(animation.LoopClipName, Is.EqualTo("CatFeedLoop"));
+            Assert.That(animation.ExitClipName, Is.EqualTo("CatFeedExit"));
             Assert.That(
                 catInteraction.CanInteract(player.Interactor),
                 Is.True);
@@ -371,6 +360,99 @@ namespace BarPromenade.Tests.EditMode
             if (value != null)
             {
                 Object.DestroyImmediate(value);
+            }
+        }
+
+        private sealed class TestPlayerPresentation :
+            IPlayerPresentation,
+            IPlayerClipPresentation
+        {
+            private static readonly Renderer[] NoRenderers =
+                System.Array.Empty<Renderer>();
+            private readonly Transform visualRoot;
+
+            public TestPlayerPresentation(Transform root)
+            {
+                visualRoot = root;
+            }
+
+            public IReadOnlyList<Renderer> Renderers => NoRenderers;
+            public Transform VisualRoot => visualRoot;
+            public PlayerPresentationMetrics Metrics =>
+                new PlayerPresentationMetrics(
+                    PlayerCharacterDimensions.StandingHeight,
+                    0.32f,
+                    visualRoot,
+                    visualRoot.position,
+                    visualRoot.position,
+                    1f,
+                    0f,
+                    1f);
+            public bool InteractionHandoffLocked { get; private set; }
+            public string ActiveClipName { get; private set; } =
+                string.Empty;
+            public bool IsClipActive => ActiveClipName.Length > 0;
+
+            public void SetMotion(Vector3 planarVelocity)
+            {
+            }
+
+            public void SetIntoxication(float intensity)
+            {
+            }
+
+            public void SetBalancePose(float signedLean)
+            {
+            }
+
+            public void SetFallPose(float signedDirection, float amount)
+            {
+            }
+
+            public void SetFallAnimation(
+                PlayerFallAnimationPhase phase,
+                float normalizedProgress)
+            {
+            }
+
+            public void SetInteractionHandoffLocked(bool locked)
+            {
+                InteractionHandoffLocked = locked;
+            }
+
+            public bool HasClip(string clipName)
+            {
+                return clipName == "CatFeedEnter" ||
+                       clipName == "CatFeedLoop" ||
+                       clipName == "CatFeedExit";
+            }
+
+            public bool TryBeginClip(string clipName)
+            {
+                if (!HasClip(clipName))
+                {
+                    return false;
+                }
+
+                ActiveClipName = clipName;
+                return true;
+            }
+
+            public void SampleActiveClip(float normalizedTime)
+            {
+            }
+
+            public void AlignActiveClipAnchor(Vector3 worldPelvisTarget)
+            {
+            }
+
+            public void ResetClipSpatialOffset()
+            {
+            }
+
+            public void EndClip()
+            {
+                ActiveClipName = string.Empty;
             }
         }
     }

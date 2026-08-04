@@ -788,16 +788,26 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void AssertPlayerShadow(PlayerRuntime player)
         {
-            Assert.That(player.Shadow, Is.Not.Null);
-            Assert.That(player.Shadow.IsInitialized, Is.True);
-            Assert.That(player.Shadow.MainLight, Is.SameAs(RenderSettings.sun));
             Assert.That(
-                player.Shadow.Renderer.shadowCastingMode,
-                Is.EqualTo(ShadowCastingMode.ShadowsOnly));
-            Assert.That(player.Shadow.Renderer.receiveShadows, Is.False);
+                player.Visual,
+                Is.TypeOf<Player3DCharacterPresentation>());
+            Assert.That(player.Visual.Renderers, Is.Not.Empty);
+            for (int index = 0;
+                 index < player.Visual.Renderers.Count;
+                 index++)
+            {
+                Renderer renderer = player.Visual.Renderers[index];
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(
+                    renderer.shadowCastingMode,
+                    Is.EqualTo(ShadowCastingMode.On));
+            }
+
+            Assert.That(player.ContactShadow, Is.Not.Null);
+            Assert.That(player.ContactShadow.IsInitialized, Is.True);
             Assert.That(
-                player.Shadow.Renderer.sharedMaterial,
-                Is.SameAs(PlayerShadowResources.ShadowCasterMaterial));
+                player.ContactShadow.Renderer.sharedMaterial,
+                Is.SameAs(PlayerShadowResources.ContactShadowMaterial));
         }
 
         private static void AssertCityDecorations(

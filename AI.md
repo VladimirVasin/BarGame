@@ -11,11 +11,14 @@ four graph-separated bars. The default footprint now extends east to a
 reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
 access. The sparse footprint can be non-rectangular, and the same data-first
-area contract supports reordered urban areas. The runtime places one visually distinct player
-home beside a bar street and one deterministic street-front supermarket, creates an
-atlas-backed eight-direction jointed sprite player, loads separate bar,
-supermarket, stairwell and home interiors, and restores the same seed and
-matching exterior return point.
+area contract supports reordered urban areas. The runtime places one visually
+distinct player home beside a bar street and one deterministic street-front
+supermarket, instantiates the same modular low-poly 3D hero in all five gameplay
+roots, loads separate bar, supermarket, stairwell and home interiors, and
+restores the same seed and matching exterior return point. The hero keeps
+independent body meshes on one Generic rig, uses continuous in-place 3D clips
+for locomotion, falls and contextual actions, and derives first-person arms and
+the inventory portrait from the same production model.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds
@@ -70,8 +73,8 @@ repository evidence. This does not require running every test layer.
   is the requested deliverable or release gate; add a smoke only when requested
   or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
-- All future contextual player sprite/atlas interactions must follow the
-  mandatory `ai/contextual-animation-standard.md`; do not add one-off teleport
-  or sprite-fade handoffs.
+- All future contextual player animations must follow the mandatory
+  `ai/contextual-animation-standard.md`; do not add one-off teleport, root-motion
+  gameplay transactions or visibility fades that conceal mismatched endpoints.
 - Update the maps and work log when implementation changes project reality.
 - Keep documentation concise and mark uncertainty directly.

@@ -24,7 +24,7 @@ namespace BarPromenade
         private CharacterController controller;
         private Camera movementCamera;
         private IWalkableArea walkableArea;
-        private PlayerSpriteRig spriteRig;
+        private IPlayerMotionPresentation presentation;
         private float verticalSpeed;
         private float speedMultiplier = 1f;
         private float footstepDistance;
@@ -45,7 +45,7 @@ namespace BarPromenade
         public void Initialize(
             Camera cameraToUse,
             IWalkableArea area,
-            PlayerSpriteRig visual)
+            IPlayerMotionPresentation visual)
         {
             controller = GetComponent<CharacterController>();
             if (controller != null)
@@ -55,7 +55,7 @@ namespace BarPromenade
 
             movementCamera = cameraToUse;
             walkableArea = area;
-            spriteRig = visual;
+            presentation = visual;
         }
 
         public void SetInputEnabled(bool enabled)
@@ -171,7 +171,7 @@ namespace BarPromenade
                     ? displacement / deltaTime
                     : Vector3.zero;
                 FaceMovementDirection(PlanarVelocity);
-                spriteRig?.SetMotion(PlanarVelocity);
+                presentation?.SetMotion(PlanarVelocity);
                 UpdateFootsteps(
                     displacement,
                     allowWhenInputDisabled: true);
@@ -237,7 +237,7 @@ namespace BarPromenade
             {
                 UpdateVerticalMotion();
                 PlanarVelocity = Vector3.zero;
-                spriteRig?.SetMotion(Vector3.zero);
+                presentation?.SetMotion(Vector3.zero);
                 return;
             }
 
@@ -273,7 +273,7 @@ namespace BarPromenade
             planarVelocity.y = 0f;
             PlanarVelocity = planarVelocity * inverseDelta;
             FaceMovementDirection(PlanarVelocity);
-            spriteRig?.SetMotion(PlanarVelocity);
+            presentation?.SetMotion(PlanarVelocity);
             UpdateFootsteps(planarVelocity);
         }
 
@@ -322,7 +322,7 @@ namespace BarPromenade
         {
             PlanarVelocity = Vector3.zero;
             footstepDistance = 0f;
-            spriteRig?.SetMotion(Vector3.zero);
+            presentation?.SetMotion(Vector3.zero);
         }
 
         private void RecordInteractionPoseProgress(float deltaTime)

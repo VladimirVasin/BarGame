@@ -295,17 +295,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(HomeCameraShotKind.MainRoom));
-            AssertSpritePlaneFacesCamera(
-                camera,
-                home.Player.Visual.VisualRoot);
-            BillboardSprite playerBillboard =
-                home.Player.Visual.VisualRoot
-                    .GetComponent<BillboardSprite>();
-            Assert.That(playerBillboard, Is.Not.Null);
             Assert.That(
-                playerBillboard
-                    .CameraPlaneAlignmentEnabled,
-                Is.True);
+                home.Player.Visual,
+                Is.TypeOf<Player3DCharacterPresentation>());
+            Assert.That(
+                home.Player.Visual.VisualRoot
+                    .GetComponent<BillboardSprite>(),
+                Is.Null,
+                "The continuous 3D hero must keep actor-facing world " +
+                "orientation across fixed-camera cuts.");
 
             Vector3 mainPosition =
                 home.CameraFollow.FixedBasePosition;
@@ -376,9 +374,9 @@ namespace BarPromenade.Tests.PlayMode
             AssertForegroundJunkOcclusionContract(
                 home,
                 cornerJunkCollider);
-            AssertSpriteSilhouetteNotSquashed(
+            AssertPlayerPresentationInFrame(
                 camera,
-                home.Player.Visual.VisualRoot);
+                home.Player.Visual);
 
             home.Player.Motor.Teleport(
                 new Vector3(2.40f, 0.12f, 1.30f));
@@ -390,13 +388,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.CameraFollow.FixedBaseFieldOfView,
                 Is.EqualTo(92f).Within(0.001f));
-            AssertSpritePlaneFacesCamera(
-                camera,
-                home.Player.Visual.VisualRoot);
             AssertEmitterVisible(camera, bathroomEmitter);
-            AssertSpriteSilhouetteNotSquashed(
+            AssertPlayerPresentationInFrame(
                 camera,
-                home.Player.Visual.VisualRoot);
+                home.Player.Visual);
             Assert.That(
                 Vector3.Distance(
                     camera.transform.position,
@@ -440,9 +435,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.FixedCamera.ActiveShotKind,
                 Is.EqualTo(HomeCameraShotKind.MainRoom));
-            AssertSpritePlaneFacesCamera(
-                camera,
-                home.Player.Visual.VisualRoot);
             Assert.That(
                 Vector3.Distance(
                     camera.transform.position,
@@ -735,32 +727,54 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(viewport.y, Is.InRange(0.05f, 0.95f));
         }
 
-        private static void AssertSpriteSilhouetteNotSquashed(
+        private static void AssertPlayerPresentationInFrame(
             Camera camera,
-            Transform visualRoot)
+            IPlayerPresentation presentation)
         {
-            float halfWidth =
-                PlayerSpriteRig.FrameWidth /
-                (PlayerSpriteRig.PixelsPerUnit * 2f);
-            float bottom =
-                -PlayerSpriteRig.FeetPivotPixels /
-                PlayerSpriteRig.PixelsPerUnit;
-            float top =
-                (PlayerSpriteRig.FrameHeight -
-                 PlayerSpriteRig.FeetPivotPixels) /
-                PlayerSpriteRig.PixelsPerUnit;
+            Assert.That(presentation, Is.Not.Null);
+            Assert.That(presentation.Renderers, Is.Not.Empty);
+            Bounds bounds = default;
+            bool hasBounds = false;
+            for (int index = 0;
+                 index < presentation.Renderers.Count;
+                 index++)
+            {
+                Renderer renderer = presentation.Renderers[index];
+                if (renderer == null || !renderer.enabled)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            Assert.That(hasBounds, Is.True);
             float minX = float.PositiveInfinity;
             float minY = float.PositiveInfinity;
             float maxX = float.NegativeInfinity;
             float maxY = float.NegativeInfinity;
-            for (int corner = 0; corner < 4; corner++)
+            for (int corner = 0; corner < 8; corner++)
             {
-                Vector3 local = new Vector3(
-                    (corner & 1) == 0 ? -halfWidth : halfWidth,
-                    (corner & 2) == 0 ? bottom : top,
-                    0f);
+                Vector3 world = bounds.center + new Vector3(
+                    (corner & 1) == 0
+                        ? -bounds.extents.x
+                        : bounds.extents.x,
+                    (corner & 2) == 0
+                        ? -bounds.extents.y
+                        : bounds.extents.y,
+                    (corner & 4) == 0
+                        ? -bounds.extents.z
+                        : bounds.extents.z);
                 Vector3 viewport = camera.WorldToViewportPoint(
-                    visualRoot.TransformPoint(local));
+                    world);
                 Assert.That(viewport.z, Is.GreaterThan(0f));
                 minX = Mathf.Min(minX, viewport.x);
                 minY = Mathf.Min(minY, viewport.y);
@@ -774,15 +788,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(maxY, Is.LessThanOrEqualTo(0.98f));
             float width = maxX - minX;
             float height = maxY - minY;
-            float presentedAspect =
-                height /
-                width /
-                camera.aspect;
+            Assert.That(width, Is.GreaterThan(0.005f));
+            Assert.That(height, Is.GreaterThan(0.01f));
             Assert.That(
-                presentedAspect,
-                Is.InRange(1.42f, 1.58f),
-                "The camera-aligned sprite plane must preserve the " +
-                "64x96 player frame instead of compressing it.");
+                height / width,
+                Is.GreaterThan(1.05f),
+                "The standing 3D hero must remain recognizably upright " +
+                "in every authored Home shot.");
         }
 
         private static Transform AssertRequiredObject(
@@ -818,21 +830,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 viewport.y,
                 Is.InRange(0.08f, 0.94f));
-        }
-
-        private static void AssertSpritePlaneFacesCamera(
-            Camera camera,
-            Transform visualRoot)
-        {
-            Vector3 expectedForward =
-                -camera.transform.forward;
-            Assert.That(
-                Vector3.Angle(
-                    visualRoot.forward,
-                    expectedForward),
-                Is.LessThan(0.1f),
-                "The player sprite plane must be refreshed on the same " +
-                "hard cut as the fixed camera.");
         }
 
         private static Vector3 PlanarForward(

@@ -17,8 +17,6 @@ namespace BarPromenade
             "stairwell.cat.feed.confirm";
         public const string MissingStewResponsePromptKey =
             "stairwell.cat.feed.missing";
-        public const string PlayerFeedingAtlasResourcePath =
-            "Player/PlayerCatFeedingAtlas";
         public const float ResponseDurationSeconds = 2.5f;
 
         private Transform stairwellRoot;
@@ -42,6 +40,7 @@ namespace BarPromenade
         private bool catFeedingStarted;
         private bool exitRequested;
         private bool exitPhaseObserved;
+        private Transform feedingCanProp;
 
         public string PromptKey => DefaultPromptKey;
         public Vector3 InteractionPosition =>
@@ -53,6 +52,7 @@ namespace BarPromenade
             interactionDefinition;
         public PlayerAnimatedInteractionDefinition
             PlayerFeedingDefinition => playerFeedingDefinition;
+        public Transform FeedingCanProp => feedingCanProp;
 
         public void Initialize(
             Transform authoredStairwellRoot,
@@ -129,20 +129,16 @@ namespace BarPromenade
                     ResponseDurationSeconds);
             playerFeedingDefinition =
                 new PlayerAnimatedInteractionDefinition(
-                    PlayerFeedingAtlasResourcePath,
+                    "CatFeedEnter",
+                    "CatFeedLoop",
+                    "CatFeedExit",
                     enterFrameCount: 24,
                     enterFramesPerSecond: 12f,
                     loopFrameCount: 16,
                     loopFramesPerSecond: 6f,
                     exitFrameCount: 24,
-                    exitFramesPerSecond: 12f,
-                    renderAboveSceneDepth: false,
-                    // The source sheet faces image-right, while the
-                    // middle-flight shot places the cat camera-left. Mirror
-                    // the runtime sprite so both the hero and can face cat.
-                    textureFlipX: true,
-                    visualCrossfadeDurationSeconds: 0f,
-                    alignBillboardToCameraPlane: true);
+                    exitFramesPerSecond: 12f);
+            RebuildFeedingCanProp();
             animatedInteraction.PhaseChanged +=
                 HandlePlayerAnimationPhaseChanged;
             isInitialized = true;
@@ -341,6 +337,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (phase == PlayerAnimatedInteractionPhase.Entering)
+            {
+                SetFeedingCanVisible(true);
+                return;
+            }
+
             if (phase == PlayerAnimatedInteractionPhase.Looping)
             {
                 if (!cat.BeginPreparedFeeding())
@@ -372,6 +374,8 @@ namespace BarPromenade
                 return;
             }
 
+            SetFeedingCanVisible(false);
+
             if (!exitPhaseObserved)
             {
                 targetInteraction.AbortExecution();
@@ -401,6 +405,7 @@ namespace BarPromenade
             catFeedingStarted = false;
             exitRequested = false;
             exitPhaseObserved = false;
+            SetFeedingCanVisible(false);
 
             if (cancelPlayer && animatedInteraction != null)
             {
@@ -446,7 +451,64 @@ namespace BarPromenade
                 CancelInventoryInteractionPreparation();
             }
 
+            ReleaseFeedingCanProp();
             isInitialized = false;
+        }
+
+        private void RebuildFeedingCanProp()
+        {
+            ReleaseFeedingCanProp();
+            if (!(player.Visual is Player3DCharacterPresentation visual))
+            {
+                return;
+            }
+
+            Transform grip = visual.Registry != null
+                ? visual.Registry.Anchors.LeftGrip
+                : null;
+            if (grip == null)
+            {
+                throw new InvalidOperationException(
+                    "The Player 3D cat-feeding presentation requires " +
+                    "the serialized left grip anchor.");
+            }
+
+            feedingCanProp = InventoryItemModelFactory.BuildWorldModel(
+                InventoryItemId.OpenStewCan,
+                grip,
+                Vector3.one * 0.12f);
+            feedingCanProp.name = "Player Cat Feeding Can";
+            feedingCanProp.localPosition = Vector3.zero;
+            feedingCanProp.localRotation = Quaternion.identity;
+            feedingCanProp.gameObject.SetActive(false);
+        }
+
+        private void SetFeedingCanVisible(bool visible)
+        {
+            if (feedingCanProp != null &&
+                feedingCanProp.gameObject.activeSelf != visible)
+            {
+                feedingCanProp.gameObject.SetActive(visible);
+            }
+        }
+
+        private void ReleaseFeedingCanProp()
+        {
+            if (feedingCanProp == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(feedingCanProp.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(feedingCanProp.gameObject);
+            }
+
+            feedingCanProp = null;
         }
     }
 }

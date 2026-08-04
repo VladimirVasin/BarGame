@@ -109,7 +109,7 @@ namespace BarPromenade
         public void Initialize(
             HomeInteriorRoot homeRoot,
             Camera camera,
-            PlayerSpriteRig playerVisual,
+            IPlayerPresentation playerVisual,
             HomeOcclusionRegistry occlusionRegistry,
             HomeFixedCameraController fixedCameraController)
         {

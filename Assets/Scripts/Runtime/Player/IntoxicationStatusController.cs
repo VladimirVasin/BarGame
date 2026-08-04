@@ -28,7 +28,7 @@ namespace BarPromenade
 
         private PlayerMotor motor;
         private PlayerInteractor interactor;
-        private PlayerSpriteRig spriteRig;
+        private IPlayerStatusPresentation playerPresentation;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
         private BalanceCheckView balanceView;
@@ -73,7 +73,7 @@ namespace BarPromenade
         {
             motor = player.Motor;
             interactor = player.Interactor;
-            spriteRig = player.Visual;
+            playerPresentation = player.Visual;
             cameraFollow = follow;
             hud = intoxicationHud;
             balanceView = view;
@@ -690,14 +690,14 @@ namespace BarPromenade
         {
             motor?.SetSpeedMultiplier(
                 currentProfile.SpeedMultiplier);
-            spriteRig?.SetIntoxication(
+            playerPresentation?.SetIntoxication(
                 currentProfile.Normalized);
             float balanceLean = GetPresentationBalanceLean();
-            spriteRig?.SetBalancePose(balanceLean);
-            spriteRig?.SetFallPose(
+            playerPresentation?.SetBalancePose(balanceLean);
+            playerPresentation?.SetFallPose(
                 fallDirection,
                 fallAmount);
-            spriteRig?.SetFallAnimation(
+            playerPresentation?.SetFallAnimation(
                 GetFallAnimationPhase(),
                 GetFallAnimationProgress());
             cameraFollow?.SetIntoxication(
@@ -775,10 +775,10 @@ namespace BarPromenade
             balanceLock.Restore();
             balanceView?.Hide();
             motor?.SetSpeedMultiplier(1f);
-            spriteRig?.SetIntoxication(0f);
-            spriteRig?.SetBalancePose(0f);
-            spriteRig?.SetFallPose(0f, 0f);
-            spriteRig?.SetFallAnimation(
+            playerPresentation?.SetIntoxication(0f);
+            playerPresentation?.SetBalancePose(0f);
+            playerPresentation?.SetFallPose(0f, 0f);
+            playerPresentation?.SetFallAnimation(
                 PlayerFallAnimationPhase.None,
                 0f);
             cameraFollow?.SetIntoxication(0f);

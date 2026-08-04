@@ -1,4 +1,3 @@
-using System;
 using NUnit.Framework;
 
 namespace BarPromenade.Tests.EditMode
@@ -41,34 +40,6 @@ namespace BarPromenade.Tests.EditMode
                     phase,
                     progress),
                 Is.EqualTo(expectedFrame));
-        }
-
-        [Test]
-        public void FallAtlasPaths_CoverBothPhysicalVariantsForAllViews()
-        {
-            Array directions = Enum.GetValues(
-                typeof(PlayerViewDirection));
-            Assert.That(
-                directions.Length,
-                Is.EqualTo(PlayerSpriteRig.DirectionCount));
-
-            foreach (PlayerViewDirection direction in directions)
-            {
-                string leftPath =
-                    PlayerSpriteRig.GetFallAtlasResourcePath(
-                        direction,
-                        -1f);
-                string rightPath =
-                    PlayerSpriteRig.GetFallAtlasResourcePath(
-                        direction,
-                        1f);
-
-                Assert.That(leftPath, Does.Contain(direction.ToString()));
-                Assert.That(leftPath, Does.EndWith("ScreenLeftAtlas"));
-                Assert.That(rightPath, Does.Contain(direction.ToString()));
-                Assert.That(rightPath, Does.EndWith("ScreenRightAtlas"));
-                Assert.That(rightPath, Is.Not.EqualTo(leftPath));
-            }
         }
     }
 }

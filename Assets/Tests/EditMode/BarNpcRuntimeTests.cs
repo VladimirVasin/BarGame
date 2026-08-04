@@ -145,11 +145,6 @@ namespace BarPromenade.Tests.EditMode
                 director.GetComponentsInChildren<PlayerInteractor>(
                     true),
                 Is.Empty);
-            Assert.That(
-                director.GetComponentsInChildren<PlayerDynamicShadow>(
-                    true),
-                Is.Empty);
-
             foreach (BarNpcActor actor in director.Actors)
             {
                 Assert.That(actor.IsInitialized, Is.True);

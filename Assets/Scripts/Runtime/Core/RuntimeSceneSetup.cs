@@ -23,9 +23,13 @@ namespace BarPromenade
         public const float CityFarClipPlane = 48f;
         public const float DoorTransitionFarClipPlane = 18f;
         public const float DefaultFarClipPlane = 220f;
+        public const float GameplayNearClipPlane = 0.06f;
         public const float CityShadowStrength = 0.38f;
         public const float CityMoonlightIntensity = 0.72f;
         public const float CityNightReflectionIntensity = 0.50f;
+        public const float PlayerMeshShadowBias = 0.04f;
+        public const float PlayerMeshShadowNormalBias = 0.25f;
+        public const float PlayerMeshShadowNearPlane = 0.10f;
 
         public static Camera EnsureCityNight()
         {
@@ -229,8 +233,16 @@ namespace BarPromenade
             camera.backgroundColor = backgroundColor;
             camera.allowHDR = true;
             camera.allowMSAA = false;
-            camera.nearClipPlane = 0.1f;
+            // The continuous 3D player and camera-local arm subsets can enter
+            // authored close shots. Keep the near plane tight enough for those
+            // meshes without sacrificing meaningful depth precision at the
+            // bounded gameplay far planes.
+            camera.nearClipPlane = GameplayNearClipPlane;
             camera.farClipPlane = DefaultFarClipPlane;
+            UniversalAdditionalCameraData cameraData =
+                camera.GetUniversalAdditionalCameraData();
+            cameraData.renderShadows = true;
+            cameraData.requiresDepthTexture = true;
             return camera;
         }
 
@@ -276,8 +288,13 @@ namespace BarPromenade
             directional.transform.rotation = CityMoonlightRotation;
             directional.color = color;
             directional.intensity = intensity;
+            directional.enabled = true;
+            directional.cullingMask = ~0;
             directional.shadows = LightShadows.Hard;
             directional.shadowStrength = shadowStrength;
+            directional.shadowBias = PlayerMeshShadowBias;
+            directional.shadowNormalBias = PlayerMeshShadowNormalBias;
+            directional.shadowNearPlane = PlayerMeshShadowNearPlane;
             RenderSettings.sun = directional;
 
             RenderSettings.ambientMode = AmbientMode.Flat;

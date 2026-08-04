@@ -20,7 +20,7 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
 
         private Transform groundTransform;
-        private PlayerSpriteRig sourceVisual;
+        private IPlayerPresentation sourcePresentation;
         private Transform shadowRoot;
         private MeshFilter meshFilter;
         private MeshRenderer shadowRenderer;
@@ -33,13 +33,13 @@ namespace BarPromenade
 
         public void Initialize(
             Transform actorGroundTransform,
-            PlayerSpriteRig visual)
+            IPlayerPresentation visual)
         {
             groundTransform = actorGroundTransform != null
                 ? actorGroundTransform
                 : throw new ArgumentNullException(
                     nameof(actorGroundTransform));
-            sourceVisual = visual != null
+            sourcePresentation = visual != null
                 ? visual
                 : throw new ArgumentNullException(nameof(visual));
 
@@ -132,11 +132,13 @@ namespace BarPromenade
                     PlayerShadowResources.ContactShadowMaterial;
             }
 
-            float plant = Mathf.Clamp01(sourceVisual.FootPlantAmount);
+            PlayerPresentationMetrics metrics =
+                sourcePresentation.Metrics;
+            float plant = metrics.FootPlantAmount;
             float width = BaseWidth * Mathf.Lerp(0.94f, 1f, plant);
             float depth = BaseDepth * Mathf.Lerp(0.9f, 1f, plant);
             float alpha = Mathf.Lerp(0.36f, 0.46f, plant);
-            float fall = Mathf.Clamp01(sourceVisual.FallAmount);
+            float fall = metrics.FallAmount;
             width = Mathf.Lerp(width, 1.35f, fall);
             depth = Mathf.Lerp(depth, 0.42f, fall);
             alpha = Mathf.Lerp(alpha, 0.5f, fall);
@@ -149,8 +151,8 @@ namespace BarPromenade
             }
             else
             {
-                Vector3 fallRight = sourceVisual.VisualRoot != null
-                    ? sourceVisual.VisualRoot.right
+                Vector3 fallRight = metrics.FacingTransform != null
+                    ? metrics.FacingTransform.right
                     : groundTransform.right;
                 fallRight = Vector3.ProjectOnPlane(
                     fallRight,
@@ -167,7 +169,7 @@ namespace BarPromenade
                     groundTransform.position +
                     Vector3.up * GroundOffset +
                     fallRight *
-                    sourceVisual.FallDirection *
+                    metrics.FallDirection *
                     fall *
                     0.24f,
                     Quaternion.LookRotation(

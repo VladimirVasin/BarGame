@@ -683,10 +683,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             AssertRigRendererState(expected);
             Assert.That(
-                home.Player.Shadow.enabled,
-                Is.EqualTo(expected),
-                "Unexpected dynamic-shadow state.");
-            Assert.That(
                 home.Player.ContactShadow.enabled,
                 Is.EqualTo(expected),
                 "Unexpected contact-shadow state.");

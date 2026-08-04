@@ -44,13 +44,14 @@ from typing import Sequence
 
 import bmesh
 import bpy
-from mathutils import Quaternion, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "2.0.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
+ANIMATION_FPS = 24
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = (
@@ -145,14 +146,62 @@ REQUIRED_BONES = (
     "foot.R",
 )
 
+# These bones are exported as ordinary transforms but never deform geometry.
+# Keeping sockets inside the armature makes them deterministic across FBX
+# imports and guarantees that props follow their owning hand/head animation.
+REQUIRED_SOCKET_BONES = (
+    "SOCKET_Grip.L",
+    "SOCKET_Grip.R",
+    "SOCKET_Cigarette.R",
+    "SOCKET_Bottle.R",
+    "SOCKET_Vessel.L",
+    "SOCKET_Mouth",
+)
+
+REQUIRED_FACE_BONES = (
+    "face.eye.L",
+    "face.eye.R",
+    "face.brow.L",
+    "face.brow.R",
+    "face.mouth",
+)
+
+REQUIRED_ACTIONS = (
+    "Relaxed",
+    "Idle",
+    "Walk",
+    "Face_Neutral",
+    "Face_HalfBlink",
+    "Face_ClosedBlink",
+    "Face_Watchful",
+    "Face_Tense",
+    "FallLeft",
+    "DownLeft",
+    "RiseLeft",
+    "FallRight",
+    "DownRight",
+    "RiseRight",
+    "BedEnter",
+    "BedSleepLoop",
+    "BedExit",
+    "SmokeEnter",
+    "SmokeLoop",
+    "SmokeExit",
+    "CatFeedEnter",
+    "CatFeedLoop",
+    "CatFeedExit",
+)
+
 
 @dataclass(frozen=True)
 class BuildConfig:
     output: Path
     preview: Path | None
+    portrait: Path | None
     manifest: Path | None
     glb: Path | None
     fbx: Path | None
+    animation_fbx: Path | None
     height: float
     seed: int
     pose: str
@@ -177,6 +226,26 @@ class PartRecord:
     side: str
 
 
+@dataclass(frozen=True)
+class BonePose:
+    """A bone-local pose delta authored in readable canonical units."""
+
+    rotation_degrees: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    location_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    target_direction: tuple[float, float, float] | None = None
+
+
+@dataclass(frozen=True)
+class ActionRecord:
+    action: bpy.types.Action
+    category: str
+    duration_seconds: float
+    loop: bool
+    source_frame_count: int
+    source_fps: float
+
+
 @dataclass
 class BuildResult:
     root: bpy.types.Object
@@ -185,6 +254,7 @@ class BuildResult:
     materials: dict[str, bpy.types.Material]
     parts: list[PartRecord] = field(default_factory=list)
     presentation_objects: list[bpy.types.Object] = field(default_factory=list)
+    actions: dict[str, ActionRecord] = field(default_factory=dict)
 
     @property
     def export_objects(self) -> list[bpy.types.Object]:
@@ -196,6 +266,8 @@ class ValidationReport:
     object_count: int
     mesh_count: int
     triangle_count: int
+    action_count: int
+    socket_count: int
     bounds_min: tuple[float, float, float]
     bounds_max: tuple[float, float, float]
 
@@ -224,6 +296,14 @@ def parse_args() -> BuildConfig:
         help="Optional PNG path; triggers a portrait render.",
     )
     parser.add_argument(
+        "--portrait",
+        type=Path,
+        help=(
+            "Optional transparent 192x256 head/upper-torso inventory "
+            "portrait rendered from the production rig."
+        ),
+    )
+    parser.add_argument(
         "--manifest",
         type=Path,
         help="Optional JSON manifest with objects, mappings and bounds.",
@@ -237,6 +317,14 @@ def parse_args() -> BuildConfig:
         "--fbx",
         type=Path,
         help="Optional selection-only FBX export path.",
+    )
+    parser.add_argument(
+        "--animation-fbx",
+        type=Path,
+        help=(
+            "Optional armature-only FBX containing all generated Actions; "
+            "use --fbx for the animation-free model export."
+        ),
     )
     parser.add_argument(
         "--height",
@@ -253,8 +341,11 @@ def parse_args() -> BuildConfig:
     parser.add_argument(
         "--pose",
         choices=("relaxed", "apose"),
-        default="relaxed",
-        help="Canonical relaxed stance or symmetric animation A-pose.",
+        default="apose",
+        help=(
+            "Bind pose (default: apose). Relaxed remains a compatibility "
+            "preview; production exports should use apose."
+        ),
     )
     args = parser.parse_args(user_args)
 
@@ -264,9 +355,11 @@ def parse_args() -> BuildConfig:
     return BuildConfig(
         output=resolve_path(args.output),
         preview=resolve_optional_path(args.preview),
+        portrait=resolve_optional_path(args.portrait),
         manifest=resolve_optional_path(args.manifest),
         glb=resolve_optional_path(args.glb),
         fbx=resolve_optional_path(args.fbx),
+        animation_fbx=resolve_optional_path(args.animation_fbx),
         height=args.height,
         seed=args.seed,
         pose=args.pose,
@@ -664,6 +757,7 @@ class CharacterBuilder:
         self.result: BuildResult | None = None
         self.points: dict[str, Vector] = {}
         self.bone_heads: dict[str, Vector] = {}
+        self.bone_specs: dict[str, BoneSpec] = {}
 
     def v(self, x: float, y: float, z: float) -> Vector:
         return Vector((x, y, z)) * self.scale
@@ -687,6 +781,7 @@ class CharacterBuilder:
             bone_specs,
         )
         self.bone_heads = {spec.name: spec.head for spec in bone_specs}
+        self.bone_specs = {spec.name: spec for spec in bone_specs}
         self.result = BuildResult(
             root=root,
             rig=rig,
@@ -698,6 +793,7 @@ class CharacterBuilder:
         self.build_clothing()
         self.build_face_and_hair()
         self.build_asymmetric_details()
+        self.build_actions()
         self.build_presentation()
         self.configure_scene_metadata()
         return self.result
@@ -718,6 +814,8 @@ class CharacterBuilder:
         scene.frame_start = 1
         scene.frame_end = 32
         scene.frame_set(1)
+        scene.render.fps = ANIMATION_FPS
+        scene.render.fps_base = 1.0
 
         for engine_name in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
             try:
@@ -820,7 +918,7 @@ class CharacterBuilder:
 
     def create_bone_specs(self) -> list[BoneSpec]:
         p = self.points
-        return [
+        specs = [
             BoneSpec("root", self.v(0, 0, 0), self.v(0, 0, 0.18), deform=False),
             BoneSpec(
                 "pelvis",
@@ -953,6 +1051,96 @@ class CharacterBuilder:
                 True,
             ),
         ]
+
+        # Small deforming face controls keep expression Actions bone-only.
+        # Their names are stable import identifiers; no shape keys or object
+        # visibility curves are required for blink/watchful/tense states.
+        specs.extend(
+            (
+                BoneSpec(
+                    "face.eye.L",
+                    self.v(0.052, -0.147, 1.581),
+                    self.v(0.052, -0.147, 1.599),
+                    "head",
+                ),
+                BoneSpec(
+                    "face.eye.R",
+                    self.v(-0.052, -0.147, 1.581),
+                    self.v(-0.052, -0.147, 1.599),
+                    "head",
+                ),
+                BoneSpec(
+                    "face.brow.L",
+                    self.v(0.082, -0.154, 1.627),
+                    self.v(0.027, -0.157, 1.621),
+                    "head",
+                ),
+                BoneSpec(
+                    "face.brow.R",
+                    self.v(-0.082, -0.154, 1.625),
+                    self.v(-0.027, -0.157, 1.619),
+                    "head",
+                ),
+                BoneSpec(
+                    "face.mouth",
+                    self.v(-0.036, -0.151, 1.477),
+                    self.v(0.048, -0.151, 1.477),
+                    "head",
+                ),
+            )
+        )
+
+        # Non-deforming sockets are real bones rather than generated empties.
+        # They survive FBX axis conversion and inherit animation directly.
+        grip_l = p["wrist.L"].lerp(p["hand.L"], 0.72)
+        grip_r = p["wrist.R"].lerp(p["hand.R"], 0.72)
+        specs.extend(
+            (
+                BoneSpec(
+                    "SOCKET_Grip.L",
+                    grip_l,
+                    grip_l + self.v(0, -0.055, 0),
+                    "hand.L",
+                    deform=False,
+                ),
+                BoneSpec(
+                    "SOCKET_Grip.R",
+                    grip_r,
+                    grip_r + self.v(0, -0.055, 0),
+                    "hand.R",
+                    deform=False,
+                ),
+                BoneSpec(
+                    "SOCKET_Cigarette.R",
+                    grip_r + self.v(0, -0.010, 0.012),
+                    grip_r + self.v(0, -0.085, 0.012),
+                    "hand.R",
+                    deform=False,
+                ),
+                BoneSpec(
+                    "SOCKET_Bottle.R",
+                    grip_r,
+                    grip_r + self.v(0, 0, -0.085),
+                    "hand.R",
+                    deform=False,
+                ),
+                BoneSpec(
+                    "SOCKET_Vessel.L",
+                    grip_l,
+                    grip_l + self.v(0, 0, -0.085),
+                    "hand.L",
+                    deform=False,
+                ),
+                BoneSpec(
+                    "SOCKET_Mouth",
+                    self.v(0.006, -0.158, 1.477),
+                    self.v(0.006, -0.218, 1.477),
+                    "head",
+                    deform=False,
+                ),
+            )
+        )
+        return specs
 
     def create_armature(
         self,
@@ -1467,7 +1655,7 @@ class CharacterBuilder:
                 ),
                 "EyeWhite",
                 "details",
-                "head",
+                f"face.eye.{side}",
                 "Body",
                 "facial_detail",
                 anatomical,
@@ -1480,7 +1668,7 @@ class CharacterBuilder:
                 ),
                 "Eye",
                 "details",
-                "head",
+                f"face.eye.{side}",
                 "Body",
                 "facial_detail",
                 anatomical,
@@ -1498,7 +1686,7 @@ class CharacterBuilder:
                 ),
                 "Hair",
                 "details",
-                "head",
+                f"face.brow.{side}",
                 "Body",
                 "facial_detail",
                 anatomical,
@@ -1563,7 +1751,7 @@ class CharacterBuilder:
             ),
             "SkinDark",
             "details",
-            "head",
+            "face.mouth",
             "Body",
             "facial_detail",
         )
@@ -1785,6 +1973,416 @@ class CharacterBuilder:
             "accessory",
         )
 
+    @staticmethod
+    def merge_pose(
+        base: dict[str, BonePose],
+        *overrides: dict[str, BonePose],
+    ) -> dict[str, BonePose]:
+        merged = dict(base)
+        for override in overrides:
+            merged.update(override)
+        return merged
+
+    def relaxed_pose(self) -> dict[str, BonePose]:
+        """Return the ordinary weary stance as animation, never bind pose."""
+
+        if self.config.pose == "relaxed":
+            return {}
+        return {
+            "upper_arm.L": BonePose(
+                target_direction=(0.059, -0.014, -0.334)
+            ),
+            "upper_arm.R": BonePose(
+                target_direction=(-0.047, -0.010, -0.334)
+            ),
+            "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
+            "forearm.R": BonePose(rotation_degrees=(-5.0, -3.0, 2.0)),
+            "hand.L": BonePose(rotation_degrees=(2.0, -5.0, 2.0)),
+            "hand.R": BonePose(rotation_degrees=(2.0, 5.0, -2.0)),
+            "spine": BonePose(rotation_degrees=(-2.0, 0.0, 1.2)),
+            "chest": BonePose(rotation_degrees=(2.5, 0.0, -1.4)),
+            "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.8)),
+            "head": BonePose(rotation_degrees=(1.5, 0.0, -0.6)),
+        }
+
+    def _reset_pose(self) -> None:
+        if self.result is None:
+            raise RuntimeError("BuildResult has not been initialized")
+        for pose_bone in self.result.rig.pose.bones:
+            pose_bone.rotation_mode = "QUATERNION"
+            pose_bone.location = (0.0, 0.0, 0.0)
+            pose_bone.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+            pose_bone.scale = (1.0, 1.0, 1.0)
+        bpy.context.view_layer.update()
+
+    def _apply_pose(self, pose: dict[str, BonePose]) -> None:
+        if self.result is None:
+            raise RuntimeError("BuildResult has not been initialized")
+        rig = self.result.rig
+        for bone_name in (*REQUIRED_BONES, *REQUIRED_FACE_BONES):
+            transform = pose.get(bone_name)
+            if transform is None:
+                continue
+            pose_bone = rig.pose.bones[bone_name]
+            if transform.target_direction is not None:
+                target_direction = Vector(transform.target_direction).normalized()
+                rest_bone = pose_bone.bone
+                rest_direction = (
+                    rest_bone.tail_local - rest_bone.head_local
+                ).normalized()
+                target_rotation = (
+                    rest_direction.rotation_difference(target_direction)
+                    @ rest_bone.matrix_local.to_quaternion()
+                )
+                parent = pose_bone.parent
+                if parent is not None:
+                    parent_delta = (
+                        parent.matrix.to_quaternion()
+                        @ parent.bone.matrix_local.to_quaternion().inverted()
+                    )
+                    target_rotation = parent_delta @ target_rotation
+                pose_bone.matrix = (
+                    Matrix.Translation(pose_bone.head.copy())
+                    @ target_rotation.to_matrix().to_4x4()
+                )
+                bpy.context.view_layer.update()
+            else:
+                pose_bone.rotation_quaternion = Euler(
+                    tuple(math.radians(value) for value in transform.rotation_degrees),
+                    "XYZ",
+                ).to_quaternion()
+            pose_bone.location = Vector(transform.location_m) * self.scale
+            pose_bone.scale = transform.scale
+        bpy.context.view_layer.update()
+
+    def _create_action(
+        self,
+        name: str,
+        category: str,
+        duration_seconds: float,
+        loop: bool,
+        source_frame_count: int,
+        source_fps: float,
+        keys: Sequence[tuple[float, dict[str, BonePose]]],
+    ) -> None:
+        if self.result is None:
+            raise RuntimeError("BuildResult has not been initialized")
+        if name in self.result.actions:
+            raise ValueError(f"Duplicate Action {name}")
+        if not keys or keys[0][0] != 0.0 or keys[-1][0] != 1.0:
+            raise ValueError(f"Action {name} needs normalized 0 and 1 endpoints")
+
+        action = bpy.data.actions.new(name)
+        action.use_fake_user = True
+        action.use_frame_range = True
+        action.frame_start = 0.0
+        action.frame_end = float(max(1, round(duration_seconds * ANIMATION_FPS)))
+        action.use_cyclic = loop
+        action["bp_category"] = category
+        action["bp_duration_seconds"] = duration_seconds
+        action["bp_loop"] = loop
+        action["bp_source_frame_count"] = source_frame_count
+        action["bp_source_fps"] = source_fps
+        action["bp_root_motion"] = False
+        action["bp_generator_version"] = GENERATOR_VERSION
+
+        rig = self.result.rig
+        animation_data = rig.animation_data_create()
+        animation_data.action = action
+        keyed_bones = (*REQUIRED_BONES, *REQUIRED_FACE_BONES)
+        for normalized_time, pose in keys:
+            self._reset_pose()
+            self._apply_pose(pose)
+            frame = round(action.frame_end * normalized_time)
+            for bone_name in keyed_bones:
+                pose_bone = rig.pose.bones[bone_name]
+                group_name = bone_name.split(".")[0]
+                pose_bone.keyframe_insert(
+                    data_path="location",
+                    frame=frame,
+                    group=group_name,
+                )
+                pose_bone.keyframe_insert(
+                    data_path="rotation_quaternion",
+                    frame=frame,
+                    group=group_name,
+                )
+                pose_bone.keyframe_insert(
+                    data_path="scale",
+                    frame=frame,
+                    group=group_name,
+                )
+
+        for fcurve in iter_action_fcurves(action):
+            for keyframe in fcurve.keyframe_points:
+                keyframe.interpolation = "LINEAR"
+        animation_data.action = None
+        self._reset_pose()
+        self.result.actions[name] = ActionRecord(
+            action=action,
+            category=category,
+            duration_seconds=duration_seconds,
+            loop=loop,
+            source_frame_count=source_frame_count,
+            source_fps=source_fps,
+        )
+
+    def build_actions(self) -> None:
+        """Author deterministic, in-place first-pass production Actions."""
+
+        relaxed = self.relaxed_pose()
+        idle_inhale = self.merge_pose(
+            relaxed,
+            {
+                "spine": BonePose(rotation_degrees=(-3.2, 0.0, 1.8)),
+                "chest": BonePose(rotation_degrees=(3.8, 0.0, -1.8)),
+                "head": BonePose(rotation_degrees=(0.5, 0.0, -0.3)),
+            },
+        )
+        self._create_action(
+            "Relaxed", "locomotion", 1.0 / ANIMATION_FPS, False, 1, 24,
+            ((0.0, relaxed), (1.0, relaxed)),
+        )
+        self._create_action(
+            "Idle", "locomotion", 2.0, True, 48, 24,
+            ((0.0, relaxed), (0.5, idle_inhale), (1.0, relaxed)),
+        )
+
+        walk_left = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.05, 0.16, -0.31)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.05, -0.16, -0.31)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(0.0, 2.0, -2.0)),
+            },
+        )
+        walk_right = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.L": BonePose(
+                    target_direction=(0.05, -0.16, -0.31)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.05, 0.16, -0.31)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(0.0, -2.0, 2.0)),
+            },
+        )
+        self._create_action(
+            "Walk", "locomotion", 1.0, True, 24, 24,
+            (
+                (0.0, walk_left),
+                (0.25, relaxed),
+                (0.5, walk_right),
+                (0.75, relaxed),
+                (1.0, walk_left),
+            ),
+        )
+
+        face_poses = {
+            "Face_Neutral": {},
+            "Face_HalfBlink": {
+                "face.eye.L": BonePose(scale=(1.0, 0.48, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.48, 1.0)),
+            },
+            "Face_ClosedBlink": {
+                "face.eye.L": BonePose(scale=(1.0, 0.08, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.08, 1.0)),
+            },
+            "Face_Watchful": {
+                "face.eye.L": BonePose(scale=(1.0, 1.18, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 1.18, 1.0)),
+                "face.brow.L": BonePose(
+                    rotation_degrees=(0.0, 0.0, -5.0),
+                    location_m=(0.0, 0.0, 0.006),
+                ),
+                "face.brow.R": BonePose(
+                    rotation_degrees=(0.0, 0.0, 5.0),
+                    location_m=(0.0, 0.0, 0.006),
+                ),
+            },
+            "Face_Tense": {
+                "face.eye.L": BonePose(scale=(1.0, 0.72, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.72, 1.0)),
+                "face.brow.L": BonePose(rotation_degrees=(0.0, 0.0, 12.0)),
+                "face.brow.R": BonePose(rotation_degrees=(0.0, 0.0, -12.0)),
+                "face.mouth": BonePose(scale=(0.82, 1.0, 1.0)),
+            },
+        }
+        for name, pose in face_poses.items():
+            self._create_action(
+                name, "facial", 1.0 / ANIMATION_FPS, False, 1, 24,
+                ((0.0, pose), (1.0, pose)),
+            )
+
+        for side_name, sign in (("Left", 1.0), ("Right", -1.0)):
+            stumble = self.merge_pose(
+                relaxed,
+                {
+                    "pelvis": BonePose(rotation_degrees=(4.0, 0.0, sign * 28.0)),
+                    "spine": BonePose(rotation_degrees=(-10.0, 0.0, sign * 12.0)),
+                    "chest": BonePose(rotation_degrees=(8.0, 0.0, sign * 10.0)),
+                    "upper_arm.L": BonePose(
+                        target_direction=(0.22, -0.08, -0.08)
+                    ),
+                    "upper_arm.R": BonePose(
+                        target_direction=(-0.22, -0.08, -0.08)
+                    ),
+                },
+            )
+            down = {
+                "pelvis": BonePose(
+                    rotation_degrees=(6.0, 0.0, sign * 88.0),
+                    location_m=(sign * 0.10, 0.0, -0.52),
+                ),
+                "spine": BonePose(rotation_degrees=(-8.0, 0.0, sign * 6.0)),
+                "chest": BonePose(rotation_degrees=(12.0, 0.0, sign * 5.0)),
+                "head": BonePose(rotation_degrees=(-8.0, 0.0, -sign * 7.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(18.0, 0.0, 20.0)),
+                "upper_arm.R": BonePose(rotation_degrees=(-12.0, 0.0, -18.0)),
+                "thigh.L": BonePose(rotation_degrees=(22.0, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -4.0)),
+                "shin.L": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
+            }
+            down_breath = self.merge_pose(
+                down,
+                {"chest": BonePose(rotation_degrees=(14.0, 0.0, sign * 5.0))},
+            )
+            self._create_action(
+                f"Fall{side_name}", "fall", 0.45, False, 14, 31.111,
+                ((0.0, relaxed), (0.42, stumble), (1.0, down)),
+            )
+            self._create_action(
+                f"Down{side_name}", "fall", 1.20, False, 36, 30,
+                ((0.0, down), (0.5, down_breath), (1.0, down)),
+            )
+            self._create_action(
+                f"Rise{side_name}", "fall", 1.0, False, 30, 30,
+                ((0.0, down), (0.55, stumble), (1.0, relaxed)),
+            )
+
+        lying = {
+            "pelvis": BonePose(
+                rotation_degrees=(-88.0, 0.0, 0.0),
+                location_m=(0.0, 0.04, -0.45),
+            ),
+            "spine": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
+            "chest": BonePose(rotation_degrees=(7.0, 0.0, 4.0)),
+            "neck": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(-12.0, 0.0, -4.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(18.0, -8.0, 10.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-12.0, 6.0, -12.0)),
+            "forearm.L": BonePose(rotation_degrees=(-35.0, 0.0, 18.0)),
+            "forearm.R": BonePose(rotation_degrees=(-42.0, 0.0, -14.0)),
+            "thigh.L": BonePose(rotation_degrees=(10.0, 0.0, 4.0)),
+            "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -5.0)),
+            "shin.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+            "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        }
+        lying_breath = self.merge_pose(
+            lying,
+            {"chest": BonePose(rotation_degrees=(9.0, 0.0, 4.0))},
+        )
+        self._create_action(
+            "BedEnter", "bed", 2.0, False, 24, 12,
+            ((0.0, relaxed), (0.5, self.merge_pose(relaxed, {
+                "pelvis": BonePose(rotation_degrees=(-42.0, 0.0, 0.0), location_m=(0.0, 0.02, -0.18)),
+            })), (1.0, lying)),
+        )
+        self._create_action(
+            "BedSleepLoop", "bed", 4.0, True, 16, 4,
+            ((0.0, lying), (0.5, lying_breath), (1.0, lying)),
+        )
+        self._create_action(
+            "BedExit", "bed", 2.0, False, 24, 12,
+            ((0.0, lying), (0.5, self.merge_pose(relaxed, {
+                "pelvis": BonePose(rotation_degrees=(-42.0, 0.0, 0.0), location_m=(0.0, 0.02, -0.18)),
+            })), (1.0, relaxed)),
+        )
+
+        smoke_pose = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.R": BonePose(target_direction=(0.04, -0.19, -0.10)),
+                "forearm.R": BonePose(rotation_degrees=(-62.0, 12.0, -28.0)),
+                "hand.R": BonePose(rotation_degrees=(18.0, -10.0, 8.0)),
+                "head": BonePose(rotation_degrees=(-5.0, 0.0, 4.0)),
+            },
+        )
+        smoke_draw = self.merge_pose(
+            smoke_pose,
+            {
+                "chest": BonePose(rotation_degrees=(4.5, 0.0, -2.0)),
+                "head": BonePose(rotation_degrees=(-8.0, 0.0, 3.0)),
+            },
+        )
+        self._create_action(
+            "SmokeEnter", "smoking", 4.0, False, 48, 12,
+            ((0.0, relaxed), (0.7, smoke_pose), (1.0, smoke_pose)),
+        )
+        self._create_action(
+            "SmokeLoop", "smoking", 4.0, True, 24, 6,
+            (
+                (0.0, smoke_pose), (0.17, smoke_pose),
+                (0.42, smoke_draw), (0.58, smoke_draw),
+                (0.83, smoke_pose), (1.0, smoke_pose),
+            ),
+        )
+        self._create_action(
+            "SmokeExit", "smoking", 2.0, False, 24, 12,
+            ((0.0, smoke_pose), (0.25, smoke_pose), (1.0, relaxed)),
+        )
+
+        feed_pose = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(target_direction=(0.08, -0.16, -0.28)),
+                "upper_arm.R": BonePose(target_direction=(-0.08, -0.16, -0.28)),
+                "forearm.L": BonePose(rotation_degrees=(-28.0, 0.0, 12.0)),
+                "forearm.R": BonePose(rotation_degrees=(-28.0, 0.0, -12.0)),
+                "thigh.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
+            },
+        )
+        feed_offer = self.merge_pose(
+            feed_pose,
+            {
+                "forearm.L": BonePose(rotation_degrees=(-36.0, 0.0, 8.0)),
+                "forearm.R": BonePose(rotation_degrees=(-36.0, 0.0, -8.0)),
+            },
+        )
+        self._create_action(
+            "CatFeedEnter", "cat_feeding", 2.0, False, 24, 12,
+            ((0.0, relaxed), (1.0, feed_pose)),
+        )
+        self._create_action(
+            "CatFeedLoop", "cat_feeding", 16.0 / 6.0, True, 16, 6,
+            ((0.0, feed_pose), (0.5, feed_offer), (1.0, feed_pose)),
+        )
+        self._create_action(
+            "CatFeedExit", "cat_feeding", 2.0, False, 24, 12,
+            ((0.0, feed_pose), (1.0, relaxed)),
+        )
+
     def build_presentation(self) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -1813,6 +2411,22 @@ class CharacterBuilder:
         camera["bp_export"] = False
         bpy.context.scene.camera = camera
         self.result.presentation_objects.append(camera)
+
+        portrait_camera_data = bpy.data.cameras.new(
+            "CAM_PlayerPortrait_Data"
+        )
+        portrait_camera = bpy.data.objects.new(
+            "CAM_PlayerPortrait",
+            portrait_camera_data,
+        )
+        collection.objects.link(portrait_camera)
+        portrait_camera.location = self.v(0.62, -2.85, 1.52)
+        portrait_camera_data.lens = 82.0
+        portrait_camera_data.sensor_width = 36.0
+        look_at(portrait_camera, self.v(0, -0.025, 1.28))
+        portrait_camera["bp_export"] = False
+        portrait_camera["bp_output"] = "inventory portrait 192x256 RGBA"
+        self.result.presentation_objects.append(portrait_camera)
 
         light_specs = (
             (
@@ -1857,10 +2471,24 @@ class CharacterBuilder:
         scene["bp_character_height_m"] = self.config.height
         scene["bp_pose"] = self.config.pose
         scene["bp_seed"] = self.config.seed
-        scene["bp_runtime_integrated"] = False
+        scene["bp_runtime_integrated"] = True
         scene["bp_design_source"] = (
             "ArtSource/Player/PlayerDirectionalTurntable.png"
         )
+
+
+def iter_action_fcurves(action: bpy.types.Action):
+    """Yield curves from Blender legacy Actions and 4.4+ layered Actions."""
+
+    legacy_curves = getattr(action, "fcurves", None)
+    if legacy_curves is not None:
+        yield from legacy_curves
+        return
+    for layer in action.layers:
+        for strip in layer.strips:
+            channelbags = getattr(strip, "channelbags", ())
+            for channelbag in channelbags:
+                yield from channelbag.fcurves
 
 
 def validate_manifold(obj: bpy.types.Object) -> None:
@@ -1912,12 +2540,59 @@ def validate_result(
         errors.append("Required body parts share mesh datablocks")
 
     rig_bones = result.rig.data.bones
-    for bone_name in REQUIRED_BONES:
+    for bone_name in (*REQUIRED_BONES, *REQUIRED_FACE_BONES, *REQUIRED_SOCKET_BONES):
         bone = rig_bones.get(bone_name)
         if bone is None:
             errors.append(f"Missing required bone {bone_name}")
         elif bone.length <= 1e-5:
             errors.append(f"Bone {bone_name} has zero length")
+    for bone_name in REQUIRED_SOCKET_BONES:
+        bone = rig_bones.get(bone_name)
+        if bone is not None and bone.use_deform:
+            errors.append(f"Socket bone {bone_name} must not deform geometry")
+    for bone_name in REQUIRED_FACE_BONES:
+        bone = rig_bones.get(bone_name)
+        if bone is not None and not bone.use_deform:
+            errors.append(f"Face bone {bone_name} must deform its detail mesh")
+
+    if set(result.actions) != set(REQUIRED_ACTIONS):
+        missing_actions = sorted(set(REQUIRED_ACTIONS) - set(result.actions))
+        extra_actions = sorted(set(result.actions) - set(REQUIRED_ACTIONS))
+        if missing_actions:
+            errors.append(f"Missing required Actions: {', '.join(missing_actions)}")
+        if extra_actions:
+            errors.append(f"Unexpected Actions: {', '.join(extra_actions)}")
+    for name, record in result.actions.items():
+        action = record.action
+        curves = list(iter_action_fcurves(action))
+        if not curves:
+            errors.append(f"Action {name} has no bone curves")
+            continue
+        for fcurve in curves:
+            if not fcurve.data_path.startswith('pose.bones["'):
+                errors.append(
+                    f"Action {name} contains non-bone curve {fcurve.data_path}"
+                )
+                break
+        if abs(action.frame_start) > 1e-6:
+            errors.append(f"Action {name} must start at frame zero")
+        expected_end = max(1, round(record.duration_seconds * ANIMATION_FPS))
+        if abs(action.frame_end - expected_end) > 1e-6:
+            errors.append(
+                f"Action {name} has frame end {action.frame_end}, "
+                f"expected {expected_end}"
+            )
+        if bool(action.get("bp_root_motion", True)):
+            errors.append(f"Action {name} must declare root motion disabled")
+        if record.loop:
+            for fcurve in curves:
+                first = fcurve.evaluate(action.frame_start)
+                last = fcurve.evaluate(action.frame_end)
+                if abs(first - last) > 1e-4:
+                    errors.append(
+                        f"Loop Action {name} does not close on {fcurve.data_path}"
+                    )
+                    break
 
     triangle_count = 0
     all_minima: list[Vector] = []
@@ -2047,6 +2722,8 @@ def validate_result(
         object_count=len(result.export_objects),
         mesh_count=len(result.parts),
         triangle_count=triangle_count,
+        action_count=len(result.actions),
+        socket_count=len(REQUIRED_SOCKET_BONES),
         bounds_min=tuple(round(value, 6) for value in bounds_min),
         bounds_max=tuple(round(value, 6) for value in bounds_max),
     )
@@ -2069,6 +2746,92 @@ def render_preview(path: Path) -> None:
     bpy.ops.render.render(write_still=True)
 
 
+def render_inventory_portrait(path: Path, result: BuildResult) -> None:
+    """Render the dedicated transparent UI portrait and validate its alpha."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    camera = bpy.data.objects.get("CAM_PlayerPortrait")
+    ground = bpy.data.objects.get("GEO_PreviewGround")
+    relaxed = result.actions.get("Relaxed")
+    if camera is None or camera.type != "CAMERA":
+        raise RuntimeError("Missing deterministic inventory portrait camera")
+    if relaxed is None:
+        raise RuntimeError("Inventory portrait requires the Relaxed Action")
+
+    previous_camera = scene.camera
+    previous_filepath = scene.render.filepath
+    previous_resolution = (
+        scene.render.resolution_x,
+        scene.render.resolution_y,
+        scene.render.resolution_percentage,
+    )
+    previous_transparency = scene.render.film_transparent
+    previous_frame = scene.frame_current
+    animation_data = result.rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_ground_hidden = ground.hide_render if ground is not None else False
+
+    try:
+        scene.camera = camera
+        scene.render.resolution_x = 192
+        scene.render.resolution_y = 256
+        scene.render.resolution_percentage = 100
+        scene.render.film_transparent = True
+        scene.render.filepath = str(path)
+        if ground is not None:
+            ground.hide_render = True
+        animation_data.action = relaxed.action
+        scene.frame_set(0)
+        bpy.context.view_layer.update()
+        bpy.ops.render.render(write_still=True)
+
+        portrait_image = bpy.data.images.load(str(path), check_existing=False)
+        try:
+            if tuple(portrait_image.size) != (192, 256):
+                raise RuntimeError("Inventory portrait rendered at wrong size")
+            pixels = list(portrait_image.pixels)
+            alphas = pixels[3::4]
+            visible = sum(alpha > 0.02 for alpha in alphas)
+            coverage = visible / len(alphas)
+            if not 0.12 <= coverage <= 0.78:
+                raise RuntimeError(
+                    "Inventory portrait alpha coverage is implausible: "
+                    f"{coverage:.3f}"
+                )
+            width, height = portrait_image.size
+            corner_indices = (
+                0,
+                width - 1,
+                (height - 1) * width,
+                height * width - 1,
+            )
+            if any(alphas[index] > 0.001 for index in corner_indices):
+                raise RuntimeError(
+                    "Inventory portrait corners must be transparent"
+                )
+        finally:
+            bpy.data.images.remove(portrait_image)
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        if previous_action is None:
+            for pose_bone in result.rig.pose.bones:
+                pose_bone.rotation_mode = "QUATERNION"
+                pose_bone.location = (0.0, 0.0, 0.0)
+                pose_bone.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+                pose_bone.scale = (1.0, 1.0, 1.0)
+        if ground is not None:
+            ground.hide_render = previous_ground_hidden
+        scene.camera = previous_camera
+        scene.render.filepath = previous_filepath
+        scene.render.resolution_x = previous_resolution[0]
+        scene.render.resolution_y = previous_resolution[1]
+        scene.render.resolution_percentage = previous_resolution[2]
+        scene.render.film_transparent = previous_transparency
+        bpy.context.view_layer.update()
+
+
 def export_glb(path: Path, result: BuildResult) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     select_export_objects(result)
@@ -2080,6 +2843,7 @@ def export_glb(path: Path, result: BuildResult) -> None:
             export_animations=False,
             export_cameras=False,
             export_lights=False,
+            export_extras=True,
         )
     except (AttributeError, RuntimeError, TypeError) as error:
         raise RuntimeError(
@@ -2099,13 +2863,48 @@ def export_fbx(path: Path, result: BuildResult) -> None:
             axis_up="Y",
             add_leaf_bones=False,
             bake_anim=False,
-            use_armature_deform_only=True,
+            use_armature_deform_only=False,
             use_mesh_modifiers=True,
             mesh_smooth_type="FACE",
+            use_custom_props=True,
         )
     except (AttributeError, RuntimeError, TypeError) as error:
         raise RuntimeError(
             "FBX export is unavailable in this Blender installation"
+        ) from error
+
+
+def export_animation_fbx(path: Path, result: BuildResult) -> None:
+    """Export the complete Action library with skeleton, but without meshes."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    result.root.select_set(True)
+    result.rig.select_set(True)
+    bpy.context.view_layer.objects.active = result.rig
+    try:
+        bpy.ops.export_scene.fbx(
+            filepath=str(path),
+            use_selection=True,
+            object_types={"EMPTY", "ARMATURE"},
+            axis_forward="-Z",
+            axis_up="Y",
+            add_leaf_bones=False,
+            bake_anim=True,
+            bake_anim_use_all_bones=True,
+            bake_anim_use_nla_strips=False,
+            bake_anim_use_all_actions=True,
+            bake_anim_force_startend_keying=True,
+            bake_anim_step=1.0,
+            bake_anim_simplify_factor=0.0,
+            use_armature_deform_only=False,
+            use_custom_props=True,
+        )
+    except (AttributeError, RuntimeError, TypeError) as error:
+        raise RuntimeError(
+            "Animation FBX export is unavailable in this Blender installation"
         ) from error
 
 
@@ -2131,7 +2930,7 @@ def write_manifest(
         "generator_version": GENERATOR_VERSION,
         "blender_version": bpy.app.version_string,
         "design_source": "ArtSource/Player/PlayerDirectionalTurntable.png",
-        "runtime_integrated": False,
+        "runtime_integrated": True,
         "height_m": config.height,
         "pose": config.pose,
         "seed": config.seed,
@@ -2140,9 +2939,27 @@ def write_manifest(
         "object_count": report.object_count,
         "mesh_count": report.mesh_count,
         "triangle_count": report.triangle_count,
+        "action_count": report.action_count,
+        "socket_count": report.socket_count,
         "bounds_min": report.bounds_min,
         "bounds_max": report.bounds_max,
         "sprite_parts": list(SPRITE_PARTS),
+        "bones": [bone.name for bone in result.rig.data.bones],
+        "sockets": list(REQUIRED_SOCKET_BONES),
+        "actions": [
+            {
+                "name": name,
+                "category": record.category,
+                "duration_seconds": record.duration_seconds,
+                "loop": record.loop,
+                "source_frame_count": record.source_frame_count,
+                "source_fps": record.source_fps,
+                "frame_start": record.action.frame_start,
+                "frame_end": record.action.frame_end,
+                "root_motion": False,
+            }
+            for name, record in sorted(result.actions.items())
+        ],
         "parts": [
             {
                 "name": record.obj.name,
@@ -2175,17 +2992,23 @@ def print_report(
     print(f"  Export objects: {report.object_count}")
     print(f"  Separate mesh parts: {report.mesh_count}")
     print(f"  Triangles: {report.triangle_count}/{MAX_TRIANGLES}")
+    print(f"  Actions: {report.action_count}")
+    print(f"  Non-deforming sockets: {report.socket_count}")
     print(f"  Bounds min: {report.bounds_min}")
     print(f"  Bounds max: {report.bounds_max}")
     print(f"  Blend: {config.output}")
     if config.preview is not None:
         print(f"  Preview: {config.preview}")
+    if config.portrait is not None:
+        print(f"  Inventory portrait: {config.portrait}")
     if config.manifest is not None:
         print(f"  Manifest: {config.manifest}")
     if config.glb is not None:
         print(f"  GLB: {config.glb}")
     if config.fbx is not None:
         print(f"  FBX: {config.fbx}")
+    if config.animation_fbx is not None:
+        print(f"  Animation FBX: {config.animation_fbx}")
 
 
 def main() -> None:
@@ -2196,10 +3019,14 @@ def main() -> None:
 
     if config.preview is not None:
         render_preview(config.preview)
+    if config.portrait is not None:
+        render_inventory_portrait(config.portrait, result)
     if config.glb is not None:
         export_glb(config.glb, result)
     if config.fbx is not None:
         export_fbx(config.fbx, result)
+    if config.animation_fbx is not None:
+        export_animation_fbx(config.animation_fbx, result)
     if config.manifest is not None:
         write_manifest(config.manifest, config, result, report)
     save_blend(config.output)

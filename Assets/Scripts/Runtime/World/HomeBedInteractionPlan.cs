@@ -11,7 +11,7 @@ namespace BarPromenade
         private const float TriggerInset = 0.12f;
         internal const float BedSurfaceClearance = 0.045f;
         internal const float ActionHipFootwardOffset = 0.135f;
-        private const float UprightVisualOffset = 0.005f;
+        public const float UprightVisualOffset = 0.005f;
 
         private HomeBedInteractionPlan(
             Rect bedBounds,
@@ -104,15 +104,14 @@ namespace BarPromenade
                     "clearance inside the walkable room.");
             }
 
-            float uprightHipHeight =
-                (PlayerAnimatedInteractionController.HipPivotYPixels -
-                 PlayerSpriteRig.FeetPivotPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit +
-                UprightVisualOffset;
             Vector3 entryHip =
-                entryRoot + (Vector3.up * uprightHipHeight);
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    entryRoot,
+                    UprightVisualOffset);
             Vector3 exitHip =
-                exitRoot + (Vector3.up * uprightHipHeight);
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    exitRoot,
+                    UprightVisualOffset);
             Vector3 dockFacingDirection = Vector3.left;
             Vector3 headToFootAxis = Vector3.right;
             Vector3 actionHip = new Vector3(

@@ -10,8 +10,6 @@ namespace BarPromenade
     /// </summary>
     public sealed class HomeBalconySmokingPlan
     {
-        public const string AtlasResourcePath =
-            "Player/PlayerBalconySmokingAtlas";
         public const int EnterFrameCount = 24;
         public const float EnterFramesPerSecond = 6f;
         public const int LoopFrameCount = 24;
@@ -133,15 +131,14 @@ namespace BarPromenade
                     "balcony.");
             }
 
-            float hipHeight =
-                (PlayerAnimatedInteractionController.HipPivotYPixels -
-                 PlayerSpriteRig.FeetPivotPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit +
-                UprightVisualOffset;
             Vector3 entryHip =
-                entryRoot + Vector3.up * hipHeight;
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    entryRoot,
+                    UprightVisualOffset);
             Vector3 exitHip =
-                exitRoot + Vector3.up * hipHeight;
+                PlayerCharacterDimensions.GetUprightPelvisPosition(
+                    exitRoot,
+                    UprightVisualOffset);
             Vector3 actionHip = entryHip;
             Vector3 triggerSize = new Vector3(
                 TriggerWidth,
@@ -184,19 +181,17 @@ namespace BarPromenade
             CreateAnimationDefinition()
         {
             return new PlayerAnimatedInteractionDefinition(
-                AtlasResourcePath,
-                EnterFrameCount,
-                EnterFramesPerSecond,
-                LoopFrameCount,
-                LoopFramesPerSecond,
-                ExitFrameCount,
-                ExitFramesPerSecond,
-                renderAboveSceneDepth: false,
+                "SmokeEnter",
+                "SmokeLoop",
+                "SmokeExit",
+                enterFrameCount: EnterFrameCount,
+                enterFramesPerSecond: EnterFramesPerSecond,
+                loopFrameCount: LoopFrameCount,
+                loopFramesPerSecond: LoopFramesPerSecond,
+                exitFrameCount: ExitFrameCount,
+                exitFramesPerSecond: ExitFramesPerSecond,
                 loopFrameExtraHoldSeconds:
-                    CreateLoopFrameHolds(),
-                textureFlipX: false,
-                visualCrossfadeDurationSeconds: 0f,
-                alignBillboardToCameraPlane: false);
+                    CreateLoopFrameHolds());
         }
 
         private static float[] CreateLoopFrameHolds()

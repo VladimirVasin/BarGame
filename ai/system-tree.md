@@ -27,8 +27,6 @@ Assets/
       CityAtmosphereParticle.shader
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
-      PlayerAnimatedInteractionOverlay.shader  depth-independent contextual sprite
-      PlayerSpriteShadowCaster.shader  alpha-clipped ShadowsOnly silhouette
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
     Audio/
       Mixers/
@@ -63,14 +61,8 @@ Assets/
       TinctureMatchBackground.png  640x360 pixel-art bar backdrop
       TinctureMatchAtlas.png       4x4 shot/effect sprite atlas
     Player/
-      PlayerDirectionalAtlas.png       corrected 8x1 visual reference
-      PlayerDirectionalPartsAtlas.png  9 layers x 8 views, 64x96 per cell
-      PlayerDirectionalBodyExpressionsAtlas.png  five facial body rows
-      PlayerBedSleepAtlas.png           8x8 contextual sequence, 128x96 per cell
-      PlayerBalconySmokingAtlas.png      8x8 sequence with exact-idle endpoints, keyed motion
-      PlayerCatFeedingAtlas.png          8x8 present/feed/return interaction sequence
-      Falls/                             16 no-mirror fall atlases
-        PlayerDetailedFall*Atlas.png     8 views x 2 sides, 10x8 cells at 128x96
+      Player3D.prefab                   one production modular hero prefab
+      Player3DPortrait.png              transparent inventory portrait from 3D model
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -81,6 +73,14 @@ Assets/
     Localization/
       ru.json
       en.json
+  Player3D/
+    Models/
+      PlayerCharacter3D.fbx             production Generic model
+      PlayerCharacter3D.json            deterministic parts/bones/actions manifest
+    Animations/
+      PlayerCharacter3DAnimations.fbx   23 in-place bone-only Actions
+    Materials/
+      Player3DLit.mat                   shared URP/Lit hero material
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -154,14 +154,20 @@ Assets/
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
-      Player/        motor, 8-view rig, chase/fixed-pose camera and shadows
+      Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
-        PlayerSpriteRig.cs         nearest-view neutral render-frame handoff lock
+        PlayerPresentation.cs      3D motion/status/clip/visibility contracts
+        PlayerFactory.cs           shared prefab spawn in all five gameplay roots
+        PlayerContactShadow.cs     planted/fall-aware analytic ground patch
         PlayerNeedsRules.cs        clamped hunger/stress relief + fractional scaling
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
-        PlayerIntoxicationPose.cs   sway, balance and fall pose evaluator
-        PlayerFallAnimationTimeline.cs  14/36/30 authored frame mapping
+        PlayerFallAnimationTimeline.cs  14/36/30 deterministic phase sampling
+      Player3D/
+        Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
+        Player3DResources.cs            safe Resources prefab instantiation
+        Player3DCharacterPresentation.cs Idle/Walk, face/status/fall/context clip sampling
+        Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
         InventoryState.cs           atomic bounded stack mutations + starters
@@ -178,7 +184,7 @@ Assets/
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
-        HomeRefrigeratorFirstPersonHand.cs  procedural sleeve, hand and handle reach
+        HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
@@ -189,7 +195,7 @@ Assets/
         HomeDayNightController.cs      window and balcony time-of-day lighting
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
-        HomeFixedCameraController.cs  camera-plane Main/Bath + world-up Balcony shots
+        HomeFixedCameraController.cs  three fixed shots + activation/hold hysteresis
         HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog, grade and lights
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
@@ -211,13 +217,14 @@ Assets/
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
         InventoryView.cs            640x360 status + HH:MM/grid/description/command UI
-        InventoryIconLibrary.cs     point-filtered icons + canonical atlas crop
+        InventoryIconLibrary.cs     point-filtered icons + dedicated 3D hero portrait
         InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
+      Player3D/       deterministic model/animation/portrait import + prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
@@ -227,13 +234,14 @@ Assets/
       PlayerNeedsRulesTests.cs        relief floors, clamping and fraction scaling
       InventoryConsumableCatalogTests.cs current food/alcohol value table
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
-      InventoryPresentationTests.cs       icons, atlas portrait and 3D models
+      InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
+      Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
-      CatFeedingAnimationAssetTests.cs    player/cat atlas import and binary-alpha contract
+      CatFeedingAnimationAssetTests.cs    cat sprite-track import and timing contract
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
@@ -241,8 +249,7 @@ Assets/
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
-      HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, world-up yaw, timing, drift + safe exit
-      PlayerBalconySmokingAssetTests.cs       atlas/idle-handoff/source/build contract
+      HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, 3D clips, timing, drift + safe exit
       HomeRefrigeratorItem{Catalog,InspectionTimeline}Tests.cs  metadata and nested phases
       HomeOcclusion{Registry,Resolver}Tests.cs  group and ray contracts
       InteractionPromptViewTests.cs          prompt callback lifecycle
@@ -258,29 +265,34 @@ Assets/
       HomeBalconyPresentationPlayModeTests.cs  time lighting + fog invariants
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
-      HomeBalconySmokingInteractionPlayModeTests.cs  facing, world-up yaw, drift/direct handoff + restore
+      HomeBalconySmokingInteractionPlayModeTests.cs  facing, 3D clips, drift + exact restore
       HomeSmokingMusicPlayerPlayModeTests.cs optional clip and mixer-safe lifecycle
       HomeMusicPlayerPlayModeTests.cs      missing-track and Balcony-zone lifecycle
       SceneMusicPlayerPlayModeTests.cs     fade, pause/resume and scene-exit contracts
       HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
+      Player3DOrdinaryPresentationPlayModeTests.cs  roots, parts, locomotion/status/falls/shadow
+      PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
+      Player3DGameplaySceneIntegrationPlayModeTests.cs  all five gameplay roots
+      Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
+      BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
   Player/
-    PlayerDirectionalTurntable.png  locked 4x2 source turntable
-    Blender/                    experimental modular 3D authoring notes/output
-    BedSleep/                    64 source frames plus keyed/generated sheets
-    BalconySmoking/              generated/keyed art + exact-idle direct endpoints
-    CatFeeding/                  raw/keyed 8x8 player source + packing contract
+    PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
+    Blender/                    production .blend, transparent preview and authoring notes
+    BedSleep/                    retired player-sprite source history
+    BalconySmoking/              retired player-sprite source history
+    CatFeeding/                  retired player-sprite source history
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
-  build-player-puppet-atlas.py      deterministic reference/layers/blink build
-  build-player-3d-model.py          Blender 4+/5 modular low-poly authoring build
-  extract-player-bed-sleep-frames.py  deterministic keyed-sheet extraction
-  build-player-bed-sleep-atlas.py    validate and pack the 8x8 runtime atlas
-  extract-player-balcony-smoking-frames.py  align keyed art + exact-idle endpoints
-  build-player-balcony-smoking-atlas.py  validate and pack the 8x8 smoking atlas
-  build-player-cat-feeding-atlas.py  validate and pack the 8x8 feeding atlas
+  build-player-3d-model.py          production model/Actions/portrait build + validators
+  build-player-puppet-atlas.py      retired 2D player source tooling
+  extract-player-bed-sleep-frames.py      retired player-sprite source tooling
+  build-player-bed-sleep-atlas.py         retired player-sprite source tooling
+  extract-player-balcony-smoking-frames.py retired player-sprite source tooling
+  build-player-balcony-smoking-atlas.py   retired player-sprite source tooling
+  build-player-cat-feeding-atlas.py       retired player-sprite source tooling
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
@@ -362,7 +374,11 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
 player + seed -> CityFogField (unchanged by time of day)
-player + main directional light -> PlayerDynamicShadow -> world receivers
+five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
+                                      -> 73 mesh bindings + 16 core parts
+                                      -> Generic Idle/Walk/face/status/fall Actions
+                                      -> real URP mesh shadows
+player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> BarEntrance/BarExit -> SceneTransitionService
                          or SupermarketEntrance/Exit -> SupermarketInterior
@@ -382,7 +398,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> StairwellInteriorAtmosphere -> three flickering practicals
                                       -> green grade + sparse dust
        -> StairwellFixedCameraController -> lower/middle/apartment hard cuts
-                                         -> fixed pose + camera-plane billboard
+                                         -> same world-oriented 3D hero
        -> StairwellCatPlan -> Middle Landing Back Rail perch + walkable approach
                            -> StairwellCatActor -> rear-view billboard
                                                    + player-tracking head
@@ -397,9 +413,9 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                     -> prepare player/cat resources
                                     -> atomically remove one can
                                     -> grounded guided entry or clean cancellation
-                                    -> neutral FrontLeft render-frame handoff
-                                    -> middle-shot paired player/cat animation, no sprite fade
-                                    -> terminal exit-frame hold + separate exit pose
+                                    -> neutral 3D render-frame settle
+                                    -> CatFeedEnter/Loop/Exit + cat sprite track
+                                    -> terminal 3D pose hold + separate exit pose
                                     -> exact modal/presentation restoration
        -> StairwellAmbiencePlayer -> steady concrete room bed
        -> StairwellSoundscape -> spatial ventilation + electrical buzz
@@ -445,13 +461,11 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                           -> Balcony fade-out + pause
                           -> indoor same-sample resume + fade-in
        -> HomeFixedCameraController -> main/bath/balcony activation + hold bounds
-                                    -> PlayerCameraFollow fixed pose
-                                    -> MainRoom/Bathroom camera-plane billboard
-                                    -> Balcony world-up yaw billboard
-                                       -> reset when fixed control ends
+                                     -> PlayerCameraFollow fixed pose
+                                     -> same world-oriented 3D hero in every shot
        -> HomeOcclusionRegistry -> furniture/dressing/door/rail renderer groups
                                 -> HomePlayerOcclusionController
-                                   -> five camera-to-sprite samples
+                                   -> five samples from combined 3D renderer bounds
                                    -> head/chest/pelvis rays trigger group cutaway
                                    -> shared dither fade / hold / restore
                                    -> full opacity during Home modal presentation
@@ -459,27 +473,22 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
                                        -> visible Positioning -> Entering/Looping/Exiting
-                                       -> separate root/hip/facing entry + exit poses
-                                       -> PlayerBedSleepAtlas exact camera-plane billboard
-                                       -> camera-up handoff hip + LateUpdate pivot correction
-                                       -> projected bed axis + preserved handedness
+                                       -> separate root/pelvis/facing entry + exit poses
+                                       -> BedEnter/BedSleepLoop/BedExit on same rig
+                                       -> sample then align registered pelvis anchor
                                        -> grounded guided walk/turn or stalled cancel
-                                       -> neutral FrontLeft rendered handoff frame
-                                       -> direct rig/atlas endpoint handoff; zero sprite fade
-                                       -> terminal exit frame -> independent exit pose
+                                       -> neutral 3D rendered settle frame
+                                       -> terminal clip pose -> independent exit pose
                                        -> owner/transition cancel -> complete restoration
        -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
-                                  -> first E -> guided walk + face city +X
-                                     -> smoking TextureFlipX false
-                                     -> world-up yaw billboard (camera-plane mode off)
-                                     -> neutral BackRight render-frame handoff
-                                     -> exact-idle direct rig-to-atlas handoff; zero fade
-                                     -> keyed 24-frame enter without dissolve
-                                     -> held 24-frame drag/exhale loop
-                                  -> second E -> queued calm-boundary exit
-                                     -> 16-frame discard + held terminal endpoint
-                                     -> direct atlas-to-rig exit-pose handoff
-                                  -> shadows visible on approach; restored at exit
+                                   -> first E -> guided walk + face city +X
+                                      -> neutral 3D render-frame settle
+                                      -> SmokeEnter -> held SmokeLoop
+                                      -> cigarette at SOCKET_Cigarette.R
+                                   -> second E -> queued calm-boundary exit
+                                      -> SmokeExit + held terminal pose
+                                      -> independent exit-root restoration
+                                   -> continuous mesh/contact shadows
                                   -> quadratic city-biased push to 38-degree FOV
                                      -> 0.33 m Home-local +X look offset
                                      -> hero near 0.37 viewport X; city visible right
@@ -489,7 +498,9 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                   -> optional smoking_theme fade in/out
        -> HomeRefrigeratorInteraction -> modal unscaled timeline
                                       -> clickable close prompt -> RequestClose
-                                      -> first-person Bezier camera + low-poly hand
+                                      -> first-person Bezier camera
+                                         + prefab-derived right-arm subset
+                                         + owner-scoped visibility lease
                                       -> seal / handle / 102-degree door animation
                                       -> persistent lit inspection
                                       -> HomeRefrigeratorItemInspectionController
@@ -538,7 +549,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                             -> BarDrinkServiceWorldBuilder
                                -> 9 bottle views + 5 vessel views + pour stream
                             -> BarDrinkServiceTimeline
-                               -> seated camera + low-poly first-person arms
+                               -> seated camera + prefab-derived arm subsets
+                               -> owner-scoped world visibility lease
                                -> pickup -> pour -> 3 s drink -> vessel return
                                -> persistent browser -> explicit camera exit
                              -> GameSessionState wallet + drinking progress
@@ -557,11 +569,11 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                       -> remove physical product immediately
                                       -> filter source on scene re-entry
 GameSessionState intoxication -> IntoxicationStageRules
-                              -> motor + puppet + camera
+                              -> motor + 3D status bones + camera
                               -> IntoxicationRenderState -> PS1 world composite
                               -> above 60 -> balance scheduler/model
                                  -> BalanceCheckView
-                                 -> success or 16-atlas detailed fall/recovery
+                                 -> success or left/right Generic fall/down/rise clips
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
                           -> City test-teleport toggle -> CityMap all-lot selection

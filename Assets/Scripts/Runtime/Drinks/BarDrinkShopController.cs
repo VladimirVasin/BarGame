@@ -19,8 +19,6 @@ namespace BarPromenade
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
-        private readonly bool[] previousRigRendererStates =
-            new bool[PlayerSpriteRig.PartCount];
         private readonly RaycastHit[] selectionHits =
             new RaycastHit[MaximumRayHits];
 
@@ -57,9 +55,8 @@ namespace BarPromenade
         private bool hasPhysicalPresentation;
         private bool playerVisualStateCaptured;
         private bool playerVisualHidden;
+        private IDisposable playerVisualHideLease;
         private bool sceneMarkerStateCaptured;
-        private bool previousDynamicShadowEnabled;
-        private bool previousContactShadowEnabled;
         private bool purchaseCommitted;
         private bool clinkPlayed;
         private bool pourPlayed;
@@ -818,23 +815,8 @@ namespace BarPromenade
 
         private void CapturePlayerVisualState()
         {
-            previousDynamicShadowEnabled =
-                player.Shadow != null && player.Shadow.enabled;
-            previousContactShadowEnabled =
-                player.ContactShadow != null &&
-                player.ContactShadow.enabled;
-            IReadOnlyList<SpriteRenderer> renderers =
-                player.Visual.Renderers;
-            for (int index = 0;
-                 index < PlayerSpriteRig.PartCount;
-                 index++)
-            {
-                SpriteRenderer renderer =
-                    index < renderers.Count ? renderers[index] : null;
-                previousRigRendererStates[index] =
-                    renderer != null && renderer.enabled;
-            }
-
+            playerVisualHideLease?.Dispose();
+            playerVisualHideLease = null;
             playerVisualStateCaptured = true;
             playerVisualHidden = false;
         }
@@ -856,31 +838,15 @@ namespace BarPromenade
                 return;
             }
 
-            IReadOnlyList<SpriteRenderer> renderers =
-                player.Visual.Renderers;
-            for (int index = 0;
-                 index < PlayerSpriteRig.PartCount;
-                 index++)
+            if (hidden)
             {
-                SpriteRenderer renderer =
-                    index < renderers.Count ? renderers[index] : null;
-                if (renderer != null)
-                {
-                    renderer.enabled =
-                        hidden ? false : previousRigRendererStates[index];
-                }
+                playerVisualHideLease =
+                    player.PresentationVisibility?.AcquireHidden(this);
             }
-
-            if (player.Shadow != null)
+            else
             {
-                player.Shadow.enabled =
-                    hidden ? false : previousDynamicShadowEnabled;
-            }
-
-            if (player.ContactShadow != null)
-            {
-                player.ContactShadow.enabled =
-                    hidden ? false : previousContactShadowEnabled;
+                playerVisualHideLease?.Dispose();
+                playerVisualHideLease = null;
             }
 
             playerVisualHidden = hidden;
@@ -894,6 +860,8 @@ namespace BarPromenade
             }
 
             SetPlayerVisualHidden(false);
+            playerVisualHideLease?.Dispose();
+            playerVisualHideLease = null;
             playerVisualStateCaptured = false;
             playerVisualHidden = false;
         }

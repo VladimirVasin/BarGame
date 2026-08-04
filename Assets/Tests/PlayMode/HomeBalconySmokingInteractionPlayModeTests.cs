@@ -78,11 +78,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Smoking, Is.Not.Null);
             Assert.That(home.SmokingMusic, Is.Not.Null);
             Assert.That(home.Smoking.IsInitialized, Is.True);
+            Assert.That(home.Smoking.CigaretteProp, Is.Not.Null);
             Assert.That(
-                home.Smoking.Definition
-                    .VisualCrossfadeDurationSeconds,
-                Is.Zero,
-                "Smoking must use a hard 0/1 rig-to-atlas handoff.");
+                home.Smoking.CigaretteProp.activeSelf,
+                Is.False);
+            Assert.That(
+                home.Smoking.Definition.EnterClipName,
+                Is.EqualTo("SmokeEnter"));
+            Assert.That(
+                home.Smoking.Definition.LoopClipName,
+                Is.EqualTo("SmokeLoop"));
+            Assert.That(
+                home.Smoking.Definition.ExitClipName,
+                Is.EqualTo("SmokeExit"));
 
             Vector3 entryPosition =
                 home.transform.TransformPoint(
@@ -204,12 +212,8 @@ namespace BarPromenade.Tests.PlayMode
                 home.Player.GameObject.transform,
                 entryPosition,
                 entryRotation);
-            Assert.That(
-                home.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.BackRight),
-                "The rig handoff view must match the smoking atlas's " +
-                "exact BackRight endpoint.");
-            AssertAtlasOnlyPresentation();
+            AssertContinuous3DPresentation("SmokeEnter");
+            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
             Assert.That(
                 home.InteractionPrompt.PromptKey,
                 Is.EqualTo(
@@ -222,87 +226,37 @@ namespace BarPromenade.Tests.PlayMode
                         Vector3.right)),
                 Is.LessThan(0.01f));
             Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.flipX,
-                Is.False,
-                "Smoking must use the atlas's city-facing profile without " +
-                "the bed animation's shared mirror.");
-            Assert.That(
-                home.AnimatedInteraction.CameraPlaneAlignmentEnabled,
-                Is.False,
-                "The balcony shot and smoking atlas must share world-up " +
-                "alignment so the exact endpoint cannot jump or drift.");
-            Assert.That(
-                home.Player.Visual.VisualRoot
-                    .GetComponent<BillboardSprite>()
-                    .CameraPlaneAlignmentEnabled,
-                Is.False,
-                "The ordinary balcony rig must already be world-up before " +
-                "the hard atlas handoff.");
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
                 home.Smoking.Timeline.CameraDriftBlend,
                 Is.EqualTo(0f),
                 "Camera drift must begin at zero instead of cutting into " +
                 "the captured Balcony shot.");
 
             Time.timeScale = 12f;
-            yield return WaitForAtlasPhaseCompletion(
+            yield return WaitForPhaseCompletion(
                 PlayerAnimatedInteractionPhase.Looping);
             Time.timeScale = 1f;
             yield return null;
 
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.flipX,
-                Is.False,
-                "The smoking-specific direction must remain unchanged " +
-                "after the enter handoff.");
+            AssertContinuous3DPresentation("SmokeLoop");
+            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
             Assert.That(
                 Vector3.Angle(
-                    home.AnimatedInteraction.AnimationVisualRoot.up,
+                    home.Player.GameObject.transform.up,
                     Vector3.up),
                 Is.LessThan(0.1f),
-                "The smoking silhouette must remain vertical in world " +
+                "The continuous smoking rig must remain upright in world " +
                 "space throughout its loop.");
-            float footOffset =
-                (PlayerSpriteRig.FeetPivotPixels -
-                 PlayerAnimatedInteractionController.HipPivotYPixels) /
-                PlayerAnimatedInteractionController.PixelsPerUnit;
-            Vector3 actualFoot =
-                home.AnimatedInteraction.AnimationVisualRoot.TransformPoint(
-                    Vector3.up * footOffset);
-            Vector3 expectedFoot = home.transform.TransformPoint(
-                home.SmokingPlan.DockRootPosition +
-                Vector3.up *
-                HomeBalconySmokingPlan.UprightVisualOffset);
-            Assert.That(
-                Vector3.Distance(actualFoot, expectedFoot),
-                Is.LessThan(0.01f),
-                "The upright smoking billboard must keep the authored feet " +
-                "on the balcony dock instead of moving them through the " +
-                "pitched camera plane.");
-            Assert.That(
-                Vector3.Dot(
-                    home.AnimatedInteraction
-                        .AnimationVisualRoot.right,
-                    camera.transform.right),
-                Is.LessThan(0f),
-                "The camera-facing billboard reverses its local X, so the " +
-                "unflipped atlas is the city-facing handedness.");
             Assert.That(
                 Vector3.Angle(camera.transform.up, Vector3.up),
                 Is.GreaterThan(10f),
                 "The close camera must remain materially pitched so this " +
                 "test distinguishes world-up from camera-plane alignment.");
+            Player3DCharacterPresentation playerPresentation =
+                (Player3DCharacterPresentation)home.Player.Visual;
             Vector3 actionHipWorld =
-                home.transform.TransformPoint(
-                    home.SmokingPlan.ActionHipPosition);
+                playerPresentation.Registry.Anchors.Pelvis.position;
             Vector3 cityFacingWorld =
                 actionHipWorld +
                 home.transform.TransformDirection(Vector3.right);
@@ -453,45 +407,32 @@ namespace BarPromenade.Tests.PlayMode
             Time.timeScale = 12f;
             yield return WaitForAnimatedPhase(
                 PlayerAnimatedInteractionPhase.Exiting);
-            AssertAtlasOnlyPresentation();
+            AssertContinuous3DPresentation("SmokeExit");
+            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
             Time.timeScale = 12f;
-            yield return WaitForAtlasPhaseCompletion(
+            yield return WaitForPhaseCompletion(
                 PlayerAnimatedInteractionPhase.Idle);
             Time.timeScale = 1f;
             yield return null;
 
             Assert.That(home.Smoking.OwnsInteraction, Is.False);
             Assert.That(home.Smoking.ExitQueued, Is.False);
+            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.False);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Player.Interactor.InputEnabled, Is.True);
-            Assert.That(
-                home.Player.Visual.BodyRenderer.enabled,
-                Is.True);
-            Assert.That(
-                home.Player.Visual.BodyRenderer.color.a,
-                Is.EqualTo(1f).Within(0.001f));
             for (int index = 0;
                  index < home.Player.Visual.Renderers.Count;
                  index++)
             {
-                SpriteRenderer renderer =
+                Renderer renderer =
                     home.Player.Visual.Renderers[index];
                 Assert.That(renderer.enabled, Is.True);
-                Assert.That(
-                    renderer.color.a,
-                    Is.EqualTo(1f).Within(0.001f));
             }
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.False);
-            Assert.That(home.Player.Shadow.enabled, Is.True);
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            Assert.That(
+                ((IPlayerClipPresentation)home.Player.Visual)
+                    .IsClipActive,
+                Is.False);
             Assert.That(
                 home.SmokingMusic.NormalizedGain,
                 Is.EqualTo(0f));
@@ -521,9 +462,6 @@ namespace BarPromenade.Tests.PlayMode
                     home.SmokingPlan.ExitRootPosition),
                 home.transform.rotation *
                     home.SmokingPlan.ExitRotation);
-            Assert.That(
-                home.Player.Visual.CurrentDirection,
-                Is.EqualTo(PlayerViewDirection.BackRight));
         }
 
         private IEnumerator LoadHome()
@@ -590,7 +528,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(home.Smoking));
         }
 
-        private IEnumerator WaitForAtlasPhaseCompletion(
+        private IEnumerator WaitForPhaseCompletion(
             PlayerAnimatedInteractionPhase expected)
         {
             PlayerAnimatedInteractionPhase activePhase =
@@ -605,7 +543,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     home.AnimatedInteraction.Phase,
                     Is.EqualTo(activePhase));
-                AssertAtlasOnlyPresentation();
+                AssertContinuous3DPresentation(
+                    activePhase ==
+                        PlayerAnimatedInteractionPhase.Entering
+                        ? "SmokeEnter"
+                        : "SmokeExit");
                 yield return null;
             }
 
@@ -614,7 +556,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(expected));
             if (expected != PlayerAnimatedInteractionPhase.Idle)
             {
-                AssertAtlasOnlyPresentation();
+                AssertContinuous3DPresentation("SmokeLoop");
             }
         }
 
@@ -649,61 +591,38 @@ namespace BarPromenade.Tests.PlayMode
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(
                     PlayerAnimatedInteractionPhase.Positioning));
+            Assert.That(home.Player.ContactShadow.enabled, Is.True);
+            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.False);
+            for (int index = 0;
+                 index < home.Player.Visual.Renderers.Count;
+                 index++)
+            {
+                Renderer renderer =
+                    home.Player.Visual.Renderers[index];
+                Assert.That(renderer.enabled, Is.True);
+            }
             Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
+                ((IPlayerClipPresentation)home.Player.Visual)
+                    .IsClipActive,
                 Is.False);
-            Assert.That(home.Player.Shadow.enabled, Is.True);
+        }
+
+        private void AssertContinuous3DPresentation(
+            string expectedClip)
+        {
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             for (int index = 0;
                  index < home.Player.Visual.Renderers.Count;
                  index++)
             {
-                SpriteRenderer renderer =
-                    home.Player.Visual.Renderers[index];
+                Renderer renderer = home.Player.Visual.Renderers[index];
                 Assert.That(renderer.enabled, Is.True);
-                Assert.That(
-                    renderer.color.a,
-                    Is.EqualTo(1f).Within(0.001f));
             }
-        }
 
-        private void AssertAtlasOnlyPresentation()
-        {
-            Assert.That(
-                home.AnimatedInteraction.RigVisualOpacity,
-                Is.EqualTo(0f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationVisualOpacity,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.enabled,
-                Is.True);
-            Assert.That(
-                home.AnimatedInteraction.AnimationRenderer.color.a,
-                Is.EqualTo(1f).Within(0.001f));
-            Assert.That(
-                home.Player.Shadow.enabled,
-                Is.False);
-            Assert.That(
-                home.Player.ContactShadow.enabled,
-                Is.False);
-            for (int index = 0;
-                 index < home.Player.Visual.Renderers.Count;
-                 index++)
-            {
-                SpriteRenderer renderer =
-                    home.Player.Visual.Renderers[index];
-                Assert.That(renderer.enabled, Is.False);
-                Assert.That(
-                    renderer.color.a,
-                    Is.EqualTo(0f).Within(0.001f));
-            }
+            IPlayerClipPresentation clips =
+                (IPlayerClipPresentation)home.Player.Visual;
+            Assert.That(clips.IsClipActive, Is.True);
+            Assert.That(clips.ActiveClipName, Is.EqualTo(expectedClip));
         }
 
         private static void AssertBoundedGuidedStep(

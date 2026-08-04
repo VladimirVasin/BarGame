@@ -8,6 +8,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
   in seven explicit build scenes.
+- **Accepted:** City, Bar, Supermarket, Home and Stairwell instantiate one
+  `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
+  Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
+  first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
+  contact patch are the active player presentation.
 
 ## MVP decisions
 
@@ -109,10 +114,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   batches per `48 m` chunk. Home regenerates and filters the same descriptors,
   then applies the same recipes after its world-to-local transform and exterior
   half-space clip.
-- **Accepted — Physical/visual split:** `CharacterController` stays on the
-  player root; a collider-free camera-facing child owns nine visual-only
-  `SpriteRenderer` components: body plus upper/lower segments for both arms
-  and legs.
+- **Superseded 2026-08-04 — Sprite physical/visual split:** The
+  `CharacterController` still stays on the player root, but the former
+  camera-facing nine-renderer sprite child has been replaced by the
+  collider-free modular 3D prefab and `IPlayerPresentation` contract.
 - **Accepted — Explicit scene allow-list:** Only `MainMenu`, `City`,
   `DoorTransition`, `BarInterior`, `SupermarketInterior`, `HomeInterior` and
   `StairwellInterior` install their matching roots. Directly opening
@@ -210,13 +215,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `HomeRefrigeratorInteraction` owns a separate unscaled
   `CameraApproach -> Reach -> Unsealing -> Opening -> Inspecting -> Closing ->
   Sealing -> CameraReturn` timeline. It captures the shared modal lock, keeps
-  the normal puppet and shadows through the camera approach, then hides them
-  in the same presentation frame that the procedural sleeved hand appears.
+  the normal 3D hero and contact shadow through the camera approach, then
+  acquires their owner-scoped visibility lease in the same presentation frame
+  that a right-arm subset filtered from the production prefab appears.
   It holds the `102°` open state until explicit close input; while the ordinary
   interactor is suspended, its clickable close prompt binds directly to the
-  same `RequestClose` guard used by keyboard/gamepad input. It restores the rig
-  and shadows at the start of `CameraReturn`; the exact active fixed-camera
-  shot, input and HUD restore on completion, disable or destroy. A cold
+  same `RequestClose` guard used by keyboard/gamepad input. It disposes the
+  subset and lease at the start of `CameraReturn`, restoring the exact world
+  mesh and contact-shadow state; the active fixed-camera shot, input and HUD
+  restore on completion, disable or destroy. A cold
   emissive strip plus `CityLightHalo` reveals the contents without increasing
   Home's realtime-light count; generated seal, hinge and thunk cues use the
   existing spatial audio contracts.
@@ -247,8 +254,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
   close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
-  point-filtered icons in the bounded five-column grid, crops the hero portrait
-  directly from the neutral front cell of the canonical directional atlas and
+  point-filtered icons in the bounded five-column grid, uses the dedicated
+  transparent portrait rendered from the production 3D hero and
   shows the selected item through a live point-filtered 3D render in both the
   lower description and Examine views. The preview reuses the same procedural
   models as physical refrigerator contents, adds matching keys and lighter,
@@ -284,7 +291,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   combined world renderer bounds of the selected product. Muted clickable
   previous/next arrows follow the product's projected screen bounds; pointer,
   keyboard and gamepad all use the same navigation path without replacing or
-  fading the player sprite.
+  fading or replacing the player presentation.
   `SupermarketProductCatalog` offers exactly one physical chicken egg, vodka
   bottle, closed stew can, instant noodles and day-old loaf. Each product has a
   stable source ID. `GameSessionState.TryPurchaseWorldItem` is the sole commit
@@ -315,15 +322,31 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   modal input returns. This first version intentionally supports
   one item stack per definition; multi-item recipes require a later atomic
   inventory transaction rather than sequential removal.
-- **Accepted — Grounded endpoint handoff for contextual sprite animation:**
+- **Accepted and implemented 2026-08-04 — Continuous modular 3D hero:** Every
+  production runtime and UI representation of the main hero now derives from
+  the generated modular 3D character. `PlayerFactory` preserves the
+  authoritative `PlayerMotor`/`CharacterController` root and instantiates one
+  `Resources/Player/Player3D` prefab in all five gameplay roots. Its Generic
+  Animator uses no root motion; the prefab contains a 31-bone armature with six
+  non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
+  bindings, 16 required anatomical parts, metrics and 23 in-place Actions.
+  `Player3DCharacterPresentation` owns locomotion, face,
+  intoxication/balance and fall sampling. Bed, smoking and cat feeding drive
+  continuous full-body clips on that same rig; bar drinking and refrigerator
+  reach filter camera-local arms from the prefab, and inventory loads the
+  dedicated transparent 3D portrait. Real meshes cast URP shadows while the
+  analytic contact patch remains grounded and fall-aware. Guided approach,
+  independent entry/action/exit poses, neutral settle, terminal hold, atomic
+  preparation and owned lifecycle cleanup remain mandatory.
+- **Accepted — Grounded endpoint contract for contextual 3D animation:**
   This is the mandatory project-wide authoring and runtime contract for every
   future interaction in this class; the normative checklist lives in
   `ai/contextual-animation-standard.md`, and deviations require an explicit
   user-approved accepted exception here.
   Interactive bed sleep, balcony smoking and cat feeding share a visible
   `Positioning` phase before `Entering -> Looping -> Exiting`. Each adapter
-  provides independent entry root/hip/facing, action hip and exit
-  root/hip/facing data. `PlayerMotor` advances the ordinary rig with its real
+  provides independent entry root/pelvis/facing, action pelvis and exit
+  root/pelvis/facing data. `PlayerMotor` advances the ordinary rig with its real
   `CharacterController`, walkable constraint, gait, facing and footsteps;
   manual input cannot redirect that approach. The authored Y level must already
   be reachable from the current grounded root, so a vertical mismatch refuses
@@ -331,21 +354,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   or rotation progress for `1.5 s` marks the approach stalled and restores the
   captured state; scene transition, disable and destroy boundaries cancel it
   through the same ownership cleanup.
-  Exact entry alignment activates `PlayerSpriteRig`'s handoff lock. It bypasses
-  angular hysteresis for the nearest eight-way direction, freezes the neutral
-  rest transforms and neutral body sprite, and keeps the ordinary rig visible
-  for one rendered frame before atlas visibility takes over. Bed and cat
-  feeding use `FrontLeft` endpoint cells; smoking uses `BackRight`. All three
-  installed definitions use zero sprite alpha crossfade. The timeline also
-  guarantees that its terminal exit frame is presented before becoming idle;
-  the physical root is then placed at the independent exit pose and the neutral
-  ordinary rig stays locked until its final `LateUpdate` handoff frame has
-  rendered.
-  Exact camera-plane definitions resolve upright entry and exit hips by the
-  live `(camera.up - Vector3.up)` feet-to-hip offset and refresh the atlas root
-  again in `LateUpdate`, preventing a one-frame foot/pivot slip after camera
-  movement. World-up definitions keep their upright hip unchanged. Bed and cat
-  feeding select camera-plane presentation; balcony smoking selects world-up.
+  Exact entry alignment activates the shared presentation handoff lock, resets
+  locomotion, face and additive status bones, and keeps the neutral rig visible
+  for one rendered frame. The controller then samples the registered Generic
+  enter/loop/exit clip before aligning its serialized pelvis anchor to the
+  authored world target. Animator transitions, Animation Events and root motion
+  own no gameplay transaction. The timeline guarantees that its terminal exit
+  pose is presented before becoming idle; the physical root is then placed at
+  the independent exit and the neutral ordinary rig stays locked until its
+  final `LateUpdate` restoration frame. Normal and abnormal exits end the clip,
+  reset its model-root spatial offset and restore owned presentation state.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment
@@ -379,16 +397,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   presence opens default-No confirmation. Yes uses the two-phase preparation
   boundary before the controller atomically removes one can. The adapter
   visibly guides the player to a grounded, validated middle-shot entry point,
-  settles the neutral `FrontLeft` handoff frame and begins a point-filtered
-  `1024x768` player atlas with 24 present frames at `12 fps`, 16 action frames
-  at `6 fps` and 24 return frames at `12 fps`. On the player loop boundary it
-  begins the cat's independent top-first `512x128`, `8x2`, 16-frame track at
-  `6 fps`; ordinary cat idle/look is paused and restored afterward. Player
-  rig/shadows, cat presentation, modal ownership, camera, HUD and input restore
-  on normal completion and every lifecycle abort. The keyed source sheets and
-  contracts live under `ArtSource/Player/CatFeeding` and
-  `ArtSource/Stairwell/Cat/Feeding`; deterministic validation/packing is owned
-  by `tools/build-player-cat-feeding-atlas.py` and
+  settles the neutral 3D rig for one rendered frame and samples
+  `CatFeedEnter`, `CatFeedLoop` and `CatFeedExit` on that continuous rig. On the
+  player loop boundary it begins the cat's independent top-first `512x128`,
+  `8x2`, 16-frame sprite track at `6 fps`; ordinary cat idle/look is paused and
+  restored afterward. Player presentation/contact shadow, cat presentation,
+  modal ownership, camera, HUD and input restore on normal completion and every
+  lifecycle abort. The cat's keyed source and packing contract remain under
+  `ArtSource/Stairwell/Cat/Feeding` and
   `tools/build-stairwell-cat-feeding-atlas.py`.
 - **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
   a real window and open glazed door connected to a walkable balcony at
@@ -403,34 +419,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Modal city-facing balcony-smoking vignette:** A data-first
   `HomeBalconySmokingPlan` derives one walkable Home-local dock around
   `(6.60, 0.04, -1.45)` from the balcony bounds. On the first `E`, modal
-  ownership disables manual input but keeps the ordinary rig and both shadows
-  visible while `PlayerMotor` walks the physical root through the existing
+  ownership disables manual input but keeps the ordinary 3D rig plus its mesh
+  and contact shadows visible while `PlayerMotor` walks the physical root
+  through the existing
   CharacterController/walkable constraint to the explicit entry point and
   turns it along `+X`, out toward the reconstructed city. Only exact entry
-  alignment begins atlas playback. A separately authored exit root, hip and
+  alignment begins continuous sampling of `SmokeEnter`, `SmokeLoop` and
+  `SmokeExit` on that same rig. A separately authored exit root, pelvis and
   facing receive the ordinary rig before control returns; entry and exit may
-  currently coincide without sharing one implicit stand anchor. The Balcony
-  view's projected handedness
-  requires the smoking definition to set `TextureFlipX = false`; the
-  texture-left authored pose therefore reads outward in the final shot, while
-  the shared default remains `true` for existing interactions such as the bed.
-  The smoking definition separately sets
-  `AlignBillboardToCameraPlane = false`: its outer billboard follows the camera
-  only around world up, keeping the standing body vertical and its foot line
-  on the balcony while the close camera pitches down. The default remains
-  `true` for the reclining bed sequence, whose authored silhouette needs exact
-  camera-plane alignment to avoid fixed-shot foreshortening. The
-  dedicated point-filtered `8 x 8` atlas is exactly 64 frames: 24 enter and
-  24 loop frames at `6 fps`, followed by 16 exit frames at `8 fps`. Frame `0`
-  and frame `63` are exact copies of the ordinary `BackRight` idle at the
-  same hip/foot pivot. Frames `1-62` are the normalized keyed authored motion;
-  the former Bayer/RGB dissolve edges are absent. The controller changes
-  visibility directly at the matching first/last endpoints and all installed
-  contextual definitions use zero sprite alpha-crossfade duration. Dynamic and
-  contact shadows remain visible during automatic positioning, disable for the
-  atlas phases and restore at the direct exit handoff. Extra holds on
-  loop-local frames `3`, `11`, `14` and `23` produce the `9.5 s`
-  rest/drag/breath/exhale cadence without duplicate art. A second `E` queues
+  currently coincide without sharing one implicit stand anchor. The cigarette
+  prop follows the serialized `SOCKET_Cigarette.R` bone. Real mesh and contact
+  shadows remain active throughout because no alternate player renderer is
+  introduced. Existing loop-local frames `3`, `11`, `14` and `23` produce the
+  `9.5 s` rest/drag/breath/exhale cadence without duplicate art. A second `E` queues
   immediately but reaches the exit sequence only at calm loop-local frames
   `0-3` or `21-23`, so no active drag or smoke plume is cut. The camera holds
   for `0.35 s` and follows a smooth quadratic push-in to `38°` FOV. Its close
@@ -456,7 +457,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `HomeSmokingMusicPlayer` loads only the optional user-supplied
   `Resources/Audio/SmokingMusic/smoking_theme`, fades from zero over `3.2 s`,
   fades with the exit and treats a missing clip as a silent no-op.
-- **Accepted — Diegetic Home practicals and shot-specific sprite plane:** The Home
+- **Accepted — Diegetic Home practicals and fixed 3D shots:** The Home
   atmosphere retains exactly two shadowless practical realtime lights. A
   visible HDR emitter and depth-tested halo are physically co-located with
   each practical so the warm hanging lamp and cold bathroom tube read as
@@ -469,12 +470,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   existing cold night shaft to warm daylight under `HomeDayNightController`,
   while the room practicals retain their existing behavior. Window/door panes
   reuse one shared transparent glass shader/material. During Home fixed-camera
-  ownership, `BillboardSprite`
-  aligns to `-camera.forward` and `camera.up` in MainRoom and Bathroom,
-  preserving the authored `64 x 96` aspect in their steep views. Balcony uses
-  a world-up yaw billboard so the standing ordinary rig and smoking endpoint
-  stay vertical on the deck; disabling or destroying the controller restores
-  the shared default billboard behavior.
+  ownership, the same world-oriented modular 3D hero remains active in
+  MainRoom, Bathroom and Balcony; no player billboard-plane mode is required.
 - **Accepted — Explicit Home foreground cutaway:** Runtime Home builders
   register logical renderer groups for furniture and its attached dressing,
   bathroom and balcony doors, soft bathroom dressing and the visible balcony
@@ -561,7 +558,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cinematic motion during fullscreen modal ownership. Balance checks disable
   orbit input but deliberately retain cinematic motion so intoxication lean
   and fall reactions remain visible.
-- **Accepted — Eight-direction player presentation:** A corrected
+- **Superseded 2026-08-04 — Eight-direction player presentation:** A corrected
   point-filtered `512x96` reference and a derived `512x864` layered atlas
   provide eight explicit `64x96` views at PPU 48. Each view has one body layer
   and upper/lower segments for both arms and legs. A signed player-camera
@@ -590,7 +587,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bandage/patch asymmetry never relies on mirroring. Explicit
   `Falling`/`Down`/`Rising` progress maps to `14`/`36`/`30` frames and restores
   the original nine-part puppet without changing renderer count.
-- **Accepted — Camera-independent player shadow:** One collider-free
+- **Superseded 2026-08-04 — Camera-independent sprite shadow:** One collider-free
   nine-part `ShadowsOnly` puppet reuses the directional part sprites and a
   shared alpha-clipped URP shadow-caster material. It selects its authored view
   from the signed player-to-main-light angle, faces the directional light
@@ -602,9 +599,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unavailable and supplies the stable ambient-occlusion cue beneath the feet.
   Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
-  shared interior are built at runtime. Authored player, cocktail, beer-pong,
-  Split-the-G and tincture bitmaps load from `Resources` and are sliced or
-  drawn at runtime.
+  shared interior are built at runtime. The hero loads as the production 3D
+  prefab; cocktail, beer-pong, Split-the-G, tincture, NPC and cat bitmaps still
+  load from `Resources` and are sliced or drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
   the serialized Resources `RuntimePrimitiveLit` URP material so Player builds
@@ -857,16 +854,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   while per-drink colors and highlights use property blocks. A pure unscaled
   timeline owns camera approach, persistent browsing, pickup, vessel
   placement, pour/fill, bottle return, an exact three-second drink, empty
-  vessel return and the explicit-exit camera return. The player
-  self-pours with procedural camera-local arms, deterministic kinematic poses
-  and one reusable world-space liquid stream rather than a free physics/fluid
-  simulation. Confirmation remains the sole transaction boundary: cash and
+  vessel return and the explicit-exit camera return. The player self-pours with
+  left/right camera-local arm subsets filtered from the production prefab,
+  deterministic kinematic poses and one reusable world-space liquid stream
+  rather than a free physics/fluid simulation. Their owned visibility lease
+  hides and restores the complete world presentation. Confirmation remains the
+  sole transaction boundary: cash and
   drinking state commit exactly once before service and exit is then rejected
   until the empty vessel reaches the counter. Completing service clears only
   that order and returns to the same seated browser so another purchase can be
   made; only the dedicated Exit action starts camera return and releases the
   modal presentation. Lifecycle cleanup never refunds but always restores the
-  selected bottle, vessel, camera, player rig/shadows, controls and HUD. The
+  selected bottle, vessel, camera, player presentation, controls and HUD. The
   F9 debug window may replace only pre-commit browsing and refuses to interrupt
   committed service. The validated seated framing keeps all bottle renderer
   bounds inside a 16:10 viewport, and every reusable vessel snapshots and
@@ -896,7 +895,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Parameters interpolate linearly between the 20-point boundaries instead of
   jumping only when a name changes:
 
-  | Range and stage | Speed | Puppet sway | Camera roll | Vignette | Ghost | Warp |
+  | Range and stage | Speed | 3D bone sway | Camera roll | Vignette | Ghost | Warp |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: |
   | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` |
   | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` |
@@ -906,10 +905,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
   Values shown are each range's upper-bound profile; the lower bound continues
   from the preceding row. Warmth rises to `0.10` and exposure pulse to `0.08`
-  at 100. The puppet evaluator progressively suppresses ordinary idle gestures,
-  spreads the arms and adds wave-driven knee bend before balance lean or fall
-  offsets are considered. Runtime presentation eases a full-scale change over
-  about `0.7 s`. The HUD is hidden at zero and otherwise shows the localized
+  at 100. The 3D presentation progressively suppresses idle-only expressions,
+  spreads the registered arms and adds pelvis/chest sway plus knee bend before
+  signed balance lean or fall clips are considered. Runtime presentation eases
+  a full-scale change over about `0.7 s`. The HUD is hidden at zero and otherwise
+  shows the localized
   stage beside five separately filling 20-point segments. Percentage is the
   only source of persistent slowdown and visual intoxication; there is no
   independent expiring status.
@@ -929,10 +929,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   camera motion remain visible. Scene transitions,
   fullscreen modals, disabled controls or ungrounded movement prevent a check;
   returning from an external block grants at least `3 s` before it can start.
-  Success schedules the next normal interval. Failure stops the motor,
-  chooses the arrow side and drives the explicit 80-frame authored sequence
-  through `0.45 s` falling, `1.2 s` down and `1.0 s` rising while the upright
-  `CharacterController` root remains fixed;
+  Success schedules the next normal interval. Failure stops the motor, chooses
+  the arrow side and samples the matching registered left/right `Fall`, `Down`
+  and `Rise` Generic actions through `0.45 s` falling, `1.2 s` down and `1.0 s`
+  rising while the upright `CharacterController` root remains fixed;
   the contact shadow expands and offsets with the pose. Recovery adds `6 s`
   to the next normal interval. Dropping intoxication to `60` or below safely
   cancels the challenge and clears its delay.

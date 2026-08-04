@@ -1,13 +1,12 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Camera-local, runtime-composed hand used while the refrigerator owns
-    /// the Home camera. The grip is evaluated from the live handle transform,
-    /// so the hand keeps following it while the door swings.
+    /// Camera-local right arm used while the refrigerator owns the Home
+    /// camera. Its visible parts come from the production Player3D prefab and
+    /// its grip keeps following the live door handle while that door swings.
     /// </summary>
     [DefaultExecutionOrder(290)]
     [DisallowMultipleComponent]
@@ -22,29 +21,11 @@ namespace BarPromenade
         private static readonly Quaternion StartLocalRotation =
             Quaternion.Euler(8f, 164f, -16f);
 
-        private static readonly Color SleeveColor =
-            new Color(0.17f, 0.18f, 0.12f);
-        private static readonly Color SleeveShadowColor =
-            new Color(0.085f, 0.09f, 0.06f);
-        private static readonly Color CuffColor =
-            new Color(0.27f, 0.25f, 0.17f);
-        private static readonly Color SkinColor =
-            new Color(0.50f, 0.35f, 0.25f);
-        private static readonly Color SkinHighlightColor =
-            new Color(0.62f, 0.44f, 0.31f);
-        private static readonly Color NailColor =
-            new Color(0.51f, 0.39f, 0.33f);
-
-        private readonly Transform[] proximalFingerPivots =
-            new Transform[4];
-        private readonly Transform[] distalFingerPivots =
-            new Transform[4];
-
         private Camera targetCamera;
         private Transform handleTarget;
         private Transform presentationRoot;
         private Transform handModelRoot;
-        private Transform thumbPivot;
+        private Player3DFirstPersonSubset armSubset;
 
         public bool IsInitialized { get; private set; }
         public bool IsVisible =>
@@ -55,6 +36,7 @@ namespace BarPromenade
         public Transform HandleTarget => handleTarget;
         public Transform PresentationRoot => presentationRoot;
         public Transform HandModelRoot => handModelRoot;
+        public Player3DAssetRegistry ModelRegistry => armSubset?.Registry;
 
         public void Initialize(
             Camera camera,
@@ -73,9 +55,20 @@ namespace BarPromenade
             ReleasePresentation();
             targetCamera = camera;
             handleTarget = newHandleTarget;
-            BuildPresentation();
-            IsInitialized = true;
-            ResetPresentation();
+            try
+            {
+                BuildPresentation();
+                IsInitialized = true;
+                ResetPresentation();
+            }
+            catch
+            {
+                ReleasePresentation();
+                targetCamera = null;
+                handleTarget = null;
+                IsInitialized = false;
+                throw;
+            }
         }
 
         public void SetHandleTarget(Transform newHandleTarget)
@@ -126,8 +119,6 @@ namespace BarPromenade
             {
                 presentationRoot.gameObject.SetActive(false);
             }
-
-            ApplyFingerCurl(0f);
         }
 
         public void ResetPresentation()
@@ -170,129 +161,22 @@ namespace BarPromenade
                 new GameObject(
                     "Home Refrigerator First Person Hand").transform;
             presentationRoot.SetParent(targetCamera.transform, false);
-
-            handModelRoot =
-                new GameObject("Hand Model").transform;
-            handModelRoot.SetParent(presentationRoot, false);
-
-            BuildSleeve();
-            BuildHand();
+            presentationRoot.gameObject.layer =
+                targetCamera.gameObject.layer;
             presentationRoot.gameObject.SetActive(false);
-        }
 
-        private void BuildSleeve()
-        {
-            CreateCylinder(
-                "First Person Sleeve",
+            handModelRoot = new GameObject("Hand Model").transform;
+            handModelRoot.SetParent(presentationRoot, false);
+            handModelRoot.gameObject.layer = targetCamera.gameObject.layer;
+            // Preserve the existing reach trajectory: its root ends below the
+            // handle while the production grip socket lands on the handle.
+            handModelRoot.localPosition =
+                Vector3.up * GripVerticalOffset;
+            armSubset = Player3DFirstPersonSubset.Create(
                 handModelRoot,
-                new Vector3(0f, -0.185f, 0.002f),
-                new Vector3(0.124f, 0.17f, 0.112f),
-                SleeveColor);
-            GameObject sleeveShadow = CreateBox(
-                "First Person Sleeve Seam",
-                handModelRoot,
-                new Vector3(0.047f, -0.18f, -0.047f),
-                new Vector3(0.014f, 0.28f, 0.008f),
-                SleeveShadowColor);
-            sleeveShadow.transform.localRotation =
-                Quaternion.Euler(0f, 0f, -2f);
-
-            CreateCylinder(
-                "First Person Sleeve Cuff",
-                handModelRoot,
-                new Vector3(0f, -0.025f, 0f),
-                new Vector3(0.142f, 0.035f, 0.126f),
-                CuffColor);
-            CreateCylinder(
-                "First Person Wrist",
-                handModelRoot,
-                new Vector3(0f, 0.018f, 0f),
-                new Vector3(0.102f, 0.048f, 0.09f),
-                SkinColor);
-        }
-
-        private void BuildHand()
-        {
-            CreateBox(
-                "First Person Palm",
-                handModelRoot,
-                new Vector3(0f, 0.078f, 0f),
-                new Vector3(0.112f, 0.132f, 0.046f),
-                SkinColor);
-            CreateBox(
-                "First Person Knuckles",
-                handModelRoot,
-                new Vector3(0f, 0.137f, -0.006f),
-                new Vector3(0.118f, 0.025f, 0.052f),
-                SkinHighlightColor);
-
-            for (int index = 0; index < 4; index++)
-            {
-                float x = -0.045f + index * 0.03f;
-                float length = index == 0 || index == 3
-                    ? 0.048f
-                    : 0.055f;
-                BuildFinger(index, x, length);
-            }
-
-            thumbPivot =
-                new GameObject("First Person Thumb Pivot").transform;
-            thumbPivot.SetParent(handModelRoot, false);
-            thumbPivot.localPosition =
-                new Vector3(-0.062f, 0.072f, -0.002f);
-            CreateBox(
-                "First Person Thumb",
-                thumbPivot,
-                new Vector3(-0.025f, 0.018f, -0.003f),
-                new Vector3(0.064f, 0.031f, 0.038f),
-                SkinHighlightColor);
-        }
-
-        private void BuildFinger(
-            int index,
-            float x,
-            float proximalLength)
-        {
-            Transform proximal =
-                new GameObject(
-                    $"First Person Finger {index + 1} Proximal Pivot")
-                    .transform;
-            proximal.SetParent(handModelRoot, false);
-            proximal.localPosition = new Vector3(x, 0.144f, 0f);
-            proximalFingerPivots[index] = proximal;
-
-            CreateBox(
-                $"First Person Finger {index + 1} Proximal",
-                proximal,
-                new Vector3(0f, proximalLength * 0.5f, 0f),
-                new Vector3(0.024f, proximalLength, 0.036f),
-                SkinColor);
-
-            Transform distal =
-                new GameObject(
-                    $"First Person Finger {index + 1} Distal Pivot")
-                    .transform;
-            distal.SetParent(proximal, false);
-            distal.localPosition =
-                new Vector3(0f, proximalLength, 0f);
-            distalFingerPivots[index] = distal;
-
-            float distalLength = proximalLength * 0.70f;
-            CreateBox(
-                $"First Person Finger {index + 1} Distal",
-                distal,
-                new Vector3(0f, distalLength * 0.5f, 0f),
-                new Vector3(0.023f, distalLength, 0.034f),
-                SkinHighlightColor);
-            CreateBox(
-                $"First Person Finger {index + 1} Nail",
-                distal,
-                new Vector3(
-                    0f,
-                    distalLength * 0.73f,
-                    0.018f),
-                new Vector3(0.014f, distalLength * 0.34f, 0.004f),
-                NailColor);
+                Player3DFirstPersonSide.Right,
+                targetCamera.gameObject.layer,
+                "Player3D Refrigerator Right Arm Subset");
         }
 
         private void RefreshPose()
@@ -321,10 +205,17 @@ namespace BarPromenade
                 towardCamera.Normalize();
             }
 
+            Quaternion gripWorldRotation =
+                Quaternion.LookRotation(towardCamera, targetUp);
+            // LookRotation orthogonalizes its up vector when the handle-to-
+            // camera direction has a vertical component. Offset along that
+            // actual local up so the model's raised grip socket cancels it
+            // exactly instead of missing the handle by a few millimetres.
+            Vector3 modelUp = gripWorldRotation * Vector3.up;
             Vector3 gripWorldPosition =
                 handleTarget.position +
                 towardCamera * GripForwardOffset -
-                targetUp * GripVerticalOffset;
+                modelUp * GripVerticalOffset;
             Vector3 gripLocalPosition =
                 cameraTransform.InverseTransformPoint(gripWorldPosition);
             float safeDepth = targetCamera.nearClipPlane + 0.08f;
@@ -340,8 +231,6 @@ namespace BarPromenade
                 gripLocalPosition,
                 easedReach);
 
-            Quaternion gripWorldRotation =
-                Quaternion.LookRotation(towardCamera, targetUp);
             Quaternion gripLocalRotation =
                 Quaternion.Inverse(cameraTransform.rotation) *
                 gripWorldRotation;
@@ -353,113 +242,28 @@ namespace BarPromenade
             float reveal = SmootherRange(ReachAmount, 0f, 0.16f);
             presentationRoot.localScale =
                 Vector3.one * Mathf.Lerp(0.82f, 1f, reveal);
-            ApplyFingerCurl(
-                SmootherRange(ReachAmount, 0.52f, 1f));
-        }
-
-        private void ApplyFingerCurl(float amount)
-        {
-            float curl = Mathf.Clamp01(amount);
-            for (int index = 0;
-                 index < proximalFingerPivots.Length;
-                 index++)
-            {
-                if (proximalFingerPivots[index] != null)
-                {
-                    float spread = (index - 1.5f) * (1f - curl) * 2.2f;
-                    proximalFingerPivots[index].localRotation =
-                        Quaternion.Euler(-27f * curl, 0f, spread);
-                }
-
-                if (distalFingerPivots[index] != null)
-                {
-                    distalFingerPivots[index].localRotation =
-                        Quaternion.Euler(-53f * curl, 0f, 0f);
-                }
-            }
-
-            if (thumbPivot != null)
-            {
-                thumbPivot.localRotation = Quaternion.Euler(
-                    -9f - 29f * curl,
-                    7f * curl,
-                    -35f + 18f * curl);
-            }
-        }
-
-        private GameObject CreateBox(
-            string objectName,
-            Transform parent,
-            Vector3 localPosition,
-            Vector3 size,
-            Color color)
-        {
-            GameObject result = RuntimePrimitiveFactory.CreateBox(
-                objectName,
-                parent,
-                localPosition,
-                size,
-                color,
-                false);
-            ConfigureRenderer(result);
-            return result;
-        }
-
-        private GameObject CreateCylinder(
-            string objectName,
-            Transform parent,
-            Vector3 localPosition,
-            Vector3 size,
-            Color color)
-        {
-            GameObject result = RuntimePrimitiveFactory.CreateCylinder(
-                objectName,
-                parent,
-                localPosition,
-                size,
-                color,
-                false);
-            ConfigureRenderer(result);
-            return result;
-        }
-
-        private void ConfigureRenderer(GameObject part)
-        {
-            part.layer = targetCamera.gameObject.layer;
-            Renderer renderer = part.GetComponent<Renderer>();
-            if (renderer == null)
-            {
-                return;
-            }
-
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
         }
 
         private void ReleasePresentation()
         {
+            armSubset?.Dispose();
+            armSubset = null;
             if (presentationRoot != null)
             {
+                GameObject rootObject = presentationRoot.gameObject;
+                rootObject.SetActive(false);
                 if (Application.isPlaying)
                 {
-                    Destroy(presentationRoot.gameObject);
+                    Destroy(rootObject);
                 }
                 else
                 {
-                    DestroyImmediate(presentationRoot.gameObject);
+                    DestroyImmediate(rootObject);
                 }
             }
 
             presentationRoot = null;
             handModelRoot = null;
-            thumbPivot = null;
-            for (int index = 0;
-                 index < proximalFingerPivots.Length;
-                 index++)
-            {
-                proximalFingerPivots[index] = null;
-                distalFingerPivots[index] = null;
-            }
         }
 
         private static Vector3 QuadraticBezier(

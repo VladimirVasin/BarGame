@@ -2,6 +2,53 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Complete modular 3D hero migration
+
+- Promoted the Blender hero experiment into the production player asset path.
+  The deterministic source now emits a `1.75 m` A-pose model, separate model
+  and animation FBXs, a manifest, 23 in-place Generic Actions and a transparent
+  portrait. The Unity prefab keeps 73 independent mesh objects, 16 required
+  anatomical bindings, a 31-bone armature with six non-deforming sockets and
+  one shared URP/Lit material with a property-block palette.
+- Replaced the active hero presentation in City, Bar, Supermarket, Home and
+  Stairwell with one `Resources/Player/Player3D.prefab` instantiated by
+  `PlayerFactory`. A presentation-neutral seam now feeds locomotion and status
+  state into the 3D PlayableGraph, preserves physical left/right details,
+  drives face/intoxication/balance bones and samples left/right fall/down/rise
+  clips while the gameplay root remains authoritative.
+- Migrated bed sleep, balcony smoking and cat feeding to deterministic
+  enter/loop/exit clips on the same continuous world rig. The shared contextual
+  controller retains grounded positioning, neutral settle, sample-then-pelvis
+  alignment, terminal holds, deferred unlock, atomic preparation and owned
+  cleanup. The smoking prop uses the registered right-hand cigarette socket;
+  the cat keeps its independent NPC sprite track.
+- Rebuilt bar-drinking arms and the refrigerator reach as filtered camera-local
+  subsets of the same production prefab. Owner-scoped visibility leases restore
+  the exact world meshes and contact shadow. Inventory now uses the dedicated
+  transparent 3D portrait rather than cropping the retired directional atlas.
+- Removed the 22 legacy runtime player atlas PNGs together with the obsolete
+  sprite-rig/dynamic-shadow code and shaders. Real hero meshes cast URP shadows
+  and the analytic ground-contact patch remains planted and expands/offsets
+  during falls. Historical player source art and tools remain only as retired
+  lineage; NPC, cat and minigame sprites are unchanged.
+
+Verification:
+
+- Blender `5.0.1` regenerated and self-validated the production source, model
+  and animation FBXs: `73` separate meshes, `31` bones, six sockets, `23`
+  in-place Actions, `1,534` triangles and an exact `1.750 m` height. Unity then
+  imported the assets, compiled the affected assemblies and rebuilt the
+  runtime prefab successfully from its dependency signature.
+- The focused GPU-backed PlayMode selection passed `15/16` on its combined
+  run. Its sole failure was the new contact-sheet foreground threshold; after
+  correcting the isolated capture lighting and background, that exact visual
+  regression passed `1/1`. Thus all `16` selected gameplay-scene, ordinary
+  presentation, contextual-animation, first-person, shadow and visual
+  contracts passed in the final code state, and the resulting four-pose
+  contact sheet was inspected manually.
+- `git diff --check` passed. In accordance with fast mode, no complete Unity
+  suite, packaged player build or startup smoke was run.
+
 ## 2026-08-04 — Experimental modular Blender hero
 
 - Added a Blender-native low-poly generator for the locked player design. It

@@ -1,0 +1,911 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
+using UnityEngine.Rendering;
+
+namespace BarPromenade
+{
+    public enum Player3DLocomotionState
+    {
+        Idle = 0,
+        Walk
+    }
+
+    /// <summary>
+    /// Continuous world presentation for the modular player model. The
+    /// CharacterController owns movement and facing; a manual PlayableGraph
+    /// owns bone-only, in-place animation and deterministic clip sampling.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class Player3DCharacterPresentation :
+        MonoBehaviour,
+        IPlayerPresentation,
+        IPlayerClipPresentation
+    {
+        public const float FullWalkSpeed = 2.6f;
+
+        private const float LocomotionBlendSpeed = 7.5f;
+        private const float MotionThreshold = 0.05f;
+        private const float StatusBlendSpeed = 4.5f;
+        private const float BodyRadius = 0.32f;
+
+        private enum ClipOwner
+        {
+            None = 0,
+            External,
+            Fall
+        }
+
+        private readonly PlayerFacialAnimationState facialState =
+            new PlayerFacialAnimationState();
+
+        private Player3DAssetRegistry registry;
+        private Transform actorFacingTransform;
+        private PlayableGraph graph;
+        private AnimationMixerPlayable locomotionMixer;
+        private AnimationLayerMixerPlayable layerMixer;
+        private AnimationClipPlayable idlePlayable;
+        private AnimationClipPlayable walkPlayable;
+        private AnimationClipPlayable activeClipPlayable;
+        private Player3DAnimationBinding idleBinding;
+        private Player3DAnimationBinding walkBinding;
+        private Player3DAnimationBinding activeClipBinding;
+        private ClipOwner activeClipOwner;
+        private Vector3 clipModelLocalPosition;
+        private Quaternion clipModelLocalRotation;
+        private Vector3 clipModelLocalScale;
+        private bool clipSpatialStateCaptured;
+        private float targetLocomotionBlend;
+        private float locomotionBlend;
+        private float planarSpeed;
+        private float intoxicationTarget;
+        private float intoxicationAmount;
+        private float balanceLeanTarget;
+        private float balanceLean;
+        private float fallAmount;
+        private float fallDirection = 1f;
+        private float footPlantAmount = 1f;
+        private bool interactionHandoffLocked;
+        private bool releaseInteractionHandoffAfterLateUpdate;
+        private FacialBoneRest leftEye;
+        private FacialBoneRest rightEye;
+        private FacialBoneRest leftBrow;
+        private FacialBoneRest rightBrow;
+        private FacialBoneRest mouth;
+        private Transform pelvisBone;
+        private Transform chestBone;
+        private Transform leftUpperArmBone;
+        private Transform rightUpperArmBone;
+        private Transform leftThighBone;
+        private Transform rightThighBone;
+        private Transform leftShinBone;
+        private Transform rightShinBone;
+
+        public Player3DAssetRegistry Registry => registry;
+        public IReadOnlyList<Renderer> Renderers =>
+            registry != null
+                ? registry.Renderers
+                : Array.Empty<Renderer>();
+        public Transform VisualRoot =>
+            registry != null && registry.ModelRoot != null
+                ? registry.ModelRoot
+                : transform;
+        public PlayerPresentationMetrics Metrics =>
+            new PlayerPresentationMetrics(
+                registry != null
+                    ? registry.Metrics.CanonicalHeight
+                    : 1.75f,
+                BodyRadius,
+                actorFacingTransform != null
+                    ? actorFacingTransform
+                    : transform,
+                GetAnchorPosition(
+                    registry != null
+                        ? registry.Anchors.LeftFoot
+                        : null),
+                GetAnchorPosition(
+                    registry != null
+                        ? registry.Anchors.RightFoot
+                        : null),
+                footPlantAmount,
+                fallAmount,
+                fallDirection);
+        public bool InteractionHandoffLocked =>
+            interactionHandoffLocked;
+        public Player3DLocomotionState CurrentLocomotionState { get; private set; }
+        public float LocomotionBlend => locomotionBlend;
+        public float PlanarSpeed => planarSpeed;
+        public float IntoxicationAmount => intoxicationAmount;
+        public float BalanceLean => balanceLean;
+        public float FallAmount => fallAmount;
+        public float FallDirection => fallDirection;
+        public PlayerFacialExpression CurrentFacialExpression =>
+            facialState.CurrentExpression;
+        public string ActiveClipName =>
+            activeClipBinding != null
+                ? activeClipBinding.ClipName
+                : string.Empty;
+        public bool IsClipActive => activeClipBinding != null;
+
+        public void Initialize(
+            Transform facingTransform,
+            Player3DAssetRegistry assetRegistry)
+        {
+            if (assetRegistry == null)
+            {
+                throw new ArgumentNullException(nameof(assetRegistry));
+            }
+
+            DestroyGraph();
+            registry = assetRegistry;
+            actorFacingTransform = facingTransform != null
+                ? facingTransform
+                : transform;
+
+            Animator animator = registry.Animator;
+            if (animator == null)
+            {
+                throw new InvalidOperationException(
+                    "The Player3D registry has no Animator.");
+            }
+
+            if (!TryResolveAnimation("Idle", out idleBinding) ||
+                !TryResolveAnimation("Walk", out walkBinding))
+            {
+                throw new InvalidOperationException(
+                    "The Player3D registry requires Idle and Walk clips.");
+            }
+
+            animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.runtimeAnimatorController = null;
+            ConfigureWorldRenderers();
+            BuildGraph(animator);
+            CaptureStatusBones();
+            CaptureFacialBones();
+            facialState.Reset();
+            SetMotion(Vector3.zero);
+            ApplyLocomotionWeights(immediate: true);
+            EvaluateGraph(0f);
+        }
+
+        public void SetMotion(Vector3 planarVelocity)
+        {
+            planarVelocity.y = 0f;
+            planarSpeed = planarVelocity.magnitude;
+            targetLocomotionBlend = interactionHandoffLocked
+                ? 0f
+                : Mathf.Clamp01(planarSpeed / FullWalkSpeed);
+            CurrentLocomotionState =
+                targetLocomotionBlend >= MotionThreshold
+                    ? Player3DLocomotionState.Walk
+                    : Player3DLocomotionState.Idle;
+        }
+
+        public void SetInteractionHandoffLocked(bool locked)
+        {
+            if (!locked)
+            {
+                releaseInteractionHandoffAfterLateUpdate =
+                    interactionHandoffLocked;
+                return;
+            }
+
+            interactionHandoffLocked = true;
+            releaseInteractionHandoffAfterLateUpdate = false;
+            planarSpeed = 0f;
+            targetLocomotionBlend = 0f;
+            locomotionBlend = 0f;
+            footPlantAmount = 1f;
+            CurrentLocomotionState = Player3DLocomotionState.Idle;
+            facialState.Reset();
+            ApplyLocomotionWeights(immediate: true);
+            if (!IsClipActive && idlePlayable.IsValid())
+            {
+                idlePlayable.SetTime(0d);
+                EvaluateGraph(0f);
+            }
+        }
+
+        public void SetIntoxication(float intensity)
+        {
+            intoxicationTarget = Mathf.Clamp01(intensity);
+        }
+
+        public void SetBalancePose(float signedLean)
+        {
+            balanceLeanTarget = Mathf.Clamp(signedLean, -1f, 1f);
+        }
+
+        public void SetFallPose(float signedDirection, float amount)
+        {
+            if (!Mathf.Approximately(signedDirection, 0f))
+            {
+                fallDirection = Mathf.Sign(signedDirection);
+            }
+
+            fallAmount = Mathf.Clamp01(amount);
+        }
+
+        public void SetFallAnimation(
+            PlayerFallAnimationPhase phase,
+            float normalizedProgress)
+        {
+            if (phase == PlayerFallAnimationPhase.None)
+            {
+                if (activeClipOwner == ClipOwner.Fall)
+                {
+                    EndClip();
+                }
+
+                return;
+            }
+
+            string side = fallDirection < 0f ? "Left" : "Right";
+            string clipName;
+            switch (phase)
+            {
+                case PlayerFallAnimationPhase.Falling:
+                    clipName = "Fall" + side;
+                    break;
+                case PlayerFallAnimationPhase.Down:
+                    clipName = "Down" + side;
+                    break;
+                case PlayerFallAnimationPhase.Rising:
+                    clipName = "Rise" + side;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(phase),
+                        phase,
+                        "Unknown player fall animation phase.");
+            }
+
+            if (activeClipBinding == null ||
+                activeClipBinding.ClipName != clipName ||
+                activeClipOwner != ClipOwner.Fall)
+            {
+                if (!BeginClip(clipName, ClipOwner.Fall))
+                {
+                    return;
+                }
+            }
+
+            SampleActiveClip(normalizedProgress);
+        }
+
+        public bool HasClip(string clipName)
+        {
+            return TryResolveAnimation(clipName, out _);
+        }
+
+        public bool TryBeginClip(string clipName)
+        {
+            CaptureClipSpatialState();
+            if (BeginClip(clipName, ClipOwner.External))
+            {
+                return true;
+            }
+
+            ResetClipSpatialOffset();
+            return false;
+        }
+
+        public void SampleActiveClip(float normalizedTime)
+        {
+            if (activeClipBinding == null ||
+                !activeClipPlayable.IsValid())
+            {
+                throw new InvalidOperationException(
+                    "No Player3D clip is active.");
+            }
+
+            float progress = Mathf.Clamp01(normalizedTime);
+            double sampleTime = activeClipBinding.Clip.length * progress;
+            activeClipPlayable.SetTime(sampleTime);
+            EvaluateGraph(0f);
+        }
+
+        public void AlignActiveClipAnchor(Vector3 worldPelvisTarget)
+        {
+            if (!IsFinite(worldPelvisTarget))
+            {
+                throw new ArgumentException(
+                    "The contextual pelvis target must be finite.",
+                    nameof(worldPelvisTarget));
+            }
+
+            if (activeClipOwner != ClipOwner.External ||
+                activeClipBinding == null ||
+                registry == null ||
+                registry.ModelRoot == null ||
+                registry.Anchors.Pelvis == null)
+            {
+                throw new InvalidOperationException(
+                    "An external Player3D clip with a validated pelvis " +
+                    "anchor must be active before spatial alignment.");
+            }
+
+            CaptureClipSpatialState();
+            registry.ModelRoot.position +=
+                worldPelvisTarget -
+                registry.Anchors.Pelvis.position;
+        }
+
+        public void ResetClipSpatialOffset()
+        {
+            if (!clipSpatialStateCaptured)
+            {
+                return;
+            }
+
+            if (registry != null && registry.ModelRoot != null)
+            {
+                registry.ModelRoot.localPosition =
+                    clipModelLocalPosition;
+                registry.ModelRoot.localRotation =
+                    clipModelLocalRotation;
+                registry.ModelRoot.localScale =
+                    clipModelLocalScale;
+            }
+
+            clipSpatialStateCaptured = false;
+        }
+
+        public void EndClip()
+        {
+            if (!graph.IsValid() || activeClipBinding == null)
+            {
+                activeClipBinding = null;
+                activeClipOwner = ClipOwner.None;
+                ResetClipSpatialOffset();
+                return;
+            }
+
+            graph.Disconnect(layerMixer, 1);
+            if (activeClipPlayable.IsValid())
+            {
+                graph.DestroyPlayable(activeClipPlayable);
+            }
+
+            activeClipPlayable = default;
+            activeClipBinding = null;
+            activeClipOwner = ClipOwner.None;
+            layerMixer.SetInputWeight(0, 1f);
+            layerMixer.SetInputWeight(1, 0f);
+            ApplyLocomotionWeights(immediate: true);
+            EvaluateGraph(0f);
+            ResetClipSpatialOffset();
+        }
+
+        private void Update()
+        {
+            if (!graph.IsValid())
+            {
+                return;
+            }
+
+            float deltaTime = Mathf.Max(0f, Time.deltaTime);
+            intoxicationAmount = Mathf.MoveTowards(
+                intoxicationAmount,
+                intoxicationTarget,
+                StatusBlendSpeed * deltaTime);
+            balanceLean = Mathf.MoveTowards(
+                balanceLean,
+                balanceLeanTarget,
+                StatusBlendSpeed * deltaTime);
+
+            if (!IsClipActive)
+            {
+                ApplyLocomotionWeights(immediate: false);
+                double speed = Mathf.Lerp(
+                    0.78f,
+                    1.12f,
+                    targetLocomotionBlend);
+                walkPlayable.SetSpeed(speed);
+                EvaluateGraph(deltaTime);
+                UpdateFootPlant();
+            }
+            else
+            {
+                EvaluateGraph(0f);
+                footPlantAmount = Mathf.Lerp(1f, 0.35f, fallAmount);
+            }
+        }
+
+        private void LateUpdate()
+        {
+            ApplyProceduralStatusPose();
+            ApplyFacialPose();
+
+            if (releaseInteractionHandoffAfterLateUpdate)
+            {
+                interactionHandoffLocked = false;
+                releaseInteractionHandoffAfterLateUpdate = false;
+            }
+        }
+
+        internal void ReapplyLatePresentationPose()
+        {
+            // A deterministic seam for checks that run in batch mode, where
+            // WaitForEndOfFrame is not dispatched. It reapplies the current
+            // visible pose after the manual graph has evaluated without
+            // advancing any presentation state a second time.
+            ApplyProceduralStatusPose();
+            ApplyFacialExpression(facialState.CurrentExpression);
+        }
+
+        private void OnDisable()
+        {
+            interactionHandoffLocked = false;
+            releaseInteractionHandoffAfterLateUpdate = false;
+            intoxicationTarget = 0f;
+            intoxicationAmount = 0f;
+            balanceLeanTarget = 0f;
+            balanceLean = 0f;
+            fallAmount = 0f;
+            fallDirection = 1f;
+            footPlantAmount = 1f;
+            planarSpeed = 0f;
+            targetLocomotionBlend = 0f;
+            locomotionBlend = 0f;
+            CurrentLocomotionState = Player3DLocomotionState.Idle;
+            facialState.Reset();
+
+            if (activeClipBinding != null)
+            {
+                EndClip();
+            }
+            else if (graph.IsValid())
+            {
+                ApplyLocomotionWeights(immediate: true);
+                if (idlePlayable.IsValid())
+                {
+                    idlePlayable.SetTime(0d);
+                }
+
+                EvaluateGraph(0f);
+            }
+
+            RestoreFacialBones();
+        }
+
+        private void OnDestroy()
+        {
+            DestroyGraph();
+        }
+
+        private bool BeginClip(string clipName, ClipOwner owner)
+        {
+            if (!TryResolveAnimation(
+                    clipName,
+                    out Player3DAnimationBinding binding) ||
+                !graph.IsValid())
+            {
+                return false;
+            }
+
+            if (activeClipBinding != null)
+            {
+                graph.Disconnect(layerMixer, 1);
+                if (activeClipPlayable.IsValid())
+                {
+                    graph.DestroyPlayable(activeClipPlayable);
+                }
+            }
+
+            activeClipPlayable = AnimationClipPlayable.Create(
+                graph,
+                binding.Clip);
+            activeClipPlayable.SetApplyFootIK(false);
+            activeClipPlayable.SetApplyPlayableIK(false);
+            activeClipPlayable.SetSpeed(0d);
+            graph.Connect(activeClipPlayable, 0, layerMixer, 1);
+            layerMixer.SetInputWeight(0, 0f);
+            layerMixer.SetInputWeight(1, 1f);
+            activeClipBinding = binding;
+            activeClipOwner = owner;
+            SampleActiveClip(0f);
+            return true;
+        }
+
+        private bool TryResolveAnimation(
+            string clipName,
+            out Player3DAnimationBinding binding)
+        {
+            if (registry != null &&
+                registry.TryGetAnimation(clipName, out binding) &&
+                binding != null &&
+                binding.Clip != null)
+            {
+                return true;
+            }
+
+            binding = null;
+            return false;
+        }
+
+        private void BuildGraph(Animator animator)
+        {
+            graph = PlayableGraph.Create("Player3D Presentation");
+            graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+            locomotionMixer = AnimationMixerPlayable.Create(graph, 2);
+            layerMixer = AnimationLayerMixerPlayable.Create(graph, 2);
+            idlePlayable = AnimationClipPlayable.Create(
+                graph,
+                idleBinding.Clip);
+            walkPlayable = AnimationClipPlayable.Create(
+                graph,
+                walkBinding.Clip);
+            idlePlayable.SetApplyFootIK(false);
+            idlePlayable.SetApplyPlayableIK(false);
+            walkPlayable.SetApplyFootIK(false);
+            walkPlayable.SetApplyPlayableIK(false);
+            graph.Connect(idlePlayable, 0, locomotionMixer, 0);
+            graph.Connect(walkPlayable, 0, locomotionMixer, 1);
+            graph.Connect(locomotionMixer, 0, layerMixer, 0);
+            locomotionMixer.SetInputWeight(0, 1f);
+            locomotionMixer.SetInputWeight(1, 0f);
+            layerMixer.SetInputWeight(0, 1f);
+            layerMixer.SetInputWeight(1, 0f);
+
+            AnimationPlayableOutput output =
+                AnimationPlayableOutput.Create(
+                    graph,
+                    "Player3D Animator",
+                    animator);
+            output.SetSourcePlayable(layerMixer);
+            graph.Play();
+        }
+
+        private void ApplyLocomotionWeights(bool immediate)
+        {
+            if (!locomotionMixer.IsValid())
+            {
+                return;
+            }
+
+            locomotionBlend = immediate
+                ? targetLocomotionBlend
+                : Mathf.MoveTowards(
+                    locomotionBlend,
+                    targetLocomotionBlend,
+                    LocomotionBlendSpeed * Time.deltaTime);
+            locomotionMixer.SetInputWeight(0, 1f - locomotionBlend);
+            locomotionMixer.SetInputWeight(1, locomotionBlend);
+        }
+
+        private void UpdateFootPlant()
+        {
+            if (!walkPlayable.IsValid() ||
+                walkBinding == null ||
+                walkBinding.Clip.length <= 0.0001f)
+            {
+                footPlantAmount = 1f;
+                return;
+            }
+
+            float cycle = (float)(walkPlayable.GetTime() /
+                                  walkBinding.Clip.length);
+            float planted = Mathf.Abs(Mathf.Cos(cycle * Mathf.PI * 2f));
+            footPlantAmount = Mathf.Lerp(
+                1f,
+                Mathf.Lerp(0.68f, 1f, planted),
+                locomotionBlend);
+        }
+
+        private void ApplyProceduralStatusPose()
+        {
+            if (registry == null || IsClipActive ||
+                interactionHandoffLocked)
+            {
+                return;
+            }
+
+            float phase = Time.unscaledTime * 1.35f;
+            float sway = Mathf.Sin(phase) *
+                         intoxicationAmount * 5f;
+            float stagger = Mathf.Cos(phase * 0.73f) *
+                            intoxicationAmount;
+            float lean = balanceLean * 13f;
+            if (pelvisBone != null)
+            {
+                pelvisBone.localRotation *= Quaternion.AngleAxis(
+                    lean + sway,
+                    Vector3.forward);
+                pelvisBone.localPosition += new Vector3(
+                    (balanceLean * 0.012f) + (stagger * 0.018f),
+                    -intoxicationAmount * 0.008f,
+                    0f);
+            }
+
+            if (chestBone != null)
+            {
+                chestBone.localRotation *= Quaternion.AngleAxis(
+                    (lean * -0.42f) + (sway * 0.55f),
+                    Vector3.forward);
+            }
+
+            float armSpread = intoxicationAmount * 9f;
+            RotateBone(
+                leftUpperArmBone,
+                Vector3.forward,
+                armSpread + (stagger * 2f));
+            RotateBone(
+                rightUpperArmBone,
+                Vector3.forward,
+                -armSpread + (stagger * 2f));
+
+            float kneeBend = intoxicationAmount * 7f;
+            RotateBone(leftThighBone, Vector3.right, -kneeBend);
+            RotateBone(rightThighBone, Vector3.right, -kneeBend);
+            RotateBone(leftShinBone, Vector3.right, kneeBend * 1.35f);
+            RotateBone(rightShinBone, Vector3.right, kneeBend * 1.35f);
+        }
+
+        private void CaptureStatusBones()
+        {
+            pelvisBone = registry.Anchors.Pelvis;
+            chestBone = registry.Anchors.Chest;
+            leftUpperArmBone = GetPartBone(
+                Player3DAnatomicalPart.LeftUpperArm);
+            rightUpperArmBone = GetPartBone(
+                Player3DAnatomicalPart.RightUpperArm);
+            leftThighBone = GetPartBone(
+                Player3DAnatomicalPart.LeftThigh);
+            rightThighBone = GetPartBone(
+                Player3DAnatomicalPart.RightThigh);
+            leftShinBone = GetPartBone(
+                Player3DAnatomicalPart.LeftShin);
+            rightShinBone = GetPartBone(
+                Player3DAnatomicalPart.RightShin);
+        }
+
+        private Transform GetPartBone(Player3DAnatomicalPart part)
+        {
+            return registry.TryGetPart(part, out var binding) &&
+                   binding != null
+                ? binding.Bone
+                : null;
+        }
+
+        private static void RotateBone(
+            Transform bone,
+            Vector3 localAxis,
+            float degrees)
+        {
+            if (bone != null)
+            {
+                bone.localRotation *= Quaternion.AngleAxis(
+                    degrees,
+                    localAxis);
+            }
+        }
+
+        private void CaptureFacialBones()
+        {
+            leftEye = CaptureBone("face.eye.L");
+            rightEye = CaptureBone("face.eye.R");
+            leftBrow = CaptureBone("face.brow.L");
+            rightBrow = CaptureBone("face.brow.R");
+            mouth = CaptureBone("face.mouth");
+        }
+
+        private FacialBoneRest CaptureBone(string boneName)
+        {
+            IReadOnlyList<Player3DMeshBinding> bindings =
+                registry.MeshBindings;
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                Player3DMeshBinding binding = bindings[index];
+                if (binding != null &&
+                    binding.BoneName == boneName &&
+                    binding.Bone != null)
+                {
+                    return new FacialBoneRest(binding.Bone);
+                }
+            }
+
+            return default;
+        }
+
+        private void ApplyFacialPose()
+        {
+            bool allowIdleExpressions =
+                !IsClipActive &&
+                !interactionHandoffLocked &&
+                locomotionBlend < MotionThreshold &&
+                intoxicationAmount < 0.35f &&
+                Mathf.Abs(balanceLean) < 0.001f &&
+                fallAmount <= 0.001f;
+            PlayerFacialExpression expression = facialState.Advance(
+                Time.deltaTime,
+                allowIdleExpressions);
+
+            ApplyFacialExpression(expression);
+        }
+
+        private void ApplyFacialExpression(
+            PlayerFacialExpression expression)
+        {
+
+            RestoreFacialBones();
+
+            switch (expression)
+            {
+                case PlayerFacialExpression.HalfBlink:
+                    leftEye.ScaleY(0.48f);
+                    rightEye.ScaleY(0.48f);
+                    break;
+                case PlayerFacialExpression.ClosedBlink:
+                    leftEye.ScaleY(0.08f);
+                    rightEye.ScaleY(0.08f);
+                    break;
+                case PlayerFacialExpression.Watchful:
+                    leftEye.ScaleY(1.18f);
+                    rightEye.ScaleY(1.18f);
+                    leftBrow.RotateZ(-5f);
+                    rightBrow.RotateZ(5f);
+                    break;
+                case PlayerFacialExpression.Tense:
+                    leftEye.ScaleY(0.72f);
+                    rightEye.ScaleY(0.72f);
+                    leftBrow.RotateZ(12f);
+                    rightBrow.RotateZ(-12f);
+                    mouth.ScaleX(0.82f);
+                    break;
+            }
+        }
+
+        private void RestoreFacialBones()
+        {
+            leftEye.Restore();
+            rightEye.Restore();
+            leftBrow.Restore();
+            rightBrow.Restore();
+            mouth.Restore();
+        }
+
+        private void ConfigureWorldRenderers()
+        {
+            IReadOnlyList<Renderer> renderers = registry.Renderers;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.enabled = true;
+                renderer.shadowCastingMode = ShadowCastingMode.On;
+                renderer.receiveShadows = true;
+                if (renderer is SkinnedMeshRenderer skinnedRenderer)
+                {
+                    // Context clips are imported from a separate FBX, so the
+                    // model FBX cannot bake their lying/falling poses into
+                    // its renderer bounds. Recalculate them while animated
+                    // to keep every modular body part visible.
+                    skinnedRenderer.updateWhenOffscreen = true;
+                }
+            }
+        }
+
+        private void CaptureClipSpatialState()
+        {
+            if (clipSpatialStateCaptured ||
+                registry == null ||
+                registry.ModelRoot == null)
+            {
+                return;
+            }
+
+            Transform modelRoot = registry.ModelRoot;
+            clipModelLocalPosition = modelRoot.localPosition;
+            clipModelLocalRotation = modelRoot.localRotation;
+            clipModelLocalScale = modelRoot.localScale;
+            clipSpatialStateCaptured = true;
+        }
+
+        private void EvaluateGraph(float deltaTime)
+        {
+            if (graph.IsValid())
+            {
+                graph.Evaluate(Mathf.Max(0f, deltaTime));
+            }
+        }
+
+        private void DestroyGraph()
+        {
+            ResetClipSpatialOffset();
+            if (graph.IsValid())
+            {
+                graph.Destroy();
+            }
+
+            activeClipPlayable = default;
+            activeClipBinding = null;
+            activeClipOwner = ClipOwner.None;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) &&
+                   !float.IsInfinity(value.x) &&
+                   !float.IsNaN(value.y) &&
+                   !float.IsInfinity(value.y) &&
+                   !float.IsNaN(value.z) &&
+                   !float.IsInfinity(value.z);
+        }
+
+        private Vector3 GetAnchorPosition(Transform anchor)
+        {
+            return anchor != null
+                ? anchor.position
+                : actorFacingTransform != null
+                    ? actorFacingTransform.position
+                    : transform.position;
+        }
+
+        private readonly struct FacialBoneRest
+        {
+            private readonly Transform bone;
+            private readonly Vector3 localPosition;
+            private readonly Quaternion localRotation;
+            private readonly Vector3 localScale;
+
+            public FacialBoneRest(Transform transformToCapture)
+            {
+                bone = transformToCapture;
+                localPosition = bone.localPosition;
+                localRotation = bone.localRotation;
+                localScale = bone.localScale;
+            }
+
+            public void Restore()
+            {
+                if (bone == null)
+                {
+                    return;
+                }
+
+                bone.localPosition = localPosition;
+                bone.localRotation = localRotation;
+                bone.localScale = localScale;
+            }
+
+            public void ScaleX(float factor)
+            {
+                if (bone != null)
+                {
+                    bone.localScale = new Vector3(
+                        localScale.x * factor,
+                        localScale.y,
+                        localScale.z);
+                }
+            }
+
+            public void ScaleY(float factor)
+            {
+                if (bone != null)
+                {
+                    bone.localScale = new Vector3(
+                        localScale.x,
+                        localScale.y * factor,
+                        localScale.z);
+                }
+            }
+
+            public void RotateZ(float degrees)
+            {
+                if (bone != null)
+                {
+                    bone.localRotation = localRotation *
+                        Quaternion.AngleAxis(degrees, Vector3.forward);
+                }
+            }
+        }
+    }
+}

@@ -10,8 +10,6 @@ namespace BarPromenade
     {
         public const string SleepPromptKey = "interaction.sleep";
         public const string WakePromptKey = "interaction.wake";
-        public const string AtlasResourcePath =
-            "Player/PlayerBedSleepAtlas";
         public const string SurfaceClutterName =
             "Home Bed Crumpled Shirt";
         public const int SleepLoopFrameCount = 16;
@@ -81,14 +79,16 @@ namespace BarPromenade
                 surfaceClutter.activeSelf;
             definition =
                 new PlayerAnimatedInteractionDefinition(
-                    AtlasResourcePath,
-                    24,
-                    12f,
-                    SleepLoopFrameCount,
-                    SleepLoopFramesPerSecond,
-                    24,
-                    12f,
-                    renderAboveSceneDepth: true,
+                    "BedEnter",
+                    "BedSleepLoop",
+                    "BedExit",
+                    enterFrameCount: 24,
+                    enterFramesPerSecond: 12f,
+                    loopFrameCount: SleepLoopFrameCount,
+                    loopFramesPerSecond:
+                        SleepLoopFramesPerSecond,
+                    exitFrameCount: 24,
+                    exitFramesPerSecond: 12f,
                     loopFrameExtraHoldSeconds:
                         CreateSleepLoopFrameHolds());
             controller.PhaseChanged += HandlePhaseChanged;
@@ -179,8 +179,7 @@ namespace BarPromenade
                     accepted = controller.BeginLooping(
                         definition,
                         plan.EntryHipPosition,
-                        plan.ActionHipPosition,
-                        plan.HeadToFootAxis);
+                        plan.ActionHipPosition);
                 }
                 else
                 {
@@ -194,8 +193,7 @@ namespace BarPromenade
                         new PlayerAnimatedInteractionPose(
                             plan.ExitRootPosition,
                             plan.ExitRotation,
-                            plan.ExitHipPosition),
-                        plan.HeadToFootAxis);
+                            plan.ExitHipPosition));
                 }
             }
             catch

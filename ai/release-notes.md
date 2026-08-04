@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### 2026-08-04 — The hero is now fully 3D
+
+- The main character is now one continuous modular low-poly 3D model in the
+  City, Bar, Supermarket, Home and Stairwell. His separate head, torso, hands,
+  arms, legs and feet remain individually addressable, and the left-arm
+  bandage, right-shoulder patch and diagonal strap keep their physical sides.
+- Walking, idle expressions, intoxication sway, balance reactions and
+  left/right falls now animate the 3D skeleton. The real meshes cast world
+  shadows while a small grounded contact patch keeps the feet readable.
+- Sleeping, balcony smoking and feeding the stairwell cat now play continuously
+  on that same visible model, including their guided approach and exact exit
+  restoration. The cigarette follows the character's right-hand socket; the
+  cat retains its own pixel-art animation.
+- Bar drinking and the refrigerator use first-person arms taken from the same
+  model and clothing instead of a separate hand design. The inventory portrait
+  has also been replaced by a dedicated transparent render of the 3D hero.
+- Retired player atlases and the sprite-shadow proxy are no longer part of the
+  runtime. Pixel-art NPCs, the stairwell cat and minigames are unchanged.
+
 ### 2026-08-04 — Eastern lake, cemetery and scrollable city map
 
 - The playable city now includes a reachable lake on its north-eastern edge

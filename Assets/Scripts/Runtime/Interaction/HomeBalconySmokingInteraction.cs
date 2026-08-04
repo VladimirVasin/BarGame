@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace BarPromenade
 {
     /// <summary>
-    /// Owns the modal balcony-smoking vignette: docking, atlas playback,
+    /// Owns the modal balcony-smoking vignette: docking, clip playback,
     /// queued safe-frame exit, drifting camera push-in and the scene-local
     /// music fade.
     /// </summary>
@@ -43,6 +43,7 @@ namespace BarPromenade
         private float exitInputArmTime;
         private bool cameraPathCaptured;
         private Func<bool> exitPromptAction;
+        private GameObject cigaretteProp;
 
         public bool IsInitialized { get; private set; }
         public bool OwnsInteraction => ownsInteraction;
@@ -51,6 +52,7 @@ namespace BarPromenade
         public HomeBalconySmokingTimeline Timeline => timeline;
         public PlayerAnimatedInteractionDefinition Definition =>
             definition;
+        public GameObject CigaretteProp => cigaretteProp;
         public string PromptKey
         {
             get
@@ -106,6 +108,7 @@ namespace BarPromenade
             music = musicPlayer;
             playerRoot = home.Player.GameObject.transform;
             definition = plan.CreateAnimationDefinition();
+            RebuildCigaretteProp();
             timeline = new HomeBalconySmokingTimeline();
             exitPromptAction = RequestExit;
             controller.PhaseChanged +=
@@ -218,7 +221,7 @@ namespace BarPromenade
 
         /// <summary>
         /// Accepts the second interaction immediately, but starts the exit
-        /// atlas only when the loop reaches a calm bridge frame.
+        /// clip only when the loop reaches a calm bridge frame.
         /// </summary>
         public bool RequestExit()
         {
@@ -280,6 +283,8 @@ namespace BarPromenade
                 controller.PhaseChanged -=
                     HandleAnimatedPhaseChanged;
             }
+
+            ReleaseCigaretteProp();
         }
 
         private void CaptureCameraPath()
@@ -427,6 +432,7 @@ namespace BarPromenade
             switch (phase)
             {
                 case PlayerAnimatedInteractionPhase.Entering:
+                    SetCigaretteVisible(true);
                     BeginAnimatedPresentation();
                     break;
                 case PlayerAnimatedInteractionPhase.Looping:
@@ -506,6 +512,7 @@ namespace BarPromenade
             exitInputArmed = false;
             cameraPathCaptured = false;
             timeline?.Reset();
+            SetCigaretteVisible(false);
             music?.StopImmediate();
             home?.InteractionPrompt?.SetPrompt(string.Empty);
             modalLock.Restore();
@@ -518,6 +525,7 @@ namespace BarPromenade
         {
             ownsInteraction = false;
             cameraPathCaptured = false;
+            SetCigaretteVisible(false);
             if (home?.Player.Motor != null)
             {
                 home.Player.Motor.Teleport(previousPosition);
@@ -579,6 +587,71 @@ namespace BarPromenade
                     "player, camera and interaction stack.",
                     nameof(homeRoot));
             }
+        }
+
+        private void RebuildCigaretteProp()
+        {
+            ReleaseCigaretteProp();
+            if (!(home.Player.Visual is Player3DCharacterPresentation visual))
+            {
+                return;
+            }
+
+            Transform socket = visual.Registry != null
+                ? visual.Registry.Anchors.RightCigarette
+                : null;
+            if (socket == null)
+            {
+                throw new InvalidOperationException(
+                    "The Player 3D smoking presentation requires the " +
+                    "serialized SOCKET_Cigarette.R anchor.");
+            }
+
+            cigaretteProp = new GameObject("Player Smoking Cigarette");
+            cigaretteProp.transform.SetParent(socket, false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Paper",
+                cigaretteProp.transform,
+                new Vector3(0f, -0.030f, 0f),
+                new Vector3(0.010f, 0.060f, 0.010f),
+                new Color(0.76f, 0.72f, 0.60f),
+                collider: false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Ember",
+                cigaretteProp.transform,
+                new Vector3(0f, -0.063f, 0f),
+                new Vector3(0.012f, 0.008f, 0.012f),
+                new Color(0.92f, 0.20f, 0.055f),
+                collider: false);
+            cigaretteProp.SetActive(false);
+        }
+
+        private void SetCigaretteVisible(bool visible)
+        {
+            if (cigaretteProp != null &&
+                cigaretteProp.activeSelf != visible)
+            {
+                cigaretteProp.SetActive(visible);
+            }
+        }
+
+        private void ReleaseCigaretteProp()
+        {
+            if (cigaretteProp == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(cigaretteProp);
+            }
+            else
+            {
+                DestroyImmediate(cigaretteProp);
+            }
+
+            cigaretteProp = null;
         }
     }
 }

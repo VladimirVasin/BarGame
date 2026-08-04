@@ -102,12 +102,8 @@ namespace BarPromenade.Tests.EditMode
                     .Within(Tolerance));
             float expectedStandHipY =
                 plan.EntryRootPosition.y +
-                ((PlayerAnimatedInteractionController
-                    .HipPivotYPixels -
-                  PlayerSpriteRig.FeetPivotPixels) /
-                 PlayerAnimatedInteractionController
-                    .PixelsPerUnit) +
-                0.005f;
+                PlayerCharacterDimensions.PelvisHeight +
+                HomeBedInteractionPlan.UprightVisualOffset;
             Assert.That(
                 plan.EntryHipPosition.y,
                 Is.EqualTo(expectedStandHipY)

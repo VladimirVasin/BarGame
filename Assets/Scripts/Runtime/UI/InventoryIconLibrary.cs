@@ -7,15 +7,13 @@ namespace BarPromenade
     {
         private static readonly Dictionary<InventoryItemId, Texture2D> Icons =
             new Dictionary<InventoryItemId, Texture2D>();
-        private static Texture2D heroPortraitAtlas;
+        private static Texture2D heroPortrait;
 
-        internal static readonly Rect HeroPortraitUv = new Rect(
-            13f / (PlayerSpriteRig.FrameWidth *
-                   PlayerSpriteRig.DirectionCount),
-            44f / PlayerSpriteRig.FrameHeight,
-            39f / (PlayerSpriteRig.FrameWidth *
-                   PlayerSpriteRig.DirectionCount),
-            52f / PlayerSpriteRig.FrameHeight);
+        internal const string HeroPortraitResourcePath =
+            "Player/Player3DPortrait";
+
+        internal static readonly Rect HeroPortraitUv =
+            new Rect(0f, 0f, 1f, 1f);
 
         public static Texture2D GetIcon(InventoryItemId itemId)
         {
@@ -32,19 +30,19 @@ namespace BarPromenade
 
         public static Texture2D GetHeroPortrait()
         {
-            if (heroPortraitAtlas == null)
+            if (heroPortrait == null)
             {
-                heroPortraitAtlas = Resources.Load<Texture2D>(
-                    PlayerSpriteRig.ReferenceAtlasResourcePath);
-                if (heroPortraitAtlas == null)
+                heroPortrait = Resources.Load<Texture2D>(
+                    HeroPortraitResourcePath);
+                if (heroPortrait == null)
                 {
                     throw new System.InvalidOperationException(
-                        "Missing player reference atlas at Resources/" +
-                        PlayerSpriteRig.ReferenceAtlasResourcePath + ".");
+                        "Missing dedicated 3D player portrait at Resources/" +
+                        HeroPortraitResourcePath + ".");
                 }
             }
 
-            return heroPortraitAtlas;
+            return heroPortrait;
         }
 
         private static Texture2D CreateItemIcon(InventoryItemId itemId)
@@ -132,7 +130,7 @@ namespace BarPromenade
             }
 
             Icons.Clear();
-            heroPortraitAtlas = null;
+            heroPortrait = null;
         }
 
         private static void DestroyTexture(Texture2D texture)
