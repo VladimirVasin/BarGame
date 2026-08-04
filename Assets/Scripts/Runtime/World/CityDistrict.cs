@@ -11,7 +11,10 @@ namespace BarPromenade
         Residential = 1,
         Industrial = 2,
         Nightlife = 3,
-        CentralPark = 4
+        CentralPark = 4,
+        NorthWaterfront = 5,
+        Lake = 6,
+        Cemetery = 7
     }
 
     public enum CityLandUseKind
@@ -32,10 +35,19 @@ namespace BarPromenade
         private readonly HashSet<Vector2Int> cellSet;
 
         internal CityDistrictDescriptor(
+            string areaId,
             CityDistrictKind kind,
             IList<Vector2Int> cells,
             Bounds worldBounds)
         {
+            if (string.IsNullOrWhiteSpace(areaId))
+            {
+                throw new ArgumentException(
+                    "A district descriptor requires a stable area ID.",
+                    nameof(areaId));
+            }
+
+            AreaId = areaId;
             Kind = kind;
             Cells = new ReadOnlyCollection<Vector2Int>(
                 new List<Vector2Int>(
@@ -44,6 +56,7 @@ namespace BarPromenade
             cellSet = new HashSet<Vector2Int>(Cells);
         }
 
+        public string AreaId { get; }
         public CityDistrictKind Kind { get; }
         public IReadOnlyList<Vector2Int> Cells { get; }
         public Bounds WorldBounds { get; }

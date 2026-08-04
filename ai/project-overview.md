@@ -54,8 +54,11 @@ The vertical slice contains:
   `1440` real seconds (`24` minutes), crosses midnight with a day index and
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
   and inventory Status panel both show its current `HH:MM`;
-- a finite, seed-reproducible connected `12 x 12`-block city spanning roughly
-  `288 x 288 m`;
+- a finite, seed-reproducible coastal city driven by one immutable blueprint:
+  the default keeps a connected `12 x 12` road-and-lot core, adds a full-width
+  northern beach and water strip, and anchors the central park at world/map
+  center. Active cells, roads and surfaces may form a connected sparse,
+  non-rectangular footprint inside their map bounds;
 - one shared MVP day/night lighting cycle for City, the Home window and the
   Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
   `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.
@@ -140,11 +143,26 @@ The vertical slice contains:
   distant water and movement. Both use deterministic schedules, `22050 Hz`
   mono clips, deliberately quantized retro waveforms and layout-derived
   anchors;
-- a spanning-tree road graph with deterministic loops, cross-city arterials
-  and a connected park-path cross;
-- five readable districts: Old Town, Residential, Industrial, Nightlife and
-  a central `4 x 4`-block park with lawn, plaza, trees, benches, hedges and
-  four continuously walkable gates;
+- an immutable `CityBlueprint`/builder/catalog boundary with stable blueprint
+  and area IDs. Area definitions separate `UrbanBuilt` districts from
+  `NonUrbanOpen` areas, retain a reusable visual archetype, declare movable,
+  center-anchor or north-edge placement and assign buildable, park, open-land
+  or water topology per cell. The legacy rectangular blueprint remains an
+  explicit compatibility path;
+- a spanning-tree road graph over only the sparse road footprint, with
+  deterministic loops, filtered cross-city arterials, required open-area
+  access edges and a connected park-path cross;
+- four readable built areas—Old Town, Residential, Industrial and
+  Nightlife—plus a fixed central `4 x 4`-block park with lawn, plaza, trees,
+  benches, hedges and four continuously walkable gates;
+- one mandatory north-edge waterfront in the default blueprint: its connected
+  beach has a deterministic street approach and remains walkable to the water
+  line, while the continuous northern water row is rendered and mapped but is
+  excluded from player navigation and night-fixture placement;
+- reusable Lake and Cemetery non-urban profiles for custom blueprints. The
+  generic surface planner maps lake shore/water and cemetery ground, requires
+  one street-linked open-area approach and exposes the same data to world,
+  fence, navigation and map consumers; bespoke props are not part of this MVP;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24
@@ -170,8 +188,9 @@ The vertical slice contains:
 - frontage-aware windows and facade details now face each lot's actual road.
   Decoration geometry is visual-only, shadowless and collider-free, reuses
   the two packaged shared materials and combines at most six style batches per
-  `48 m` chunk. The bounded Home balcony exterior rebuilds the same seeded
-  descriptors in Home-local space instead of showing a simpler parallel city;
+  `48 m` chunk. The bounded Home balcony exterior rebuilds descriptors from
+  the same blueprint ID and seed in Home-local space instead of showing a
+  simpler parallel city;
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the puppet intersect raised surfaces;
@@ -180,9 +199,11 @@ The vertical slice contains:
   openings around every bar, supermarket and park-gate approach, while
   removing the full fence interval from every public-place side that meets a
   street;
-- 144 land-use lots by default, including 16 park cells, 4 open district points
-  of interest, exactly 4 reachable bars in four different urban districts and
-  one non-bar player home beside one bar street, plus exactly one ordinary
+- 144 land-use lots in the default road-grid core, including 16 park cells and
+  4 open district points of interest, plus 24 northern beach/water surface
+  cells. The core still contains exactly 4 reachable bars in four different
+  stable urban area IDs and one non-bar player home beside one bar street,
+  plus exactly one ordinary
   street-front supermarket. Its deterministic selection prefers Residential,
   then the shortest traversable route from the home, without consuming a bar,
   public-place or primary-landmark lot. Every bar pair is at least `120 m`
@@ -268,8 +289,10 @@ The vertical slice contains:
   contact shadow expands and offsets, the light-facing shadow uses the same
   authored frame, and the sequence recovers through `0.45 s` falling,
   `1.2 s` down and `1.0 s` rising before restoring all nine puppet layers;
-- a full-screen city map with district colors and labels, distinct park land
-  and paths, player/bar markers, a dedicated labeled home icon, a distinct
+- a full-screen city map projected from the blueprint's centered map bounds,
+  with area colors and labels anchored on real active cells, distinct park,
+  beach, water, lake-shore and cemetery surfaces and paths, player/bar markers,
+  a dedicated labeled home icon, a distinct
   grocery-shop marker and four non-interactive, kind-specific public-place
   markers with a localized legend. Hovering a bar, home, shop or public-place
   marker shows its localized name in a bounded high-contrast tooltip. Public
@@ -280,8 +303,9 @@ The vertical slice contains:
   generated road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
-- guarded asynchronous transitions and persistent seed/bar/route/visited
-  context for the current city, with an explicit bar/home/supermarket return
+- guarded asynchronous transitions and persistent blueprint ID,
+  seed/bar/route/visited context for the current city, with an explicit
+  bar/home/supermarket return
   kind, a separate stairwell-arrival side and a consumed
   `Normal`/`OpeningSleep` Home arrival value;
 - a dedicated `3.15 s` `DoorTransition` scene between connected locations:
@@ -430,9 +454,10 @@ The vertical slice contains:
 - a real window and open glazed door in the Home right wall leading, without
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
-  view rebuilds only a bounded same-seed slice of the actual street's roads,
-  lots, windows, lamps and signals. City and Home share the exterior ground,
-  road, facade, window and passive bar-front appearance recipe. The balcony
+  view rebuilds only a bounded same-blueprint-and-seed slice of the actual
+  street's roads, lots, windows, lamps and signals. City and Home share the
+  exterior ground, road, facade, window and passive bar-front appearance
+  recipe. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
   background, `48 m` visibility cap, current time-of-day lighting, grading,
   local fog field and bounded `12`-light street/bar pool, then restores the

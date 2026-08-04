@@ -44,6 +44,15 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             CityDistrictKind.CentralPark,
             "map.district.central_park")]
+        [TestCase(
+            CityDistrictKind.NorthWaterfront,
+            "map.district.north_waterfront")]
+        [TestCase(
+            CityDistrictKind.Lake,
+            "map.district.lake")]
+        [TestCase(
+            CityDistrictKind.Cemetery,
+            "map.district.cemetery")]
         public void DistrictLocalizationKeys_AreStable(
             CityDistrictKind district,
             string expected)

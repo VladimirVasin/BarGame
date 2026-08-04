@@ -280,7 +280,8 @@ namespace BarPromenade.Tests.EditMode
                     plan.ParkGateOpenings.Count +
                     plan.PlayerHomeOpenings.Count +
                     plan.PublicSpaceOpenings.Count +
-                    plan.SupermarketOpenings.Count));
+                    plan.SupermarketOpenings.Count +
+                    plan.OpenAreaAccessOpenings.Count));
             foreach (CityParkGateDescriptor gate
                      in layout.Park.Gates)
             {

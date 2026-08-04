@@ -4,10 +4,13 @@ Read this file first, then use [`ai/README.md`](ai/README.md) as the documentati
 
 ## Reality check
 
-The Unity 6 URP vertical slice is implemented. It generates a finite connected
-`12 x 12`-block city with four urban districts, a traversable central park and
-four graph-separated bars, places one visually distinct player home beside a
-bar street and one deterministic street-front supermarket, creates an
+The Unity 6 URP vertical slice is implemented. It generates a finite connected,
+blueprint-driven city with a `12 x 12` urban core, a fixed traversable central
+park, a reachable northern beach and water edge, and four urban districts with
+four graph-separated bars. The sparse footprint can be non-rectangular, and
+the same data-first area contract supports reordered urban areas plus future
+lake and cemetery placements. The runtime places one visually distinct player
+home beside a bar street and one deterministic street-front supermarket, creates an
 atlas-backed eight-direction jointed sprite player, loads separate bar,
 supermarket, stairwell and home interiors, and restores the same seed and
 matching exterior return point.

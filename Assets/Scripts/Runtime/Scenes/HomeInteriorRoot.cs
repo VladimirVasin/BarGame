@@ -142,6 +142,7 @@ namespace BarPromenade
                 HomeBalconyLayoutPlanner.Generate(Layout);
             ExteriorContext =
                 HomeExteriorContextPlanner.Generate(
+                    GameSessionState.CityBlueprintId,
                     GameSessionState.CitySeed);
             Room = HomeInteriorWorldBuilder.Build(
                 transform,

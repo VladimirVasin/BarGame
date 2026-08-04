@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### 2026-08-04 — A coastal, rearrangeable city foundation
+
+- The default city now opens onto a full-width beach and waterline along the
+  north edge of the map. The beach is reachable from the street and walkable
+  to the shore; the water is visible on the world and map but cannot be entered.
+- Central Park remains fixed at the city/map center while the generated city
+  can use connected irregular outlines instead of filling a perfect rectangle.
+  Area names and colors now follow stable area identities rather than their
+  current position.
+- The city constructor can reuse built-district styles and includes generic
+  lake and cemetery area profiles with suitable ground/water presentation and
+  street access. These optional areas are available to authored layouts but are
+  not added to the default city yet.
+- The selected city layout is stored with the session, so the City scene and
+  the exterior seen from Home always use the same blueprint and seed.
+
 ### 2026-08-04 — Smoother day/night updates
 
 - City and Home no longer repeat unchanged global-lighting, environment and

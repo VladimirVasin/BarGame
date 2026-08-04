@@ -352,6 +352,20 @@ namespace BarPromenade
                 }
             }
 
+            for (int accessIndex = 0;
+                 accessIndex < layout.OpenAreaAccesses.Count;
+                 accessIndex++)
+            {
+                CityOpenAreaAccessDescriptor access =
+                    layout.OpenAreaAccesses[accessIndex];
+                openings.Add(new RoadFenceOpeningDescriptor(
+                    RoadFenceOpeningKind.OpenAreaAccess,
+                    access.Id,
+                    access.Center,
+                    access.OutwardNormal,
+                    access.Width));
+            }
+
             openings.Sort(CompareOpenings);
             return openings;
         }

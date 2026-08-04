@@ -129,17 +129,17 @@ namespace BarPromenade
 
         private static int CountUrbanDistricts(CityLayout layout)
         {
-            int count = 0;
+            var archetypes = new HashSet<CityDistrictKind>();
             for (int index = 0; index < layout.Districts.Count; index++)
             {
                 if (layout.Districts[index].Kind !=
                     CityDistrictKind.CentralPark)
                 {
-                    count++;
+                    archetypes.Add(layout.Districts[index].Kind);
                 }
             }
 
-            return count;
+            return archetypes.Count;
         }
 
         private static void AddOrdinaryLotVisuals(
@@ -200,10 +200,12 @@ namespace BarPromenade
             CityLayout layout,
             ICollection<CityDecorationDescriptor> target)
         {
+            var plannedArchetypes = new HashSet<CityDistrictKind>();
             for (int index = 0; index < layout.Districts.Count; index++)
             {
                 CityDistrictKind district = layout.Districts[index].Kind;
-                if (district == CityDistrictKind.CentralPark)
+                if (district == CityDistrictKind.CentralPark ||
+                    !plannedArchetypes.Add(district))
                 {
                     continue;
                 }

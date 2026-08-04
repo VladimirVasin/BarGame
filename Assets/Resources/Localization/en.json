@@ -833,6 +833,18 @@
       "value": "Central Park"
     },
     {
+      "key": "map.district.north_waterfront",
+      "value": "North Waterfront"
+    },
+    {
+      "key": "map.district.lake",
+      "value": "Lake"
+    },
+    {
+      "key": "map.district.cemetery",
+      "value": "Cemetery"
+    },
+    {
       "key": "inventory.status",
       "value": "STATUS"
     },

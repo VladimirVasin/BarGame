@@ -102,6 +102,318 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void DefaultCoastalBlueprint_CreatesCenteredParkReachableBeachAndBlockedWater()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                settings,
+                GameSessionState.DefaultCitySeed);
+
+            Assert.That(
+                layout.BlueprintId,
+                Is.EqualTo(CityBlueprintCatalog.DefaultBlueprintId));
+            Assert.That(layout.Blueprint, Is.SameAs(blueprint));
+            Assert.That(
+                blueprint.CellBounds.width,
+                Is.Not.EqualTo(blueprint.CellBounds.height));
+            Assert.That(blueprint.CentralPark, Is.Not.Null);
+            Assert.That(blueprint.CentralPark.Cells, Has.Count.EqualTo(16));
+            Assert.That(
+                layout.Park.Cells,
+                Is.EquivalentTo(blueprint.CentralPark.Cells));
+            Assert.That(
+                Vector3.Distance(
+                    layout.Park.Center,
+                    layout.GetGridWorldPosition(blueprint.CenterNode)),
+                Is.LessThan(0.001f));
+
+            Assert.That(blueprint.NorthWaterfront, Is.Not.Null);
+            int northernCellZ = blueprint.CellBounds.yMax - 1;
+            for (int x = blueprint.CellBounds.xMin;
+                 x < blueprint.CellBounds.xMax;
+                 x++)
+            {
+                var northernCell = new Vector2Int(x, northernCellZ);
+                Assert.That(
+                    blueprint.TryGetCell(
+                        northernCell,
+                        out CityBlueprintCell descriptor),
+                    Is.True,
+                    northernCell.ToString());
+                Assert.That(
+                    descriptor.Area.Id,
+                    Is.EqualTo(blueprint.NorthWaterfront.Id),
+                    northernCell.ToString());
+                Assert.That(
+                    descriptor.Topology,
+                    Is.EqualTo(CityCellTopologyKind.Water),
+                    northernCell.ToString());
+            }
+
+            Assert.That(
+                layout.Surfaces.Select(surface => surface.Cell),
+                Is.EquivalentTo(
+                    blueprint.Cells.Select(cell => cell.Cell)));
+            Assert.That(
+                layout.BuildingLots.All(
+                    lot => blueprint.CreatesLot(lot.Cell)),
+                Is.True);
+            Assert.That(
+                layout.BuildingLots.Any(
+                    lot =>
+                        lot.District ==
+                        CityDistrictKind.NorthWaterfront),
+                Is.False);
+
+            CityOpenAreaAccessDescriptor access =
+                layout.OpenAreaAccesses.Single(candidate =>
+                    candidate.Feature ==
+                    CityAreaFeatureKind.NorthWaterfront);
+            CitySurfaceDescriptor beach = layout.Surfaces.Single(
+                surface => surface.Cell == access.Cell);
+            CitySurfaceDescriptor water = layout.Surfaces.First(
+                surface =>
+                    surface.Feature ==
+                        CityAreaFeatureKind.NorthWaterfront &&
+                    surface.Kind == CitySurfaceKind.Water);
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+
+            Assert.That(layout.HasRoad(access.FrontageEdge), Is.True);
+            Assert.That(
+                layout.GetPathKind(access.FrontageEdge),
+                Is.EqualTo(CityPathKind.Street));
+            Assert.That(beach.Kind, Is.EqualTo(CitySurfaceKind.Beach));
+            Assert.That(beach.IsWalkable, Is.True);
+            Assert.That(walkable.Contains(access.Center, 0.28f), Is.True);
+            Assert.That(walkable.Contains(beach.Center, 0.28f), Is.True);
+            Assert.That(water.IsWalkable, Is.False);
+            Assert.That(layout.IsWater(water.Center), Is.True);
+            Assert.That(layout.IsWater(beach.Center), Is.False);
+            Assert.That(walkable.Contains(water.Center, 0.28f), Is.False);
+            Assert.That(layout.IsRoadGraphConnected(), Is.True);
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void SwappingUrbanAreas_PreservesTopologyNodesAndRoads()
+        {
+            CityBlueprint originalBlueprint =
+                CityBlueprintCatalog.Default;
+            Assert.That(
+                originalBlueprint.TryGetArea(
+                    "old-town",
+                    out CityAreaPlacement oldTown),
+                Is.True);
+            Assert.That(
+                originalBlueprint.TryGetArea(
+                    "residential",
+                    out CityAreaPlacement residential),
+                Is.True);
+            Vector2Int[] oldTownCells = oldTown.Cells.ToArray();
+            Vector2Int[] residentialCells =
+                residential.Cells.ToArray();
+            CityBlueprint swappedBlueprint =
+                CityBlueprintBuilder.From(originalBlueprint)
+                    .SwapUrbanAreas(oldTown.Id, residential.Id)
+                    .Build();
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            const int seed = 271828;
+
+            CityLayout original = CityLayoutGenerator.Generate(
+                originalBlueprint,
+                settings,
+                seed);
+            CityLayout swapped = CityLayoutGenerator.Generate(
+                swappedBlueprint,
+                settings,
+                seed);
+
+            Assert.That(
+                swappedBlueprint.Cells.Count,
+                Is.EqualTo(originalBlueprint.Cells.Count));
+            for (int index = 0;
+                 index < originalBlueprint.Cells.Count;
+                 index++)
+            {
+                CityBlueprintCell expected =
+                    originalBlueprint.Cells[index];
+                Assert.That(
+                    swappedBlueprint.TryGetCell(
+                        expected.Cell,
+                        out CityBlueprintCell actual),
+                    Is.True,
+                    expected.Cell.ToString());
+                Assert.That(
+                    actual.Topology,
+                    Is.EqualTo(expected.Topology),
+                    expected.Cell.ToString());
+            }
+
+            CollectionAssert.AreEqual(original.Nodes, swapped.Nodes);
+            CollectionAssert.AreEqual(
+                original.RoadEdges,
+                swapped.RoadEdges);
+            CollectionAssert.AreEqual(
+                original.PathKinds,
+                swapped.PathKinds);
+            CollectionAssert.AreEqual(
+                original.Park.Cells,
+                swapped.Park.Cells);
+            Assert.That(
+                swapped.TryGetArea(
+                    oldTownCells[0],
+                    out CityAreaDefinition movedOldTownCell),
+                Is.True);
+            Assert.That(
+                movedOldTownCell.Id,
+                Is.EqualTo(residential.Id));
+            Assert.That(
+                swapped.TryGetArea(
+                    residentialCells[0],
+                    out CityAreaDefinition movedResidentialCell),
+                Is.True);
+            Assert.That(
+                movedResidentialCell.Id,
+                Is.EqualTo(oldTown.Id));
+            Assert.That(
+                swapped.BuildingLots.Single(
+                    lot => lot.Cell == oldTownCells[0]).AreaId,
+                Is.EqualTo(residential.Id));
+            Assert.That(
+                swapped.BuildingLots.Single(
+                    lot => lot.Cell == residentialCells[0]).AreaId,
+                Is.EqualTo(oldTown.Id));
+            Assert.DoesNotThrow(swapped.ValidateOrThrow);
+        }
+
+        [Test]
+        public void IrregularBlueprint_AddsLakeAndCemeteryWithoutFillingHole()
+        {
+            CityBlueprint source = CityBlueprintCatalog.Default;
+            Assert.That(
+                source.TryGetArea(
+                    "industrial",
+                    out CityAreaPlacement industrial),
+                Is.True);
+            Assert.That(
+                source.TryGetArea(
+                    "nightlife",
+                    out CityAreaPlacement nightlife),
+                Is.True);
+
+            var waterCell = new Vector2Int(0, 0);
+            var shoreCells = new[]
+            {
+                new Vector2Int(0, 1),
+                new Vector2Int(1, 0),
+                new Vector2Int(1, 1)
+            };
+            var lakeCells = new HashSet<Vector2Int>(shoreCells)
+            {
+                waterCell
+            };
+            var cemeteryCell = new Vector2Int(11, 0);
+            var holeCell = new Vector2Int(11, 1);
+            Vector2Int[] remainingIndustrialCells = industrial.Cells
+                .Where(cell => !lakeCells.Contains(cell))
+                .ToArray();
+            Vector2Int[] remainingNightlifeCells = nightlife.Cells
+                .Where(cell =>
+                    cell != cemeteryCell &&
+                    cell != holeCell)
+                .ToArray();
+            CityAreaDefinition lake =
+                CityBlueprintCatalog.CreateLake();
+            CityAreaDefinition cemetery =
+                CityBlueprintCatalog.CreateCemetery();
+            CityBlueprint blueprint = CityBlueprintBuilder.From(source)
+                .SetAreaCells(
+                    industrial.Definition,
+                    remainingIndustrialCells,
+                    CityCellTopologyKind.BuildableLand)
+                .SetAreaCells(
+                    nightlife.Definition,
+                    remainingNightlifeCells,
+                    CityCellTopologyKind.BuildableLand)
+                .AddCells(
+                    lake,
+                    new[] { waterCell },
+                    CityCellTopologyKind.Water)
+                .AddCells(
+                    lake,
+                    shoreCells,
+                    CityCellTopologyKind.OpenLand)
+                .AddCells(
+                    cemetery,
+                    new[] { cemeteryCell },
+                    CityCellTopologyKind.OpenLand)
+                .Build();
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                CityGenerationSettings.Default,
+                314159);
+
+            Assert.That(blueprint.ContainsCell(holeCell), Is.False);
+            Assert.That(
+                blueprint.Cells.Count,
+                Is.LessThan(
+                    blueprint.CellBounds.width *
+                    blueprint.CellBounds.height));
+            Assert.That(
+                layout.BuildingLots.Any(lot => lot.Cell == holeCell),
+                Is.False);
+            Assert.That(
+                layout.Surfaces.Any(surface => surface.Cell == holeCell),
+                Is.False);
+            Assert.That(
+                layout.BuildingLots.Any(lot =>
+                    lakeCells.Contains(lot.Cell) ||
+                    lot.Cell == cemeteryCell),
+                Is.False);
+
+            CitySurfaceDescriptor water = layout.Surfaces.Single(
+                surface => surface.Cell == waterCell);
+            Assert.That(water.Kind, Is.EqualTo(CitySurfaceKind.Water));
+            Assert.That(water.IsWalkable, Is.False);
+            Assert.That(
+                blueprint.ParticipatesInRoadGrid(Vector2Int.right),
+                Is.False);
+            Assert.That(
+                blueprint.ParticipatesInRoadGrid(Vector2Int.up),
+                Is.False);
+            Assert.That(
+                layout.Surfaces
+                    .Where(surface =>
+                        shoreCells.Contains(surface.Cell))
+                    .All(surface =>
+                        surface.Kind == CitySurfaceKind.LakeShore &&
+                        surface.IsWalkable),
+                Is.True);
+            CitySurfaceDescriptor cemeterySurface =
+                layout.Surfaces.Single(
+                    surface => surface.Cell == cemeteryCell);
+            Assert.That(
+                cemeterySurface.Kind,
+                Is.EqualTo(CitySurfaceKind.CemeteryGround));
+            Assert.That(cemeterySurface.IsWalkable, Is.True);
+            Assert.That(
+                layout.OpenAreaAccesses.Any(access =>
+                    access.Feature == CityAreaFeatureKind.Lake),
+                Is.True);
+            Assert.That(
+                layout.OpenAreaAccesses.Any(access =>
+                    access.Feature == CityAreaFeatureKind.Cemetery),
+                Is.True);
+            Assert.That(layout.IsRoadGraphConnected(), Is.True);
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
         public void DefaultSettings_CreateConnectedWalkableCentralPark()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

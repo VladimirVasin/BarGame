@@ -11,7 +11,8 @@ namespace BarPromenade
         ParkGate = 1,
         PlayerHomeEntrance = 2,
         DistrictPointOfInterest = 3,
-        SupermarketEntrance = 4
+        SupermarketEntrance = 4,
+        OpenAreaAccess = 5
     }
 
     public readonly struct RoadFenceSegmentDescriptor :
@@ -130,6 +131,10 @@ namespace BarPromenade
             Kind == RoadFenceOpeningKind.SupermarketEntrance
                 ? Id
                 : string.Empty;
+        public string OpenAreaAccessId =>
+            Kind == RoadFenceOpeningKind.OpenAreaAccess
+                ? Id
+                : string.Empty;
         public Vector3 Center { get; }
         public Vector3 OutwardNormal { get; }
         public float Width { get; }
@@ -211,6 +216,8 @@ namespace BarPromenade
                 new List<RoadFenceOpeningDescriptor>();
             var supermarketOpenings =
                 new List<RoadFenceOpeningDescriptor>();
+            var openAreaAccessOpenings =
+                new List<RoadFenceOpeningDescriptor>();
             for (int index = 0; index < allOpenings.Count; index++)
             {
                 RoadFenceOpeningDescriptor opening =
@@ -240,6 +247,11 @@ namespace BarPromenade
                 {
                     supermarketOpenings.Add(opening);
                 }
+                else if (opening.Kind ==
+                         RoadFenceOpeningKind.OpenAreaAccess)
+                {
+                    openAreaAccessOpenings.Add(opening);
+                }
             }
 
             Openings =
@@ -260,6 +272,9 @@ namespace BarPromenade
             SupermarketOpenings =
                 new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
                     supermarketOpenings);
+            OpenAreaAccessOpenings =
+                new ReadOnlyCollection<RoadFenceOpeningDescriptor>(
+                    openAreaAccessOpenings);
         }
 
         public IReadOnlyList<RoadFenceSegmentDescriptor> Segments { get; }
@@ -284,5 +299,7 @@ namespace BarPromenade
         {
             get;
         }
+        public IReadOnlyList<RoadFenceOpeningDescriptor>
+            OpenAreaAccessOpenings { get; }
     }
 }

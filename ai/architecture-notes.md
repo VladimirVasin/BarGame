@@ -14,10 +14,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Data-first generation:** A pure `CityLayout` is validated before GameObjects are created.
 - **Accepted — Stable local randomness:** Road stages and lot coordinates use stable hashes; Unity global random state is not used.
 - **Accepted — Finite connected graph:** Kruskal-style spanning tree plus deterministic optional loops.
-- **Accepted — District-scale finite city:** The default layout is a
-  `12 x 12`-block, roughly `288 x 288 m` city. Four quadrant-based urban
-  districts surround a central `4 x 4`-block park; cross-city arterials and a
-  park-path cross are mandatory before optional seeded roads are added.
+- **Accepted — Stable blueprint identity over position:** An immutable
+  `CityBlueprint` owns stable area IDs, category, reusable visual archetype,
+  placement policy and per-cell topology. Movable urban areas may swap cell
+  sets without changing roads; `CityDistrictKind` remains a presentation and
+  legacy-system archetype, not canonical area identity. The session persists
+  one blueprint ID and seed shared by City and Home.
+- **Accepted — Anchored coastal sparse city:** The default blueprint keeps a
+  connected `12 x 12` road-and-lot core with four urban areas and a fixed
+  central `4 x 4` park, then adds a full-width walkable northern beach and a
+  continuous non-walkable water row. Roads, ground, navigation and map drawing
+  consume only active cells, so connected holes and non-rectangular outlines
+  remain real voids. Lake and Cemetery are optional non-urban profiles using
+  the same surface/access contract; bespoke props are deferred.
 - **Accepted — Graph-separated accessible bars:** Buildable lots get street
   frontage and bar return points are validated against it. The default four
   bars occupy different urban districts and every pair is separated by at

@@ -118,20 +118,88 @@ namespace BarPromenade
             CityLayout layout,
             CityGenerationSettings settings)
         {
-            Vector3 minimum = layout.GetNodeWorldPosition(Vector2Int.zero);
-            Vector3 maximum = layout.GetNodeWorldPosition(layout.BlockCount);
-            Vector3 center = (minimum + maximum) * 0.5f;
-            Vector3 size = new Vector3(
-                maximum.x - minimum.x + settings.RoadWidth + 10f,
-                0.32f,
-                maximum.z - minimum.z + settings.RoadWidth + 10f);
-            RuntimePrimitiveFactory.CreateBox(
-                "City Ground",
-                parent,
-                center + (Vector3.down * 0.24f),
-                size,
-                CityExteriorAppearance.Ground);
-            return new Bounds(center, new Vector3(size.x, 20f, size.z));
+            Transform surfaces = new GameObject("City Surfaces").transform;
+            surfaces.SetParent(parent, false);
+            var buildable = new List<Bounds>();
+            var beach = new List<Bounds>();
+            var lakeShore = new List<Bounds>();
+            var cemetery = new List<Bounds>();
+            var water = new List<Bounds>();
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = layout.Surfaces[index];
+                bool isWater = surface.IsWater;
+                float height = isWater ? 0.10f : 0.32f;
+                float centerY = isWater ? -0.17f : -0.24f;
+                var bounds = new Bounds(
+                    new Vector3(
+                        surface.WorldBounds.center.x,
+                        centerY,
+                        surface.WorldBounds.center.y),
+                    new Vector3(
+                        surface.WorldBounds.width,
+                        height,
+                        surface.WorldBounds.height));
+                switch (surface.Kind)
+                {
+                    case CitySurfaceKind.Beach:
+                        beach.Add(bounds);
+                        break;
+                    case CitySurfaceKind.LakeShore:
+                        lakeShore.Add(bounds);
+                        break;
+                    case CitySurfaceKind.CemeteryGround:
+                        cemetery.Add(bounds);
+                        break;
+                    case CitySurfaceKind.Water:
+                        water.Add(bounds);
+                        break;
+                    default:
+                        buildable.Add(bounds);
+                        break;
+                }
+            }
+
+            BuildCombinedBoxesIfAny(
+                "Active Land",
+                surfaces,
+                buildable,
+                CityExteriorAppearance.Ground,
+                true);
+            BuildCombinedBoxesIfAny(
+                "Beach",
+                surfaces,
+                beach,
+                CityExteriorAppearance.BeachSand,
+                true);
+            BuildCombinedBoxesIfAny(
+                "Lake Shore",
+                surfaces,
+                lakeShore,
+                CityExteriorAppearance.LakeShore,
+                true);
+            BuildCombinedBoxesIfAny(
+                "Cemetery Ground",
+                surfaces,
+                cemetery,
+                CityExteriorAppearance.CemeteryGround,
+                true);
+            BuildCombinedBoxesIfAny(
+                "Water",
+                surfaces,
+                water,
+                CityExteriorAppearance.Water);
+
+            Rect footprint = layout.WorldXZBounds;
+            return new Bounds(
+                new Vector3(
+                    footprint.center.x,
+                    0f,
+                    footprint.center.y),
+                new Vector3(
+                    footprint.width,
+                    20f,
+                    footprint.height));
         }
 
         private static void BuildRoads(

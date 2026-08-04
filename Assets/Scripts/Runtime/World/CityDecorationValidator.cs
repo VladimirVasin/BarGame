@@ -487,10 +487,12 @@ namespace BarPromenade
             int fountainCount,
             int bandstandCount)
         {
+            var validatedArchetypes = new HashSet<CityDistrictKind>();
             for (int index = 0; index < layout.Districts.Count; index++)
             {
                 CityDistrictKind district = layout.Districts[index].Kind;
-                if (district == CityDistrictKind.CentralPark)
+                if (district == CityDistrictKind.CentralPark ||
+                    !validatedArchetypes.Add(district))
                 {
                     continue;
                 }

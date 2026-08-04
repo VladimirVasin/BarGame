@@ -79,6 +79,8 @@ namespace BarPromenade
             RetroUiTheme.WithAlpha(RetroUiTheme.Backdrop, 0.96f);
         private static readonly Color MapGround =
             RetroUiTheme.MapGround;
+        private static readonly Color MapVoid =
+            new Color32(18, 22, 27, 255);
         private static readonly Color Building =
             RetroUiTheme.MapBuilding;
         private static readonly Color OldTownBuilding =
@@ -91,6 +93,14 @@ namespace BarPromenade
             new Color32(80, 63, 87, 255);
         private static readonly Color ParkLand =
             new Color32(54, 83, 60, 255);
+        private static readonly Color WaterfrontLand =
+            new Color32(147, 124, 77, 255);
+        private static readonly Color LakeLand =
+            new Color32(50, 91, 101, 255);
+        private static readonly Color CemeteryLand =
+            new Color32(66, 77, 65, 255);
+        private static readonly Color WaterLand =
+            new Color32(35, 91, 119, 255);
         private static readonly Color PublicPlaceLand =
             new Color32(123, 112, 91, 255);
         private static readonly Color BarBuilding =
@@ -229,11 +239,12 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(
                 projection.ScreenRect,
-                MapGround,
+                MapVoid,
                 RetroUiTheme.BorderMuted,
                 true,
                 2f,
                 1f);
+            DrawSurfaces(projection);
             DrawBuildings(projection);
             DrawRoads(projection);
             DrawDistrictLabels(projection);
@@ -243,6 +254,33 @@ namespace BarPromenade
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
+        }
+
+        private void DrawSurfaces(MapProjection projection)
+        {
+            IReadOnlyList<CitySurfaceDescriptor> surfaces =
+                controller.Layout.Surfaces;
+            for (int index = 0; index < surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = surfaces[index];
+                Vector2 topLeft = projection.WorldToScreen(
+                    new Vector3(
+                        surface.WorldBounds.xMin,
+                        0f,
+                        surface.WorldBounds.yMax));
+                Vector2 bottomRight = projection.WorldToScreen(
+                    new Vector3(
+                        surface.WorldBounds.xMax,
+                        0f,
+                        surface.WorldBounds.yMin));
+                DrawSolidRect(
+                    Rect.MinMaxRect(
+                        topLeft.x,
+                        topLeft.y,
+                        bottomRight.x,
+                        bottomRight.y),
+                    ResolveSurfaceMapColor(surface));
+            }
         }
 
         private void DrawBuildings(MapProjection projection)
@@ -359,13 +397,15 @@ namespace BarPromenade
 
         private void DrawDistrictLabels(MapProjection projection)
         {
-            IReadOnlyList<CityDistrictDescriptor> districts =
-                controller.Layout.Districts;
-            for (int index = 0; index < districts.Count; index++)
+            IReadOnlyList<CityAreaPlacement> areas =
+                controller.Layout.Blueprint.Areas;
+            for (int index = 0; index < areas.Count; index++)
             {
-                CityDistrictDescriptor district = districts[index];
+                CityAreaPlacement area = areas[index];
                 Vector2 position = projection.WorldToScreen(
-                    district.CenterWorldPosition);
+                    ResolveAreaLabelPosition(
+                        controller.Layout,
+                        area));
                 const float labelWidth = 104f;
                 const float labelHeight = 13f;
                 var labelRect = new Rect(
@@ -378,14 +418,47 @@ namespace BarPromenade
                     labelRect,
                     1f,
                     RetroUiTheme.WithAlpha(
-                        GetDistrictColor(district.Kind),
+                        area.Definition.MapColor,
                         0.92f));
                 GUI.Label(
                     labelRect,
                     LocalizationService.Get(
-                        GetDistrictLocalizationKey(district.Kind)),
+                        area.Definition.LocalizationKey),
                     districtLabelStyle);
             }
+        }
+
+        private static Vector3 ResolveAreaLabelPosition(
+            CityLayout layout,
+            CityAreaPlacement area)
+        {
+            Vector2 average = Vector2.zero;
+            for (int index = 0; index < area.Cells.Count; index++)
+            {
+                Vector2Int cell = area.Cells[index];
+                average += new Vector2(cell.x, cell.y);
+            }
+
+            average /= area.Cells.Count;
+            Vector2Int anchor = area.Cells[0];
+            float bestDistance = float.PositiveInfinity;
+            for (int index = 0; index < area.Cells.Count; index++)
+            {
+                Vector2Int cell = area.Cells[index];
+                float distance = (new Vector2(cell.x, cell.y) - average)
+                    .sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    anchor = cell;
+                }
+            }
+
+            return layout.GetGridWorldPosition(anchor) +
+                   new Vector3(
+                       layout.NodeSpacing.x * 0.5f,
+                       0f,
+                       layout.NodeSpacing.y * 0.5f);
         }
 
         private void DrawRoute(MapProjection projection)
@@ -1117,15 +1190,11 @@ namespace BarPromenade
         private MapProjection CreateProjection(Rect available)
         {
             CityLayout layout = controller.Layout;
-            Vector3 minimum =
-                layout.GetNodeWorldPosition(Vector2Int.zero);
-            Vector3 maximum =
-                layout.GetNodeWorldPosition(layout.BlockCount);
-            float padding = layout.RoadWidth * 0.75f;
-            float minimumX = minimum.x - padding;
-            float maximumX = maximum.x + padding;
-            float minimumZ = minimum.z - padding;
-            float maximumZ = maximum.z + padding;
+            Rect bounds = layout.MapWorldXZBounds;
+            float minimumX = bounds.xMin;
+            float maximumX = bounds.xMax;
+            float minimumZ = bounds.yMin;
+            float maximumZ = bounds.yMax;
             float worldWidth = maximumX - minimumX;
             float worldHeight = maximumZ - minimumZ;
             float worldAspect =
@@ -1375,8 +1444,32 @@ namespace BarPromenade
                     return NightlifeBuilding;
                 case CityDistrictKind.CentralPark:
                     return ParkLand;
+                case CityDistrictKind.NorthWaterfront:
+                    return WaterfrontLand;
+                case CityDistrictKind.Lake:
+                    return LakeLand;
+                case CityDistrictKind.Cemetery:
+                    return CemeteryLand;
                 default:
                     return Building;
+            }
+        }
+
+        private static Color ResolveSurfaceMapColor(
+            CitySurfaceDescriptor surface)
+        {
+            switch (surface.Kind)
+            {
+                case CitySurfaceKind.Water:
+                    return WaterLand;
+                case CitySurfaceKind.Beach:
+                    return WaterfrontLand;
+                case CitySurfaceKind.LakeShore:
+                    return LakeLand;
+                case CitySurfaceKind.CemeteryGround:
+                    return CemeteryLand;
+                default:
+                    return surface.MapColor;
             }
         }
 
@@ -1395,6 +1488,12 @@ namespace BarPromenade
                     return "map.district.nightlife";
                 case CityDistrictKind.CentralPark:
                     return "map.district.central_park";
+                case CityDistrictKind.NorthWaterfront:
+                    return "map.district.north_waterfront";
+                case CityDistrictKind.Lake:
+                    return "map.district.lake";
+                case CityDistrictKind.Cemetery:
+                    return "map.district.cemetery";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(district),

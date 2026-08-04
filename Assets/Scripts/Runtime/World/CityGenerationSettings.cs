@@ -20,17 +20,32 @@ namespace BarPromenade
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;
         [Min(0.1f)] public float MaximumBuildingHeight = 13f;
 
+        internal CityBlueprint Blueprint { get; set; }
+
         public static CityGenerationSettings Default => new CityGenerationSettings();
 
         public Vector2 NodeSpacing =>
             new Vector2(BlockWidth + RoadWidth, BlockDepth + RoadWidth);
 
-        public Vector2Int BlockCount => new Vector2Int(BlocksX, BlocksZ);
+        public Vector2Int BlockCount => Blueprint != null
+            ? new Vector2Int(
+                Blueprint.CellBounds.xMax,
+                Blueprint.CellBounds.yMax)
+            : new Vector2Int(BlocksX, BlocksZ);
 
         public Vector2Int EffectiveParkBlockCount
         {
             get
             {
+                if (Blueprint?.CentralPark != null)
+                {
+                    RectInt bounds = GetCellBounds(
+                        Blueprint.CentralPark.Cells);
+                    return new Vector2Int(
+                        bounds.width,
+                        bounds.height);
+                }
+
                 if (BlocksX < 6 || BlocksZ < 6 ||
                     ParkBlocksX <= 0 || ParkBlocksZ <= 0)
                 {
@@ -47,6 +62,12 @@ namespace BarPromenade
         {
             get
             {
+                if (Blueprint?.CentralPark != null)
+                {
+                    return GetCellBounds(
+                        Blueprint.CentralPark.Cells).position;
+                }
+
                 Vector2Int count = EffectiveParkBlockCount;
                 return count == Vector2Int.zero
                     ? Vector2Int.zero
@@ -58,6 +79,11 @@ namespace BarPromenade
 
         public bool IsParkCell(Vector2Int cell)
         {
+            if (Blueprint != null)
+            {
+                return Blueprint.IsParkCell(cell);
+            }
+
             Vector2Int count = EffectiveParkBlockCount;
             if (count == Vector2Int.zero)
             {
@@ -87,8 +113,46 @@ namespace BarPromenade
                 LoopChance = LoopChance,
                 BuildingInset = BuildingInset,
                 MinimumBuildingHeight = MinimumBuildingHeight,
-                MaximumBuildingHeight = MaximumBuildingHeight
+                MaximumBuildingHeight = MaximumBuildingHeight,
+                Blueprint = Blueprint
             };
+        }
+
+        public bool IsCityCell(Vector2Int cell)
+        {
+            return Blueprint == null
+                ? cell.x >= 0 &&
+                  cell.x < BlocksX &&
+                  cell.y >= 0 &&
+                  cell.y < BlocksZ
+                : Blueprint.ContainsCell(cell);
+        }
+
+        public bool CreatesLot(Vector2Int cell)
+        {
+            return Blueprint == null
+                ? IsCityCell(cell)
+                : Blueprint.CreatesLot(cell);
+        }
+
+        public bool ParticipatesInRoadGrid(Vector2Int cell)
+        {
+            return Blueprint == null
+                ? IsCityCell(cell)
+                : Blueprint.ParticipatesInRoadGrid(cell);
+        }
+
+        public bool TryGetArea(
+            Vector2Int cell,
+            out CityAreaDefinition area)
+        {
+            if (Blueprint != null)
+            {
+                return Blueprint.TryGetArea(cell, out area);
+            }
+
+            area = null;
+            return false;
         }
 
         public void Validate()
@@ -113,7 +177,9 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(ParkBlocksZ));
             }
 
-            int lotCount = checked(BlocksX * BlocksZ);
+            int lotCount = Blueprint != null
+                ? Blueprint.LotCellCount
+                : checked(BlocksX * BlocksZ);
             Vector2Int parkCount = EffectiveParkBlockCount;
             int buildableLotCount =
                 lotCount - checked(parkCount.x * parkCount.y);
@@ -172,6 +238,29 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static RectInt GetCellBounds(
+            System.Collections.Generic.IReadOnlyList<Vector2Int> cells)
+        {
+            int xMin = cells[0].x;
+            int xMax = cells[0].x;
+            int zMin = cells[0].y;
+            int zMax = cells[0].y;
+            for (int index = 1; index < cells.Count; index++)
+            {
+                Vector2Int cell = cells[index];
+                xMin = Mathf.Min(xMin, cell.x);
+                xMax = Mathf.Max(xMax, cell.x);
+                zMin = Mathf.Min(zMin, cell.y);
+                zMax = Mathf.Max(zMax, cell.y);
+            }
+
+            return new RectInt(
+                xMin,
+                zMin,
+                xMax - xMin + 1,
+                zMax - zMin + 1);
         }
     }
 }

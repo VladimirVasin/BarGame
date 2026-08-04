@@ -13,6 +13,8 @@ namespace BarPromenade
             readOnlyPathKinds;
         private readonly Dictionary<CityDistrictKind, CityDistrictDescriptor>
             districtsByKind;
+        private readonly Dictionary<string, CityDistrictDescriptor>
+            districtsByAreaId;
         private readonly Dictionary<
             Vector2Int,
             CityDistrictPointOfInterestDescriptor> districtPointsByCell;
@@ -22,6 +24,7 @@ namespace BarPromenade
 
         internal CityLayout(
             int seed,
+            CityBlueprint blueprint,
             Vector2Int blockCount,
             Vector2 nodeSpacing,
             Vector3 worldOrigin,
@@ -37,9 +40,15 @@ namespace BarPromenade
                 districtPointsOfInterest,
             IDictionary<CityDistrictKind, Vector2Int>
                 primaryLandmarkCells,
+            IList<CitySurfaceDescriptor> surfaces,
+            IList<CityOpenAreaAccessDescriptor> openAreaAccesses,
+            Rect worldXZBounds,
+            Rect mapWorldXZBounds,
             Vector2Int spawnNode)
         {
             Seed = seed;
+            Blueprint = blueprint ??
+                throw new ArgumentNullException(nameof(blueprint));
             BlockCount = blockCount;
             NodeSpacing = nodeSpacing;
             WorldOrigin = worldOrigin;
@@ -99,6 +108,18 @@ namespace BarPromenade
                         primaryLandmarkCells ??
                         throw new ArgumentNullException(
                             nameof(primaryLandmarkCells))));
+            Surfaces = new ReadOnlyCollection<CitySurfaceDescriptor>(
+                new List<CitySurfaceDescriptor>(
+                    surfaces ??
+                    throw new ArgumentNullException(nameof(surfaces))));
+            OpenAreaAccesses =
+                new ReadOnlyCollection<CityOpenAreaAccessDescriptor>(
+                    new List<CityOpenAreaAccessDescriptor>(
+                        openAreaAccesses ??
+                        throw new ArgumentNullException(
+                            nameof(openAreaAccesses))));
+            WorldXZBounds = worldXZBounds;
+            MapWorldXZBounds = mapWorldXZBounds;
             SpawnNode = spawnNode;
             SpawnWorldPosition = GetNodeWorldPosition(spawnNode);
             nodeSet = new HashSet<Vector2Int>(Nodes);
@@ -110,9 +131,18 @@ namespace BarPromenade
                     copiedPathKinds);
             districtsByKind =
                 new Dictionary<CityDistrictKind, CityDistrictDescriptor>();
+            districtsByAreaId =
+                new Dictionary<string, CityDistrictDescriptor>(
+                    StringComparer.Ordinal);
             for (int index = 0; index < Districts.Count; index++)
             {
                 CityDistrictDescriptor district = Districts[index];
+                if (district != null &&
+                    !districtsByAreaId.ContainsKey(district.AreaId))
+                {
+                    districtsByAreaId.Add(district.AreaId, district);
+                }
+
                 if (district != null &&
                     !districtsByKind.ContainsKey(district.Kind))
                 {
@@ -122,6 +152,8 @@ namespace BarPromenade
         }
 
         public int Seed { get; }
+        public CityBlueprint Blueprint { get; }
+        public string BlueprintId => Blueprint.Id;
         public Vector2Int BlockCount { get; }
         public Vector2 NodeSpacing { get; }
         public Vector3 WorldOrigin { get; }
@@ -141,6 +173,11 @@ namespace BarPromenade
             DistrictPointsOfInterest { get; }
         public IReadOnlyDictionary<CityDistrictKind, Vector2Int>
             PrimaryLandmarkCells => readOnlyPrimaryLandmarkCells;
+        public IReadOnlyList<CitySurfaceDescriptor> Surfaces { get; }
+        public IReadOnlyList<CityOpenAreaAccessDescriptor>
+            OpenAreaAccesses { get; }
+        public Rect WorldXZBounds { get; }
+        public Rect MapWorldXZBounds { get; }
         public Vector2Int SpawnNode { get; }
         public Vector3 SpawnWorldPosition { get; }
 
@@ -158,6 +195,14 @@ namespace BarPromenade
                 node.x * NodeSpacing.x,
                 0f,
                 node.y * NodeSpacing.y);
+        }
+
+        public Vector3 GetGridWorldPosition(Vector2Int coordinate)
+        {
+            return WorldOrigin + new Vector3(
+                coordinate.x * NodeSpacing.x,
+                0f,
+                coordinate.y * NodeSpacing.y);
         }
 
         public bool HasRoad(Vector2Int first, Vector2Int second)
@@ -192,6 +237,44 @@ namespace BarPromenade
             out CityDistrictDescriptor district)
         {
             return districtsByKind.TryGetValue(kind, out district);
+        }
+
+        public bool TryGetDistrict(
+            string areaId,
+            out CityDistrictDescriptor district)
+        {
+            return districtsByAreaId.TryGetValue(
+                areaId ?? string.Empty,
+                out district);
+        }
+
+        public bool TryGetArea(
+            Vector2Int cell,
+            out CityAreaDefinition area)
+        {
+            return Blueprint.TryGetArea(cell, out area);
+        }
+
+        public bool TryGetArea(
+            string areaId,
+            out CityAreaPlacement area)
+        {
+            return Blueprint.TryGetArea(areaId, out area);
+        }
+
+        public bool IsWater(Vector3 worldPosition)
+        {
+            for (int index = 0; index < Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = Surfaces[index];
+                if (surface.Kind == CitySurfaceKind.Water &&
+                    ContainsInclusive(surface.WorldBounds, worldPosition))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool TryGetDistrictPointOfInterest(
@@ -314,12 +397,27 @@ namespace BarPromenade
                 return;
             }
 
-            int expectedNodeCount =
-                checked((BlockCount.x + 1) * (BlockCount.y + 1));
-            if (Nodes.Count != expectedNodeCount || nodeSet.Count != Nodes.Count)
+            var expectedNodes = new HashSet<Vector2Int>();
+            for (int index = 0; index < Blueprint.Cells.Count; index++)
+            {
+                CityBlueprintCell blueprintCell = Blueprint.Cells[index];
+                if (!blueprintCell.ParticipatesInRoadGrid)
+                {
+                    continue;
+                }
+
+                Vector2Int cell = blueprintCell.Cell;
+                expectedNodes.Add(cell);
+                expectedNodes.Add(cell + Vector2Int.right);
+                expectedNodes.Add(cell + Vector2Int.up);
+                expectedNodes.Add(cell + Vector2Int.one);
+            }
+
+            if (nodeSet.Count != Nodes.Count ||
+                !nodeSet.SetEquals(expectedNodes))
             {
                 throw new InvalidOperationException(
-                    "The layout does not contain exactly one copy of every grid node.");
+                    "The layout nodes must match the sparse road footprint.");
             }
 
             if (edgeSet.Count != RoadEdges.Count)
@@ -357,21 +455,25 @@ namespace BarPromenade
                     "The spawn node must belong to one connected road graph.");
             }
 
-            int expectedLotCount = checked(BlockCount.x * BlockCount.y);
+            ValidateSurfacesAndOpenAreas();
+
+            int expectedLotCount = Blueprint.LotCellCount;
             if (BuildingLots.Count != expectedLotCount)
             {
                 throw new InvalidOperationException(
                     "The layout must contain one lot descriptor per block.");
             }
 
-            var districtKinds = new HashSet<CityDistrictKind>();
+            var districtAreaIds = new HashSet<string>(
+                StringComparer.Ordinal);
             var districtCells =
-                new Dictionary<Vector2Int, CityDistrictKind>();
+                new Dictionary<Vector2Int, CityDistrictDescriptor>();
             for (int index = 0; index < Districts.Count; index++)
             {
                 CityDistrictDescriptor district = Districts[index];
                 if (district == null ||
-                    !districtKinds.Add(district.Kind) ||
+                    string.IsNullOrEmpty(district.AreaId) ||
+                    !districtAreaIds.Add(district.AreaId) ||
                     district.Cells.Count == 0)
                 {
                     throw new InvalidOperationException(
@@ -384,7 +486,7 @@ namespace BarPromenade
                 {
                     Vector2Int cell = district.Cells[cellIndex];
                     if (!IsCellInsideGrid(cell) ||
-                        !districtCells.TryAdd(cell, district.Kind))
+                        !districtCells.TryAdd(cell, district))
                     {
                         throw new InvalidOperationException(
                             "District cells must cover unique in-grid blocks.");
@@ -403,6 +505,24 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "Park cells must be unique.");
+            }
+
+            var blueprintParkCells = new HashSet<Vector2Int>();
+            if (Blueprint.CentralPark != null)
+            {
+                for (int index = 0;
+                     index < Blueprint.CentralPark.Cells.Count;
+                     index++)
+                {
+                    blueprintParkCells.Add(
+                        Blueprint.CentralPark.Cells[index]);
+                }
+            }
+
+            if (!parkCells.SetEquals(blueprintParkCells))
+            {
+                throw new InvalidOperationException(
+                    "The generated park must match the blueprint anchor.");
             }
 
             var cells = new HashSet<Vector2Int>();
@@ -424,8 +544,20 @@ namespace BarPromenade
 
                 if (!districtCells.TryGetValue(
                         lot.Cell,
-                        out CityDistrictKind district) ||
-                    district != lot.District)
+                        out CityDistrictDescriptor district) ||
+                    district.Kind != lot.District ||
+                    !string.Equals(
+                        district.AreaId,
+                        lot.AreaId,
+                        StringComparison.Ordinal) ||
+                    !Blueprint.TryGetArea(
+                        lot.Cell,
+                        out CityAreaDefinition area) ||
+                    !string.Equals(
+                        area.Id,
+                        lot.AreaId,
+                        StringComparison.Ordinal) ||
+                    area.Archetype != lot.District)
                 {
                     throw new InvalidOperationException(
                         $"Lot {lot.Cell} does not match its district plan.");
@@ -655,7 +787,8 @@ namespace BarPromenade
             }
 
             bars.Sort(CompareLotsRowMajor);
-            var firstBarDistricts = new HashSet<CityDistrictKind>();
+            var firstBarAreas = new HashSet<string>(
+                StringComparer.Ordinal);
             for (int ordinal = 0; ordinal < bars.Count; ordinal++)
             {
                 BarActivityKind expected =
@@ -669,10 +802,40 @@ namespace BarPromenade
                 }
 
                 if (bars.Count <= 4 &&
-                    !firstBarDistricts.Add(bars[ordinal].District))
+                    !firstBarAreas.Add(bars[ordinal].AreaId))
                 {
                     throw new InvalidOperationException(
-                        "The first four bars must occupy different districts.");
+                        "The first four bars must occupy different city areas.");
+                }
+            }
+
+            for (int areaIndex = 0;
+                 areaIndex < Blueprint.UrbanAreas.Count;
+                 areaIndex++)
+            {
+                CityAreaPlacement area = Blueprint.UrbanAreas[areaIndex];
+                if (!area.Definition.RequiresBar)
+                {
+                    continue;
+                }
+
+                bool found = false;
+                for (int barIndex = 0; barIndex < bars.Count; barIndex++)
+                {
+                    if (string.Equals(
+                            bars[barIndex].AreaId,
+                            area.Id,
+                            StringComparison.Ordinal))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    throw new InvalidOperationException(
+                        $"Required urban area '{area.Id}' has no bar.");
                 }
             }
 
@@ -701,6 +864,150 @@ namespace BarPromenade
             }
 
             hasValidated = true;
+        }
+
+        private void ValidateSurfacesAndOpenAreas()
+        {
+            if (!IsFinitePositive(WorldXZBounds) ||
+                !IsFinitePositive(MapWorldXZBounds) ||
+                !ContainsInclusive(MapWorldXZBounds, WorldXZBounds))
+            {
+                throw new InvalidOperationException(
+                    "City and map world bounds must be finite and the map " +
+                    "must contain the complete active footprint.");
+            }
+
+            if (Surfaces.Count != Blueprint.Cells.Count)
+            {
+                throw new InvalidOperationException(
+                    "Every mapped blueprint cell requires one surface.");
+            }
+
+            var surfacesByCell =
+                new Dictionary<Vector2Int, CitySurfaceDescriptor>();
+            var waterSurfaces = new List<CitySurfaceDescriptor>();
+            var walkableSurfaces = new List<CitySurfaceDescriptor>();
+            for (int index = 0; index < Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = Surfaces[index];
+                if (!surfacesByCell.TryAdd(surface.Cell, surface) ||
+                    !IsFinitePositive(surface.WorldBounds) ||
+                    !Blueprint.TryGetCell(
+                        surface.Cell,
+                        out CityBlueprintCell blueprintCell) ||
+                    !string.Equals(
+                        surface.AreaId,
+                        blueprintCell.Area.Id,
+                        StringComparison.Ordinal) ||
+                    surface.Feature != blueprintCell.Area.Feature ||
+                    surface.IsWater != blueprintCell.IsWater ||
+                    surface.IsWalkable !=
+                    blueprintCell.IsWalkableOpenLand)
+                {
+                    throw new InvalidOperationException(
+                        $"Surface for cell {surface.Cell} does not match " +
+                        "the city blueprint.");
+                }
+
+                if (surface.IsWater)
+                {
+                    waterSurfaces.Add(surface);
+                }
+                else if (surface.IsWalkable)
+                {
+                    walkableSurfaces.Add(surface);
+                }
+            }
+
+            for (int walkableIndex = 0;
+                 walkableIndex < walkableSurfaces.Count;
+                 walkableIndex++)
+            {
+                for (int waterIndex = 0;
+                     waterIndex < waterSurfaces.Count;
+                     waterIndex++)
+                {
+                    if (HasPositiveOverlap(
+                            walkableSurfaces[walkableIndex].WorldBounds,
+                            waterSurfaces[waterIndex].WorldBounds))
+                    {
+                        throw new InvalidOperationException(
+                            "Walkable open land cannot overlap water.");
+                    }
+                }
+            }
+
+            var accessIds = new HashSet<string>(StringComparer.Ordinal);
+            var areasWithAccess = new HashSet<string>(
+                StringComparer.Ordinal);
+            for (int index = 0; index < OpenAreaAccesses.Count; index++)
+            {
+                CityOpenAreaAccessDescriptor access =
+                    OpenAreaAccesses[index];
+                if (string.IsNullOrEmpty(access.Id) ||
+                    !accessIds.Add(access.Id) ||
+                    !areasWithAccess.Add(access.AreaId) ||
+                    !Blueprint.TryGetArea(
+                        access.AreaId,
+                        out CityAreaPlacement area) ||
+                    area.Definition.Feature != access.Feature ||
+                    area.GetTopology(access.Cell) !=
+                        CityCellTopologyKind.OpenLand ||
+                    Mathf.Abs(access.StreetSideDirection.x) +
+                    Mathf.Abs(access.StreetSideDirection.y) != 1 ||
+                    access.FrontageEdge != RoadEdge.ForCellFrontage(
+                        access.Cell,
+                        access.StreetSideDirection) ||
+                    !HasRoad(access.FrontageEdge) ||
+                    GetPathKind(access.FrontageEdge) !=
+                        CityPathKind.Street ||
+                    (access.OutwardNormal -
+                     new Vector3(
+                         -access.StreetSideDirection.x,
+                         0f,
+                         -access.StreetSideDirection.y)).sqrMagnitude >
+                    0.0001f ||
+                    !IsFinite(access.Width) || access.Width <= 0f ||
+                    !IsFinitePositive(access.ApproachBounds) ||
+                    !surfacesByCell.TryGetValue(
+                        access.Cell,
+                        out CitySurfaceDescriptor accessSurface) ||
+                    !ContainsInclusive(
+                        access.ApproachBounds,
+                        access.Center) ||
+                    !ContainsInclusive(
+                        GetRoadRect(access.FrontageEdge),
+                        access.Center) ||
+                    !ContainsInclusive(
+                        accessSurface.WorldBounds,
+                        access.Center))
+                {
+                    throw new InvalidOperationException(
+                        $"Open-area access '{access.Id}' is invalid.");
+                }
+
+                if (access.Feature ==
+                        CityAreaFeatureKind.NorthWaterfront &&
+                    access.OutwardNormal != Vector3.forward)
+                {
+                    throw new InvalidOperationException(
+                        "The north waterfront access must face north.");
+                }
+            }
+
+            for (int index = 0; index < Blueprint.Areas.Count; index++)
+            {
+                CityAreaPlacement area = Blueprint.Areas[index];
+                CityAreaFeatureKind feature = area.Definition.Feature;
+                if ((feature == CityAreaFeatureKind.NorthWaterfront ||
+                     feature == CityAreaFeatureKind.Lake ||
+                     feature == CityAreaFeatureKind.Cemetery) &&
+                    !areasWithAccess.Contains(area.Id))
+                {
+                    throw new InvalidOperationException(
+                        $"Open area '{area.Id}' requires a street access.");
+                }
+            }
         }
 
         private void ValidatePrimaryLandmarkCells(
@@ -782,6 +1089,10 @@ namespace BarPromenade
                     lot.IsPlayerHome ||
                     lot.IsSupermarket ||
                     lot.District != point.District ||
+                    !string.Equals(
+                        lot.AreaId,
+                        point.AreaId,
+                        StringComparison.Ordinal) ||
                     ResolvePointOfInterestKind(point.District) != point.Kind)
                 {
                     throw new InvalidOperationException(
@@ -944,6 +1255,24 @@ namespace BarPromenade
                    position.z <= rectangle.yMax;
         }
 
+        private static bool ContainsInclusive(
+            Rect container,
+            Rect contained)
+        {
+            return contained.xMin >= container.xMin &&
+                   contained.xMax <= container.xMax &&
+                   contained.yMin >= container.yMin &&
+                   contained.yMax <= container.yMax;
+        }
+
+        private static bool HasPositiveOverlap(Rect first, Rect second)
+        {
+            return Mathf.Min(first.xMax, second.xMax) -
+                       Mathf.Max(first.xMin, second.xMin) > 0.0001f &&
+                   Mathf.Min(first.yMax, second.yMax) -
+                       Mathf.Max(first.yMin, second.yMin) > 0.0001f;
+        }
+
         private static bool IsFinitePositive(Rect rectangle)
         {
             return IsFinite(rectangle.xMin) &&
@@ -961,10 +1290,7 @@ namespace BarPromenade
 
         private bool IsCellInsideGrid(Vector2Int cell)
         {
-            return cell.x >= 0 &&
-                   cell.x < BlockCount.x &&
-                   cell.y >= 0 &&
-                   cell.y < BlockCount.y;
+            return Blueprint.CreatesLot(cell);
         }
     }
 }

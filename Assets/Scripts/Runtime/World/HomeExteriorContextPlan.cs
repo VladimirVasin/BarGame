@@ -80,10 +80,34 @@ namespace BarPromenade
 
         public static HomeExteriorContextPlan Generate(int citySeed)
         {
+            return Generate(
+                CityBlueprintCatalog.Default,
+                citySeed);
+        }
+
+        public static HomeExteriorContextPlan Generate(
+            string cityBlueprintId,
+            int citySeed)
+        {
+            return Generate(
+                CityBlueprintCatalog.Resolve(cityBlueprintId),
+                citySeed);
+        }
+
+        public static HomeExteriorContextPlan Generate(
+            CityBlueprint blueprint,
+            int citySeed)
+        {
+            if (blueprint == null)
+            {
+                throw new ArgumentNullException(nameof(blueprint));
+            }
+
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
             CityLayout layout =
                 CityLayoutGenerator.Generate(
+                    blueprint,
                     settings,
                     citySeed);
             return Generate(layout);

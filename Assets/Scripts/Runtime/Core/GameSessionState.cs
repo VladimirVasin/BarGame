@@ -78,6 +78,8 @@ namespace BarPromenade
     public static class GameSessionState
     {
         public const int DefaultCitySeed = 20260727;
+        public const string DefaultCityBlueprintId =
+            CityBlueprintCatalog.DefaultBlueprintId;
         public const int DefaultCash = 999;
         public const int DefaultHunger = 0;
         public const int DefaultStress = 0;
@@ -97,6 +99,8 @@ namespace BarPromenade
         private static float intoxicationRecoveryElapsed;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
+        public static string CityBlueprintId { get; private set; } =
+            DefaultCityBlueprintId;
         public static string ActiveBarId { get; private set; } = string.Empty;
         public static BarActivityKind ActiveBarActivity { get; private set; } =
             BarActivityKind.None;
@@ -150,6 +154,9 @@ namespace BarPromenade
                 "session",
                 "new_game_started",
                 GameLog.Field("city_seed", CitySeed),
+                GameLog.Field(
+                    "city_blueprint_id",
+                    CityBlueprintId),
                 GameLog.Field("cash_balance", CashBalance),
                 GameLog.Field("hunger", HungerLevel),
                 GameLog.Field("stress", StressLevel),
@@ -171,6 +178,7 @@ namespace BarPromenade
         private static void ResetToDefaults()
         {
             CitySeed = DefaultCitySeed;
+            CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
             ReturnKind = CityReturnKind.None;
@@ -533,6 +541,42 @@ namespace BarPromenade
                 "city_seed_changed",
                 GameLog.Field("previous_seed", previousSeed),
                 GameLog.Field("new_seed", CitySeed),
+                GameLog.Field(
+                    "cleared_route_count",
+                    clearedRouteCount),
+                GameLog.Field(
+                    "cleared_visited_count",
+                    clearedVisitedCount));
+        }
+
+        public static void SetCityBlueprint(string blueprintId)
+        {
+            CityBlueprint blueprint =
+                CityBlueprintCatalog.Resolve(blueprintId);
+            string resolvedId = blueprint.Id;
+            if (string.Equals(
+                    CityBlueprintId,
+                    resolvedId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            string previousBlueprintId = CityBlueprintId;
+            int clearedRouteCount = plannedBarRoute.Count;
+            int clearedVisitedCount = visitedBars.Count;
+            CityBlueprintId = resolvedId;
+            ClearRoute();
+            ClearVisitedBars();
+            GameLog.Info(
+                "session",
+                "city_blueprint_changed",
+                GameLog.Field(
+                    "previous_blueprint_id",
+                    previousBlueprintId),
+                GameLog.Field(
+                    "new_blueprint_id",
+                    CityBlueprintId),
                 GameLog.Field(
                     "cleared_route_count",
                     clearedRouteCount),

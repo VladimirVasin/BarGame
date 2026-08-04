@@ -86,9 +86,7 @@ namespace BarPromenade
                 edge,
                 edgeT,
                 preferredSide);
-            if (!IntersectsDistrictPointOfInterestReservation(
-                    layout,
-                    preferred.Position))
+            if (!IsFixtureBlocked(layout, preferred.Position))
             {
                 target.Add(preferred);
                 return;
@@ -103,9 +101,7 @@ namespace BarPromenade
                 edge,
                 edgeT,
                 alternateSide);
-            if (!IntersectsDistrictPointOfInterestReservation(
-                    layout,
-                    alternate.Position))
+            if (!IsFixtureBlocked(layout, alternate.Position))
             {
                 target.Add(alternate);
             }
@@ -248,12 +244,8 @@ namespace BarPromenade
                 secondPosition,
                 (nodePosition - secondPosition).normalized,
                 phase);
-            if (IntersectsDistrictPointOfInterestReservation(
-                    layout,
-                    first.Position) ||
-                IntersectsDistrictPointOfInterestReservation(
-                    layout,
-                    second.Position))
+            if (IsFixtureBlocked(layout, first.Position) ||
+                IsFixtureBlocked(layout, second.Position))
             {
                 return false;
             }
@@ -261,6 +253,16 @@ namespace BarPromenade
             target.Add(first);
             target.Add(second);
             return true;
+        }
+
+        private static bool IsFixtureBlocked(
+            CityLayout layout,
+            Vector3 position)
+        {
+            return layout.IsWater(position) ||
+                   IntersectsDistrictPointOfInterestReservation(
+                       layout,
+                       position);
         }
 
         private static bool IntersectsDistrictPointOfInterestReservation(

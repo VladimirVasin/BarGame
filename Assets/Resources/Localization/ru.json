@@ -833,6 +833,18 @@
       "value": "Центральный парк"
     },
     {
+      "key": "map.district.north_waterfront",
+      "value": "Северное побережье"
+    },
+    {
+      "key": "map.district.lake",
+      "value": "Озеро"
+    },
+    {
+      "key": "map.district.cemetery",
+      "value": "Кладбище"
+    },
+    {
       "key": "inventory.status",
       "value": "СОСТОЯНИЕ"
     },

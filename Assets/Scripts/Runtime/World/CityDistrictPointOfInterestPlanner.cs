@@ -76,7 +76,8 @@ namespace BarPromenade
                     for (int x = 0; x < settings.BlocksX; x++)
                     {
                         var cell = new Vector2Int(x, z);
-                        if (settings.IsParkCell(cell) ||
+                        if (!settings.CreatesLot(cell) ||
+                            settings.IsParkCell(cell) ||
                             CityLayoutGenerator.ResolveDistrict(
                                 settings,
                                 cell) != district)
@@ -169,7 +170,8 @@ namespace BarPromenade
                             x,
                             z,
                             settings.BlocksX);
-                        if (settings.IsParkCell(cell) ||
+                        if (!settings.CreatesLot(cell) ||
+                            settings.IsParkCell(cell) ||
                             CityLayoutGenerator.ResolveDistrict(
                                 settings,
                                 cell) != district ||
@@ -335,6 +337,9 @@ namespace BarPromenade
                 result.Add(
                     new CityDistrictPointOfInterestDescriptor(
                         id,
+                        CityLayoutGenerator.ResolveAreaId(
+                            settings,
+                            cell),
                         district,
                         ResolveKind(district),
                         cell,

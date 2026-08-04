@@ -2,6 +2,39 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — Blueprint-driven coastal city MVP
+
+- Added an immutable `CityBlueprint` model and fluent builder with stable
+  blueprint/area IDs, `UrbanBuilt` versus `NonUrbanOpen` classification,
+  reusable archetypes, placement policies and per-cell buildable, park,
+  open-land or water topology. The catalog now owns the playable
+  `default-coastal` blueprint and an explicit legacy rectangular path.
+- Made the road graph, lots, validation, world/map bounds and ground surfaces
+  consume the connected sparse footprint rather than assuming every bounding
+  cell exists. The existing `4 x 4` park stays fixed on the blueprint center
+  anchor while built-area placements can be rearranged independently.
+- Extended the default city north with one connected walkable beach row and a
+  continuous water row. A deterministic street approach opens its road fence,
+  the player can reach the water line, water remains outside navigation and
+  night fixtures reject water positions.
+- Added generic Lake and Cemetery profiles for authored blueprints. Lake shore,
+  water and cemetery ground receive typed surfaces, map presentation and one
+  canonical street-linked approach, without claiming bespoke landmark or prop
+  art in this MVP.
+- Propagated area IDs through generated lots, district descriptors, bars and
+  public-place descriptors, and persisted the selected blueprint ID in the
+  session. City and the Home balcony exterior now regenerate from the same
+  blueprint ID and seed.
+
+Verification:
+
+- Focused Unity EditMode verification passed `28/28` for
+  `CityLayoutGeneratorTests`, including the coastal default, urban-area swap
+  and irregular Lake/Cemetery blueprint contracts; Unity also compiled the
+  Runtime, EditModeTests and PlayModeTests assemblies for the run.
+- Localization catalogs parsed successfully and `git diff --check` passed.
+- Full EditMode/PlayMode suites and a player build were not run.
+
 ## 2026-08-04 — Day/night runtime optimization
 
 - Made City and Home day/night presentation change-driven: advancing through

@@ -57,6 +57,7 @@ namespace BarPromenade
     {
         internal CityDistrictPointOfInterestDescriptor(
             string id,
+            string areaId,
             CityDistrictKind district,
             CityDistrictPointOfInterestKind kind,
             Vector2Int cell,
@@ -65,6 +66,7 @@ namespace BarPromenade
             IList<CityDistrictPointOfInterestAccessDescriptor> accesses)
         {
             Id = id ?? string.Empty;
+            AreaId = areaId ?? string.Empty;
             District = district;
             Kind = kind;
             Cell = cell;
@@ -80,6 +82,7 @@ namespace BarPromenade
         }
 
         public string Id { get; }
+        public string AreaId { get; }
         public CityDistrictKind District { get; }
         public CityDistrictPointOfInterestKind Kind { get; }
         public Vector2Int Cell { get; }

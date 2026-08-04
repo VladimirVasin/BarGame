@@ -47,6 +47,9 @@ namespace BarPromenade
                 "initialize_started",
                 GameLog.Field("seed", GameSessionState.CitySeed),
                 GameLog.Field(
+                    "blueprint_id",
+                    GameSessionState.CityBlueprintId),
+                GameLog.Field(
                     "is_returning",
                     GameSessionState.IsReturningToCity),
                 GameLog.Field(
@@ -71,7 +74,12 @@ namespace BarPromenade
 
             phaseTimer.Restart();
             CityGenerationSettings settings = CityGenerationSettings.Default;
-            Layout = CityLayoutGenerator.Generate(settings, GameSessionState.CitySeed);
+            CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
+                GameSessionState.CityBlueprintId);
+            Layout = CityLayoutGenerator.Generate(
+                blueprint,
+                settings,
+                GameSessionState.CitySeed);
             ReportPhase("layout_generation", phaseTimer);
             ReportLayout(Layout);
 
@@ -274,8 +282,15 @@ namespace BarPromenade
             GameLog.Info(
                 "city",
                 "layout_generated",
+                GameLog.Field("blueprint_id", layout.BlueprintId),
                 GameLog.Field("blocks_x", layout.BlockCount.x),
                 GameLog.Field("blocks_z", layout.BlockCount.y),
+                GameLog.Field(
+                    "mapped_cell_count",
+                    layout.Blueprint.Cells.Count),
+                GameLog.Field(
+                    "area_count",
+                    layout.Blueprint.Areas.Count),
                 GameLog.Field("node_count", layout.Nodes.Count),
                 GameLog.Field(
                     "road_edge_count",
@@ -293,6 +308,9 @@ namespace BarPromenade
                     "park_gate_count",
                     layout.Park.Gates.Count),
                 GameLog.Field(
+                    "open_area_access_count",
+                    layout.OpenAreaAccesses.Count),
+                GameLog.Field(
                     "required_bar_route_distance",
                     layout.MinimumBarRouteDistance));
 
@@ -304,6 +322,9 @@ namespace BarPromenade
                     GameLog.Field(
                         "district",
                         layout.PlayerHome.District.ToString()),
+                    GameLog.Field(
+                        "area_id",
+                        layout.PlayerHome.AreaId),
                     GameLog.Field(
                         "cell_x",
                         layout.PlayerHome.Cell.x),
@@ -341,6 +362,7 @@ namespace BarPromenade
                     GameLog.Field(
                         "district",
                         lot.District.ToString()),
+                    GameLog.Field("area_id", lot.AreaId),
                     GameLog.Field("cell_x", lot.Cell.x),
                     GameLog.Field("cell_z", lot.Cell.y),
                     GameLog.Field("return_x", lot.ReturnPosition.x),

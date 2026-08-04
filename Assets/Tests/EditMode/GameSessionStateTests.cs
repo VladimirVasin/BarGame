@@ -199,6 +199,8 @@ namespace BarPromenade.Tests.EditMode
         public void BeginNewGame_RestoresEverySessionContract()
         {
             GameSessionState.SetCitySeed(-7001);
+            GameSessionState.SetCityBlueprint(
+                CityBlueprintCatalog.LegacyBlueprintId);
             GameSessionState.TryAddRouteStop("bar-route");
             GameSessionState.TryAddRouteStop("bar-visited");
             GameSessionState.MarkBarVisited("bar-visited");
@@ -231,6 +233,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.CitySeed,
                 Is.EqualTo(GameSessionState.DefaultCitySeed));
+            Assert.That(
+                GameSessionState.CityBlueprintId,
+                Is.EqualTo(
+                    GameSessionState.DefaultCityBlueprintId));
             Assert.That(GameSessionState.ActiveBarId, Is.Empty);
             Assert.That(
                 GameSessionState.ActiveBarActivity,
@@ -984,6 +990,52 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.IsBarVisited("bar-visited"),
                 Is.False);
+        }
+
+        [Test]
+        public void SetCityBlueprint_ClearsRouteAndVisitsOnlyWhenIdChanges()
+        {
+            GameSessionState.TryAddRouteStop("bar-a");
+            GameSessionState.TryAddRouteStop("bar-b");
+            GameSessionState.MarkBarVisited("bar-visited");
+
+            GameSessionState.SetCityBlueprint(
+                CityBlueprintCatalog.DefaultBlueprintId);
+
+            CollectionAssert.AreEqual(
+                new[] { "bar-a", "bar-b" },
+                GameSessionState.PlannedBarRoute);
+            Assert.That(
+                GameSessionState.IsBarVisited("bar-visited"),
+                Is.True);
+
+            GameSessionState.EnterBar(
+                "bar-pending-return",
+                BarActivityKind.BeerPong);
+            GameSessionState.PrepareCityReturn();
+            GameSessionState.SetCityBlueprint(
+                CityBlueprintCatalog.LegacyBlueprintId);
+
+            Assert.That(
+                GameSessionState.CityBlueprintId,
+                Is.EqualTo(CityBlueprintCatalog.LegacyBlueprintId));
+            Assert.That(GameSessionState.PlannedBarRoute, Is.Empty);
+            Assert.That(GameSessionState.VisitedBarCount, Is.Zero);
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.Bar));
+            Assert.That(
+                GameSessionState.ActiveBarId,
+                Is.EqualTo("bar-pending-return"));
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                GameSessionState.SetCityBlueprint("missing-blueprint"));
+            Assert.That(
+                GameSessionState.CityBlueprintId,
+                Is.EqualTo(CityBlueprintCatalog.LegacyBlueprintId));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.Bar));
         }
 
         private static void ResetPublicState()

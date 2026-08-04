@@ -101,7 +101,10 @@ Assets/
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
-        CityDistrict.cs          district/path/land-use enums and district/park data
+        CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
+        CityBlueprintCatalog.cs  default coastal and legacy blueprints + Lake/Cemetery profiles
+        CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
+        CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
@@ -115,16 +118,16 @@ Assets/
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
-        RoadFencePlan.cs         typed bar/home/supermarket/park/public-place openings
-        RoadFencePlanner.cs      exposed street boundary minus complete public sides
+        RoadFencePlan.cs         typed building/park/public/open-area access openings
+        RoadFencePlanner.cs      exposed street boundary minus all canonical approaches
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         CityDayNightController.cs   session lighting + exterior night factor
-        RoadWalkableArea.cs      street/park/public XZ union; surfaces own height
+        RoadWalkableArea.cs      street/park/public/open-land XZ union; water excluded
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
-        HomeExteriorContextPlan.cs  bounded same-seed street view descriptors
+        HomeExteriorContextPlan.cs  bounded same-blueprint/seed street view descriptors
         HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
@@ -291,8 +294,16 @@ startup Wake -> session time 06:00 -> GameTimeRuntime scaled delta
                                   -> HomeAlarmClock HH:MM
                                   -> CityDayNightController
                                   -> HomeDayNightController
-seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
-                                           -> four urban districts + central park
+blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
+                                          -> stable area IDs + categories/profiles
+                                          -> sparse active-cell topology
+                                          -> fixed centered park
+                                          -> north-edge beach + water
+                                          -> optional Lake/Cemetery areas
+                                          -> CityLayoutGenerator -> validated CityLayout
+                                           -> 12x12 default road/lot core
+                                           -> four UrbanBuilt areas + central park
+                                           -> typed surfaces + open-area accesses
                                            -> distant bars via CityTravelDistance
                                            -> player home beside one bar street
                                            -> nearest eligible Residential supermarket
@@ -306,9 +317,11 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                               -> grounded non-emissive last-route island
                                            -> shared third-floor balcony facade geometry
                                            -> fresh road-node spawn beside the home
-                                           -> RoadWalkableArea
-                                              -> streets + park
-                                              -> public grounds + approaches
+                                            -> RoadWalkableArea
+                                               -> streets + park
+                                               -> beach/lake-shore/cemetery ground
+                                               -> public/open-area approaches
+                                               -> water excluded
                                               -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
@@ -329,9 +342,10 @@ seed -> CityLayoutGenerator -> 12x12 CityLayout -> CityWorldBuilder
                                              -> CityDecorationWorldBuilder
                                                 -> six shared visual styles
                                                 -> shadowless 48 m chunks
-                                          -> CityMap
-                                             -> canonical public-place descriptors
-                                             -> open lots + four marker shapes + legend
+                                           -> CityMap
+                                              -> centered sparse blueprint bounds
+                                              -> canonical area surfaces and labels
+                                              -> public-place descriptors + marker legend
                                           -> Home exterior context
                                              -> nearby canonical public places
                                              -> local-space visual reconstruction
@@ -395,7 +409,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                 -> localized metadata + tight triggers
        -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
                                    -> window + open door + walkable safe balcony
-       -> same seed -> HomeExteriorContextPlanner
+       -> same blueprint ID + seed -> HomeExteriorContextPlanner
                     -> bounded roads/lots/windows/lamps/signals/decorations view
                     -> same CityDecorationWorldBuilder recipes in Home space
                     -> shared City exterior appearance + passive bar facade
