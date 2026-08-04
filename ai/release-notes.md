@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-04 — City-map test teleport
+
+- The City F9 debug window can now enable test teleportation. While enabled,
+  any object lot on the map can be selected; confirming `Teleport? / Yes`
+  moves the hero to its street-front or nearest route point. Normal bar-route
+  planning remains unchanged when the debug toggle is off.
+
 ### 2026-08-04 — A coastal, rearrangeable city foundation
 
 - The default city now opens onto a full-width beach and waterline along the

@@ -129,7 +129,7 @@ namespace BarPromenade
             new Color32(19, 15, 25, 250);
 
         private readonly List<MapHoverTarget> hoverTargets =
-            new List<MapHoverTarget>(8);
+            new List<MapHoverTarget>(160);
 
         private CityMapController controller;
         private GUIStyle titleStyle;
@@ -318,6 +318,32 @@ namespace BarPromenade
                         buildingRect,
                         GetDistrictColor(lot.District));
                 }
+
+                if (controller.DebugTeleportEnabled)
+                {
+                    int mapObjectIndex = index;
+                    RegisterHoverTarget(
+                        buildingRect,
+                        buildingRect.center,
+                        controller.GetMapObjectLabel(mapObjectIndex),
+                        PointOfInterestHoverPriority);
+                    if (mapObjectIndex ==
+                        controller.SelectedMapObjectIndex)
+                    {
+                        RetroUiTheme.StrokeRect(
+                            buildingRect,
+                            2f,
+                            RetroUiTheme.AccentPale);
+                    }
+
+                    if (GUI.Button(
+                        buildingRect,
+                        GUIContent.none,
+                        GUIStyle.none))
+                    {
+                        controller.QueueSelectMapObject(mapObjectIndex);
+                    }
+                }
             }
         }
 
@@ -490,7 +516,12 @@ namespace BarPromenade
                 int routeOrder = controller.GetRouteOrder(bar.BarId);
                 bool selected = routeOrder >= 0;
                 bool visited = controller.IsBarVisited(bar.BarId);
-                bool focused = index == controller.SelectedBarIndex;
+                int mapObjectIndex =
+                    controller.FindMapObjectIndex(bar);
+                bool focused = controller.DebugTeleportEnabled
+                    ? mapObjectIndex ==
+                      controller.SelectedMapObjectIndex
+                    : index == controller.SelectedBarIndex;
                 const float markerSize = 17f;
                 Rect marker = new Rect(
                     position.x - markerSize * 0.5f,
@@ -525,7 +556,14 @@ namespace BarPromenade
                 string markerLabel = (index + 1).ToString();
                 if (GUI.Button(marker, markerLabel, markerButtonStyle))
                 {
-                    controller.QueueToggleBar(index);
+                    if (controller.DebugTeleportEnabled)
+                    {
+                        controller.QueueSelectMapObject(mapObjectIndex);
+                    }
+                    else
+                    {
+                        controller.QueueToggleBar(index);
+                    }
                 }
 
                 if (selected)
@@ -894,6 +932,12 @@ namespace BarPromenade
                 true,
                 2f,
                 1f);
+            if (controller.DebugTeleportEnabled)
+            {
+                DrawDebugTeleportPanel(panel);
+                return;
+            }
+
             GUI.Label(
                 new Rect(
                     panel.x + 6f,
@@ -975,6 +1019,70 @@ namespace BarPromenade
             }
 
             GUI.enabled = previousEnabled;
+        }
+
+        private void DrawDebugTeleportPanel(Rect panel)
+        {
+            GUI.Label(
+                new Rect(
+                    panel.x + 6f,
+                    panel.y + 5f,
+                    panel.width - 12f,
+                    18f),
+                LocalizationService.Get("map.teleport.title"),
+                subtitleStyle);
+
+            BuildingLot selected = controller.SelectedMapObject;
+            if (selected == null)
+            {
+                GUI.Label(
+                    new Rect(
+                        panel.x + 9f,
+                        panel.y + 34f,
+                        panel.width - 18f,
+                        58f),
+                    LocalizationService.Get("map.teleport.select"),
+                    centeredStyle);
+                return;
+            }
+
+            GUI.Label(
+                new Rect(
+                    panel.x + 9f,
+                    panel.y + 35f,
+                    panel.width - 18f,
+                    42f),
+                controller.GetMapObjectLabel(
+                    controller.SelectedMapObjectIndex),
+                centeredStyle);
+            GUI.Label(
+                new Rect(
+                    panel.x + 9f,
+                    panel.y + 84f,
+                    panel.width - 18f,
+                    28f),
+                LocalizationService.Get("map.teleport.question"),
+                centeredStyle);
+
+            Rect confirmButton = new Rect(
+                panel.x + 18f,
+                panel.y + 119f,
+                panel.width - 36f,
+                24f);
+            RetroUiTheme.DrawPanel(
+                confirmButton,
+                RetroUiTheme.PanelRaised,
+                RetroUiTheme.Good,
+                true,
+                2f,
+                1f);
+            if (GUI.Button(
+                confirmButton,
+                LocalizationService.Get("common.yes"),
+                hintStyle))
+            {
+                controller.QueueConfirmDebugTeleport();
+            }
         }
 
         private void DrawPointOfInterestLegend(

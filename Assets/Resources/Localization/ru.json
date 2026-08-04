@@ -793,6 +793,22 @@
       "value": "Длина: {0:0} м"
     },
     {
+      "key": "map.object",
+      "value": "\u041e\u0431\u044a\u0435\u043a\u0442 \u043d\u0430 \u043a\u0430\u0440\u0442\u0435 [{0}, {1}]"
+    },
+    {
+      "key": "map.teleport.title",
+      "value": "DEBUG-\u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422"
+    },
+    {
+      "key": "map.teleport.select",
+      "value": "\u0412\u044b\u0434\u0435\u043b\u0438\u0442\u0435 \u043b\u044e\u0431\u043e\u0439 \u043e\u0431\u044a\u0435\u043a\u0442 \u043d\u0430 \u043a\u0430\u0440\u0442\u0435"
+    },
+    {
+      "key": "map.teleport.question",
+      "value": "\u0422\u0435\u043b\u0435\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f?"
+    },
+    {
       "key": "map.poi.title",
       "value": "Точки интереса"
     },
@@ -1055,6 +1071,14 @@
     {
       "key": "debug.minigames.unavailable",
       "value": "Не удалось запустить мини-игру"
+    },
+    {
+      "key": "debug.teleport.disabled",
+      "value": "\u0422\u0415\u0421\u0422\u041e\u0412\u0410\u042f \u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422\u0410\u0426\u0418\u042f: \u0412\u042b\u041a\u041b"
+    },
+    {
+      "key": "debug.teleport.enabled",
+      "value": "\u0422\u0415\u0421\u0422\u041e\u0412\u0410\u042f \u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422\u0410\u0426\u0418\u042f: \u0412\u041a\u041b"
     },
     {
       "key": "debug.minigame.cocktail",

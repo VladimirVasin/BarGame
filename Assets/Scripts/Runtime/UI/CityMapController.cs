@@ -37,7 +37,9 @@ namespace BarPromenade
             ToggleMap,
             ToggleBar,
             MoveBar,
-            ClearRoute
+            ClearRoute,
+            SelectMapObject,
+            ConfirmDebugTeleport
         }
 
         private readonly struct PendingCommand
@@ -82,6 +84,8 @@ namespace BarPromenade
         public IReadOnlyList<BuildingLot> Bars => bars;
         public IReadOnlyList<CityMapPointOfInterest> PointsOfInterest =>
             pointsOfInterest;
+        public IReadOnlyList<BuildingLot> MapObjects =>
+            Layout?.BuildingLots ?? Array.Empty<BuildingLot>();
         public BuildingLot PlayerHome => Layout?.PlayerHome;
         public BuildingLot Supermarket => Layout?.Supermarket;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
@@ -103,6 +107,12 @@ namespace BarPromenade
         }
         public CityRoutePath CurrentPath { get; private set; }
         public int SelectedBarIndex { get; private set; }
+        public int SelectedMapObjectIndex { get; private set; } = -1;
+        public bool DebugTeleportEnabled { get; private set; }
+        public BuildingLot SelectedMapObject =>
+            IsValidMapObjectIndex(SelectedMapObjectIndex)
+                ? MapObjects[SelectedMapObjectIndex]
+                : null;
         public CityMapView View { get; private set; }
         public Vector3 PlayerWorldPosition =>
             player.GameObject == null
@@ -139,6 +149,7 @@ namespace BarPromenade
             SelectedBarIndex = bars.Count == 0
                 ? -1
                 : Mathf.Clamp(SelectedBarIndex, 0, bars.Count - 1);
+            SelectedMapObjectIndex = -1;
 
             View = GetComponent<CityMapView>();
             if (View == null)
@@ -410,6 +421,181 @@ namespace BarPromenade
             return LocalizationService.Get("map.supermarket");
         }
 
+        public string GetMapObjectLabel(int mapObjectIndex)
+        {
+            if (!IsValidMapObjectIndex(mapObjectIndex))
+            {
+                return string.Empty;
+            }
+
+            BuildingLot lot = MapObjects[mapObjectIndex];
+            if (lot.IsBar)
+            {
+                return GetBarLabel(FindBarIndex(lot.BarId));
+            }
+
+            if (lot.IsPlayerHome)
+            {
+                return LocalizationService.Get("map.home");
+            }
+
+            if (lot.IsSupermarket)
+            {
+                return GetSupermarketLabel();
+            }
+
+            int pointOfInterestIndex = FindPointOfInterestIndex(lot.Cell);
+            return pointOfInterestIndex >= 0
+                ? GetPointOfInterestLabel(pointOfInterestIndex)
+                : string.Format(
+                    LocalizationService.Get("map.object"),
+                    lot.Cell.x,
+                    lot.Cell.y);
+        }
+
+        public int FindMapObjectIndex(BuildingLot lot)
+        {
+            if (lot == null)
+            {
+                return -1;
+            }
+
+            for (int index = 0; index < MapObjects.Count; index++)
+            {
+                if (ReferenceEquals(MapObjects[index], lot))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        public bool SetDebugTeleportEnabled(bool enabled)
+        {
+            if (DebugTeleportEnabled == enabled)
+            {
+                return false;
+            }
+
+            DebugTeleportEnabled = enabled;
+            SelectedMapObjectIndex = -1;
+            GameLog.Info(
+                "map",
+                "debug_teleport_mode_changed",
+                GameLog.Field("enabled", enabled));
+            return true;
+        }
+
+        public bool SelectMapObject(int mapObjectIndex)
+        {
+            if (!DebugTeleportEnabled ||
+                !IsOpen ||
+                !IsValidMapObjectIndex(mapObjectIndex))
+            {
+                return false;
+            }
+
+            bool changed = SelectedMapObjectIndex != mapObjectIndex;
+            SelectedMapObjectIndex = mapObjectIndex;
+            if (changed)
+            {
+                RetroAudio.Play(RetroSfxId.UiMove);
+            }
+
+            return true;
+        }
+
+        public bool ConfirmDebugTeleport()
+        {
+            if (!DebugTeleportEnabled ||
+                !IsOpen ||
+                player.GameObject == null ||
+                player.Motor == null ||
+                SelectedMapObject == null)
+            {
+                return false;
+            }
+
+            BuildingLot target = SelectedMapObject;
+            Vector3 destination =
+                ResolveDebugTeleportDestination(target);
+            Vector3 facing = target.DoorPosition - destination;
+            facing.y = 0f;
+            SelectedMapObjectIndex = -1;
+
+            Close(false, "debug_teleport");
+            player.Motor.Teleport(destination);
+            if (facing.sqrMagnitude > 0.0001f)
+            {
+                player.GameObject.transform.rotation =
+                    Quaternion.LookRotation(facing.normalized, Vector3.up);
+            }
+
+            RefreshPath("debug_teleport");
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            GameLog.Info(
+                "map",
+                "debug_teleported",
+                GameLog.Field("cell_x", target.Cell.x),
+                GameLog.Field("cell_y", target.Cell.y),
+                GameLog.Field("x", destination.x),
+                GameLog.Field("y", destination.y),
+                GameLog.Field("z", destination.z));
+            return true;
+        }
+
+        private Vector3 ResolveDebugTeleportDestination(
+            BuildingLot target)
+        {
+            Vector3 destination = target.ReturnPosition;
+            if (!Layout.TryGetFrontageEdge(target, out _))
+            {
+                float bestSquaredDistance = float.PositiveInfinity;
+                for (int index = 0;
+                     index < Layout.RoadEdges.Count;
+                     index++)
+                {
+                    RoadEdge edge = Layout.RoadEdges[index];
+                    Vector3 candidate = ClosestPointOnPlanarSegment(
+                        target.Center,
+                        Layout.GetNodeWorldPosition(edge.A),
+                        Layout.GetNodeWorldPosition(edge.B));
+                    float squaredDistance =
+                        (candidate - target.Center).sqrMagnitude;
+                    if (squaredDistance < bestSquaredDistance)
+                    {
+                        bestSquaredDistance = squaredDistance;
+                        destination = candidate;
+                    }
+                }
+            }
+
+            destination.y = PlayerWorldPosition.y;
+            return destination;
+        }
+
+        private static Vector3 ClosestPointOnPlanarSegment(
+            Vector3 point,
+            Vector3 start,
+            Vector3 end)
+        {
+            point.y = 0f;
+            start.y = 0f;
+            end.y = 0f;
+            Vector3 segment = end - start;
+            float squaredLength = segment.sqrMagnitude;
+            if (squaredLength <= 0.0001f)
+            {
+                return start;
+            }
+
+            float progress = Mathf.Clamp01(
+                Vector3.Dot(point - start, segment) /
+                squaredLength);
+            return start + segment * progress;
+        }
+
         internal static bool TryGetPointOfInterestLocalizationKey(
             CityDistrictPointOfInterestKind kind,
             out string key)
@@ -463,6 +649,20 @@ namespace BarPromenade
                 new PendingCommand(CommandType.ClearRoute));
         }
 
+        public void QueueSelectMapObject(int mapObjectIndex)
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(
+                    CommandType.SelectMapObject,
+                    barIndex: mapObjectIndex));
+        }
+
+        public void QueueConfirmDebugTeleport()
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(CommandType.ConfirmDebugTeleport));
+        }
+
         private void Update()
         {
             ProcessQueuedCommands();
@@ -499,7 +699,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (WasClearPressed())
+            if (!DebugTeleportEnabled && WasClearPressed())
             {
                 ClearRoute();
                 return;
@@ -508,18 +708,34 @@ namespace BarPromenade
             int selectionDelta = ReadSelectionDelta();
             if (selectionDelta != 0)
             {
-                MoveSelection(selectionDelta);
+                if (DebugTeleportEnabled)
+                {
+                    MoveMapObjectSelection(selectionDelta);
+                }
+                else
+                {
+                    MoveSelection(selectionDelta);
+                }
             }
 
             int routeMove = ReadRouteMove();
-            if (routeMove != 0 && IsValidBarIndex(SelectedBarIndex))
+            if (!DebugTeleportEnabled &&
+                routeMove != 0 &&
+                IsValidBarIndex(SelectedBarIndex))
             {
                 MoveBar(bars[SelectedBarIndex].BarId, routeMove);
             }
 
-            if (WasConfirmPressed() && IsValidBarIndex(SelectedBarIndex))
+            if (WasConfirmPressed())
             {
-                ToggleBar(SelectedBarIndex);
+                if (DebugTeleportEnabled)
+                {
+                    ConfirmDebugTeleport();
+                }
+                else if (IsValidBarIndex(SelectedBarIndex))
+                {
+                    ToggleBar(SelectedBarIndex);
+                }
             }
         }
 
@@ -572,6 +788,12 @@ namespace BarPromenade
                             ClearRoute();
                         }
 
+                        break;
+                    case CommandType.SelectMapObject:
+                        SelectMapObject(command.BarIndex);
+                        break;
+                    case CommandType.ConfirmDebugTeleport:
+                        ConfirmDebugTeleport();
                         break;
                 }
             }
@@ -694,22 +916,52 @@ namespace BarPromenade
             }
         }
 
+        private void MoveMapObjectSelection(int delta)
+        {
+            if (MapObjects.Count == 0 || delta == 0)
+            {
+                SelectedMapObjectIndex = -1;
+                return;
+            }
+
+            int nextIndex = SelectedMapObjectIndex < 0
+                ? delta > 0 ? 0 : MapObjects.Count - 1
+                : (SelectedMapObjectIndex + Math.Sign(delta)) %
+                  MapObjects.Count;
+            if (nextIndex < 0)
+            {
+                nextIndex += MapObjects.Count;
+            }
+
+            SelectMapObject(nextIndex);
+        }
+
         private bool IsValidBarIndex(int index)
         {
             return index >= 0 && index < bars.Count;
         }
 
+        private bool IsValidMapObjectIndex(int index)
+        {
+            return index >= 0 && index < MapObjects.Count;
+        }
+
         internal bool IsPointOfInterestLot(Vector2Int cell)
+        {
+            return FindPointOfInterestIndex(cell) >= 0;
+        }
+
+        private int FindPointOfInterestIndex(Vector2Int cell)
         {
             for (int index = 0; index < pointsOfInterest.Count; index++)
             {
                 if (pointsOfInterest[index].LotCell == cell)
                 {
-                    return true;
+                    return index;
                 }
             }
 
-            return false;
+            return -1;
         }
 
         private void CollectPointsOfInterest()

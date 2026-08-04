@@ -59,7 +59,7 @@ Manual snapshots include the current `hunger` and `stress` beside
 | `needs`, `inventory` | hunger/stress mutations, committed alcohol relief and atomic item-use results |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed |
 | `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings |
-| `interaction`, `map` | entrance/exit results and map lifecycle; path rebuilds are verbose-only |
+| `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events; path rebuilds are verbose-only |
 | minigame categories | opening, bounded player actions, committed round/throw/move results, cancellation and completion |
 | `intoxication`, `balance` | stage changes and balance scheduling, start, result, fall, recovery or cancellation |
 | `diagnostics` | manual snapshots and support-directory commands |

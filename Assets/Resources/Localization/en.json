@@ -793,6 +793,22 @@
       "value": "Distance: {0:0} m"
     },
     {
+      "key": "map.object",
+      "value": "Map object [{0}, {1}]"
+    },
+    {
+      "key": "map.teleport.title",
+      "value": "DEBUG TELEPORT"
+    },
+    {
+      "key": "map.teleport.select",
+      "value": "Select any object on the map"
+    },
+    {
+      "key": "map.teleport.question",
+      "value": "Teleport?"
+    },
+    {
       "key": "map.poi.title",
       "value": "Points of Interest"
     },
@@ -1055,6 +1071,14 @@
     {
       "key": "debug.minigames.unavailable",
       "value": "The minigame could not be launched"
+    },
+    {
+      "key": "debug.teleport.disabled",
+      "value": "TEST TELEPORT: OFF"
+    },
+    {
+      "key": "debug.teleport.enabled",
+      "value": "TEST TELEPORT: ON"
     },
     {
       "key": "debug.minigame.cocktail",

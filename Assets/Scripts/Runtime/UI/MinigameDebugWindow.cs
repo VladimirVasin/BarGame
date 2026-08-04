@@ -9,7 +9,8 @@ namespace BarPromenade
     public sealed class MinigameDebugWindow : MonoBehaviour
     {
         private const int IntoxicationStep = 20;
-        private const int VisibleRowCount = 5;
+        private const int DefaultVisibleRowCount = 5;
+        private const int CityVisibleRowCount = 4;
         private const float RowHeight = 30f;
         private const float RowGap = 5f;
 
@@ -39,6 +40,8 @@ namespace BarPromenade
         public string LastLaunchErrorKey { get; private set; } =
             string.Empty;
         public IBarMinigame ActiveDebugMinigame { get; private set; }
+        public bool DebugTeleportEnabled =>
+            cityMap != null && cityMap.DebugTeleportEnabled;
         public IReadOnlyList<BarMinigameDefinition> Definitions =>
             BarMinigameCatalog.Definitions;
 
@@ -173,6 +176,19 @@ namespace BarPromenade
                 RetroAudio.Play(RetroSfxId.UiMove);
             }
 
+            return true;
+        }
+
+        public bool ToggleDebugTeleport()
+        {
+            if (cityMap == null)
+            {
+                return false;
+            }
+
+            cityMap.SetDebugTeleportEnabled(
+                !cityMap.DebugTeleportEnabled);
+            RetroAudio.Play(RetroSfxId.UiConfirm);
             return true;
         }
 
@@ -416,13 +432,21 @@ namespace BarPromenade
                     "debug.minigames.hint"),
                 hintStyle);
             DrawIntoxicationControls();
+            if (cityMap != null)
+            {
+                DrawDebugTeleportControl();
+            }
 
             IReadOnlyList<BarMinigameDefinition> definitions =
                 Definitions;
             if (definitions.Count == 0)
             {
                 GUI.Label(
-                    new Rect(140f, 145f, 360f, 34f),
+                    new Rect(
+                        140f,
+                        cityMap == null ? 145f : 174f,
+                        360f,
+                        34f),
                     LocalizationService.Get(
                         "debug.minigames.empty"),
                     hintStyle);
@@ -467,6 +491,30 @@ namespace BarPromenade
                 intoxication < 100);
         }
 
+        private void DrawDebugTeleportControl()
+        {
+            Rect button = new Rect(132f, 125f, 376f, 24f);
+            RetroUiTheme.DrawPanel(
+                button,
+                DebugTeleportEnabled
+                    ? RetroUiTheme.PanelRaised
+                    : RetroUiTheme.PanelInset,
+                DebugTeleportEnabled
+                    ? RetroUiTheme.Good
+                    : RetroUiTheme.BorderMuted,
+                DebugTeleportEnabled,
+                2f,
+                1f);
+            string label = LocalizationService.Get(
+                DebugTeleportEnabled
+                    ? "debug.teleport.enabled"
+                    : "debug.teleport.disabled");
+            if (GUI.Button(button, label, rowStyle))
+            {
+                ToggleDebugTeleport();
+            }
+        }
+
         private void DrawIntoxicationButton(
             Rect rect,
             string label,
@@ -498,9 +546,10 @@ namespace BarPromenade
         private void DrawDefinitionRows(
             IReadOnlyList<BarMinigameDefinition> definitions)
         {
+            int visibleRowCount = GetVisibleRowCount();
             int lastIndex = Mathf.Min(
                 definitions.Count,
-                firstVisibleIndex + VisibleRowCount);
+                firstVisibleIndex + visibleRowCount);
             for (int index = firstVisibleIndex;
                  index < lastIndex;
                  index++)
@@ -508,7 +557,8 @@ namespace BarPromenade
                 int visibleIndex = index - firstVisibleIndex;
                 Rect row = new Rect(
                     132f,
-                    125f + visibleIndex * (RowHeight + RowGap),
+                    (cityMap == null ? 125f : 154f) +
+                    visibleIndex * (RowHeight + RowGap),
                     376f,
                     RowHeight);
                 bool selected = index == SelectedIndex;
@@ -589,24 +639,32 @@ namespace BarPromenade
         private void KeepSelectionVisible()
         {
             int count = Definitions.Count;
+            int visibleRowCount = GetVisibleRowCount();
             int maximumFirst = Mathf.Max(
                 0,
-                count - VisibleRowCount);
+                count - visibleRowCount);
             if (SelectedIndex < firstVisibleIndex)
             {
                 firstVisibleIndex = SelectedIndex;
             }
             else if (SelectedIndex >=
-                     firstVisibleIndex + VisibleRowCount)
+                     firstVisibleIndex + visibleRowCount)
             {
                 firstVisibleIndex =
-                    SelectedIndex - VisibleRowCount + 1;
+                    SelectedIndex - visibleRowCount + 1;
             }
 
             firstVisibleIndex = Mathf.Clamp(
                 firstVisibleIndex,
                 0,
                 maximumFirst);
+        }
+
+        private int GetVisibleRowCount()
+        {
+            return cityMap == null
+                ? DefaultVisibleRowCount
+                : CityVisibleRowCount;
         }
 
         private void HandleMouseWheel()

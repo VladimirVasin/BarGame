@@ -2,6 +2,28 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-04 — F9 city-map test teleport
+
+- Added a City-only test-teleport toggle to the existing F9 debug window while
+  retaining its BarInterior minigame and intoxication tools unchanged.
+- Made every canonical map lot selectable in debug teleport mode, including
+  ordinary lots, public places, home, supermarket and bars. The map replaces
+  its route sidebar with an explicit `Teleport? / Yes` confirmation.
+- Confirming closes the map, restores modal input ownership, teleports the hero
+  to the selected lot's street-front return point (or nearest generated route
+  fallback), faces the lot and rebuilds any planned route from the new
+  position. Normal bar-route selection remains unchanged while the mode is
+  disabled.
+
+Verification:
+
+- Focused PlayMode verification passed `1/1` for the F9-owned toggle, selection
+  of a non-bar lot and the resulting physical player relocation/input
+  restoration; the run also compiled the affected Runtime and test assemblies.
+- Both localization catalogs parse with all six new keys, no duplicates, and
+  `git diff --check` passes.
+- Full EditMode/PlayMode suites and a player build were not run.
+
 ## 2026-08-04 — Blueprint-driven coastal city MVP
 
 - Added an immutable `CityBlueprint` model and fluent builder with stable

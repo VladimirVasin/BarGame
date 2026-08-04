@@ -153,6 +153,77 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator CityDebugTeleport_SelectsNonBarMapObjectAndMovesPlayer()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                58021);
+            var player = new PlayerRuntime(
+                playerObject,
+                motor,
+                interactor,
+                null);
+            CityMapController map =
+                uiObject.AddComponent<CityMapController>();
+            map.Initialize(
+                layout,
+                player,
+                cameraFollow,
+                hud);
+            window.Initialize(
+                player,
+                cameraFollow,
+                hud,
+                map,
+                null,
+                drinkShop);
+
+            Assert.That(window.Open(), Is.True);
+            Assert.That(window.ToggleDebugTeleport(), Is.True);
+            Assert.That(window.DebugTeleportEnabled, Is.True);
+            Assert.That(map.DebugTeleportEnabled, Is.True);
+            Assert.That(window.Close(), Is.True);
+
+            Assert.That(map.MapObjects.Count, Is.EqualTo(layout.Lots.Count));
+            int ordinaryObjectIndex = -1;
+            for (int index = 0; index < map.MapObjects.Count; index++)
+            {
+                BuildingLot candidate = map.MapObjects[index];
+                if (!candidate.IsBar &&
+                    !candidate.IsPlayerHome &&
+                    !candidate.IsSupermarket)
+                {
+                    ordinaryObjectIndex = index;
+                    break;
+                }
+            }
+
+            Assert.That(ordinaryObjectIndex, Is.GreaterThanOrEqualTo(0));
+            BuildingLot target = map.MapObjects[ordinaryObjectIndex];
+            playerObject.transform.position = new Vector3(1f, 0.12f, 1f);
+            Assert.That(map.Open(), Is.True);
+            Assert.That(
+                map.SelectMapObject(ordinaryObjectIndex),
+                Is.True);
+            Assert.That(map.SelectedMapObject, Is.SameAs(target));
+            Assert.That(
+                map.GetMapObjectLabel(ordinaryObjectIndex),
+                Is.Not.Empty);
+
+            Vector3 expected = target.ReturnPosition;
+            expected.y = 0.12f;
+            Assert.That(map.ConfirmDebugTeleport(), Is.True);
+            Assert.That(map.IsOpen, Is.False);
+            Assert.That(
+                playerObject.transform.position,
+                Is.EqualTo(expected));
+            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator OpeningWindow_ClosesDrinkShopFirst()
         {
             Assert.That(drinkShop.Open(interactor), Is.True);

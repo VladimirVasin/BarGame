@@ -203,8 +203,8 @@ Assets/
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, pause/inventory, segmented HUD, district/public-place map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
-        CityMapController.cs        canonical shop/POIs plus bar-route state
-        CityMapView.cs              shop/POI markers, hover names and POI legend
+        CityMapController.cs        canonical lot selection, debug teleport and bar-route state
+        CityMapView.cs              all-lot debug selection plus shop/POI/bar presentation
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
@@ -556,6 +556,8 @@ GameSessionState intoxication -> IntoxicationStageRules
                                  -> success or 16-atlas detailed fall/recovery
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
+                          -> City test-teleport toggle -> CityMap all-lot selection
+                                                      -> Yes -> PlayerMotor.Teleport
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^

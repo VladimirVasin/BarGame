@@ -293,14 +293,18 @@ The vertical slice contains:
   with area colors and labels anchored on real active cells, distinct park,
   beach, water, lake-shore and cemetery surfaces and paths, player/bar markers,
   a dedicated labeled home icon, a distinct
-  grocery-shop marker and four non-interactive, kind-specific public-place
+  grocery-shop marker and four kind-specific public-place
   markers with a localized legend. Hovering a bar, home, shop or public-place
   marker shows its localized name in a bounded high-contrast tooltip. Public
   lots are drawn as open ground rather than buildings, and all landmark data
   comes directly from the canonical validated layout used by the world
-  builder. Bar visits, ordered route editing and deterministic shortest paths
-  remain separate from the shop/POI presentation and are constrained to the
-  generated road graph;
+  builder. With the City-only F9 test-teleport toggle enabled, every map lot
+  becomes selectable, the side panel asks for an explicit confirmation and a
+  confirmed target moves the hero to that lot's street-front return point or
+  its nearest generated route when no frontage edge exists.
+  Bar visits, ordinary ordered route editing and deterministic shortest paths
+  remain unchanged outside this debug mode and are constrained to the generated
+  road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent blueprint ID,
@@ -626,7 +630,8 @@ The vertical slice contains:
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
   last-drink or consumed-drink context; an unpaid bar-menu presentation may
   be replaced immediately, but a committed physical drink service cannot be
-  interrupted through this debug path;
+  interrupted through this debug path. In `City` the same window also owns a
+  persistent scene-local test-teleport toggle consumed by the city map;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route and visit state, minigame runs, drinking and balance outcomes, plus
