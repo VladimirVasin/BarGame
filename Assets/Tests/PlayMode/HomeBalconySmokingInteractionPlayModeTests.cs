@@ -84,6 +84,42 @@ namespace BarPromenade.Tests.PlayMode
                 home.Smoking.CigaretteProp.activeSelf,
                 Is.False);
             AssertCigaretteGeometry();
+            Transform ashtray = AssertPermanentAshtray();
+            Player3DCharacterPresentation playerPresentation =
+                (Player3DCharacterPresentation)home.Player.Visual;
+            HomeBalconySmokingExhaleEffect exhale =
+                home.Smoking.ExhaleEffect;
+            Assert.That(exhale, Is.Not.Null);
+            Assert.That(exhale.IsInitialized, Is.True);
+            Assert.That(
+                exhale.MouthAnchor,
+                Is.SameAs(
+                    playerPresentation.Registry.Anchors.Mouth));
+            Assert.That(exhale.Particles, Is.Not.Null);
+            Assert.That(exhale.SmokeRenderer, Is.Not.Null);
+            Assert.That(
+                exhale.Particles.transform.parent,
+                Is.SameAs(exhale.transform),
+                "The world-space plume must not inherit the FBX mouth " +
+                "bone's 100x hierarchy scale.");
+            Assert.That(
+                exhale.Particles.main.simulationSpace,
+                Is.EqualTo(ParticleSystemSimulationSpace.World));
+            Assert.That(
+                exhale.Particles.main.maxParticles,
+                Is.EqualTo(
+                    HomeBalconySmokingExhaleEffect.MaximumParticles));
+            Assert.That(
+                exhale.LoopDurationSeconds,
+                Is.EqualTo(9.5f).Within(0.0001f));
+            Assert.That(
+                exhale.BurstTimeSeconds,
+                Is.EqualTo(5.8666667f).Within(0.0001f));
+            Assert.That(
+                exhale.SmokeRenderer.sharedMaterial,
+                Is.SameAs(CityNightResources.AtmosphereMaterial));
+            Assert.That(exhale.IsEmissionCycleActive, Is.False);
+            Assert.That(exhale.Particles.particleCount, Is.Zero);
             Assert.That(
                 home.Smoking.Definition.EnterClipName,
                 Is.EqualTo("SmokeEnter"));
@@ -260,6 +296,8 @@ namespace BarPromenade.Tests.PlayMode
 
             AssertContinuous3DPresentation("SmokeLoop");
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
+            Assert.That(exhale.IsEmissionCycleActive, Is.True);
+            Assert.That(exhale.Particles.particleCount, Is.Zero);
             AssertCigaretteGeometry();
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
@@ -275,8 +313,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(10f),
                 "The close camera must remain materially pitched so this " +
                 "test distinguishes world-up from camera-plane alignment.");
-            Player3DCharacterPresentation playerPresentation =
-                (Player3DCharacterPresentation)home.Player.Visual;
             AssertAnimatedCharacterFacesCity(
                 playerPresentation.Registry);
             Vector3 actionHipWorld =
@@ -409,7 +445,28 @@ namespace BarPromenade.Tests.PlayMode
                 home.SmokingMusic.NormalizedGain,
                 Is.EqualTo(1f).Within(0.001f));
 
+            Time.timeScale = 4f;
+            yield return WaitForExhaleBurst();
+            float firstExhaleTime = Time.time;
+            yield return WaitForExhaleSmokeToClear();
+            yield return WaitForExhaleBurst();
+            float secondExhaleTime = Time.time;
+            Assert.That(
+                secondExhaleTime - firstExhaleTime,
+                Is.EqualTo(exhale.LoopDurationSeconds).Within(0.50f),
+                "The mouth plume must repeat once per complete smoking " +
+                "loop.");
+            yield return WaitForExhaleSmokeToClear();
             yield return WaitForUnsafeLoopFrame();
+            Time.timeScale = 1f;
+            int unsafeLoopFrame =
+                home.AnimatedInteraction.FrameIndex -
+                home.Smoking.Definition.LoopStartFrame;
+            Assert.That(unsafeLoopFrame, Is.InRange(4, 20));
+            Assert.That(
+                HomeBalconySmokingTimeline
+                    .IsSafeExitLoopFrame(unsafeLoopFrame),
+                Is.False);
             Assert.That(
                 home.InteractionPrompt.IsClickable,
                 Is.True);
@@ -431,6 +488,13 @@ namespace BarPromenade.Tests.PlayMode
             Time.timeScale = 12f;
             yield return WaitForAnimatedPhase(
                 PlayerAnimatedInteractionPhase.Exiting);
+            Assert.That(exhale.IsEmissionCycleActive, Is.False);
+            Assert.That(exhale.Particles.isEmitting, Is.False);
+            Assert.That(
+                exhale.Particles.particleCount,
+                Is.GreaterThan(0),
+                "Stopping the emitter must let the already exhaled " +
+                "world-space plume dissipate naturally during exit.");
             AssertContinuous3DPresentation("SmokeExit");
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
             Time.timeScale = 4f;
@@ -447,6 +511,7 @@ namespace BarPromenade.Tests.PlayMode
                         .CigaretteHideExitLocalFrame,
                     HomeBalconySmokingInteraction
                         .CigaretteHideExitLocalFrame + 1));
+            AssertExitFlickOverAshtray(ashtray);
             Time.timeScale = 12f;
             yield return WaitForPhaseCompletion(
                 PlayerAnimatedInteractionPhase.Idle);
@@ -456,6 +521,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Smoking.OwnsInteraction, Is.False);
             Assert.That(home.Smoking.ExitQueued, Is.False);
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.False);
+            Assert.That(ashtray.gameObject.activeInHierarchy, Is.True);
+            Assert.That(AssertPermanentAshtray(), Is.SameAs(ashtray));
+            Assert.That(exhale.IsEmissionCycleActive, Is.False);
+            Assert.That(exhale.Particles.particleCount, Is.Zero);
+            Assert.That(exhale.Particles.IsAlive(true), Is.False);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(home.Player.Interactor.InputEnabled, Is.True);
             for (int index = 0;
@@ -598,6 +668,58 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private IEnumerator WaitForExhaleBurst()
+        {
+            HomeBalconySmokingExhaleEffect exhale =
+                home.Smoking.ExhaleEffect;
+            float deadline =
+                Time.realtimeSinceStartup + 4f;
+            while (exhale.Particles.particleCount == 0 &&
+                   home.AnimatedInteraction.Phase ==
+                       PlayerAnimatedInteractionPhase.Looping &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(exhale.IsEmissionCycleActive, Is.True);
+            Assert.That(
+                exhale.Particles.particleCount,
+                Is.GreaterThanOrEqualTo(
+                    HomeBalconySmokingExhaleEffect
+                        .BurstParticleCount),
+                "Each 9.5-second smoking loop must emit one dense, " +
+                "visible mouth plume.");
+            AssertExhaleParticleMotion(exhale);
+        }
+
+        private IEnumerator WaitForExhaleSmokeToClear()
+        {
+            HomeBalconySmokingExhaleEffect exhale =
+                home.Smoking.ExhaleEffect;
+            float deadline =
+                Time.realtimeSinceStartup + 2f;
+            while (exhale.Particles.particleCount > 0 &&
+                   home.AnimatedInteraction.Phase ==
+                       PlayerAnimatedInteractionPhase.Looping &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(
+                exhale.Particles.particleCount,
+                Is.Zero,
+                "The plume must dissipate before the next smoking loop " +
+                "burst.");
+        }
+
         private IEnumerator WaitForUnsafeLoopFrame()
         {
             float deadline =
@@ -621,6 +743,46 @@ namespace BarPromenade.Tests.PlayMode
                 HomeBalconySmokingTimeline
                     .IsSafeExitLoopFrame(localFrame),
                 Is.False);
+        }
+
+        private void AssertExhaleParticleMotion(
+            HomeBalconySmokingExhaleEffect exhale)
+        {
+            Transform mouth = exhale.MouthAnchor;
+            Vector3 expectedEmitterPosition =
+                mouth.position +
+                mouth.up.normalized *
+                HomeBalconySmokingExhaleEffect.MouthForwardOffset;
+            Assert.That(
+                Vector3.Distance(
+                    exhale.Particles.transform.position,
+                    expectedEmitterPosition),
+                Is.LessThan(0.035f));
+            Assert.That(
+                Vector3.Dot(
+                    exhale.Particles.transform.forward,
+                    mouth.up.normalized),
+                Is.GreaterThan(0.99f));
+
+            var samples = new ParticleSystem.Particle[
+                HomeBalconySmokingExhaleEffect.MaximumParticles];
+            int count = exhale.Particles.GetParticles(samples);
+            Assert.That(count, Is.GreaterThan(0));
+            Vector3 averageVelocity = Vector3.zero;
+            for (int index = 0; index < count; index++)
+            {
+                averageVelocity += samples[index].velocity;
+            }
+
+            averageVelocity /= count;
+            Vector3 cityDirection =
+                home.transform.TransformDirection(Vector3.right);
+            Assert.That(
+                Vector3.Dot(
+                    averageVelocity,
+                    cityDirection.normalized),
+                Is.GreaterThan(0.10f),
+                "The exhaled smoke must travel outward toward the city.");
         }
 
         private IEnumerator WaitForCigaretteVisibility(
@@ -708,6 +870,79 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 ember.localPosition.y,
                 Is.GreaterThan(paper.localPosition.y));
+        }
+
+        private Transform AssertPermanentAshtray()
+        {
+            Transform ashtray =
+                home.Balcony.Find("Home Balcony Ashtray");
+            Assert.That(ashtray, Is.Not.Null);
+            Assert.That(ashtray.gameObject.activeSelf, Is.True);
+            Assert.That(ashtray.gameObject.activeInHierarchy, Is.True);
+            Assert.That(
+                ashtray.localPosition,
+                Is.EqualTo(home.SmokingPlan.AshtrayPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                ashtray.GetComponentsInChildren<Collider>(true),
+                Is.Empty,
+                "The permanent rail ashtray must remain visual-only.");
+
+            Renderer[] renderers =
+                ashtray.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers, Has.Length.EqualTo(3));
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Assert.That(
+                    renderers[index].sharedMaterial,
+                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                    "The ashtray must reuse the shared primitive material.");
+            }
+
+            Transform body =
+                ashtray.Find("Home Balcony Ashtray Body");
+            Transform railCap =
+                home.Balcony.Find("Home Balcony Outer Rail Cap");
+            Assert.That(body, Is.Not.Null);
+            Assert.That(railCap, Is.Not.Null);
+            Renderer bodyRenderer = body.GetComponent<Renderer>();
+            Renderer railRenderer = railCap.GetComponent<Renderer>();
+            Assert.That(bodyRenderer, Is.Not.Null);
+            Assert.That(railRenderer, Is.Not.Null);
+            Assert.That(
+                bodyRenderer.bounds.min.y,
+                Is.EqualTo(railRenderer.bounds.max.y).Within(0.001f),
+                "The ashtray base must rest directly on the outer rail cap.");
+            return ashtray;
+        }
+
+        private void AssertExitFlickOverAshtray(Transform ashtray)
+        {
+            Transform ember =
+                home.Smoking.CigaretteProp.transform.Find("Ember");
+            Transform basin =
+                ashtray.Find("Home Balcony Ashtray Basin");
+            Assert.That(ember, Is.Not.Null);
+            Assert.That(basin, Is.Not.Null);
+
+            Bounds dishBounds = basin.GetComponent<Renderer>().bounds;
+            Vector3 emberPosition = ember.position;
+            Assert.That(
+                emberPosition.x,
+                Is.InRange(dishBounds.min.x, dishBounds.max.x),
+                "The exit flick's ember must remain over the ashtray width.");
+            Assert.That(
+                emberPosition.z,
+                Is.InRange(dishBounds.min.z, dishBounds.max.z),
+                "The exit flick's ember must remain over the ashtray depth.");
+            float heightAboveBasin =
+                emberPosition.y -
+                basin.GetComponent<Renderer>().bounds.max.y;
+            Assert.That(
+                heightAboveBasin,
+                Is.InRange(0.04f, 0.24f),
+                "The ashtray must sit directly below the authored exit " +
+                "flick, not elsewhere on the rail.");
         }
 
         private void AssertAnimatedCharacterFacesCity(
@@ -805,6 +1040,12 @@ namespace BarPromenade.Tests.PlayMode
                     PlayerAnimatedInteractionPhase.Positioning));
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.False);
+            Assert.That(
+                home.Smoking.ExhaleEffect.IsEmissionCycleActive,
+                Is.False);
+            Assert.That(
+                home.Smoking.ExhaleEffect.Particles.particleCount,
+                Is.Zero);
             for (int index = 0;
                  index < home.Player.Visual.Renderers.Count;
                  index++)

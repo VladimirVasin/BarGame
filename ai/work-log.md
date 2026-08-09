@@ -2,6 +2,58 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-09 — Placed a permanent ashtray under the balcony flick
+
+- Sampled the shipped `SmokeExit` discard pose and placed a `0.26 m`
+  low-poly worn enamel ashtray at Home-local `(7.25, 1.12, -1.67)`. Its base
+  rests on the outer rail cap and its dish covers the animated ember point
+  around `(7.14, 1.30, -1.67)`.
+- Composed the visual-only body, dark basin and ash remnant under the permanent
+  `Home Balcony` hierarchy. The prop owns no collider, light, particles or
+  interaction lifecycle and is deliberately excluded from the rail dither
+  group, so it remains active before, during and after smoking.
+- Extended the existing smoking PlayMode regression to lock shared-material
+  reuse, rail contact, exact plan placement, exit-flick coverage and continued
+  visibility after the interaction restores.
+
+Verification:
+
+- `dotnet build BarPromenade.PlayModeTests.csproj -nologo` compiled runtime and
+  PlayMode test assemblies with `0` warnings and `0` errors.
+- The focused Unity test invocation could not acquire the project because the
+  user's Unity editor was already open, so it exited before compilation and
+  produced no test-result XML; the running editor was left untouched.
+- `git diff --check` passed. Fast mode intentionally
+  omitted complete Unity suites, a player build, startup smoke and manual
+  rendered review.
+
+## 2026-08-09 — Restored periodic balcony-smoking exhale smoke
+
+- Added a deterministic runtime mouth plume to the existing 3D smoking loop.
+  One `16`-particle burst starts at loop-local frame `16`, repeats with the
+  held `9.5 s` cadence and reuses the shared procedural atmosphere material.
+  The emitter follows the registered mouth socket without inheriting its FBX
+  scale, while world-space particles travel cityward, expand and fade before
+  the next loop under a `32`-particle cap. Larger particles, stronger opacity,
+  broader procedural coverage and longer lifetimes keep the plume readable
+  through the low-resolution PS1 composite.
+- Integrated the effect with smoking ownership: positioning and entry remain
+  clear, Looping starts the scheduled emitter, Exiting stops new emission but
+  lets the detached plume dissipate, and completion, cancellation, disable,
+  destroy or reinitialization clear every remaining particle.
+- Extended the existing smoking PlayMode regression to prove two separated
+  bursts one complete loop apart, outward mouth alignment and velocity,
+  queued exit at an unsafe frame, lingering world-space smoke during exit and
+  exact cleanup afterward.
+
+Verification:
+
+- Focused PlayMode verification passed `1/1`:
+  `HomeBalconySmokingInteractionPlayModeTests.Smoking_ClickableExitQueuesAtCalmFrameAndRestores`.
+  The run completed in `9.95 s` with no compilation or test errors.
+- `git diff --check` passed. Fast mode intentionally omitted complete Unity
+  suites, a player build, startup smoke and manual rendered review.
+
 ## 2026-08-09 — Added a compact lamp above the apartment entrance
 
 - Added a deterministic `Home Entry Door Lamp` assembly to the generated Home

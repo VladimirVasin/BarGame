@@ -4,8 +4,8 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Pure presentation timing layered over the atlas-driven player
-    /// interaction. The atlas controller remains the authority for animation
+    /// Pure presentation timing layered over the clip-driven player
+    /// interaction. The shared controller remains the authority for animation
     /// phase changes; this timeline supplies camera, drift and music data.
     /// </summary>
     public sealed class HomeBalconySmokingTimeline

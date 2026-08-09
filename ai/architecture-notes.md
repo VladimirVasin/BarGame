@@ -430,10 +430,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `SmokeExit` on that same rig. A separately authored exit root, pelvis and
   facing receive the ordinary rig before control returns; entry and exit may
   currently coincide without sharing one implicit stand anchor. The cigarette
-  prop follows the serialized `SOCKET_Cigarette.R` bone. Real mesh and contact
-  shadows remain active throughout because no alternate player renderer is
-  introduced. Existing loop-local frames `3`, `11`, `14` and `23` produce the
-  `9.5 s` rest/drag/breath/exhale cadence without duplicate art. A second `E` queues
+  prop follows the serialized `SOCKET_Cigarette.R` bone. A visual-only worn
+  enamel ashtray is composed permanently with the balcony at Home-local
+  `(7.25, 1.12, -1.67)`: its base rests on the outer rail cap and its dish
+  covers the ember at the authored exit flick. It is not owned by the
+  interaction or registered with the rail dither group, so it remains visible
+  before, during and after smoking. Real mesh and contact shadows remain active
+  throughout because no alternate player renderer is introduced. Existing
+  loop-local frames `3`, `11`, `14` and `23` produce the
+  `9.5 s` rest/drag/breath/exhale cadence without duplicate art. A bounded
+  deterministic ParticleSystem starts one gray-green burst at loop-local frame
+  `16` from the registered mouth socket. Its emitter follows the animated mouth
+  without inheriting the FBX bone scale, while world-space particles drift
+  cityward and finish fading before the next loop. Exit stops new emission but
+  lets the detached plume dissipate until owned cleanup. A second `E` queues
   immediately but reaches the exit sequence only at calm loop-local frames
   `0-3` or `21-23`, so no active drag or smoke plume is cut. The camera holds
   for `0.35 s` and follows a smooth quadratic push-in to `38°` FOV. Its close

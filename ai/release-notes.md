@@ -18,6 +18,12 @@
   It extends correctly from the fingers, appears only after the hand leaves
   the coat and disappears with the exit flick. Its real scene size is no
   longer multiplied by the imported hand-bone scale.
+- Every smoking loop now releases a dense, clearly visible gray-green plume
+  from the hero's mouth during the outward exhale. It drifts toward the city,
+  separates from the moving head and fades before the next breath.
+- A worn enamel ashtray now sits permanently on the outer balcony rail,
+  directly below the point where the cigarette is flicked. It remains visible
+  whether or not the smoking interaction is active.
 
 ### 2026-08-09 — Getting out of bed now uses the bedside
 

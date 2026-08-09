@@ -17,6 +17,12 @@ namespace BarPromenade
             new Color(0.23f, 0.23f, 0.20f);
         private static readonly Color Rail =
             new Color(0.18f, 0.25f, 0.25f);
+        private static readonly Color AshtrayEnamel =
+            new Color(0.48f, 0.50f, 0.43f);
+        private static readonly Color AshtrayBasin =
+            new Color(0.10f, 0.11f, 0.09f);
+        private static readonly Color AshtrayAsh =
+            new Color(0.62f, 0.60f, 0.52f);
         private static readonly Color Frame =
             new Color(0.22f, 0.27f, 0.25f);
         private static readonly Color Door =
@@ -63,6 +69,7 @@ namespace BarPromenade
             BuildFacadeContinuation(root, interior, plan);
             BuildDeck(root, plan);
             BuildGuards(root, plan, occlusionRegistry);
+            BuildAshtray(root, plan);
             BuildWindow(root, plan);
             BuildDoor(root, plan, occlusionRegistry);
             return root;
@@ -266,6 +273,8 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.RailingHeight;
             float thickness =
                 PlayerHomeBalconyGeometry.RailingThickness;
+            float capHeight =
+                PlayerHomeBalconyGeometry.RailingCapHeight;
 
             CreateInvisibleGuard(
                 "Home Balcony Outer Guard",
@@ -309,11 +318,11 @@ namespace BarPromenade
                 parent,
                 new Vector3(
                     bounds.xMax - thickness * 0.5f,
-                    guardHeight + 0.035f,
+                    guardHeight + capHeight * 0.5f,
                     bounds.center.y),
                 new Vector3(
                     thickness + 0.08f,
-                    0.07f,
+                    capHeight,
                     bounds.height + 0.06f),
                 Rail,
                 false));
@@ -322,11 +331,11 @@ namespace BarPromenade
                 parent,
                 new Vector3(
                     bounds.center.x,
-                    guardHeight + 0.035f,
+                    guardHeight + capHeight * 0.5f,
                     bounds.yMin + thickness * 0.5f),
                 new Vector3(
                     bounds.width,
-                    0.07f,
+                    capHeight,
                     thickness + 0.08f),
                 Rail,
                 false));
@@ -335,11 +344,11 @@ namespace BarPromenade
                 parent,
                 new Vector3(
                     bounds.center.x,
-                    guardHeight + 0.035f,
+                    guardHeight + capHeight * 0.5f,
                     bounds.yMax - thickness * 0.5f),
                 new Vector3(
                     bounds.width,
-                    0.07f,
+                    capHeight,
                     thickness + 0.08f),
                 Rail,
                 false));
@@ -409,6 +418,41 @@ namespace BarPromenade
                 occlusionRegistry,
                 "home.balcony.rail.north",
                 northParts);
+        }
+
+        private static void BuildAshtray(
+            Transform parent,
+            HomeBalconyLayoutPlan plan)
+        {
+            Transform ashtray =
+                new GameObject("Home Balcony Ashtray").transform;
+            ashtray.SetParent(parent, false);
+            ashtray.localPosition =
+                HomeBalconySmokingPlan.ResolveAshtrayPosition(plan);
+
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Balcony Ashtray Body",
+                ashtray,
+                new Vector3(0f, 0.025f, 0f),
+                new Vector3(0.26f, 0.025f, 0.26f),
+                AshtrayEnamel,
+                false);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Balcony Ashtray Basin",
+                ashtray,
+                new Vector3(0f, 0.052f, 0f),
+                new Vector3(0.24f, 0.002f, 0.24f),
+                AshtrayBasin,
+                false);
+            GameObject ash = RuntimePrimitiveFactory.CreateBox(
+                "Home Balcony Ashtray Ash",
+                ashtray,
+                new Vector3(-0.025f, 0.056f, 0.018f),
+                new Vector3(0.055f, 0.004f, 0.014f),
+                AshtrayAsh,
+                false);
+            ash.transform.localRotation =
+                Quaternion.Euler(0f, 24f, 0f);
         }
 
         private static void CreateInvisibleGuard(

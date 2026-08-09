@@ -31,6 +31,7 @@ namespace BarPromenade
         public const float TriggerDepth = 1.20f;
         public const float DockRailInset = 0.70f;
         public const float TriggerRearOffset = 0.10f;
+        public const float AshtrayFlickOffsetZ = -0.22f;
         public const float InteractionHeightTolerance =
             PlayerMotor.InteractionVerticalTolerance;
         public const float UprightVisualOffset = 0.005f;
@@ -52,6 +53,7 @@ namespace BarPromenade
             Vector3 actionHipPosition,
             Vector3 triggerCenter,
             Vector3 triggerSize,
+            Vector3 ashtrayPosition,
             Vector3 cameraLookAt)
         {
             EntryRootPosition = entryRootPosition;
@@ -63,6 +65,7 @@ namespace BarPromenade
             ActionHipPosition = actionHipPosition;
             TriggerCenter = triggerCenter;
             TriggerSize = triggerSize;
+            AshtrayPosition = ashtrayPosition;
             CameraLookAt = cameraLookAt;
             InteractionBounds = new Rect(
                 triggerCenter.x - triggerSize.x * 0.5f,
@@ -92,6 +95,7 @@ namespace BarPromenade
         public Vector3 ActionHipPosition { get; }
         public Vector3 TriggerCenter { get; }
         public Vector3 TriggerSize { get; }
+        public Vector3 AshtrayPosition { get; }
         public Rect InteractionBounds { get; }
         public Vector3 CameraLookAt { get; }
         public Quaternion FacingRotation => EntryFacingRotation;
@@ -151,6 +155,8 @@ namespace BarPromenade
             Vector3 cameraLookAt =
                 actionHip +
                 new Vector3(CameraCityLookOffset, 0.50f, 0f);
+            Vector3 ashtrayPosition =
+                ResolveAshtrayPosition(balcony);
 
             return new HomeBalconySmokingPlan(
                 entryRoot,
@@ -162,7 +168,25 @@ namespace BarPromenade
                 actionHip,
                 triggerCenter,
                 triggerSize,
+                ashtrayPosition,
                 cameraLookAt);
+        }
+
+        public static Vector3 ResolveAshtrayPosition(
+            HomeBalconyLayoutPlan balcony)
+        {
+            if (balcony == null)
+            {
+                throw new ArgumentNullException(nameof(balcony));
+            }
+
+            Rect bounds = balcony.BalconyBounds;
+            return new Vector3(
+                bounds.xMax -
+                PlayerHomeBalconyGeometry.RailingThickness * 0.5f,
+                PlayerHomeBalconyGeometry.RailingHeight +
+                PlayerHomeBalconyGeometry.RailingCapHeight,
+                bounds.center.y + AshtrayFlickOffsetZ);
         }
 
         public bool CanInteractAt(Vector3 localRootPosition)

@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Owns the modal balcony-smoking vignette: docking, clip playback,
-    /// queued safe-frame exit, drifting camera push-in and the scene-local
-    /// music fade.
+    /// queued safe-frame exit, mouth-synchronized exhale smoke, drifting
+    /// camera push-in and the scene-local music fade.
     /// </summary>
     [DefaultExecutionOrder(260)]
     [DisallowMultipleComponent]
@@ -55,6 +55,7 @@ namespace BarPromenade
         private bool cameraPathCaptured;
         private Func<bool> exitPromptAction;
         private GameObject cigaretteProp;
+        private HomeBalconySmokingExhaleEffect exhaleEffect;
 
         public bool IsInitialized { get; private set; }
         public bool OwnsInteraction => ownsInteraction;
@@ -64,6 +65,8 @@ namespace BarPromenade
         public PlayerAnimatedInteractionDefinition Definition =>
             definition;
         public GameObject CigaretteProp => cigaretteProp;
+        public HomeBalconySmokingExhaleEffect ExhaleEffect =>
+            exhaleEffect;
         public string PromptKey
         {
             get
@@ -119,7 +122,7 @@ namespace BarPromenade
             music = musicPlayer;
             playerRoot = home.Player.GameObject.transform;
             definition = plan.CreateAnimationDefinition();
-            RebuildCigaretteProp();
+            RebuildSmokingPresentation();
             timeline = new HomeBalconySmokingTimeline();
             exitPromptAction = RequestExit;
             controller.PhaseChanged +=
@@ -140,6 +143,9 @@ namespace BarPromenade
                 !controller.IsInitialized ||
                 !controller.isActiveAndEnabled ||
                 controller.IsActive ||
+                exhaleEffect == null ||
+                !exhaleEffect.IsInitialized ||
+                !exhaleEffect.isActiveAndEnabled ||
                 playerRoot == null)
             {
                 return false;
@@ -285,6 +291,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             CancelOwnedInteraction();
+            exhaleEffect?.StopAndClear();
         }
 
         private void OnDestroy()
@@ -296,6 +303,7 @@ namespace BarPromenade
                     HandleAnimatedPhaseChanged;
             }
 
+            exhaleEffect?.StopAndClear();
             ReleaseCigaretteProp();
         }
 
@@ -445,15 +453,27 @@ namespace BarPromenade
             {
                 case PlayerAnimatedInteractionPhase.Entering:
                     RefreshCigaretteVisibility();
+                    exhaleEffect?.StopAndClear();
                     BeginAnimatedPresentation();
                     break;
                 case PlayerAnimatedInteractionPhase.Looping:
                     RefreshCigaretteVisibility();
                     timeline.EnterLooping();
+                    if (exhaleEffect == null ||
+                        !exhaleEffect.BeginLooping())
+                    {
+                        Debug.LogError(
+                            "The smoking exhale effect could not begin.",
+                            this);
+                        CancelOwnedInteraction();
+                        break;
+                    }
+
                     TryBeginSafeExit();
                     break;
                 case PlayerAnimatedInteractionPhase.Exiting:
                     RefreshCigaretteVisibility();
+                    exhaleEffect?.StopEmitting();
                     timeline.BeginExit();
                     ApplyPrompt();
                     break;
@@ -527,6 +547,7 @@ namespace BarPromenade
             cameraPathCaptured = false;
             timeline?.Reset();
             SetCigaretteVisible(false);
+            exhaleEffect?.StopAndClear();
             music?.StopImmediate();
             home?.InteractionPrompt?.SetPrompt(string.Empty);
             modalLock.Restore();
@@ -540,6 +561,7 @@ namespace BarPromenade
             ownsInteraction = false;
             cameraPathCaptured = false;
             SetCigaretteVisible(false);
+            exhaleEffect?.StopAndClear();
             if (home?.Player.Motor != null)
             {
                 home.Player.Motor.Teleport(previousPosition);
@@ -603,9 +625,17 @@ namespace BarPromenade
             }
         }
 
-        private void RebuildCigaretteProp()
+        private void RebuildSmokingPresentation()
         {
             ReleaseCigaretteProp();
+            exhaleEffect =
+                GetComponent<HomeBalconySmokingExhaleEffect>();
+            exhaleEffect?.StopAndClear();
+            if (exhaleEffect != null)
+            {
+                exhaleEffect.enabled = false;
+            }
+
             if (!(home.Player.Visual is Player3DCharacterPresentation visual))
             {
                 return;
@@ -619,6 +649,16 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The Player 3D smoking presentation requires the " +
                     "serialized SOCKET_Cigarette.R anchor.");
+            }
+
+            Transform mouth = visual.Registry != null
+                ? visual.Registry.Anchors.Mouth
+                : null;
+            if (mouth == null)
+            {
+                throw new InvalidOperationException(
+                    "The Player 3D smoking presentation requires the " +
+                    "serialized SOCKET_Mouth anchor.");
             }
 
             cigaretteProp = new GameObject("Player Smoking Cigarette");
@@ -640,6 +680,18 @@ namespace BarPromenade
                 new Color(0.92f, 0.20f, 0.055f),
                 collider: false);
             cigaretteProp.SetActive(false);
+
+            if (exhaleEffect == null)
+            {
+                exhaleEffect = gameObject.AddComponent<
+                    HomeBalconySmokingExhaleEffect>();
+            }
+            else
+            {
+                exhaleEffect.enabled = true;
+            }
+
+            exhaleEffect.Initialize(mouth, definition);
         }
 
         private static Vector3 InverseScale(Vector3 scale)

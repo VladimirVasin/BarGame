@@ -130,7 +130,7 @@ Assets/
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
         HomeExteriorContextPlan.cs  bounded same-blueprint/seed street view descriptors
-        HomeBalconyWorldBuilder.cs   window, open door, deck and safe open rails
+        HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
         HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
@@ -265,7 +265,7 @@ Assets/
       HomeBalconyPresentationPlayModeTests.cs  time lighting + fog invariants
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
-      HomeBalconySmokingInteractionPlayModeTests.cs  facing, 3D clips, drift + exact restore
+      HomeBalconySmokingInteractionPlayModeTests.cs  rail ashtray, 3D clips, mouth plume, drift + restore
       HomeSmokingMusicPlayerPlayModeTests.cs optional clip and mixer-safe lifecycle
       HomeMusicPlayerPlayModeTests.cs      missing-track and Balcony-zone lifecycle
       SceneMusicPlayerPlayModeTests.cs     fade, pause/resume and scene-exit contracts
@@ -483,11 +483,16 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                        -> terminal clip pose -> independent exit pose
                                        -> owner/transition cancel -> complete restoration
        -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
+                                   -> permanent rail ashtray at (7.25, 1.12, -1.67)
+                                      -> visual-only dish under exit-flick ember
                                    -> first E -> guided walk + visible face toward city +X
                                       -> neutral 3D render-frame settle
                                       -> SmokeEnter -> retrieve + first held inhale
                                       -> held SmokeLoop -> lift + inhale + lower + outward exhale
                                       -> 74 mm cigarette along SOCKET_Cigarette.R +Y
+                                      -> world-space plume from SOCKET_Mouth +Y
+                                         -> bounded burst at loop-local frame 16
+                                         -> cityward growth/fade before next 9.5 s loop
                                    -> second E -> queued calm-boundary exit
                                       -> SmokeExit -> rail flick + empty-hand terminal pose
                                       -> independent exit-root restoration

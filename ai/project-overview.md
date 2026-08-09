@@ -483,9 +483,16 @@ The vertical slice contains:
   `SmokeEnter`, `SmokeLoop` and `SmokeExit`. The authored motion settles the
   hero toward the outer rail, draws the right hand from his coat, brings the
   cigarette to his lips for a held inhale, lowers it for an outward exhale and
-  returns through a deliberate discard. The approximately `74 mm` cigarette
+  returns through a deliberate discard. Once per `9.5 s` loop, local frame
+  `16` emits a bounded gray-green world-space plume from the registered mouth
+  socket; it travels toward the city, grows and fades before the next loop,
+  while queued exit stops new emission and lets the detached smoke dissipate.
+  The approximately `74 mm` cigarette
   follows the registered right-hand socket along its outward local axis; it is
-  revealed only after leaving the coat and hidden on the exit flick. The
+  revealed only after leaving the coat and hidden on the exit flick. A
+  permanent worn enamel ashtray rests on the outer rail at Home-local
+  `(7.25, 1.12, -1.67)`, directly below that authored flick, and remains
+  visible independently of the smoking lifecycle. The
   deterministic timeline retains its melancholic `9.5 s` loop; a second `E`
   queues until a calm low-hand boundary, preventing a raised-hand or inhale
   cut. No renderer swap, sprite fade or shadow handoff is needed;

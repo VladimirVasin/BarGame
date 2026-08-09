@@ -25,6 +25,7 @@ namespace BarPromenade
         public const float BalconySlabThickness = 0.18f;
         public const float RailingHeight = 1.05f;
         public const float RailingThickness = 0.10f;
+        public const float RailingCapHeight = 0.07f;
 
         public static float ResolveBuildingHeight(
             CityGenerationSettings settings)
