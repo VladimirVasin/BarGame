@@ -7,8 +7,6 @@ namespace BarPromenade.Tests.EditMode
     public sealed class HomeBedInteractionPlanTests
     {
         private const float Tolerance = 0.0001f;
-        private const float SleepLoopHeadExtent = 64f / 48f;
-        private const float SleepLoopFootExtent = 51f / 48f;
 
         [Test]
         public void Create_DerivesTriggerAndEntryExitPosesFromBed()
@@ -32,11 +30,14 @@ namespace BarPromenade.Tests.EditMode
                 plan.EntryRootPosition);
             Assert.That(
                 plan.EntryRootPosition.x,
-                Is.GreaterThan(bed.Bounds.xMax));
+                Is.EqualTo(
+                    bed.Bounds.xMax -
+                    HomeBedInteractionPlan
+                        .DoorSideDockFootInset)
+                    .Within(Tolerance));
             Assert.That(
                 plan.EntryRootPosition.z,
-                Is.EqualTo(bed.Bounds.center.y)
-                    .Within(Tolerance));
+                Is.LessThan(bed.Bounds.yMin));
             Assert.That(
                 plan.EntryRootPosition.y,
                 Is.EqualTo(PlayerFactory.GroundedRootOffset)
@@ -59,22 +60,29 @@ namespace BarPromenade.Tests.EditMode
                 plan.ExitRootPosition,
                 plan.EntryRootPosition);
 
-            float triggerMinX =
-                plan.TriggerCenter.x -
+            float triggerMaxX =
+                plan.TriggerCenter.x +
                 (plan.TriggerSize.x * 0.5f);
             float triggerMinY =
                 plan.TriggerCenter.y -
                 (plan.TriggerSize.y * 0.5f);
+            float triggerMaxZ =
+                plan.TriggerCenter.z +
+                (plan.TriggerSize.z * 0.5f);
             Assert.That(
-                triggerMinX,
+                triggerMaxX,
                 Is.EqualTo(bed.Bounds.xMax)
+                    .Within(Tolerance));
+            Assert.That(
+                triggerMaxZ,
+                Is.EqualTo(bed.Bounds.yMin)
                     .Within(Tolerance));
             Assert.That(
                 triggerMinY,
                 Is.EqualTo(0f).Within(Tolerance));
             Assert.That(
-                plan.TriggerCenter.z,
-                Is.EqualTo(bed.Bounds.center.y)
+                plan.TriggerCenter.x,
+                Is.EqualTo(plan.EntryRootPosition.x)
                     .Within(Tolerance));
             Assert.That(
                 plan.TriggerSize.x,
@@ -84,13 +92,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(0f));
             Assert.That(
                 plan.TriggerSize.z,
-                Is.GreaterThan(0f)
-                    .And.LessThan(bed.Bounds.height));
+                Is.GreaterThan(0f));
             Assert.That(
-                plan.EntryRootPosition.x,
+                plan.EntryRootPosition.z,
                 Is.InRange(
-                    triggerMinX,
-                    triggerMinX + plan.TriggerSize.x));
+                    triggerMaxZ - plan.TriggerSize.z,
+                    triggerMaxZ));
 
             Assert.That(
                 plan.EntryHipPosition.x,
@@ -113,24 +120,68 @@ namespace BarPromenade.Tests.EditMode
             AssertVector(
                 plan.ExitHipPosition,
                 plan.EntryHipPosition);
+            Assert.That(
+                plan.SeatHipPosition.x,
+                Is.EqualTo(plan.EntryRootPosition.x)
+                    .Within(Tolerance));
+            Assert.That(
+                plan.SeatHipPosition.y,
+                Is.EqualTo(HomeBedInteractionPlan.SeatedHipHeight)
+                    .Within(Tolerance));
+            Assert.That(
+                plan.SeatHipPosition.z,
+                Is.EqualTo(
+                    bed.Bounds.yMin +
+                    HomeBedInteractionPlan.DoorSideSeatInset)
+                    .Within(Tolerance));
+            Assert.That(
+                plan.SeatHipPosition.z,
+                Is.InRange(bed.Bounds.yMin, bed.Bounds.yMax));
+
+            PlayerAnimatedInteractionPelvisTransition transition =
+                plan.PelvisTransition;
+            AssertVector(
+                transition.EvaluateEntering(
+                    plan.EntryHipPosition,
+                    plan.ActionHipPosition,
+                    HomeBedInteractionPlan.EnterSeatArrivalProgress),
+                plan.SeatHipPosition);
+            AssertVector(
+                transition.EvaluateEntering(
+                    plan.EntryHipPosition,
+                    plan.ActionHipPosition,
+                    HomeBedInteractionPlan.EnterSeatDepartureProgress),
+                plan.SeatHipPosition);
+            AssertVector(
+                transition.EvaluateExiting(
+                    plan.ActionHipPosition,
+                    plan.ExitHipPosition,
+                    HomeBedInteractionPlan.ExitSeatArrivalProgress),
+                plan.SeatHipPosition);
+            AssertVector(
+                transition.EvaluateExiting(
+                    plan.ActionHipPosition,
+                    plan.ExitHipPosition,
+                    HomeBedInteractionPlan.ExitSeatDepartureProgress),
+                plan.SeatHipPosition);
 
             AssertFinite(plan.EntryFacingDirection);
             AssertFinite(plan.ExitFacingDirection);
             AssertVector(
                 plan.EntryFacingDirection,
-                Vector3.left);
+                Vector3.back);
             AssertVector(
                 plan.ExitFacingDirection,
-                Vector3.left);
+                Vector3.back);
             Assert.That(
                 Vector3.Angle(
                     plan.EntryFacingRotation * Vector3.forward,
-                    Vector3.left),
+                    Vector3.back),
                 Is.LessThan(0.001f));
             Assert.That(
                 Vector3.Angle(
                     plan.ExitFacingRotation * Vector3.forward,
-                    Vector3.left),
+                    Vector3.back),
                 Is.LessThan(0.001f));
             Assert.That(
                 plan.EntryRotation,
@@ -172,25 +223,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.HeadToFootAxis.magnitude,
                 Is.EqualTo(1f).Within(Tolerance));
-            float headMargin =
-                (plan.ActionHipPosition.x -
-                 SleepLoopHeadExtent) -
-                bed.Bounds.xMin;
-            float footMargin =
-                bed.Bounds.xMax -
-                (plan.ActionHipPosition.x +
-                 SleepLoopFootExtent);
             Assert.That(
-                headMargin,
-                Is.EqualTo(0.077f).Within(0.002f),
-                "The sleeping head must remain just inside xMin/pillow.");
+                plan.ActionHipPosition.x,
+                Is.InRange(bed.Bounds.xMin, bed.Bounds.xMax));
             Assert.That(
-                footMargin,
-                Is.EqualTo(0.077f).Within(0.002f));
-            Assert.That(
-                Mathf.Abs(headMargin - footMargin),
-                Is.LessThan(0.002f),
-                "The sleep-loop union must be centered between bed ends.");
+                plan.ActionHipPosition.z,
+                Is.InRange(bed.Bounds.yMin, bed.Bounds.yMax));
         }
 
         [Test]

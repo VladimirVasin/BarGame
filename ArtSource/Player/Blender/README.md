@@ -118,6 +118,26 @@ elbow, knee and ankle articulation and opposite arm swing. These two
 locomotion Actions alone use auto-clamped Bezier curves; contextual, facial
 and fall Actions plus `Relaxed` retain their authored linear timing.
 
+With the Home bed dock facing the room, the bed's source-space headboard
+direction is `-X` and the door-side long edge is `-Y`. `BedEnter` first seats
+the hero on that long edge, then swings both legs onto the mattress and lowers
+through an arm-supported side pose; `BedSleepLoop` keeps the head toward `-X`,
+the face upward and both eyes closed. `BedExit` wakes and rolls the hero,
+pushes the chest up while the legs leave the mattress, holds a grounded seated
+pose on the edge, leans weight over the planted feet and only then stands. The
+same Actions drive ordinary bed use and the slower opening wake.
+
+`SmokeEnter` settles the stance, reaches to the jacket, draws the cigarette,
+raises the right hand to the mouth, cups the first light with the left hand,
+inhales and lowers both hands. `SmokeLoop` holds an exact low-hand rest over
+source frames `0-3`, lifts to a mouth-contact inhale over frames `10-14`,
+breathes through the chest, lowers into an exhale and returns to the exact rest
+over frames `21-23` for a seamless loop. `SmokeExit` inspects the cigarette,
+extends it away from the body, flicks it, follows it with the gaze and returns
+to `Relaxed`. The cigarette runs from the right socket head along its local
+`+Y` head-to-tail axis; the mouth-contact pose aligns that axis with
+`SOCKET_Mouth`.
+
 The Actions intentionally contain no gameplay events or root motion. Unity's
 deterministic interaction timelines own exact playback, terminal holds,
 inventory commits and cancellation.
@@ -137,6 +157,12 @@ Before saving, the script fails with a non-zero Blender exit code unless:
 - the model stays below the `4,500`-triangle cap;
 - the bandage remains on physical left, the patch on physical right and the
   front strap crosses the torso centre line;
+- the sleeping head points toward source `-X`, the feet toward `+X`, the face
+  remains upward and both eyes remain closed;
+- the smoking loop keeps its exact full-rig seam and fixed root, preserves
+  source facing `-Y`, holds the cigarette at least `0.40 m` from the mouth at
+  rest, and brings it within `25 mm` with socket-axis alignment above `0.85`
+  during the inhale;
 - presentation-only objects cannot enter an export selection.
 
 The production model currently builds as 73 independent mesh objects, 31 bones

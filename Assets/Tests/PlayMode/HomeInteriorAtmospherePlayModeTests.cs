@@ -147,6 +147,49 @@ namespace BarPromenade.Tests.PlayMode
                 bathroomSpillLight.shadowStrength,
                 Is.EqualTo(0.62f).Within(0.001f));
 
+            Light entryDoorLight = atmosphere.EntryDoorLight;
+            Assert.That(entryDoorLight, Is.Not.Null);
+            Assert.That(entryDoorLight.enabled, Is.True);
+            Assert.That(
+                entryDoorLight.type,
+                Is.EqualTo(LightType.Spot));
+            Assert.That(
+                entryDoorLight.shadows,
+                Is.EqualTo(LightShadows.None));
+            Assert.That(
+                entryDoorLight.renderMode,
+                Is.EqualTo(LightRenderMode.ForcePixel));
+            Assert.That(
+                entryDoorLight.transform.localPosition,
+                Is.EqualTo(new Vector3(0f, 2.45f, -3.70f)));
+            Vector3 entryDoorDirection =
+                entryDoorLight.transform.localRotation *
+                Vector3.forward;
+            Assert.That(
+                Vector3.Dot(
+                    entryDoorDirection,
+                    (new Vector3(0f, 0.55f, -2.75f) -
+                     new Vector3(0f, 2.45f, -3.70f)).normalized),
+                Is.GreaterThan(0.999f));
+            Assert.That(
+                entryDoorLight.intensity,
+                Is.EqualTo(8.0f).Within(0.001f));
+            Assert.That(
+                entryDoorLight.range,
+                Is.EqualTo(4.0f).Within(0.001f));
+            Assert.That(
+                entryDoorLight.innerSpotAngle,
+                Is.EqualTo(72f).Within(0.001f));
+            Assert.That(
+                entryDoorLight.spotAngle,
+                Is.EqualTo(100f).Within(0.001f));
+            Assert.That(
+                entryDoorLight.color,
+                Is.EqualTo(new Color(1.0f, 0.46f, 0.16f)));
+            Assert.That(
+                entryDoorLight.bounceIntensity,
+                Is.EqualTo(0f).Within(0.001f));
+
             HomeBathroomLightFlicker flicker =
                 atmosphere.BathroomFlicker;
             Assert.That(flicker, Is.Not.Null);
@@ -216,7 +259,7 @@ namespace BarPromenade.Tests.PlayMode
                         .MaximumRealtimeLights));
             Assert.That(
                 ownedLights.Length,
-                Is.LessThanOrEqualTo(4));
+                Is.LessThanOrEqualTo(5));
             Assert.That(
                 atmosphere.PracticalLights[0],
                 Is.Not.SameAs(windowLight),
@@ -236,6 +279,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 bathroomSpillLight,
                 Is.Not.SameAs(windowLight));
+            Assert.That(
+                entryDoorLight,
+                Is.Not.SameAs(windowLight)
+                    .And.Not.SameAs(bathroomSpillLight));
+            Assert.That(
+                atmosphere.PracticalLights[0],
+                Is.Not.SameAs(entryDoorLight));
+            Assert.That(
+                atmosphere.PracticalLights[1],
+                Is.Not.SameAs(entryDoorLight));
 
             Material glass =
                 HomeBalconyResources.GlassMaterial;

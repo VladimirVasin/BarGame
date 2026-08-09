@@ -2,6 +2,108 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-09 — Added a compact lamp above the apartment entrance
+
+- Added a deterministic `Home Entry Door Lamp` assembly to the generated Home
+  interior: a narrow dark housing and hood, a shared HDR emissive amber lens
+  and a shared depth-tested halo. It is centered in the existing transom above
+  the door, remains under `0.35 m` wide and has no collider.
+- Added a co-located shadowless warm ForcePixel Spot aimed down and into the
+  room. Its full-strength cone reaches both the entrance door and the floor in
+  front of it, so the fixture produces a real local pool instead of only an
+  emissive dot. The explicit Home atmosphere budget is now five local lights.
+- Extended the existing Home presentation regression to lock the hierarchy,
+  shared materials, bloom threshold, transom placement, Full-HD main-camera
+  framing, lack of collision, co-located light, illuminated door/floor targets
+  and the five-light realtime budget. The old `Home Exit Header` absence
+  contract remains in place.
+
+Verification:
+
+- Focused atmosphere PlayMode verification passed `1/1` and confirmed the real
+  Spot's position, direction, intensity, range, cone, warm color and five-light
+  ownership budget.
+- The focused Home presentation test reached and passed every entry-lamp
+  integration assertion, including full-strength coverage of the door and
+  floor, then failed later in the pre-existing player-framing assertion with
+  `minX = -0.0799` while the worktree contains the separate in-progress bed and
+  player-animation changes. No lamp assertion failed.
+- `git diff --check` passed. Fast mode intentionally omitted complete Unity
+  suites, a player build and a startup smoke.
+
+## 2026-08-09 — Re-authored balcony smoking around a real inhale
+
+- Replaced the two-pose smoking motion with authored Blender sequences for a
+  settled cityward stance, jacket reach, cigarette draw, mouth contact, cupped
+  first light, held inhale, lowered-hand exhale and a rail-side exit flick.
+  The existing four-second enter/loop, two-second exit, `9.5 s` held loop and
+  calm exit boundaries remain unchanged.
+- Corrected the socket prop from a backward `120 x 10 mm` cylinder with an
+  embedded ember to a roughly `74 mm` cigarette aligned along socket-local
+  `+Y`: `70 x 6.5 mm` paper plus a contiguous `4 x 7 mm` ember. It now appears
+  only after the hand leaves the coat and disappears on the exit flick. The
+  prop root cancels Unity's inherited FBX bone scale so those dimensions also
+  remain exact in world space instead of expanding by `100x` in play mode.
+- Bumped the deterministic Blender generator to `2.4.0` and added smoking
+  validation for every Action's fixed root, source-facing socket contract,
+  low-hand rest clearance, mouth contact/alignment and exact loop seam. Unity
+  coverage now measures the animated head-to-nose direction against the real
+  Home-local `+X` city vector instead of trusting only the gameplay root.
+
+Verification:
+
+- Blender `5.0.1` regenerated and self-validated `73` separate meshes, `31`
+  bones, six sockets, `23` in-place Actions and `1,534` triangles. Inhale
+  socket-to-mouth distance is `5.275 mm`, socket-axis alignment is `0.9385`,
+  and both root and loop-seam error are zero. Eight key poses plus side views
+  were inspected without hand/face intersections.
+- Unity rebuilt `Resources/Player/Player3D.prefab` at generator `2.4.0`.
+  Focused PlayMode verification passed `1/1`:
+  `HomeBalconySmokingInteractionPlayModeTests.Smoking_ClickableExitQueuesAtCalmFrameAndRestores`.
+  Its geometry check measures the live paper and ember in world space through
+  the imported animated socket hierarchy.
+- `git diff --check` passed. Fast mode intentionally omitted complete Unity
+  suites, a player build and a startup smoke.
+
+## 2026-08-09 — Rebuilt 3D bed entry and wake around a real bedside sit
+
+- Replaced the old foot-end dock with a clear segment of the long bed edge
+  nearest the apartment door. The hero now approaches facing into the room
+  with his back to the mattress, and both normal interaction and opening wake
+  restore to that same grounded side dock.
+- Added an optional held pelvis waypoint to the shared animated-interaction
+  controller. Bed entry reaches a low seated hip, holds while both feet remain
+  planted, then moves inward; wake reaches the same point from the bed centre,
+  holds through the supported sit and only then proceeds to standing. This
+  keeps runtime pelvis alignment synchronized with the authored Blender keys
+  instead of sliding the seated pose through a direct centre-to-dock lerp.
+- Re-authored three-second `BedEnter` and `BedExit` Actions. Entry sits first,
+  braces on the mattress, swings the legs up and lowers through the side;
+  exit wakes, rolls toward the door side, pushes the chest up, drops both legs,
+  settles upright, releases the hands, leans weight over the feet and rises.
+  `BedSleepLoop` keeps the head at the pillow, face upward and eyes closed.
+- Bumped the deterministic Blender generator to `2.3.0`. Its validation now
+  checks the new source `-X -> +X` sleep orientation. Blender regenerated the
+  editable source, model and animation FBXs, manifest, preview and portrait.
+  The ordinary transition is now three seconds; the opening multiplier is
+  two, preserving its established six-second wake.
+- Replaced the legacy sprite-extent assertions with production 3D checks. The
+  focused bed regression now samples the real rig both in the sleep loop and
+  at the door-side seated waypoint.
+
+Verification:
+
+- Blender `5.0.1` regenerated and self-validated `73` separate meshes, `31`
+  bones, six sockets, `23` in-place Actions and `1,534` triangles. Entry and
+  exit key poses were rendered against a diagnostic mattress; seated feet,
+  hand support, forward weight transfer and final stand were inspected.
+- Focused Unity PlayMode verification passed `1/1`:
+  `HomeBedInteractionPlayModeTests.Bed_ProgrammaticSleepStartsInLoopAndWakeRestoresPlayer`.
+  It sampled the production head/feet orientation and the real pelvis at the
+  held door-side seated waypoint before confirming final control restoration.
+- Fast mode intentionally omitted complete Unity suites, a player build and a
+  startup smoke.
+
 ## 2026-08-04 — Articulated 3D walk and stronger idle
 
 - Re-authored the production Blender locomotion Actions. Walk now uses eight

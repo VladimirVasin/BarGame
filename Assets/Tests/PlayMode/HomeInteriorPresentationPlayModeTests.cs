@@ -348,6 +348,10 @@ namespace BarPromenade.Tests.PlayMode
                 "Foreground junk must not hide most of the nearby player.");
             AssertPlayerVisible(camera, home.Player.GameObject.transform);
             AssertEmitterVisible(camera, mainEmitter);
+            AssertEntryDoorLamp(
+                home,
+                camera,
+                exitDoorRenderer);
             Assert.That(
                 Physics.CheckSphere(
                     mainPosition,
@@ -700,6 +704,200 @@ namespace BarPromenade.Tests.PlayMode
                     light.transform.position),
                 Is.LessThanOrEqualTo(maximumDistance),
                 $"'{light.name}' must originate at its visible fixture.");
+        }
+
+        private static void AssertEntryDoorLamp(
+            HomeInteriorRoot home,
+            Camera camera,
+            Renderer exitDoorRenderer)
+        {
+            Transform lamp = AssertRequiredObject(
+                home.Room,
+                "Home Entry Door Lamp");
+            Transform housing = AssertRequiredObject(
+                lamp,
+                "Home Entry Door Lamp Housing");
+            Transform hood = AssertRequiredObject(
+                lamp,
+                "Home Entry Door Lamp Hood");
+            Transform glow = AssertRequiredObject(
+                lamp,
+                "Home Entry Door Lamp Glow");
+            Transform haloTransform = AssertRequiredObject(
+                lamp,
+                "Home Entry Door Lamp Halo");
+
+            Assert.That(lamp.parent, Is.SameAs(home.Room));
+            Assert.That(
+                lamp.GetComponentsInChildren<Collider>(true),
+                Is.Empty,
+                "The small wall fixture must not block the player.");
+            Assert.That(
+                home.Atmosphere.GetComponentsInChildren<Light>(true),
+                Has.Length.EqualTo(
+                    HomeInteriorAtmosphere.MaximumRealtimeLights));
+
+            Renderer housingRenderer =
+                housing.GetComponent<Renderer>();
+            Renderer hoodRenderer = hood.GetComponent<Renderer>();
+            Renderer glowRenderer = glow.GetComponent<Renderer>();
+            Assert.That(housingRenderer, Is.Not.Null);
+            Assert.That(hoodRenderer, Is.Not.Null);
+            Assert.That(glowRenderer, Is.Not.Null);
+            Assert.That(
+                glowRenderer.sharedMaterial,
+                Is.SameAs(CityNightResources.EmissiveMaterial));
+            var properties = new MaterialPropertyBlock();
+            glowRenderer.GetPropertyBlock(properties);
+            Color hdrColor = properties.GetColor(
+                Shader.PropertyToID("_BaseColor"));
+            Assert.That(
+                Mathf.Max(
+                    hdrColor.r,
+                    Mathf.Max(hdrColor.g, hdrColor.b)),
+                Is.GreaterThan(1.10f),
+                "The entry lamp must cross the Home bloom threshold.");
+
+            CityLightHalo halo =
+                haloTransform.GetComponent<CityLightHalo>();
+            Assert.That(halo, Is.Not.Null);
+            Assert.That(halo.IsVisible, Is.True);
+            Assert.That(
+                halo.HaloRenderer.sharedMaterial,
+                Is.SameAs(CityNightResources.AtmosphereMaterial));
+
+            Light entryDoorLight = home.Atmosphere.EntryDoorLight;
+            Assert.That(entryDoorLight, Is.Not.Null);
+            Assert.That(entryDoorLight.enabled, Is.True);
+            Assert.That(
+                entryDoorLight.type,
+                Is.EqualTo(LightType.Spot));
+            Assert.That(
+                entryDoorLight.intensity,
+                Is.GreaterThanOrEqualTo(8f));
+            Assert.That(
+                entryDoorLight.color.r,
+                Is.GreaterThan(entryDoorLight.color.g));
+            Assert.That(
+                entryDoorLight.color.g,
+                Is.GreaterThan(entryDoorLight.color.b));
+            Assert.That(
+                Vector3.Distance(
+                    entryDoorLight.transform.position,
+                    glowRenderer.bounds.center),
+                Is.LessThanOrEqualTo(0.12f),
+                "The real light must originate at the visible door lamp.");
+
+            Vector3 doorDirection =
+                (exitDoorRenderer.bounds.center -
+                 entryDoorLight.transform.position).normalized;
+            Assert.That(
+                Vector3.Distance(
+                    entryDoorLight.transform.position,
+                    exitDoorRenderer.bounds.center),
+                Is.LessThan(entryDoorLight.range));
+            Assert.That(
+                Vector3.Angle(
+                    entryDoorLight.transform.forward,
+                    doorDirection),
+                Is.LessThan(entryDoorLight.innerSpotAngle * 0.5f),
+                "The door must sit inside the lamp's full-strength cone.");
+
+            Vector3 floorPoolCenter =
+                home.Room.TransformPoint(
+                    new Vector3(0f, 0.05f, -2.75f));
+            Vector3 floorPoolDirection =
+                (floorPoolCenter -
+                 entryDoorLight.transform.position).normalized;
+            Assert.That(
+                Vector3.Distance(
+                    entryDoorLight.transform.position,
+                    floorPoolCenter),
+                Is.LessThan(entryDoorLight.range));
+            Assert.That(
+                Vector3.Angle(
+                    entryDoorLight.transform.forward,
+                    floorPoolDirection),
+                Is.LessThan(entryDoorLight.innerSpotAngle * 0.5f),
+                "The lamp must cast a visible pool onto the entry floor.");
+
+            Bounds fixtureBounds = housingRenderer.bounds;
+            fixtureBounds.Encapsulate(hoodRenderer.bounds);
+            fixtureBounds.Encapsulate(glowRenderer.bounds);
+            Renderer transomRenderer = AssertRequiredObject(
+                    home.Room,
+                    "Home Entry Door Transom Infill")
+                .GetComponent<Renderer>();
+            Assert.That(transomRenderer, Is.Not.Null);
+            Assert.That(
+                fixtureBounds.center.x,
+                Is.EqualTo(exitDoorRenderer.bounds.center.x)
+                    .Within(0.01f),
+                "The entry lamp must stay centered over the door.");
+            Assert.That(
+                fixtureBounds.size.x,
+                Is.LessThanOrEqualTo(0.35f),
+                "The entry lamp must remain a compact object, not a header.");
+            Assert.That(
+                fixtureBounds.min.y,
+                Is.GreaterThan(exitDoorRenderer.bounds.max.y + 0.05f));
+            Assert.That(
+                fixtureBounds.max.y,
+                Is.LessThanOrEqualTo(
+                    transomRenderer.bounds.max.y + 0.002f));
+
+            float minX = float.PositiveInfinity;
+            float minY = float.PositiveInfinity;
+            float maxX = float.NegativeInfinity;
+            float maxY = float.NegativeInfinity;
+            GameObject validationCameraObject =
+                new GameObject("Home Entry Lamp Validation Camera");
+            Camera validationCamera =
+                validationCameraObject.AddComponent<Camera>();
+            validationCamera.CopyFrom(camera);
+            validationCamera.enabled = false;
+            validationCamera.transform.SetPositionAndRotation(
+                camera.transform.position,
+                camera.transform.rotation);
+            validationCamera.aspect = 16f / 9f;
+            try
+            {
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 world = fixtureBounds.center + new Vector3(
+                        (corner & 1) == 0
+                            ? -fixtureBounds.extents.x
+                            : fixtureBounds.extents.x,
+                        (corner & 2) == 0
+                            ? -fixtureBounds.extents.y
+                            : fixtureBounds.extents.y,
+                        (corner & 4) == 0
+                            ? -fixtureBounds.extents.z
+                            : fixtureBounds.extents.z);
+                    Vector3 viewport =
+                        validationCamera.WorldToViewportPoint(world);
+                    Assert.That(viewport.z, Is.GreaterThan(0f));
+                    minX = Mathf.Min(minX, viewport.x);
+                    minY = Mathf.Min(minY, viewport.y);
+                    maxX = Mathf.Max(maxX, viewport.x);
+                    maxY = Mathf.Max(maxY, viewport.y);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(validationCameraObject);
+            }
+
+            Assert.That(minX, Is.GreaterThanOrEqualTo(0.02f));
+            Assert.That(minY, Is.GreaterThanOrEqualTo(0.02f));
+            Assert.That(
+                maxX,
+                Is.LessThanOrEqualTo(0.97f),
+                "The compact lamp must not intrude into the right frame edge.");
+            Assert.That(
+                maxY,
+                Is.LessThanOrEqualTo(0.97f),
+                "The compact lamp must not intrude into the top frame edge.");
         }
 
         private static void AssertPracticalHalo(

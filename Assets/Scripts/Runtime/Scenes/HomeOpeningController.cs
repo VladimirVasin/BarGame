@@ -23,7 +23,7 @@ namespace BarPromenade
 
         private const float ClockFieldOfView = 42f;
         private const float SleeperFieldOfView = 57f;
-        public const float OpeningWakeDurationMultiplier = 3f;
+        public const float OpeningWakeDurationMultiplier = 2f;
         public const float WakeCameraPathHeight = 0.32f;
 
         private readonly BarMinigameModalLock modalLock =

@@ -8,9 +8,17 @@ namespace BarPromenade
         private const float ApproachOffset = 0.48f;
         private const float TriggerDepth = 0.72f;
         private const float TriggerHeight = 1.80f;
-        private const float TriggerInset = 0.12f;
+        private const float TriggerLength = 0.90f;
         internal const float BedSurfaceClearance = 0.045f;
         internal const float ActionHipFootwardOffset = 0.135f;
+        internal const float DoorSideDockFootInset = 0.45f;
+        internal const float DoorSideSeatInset = 0.07f;
+        internal const float SeatedHipHeight =
+            HomeInteriorWorldBuilder.BedDressingSurfaceHeight - 0.015f;
+        internal const float EnterSeatArrivalProgress = 0.28f;
+        internal const float EnterSeatDepartureProgress = 0.38f;
+        internal const float ExitSeatArrivalProgress = 0.63f;
+        internal const float ExitSeatDepartureProgress = 0.78f;
         public const float UprightVisualOffset = 0.005f;
 
         private HomeBedInteractionPlan(
@@ -20,6 +28,7 @@ namespace BarPromenade
             Vector3 exitRootPosition,
             Vector3 entryHipPosition,
             Vector3 exitHipPosition,
+            Vector3 seatHipPosition,
             Vector3 entryFacingDirection,
             Vector3 exitFacingDirection,
             Vector3 actionHipPosition,
@@ -33,6 +42,7 @@ namespace BarPromenade
             ExitRootPosition = exitRootPosition;
             EntryHipPosition = entryHipPosition;
             ExitHipPosition = exitHipPosition;
+            SeatHipPosition = seatHipPosition;
             EntryFacingDirection = entryFacingDirection;
             ExitFacingDirection = exitFacingDirection;
             ActionHipPosition = actionHipPosition;
@@ -47,6 +57,7 @@ namespace BarPromenade
         public Vector3 ExitRootPosition { get; }
         public Vector3 EntryHipPosition { get; }
         public Vector3 ExitHipPosition { get; }
+        public Vector3 SeatHipPosition { get; }
         public Vector3 EntryFacingDirection { get; }
         public Vector3 ExitFacingDirection { get; }
         public Quaternion EntryFacingRotation =>
@@ -65,6 +76,13 @@ namespace BarPromenade
         public Vector3 HeadToFootAxis { get; }
         public Vector3 TriggerCenter { get; }
         public Vector3 TriggerSize { get; }
+        public PlayerAnimatedInteractionPelvisTransition PelvisTransition =>
+            new PlayerAnimatedInteractionPelvisTransition(
+                SeatHipPosition,
+                EnterSeatArrivalProgress,
+                EnterSeatDepartureProgress,
+                ExitSeatArrivalProgress,
+                ExitSeatDepartureProgress);
 
         public static HomeBedInteractionPlan Create(
             HomeInteriorLayoutPlan layout)
@@ -83,12 +101,13 @@ namespace BarPromenade
             }
 
             Rect bounds = bed.Bounds;
-            float accessibleEdge = bounds.xMax;
+            float doorSideEdge = bounds.yMin;
+            float dockX = bounds.xMax - DoorSideDockFootInset;
             float centerZ = bounds.center.y;
             Vector3 entryRoot = new Vector3(
-                accessibleEdge + ApproachOffset,
+                dockX,
                 PlayerFactory.GroundedRootOffset,
-                centerZ);
+                doorSideEdge - ApproachOffset);
             Vector3 exitRoot = entryRoot;
             var walkable = new RoadWalkableArea(
                 new[] { layout.WalkableBounds });
@@ -112,7 +131,14 @@ namespace BarPromenade
                 PlayerCharacterDimensions.GetUprightPelvisPosition(
                     exitRoot,
                     UprightVisualOffset);
-            Vector3 dockFacingDirection = Vector3.left;
+            Vector3 seatHip = new Vector3(
+                dockX,
+                SeatedHipHeight,
+                doorSideEdge + DoorSideSeatInset);
+            // The dock leaves the character's back toward the mattress. The
+            // authored clip can therefore sit straight down on the long edge
+            // nearest the apartment door and finish standing into the room.
+            Vector3 dockFacingDirection = Vector3.back;
             Vector3 headToFootAxis = Vector3.right;
             Vector3 actionHip = new Vector3(
                 bounds.center.x +
@@ -122,13 +148,13 @@ namespace BarPromenade
                 centerZ +
                 (headToFootAxis.z * ActionHipFootwardOffset));
             Vector3 triggerSize = new Vector3(
-                TriggerDepth,
+                Mathf.Min(TriggerLength, bounds.width),
                 TriggerHeight,
-                Mathf.Max(0.10f, bounds.height - (TriggerInset * 2f)));
+                TriggerDepth);
             Vector3 triggerCenter = new Vector3(
-                accessibleEdge + (TriggerDepth * 0.5f),
+                dockX,
                 TriggerHeight * 0.5f,
-                centerZ);
+                doorSideEdge - (TriggerDepth * 0.5f));
 
             return new HomeBedInteractionPlan(
                 bounds,
@@ -137,6 +163,7 @@ namespace BarPromenade
                 exitRoot,
                 entryHip,
                 exitHip,
+                seatHip,
                 dockFacingDirection,
                 dockFacingDirection,
                 actionHip,

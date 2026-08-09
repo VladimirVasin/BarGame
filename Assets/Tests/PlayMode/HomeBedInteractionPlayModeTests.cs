@@ -576,6 +576,8 @@ namespace BarPromenade.Tests.PlayMode
                 home.Bed.BeginSleeping(),
                 Is.False,
                 "The bed must not replace an interaction it already owns.");
+            yield return null;
+            AssertSleepingHeadToFootOrientation(home);
 
             Assert.That(home.Bed.RequestWake(), Is.True);
             Assert.That(
@@ -597,6 +599,17 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False);
             Assert.That(home.Bed.RequestWake(), Is.False);
 
+            int seatedExitFrame =
+                home.Bed.Definition.ExitStartFrame +
+                Mathf.CeilToInt(
+                    HomeBedInteractionPlan.ExitSeatArrivalProgress *
+                    home.Bed.Definition.ExitFrameCount);
+            yield return WaitForAnimationFrame(
+                home,
+                seatedExitFrame);
+            yield return null;
+            AssertSeatedOnDoorSideEdge(home);
+
             Time.timeScale = FastTimeScale;
             yield return WaitForPhase(
                 home,
@@ -616,6 +629,64 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
+        }
+
+        private static void AssertSleepingHeadToFootOrientation(
+            HomeInteriorRoot home)
+        {
+            Player3DCharacterPresentation presentation =
+                home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            Player3DBoneAnchors anchors =
+                presentation.Registry.Anchors;
+            Vector3 feet =
+                (anchors.LeftFoot.position + anchors.RightFoot.position) *
+                0.5f;
+            Vector3 headToFeet = feet - anchors.Head.position;
+            Vector3 headToFootAxis =
+                home.BedInteractionPlan.HeadToFootAxis.normalized;
+
+            Assert.That(
+                Vector3.Dot(headToFeet.normalized, headToFootAxis),
+                Is.GreaterThan(0.90f),
+                "The sleeping 3D rig must put its head at the pillow end " +
+                "and its feet at the open end of the bed.");
+            Assert.That(
+                Vector3.Dot(
+                    anchors.Head.position - anchors.Pelvis.position,
+                    headToFootAxis),
+                Is.LessThan(-0.35f),
+                "The sleeping head must remain headboard-side of the hips.");
+            Assert.That(
+                Vector3.Dot(
+                    feet - anchors.Pelvis.position,
+                    headToFootAxis),
+                Is.GreaterThan(0.30f),
+                "The sleeping feet must remain foot-side of the hips.");
+        }
+
+        private static void AssertSeatedOnDoorSideEdge(
+            HomeInteriorRoot home)
+        {
+            Player3DCharacterPresentation presentation =
+                home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            Player3DBoneAnchors anchors =
+                presentation.Registry.Anchors;
+
+            Assert.That(
+                Vector3.Distance(
+                    anchors.Pelvis.position,
+                    home.BedInteractionPlan.SeatHipPosition),
+                Is.LessThan(0.035f),
+                "Wake must settle the pelvis on the door-side bed edge " +
+                "before the standing phase begins.");
+            Assert.That(
+                anchors.Head.position.y,
+                Is.GreaterThan(
+                    anchors.Pelvis.position.y + 0.70f),
+                "The waypoint must present an upright seated body, not " +
+                "slide the lying pose across the mattress.");
         }
 
         private IEnumerator LoadHome()
@@ -695,6 +766,28 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AnimatedInteraction.Phase,
                 Is.EqualTo(expected));
+        }
+
+        private static IEnumerator WaitForAnimationFrame(
+            HomeInteriorRoot home,
+            int minimumFrame)
+        {
+            float deadline =
+                Time.realtimeSinceStartup + 3f;
+            while (home.AnimatedInteraction.FrameIndex < minimumFrame &&
+                   home.AnimatedInteraction.Phase ==
+                       PlayerAnimatedInteractionPhase.Exiting &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                home.AnimatedInteraction.FrameIndex,
+                Is.GreaterThanOrEqualTo(minimumFrame));
         }
 
         private static IEnumerator WaitForPhaseCompletion(

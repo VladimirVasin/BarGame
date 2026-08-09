@@ -14,6 +14,8 @@ namespace BarPromenade
             "Home Bed Crumpled Shirt";
         public const int SleepLoopFrameCount = 16;
         public const float SleepLoopFramesPerSecond = 4f;
+        public const int BedTransitionFrameCount = 36;
+        public const float BedTransitionFramesPerSecond = 12f;
         public const int FullExhaleLoopFrameOffset = 3;
         public const float FullExhaleExtraHoldSeconds = 0.75f;
         public const int FullInhaleLoopFrameOffset = 10;
@@ -82,13 +84,15 @@ namespace BarPromenade
                     "BedEnter",
                     "BedSleepLoop",
                     "BedExit",
-                    enterFrameCount: 24,
-                    enterFramesPerSecond: 12f,
+                    enterFrameCount: BedTransitionFrameCount,
+                    enterFramesPerSecond:
+                        BedTransitionFramesPerSecond,
                     loopFrameCount: SleepLoopFrameCount,
                     loopFramesPerSecond:
                         SleepLoopFramesPerSecond,
-                    exitFrameCount: 24,
-                    exitFramesPerSecond: 12f,
+                    exitFrameCount: BedTransitionFrameCount,
+                    exitFramesPerSecond:
+                        BedTransitionFramesPerSecond,
                     loopFrameExtraHoldSeconds:
                         CreateSleepLoopFrameHolds());
             controller.PhaseChanged += HandlePhaseChanged;
@@ -179,7 +183,8 @@ namespace BarPromenade
                     accepted = controller.BeginLooping(
                         definition,
                         plan.EntryHipPosition,
-                        plan.ActionHipPosition);
+                        plan.ActionHipPosition,
+                        plan.PelvisTransition);
                 }
                 else
                 {
@@ -193,7 +198,8 @@ namespace BarPromenade
                         new PlayerAnimatedInteractionPose(
                             plan.ExitRootPosition,
                             plan.ExitRotation,
-                            plan.ExitHipPosition));
+                            plan.ExitHipPosition),
+                        plan.PelvisTransition);
                 }
             }
             catch

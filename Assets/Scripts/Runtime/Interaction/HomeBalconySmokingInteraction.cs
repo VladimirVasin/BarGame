@@ -21,6 +21,17 @@ namespace BarPromenade
             "interaction.stop_smoking";
         public const float ExitInputDebounceSeconds = 0.12f;
 
+        public const int CigaretteRevealEnterLocalFrame = 10;
+        public const int CigaretteHideExitLocalFrame = 8;
+        public static readonly Vector3 CigarettePaperLocalPosition =
+            new Vector3(0f, 0.030f, 0f);
+        public static readonly Vector3 CigarettePaperLocalScale =
+            new Vector3(0.0065f, 0.035f, 0.0065f);
+        public static readonly Vector3 CigaretteEmberLocalPosition =
+            new Vector3(0f, 0.067f, 0f);
+        public static readonly Vector3 CigaretteEmberLocalScale =
+            new Vector3(0.007f, 0.002f, 0.007f);
+
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
 
@@ -258,6 +269,7 @@ namespace BarPromenade
             }
 
             TryBeginSafeExit();
+            RefreshCigaretteVisibility();
             timeline.Advance(Time.deltaTime);
             ApplyPresentation();
         }
@@ -432,14 +444,16 @@ namespace BarPromenade
             switch (phase)
             {
                 case PlayerAnimatedInteractionPhase.Entering:
-                    SetCigaretteVisible(true);
+                    RefreshCigaretteVisibility();
                     BeginAnimatedPresentation();
                     break;
                 case PlayerAnimatedInteractionPhase.Looping:
+                    RefreshCigaretteVisibility();
                     timeline.EnterLooping();
                     TryBeginSafeExit();
                     break;
                 case PlayerAnimatedInteractionPhase.Exiting:
+                    RefreshCigaretteVisibility();
                     timeline.BeginExit();
                     ApplyPrompt();
                     break;
@@ -609,21 +623,79 @@ namespace BarPromenade
 
             cigaretteProp = new GameObject("Player Smoking Cigarette");
             cigaretteProp.transform.SetParent(socket, false);
+            cigaretteProp.transform.localScale =
+                InverseScale(socket.lossyScale);
             RuntimePrimitiveFactory.CreateCylinder(
                 "Paper",
                 cigaretteProp.transform,
-                new Vector3(0f, -0.030f, 0f),
-                new Vector3(0.010f, 0.060f, 0.010f),
+                CigarettePaperLocalPosition,
+                CigarettePaperLocalScale,
                 new Color(0.76f, 0.72f, 0.60f),
                 collider: false);
             RuntimePrimitiveFactory.CreateCylinder(
                 "Ember",
                 cigaretteProp.transform,
-                new Vector3(0f, -0.063f, 0f),
-                new Vector3(0.012f, 0.008f, 0.012f),
+                CigaretteEmberLocalPosition,
+                CigaretteEmberLocalScale,
                 new Color(0.92f, 0.20f, 0.055f),
                 collider: false);
             cigaretteProp.SetActive(false);
+        }
+
+        private static Vector3 InverseScale(Vector3 scale)
+        {
+            const float minimumAxis = 0.0001f;
+            if (Mathf.Abs(scale.x) < minimumAxis ||
+                Mathf.Abs(scale.y) < minimumAxis ||
+                Mathf.Abs(scale.z) < minimumAxis)
+            {
+                throw new InvalidOperationException(
+                    "The cigarette socket must have a non-zero world " +
+                    "scale.");
+            }
+
+            // Unity's Blender/FBX bone hierarchy carries a 100x transform
+            // scale even though the skinned character renders in metres.
+            // Cancel it at the prop root so the authored millimetre geometry
+            // remains millimetre-sized in the scene.
+            return new Vector3(
+                1f / scale.x,
+                1f / scale.y,
+                1f / scale.z);
+        }
+
+        private void RefreshCigaretteVisibility()
+        {
+            if (controller == null || definition == null)
+            {
+                SetCigaretteVisible(false);
+                return;
+            }
+
+            bool visible;
+            switch (controller.Phase)
+            {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    visible =
+                        controller.FrameIndex -
+                        definition.EnterStartFrame >=
+                        CigaretteRevealEnterLocalFrame;
+                    break;
+                case PlayerAnimatedInteractionPhase.Looping:
+                    visible = true;
+                    break;
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    visible =
+                        controller.FrameIndex -
+                        definition.ExitStartFrame <
+                        CigaretteHideExitLocalFrame;
+                    break;
+                default:
+                    visible = false;
+                    break;
+            }
+
+            SetCigaretteVisible(visible);
         }
 
         private void SetCigaretteVisible(bool visible)

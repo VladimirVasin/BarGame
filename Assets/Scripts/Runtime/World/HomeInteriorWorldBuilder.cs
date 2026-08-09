@@ -42,6 +42,9 @@ namespace BarPromenade
         private static readonly Color DirtyLinen =
             new Color(0.43f, 0.39f, 0.29f);
 
+        private static readonly Vector3 EntryDoorLampPosition =
+            new Vector3(0f, 2.48f, -3.84f);
+
         public static Transform Build(
             Transform parent,
             HomeInteriorLayoutPlan plan)
@@ -644,6 +647,52 @@ namespace BarPromenade
                 coldTube.GetComponent<Renderer>(),
                 bathroomHalo,
                 coldTubeColor);
+
+            BuildEntryDoorLamp(room);
+        }
+
+        private static void BuildEntryDoorLamp(Transform room)
+        {
+            Transform lamp =
+                new GameObject("Home Entry Door Lamp").transform;
+            lamp.SetParent(room, false);
+            lamp.localPosition = EntryDoorLampPosition;
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Door Lamp Housing",
+                lamp,
+                Vector3.zero,
+                new Vector3(0.34f, 0.14f, 0.065f),
+                new Color(0.065f, 0.052f, 0.036f),
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Door Lamp Hood",
+                lamp,
+                new Vector3(0f, 0.085f, 0.028f),
+                new Vector3(0.30f, 0.035f, 0.12f),
+                new Color(0.052f, 0.043f, 0.032f),
+                false);
+
+            GameObject glow = RuntimePrimitiveFactory.CreateBox(
+                "Home Entry Door Lamp Glow",
+                lamp,
+                new Vector3(0f, -0.005f, 0.052f),
+                new Vector3(0.22f, 0.075f, 0.025f),
+                new Color(2.45f, 1.18f, 0.28f),
+                CityNightResources.EmissiveMaterial,
+                false);
+            Renderer glowRenderer = glow.GetComponent<Renderer>();
+            glowRenderer.shadowCastingMode =
+                UnityEngine.Rendering.ShadowCastingMode.Off;
+            glowRenderer.receiveShadows = false;
+
+            AddPracticalHalo(
+                glow.transform,
+                "Home Entry Door Lamp Halo",
+                0.14f,
+                0.29f,
+                new Color(1f, 0.55f, 0.18f, 0.105f),
+                new Color(0.74f, 0.25f, 0.055f, 0.025f));
         }
 
         private static CityLightHalo AddPracticalHalo(

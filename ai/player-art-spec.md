@@ -57,9 +57,16 @@
   `RiseLeft/Right`. Negative status direction selects Left; positive selects
   Right. The physical player root remains upright while the clip and analytic
   contact patch present the fall.
-- Bed uses `BedEnter`, `BedSleepLoop`, `BedExit`; balcony smoking uses
-  `SmokeEnter`, `SmokeLoop`, `SmokeExit`; cat feeding uses `CatFeedEnter`,
-  `CatFeedLoop`, `CatFeedExit`.
+- Bed uses three-second `BedEnter` and `BedExit` clips around the persistent
+  `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
+  swings both legs onto the mattress and lowers through a supported side pose
+  with his head toward the pillow. Waking rolls to the edge, plants both feet,
+  holds a supported seated pose, leans weight over the feet and only then
+  stands. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
+  right hand retrieves a socket-bound cigarette, brings its mouth end to the
+  lips for a held inhale, lowers for an outward exhale and discards it before
+  returning to `Relaxed`. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
+  `CatFeedExit`.
 - Every production action is bone-only and in-place. Gameplay owns normalized
   clip sampling, pelvis alignment and terminal holds; root motion and Animation
   Events remain disabled.
@@ -89,7 +96,8 @@
 
 - Rebuild through Blender with `tools/build-player-3d-model.py`; its validators
   own exact height, outward winding, unique mesh data, weights, triangle budget,
-  required parts/bones/sockets/actions, no root motion and signature asymmetry.
+  required parts/bones/sockets/actions, no root motion, signature asymmetry and
+  the bed loop's head-to-foot, face-up and closed-eye orientation.
 - Direct `.blend` and GLB imports are not production paths. The deterministic
   FBX, animation FBX and JSON manifest are the Unity inputs; the generated
   transparent portrait is a separate Resources asset.

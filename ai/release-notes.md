@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### 2026-08-09 — A small lamp now marks the apartment exit
+
+- A compact dirty-amber wall lamp now sits above the apartment entrance door.
+  Its dark hood and restrained glow replace the old oversized luminous header,
+  while a real warm spotlight now illuminates the door, nearby wall and entry
+  floor instead of leaving a lone yellow point in the darkness.
+
+### 2026-08-09 — Smoking now reaches the lips
+
+- The balcony animation now shows the complete gesture: the hero settles
+  toward the city, retrieves the cigarette, raises it to his lips for a held
+  inhale, lowers his hand for the exhale and flicks it away before relaxing.
+- The cigarette is now a cigarette-sized prop rather than an oversized cigar.
+  It extends correctly from the fingers, appears only after the hand leaves
+  the coat and disappears with the exit flick. Its real scene size is no
+  longer multiplied by the imported hand-bone scale.
+
+### 2026-08-09 — Getting out of bed now uses the bedside
+
+- The hero now uses the long side of the bed nearest the apartment door:
+  first sitting on its edge, then swinging his legs onto the mattress and
+  lowering himself with arm support. His head remains at the pillow instead
+  of sleeping head-to-foot in reverse.
+- Waking now rolls toward that edge, moves both legs off the mattress, settles
+  into a visible seated pose with planted feet, leans forward and only then
+  stands. Ordinary entry and wake take three seconds; the opening keeps its
+  existing six-second cinematic wake.
+
 ### 2026-08-04 — Walking and idle feel more natural
 
 - The hero now bends both elbows, knees and ankles through a complete walking

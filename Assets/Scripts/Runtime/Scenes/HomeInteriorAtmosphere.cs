@@ -14,10 +14,12 @@ namespace BarPromenade
         public const int MaximumPracticalLights = 2;
         public const int MaximumWindowLights = 1;
         public const int MaximumBathroomSpillLights = 1;
+        public const int MaximumEntryDoorLights = 1;
         public const int MaximumRealtimeLights =
             MaximumPracticalLights +
             MaximumWindowLights +
-            MaximumBathroomSpillLights;
+            MaximumBathroomSpillLights +
+            MaximumEntryDoorLights;
         public const int MaximumDustParticles = 12;
         public const float NightWindowLightIntensity = 5.25f;
 
@@ -51,6 +53,12 @@ namespace BarPromenade
         internal static readonly Vector3 BathroomSpillLightDirection =
             (BathroomSpillLightTarget -
              BathroomSpillLightPosition).normalized;
+        internal static readonly Vector3 EntryDoorLightPosition =
+            new Vector3(0f, 2.45f, -3.70f);
+        internal static readonly Vector3 EntryDoorLightTarget =
+            new Vector3(0f, 0.55f, -2.75f);
+        internal static readonly Vector3 EntryDoorLightDirection =
+            (EntryDoorLightTarget - EntryDoorLightPosition).normalized;
 
         private readonly List<Light> practicalLights =
             new List<Light>(MaximumPracticalLights);
@@ -66,6 +74,7 @@ namespace BarPromenade
         public ParticleSystem Dust { get; private set; }
         public Light WindowLight { get; private set; }
         public Light BathroomSpillLight { get; private set; }
+        public Light EntryDoorLight { get; private set; }
         public HomeBathroomLightFlicker BathroomFlicker
         {
             get;
@@ -108,6 +117,7 @@ namespace BarPromenade
                 practicalLights.Count > 0 ||
                 WindowLight != null ||
                 BathroomSpillLight != null ||
+                EntryDoorLight != null ||
                 PostProcessVolume != null)
             {
                 throw new InvalidOperationException(
@@ -137,6 +147,7 @@ namespace BarPromenade
             practicalLights.Add(bathroomLight);
             WindowLight = CreateWindowLight();
             BathroomSpillLight = CreateBathroomSpillLight();
+            EntryDoorLight = CreateEntryDoorLight();
             BathroomFlicker =
                 bathroomLight.gameObject.AddComponent<
                     HomeBathroomLightFlicker>();
@@ -224,6 +235,31 @@ namespace BarPromenade
             light.shadowStrength = 0.62f;
             light.shadowBias = 0.04f;
             light.shadowNormalBias = 0.25f;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0f;
+            return light;
+        }
+
+        private Light CreateEntryDoorLight()
+        {
+            GameObject lightObject = new GameObject(
+                "Home Entry Door Light");
+            lightObject.transform.SetParent(transform, false);
+            lightObject.transform.localPosition =
+                EntryDoorLightPosition;
+            lightObject.transform.localRotation =
+                Quaternion.LookRotation(
+                    EntryDoorLightDirection,
+                    Vector3.up);
+
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1.0f, 0.46f, 0.16f);
+            light.intensity = 8.0f;
+            light.range = 4.0f;
+            light.spotAngle = 100f;
+            light.innerSpotAngle = 72f;
+            light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0f;
             return light;

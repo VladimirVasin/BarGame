@@ -49,7 +49,7 @@ The vertical slice contains:
   Up alone switches it to solid `06:00`, starts the session clock and alarm,
   and hides the menu. After three more unscaled seconds on the clock and
   sleeping loop, the alarm stops; only then does the six-second,
-  three-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
+  two-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
   and easing onward into the active gameplay shot without a cut;
 - one session-owned in-game clock that starts every fresh run frozen at
   `05:59`, advances only after the successful startup Wake sets it to `06:00`,
@@ -480,12 +480,15 @@ The vertical slice contains:
   `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary 3D
   rig walks to entry and turns toward the city along `+X`; exact alignment
   holds one neutral rendered frame, then the same visible rig samples
-  `SmokeEnter`, `SmokeLoop` and `SmokeExit`. A cigarette prop follows the
-  registered right-hand socket. The deterministic timeline retains its slow
-  draw/light/first-drag entrance, melancholic `9.5 s` loop and safe discard/
-  return exit; a second `E` queues until a calm loop boundary, preventing a
-  raised-hand or smoke cut. No renderer swap, sprite fade or shadow handoff is
-  needed;
+  `SmokeEnter`, `SmokeLoop` and `SmokeExit`. The authored motion settles the
+  hero toward the outer rail, draws the right hand from his coat, brings the
+  cigarette to his lips for a held inhale, lowers it for an outward exhale and
+  returns through a deliberate discard. The approximately `74 mm` cigarette
+  follows the registered right-hand socket along its outward local axis; it is
+  revealed only after leaving the coat and hidden on the exit flick. The
+  deterministic timeline retains its melancholic `9.5 s` loop; a second `E`
+  queues until a calm low-hand boundary, preventing a raised-hand or inhale
+  cut. No renderer swap, sprite fade or shadow handoff is needed;
   the camera holds briefly and eases along a quadratic push-in to `38°` FOV.
   Its close look target is biased `0.33 m` toward the city along Home-local
   `+X`, turning the target yaw to about `13.12°`: the hero stays prominent at
@@ -504,7 +507,9 @@ The vertical slice contains:
 - one reusable animated-interaction timeline and player controller with a
   visible `Positioning` pre-phase followed by
   `Entering -> Looping -> Exiting`; each interaction supplies separate entry
-  root/pelvis/facing, action pelvis and exit root/pelvis/facing poses. The
+  root/pelvis/facing, action pelvis and exit root/pelvis/facing poses, plus an
+  optional pelvis waypoint with independent arrival/hold timing in each
+  transition. The
   ordinary rig uses the constrained motor, gait, turn and footsteps to reach
   entry. Exact grounded alignment clears locomotion, facial and additive status
   offsets and holds the neutral 3D endpoint for one rendered frame. The
@@ -518,9 +523,12 @@ The vertical slice contains:
   height, no-progress approach, failed preparation, transition, disable and
   destroy all reset clip spatial offsets and restore control, camera, HUD,
   props, partner animation and contact shadow through owned cleanup;
-- one reachable bed interaction on the open `xMax` side of the Home bed: the
-  first `E` walks and turns the 3D hero to the grounded open-side entry, holds
-  neutral for one frame and plays `BedEnter` on the continuous rig. The
+- one reachable bed interaction on the long `zMin` side nearest the Home door:
+  the first `E` walks and turns the 3D hero to a clear foot-side segment of
+  that edge, holds neutral for one frame and plays the three-second `BedEnter`
+  on the continuous rig. A dedicated low seated-pelvis waypoint holds the
+  character on the mattress edge with both feet grounded before movement can
+  continue between the standing dock and bed centre. The
   deterministic `BedSleepLoop` repeats with the existing breathing holds until
   a second `E` plays `BedExit`; the opening can begin directly in that loop and
   apply its one-shot wake-duration multiplier. Per-sample pelvis alignment
@@ -538,7 +546,7 @@ The vertical slice contains:
   returning Home. The clock shot and sleeping loop remain fixed for three
   unscaled seconds; the ring then stops and only then does the camera glide to
   the sleeper and smoothly settle into the active Home shot while the existing
-  24-frame wake sequence plays over six seconds instead of the ordinary two,
+  36-frame wake sequence plays over six seconds instead of the ordinary three,
   restoring normal control without a camera cut or another scene load;
 - one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
   shower tray and curtain, pedestal sink, cracked mirror, exposed rusty pipes,
@@ -555,7 +563,9 @@ The vertical slice contains:
   bathroom threshold, shares the same flicker and projects through the ajar
   door onto the apartment exit area; another cold shadowed cookie Spot casts
   time-of-day light through the window, blending from the existing cold night
-  shaft to a warm daylight shaft. These remain capped at four
+  shaft to a warm daylight shaft. A fifth shadowless warm Spot is physically
+  co-located with the compact amber lamp above the entrance and casts a local
+  pool over the door, wall and floor. These remain capped at five
   atmosphere-owned local realtime lights; the scene Directional light is
   separate. The atmosphere also owns a shared transparent glass
   shader/material, a restrained Bloom/color/exposure/vignette/film-grain

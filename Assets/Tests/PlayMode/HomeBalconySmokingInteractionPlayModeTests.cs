@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.TestTools.Utils;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -82,6 +83,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Smoking.CigaretteProp.activeSelf,
                 Is.False);
+            AssertCigaretteGeometry();
             Assert.That(
                 home.Smoking.Definition.EnterClipName,
                 Is.EqualTo("SmokeEnter"));
@@ -213,7 +215,11 @@ namespace BarPromenade.Tests.PlayMode
                 entryPosition,
                 entryRotation);
             AssertContinuous3DPresentation("SmokeEnter");
-            Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
+            Assert.That(
+                home.Smoking.CigaretteProp.activeSelf,
+                Is.False,
+                "The cigarette must remain hidden until the entering " +
+                "hand reaches its authored extraction frame.");
             Assert.That(
                 home.InteractionPrompt.PromptKey,
                 Is.EqualTo(
@@ -231,6 +237,21 @@ namespace BarPromenade.Tests.PlayMode
                 "Camera drift must begin at zero instead of cutting into " +
                 "the captured Balcony shot.");
 
+            Time.timeScale = 4f;
+            yield return WaitForCigaretteVisibility(
+                true,
+                PlayerAnimatedInteractionPhase.Entering);
+            int revealLocalFrame =
+                home.AnimatedInteraction.FrameIndex -
+                home.Smoking.Definition.EnterStartFrame;
+            Assert.That(
+                revealLocalFrame,
+                Is.InRange(
+                    HomeBalconySmokingInteraction
+                        .CigaretteRevealEnterLocalFrame,
+                    HomeBalconySmokingInteraction
+                        .CigaretteRevealEnterLocalFrame + 1));
+
             Time.timeScale = 12f;
             yield return WaitForPhaseCompletion(
                 PlayerAnimatedInteractionPhase.Looping);
@@ -239,6 +260,7 @@ namespace BarPromenade.Tests.PlayMode
 
             AssertContinuous3DPresentation("SmokeLoop");
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
+            AssertCigaretteGeometry();
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
             Assert.That(
@@ -255,6 +277,8 @@ namespace BarPromenade.Tests.PlayMode
                 "test distinguishes world-up from camera-plane alignment.");
             Player3DCharacterPresentation playerPresentation =
                 (Player3DCharacterPresentation)home.Player.Visual;
+            AssertAnimatedCharacterFacesCity(
+                playerPresentation.Registry);
             Vector3 actionHipWorld =
                 playerPresentation.Registry.Anchors.Pelvis.position;
             Vector3 cityFacingWorld =
@@ -409,6 +433,20 @@ namespace BarPromenade.Tests.PlayMode
                 PlayerAnimatedInteractionPhase.Exiting);
             AssertContinuous3DPresentation("SmokeExit");
             Assert.That(home.Smoking.CigaretteProp.activeSelf, Is.True);
+            Time.timeScale = 4f;
+            yield return WaitForCigaretteVisibility(
+                false,
+                PlayerAnimatedInteractionPhase.Exiting);
+            int hideLocalFrame =
+                home.AnimatedInteraction.FrameIndex -
+                home.Smoking.Definition.ExitStartFrame;
+            Assert.That(
+                hideLocalFrame,
+                Is.InRange(
+                    HomeBalconySmokingInteraction
+                        .CigaretteHideExitLocalFrame,
+                    HomeBalconySmokingInteraction
+                        .CigaretteHideExitLocalFrame + 1));
             Time.timeScale = 12f;
             yield return WaitForPhaseCompletion(
                 PlayerAnimatedInteractionPhase.Idle);
@@ -583,6 +621,180 @@ namespace BarPromenade.Tests.PlayMode
                 HomeBalconySmokingTimeline
                     .IsSafeExitLoopFrame(localFrame),
                 Is.False);
+        }
+
+        private IEnumerator WaitForCigaretteVisibility(
+            bool expectedVisible,
+            PlayerAnimatedInteractionPhase expectedPhase)
+        {
+            float deadline =
+                Time.realtimeSinceStartup + 3f;
+            while (home.Smoking.CigaretteProp.activeSelf !=
+                       expectedVisible &&
+                   home.AnimatedInteraction.Phase == expectedPhase &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(expectedPhase),
+                "The cigarette visibility marker must be presented " +
+                "inside its authored animation phase.");
+            Assert.That(
+                home.Smoking.CigaretteProp.activeSelf,
+                Is.EqualTo(expectedVisible));
+        }
+
+        private void AssertCigaretteGeometry()
+        {
+            Transform prop = home.Smoking.CigaretteProp.transform;
+            Player3DCharacterPresentation presentation =
+                (Player3DCharacterPresentation)home.Player.Visual;
+            Assert.That(
+                prop.parent,
+                Is.SameAs(
+                    presentation.Registry.Anchors.RightCigarette));
+            Assert.That(prop.localPosition, Is.EqualTo(Vector3.zero));
+            Assert.That(prop.localRotation, Is.EqualTo(Quaternion.identity));
+
+            Transform paper = prop.Find("Paper");
+            Transform ember = prop.Find("Ember");
+            Assert.That(paper, Is.Not.Null);
+            Assert.That(ember, Is.Not.Null);
+            Assert.That(
+                paper.localPosition,
+                Is.EqualTo(
+                    HomeBalconySmokingInteraction
+                        .CigarettePaperLocalPosition));
+            Assert.That(
+                paper.localScale,
+                Is.EqualTo(
+                    HomeBalconySmokingInteraction
+                        .CigarettePaperLocalScale));
+            Assert.That(
+                ember.localPosition,
+                Is.EqualTo(
+                    HomeBalconySmokingInteraction
+                        .CigaretteEmberLocalPosition));
+            Assert.That(
+                ember.localScale,
+                Is.EqualTo(
+                    HomeBalconySmokingInteraction
+                        .CigaretteEmberLocalScale));
+
+            Assert.That(
+                GetLocalMeshSize(paper),
+                Is.EqualTo(new Vector3(0.0065f, 0.070f, 0.0065f))
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                GetLocalMeshSize(ember),
+                Is.EqualTo(new Vector3(0.007f, 0.004f, 0.007f))
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            AssertWorldMeshSize(
+                paper,
+                new Vector3(0.0065f, 0.070f, 0.0065f));
+            AssertWorldMeshSize(
+                ember,
+                new Vector3(0.007f, 0.004f, 0.007f));
+            Assert.That(paper.localPosition.y, Is.GreaterThan(0f));
+            Assert.That(ember.localPosition.y, Is.GreaterThan(0f));
+            float paperTip =
+                paper.localPosition.y + paper.localScale.y;
+            float emberBase =
+                ember.localPosition.y - ember.localScale.y;
+            Assert.That(emberBase, Is.EqualTo(paperTip).Within(0.0001f));
+            Assert.That(
+                ember.localPosition.y,
+                Is.GreaterThan(paper.localPosition.y));
+        }
+
+        private void AssertAnimatedCharacterFacesCity(
+            Player3DAssetRegistry registry)
+        {
+            Renderer head = FindPlayerRenderer(registry, "GEO_Head");
+            Renderer nose = FindPlayerRenderer(registry, "GEO_Nose");
+            Vector3 headToNose = Vector3.ProjectOnPlane(
+                nose.bounds.center - head.bounds.center,
+                home.transform.up);
+            Assert.That(
+                headToNose.sqrMagnitude,
+                Is.GreaterThan(0.0001f));
+            Vector3 cityFacing =
+                home.transform.TransformDirection(Vector3.right);
+            Assert.That(
+                Vector3.Dot(
+                    headToNose.normalized,
+                    cityFacing.normalized),
+                Is.GreaterThan(0.95f),
+                "The sampled smoking rig's visible face must point " +
+                "toward the Home-local +X city direction, not merely " +
+                "leave the gameplay root facing that way.");
+        }
+
+        private static Renderer FindPlayerRenderer(
+            Player3DAssetRegistry registry,
+            string meshName)
+        {
+            for (int index = 0;
+                 index < registry.MeshBindings.Count;
+                 index++)
+            {
+                Player3DMeshBinding binding =
+                    registry.MeshBindings[index];
+                if (binding.MeshName == meshName)
+                {
+                    return binding.Renderer;
+                }
+            }
+
+            Assert.Fail($"Missing Player 3D renderer '{meshName}'.");
+            return null;
+        }
+
+        private static Vector3 GetLocalMeshSize(Transform part)
+        {
+            MeshFilter filter = part.GetComponent<MeshFilter>();
+            Assert.That(filter, Is.Not.Null);
+            Assert.That(filter.sharedMesh, Is.Not.Null);
+            Vector3 scale = part.localScale;
+            scale = new Vector3(
+                Mathf.Abs(scale.x),
+                Mathf.Abs(scale.y),
+                Mathf.Abs(scale.z));
+            return Vector3.Scale(
+                filter.sharedMesh.bounds.size,
+                scale);
+        }
+
+        private static void AssertWorldMeshSize(
+            Transform part,
+            Vector3 expected)
+        {
+            MeshFilter filter = part.GetComponent<MeshFilter>();
+            Assert.That(filter, Is.Not.Null);
+            Assert.That(filter.sharedMesh, Is.Not.Null);
+            Vector3 meshSize = filter.sharedMesh.bounds.size;
+            Vector3 actual = new Vector3(
+                part.TransformVector(Vector3.right * meshSize.x).magnitude,
+                part.TransformVector(Vector3.up * meshSize.y).magnitude,
+                part.TransformVector(Vector3.forward * meshSize.z).magnitude);
+            Assert.That(
+                actual.x,
+                Is.EqualTo(expected.x).Within(0.0001f),
+                "Cigarette world-space diameter was multiplied by the " +
+                "imported socket scale.");
+            Assert.That(
+                actual.y,
+                Is.EqualTo(expected.y).Within(0.0001f),
+                "Cigarette world-space length was multiplied by the " +
+                "imported socket scale.");
+            Assert.That(
+                actual.z,
+                Is.EqualTo(expected.z).Within(0.0001f),
+                "Cigarette world-space diameter was multiplied by the " +
+                "imported socket scale.");
         }
 
         private void AssertGuidedApproachPresentation()

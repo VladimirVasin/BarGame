@@ -179,7 +179,7 @@ Assets/
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
       Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
-        PlayerAnimatedInteraction*.cs  grounded positioning, neutral handoff + terminal exit hold
+        PlayerAnimatedInteraction*.cs  grounded positioning, optional held pelvis waypoint + terminal exit hold
         HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
@@ -190,7 +190,7 @@ Assets/
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
       Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
         MainMenuRoot.cs                 black build-index-0 new-run boundary
-        HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 3x wake
+        HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 2x wake
         HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
         HomeDayNightController.cs      window and balcony time-of-day lighting
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
@@ -445,7 +445,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> synchronized cold shadowed bathroom-spill Spot
                                  -> shadowed time-of-day window cookie Spot
-                                 -> at most four owned local realtime lights
+                                 -> warm entry-lamp Spot over door and floor
+                                 -> at most five owned local realtime lights
                                     + separate scene Directional light
                                  -> shared transparent glass + grade + sparse dust
        -> HomeDayNightController -> window night/day blend
@@ -469,11 +470,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> head/chest/pelvis rays trigger group cutaway
                                    -> shared dither fade / hold / restore
                                    -> full opacity during Home modal presentation
-       -> HomeBedInteractionPlan -> reachable open-side trigger
+       -> HomeBedInteractionPlan -> reachable door-side trigger + seated waypoint
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
                                        -> visible Positioning -> Entering/Looping/Exiting
                                        -> separate root/pelvis/facing entry + exit poses
+                                       -> held seated pelvis waypoint on both transitions
                                        -> BedEnter/BedSleepLoop/BedExit on same rig
                                        -> sample then align registered pelvis anchor
                                        -> grounded guided walk/turn or stalled cancel
@@ -481,12 +483,13 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                        -> terminal clip pose -> independent exit pose
                                        -> owner/transition cancel -> complete restoration
        -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
-                                   -> first E -> guided walk + face city +X
+                                   -> first E -> guided walk + visible face toward city +X
                                       -> neutral 3D render-frame settle
-                                      -> SmokeEnter -> held SmokeLoop
-                                      -> cigarette at SOCKET_Cigarette.R
+                                      -> SmokeEnter -> retrieve + first held inhale
+                                      -> held SmokeLoop -> lift + inhale + lower + outward exhale
+                                      -> 74 mm cigarette along SOCKET_Cigarette.R +Y
                                    -> second E -> queued calm-boundary exit
-                                      -> SmokeExit + held terminal pose
+                                      -> SmokeExit -> rail flick + empty-hand terminal pose
                                       -> independent exit-root restoration
                                    -> continuous mesh/contact shadows
                                   -> quadratic city-biased push to 38-degree FOV
@@ -522,7 +525,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                              -> silent 05:59 + Wake Up/Quit
                                              -> Wake -> solid 06:00 + start time + 3 s ring
                                              -> ring stops -> wake + smooth camera arc
-                                             -> 3x exit + continuous gameplay settle
+                                             -> 2x exit + continuous gameplay settle
                                              -> existing wake frames
                                              -> normal Home camera/input, no handoff cut
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator

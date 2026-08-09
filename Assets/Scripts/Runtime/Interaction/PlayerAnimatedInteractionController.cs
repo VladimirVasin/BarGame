@@ -4,6 +4,148 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
+    /// Adds one grounded waypoint to the otherwise direct pelvis movement.
+    /// Arrival and departure are separate so an authored clip can visibly
+    /// settle at the waypoint before continuing.
+    /// </summary>
+    public readonly struct PlayerAnimatedInteractionPelvisTransition
+    {
+        public PlayerAnimatedInteractionPelvisTransition(
+            Vector3 waypoint,
+            float enterArrivalProgress,
+            float enterDepartureProgress,
+            float exitArrivalProgress,
+            float exitDepartureProgress)
+        {
+            Waypoint = waypoint;
+            EnterArrivalProgress = enterArrivalProgress;
+            EnterDepartureProgress = enterDepartureProgress;
+            ExitArrivalProgress = exitArrivalProgress;
+            ExitDepartureProgress = exitDepartureProgress;
+            Validate(nameof(waypoint));
+        }
+
+        public Vector3 Waypoint { get; }
+        public float EnterArrivalProgress { get; }
+        public float EnterDepartureProgress { get; }
+        public float ExitArrivalProgress { get; }
+        public float ExitDepartureProgress { get; }
+
+        public Vector3 EvaluateEntering(
+            Vector3 start,
+            Vector3 end,
+            float progress)
+        {
+            return Evaluate(
+                start,
+                end,
+                progress,
+                EnterArrivalProgress,
+                EnterDepartureProgress);
+        }
+
+        public Vector3 EvaluateExiting(
+            Vector3 start,
+            Vector3 end,
+            float progress)
+        {
+            return Evaluate(
+                start,
+                end,
+                progress,
+                ExitArrivalProgress,
+                ExitDepartureProgress);
+        }
+
+        internal void Validate(string parameterName)
+        {
+            if (!IsFinite(Waypoint))
+            {
+                throw new ArgumentException(
+                    "The pelvis transition waypoint must be finite.",
+                    parameterName);
+            }
+
+            ValidateProgressRange(
+                EnterArrivalProgress,
+                EnterDepartureProgress,
+                parameterName,
+                "enter");
+            ValidateProgressRange(
+                ExitArrivalProgress,
+                ExitDepartureProgress,
+                parameterName,
+                "exit");
+        }
+
+        private Vector3 Evaluate(
+            Vector3 start,
+            Vector3 end,
+            float progress,
+            float arrivalProgress,
+            float departureProgress)
+        {
+            float clamped = Mathf.Clamp01(progress);
+            if (clamped <= arrivalProgress)
+            {
+                return Vector3.LerpUnclamped(
+                    start,
+                    Waypoint,
+                    Smooth(clamped / arrivalProgress));
+            }
+
+            if (clamped <= departureProgress)
+            {
+                return Waypoint;
+            }
+
+            return Vector3.LerpUnclamped(
+                Waypoint,
+                end,
+                Smooth(
+                    (clamped - departureProgress) /
+                    (1f - departureProgress)));
+        }
+
+        private static void ValidateProgressRange(
+            float arrival,
+            float departure,
+            string parameterName,
+            string phaseName)
+        {
+            if (!IsFinite(arrival) ||
+                !IsFinite(departure) ||
+                arrival <= 0f ||
+                departure < arrival ||
+                departure >= 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    $"The {phaseName} pelvis waypoint range must satisfy " +
+                    "0 < arrival <= departure < 1.");
+            }
+        }
+
+        private static float Smooth(float progress)
+        {
+            return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) &&
+                   !float.IsInfinity(value);
+        }
+    }
+
+    /// <summary>
     /// Moves the production 3D player into an authored interaction pose and
     /// deterministically samples enter, loop and exit clips. Gameplay timing
     /// remains independent from Animator transitions and animation events.
@@ -19,6 +161,8 @@ namespace BarPromenade
         private Vector3 standHip;
         private Vector3 actionHip;
         private Vector3 exitHip;
+        private PlayerAnimatedInteractionPelvisTransition pelvisTransition;
+        private bool hasPelvisTransition;
         private PlayerAnimatedInteractionPose entryPose;
         private PlayerAnimatedInteractionPose exitPose;
         private bool isPositioning;
@@ -123,14 +267,59 @@ namespace BarPromenade
                 startLooping: true);
         }
 
+        public bool BeginLooping(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 standHipPosition,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPelvisTransition transition)
+        {
+            return BeginInternal(
+                definition,
+                standHipPosition,
+                actionHipPosition,
+                startLooping: true,
+                transition: transition);
+        }
+
         public bool BeginPositioned(
             PlayerAnimatedInteractionDefinition definition,
             PlayerAnimatedInteractionPose authoredEntryPose,
             Vector3 actionHipPosition,
             PlayerAnimatedInteractionPose authoredExitPose)
         {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                null);
+        }
+
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            PlayerAnimatedInteractionPelvisTransition transition)
+        {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                transition);
+        }
+
+        private bool BeginPositionedInternal(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            PlayerAnimatedInteractionPelvisTransition? transition)
+        {
             authoredEntryPose.Validate(nameof(authoredEntryPose));
             authoredExitPose.Validate(nameof(authoredExitPose));
+            transition?.Validate(nameof(transition));
             if (!TryPrepareInternal(
                     definition,
                     authoredEntryPose.HipPosition,
@@ -152,6 +341,7 @@ namespace BarPromenade
             standHip = authoredEntryPose.HipPosition;
             actionHip = actionHipPosition;
             exitHip = authoredExitPose.HipPosition;
+            SetPelvisTransition(transition);
             timeline =
                 new PlayerAnimatedInteractionTimeline(definition);
             placeAtExitOnCompletion = true;
@@ -235,8 +425,10 @@ namespace BarPromenade
             PlayerAnimatedInteractionDefinition definition,
             Vector3 standHipPosition,
             Vector3 actionHipPosition,
-            bool startLooping)
+            bool startLooping,
+            PlayerAnimatedInteractionPelvisTransition? transition = null)
         {
+            transition?.Validate(nameof(transition));
             if (!TryPrepare(
                     definition,
                     standHipPosition,
@@ -258,6 +450,7 @@ namespace BarPromenade
             standHip = standHipPosition;
             actionHip = actionHipPosition;
             exitHip = standHipPosition;
+            SetPelvisTransition(transition);
             timeline = nextTimeline;
             isPositioning = false;
             placeAtExitOnCompletion = false;
@@ -506,6 +699,7 @@ namespace BarPromenade
 
             RestorePlayerState();
             placeAtExitOnCompletion = false;
+            hasPelvisTransition = false;
 
             if (shouldNotify)
             {
@@ -548,6 +742,14 @@ namespace BarPromenade
             switch (timeline.Phase)
             {
                 case PlayerAnimatedInteractionPhase.Entering:
+                    if (hasPelvisTransition)
+                    {
+                        return pelvisTransition.EvaluateEntering(
+                            standHip,
+                            actionHip,
+                            timeline.PhaseProgress);
+                    }
+
                     return Vector3.LerpUnclamped(
                         standHip,
                         actionHip,
@@ -555,6 +757,14 @@ namespace BarPromenade
                 case PlayerAnimatedInteractionPhase.Looping:
                     return actionHip;
                 case PlayerAnimatedInteractionPhase.Exiting:
+                    if (hasPelvisTransition)
+                    {
+                        return pelvisTransition.EvaluateExiting(
+                            actionHip,
+                            exitHip,
+                            timeline.PhaseProgress);
+                    }
+
                     return Vector3.LerpUnclamped(
                         actionHip,
                         exitHip,
@@ -694,6 +904,13 @@ namespace BarPromenade
                 0f,
                 1f,
                 Mathf.Clamp01(progress));
+        }
+
+        private void SetPelvisTransition(
+            PlayerAnimatedInteractionPelvisTransition? transition)
+        {
+            hasPelvisTransition = transition.HasValue;
+            pelvisTransition = transition.GetValueOrDefault();
         }
     }
 }

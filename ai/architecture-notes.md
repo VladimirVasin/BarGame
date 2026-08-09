@@ -192,9 +192,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   just inside the bathroom threshold and projects through the ajar door onto
   the existing apartment exit area. It shares one deterministic unscaled
   fluorescent-failure flicker with the bathroom point pool, HDR tube and halo;
-  the main practical and time-of-day window-cookie Spot remain, for at most
-  four atmosphere-owned local realtime lights in addition to the scene
-  Directional light. The exit door's
+  the main practical and time-of-day window-cookie Spot remain. One separate
+  shadowless warm ForcePixel Spot is co-located with the compact amber fixture
+  above the entrance and aims its full-strength cone over the door and entry
+  floor, for at most five atmosphere-owned local realtime lights in addition
+  to the scene Directional light. The exit door's
   geometry and material remain unchanged. Exiting sends
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
@@ -465,11 +467,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unscaled `6.4 s` cycle with a separate cold hard-shadow Spot staged just
   inside the bathroom threshold; the group remains steady for most of the
   cycle, then stutters together briefly while the Spot projects through the
-  ajar door toward the apartment exit. One separate shadowed cookie Spot
-  projects through the window; only its color and intensity blend from the
-  existing cold night shaft to warm daylight under `HomeDayNightController`,
-  while the room practicals retain their existing behavior. Window/door panes
-  reuse one shared transparent glass shader/material. During Home fixed-camera
+  ajar door toward the apartment exit. A separate warm shadowless Spot is
+  physically co-located with the compact emissive entrance lamp and illuminates
+  the door plus entry floor. One shadowed cookie Spot projects through the
+  window; only its color and intensity blend from the existing cold night
+  shaft to warm daylight under `HomeDayNightController`, while the room
+  practicals retain their existing behavior. The atmosphere owns at most five
+  local realtime lights. Window/door panes reuse one shared transparent glass
+  shader/material. During Home fixed-camera
   ownership, the same world-oriented modular 3D hero remains active in
   MainRoom, Bathroom and Balcony; no player billboard-plane mode is required.
 - **Accepted — Explicit Home foreground cutaway:** Runtime Home builders

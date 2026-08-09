@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.1.0"
+GENERATOR_VERSION = "2.4.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -2522,9 +2522,144 @@ class CharacterBuilder:
                 ((0.0, down), (0.55, stumble), (1.0, relaxed)),
             )
 
+        bed_edge_bend = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-22.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-20.0, 0.0, -3.0)),
+                "shin.L": BonePose(rotation_degrees=(27.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(25.0, 0.0, 0.0)),
+            },
+        )
+        bed_edge_sit = self.merge_pose(
+            bed_edge_bend,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-4.0, 0.0, 0.0),
+                    location_m=(0.0, 0.01, -0.08),
+                ),
+                "spine": BonePose(rotation_degrees=(5.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-3.0, 0.0, 2.0)),
+                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-2.0, 0.0, -1.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.09, 0.06, -0.28)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.09, 0.06, -0.28)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(4.0, 0.0, 10.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(4.0, 0.0, -10.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-35.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-40.0, 0.0, -5.0)),
+                "shin.L": BonePose(rotation_degrees=(40.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(40.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+            },
+        )
+        bed_edge_scoot = self.merge_pose(
+            bed_edge_sit,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-8.0, 0.0, 0.0),
+                    location_m=(0.0, 0.01, -0.10),
+                ),
+                "spine": BonePose(rotation_degrees=(16.0, 0.0, -2.0)),
+                "chest": BonePose(rotation_degrees=(-8.0, 0.0, 3.0)),
+                "head": BonePose(rotation_degrees=(-4.0, 0.0, -2.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.10, 0.11, -0.24)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.10, 0.11, -0.24)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(8.0, 0.0, 12.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(8.0, 0.0, -12.0)
+                ),
+            },
+        )
+        bed_leg_swing = self.merge_pose(
+            bed_edge_scoot,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-18.0, 24.0, 27.0),
+                    location_m=(0.0, 0.02, -0.18),
+                ),
+                "spine": BonePose(rotation_degrees=(-20.0, 2.0, -7.0)),
+                "chest": BonePose(rotation_degrees=(13.0, -2.0, 7.0)),
+                "neck": BonePose(rotation_degrees=(8.0, 0.0, -2.0)),
+                "head": BonePose(rotation_degrees=(-2.0, 0.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-18.0, 4.0, 7.0)),
+                "thigh.R": BonePose(rotation_degrees=(-22.0, -4.0, -7.0)),
+                "shin.L": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+            },
+        )
+        bed_lower_side = self.merge_pose(
+            bed_leg_swing,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-30.0, 50.0, 60.0),
+                    location_m=(0.0, 0.03, -0.30),
+                ),
+                "spine": BonePose(rotation_degrees=(-14.0, 4.0, -10.0)),
+                "chest": BonePose(rotation_degrees=(12.0, -4.0, 9.0)),
+                "neck": BonePose(rotation_degrees=(8.0, 0.0, -3.0)),
+                "head": BonePose(rotation_degrees=(-8.0, 0.0, -7.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.08, -0.04, -0.23)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.08, 0.04, -0.23)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-4.0, 3.0, -2.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-5.0, -3.0, 2.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(12.0, 3.0, 8.0)),
+                "thigh.R": BonePose(rotation_degrees=(6.0, -4.0, -8.0)),
+                "shin.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.45, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.45, 1.0)),
+            },
+        )
+        bed_roll_back = self.merge_pose(
+            bed_lower_side,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-70.0, 78.0, 20.0),
+                    location_m=(0.0, 0.04, -0.41),
+                ),
+                "spine": BonePose(rotation_degrees=(-8.0, 1.0, -6.0)),
+                "chest": BonePose(rotation_degrees=(10.0, -1.0, 6.0)),
+                "head": BonePose(rotation_degrees=(-11.0, 0.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(18.0, 0.0, 6.0)),
+                "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -6.0)),
+                "shin.L": BonePose(rotation_degrees=(-28.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.22, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.22, 1.0)),
+            },
+        )
         lying = {
             "pelvis": BonePose(
-                rotation_degrees=(-88.0, 0.0, 0.0),
+                rotation_degrees=(-88.0, 90.0, 0.0),
                 location_m=(0.0, 0.04, -0.45),
             ),
             "spine": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
@@ -2539,59 +2674,439 @@ class CharacterBuilder:
             "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -5.0)),
             "shin.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
             "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+            "face.eye.L": BonePose(scale=(1.0, 0.08, 1.0)),
+            "face.eye.R": BonePose(scale=(1.0, 0.08, 1.0)),
         }
         lying_breath = self.merge_pose(
             lying,
-            {"chest": BonePose(rotation_degrees=(9.0, 0.0, 4.0))},
+            {
+                "spine": BonePose(rotation_degrees=(-4.8, 0.0, -3.0)),
+                "chest": BonePose(rotation_degrees=(9.5, 0.0, 4.0)),
+                "neck": BonePose(rotation_degrees=(8.5, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-12.5, 0.0, -4.0)),
+            },
+        )
+        bed_wake_stir = self.merge_pose(
+            lying,
+            {
+                "spine": BonePose(rotation_degrees=(-10.0, 0.0, -2.0)),
+                "chest": BonePose(rotation_degrees=(16.0, 0.0, 3.0)),
+                "neck": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-4.0, 0.0, -2.0)),
+                "upper_arm.L": BonePose(
+                    rotation_degrees=(24.0, -8.0, 12.0)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-48.0, 0.0, 20.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(24.0, 0.0, 5.0)),
+                "shin.L": BonePose(rotation_degrees=(-34.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.42, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.42, 1.0)),
+            },
+        )
+        bed_wake_roll = self.merge_pose(
+            bed_roll_back,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-30.0, 50.0, 60.0),
+                    location_m=(0.0, 0.03, -0.31),
+                ),
+                "spine": BonePose(rotation_degrees=(-20.0, 4.0, -11.0)),
+                "chest": BonePose(rotation_degrees=(16.0, -4.0, 10.0)),
+                "neck": BonePose(rotation_degrees=(12.0, 0.0, -3.0)),
+                "head": BonePose(rotation_degrees=(-1.0, 0.0, -7.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.08, -0.04, -0.23)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.08, 0.04, -0.23)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-4.0, 3.0, -2.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-5.0, -3.0, 2.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(18.0, 0.0, 6.0)),
+                "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -6.0)),
+                "shin.L": BonePose(rotation_degrees=(-28.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.90, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.90, 1.0)),
+            },
+        )
+        bed_wake_push = self.merge_pose(
+            bed_leg_swing,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-18.0, 24.0, 28.0),
+                    location_m=(0.0, 0.02, -0.20),
+                ),
+                "spine": BonePose(rotation_degrees=(-27.0, 2.0, -8.0)),
+                "chest": BonePose(rotation_degrees=(19.0, -2.0, 8.0)),
+                "neck": BonePose(rotation_degrees=(11.0, 0.0, -2.0)),
+                "head": BonePose(rotation_degrees=(5.0, 0.0, -5.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.08, 0.08, -0.26)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.08, 0.10, -0.26)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-4.0, 3.0, -2.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-5.0, -3.0, 2.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-17.0, 3.0, 8.0)),
+                "thigh.R": BonePose(rotation_degrees=(-22.0, -4.0, -8.0)),
+                "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(32.0, 0.0, 0.0)),
+            },
+        )
+        bed_wake_swing = self.merge_pose(
+            bed_edge_scoot,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-8.0, 6.0, 8.0),
+                    location_m=(0.0, 0.01, -0.13),
+                ),
+                "spine": BonePose(rotation_degrees=(-26.0, 0.0, -4.0)),
+                "chest": BonePose(rotation_degrees=(16.0, 0.0, 5.0)),
+                "head": BonePose(rotation_degrees=(6.0, 0.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-28.0, 1.0, 6.0)),
+                "thigh.R": BonePose(rotation_degrees=(-33.0, -1.0, -6.0)),
+                "shin.L": BonePose(rotation_degrees=(35.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(37.0, 0.0, 0.0)),
+            },
+        )
+        bed_wake_sit_supported = self.merge_pose(
+            bed_edge_sit,
+            {
+                "pelvis": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(6.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-3.0, 0.0, 2.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(4.0, 0.0, -1.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.04, 0.10, -0.28)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.04, 0.10, -0.28)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-4.0, 3.0, -2.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-5.0, -3.0, 2.0)
+                ),
+            },
+        )
+        bed_wake_sit = self.merge_pose(
+            bed_edge_sit,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-2.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-2.0, 0.0, -1.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.06, -0.03, -0.31)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.06, -0.03, -0.31)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-14.0, 0.0, 8.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-14.0, 0.0, -8.0)
+                ),
+            },
+        )
+        bed_wake_lean = self.merge_pose(
+            bed_wake_sit,
+            {
+                "pelvis": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-10.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.059, -0.014, -0.334)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.047, -0.010, -0.334)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-5.0, -3.0, 2.0)),
+                "thigh.L": BonePose(rotation_degrees=(-39.0, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-43.0, 0.0, -4.0)),
+                "shin.L": BonePose(rotation_degrees=(45.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(44.0, 0.0, 0.0)),
+            },
+        )
+        bed_wake_rise = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    rotation_degrees=(18.0, -4.0, 9.0)
+                ),
+                "upper_arm.R": BonePose(
+                    rotation_degrees=(-17.0, 4.0, -9.0)
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(-37.0, 0.0, 16.0)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-38.0, 0.0, -15.0)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-32.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-34.0, 0.0, -3.0)),
+                "shin.L": BonePose(rotation_degrees=(38.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(39.0, 0.0, 0.0)),
+            },
         )
         self._create_action(
-            "BedEnter", "bed", 2.0, False, 24, 12,
-            ((0.0, relaxed), (0.5, self.merge_pose(relaxed, {
-                "pelvis": BonePose(rotation_degrees=(-42.0, 0.0, 0.0), location_m=(0.0, 0.02, -0.18)),
-            })), (1.0, lying)),
+            "BedEnter", "bed", 3.0, False, 36, 12,
+            (
+                (0.0, relaxed),
+                (0.12, bed_edge_bend),
+                (0.28, bed_edge_sit),
+                (0.38, bed_edge_scoot),
+                (0.52, bed_leg_swing),
+                (0.72, bed_lower_side),
+                (0.90, bed_roll_back),
+                (1.0, lying),
+            ),
         )
         self._create_action(
             "BedSleepLoop", "bed", 4.0, True, 16, 4,
             ((0.0, lying), (0.5, lying_breath), (1.0, lying)),
         )
         self._create_action(
-            "BedExit", "bed", 2.0, False, 24, 12,
-            ((0.0, lying), (0.5, self.merge_pose(relaxed, {
-                "pelvis": BonePose(rotation_degrees=(-42.0, 0.0, 0.0), location_m=(0.0, 0.02, -0.18)),
-            })), (1.0, relaxed)),
+            "BedExit", "bed", 3.0, False, 36, 12,
+            (
+                (0.0, lying),
+                (0.10, bed_wake_stir),
+                (0.25, bed_wake_roll),
+                (0.42, bed_wake_push),
+                (0.54, bed_wake_swing),
+                (0.63, bed_wake_sit_supported),
+                (0.73, bed_wake_sit),
+                (0.82, bed_wake_lean),
+                (0.92, bed_wake_rise),
+                (1.0, relaxed),
+            ),
         )
 
-        smoke_pose = self.merge_pose(
+        smoke_rest = self.merge_pose(
             relaxed,
             {
-                "upper_arm.R": BonePose(target_direction=(0.04, -0.19, -0.10)),
-                "forearm.R": BonePose(rotation_degrees=(-62.0, 12.0, -28.0)),
-                "hand.R": BonePose(rotation_degrees=(18.0, -10.0, 8.0)),
-                "head": BonePose(rotation_degrees=(-5.0, 0.0, 4.0)),
+                "pelvis": BonePose(rotation_degrees=(0.8, -0.4, -1.6)),
+                "spine": BonePose(rotation_degrees=(-2.8, 0.0, 1.8)),
+                "chest": BonePose(rotation_degrees=(3.2, 0.0, -1.8)),
+                "neck": BonePose(rotation_degrees=(-1.5, 0.0, 1.0)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, -0.8)),
             },
         )
-        smoke_draw = self.merge_pose(
-            smoke_pose,
+        smoke_settle = self.merge_pose(
+            smoke_rest,
             {
-                "chest": BonePose(rotation_degrees=(4.5, 0.0, -2.0)),
-                "head": BonePose(rotation_degrees=(-8.0, 0.0, 3.0)),
+                "pelvis": BonePose(rotation_degrees=(1.2, -0.6, -2.2)),
+                "spine": BonePose(rotation_degrees=(-3.4, 0.0, 2.4)),
+                "head": BonePose(rotation_degrees=(2.0, 0.0, -1.4)),
+            },
+        )
+        smoke_reach = self.merge_pose(
+            smoke_settle,
+            {
+                "upper_arm.R": BonePose(target_direction=(0.03, -0.12, -0.22)),
+                "forearm.R": BonePose(rotation_degrees=(-48.0, 10.0, -24.0)),
+                "hand.R": BonePose(rotation_degrees=(14.0, -8.0, 6.0)),
+                "head": BonePose(rotation_degrees=(5.0, 0.0, 1.8)),
+            },
+        )
+        smoke_draw_low = self.merge_pose(
+            smoke_settle,
+            {
+                "upper_arm.R": BonePose(target_direction=(-0.03, -0.12, -0.24)),
+                "forearm.R": BonePose(rotation_degrees=(-38.0, 5.0, -18.0)),
+                "hand.R": BonePose(rotation_degrees=(12.0, -12.0, 8.0)),
+                "head": BonePose(rotation_degrees=(2.5, 0.0, 0.5)),
+            },
+        )
+        smoke_lift = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.R": BonePose(rotation_degrees=(8.0, -8.0, 48.0)),
+                "forearm.R": BonePose(rotation_degrees=(5.0, -28.0, 60.0)),
+                "hand.R": BonePose(rotation_degrees=(0.0, -28.0, 10.0)),
+                "chest": BonePose(rotation_degrees=(3.2, 0.0, -1.4)),
+                "head": BonePose(rotation_degrees=(0.5, 0.0, -0.6)),
+            },
+        )
+        smoke_mouth = self.merge_pose(
+            relaxed,
+            {
+                # These local rotations put the cigarette socket head at the
+                # mouth while keeping its head-to-tail +Y axis pointing out.
+                "upper_arm.R": BonePose(
+                    rotation_degrees=(15.96, -13.89, 84.82),
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(11.05, -47.61, 104.20),
+                ),
+                "hand.R": BonePose(
+                    rotation_degrees=(-8.73, -50.19, 13.66),
+                ),
+            },
+        )
+        smoke_light = self.merge_pose(
+            smoke_mouth,
+            {
+                "upper_arm.L": BonePose(
+                    rotation_degrees=(10.0, 10.0, -70.0),
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(5.0, 38.0, -88.0),
+                ),
+                "hand.L": BonePose(rotation_degrees=(-5.0, 35.0, -10.0)),
+            },
+        )
+        smoke_first_inhale = self.merge_pose(
+            smoke_light,
+            {
+                "spine": BonePose(rotation_degrees=(-2.4, 0.0, 1.2)),
+                "chest": BonePose(rotation_degrees=(4.4, 0.0, -1.4)),
+                "upper_arm.L": BonePose(
+                    rotation_degrees=(8.0, 8.0, -62.0),
+                ),
+                "forearm.L": BonePose(
+                    rotation_degrees=(4.0, 32.0, -78.0),
+                ),
+            },
+        )
+        smoke_inhale = self.merge_pose(
+            smoke_mouth,
+            {
+                "spine": BonePose(rotation_degrees=(-2.4, 0.0, 1.2)),
+                "chest": BonePose(rotation_degrees=(4.4, 0.0, -1.4)),
+            },
+        )
+        smoke_breath_hold = self.merge_pose(
+            smoke_mouth,
+            {
+                "spine": BonePose(rotation_degrees=(-2.1, 0.0, 1.0)),
+                "chest": BonePose(rotation_degrees=(4.0, 0.0, -1.3)),
+            },
+        )
+        smoke_lower = self.merge_pose(
+            relaxed,
+            {
+                "upper_arm.R": BonePose(rotation_degrees=(7.0, -7.0, 42.0)),
+                "forearm.R": BonePose(rotation_degrees=(2.0, -22.0, 52.0)),
+                "hand.R": BonePose(rotation_degrees=(2.0, -20.0, 8.0)),
+                "chest": BonePose(rotation_degrees=(3.4, 0.0, -1.5)),
+            },
+        )
+        smoke_exhale = self.merge_pose(
+            smoke_rest,
+            {
+                "chest": BonePose(rotation_degrees=(2.2, 0.0, -1.6)),
+                "neck": BonePose(rotation_degrees=(-0.5, 0.0, 2.0)),
+                "head": BonePose(rotation_degrees=(2.8, 0.0, 3.8)),
+            },
+        )
+        smoke_inspect = self.merge_pose(
+            smoke_draw_low,
+            {
+                "forearm.R": BonePose(rotation_degrees=(-24.0, 2.0, -12.0)),
+                "hand.R": BonePose(rotation_degrees=(8.0, -16.0, 12.0)),
+                "head": BonePose(rotation_degrees=(7.0, 0.0, 4.0)),
+            },
+        )
+        smoke_extend = self.merge_pose(
+            smoke_settle,
+            {
+                "upper_arm.R": BonePose(target_direction=(-0.08, -0.26, -0.04)),
+                "forearm.R": BonePose(rotation_degrees=(-12.0, -8.0, 12.0)),
+                "hand.R": BonePose(rotation_degrees=(8.0, -12.0, 14.0)),
+                "head": BonePose(rotation_degrees=(2.0, 0.0, -1.0)),
+            },
+        )
+        smoke_flick = self.merge_pose(
+            smoke_extend,
+            {
+                "hand.R": BonePose(rotation_degrees=(28.0, -12.0, 24.0)),
+                "head": BonePose(rotation_degrees=(4.0, 0.0, -0.5)),
+            },
+        )
+        smoke_gaze_follow = self.merge_pose(
+            smoke_settle,
+            {
+                "upper_arm.R": BonePose(target_direction=(-0.06, -0.24, -0.10)),
+                "forearm.R": BonePose(rotation_degrees=(-8.0, -6.0, 8.0)),
+                "hand.R": BonePose(rotation_degrees=(12.0, -8.0, 10.0)),
+                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 2.0)),
+                "head": BonePose(rotation_degrees=(8.0, 0.0, 5.0)),
+            },
+        )
+        smoke_return = self.merge_pose(
+            smoke_rest,
+            {
+                "upper_arm.R": BonePose(rotation_degrees=(3.0, -3.0, 18.0)),
+                "forearm.R": BonePose(rotation_degrees=(-2.0, -8.0, 18.0)),
+                "hand.R": BonePose(rotation_degrees=(5.0, -8.0, 6.0)),
             },
         )
         self._create_action(
             "SmokeEnter", "smoking", 4.0, False, 48, 12,
-            ((0.0, relaxed), (0.7, smoke_pose), (1.0, smoke_pose)),
+            (
+                (0.0, relaxed),
+                (0.16, smoke_settle),
+                (0.30, smoke_reach),
+                (0.40, smoke_draw_low),
+                (0.55, smoke_lift),
+                (0.68, smoke_mouth),
+                (0.76, smoke_light),
+                (0.84, smoke_first_inhale),
+                (0.92, smoke_lower),
+                (1.0, smoke_rest),
+            ),
         )
         self._create_action(
             "SmokeLoop", "smoking", 4.0, True, 24, 6,
             (
-                (0.0, smoke_pose), (0.17, smoke_pose),
-                (0.42, smoke_draw), (0.58, smoke_draw),
-                (0.83, smoke_pose), (1.0, smoke_pose),
+                (0.0, smoke_rest),
+                (1.0 / 6.0, smoke_rest),
+                (0.29, smoke_lift),
+                (0.42, smoke_mouth),
+                (0.50, smoke_inhale),
+                (0.625, smoke_breath_hold),
+                (0.70, smoke_lower),
+                (0.83, smoke_exhale),
+                (0.875, smoke_rest),
+                (1.0, smoke_rest),
             ),
         )
         self._create_action(
             "SmokeExit", "smoking", 2.0, False, 24, 12,
-            ((0.0, smoke_pose), (0.25, smoke_pose), (1.0, relaxed)),
+            (
+                (0.0, smoke_rest),
+                (0.20, smoke_inspect),
+                (0.38, smoke_extend),
+                (0.50, smoke_flick),
+                (0.66, smoke_gaze_follow),
+                (0.82, smoke_return),
+                (1.0, relaxed),
+            ),
         )
 
         feed_pose = self.merge_pose(
@@ -2759,6 +3274,242 @@ def validate_manifold(obj: bpy.types.Object) -> None:
         bm.free()
 
 
+def validate_bed_sleep_pose(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Verify the authored sleeper points toward the source-space headboard."""
+
+    record = result.actions.get("BedSleepLoop")
+    if record is None:
+        return
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+    try:
+        animation_data.action = record.action
+        scene.frame_set(round(record.action.frame_end * 0.5))
+        bpy.context.view_layer.update()
+
+        head = rig.matrix_world @ rig.pose.bones["head"].tail
+        left_foot = rig.matrix_world @ rig.pose.bones["foot.L"].tail
+        right_foot = rig.matrix_world @ rig.pose.bones["foot.R"].tail
+        feet = (left_foot + right_foot) * 0.5
+        pelvis = rig.matrix_world @ rig.pose.bones["pelvis"].head
+        head_to_feet = feet - head
+        if (
+            head_to_feet.length < 1e-5
+            or head_to_feet.normalized().dot(Vector((1.0, 0.0, 0.0))) < 0.95
+        ):
+            errors.append(
+                "BedSleepLoop must place the head toward source -X and "
+                "the feet toward source +X"
+            )
+        elif not head.x < pelvis.x < feet.x:
+            errors.append(
+                "BedSleepLoop pelvis must remain between the head and feet"
+            )
+
+        mouth = rig.pose.bones["SOCKET_Mouth"]
+        face_direction = (
+            (rig.matrix_world @ mouth.tail) -
+            (rig.matrix_world @ mouth.head)
+        )
+        if (
+            face_direction.length < 1e-5
+            or face_direction.normalized().dot(Vector((0.0, 0.0, 1.0))) < 0.90
+        ):
+            errors.append("BedSleepLoop must keep the sleeper face-up")
+
+        for eye_name in ("face.eye.L", "face.eye.R"):
+            if rig.pose.bones[eye_name].scale.y > 0.15:
+                errors.append(
+                    f"BedSleepLoop must keep {eye_name} visibly closed"
+                )
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
+def validate_smoking_pose(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Verify smoking contact, facing, loop seam and fixed-root contracts."""
+
+    record = result.actions.get("SmokeLoop")
+    smoking_records = tuple(
+        result.actions.get(name)
+        for name in ("SmokeEnter", "SmokeLoop", "SmokeExit")
+    )
+    if record is None or any(value is None for value in smoking_records):
+        return
+
+    rig = result.rig
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+
+    def sample(action_record: ActionRecord, normalized_time: float) -> None:
+        animation_data.action = action_record.action
+        frame = round(action_record.action.frame_end * normalized_time)
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+
+    def armature_axis(bone_name: str) -> Vector:
+        bone = rig.pose.bones[bone_name]
+        return bone.tail - bone.head
+
+    def socket_head(bone_name: str) -> Vector:
+        return rig.matrix_world @ rig.pose.bones[bone_name].head
+
+    def matrix_error(left: Matrix, right: Matrix) -> float:
+        return max(
+            abs(left[row][column] - right[row][column])
+            for row in range(4)
+            for column in range(4)
+        )
+
+    try:
+        mouth_rest_bone = rig.data.bones["SOCKET_Mouth"]
+        mouth_rest_axis = (
+            mouth_rest_bone.tail_local - mouth_rest_bone.head_local
+        )
+        cigarette_rest_bone = rig.data.bones["SOCKET_Cigarette.R"]
+        cigarette_rest_axis = (
+            cigarette_rest_bone.tail_local - cigarette_rest_bone.head_local
+        )
+        source_forward = Vector((0.0, -1.0, 0.0))
+        if (
+            mouth_rest_axis.length < 1e-5
+            or mouth_rest_axis.normalized().dot(source_forward) < 0.95
+        ):
+            errors.append(
+                "SOCKET_Mouth local +Y must preserve source-space facing -Y"
+            )
+        if (
+            cigarette_rest_axis.length < 1e-5
+            or cigarette_rest_axis.normalized().dot(source_forward) < 0.95
+        ):
+            errors.append(
+                "SOCKET_Cigarette.R local +Y must point outward along source -Y"
+            )
+
+        sample(record, 0.0)
+        rest_distance = (
+            socket_head("SOCKET_Cigarette.R") - socket_head("SOCKET_Mouth")
+        ).length
+        if rest_distance < 0.40:
+            errors.append(
+                "SmokeLoop rest must keep the cigarette at least 0.40 m "
+                f"from the mouth (got {rest_distance:.4f} m)"
+            )
+
+        mouth_rest_pose_axis = armature_axis("SOCKET_Mouth")
+        if (
+            mouth_rest_pose_axis.length < 1e-5
+            or mouth_rest_pose_axis.normalized().dot(source_forward) < 0.95
+        ):
+            errors.append("SmokeLoop rest must keep the face toward source -Y")
+
+        seam_start = {
+            bone.name: bone.matrix.copy()
+            for bone in rig.pose.bones
+        }
+
+        identity = Matrix.Identity(4)
+        for smoking_record in smoking_records:
+            keyed_frames = sorted({
+                round(keyframe.co.x)
+                for fcurve in iter_action_fcurves(smoking_record.action)
+                for keyframe in fcurve.keyframe_points
+            })
+            animation_data.action = smoking_record.action
+            for frame in keyed_frames:
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                root_error = matrix_error(
+                    rig.pose.bones["root"].matrix_basis,
+                    identity,
+                )
+                if root_error > 1e-5:
+                    errors.append(
+                        f"{smoking_record.action.name} must keep the root "
+                        "bone fixed at every authored phase"
+                    )
+                    break
+
+        contact_samples = (
+            (result.actions["SmokeEnter"], (0.68, 0.76, 0.84)),
+            (record, (0.50, 0.625)),
+        )
+        for contact_record, normalized_times in contact_samples:
+            for normalized_time in normalized_times:
+                sample(contact_record, normalized_time)
+                cigarette_head = socket_head("SOCKET_Cigarette.R")
+                mouth_head = socket_head("SOCKET_Mouth")
+                mouth_distance = (cigarette_head - mouth_head).length
+                if mouth_distance > 0.025:
+                    errors.append(
+                        f"{contact_record.action.name} inhale must place the "
+                        "cigarette socket within 0.025 m of the mouth "
+                        f"(got {mouth_distance:.4f} m at "
+                        f"t={normalized_time:.3f})"
+                    )
+
+                cigarette_axis = armature_axis("SOCKET_Cigarette.R")
+                mouth_axis = armature_axis("SOCKET_Mouth")
+                if cigarette_axis.length < 1e-5 or mouth_axis.length < 1e-5:
+                    errors.append(
+                        f"{contact_record.action.name} inhale socket axes "
+                        "must be non-zero"
+                    )
+                    continue
+                alignment = cigarette_axis.normalized().dot(
+                    mouth_axis.normalized()
+                )
+                if alignment < 0.85:
+                    errors.append(
+                        f"{contact_record.action.name} inhale cigarette "
+                        "local +Y must point outward with the mouth socket "
+                        f"(dot {alignment:.4f})"
+                    )
+
+        sample(record, 1.0)
+        for bone_name, start_matrix in seam_start.items():
+            seam_error = matrix_error(
+                rig.pose.bones[bone_name].matrix,
+                start_matrix,
+            )
+            if seam_error > 1e-5:
+                errors.append(
+                    "SmokeLoop must have an exact full-rig seam "
+                    f"({bone_name} differs by {seam_error:.7f})"
+                )
+                break
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
 def validate_result(
     config: BuildConfig,
     result: BuildResult,
@@ -2841,6 +3592,9 @@ def validate_result(
                         f"Loop Action {name} does not close on {fcurve.data_path}"
                     )
                     break
+
+    validate_bed_sleep_pose(result, errors)
+    validate_smoking_pose(result, errors)
 
     triangle_count = 0
     all_minima: list[Vector] = []
