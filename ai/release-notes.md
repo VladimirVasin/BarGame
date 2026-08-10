@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-10 — Ground between buildings now has a surface
+
+- Exposed land between city buildings now uses a dark, compacted soil texture
+  with restrained moss, grit and tiny stones instead of a single flat color.
+  Its scale stays continuous across generated lots, and the apartment balcony
+  view uses the same ground appearance.
+
 ### 2026-08-10 — City map stays inside its frame
 
 - Roads, park paths and landmark strokes on the scrollable full-screen map no

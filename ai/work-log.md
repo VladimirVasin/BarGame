@@ -2,6 +2,27 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Textured ground between city buildings
+
+- Added one opaque generated compacted-soil albedo at
+  `Resources/Textures/CityGroundSoilAlbedo`. Unity imports it at runtime as
+  `512x512` sRGB with Repeat, Bilinear filtering, mipmaps, anisotropy `4`, no
+  compression and no readable CPU copy.
+- Applied the soil through `12 m` world-aligned XZ UVs and a material property
+  block on the shared `RuntimePrimitiveLit`. The City keeps the existing
+  collider-backed `Active Land` combined mesh, while the clipped Home exterior
+  reconstruction uses the same visual recipe without adding a collider.
+- Left beach, lake-shore, cemetery, water, park lawn and street treatments
+  unchanged, and expanded the parameterized exterior-surface contract to cover
+  the new resource, import, seam, UV, shared-material and MPB settings.
+
+Verification:
+
+- Focused Unity EditMode `RuntimePrimitiveFactoryTests` passed `9/9`; Unity
+  compiled the affected Runtime and EditMode assemblies without errors.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered City/Home walkthrough.
+
 ## 2026-08-10 — Scrollable city-map line clipping
 
 - Fixed the scrollable full-screen City map leaking and scattering roads, park

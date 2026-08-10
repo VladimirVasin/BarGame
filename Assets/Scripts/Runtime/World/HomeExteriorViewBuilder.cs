@@ -86,7 +86,7 @@ namespace BarPromenade
             float facadeX =
                 PlayerHomeBalconyGeometry.HomeFacadeX;
             float groundWidth = radius * 2.5f;
-            CreateExteriorBox(
+            CreateExteriorGroundBox(
                 "Home Exterior Ground",
                 parent,
                 new Bounds(
@@ -97,9 +97,7 @@ namespace BarPromenade
                     new Vector3(
                         groundWidth,
                         0.32f,
-                        groundWidth)),
-                CityExteriorAppearance.Ground,
-                RuntimePrimitiveFactory.DefaultMaterial);
+                        groundWidth)));
 
             float horizonX = facadeX + radius + 22f;
             float horizonHeight = 25f;
@@ -701,6 +699,31 @@ namespace BarPromenade
                 minimum,
                 maximum);
             return true;
+        }
+
+        private static void CreateExteriorGroundBox(
+            string name,
+            Transform parent,
+            Bounds bounds)
+        {
+            if (!TryClipToExteriorHalfSpace(
+                    bounds,
+                    out Bounds exteriorBounds))
+            {
+                return;
+            }
+
+            Bounds[] boxes = { exteriorBounds };
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    false,
+                    CityExteriorAppearance.GroundTextureTileSize);
+            CityExteriorAppearance.ApplyGroundSurface(
+                surface.GetComponent<Renderer>());
         }
 
         private static void CreateExteriorBox(

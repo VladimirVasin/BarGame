@@ -10,15 +10,19 @@ namespace BarPromenade
     /// </summary>
     internal static class CityExteriorAppearance
     {
+        public const string GroundTextureResourcePath =
+            "Textures/CityGroundSoilAlbedo";
         public const string RoadTextureResourcePath =
             "Textures/CityRoadAsphaltAlbedo";
         public const string SidewalkTextureResourcePath =
             "Textures/CitySidewalkAlbedo";
         public const string RoadMarkingTextureResourcePath =
             "Textures/CityRoadMarkingAlbedo";
+        public const float GroundTextureTileSize = 12f;
         public const float RoadTextureTileSize = 12f;
         public const float SidewalkTextureTileSize = 6f;
         public const float RoadMarkingTextureTileSize = 2f;
+        public const float GroundSmoothness = 0.04f;
         public const float RoadSmoothness = 0.10f;
         public const float SidewalkSmoothness = 0.08f;
         public const float RoadMarkingSmoothness = 0.12f;
@@ -34,6 +38,7 @@ namespace BarPromenade
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
 
+        private static Texture2D groundTexture;
         private static Texture2D roadTexture;
         private static Texture2D sidewalkTexture;
         private static Texture2D roadMarkingTexture;
@@ -42,8 +47,6 @@ namespace BarPromenade
             new Color(0.175f, 0.195f, 0.195f);
         public static readonly Color ParkPath =
             new Color(0.39f, 0.34f, 0.24f);
-        public static readonly Color Ground =
-            new Color(0.170f, 0.205f, 0.185f);
         public static readonly Color BeachSand =
             new Color(0.52f, 0.45f, 0.30f);
         public static readonly Color Water =
@@ -64,6 +67,17 @@ namespace BarPromenade
             new Color(0.82f, 1.10f, 1.22f);
         public static readonly Color SupermarketWindow =
             new Color(0.50f, 0.82f, 0.66f);
+
+        public static Texture2D GroundTexture
+        {
+            get
+            {
+                return LoadSurfaceTexture(
+                    ref groundTexture,
+                    GroundTextureResourcePath,
+                    "ground");
+            }
+        }
 
         public static Texture2D RoadTexture
         {
@@ -96,6 +110,19 @@ namespace BarPromenade
                     RoadMarkingTextureResourcePath,
                     "road marking");
             }
+        }
+
+        public static void ApplyGroundSurface(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            ApplySurface(
+                renderer,
+                GroundTexture,
+                GroundSmoothness);
         }
 
         public static void ApplyRoadSurface(Renderer renderer)
@@ -182,6 +209,7 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCachedResources()
         {
+            groundTexture = null;
             roadTexture = null;
             sidewalkTexture = null;
             roadMarkingTexture = null;

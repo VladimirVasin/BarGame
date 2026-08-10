@@ -95,11 +95,14 @@ The vertical slice contains:
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;
-- three opaque generated exterior albedos: dark ordinary asphalt, the former
-  light road texture reassigned to sidewalks, and worn white traffic paint.
-  They retain Repeat/Bilinear/mipmap import settings and use XZ planar UVs at
-  `12 m`, `6 m` and `2 m` per tile through material property blocks on the one
-  shared `RuntimePrimitiveLit`, without material instances. A deterministic
+- four opaque generated exterior albedos: dark compacted soil for exposed
+  ground between buildings, dark ordinary asphalt, the former light road
+  texture reassigned to sidewalks, and worn white traffic paint. They retain
+  Repeat/Bilinear/mipmap import settings and use XZ planar UVs at `12 m` for
+  soil and asphalt, `6 m` for sidewalks and `2 m` for markings through
+  material property blocks on the one shared `RuntimePrimitiveLit`, without
+  material instances. The same soil recipe covers the bounded Home exterior
+  ground reconstruction. A deterministic
   `CityStreetSurfacePlan` keeps the existing `6 m` road footprint, divides
   ordinary streets into a `4 m` carriageway plus two raised `1 m` sidewalks,
   keeps park paths separate, textures the center dashes white and adds zebra

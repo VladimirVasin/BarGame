@@ -230,6 +230,11 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [TestCase(
+            ExteriorSurfaceKind.Ground,
+            "Textures/CityGroundSoilAlbedo",
+            12f,
+            0.04f)]
+        [TestCase(
             ExteriorSurfaceKind.Road,
             "Textures/CityRoadAsphaltAlbedo",
             12f,
@@ -361,6 +366,15 @@ namespace BarPromenade.Tests.EditMode
         {
             switch (surfaceKind)
             {
+                case ExteriorSurfaceKind.Ground:
+                    resourcePath = CityExteriorAppearance
+                        .GroundTextureResourcePath;
+                    texture = CityExteriorAppearance.GroundTexture;
+                    tileSize = CityExteriorAppearance
+                        .GroundTextureTileSize;
+                    smoothness = CityExteriorAppearance
+                        .GroundSmoothness;
+                    return;
                 case ExteriorSurfaceKind.Road:
                     resourcePath = CityExteriorAppearance
                         .RoadTextureResourcePath;
@@ -400,6 +414,9 @@ namespace BarPromenade.Tests.EditMode
         {
             switch (surfaceKind)
             {
+                case ExteriorSurfaceKind.Ground:
+                    CityExteriorAppearance.ApplyGroundSurface(renderer);
+                    return;
                 case ExteriorSurfaceKind.Road:
                     CityExteriorAppearance.ApplyRoadSurface(renderer);
                     return;
@@ -484,6 +501,7 @@ namespace BarPromenade.Tests.EditMode
 
         public enum ExteriorSurfaceKind
         {
+            Ground,
             Road,
             Sidewalk,
             RoadMarking

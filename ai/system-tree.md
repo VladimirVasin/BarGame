@@ -22,6 +22,7 @@ Assets/
       Ps1Composite.mat
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Textures/
+      CityGroundSoilAlbedo.png     generated compacted-soil ground; 512 runtime, Repeat/mips
       CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
       CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
       CityRoadMarkingAlbedo.png    generated worn white traffic-paint material tile
@@ -255,7 +256,7 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
-      RuntimePrimitiveFactoryTests.cs three street assets/import/seam/MPB/UV contract
+      RuntimePrimitiveFactoryTests.cs four exterior assets/import/seam/MPB/UV contract
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation

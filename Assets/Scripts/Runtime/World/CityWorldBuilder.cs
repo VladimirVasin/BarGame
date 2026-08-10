@@ -166,11 +166,10 @@ namespace BarPromenade
                 }
             }
 
-            BuildCombinedBoxesIfAny(
+            BuildGroundSurfaceBoxesIfAny(
                 "Active Land",
                 surfaces,
                 buildable,
-                CityExteriorAppearance.Ground,
                 true);
             BuildCombinedBoxesIfAny(
                 "Beach",
@@ -1432,6 +1431,29 @@ namespace BarPromenade
                     0f,
                     lot.FrontageDirection.y)
                 : Vector3.back;
+        }
+
+        private static void BuildGroundSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            bool collider)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    collider,
+                    CityExteriorAppearance.GroundTextureTileSize);
+            CityExteriorAppearance.ApplyGroundSurface(
+                surface.GetComponent<Renderer>());
         }
 
         private static void BuildRoadSurfaceBoxesIfAny(
