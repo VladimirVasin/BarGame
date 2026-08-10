@@ -2,12 +2,23 @@
 
 ## Unreleased
 
+### 2026-08-10 — Hunger and fatigue now build over time
+
+- After the opening Wake, hunger now rises from `0` to `100` over 24 game hours
+  and fatigue over 18. Both pause together with the game clock in the
+  inventory and pause menu, then continue across locations and ordinary
+  interactions.
+- The existing inventory Status bars show the changing values. Eating reduces
+  hunger from its current point, while completing the full bed wake resets
+  fatigue; cancelled sleep grants no rest.
+- Hunger and fatigue are visual status values for now and apply no movement,
+  interaction or other gameplay penalties.
+
 ### 2026-08-10 — Sleep now clears fatigue
 
 - The inventory Status panel now includes a fourth localized Fatigue bar
-  alongside buzz, hunger and stress. Fatigue is ready as a persistent `0-100`
-  need but does not accumulate or affect the hero yet, so a new run starts at
-  zero.
+  alongside buzz, hunger and stress. Fatigue is a persistent `0-100` need and
+  a new run starts at zero.
 - Finishing the complete bed wake now restores fatigue to zero. Cancelling the
   sleep interaction or leaving during the wake does not grant the reset.
 

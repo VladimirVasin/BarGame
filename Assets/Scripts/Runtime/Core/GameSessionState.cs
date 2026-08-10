@@ -97,6 +97,8 @@ namespace BarPromenade
             new InventoryState();
         private static readonly GameTimeState gameTime =
             new GameTimeState();
+        private static readonly PlayerNeedsProgressionState needsProgression =
+            new PlayerNeedsProgressionState();
         private static float intoxicationRecoveryElapsed;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
@@ -119,9 +121,9 @@ namespace BarPromenade
             private set;
         } = HomeArrivalKind.Normal;
         public static int IntoxicationLevel { get; private set; }
-        public static int HungerLevel { get; private set; } = DefaultHunger;
+        public static int HungerLevel => needsProgression.HungerLevel;
         public static int StressLevel { get; private set; } = DefaultStress;
-        public static int FatigueLevel { get; private set; } = DefaultFatigue;
+        public static int FatigueLevel => needsProgression.FatigueLevel;
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
         public static int CashBalance { get; private set; } = DefaultCash;
@@ -175,7 +177,28 @@ namespace BarPromenade
 
         public static void AdvanceGameTime(float scaledDelta)
         {
-            gameTime.Advance(scaledDelta);
+            double advancedGameMinutes = gameTime.Advance(scaledDelta);
+            PlayerNeedsProgressionResult progression =
+                needsProgression.Advance(advancedGameMinutes);
+            if (!progression.Changed)
+            {
+                return;
+            }
+
+            GameLog.Info(
+                "needs",
+                "passive_progressed",
+                GameLog.Field(
+                    "elapsed_game_minutes",
+                    advancedGameMinutes),
+                GameLog.Field(
+                    "previous_hunger",
+                    progression.HungerBefore),
+                GameLog.Field("hunger", progression.HungerAfter),
+                GameLog.Field(
+                    "previous_fatigue",
+                    progression.FatigueBefore),
+                GameLog.Field("fatigue", progression.FatigueAfter));
         }
 
         private static void ResetToDefaults()
@@ -188,9 +211,8 @@ namespace BarPromenade
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
             IntoxicationLevel = 0;
-            HungerLevel = DefaultHunger;
+            needsProgression.Reset();
             StressLevel = DefaultStress;
-            FatigueLevel = DefaultFatigue;
             intoxicationRecoveryElapsed = 0f;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -276,7 +298,11 @@ namespace BarPromenade
 
             int previousHunger = HungerLevel;
             int previousStress = StressLevel;
-            HungerLevel = nextHunger;
+            if (previousHunger != nextHunger)
+            {
+                needsProgression.SetHunger(nextHunger);
+            }
+
             StressLevel = nextStress;
             GameLog.Info(
                 "needs",
@@ -293,13 +319,13 @@ namespace BarPromenade
                 fatigue,
                 PlayerNeedsRules.MinimumLevel,
                 PlayerNeedsRules.MaximumLevel);
-            if (FatigueLevel == nextFatigue)
+            int previousFatigue = FatigueLevel;
+            needsProgression.SetFatigue(nextFatigue);
+            if (previousFatigue == nextFatigue)
             {
                 return;
             }
 
-            int previousFatigue = FatigueLevel;
-            FatigueLevel = nextFatigue;
             GameLog.Info(
                 "needs",
                 "fatigue_changed",

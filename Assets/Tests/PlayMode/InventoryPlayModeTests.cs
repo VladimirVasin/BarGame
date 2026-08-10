@@ -25,6 +25,8 @@ namespace BarPromenade.Tests.PlayMode
         private IntoxicationHudView hud;
         private InventoryController inventory;
         private PauseMenuController pauseMenu;
+        private GameTimeRuntime gameTimeRuntime;
+        private bool ownsGameTimeRuntime;
         private float previousTimeScale;
 
         [UnitySetUp]
@@ -70,6 +72,15 @@ namespace BarPromenade.Tests.PlayMode
                     null),
                 cameraFollow,
                 hud);
+            gameTimeRuntime = Object.FindAnyObjectByType<GameTimeRuntime>();
+            if (gameTimeRuntime == null)
+            {
+                gameTimeRuntime =
+                    BarPromenadeRuntimeBootstrap
+                        .EnsureGameTimeRuntimeInstalled();
+                ownsGameTimeRuntime = true;
+            }
+
             yield return null;
         }
 
@@ -89,6 +100,13 @@ namespace BarPromenade.Tests.PlayMode
             Destroy(uiObject);
             Destroy(cameraObject);
             Destroy(playerObject);
+            if (ownsGameTimeRuntime && gameTimeRuntime != null)
+            {
+                Destroy(gameTimeRuntime.gameObject);
+            }
+
+            gameTimeRuntime = null;
+            ownsGameTimeRuntime = false;
             Time.timeScale = previousTimeScale;
             inputFixture?.TearDown();
             inputFixture = null;
@@ -148,6 +166,12 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
             GameSessionState.AdvanceGameTime(394f);
+            double gameTimeBeforeOpen =
+                GameSessionState.GameTimeOfDayMinutes;
+            int hungerBeforeOpen = GameSessionState.HungerLevel;
+            int fatigueBeforeOpen = GameSessionState.FatigueLevel;
+            Assert.That(hungerBeforeOpen, Is.GreaterThan(0));
+            Assert.That(fatigueBeforeOpen, Is.GreaterThan(0));
 
             Assert.That(inventory.Open(), Is.True);
             Assert.That(Time.timeScale, Is.Zero);
@@ -160,6 +184,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 inventory.View.CurrentGameTimeText,
                 Is.EqualTo("12:34"));
+            Assert.That(
+                GameSessionState.GameTimeOfDayMinutes,
+                Is.EqualTo(gameTimeBeforeOpen));
+            Assert.That(
+                GameSessionState.HungerLevel,
+                Is.EqualTo(hungerBeforeOpen));
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(fatigueBeforeOpen));
         }
 
         [UnityTest]

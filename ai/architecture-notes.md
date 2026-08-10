@@ -160,8 +160,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `GameTimeRuntime` persists across Single-mode loads and advances through
   `Time.deltaTime` at `1.0` game minute per real second, making one full `24 h`
   day exactly `1440` real seconds (`24` minutes). Midnight increments a
-  session day index, and any owner that sets `timeScale` to zero naturally
-  freezes this clock.
+  session day index. `GameTimeState.Advance` also returns the actually elapsed
+  game minutes so `GameSessionState` advances clock and needs from one delta;
+  any owner that sets `timeScale` to zero naturally freezes both.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
   sequence, session/scene/seed context and explicit transition/minigame
@@ -275,9 +276,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Session needs and atomic inventory consumption:** Hunger, stress
   and fatigue are clamped integer `0-100` session values where higher is worse.
   All start at `0`, survive ordinary scene loads and reset to `0` with a new
-  game; no current runtime system raises any of them. Fatigue has a dedicated
-  future mutation seam but no accumulation or gameplay effects yet. A normally
-  completed bed exit resets it to zero through the shared interaction
+  game. Once the startup Wake starts the persistent scaled clock, one pure
+  double-precision progression state raises hunger by `100 / 1440` and fatigue
+  by `100 / 1080` per elapsed game minute. Fractional state makes the result
+  independent of frame partitioning; reaching `100` discards overflow instead
+  of banking hidden growth. The clock path keeps both frozen before Wake and
+  at `timeScale = 0`, while ordinary interactions, transitions and scene loads
+  do not create another pause rule. The inventory exposes the clamped integer
+  values, but neither need applies a gameplay debuff yet. A normally completed
+  bed exit resets fatigue and its fraction through the shared interaction
   completion boundary; cancellation and lifecycle cleanup do not. A
   data-first consumable catalog gives all present food an explicit relief
   value plus a poor-food minimum hunger of `20`, so repeated cheap food can
@@ -285,7 +292,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   hero and food at or below its floor is not consumed. The supermarket vodka
   bottle is one atomic four-serving use. `GameSessionState` preflights every
   use, removes exactly one stack only after success is known, then commits food
-  relief or drinking, stress and intoxication together. Maximum intoxication,
+  relief and clears the hunger fraction, or commits drinking, stress and
+  intoxication together. Maximum intoxication,
   a stale stack or a no-effect food use mutates nothing. Refrigerator `Use`
   remains unavailable; items are taken into the hero inventory first.
 - **Accepted — Separate finite-stock supermarket interior:**

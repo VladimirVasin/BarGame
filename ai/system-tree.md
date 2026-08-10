@@ -84,7 +84,8 @@ Assets/
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
-        GameTimeState.cs          frozen 05:59 -> running 06:00, 1.0 min/s
+        GameSessionState.cs       persistent clock + needs transaction owner
+        GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
         GameTimeRuntime.cs        persistent scaled-delta driver
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
@@ -159,6 +160,7 @@ Assets/
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
         PlayerContactShadow.cs     planted/fall-aware analytic ground patch
+        PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
@@ -232,7 +234,9 @@ Assets/
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
-      PlayerNeedsRulesTests.cs        relief floors, clamping and fraction scaling
+      PlayerNeedsRulesTests.cs        relief floors, clamping and drink fractions
+      PlayerNeedsProgressionStateTests.cs  rates, chunking, cap and fractional reset
+      GameSessionStateTests.cs        clock-driven needs and atomic session transactions
       InventoryConsumableCatalogTests.cs current food/alcohol value table
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
@@ -246,7 +250,7 @@ Assets/
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
-      GameTimeStateTests.cs                 freeze/start/1440 s day/midnight/reset
+      GameTimeStateTests.cs                 freeze/start/elapsed delta/day/midnight/reset
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
@@ -259,7 +263,7 @@ Assets/
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
-      InventoryPlayModeTests.cs            I/Escape, pause exclusion and exact restoration
+      InventoryPlayModeTests.cs            I/Escape, clock/needs freeze and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, running clock and cleanup
@@ -311,6 +315,10 @@ build index 0 -> MainMenuRoot -> BeginNewGame
                               -> time frozen at 05:59
 startup Wake -> session time 06:00 -> GameTimeRuntime scaled delta
                                   -> 1440 real seconds per game day
+                                  -> PlayerNeedsProgressionState
+                                     -> hunger 0..100 / 1440 game minutes
+                                     -> fatigue 0..100 / 1080 game minutes
+                                     -> integer inventory Status bars
                                   -> HomeAlarmClock HH:MM
                                   -> CityDayNightController
                                   -> HomeDayNightController
@@ -485,6 +493,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                        -> neutral 3D rendered settle frame
                                        -> terminal clip pose -> independent exit pose
                                        -> normal completion -> session fatigue reset
+                                          + clear fatigue fraction
                                        -> owner/transition cancel -> complete restoration, fatigue preserved
        -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
                                    -> permanent rail ashtray at (7.25, 1.12, -1.67)

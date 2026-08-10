@@ -47,25 +47,27 @@ namespace BarPromenade
             return true;
         }
 
-        public void Advance(float scaledDelta)
+        public double Advance(float scaledDelta)
         {
             if (!IsRunning ||
                 scaledDelta <= 0f ||
                 float.IsNaN(scaledDelta) ||
                 float.IsInfinity(scaledDelta))
             {
-                return;
+                return 0d;
             }
 
+            double advancedGameMinutes =
+                scaledDelta * GameMinutesPerRealSecond;
             double combinedMinutes =
                 timeOfDayMinutes +
-                (scaledDelta * GameMinutesPerRealSecond);
+                advancedGameMinutes;
             double completedDays = Math.Floor(
                 combinedMinutes / MinutesPerDay);
             if (completedDays <= 0d)
             {
                 timeOfDayMinutes = combinedMinutes;
-                return;
+                return advancedGameMinutes;
             }
 
             timeOfDayMinutes = combinedMinutes % MinutesPerDay;
@@ -73,10 +75,11 @@ namespace BarPromenade
                 DayIndex > int.MaxValue - (int)completedDays)
             {
                 DayIndex = int.MaxValue;
-                return;
+                return advancedGameMinutes;
             }
 
             DayIndex += (int)completedDays;
+            return advancedGameMinutes;
         }
     }
 }

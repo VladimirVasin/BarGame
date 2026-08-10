@@ -477,15 +477,100 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ResetFatigueAfterSleep_ClearsCurrentLevel()
+        public void ResetFatigueAfterSleep_ClearsLevelAndFractionalProgress()
         {
             GameSessionState.UpdateFatigue(73);
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(5.5f);
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(73));
 
             GameSessionState.ResetFatigueAfterSleep();
 
             Assert.That(
                 GameSessionState.FatigueLevel,
                 Is.EqualTo(GameSessionState.DefaultFatigue));
+
+            GameSessionState.AdvanceGameTime(5.5f);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+
+            GameSessionState.AdvanceGameTime(5.5f);
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AdvanceGameTime_ProgressesNeedsOnlyAfterWake()
+        {
+            GameSessionState.AdvanceGameTime(720f);
+
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(33));
+        }
+
+        [Test]
+        public void BeginNewGame_ClearsFractionalNeedsProgress()
+        {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(7.3f);
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+
+            GameSessionState.BeginNewGame();
+            GameSessionState.AdvanceGameTime(720f);
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(7.3f);
+
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+
+            GameSessionState.AdvanceGameTime(7.2f);
+
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(1));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void FoodUse_ClearsFractionalHungerProgress()
+        {
+            GameSessionState.UpdateNeeds(60, 0);
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(7.3f);
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(60));
+
+            InventoryItemUseResult result =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
+
+            GameSessionState.AdvanceGameTime(7.3f);
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
+
+            GameSessionState.AdvanceGameTime(7.2f);
+            Assert.That(GameSessionState.HungerLevel, Is.EqualTo(26));
         }
 
         [Test]

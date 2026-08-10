@@ -2,6 +2,34 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Clock-driven hunger and fatigue
+
+- Connected hunger and fatigue to the one persistent scaled session clock.
+  After the startup Wake, hunger fills from `0` to `100` over `1440` game
+  minutes and fatigue over `1080`; progression freezes with the clock before
+  Wake and at `timeScale = 0`, but otherwise survives and continues through
+  ordinary interactions, transitions and scene loads.
+- Added a pure double-precision fractional progression state, keeping large and
+  small time steps deterministic and discarding overflow at the `100` cap.
+  Public session values and the existing four-bar inventory Status card remain
+  clamped integers; no hunger or fatigue debuff is applied yet.
+- Made value-setting transactions clear their corresponding hidden fraction:
+  committed food clears the hunger remainder, a normally completed bed wake
+  clears fatigue and its remainder, and a new game clears both. Cancelled sleep
+  preserves the accumulated fatigue instead of treating the rest as completed.
+- Kept diagnostics boundary-based by recording passive need changes only when
+  a visible integer level changes instead of logging each frame.
+
+Verification:
+
+- Focused EditMode progression and session-state selection: 12/12 passed in
+  0.29 seconds.
+- Focused PlayMode
+  `InventoryPlayModeTests.Open_ShowsCurrentGameTimeAndFreezesIt`: 1/1 passed in
+  1.12 seconds.
+- Fast mode intentionally omitted complete Unity suites, a player build and
+  startup smoke.
+
 ## 2026-08-10 — Session fatigue and completed bed rest
 
 - Added session-owned fatigue as a clamped integer `0-100` value where higher

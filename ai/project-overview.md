@@ -468,8 +468,15 @@ The vertical slice contains:
   compact intoxication/hunger/stress/fatigue bars, dollar cash, a five-column point-filtered
   icon grid, selected item description and contextual Eat/Drink, Examine and
   Close commands. Hunger, stress and fatigue are session-owned `0-100` values
-  that start at zero and currently have no passive increase. A normally
-  completed bed sleep resets fatigue to zero. The selected item is a
+  that start at zero and survive ordinary scene loads. Once the startup Wake
+  starts the shared scaled session clock, hunger rises from `0` to `100` over
+  `1440` game minutes and fatigue over `1080`; both use hidden double-precision
+  fractions while the existing menu bars expose only clamped integers. The
+  same `Time.deltaTime` path freezes progression before Wake and whenever
+  `timeScale` is zero, but otherwise continues through scenes, transitions and
+  ordinary interactions. Food clears the hunger fraction when it applies its
+  relief, while only a normally completed bed sleep clears fatigue and its
+  fraction. Neither need has a gameplay debuff yet. The selected item is a
   live low-resolution 3D model in both the lower panel and Examine view; its
   hidden preview stage rotates on unscaled time and reuses the same procedural
   bottle, egg and open-can geometry as the refrigerator, plus the supermarket's
