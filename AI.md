@@ -20,10 +20,14 @@ independent body meshes on one Generic rig, uses continuous in-place 3D clips
 for locomotion and contextual actions, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
-production model. City streets also host a deterministic ambient population:
-12 short function-biased routes are simulated continuously while a six-model
-pool renders nearby collider-free walkers on a compatible Generic rig using
-the hero's shared Idle and Walk clips.
+  production model. City streets also host a deterministic sidewalk and zebra
+  navigation graph. At most two ambient walkers exist near the player: they
+  spawn outside the camera frustum, keep moving forward through graph turns,
+  independently choose whether to use each zebra crossing, and return to their
+  pool after entering and then leaving view. Their compatible Generic rig uses
+  the hero's shared Idle and Walk clips. Home maps the same graph into the
+  bounded street view below the balcony and enables its two slots only while
+  the Balcony camera shot is active; returning indoors releases them.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds

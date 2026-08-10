@@ -108,15 +108,20 @@ The vertical slice contains:
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
-- 12 deterministic ambient sidewalk routes biased toward real city functions,
-  continuously simulated behind a pool of at most six visible low-poly
-  walkers. Virtual actors stay on a separate sidewalk-only mask and walk at
-  the center of either pavement strip rather than in the carriageway; a pooled
-  walker's `CharacterController` is enabled only while its presentation is
-  safely bound. The dedicated layer collides with the player, ignores other
-  pedestrians and is excluded from camera/interaction queries. All instances
-  reuse one lampshade-hood model, four material-property-block palettes and
-  the hero's shared in-place `Idle`/`Walk` clips on a compatible Generic rig;
+- one deterministic radius-safe sidewalk/crosswalk navigation graph with
+  spawn anchors on long pavement segments. At most two low-poly walkers are
+  active inside the player's local far-clip window: each starts outside the
+  camera frustum, walks forward through available turns, has an independent
+  50% choice at a zebra, and is recycled only after it has entered and then
+  left view (or never approaches before its timeout). A slot's
+  `CharacterController` is enabled only after a unique, obstacle-safe spawn
+  and disabled before pooling. The dedicated layer collides with the player,
+  ignores other pedestrians and is excluded from camera/interaction queries.
+  Both slots reuse one lampshade-hood model, four material-property-block
+  palettes and the hero's shared in-place `Idle`/`Walk` clips on a compatible
+  Generic rig. Home transforms that same graph into its local exterior,
+  filters spawn anchors to the reconstructed nearby roads beyond the facade
+  and runs the slots only while the Balcony shot is active;
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
@@ -529,8 +534,10 @@ The vertical slice contains:
   background, `48 m` visibility cap, current time-of-day lighting, grading,
   local fog field and bounded `12`-light street/bar pool, then restores the
   captured Home visibility and lighting for MainRoom, Bathroom, disable and
-  destroy. Fog and the City grade remain identical at every hour. It never
-  creates a second City root, player or camera;
+  destroy. During that shot only, the same two-slot pedestrian runtime supplies
+  offscreen passers-by on the reconstructed street below; leaving the shot
+  immediately pools them. Fog and the City grade remain identical at every
+  hour. It never creates a second City root, player or camera;
 - one modal balcony-smoking vignette at the Home-local dock around
   `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary 3D
   rig walks to entry and turns toward the city along `+X`; exact alignment

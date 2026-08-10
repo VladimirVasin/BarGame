@@ -81,25 +81,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   no positive carriageway between the two sidewalks. Asphalt, sidewalk and
   white paint use three
   packaged albedos through MPBs on the shared Lit material.
-- **Accepted — Pooled ambient sidewalk pedestrians:** City layout and session
-  seed produce 12 immutable short routes on radius-safe sidewalk segments,
-  prioritized near actual functions instead of distributed uniformly. Every
-  virtual actor keeps moving, pausing and turning under code ownership; only
-  six lightweight presentations may be bound near the player and recycling
-  happens in the outer `48 m` fog band. The one `1.75 m` lampshade-hood model
+- **Accepted — Local camera-aware street pedestrians:** City layout and session
+  seed produce one immutable, radius-safe graph over sidewalk lanes, junction
+  turns and explicit three-link zebra connectors. Recursive 2-core pruning
+  removes every reachable dead-end branch before runtime. Long sidewalk links
+  expose deterministic spawn anchors; two reusable actor/presentation slots are the
+  complete runtime population. A slot may activate only at a unique,
+  obstacle-safe anchor inside the player's local far-clip window and outside
+  the full camera frustum. Its lifecycle is `not seen -> seen -> left view`,
+  with a short exit grace and a timeout for an approach that never enters the
+  frame, so an offscreen spawn is not immediately reclaimed. Actors never
+  reverse at artificial route endpoints: they continue through graph turns,
+  avoid immediate backtracking and make one seeded 50% cross/don't-cross
+  choice when passing each zebra entry. The one `1.75 m` lampshade-hood model
   copies the production Generic Avatar contract and directly references the
-  hero's looping in-place `Idle` and `Walk` clips. Every virtual route remains
-  constrained to a separate sidewalk-only mask at the center of one pavement
-  strip. Routes currently stay on one edge and stop before intersections;
-  zebra walkable rectangles are reserved for a future connector phase. Its
-  `CharacterController`
-  becomes physical only while a presentation is bound, after an overlap-safe
-  activation check, and is disabled before pooling. The dedicated
-  `CityPedestrian` layer collides with the player but not other pedestrians;
-  camera collision and interaction queries ignore it. Stable actor order owns
-  head-on yielding. Walkers retain no prompts, persistence or gameplay
-  reactions, and their four muted palettes use the shared material through
-  property blocks.
+  hero's looping in-place `Idle` and `Walk` clips. Its `CharacterController`
+  becomes physical only after a successful spawn and presentation bind, and
+  is disabled before pooling. The dedicated `CityPedestrian` layer collides
+  with the player but not other pedestrians; camera collision and interaction
+  queries ignore it. Stable slot order owns head-on yielding. Walkers retain no
+  prompts, persistence or gameplay reactions, and their four muted palettes
+  use the shared material through property blocks. Home transforms this same
+  graph and navigation mask through `PlayerHomeBalconyGeometry`, filters spawn
+  anchors to nearby reconstructed roads wholly beyond the facade and enables
+  the director only for the Balcony shot. The director samples the final
+  LateUpdate camera after contextual overrides, while vertical capsule overlap
+  keeps the player four storeys above from blocking or attracting walkers on
+  the street below.
 - **Accepted — Logical terminal road boundary:** A pure planner retains rails
   only along street-union intervals whose outward side is water, unmapped or
   outside the active non-water footprint, plus full-road-width caps at true

@@ -180,6 +180,132 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void
+            ExteriorPedestrians_TransformCityGraphAndFilterSpawnAnchors()
+        {
+            int seed = GameSessionState.DefaultCitySeed;
+            HomeExteriorContextPlan context =
+                HomeExteriorContextPlanner.Generate(seed);
+            CityStreetSurfacePlan streetSurfaces =
+                CityStreetSurfacePlanner.Create(context.Layout);
+            CityPedestrianPlan source =
+                CityPedestrianPlanner.Create(
+                    context.Layout,
+                    seed,
+                    streetSurfaces);
+            CityPedestrianPlan exterior =
+                HomeExteriorPedestrianPlanner.Create(
+                    context,
+                    seed);
+
+            Assert.That(exterior.LayoutSeed, Is.EqualTo(source.LayoutSeed));
+            Assert.That(
+                exterior.PopulationSeed,
+                Is.EqualTo(source.PopulationSeed));
+            Assert.That(exterior.StableSeed, Is.EqualTo(source.StableSeed));
+            Assert.That(exterior.AgentRadius, Is.EqualTo(source.AgentRadius));
+            Assert.That(exterior.Nodes.Count, Is.EqualTo(source.Nodes.Count));
+            Assert.That(exterior.Links.Count, Is.EqualTo(source.Links.Count));
+            Assert.That(exterior.Count, Is.GreaterThan(0));
+
+            for (int index = 0; index < source.Nodes.Count; index++)
+            {
+                CityPedestrianNode sourceNode = source.Nodes[index];
+                CityPedestrianNode exteriorNode = exterior.Nodes[index];
+                Assert.That(exteriorNode.Id, Is.EqualTo(sourceNode.Id));
+                Assert.That(
+                    exteriorNode.IsCrosswalkEntry,
+                    Is.EqualTo(sourceNode.IsCrosswalkEntry));
+                Assert.That(
+                    Vector3.Distance(
+                        exteriorNode.Position,
+                        PlayerHomeBalconyGeometry.ToHomeLocal(
+                            context.PlayerHome,
+                            sourceNode.Position)),
+                    Is.LessThan(0.001f),
+                    $"Pedestrian node '{sourceNode.Id}' was not transformed " +
+                    "into Home coordinates.");
+            }
+
+            for (int index = 0; index < source.Links.Count; index++)
+            {
+                CityPedestrianLink sourceLink = source.Links[index];
+                CityPedestrianLink exteriorLink = exterior.Links[index];
+                Assert.That(exteriorLink.Id, Is.EqualTo(sourceLink.Id));
+                Assert.That(exteriorLink.Kind, Is.EqualTo(sourceLink.Kind));
+                Assert.That(
+                    exteriorLink.FirstNodeIndex,
+                    Is.EqualTo(sourceLink.FirstNodeIndex));
+                Assert.That(
+                    exteriorLink.SecondNodeIndex,
+                    Is.EqualTo(sourceLink.SecondNodeIndex));
+            }
+
+            var sourceAnchors = source.SpawnAnchors.ToDictionary(
+                anchor => anchor.Id);
+            for (int index = 0;
+                 index < exterior.SpawnAnchors.Count;
+                 index++)
+            {
+                CityPedestrianSpawnAnchor anchor =
+                    exterior.SpawnAnchors[index];
+                Assert.That(
+                    sourceAnchors.TryGetValue(
+                        anchor.Id,
+                        out CityPedestrianSpawnAnchor sourceAnchor),
+                    Is.True);
+                Assert.That(
+                    Vector3.Distance(
+                        anchor.Position,
+                        PlayerHomeBalconyGeometry.ToHomeLocal(
+                            context.PlayerHome,
+                            sourceAnchor.Position)),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    anchor.FirstNodeIndex,
+                    Is.EqualTo(sourceAnchor.FirstNodeIndex));
+                Assert.That(
+                    anchor.SecondNodeIndex,
+                    Is.EqualTo(sourceAnchor.SecondNodeIndex));
+                Assert.That(
+                    anchor.Position.x - exterior.AgentRadius,
+                    Is.GreaterThanOrEqualTo(
+                        HomeExteriorViewBuilder.ExteriorMinimumX -
+                        0.0001f),
+                    $"Spawn anchor '{anchor.Id}' crosses the Home facade.");
+                Assert.That(
+                    context.NearbyRoads.Any(
+                        edge => Contains(
+                            context.Layout.GetRoadRect(edge),
+                            sourceAnchor.Position)),
+                    Is.True,
+                    $"Spawn anchor '{anchor.Id}' is outside the rendered " +
+                    "nearby-road set.");
+            }
+
+            RoadWalkableArea walkable =
+                CityPedestrianPlanner.CreateWalkableArea(exterior);
+            for (int index = 0; index < exterior.Links.Count; index++)
+            {
+                CityPedestrianLink link = exterior.Links[index];
+                Vector3 first =
+                    exterior.Nodes[link.FirstNodeIndex].Position;
+                Vector3 second =
+                    exterior.Nodes[link.SecondNodeIndex].Position;
+                for (int sample = 0; sample <= 4; sample++)
+                {
+                    Assert.That(
+                        walkable.Contains(
+                            Vector3.Lerp(first, second, sample / 4f),
+                            exterior.AgentRadius),
+                        Is.True,
+                        $"Transformed pedestrian link '{link.Id}' leaves " +
+                        "its Home-local navigation area.");
+                }
+            }
+        }
+
+        [Test]
         public void ExteriorHalfSpace_RejectsInteriorAndClipsCrossingBounds()
         {
             var interiorOnly =
@@ -238,6 +364,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 unchanged.size,
                 Is.EqualTo(exteriorOnly.size));
+        }
+
+        private static bool Contains(Rect bounds, Vector3 position)
+        {
+            return position.x >= bounds.xMin &&
+                   position.x <= bounds.xMax &&
+                   position.z >= bounds.yMin &&
+                   position.z <= bounds.yMax;
         }
     }
 }

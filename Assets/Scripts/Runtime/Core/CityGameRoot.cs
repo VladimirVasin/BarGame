@@ -225,8 +225,7 @@ namespace BarPromenade
                 GameSessionState.CitySeed,
                 pedestrianStreetSurfacePlan);
             RoadWalkableArea pedestrianWalkableArea =
-                CityPedestrianPlanner.CreateSidewalkWalkableArea(
-                    pedestrianStreetSurfacePlan);
+                CityPedestrianPlanner.CreateWalkableArea(PedestrianPlan);
             Pedestrians = CityPedestrianFactory.Create(
                 transform,
                 PedestrianPlan,
@@ -301,8 +300,11 @@ namespace BarPromenade
                     "signal_count",
                     Night.TrafficSignals.Count),
                 GameLog.Field(
-                    "pedestrian_count",
-                    PedestrianPlan.Count));
+                    "pedestrian_spawn_anchor_count",
+                    PedestrianPlan.Count),
+                GameLog.Field(
+                    "pedestrian_active_cap",
+                    CityPedestrianDirector.MaximumActiveModels));
         }
 
         private static void ReportLayout(CityLayout layout)

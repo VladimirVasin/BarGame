@@ -146,7 +146,7 @@ Assets/
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
-        HomeExteriorContextPlan.cs  bounded same-blueprint/seed street view descriptors
+        HomeExteriorContextPlan.cs  bounded street descriptors + local pedestrian graph
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
         HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + full street plan
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
@@ -170,11 +170,11 @@ Assets/
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
-      City/NPC/      deterministic street routes, actors and six-model visual pool
-        CityPedestrianPlan.cs          immutable route/population definitions
-        CityPedestrianPlanner.cs       function-biased sidewalk-centered segments
-        CityPedestrianActor.cs         walking state + presentation-gated controller
-        CityPedestrianDirector.cs      simulation, safe pooling + stable yielding
+      City/NPC/      local camera-aware graph walkers with two reusable slots
+        CityPedestrianPlan.cs          immutable nodes, links and spawn anchors
+        CityPedestrianPlanner.cs       sidewalk turns + zebra connector graph
+        CityPedestrianActor.cs         forward graph walk + seeded zebra choice
+        CityPedestrianDirector.cs      offscreen lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
@@ -222,7 +222,7 @@ Assets/
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three fixed shots + activation/hold hysteresis
-        HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog, grade and lights
+        HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog/lights + pedestrian gate
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
         HomeInteriorAtmosphere.cs     two practicals + bathroom/window Spots, grade and dust
@@ -423,13 +423,16 @@ layout -> CityStreetSurfacePlanner -> dark carriageway + two raised sidewalks
                                  -> white center dashes + selected zebra crossings
                                  -> shared City/Home presentation geometry
                                  -> sidewalk/crosswalk walkable rectangles
-layout + seed -> CityPedestrianPlanner -> 12 safe sidewalk routes
+layout + seed -> CityPedestrianPlanner -> sidewalk/turn/zebra graph
+                                      -> radius-safe navigation corridors
+                                      -> unique long-segment spawn anchors
                                       -> CityPedestrianDirector
-                                         -> continuous virtual actors
-                                         -> six-model outer-fog pool
-                                            -> safe CharacterController activation
-                                            -> shared Player Idle/Walk clips
-                                         -> sidewalk-only RoadWalkableArea
+                                         -> two local reusable actor/model slots
+                                         -> outside-frustum spawn
+                                         -> seen-then-left-view recycling
+                                         -> safe CharacterController activation
+                                         -> forward turns + 50% zebra choice
+                                         -> shared Player Idle/Walk clips
                                          -> stable yield; no NPC/NPC collision
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
@@ -496,9 +499,13 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> same CityDecorationWorldBuilder recipes in Home space
                     -> shared City exterior appearance + passive bar facade
                     -> no second City root/player/camera
+                    -> HomeExteriorPedestrianPlanner
+                       -> same sidewalk/turn/zebra graph in Home coordinates
+                       -> anchors filtered to rendered roads beyond the facade
                     -> Balcony-only City visibility, fog field and light pool
                        -> exact City fog/background/48 m cap/current light/grade
                        -> at most 12 street/bar lights scaled by night factor
+                       -> enable two offscreen pedestrian slots only in shot
                        -> captured Home render state restored on exit/disable
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> synchronized cold shadowed bathroom-spill Spot

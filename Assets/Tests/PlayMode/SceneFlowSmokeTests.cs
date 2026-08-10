@@ -211,7 +211,20 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.Night.Root.GetComponentsInChildren<BoxCollider>(
                     true),
                 Is.Not.Empty);
-            Assert.That(cityRoot.Pedestrians.ActiveCount, Is.GreaterThan(0));
+            Assert.That(cityRoot.Pedestrians, Is.Not.Null);
+            Assert.That(cityRoot.Pedestrians.IsInitialized, Is.True);
+            Assert.That(
+                cityRoot.Pedestrians.Count,
+                Is.LessThanOrEqualTo(
+                    CityPedestrianDirector.MaximumActiveModels));
+            Assert.That(
+                cityRoot.Pedestrians.PoolCapacity,
+                Is.EqualTo(cityRoot.Pedestrians.Count));
+            Assert.That(
+                cityRoot.Pedestrians.ActiveCount,
+                Is.InRange(
+                    0,
+                    CityPedestrianDirector.MaximumActiveModels));
             Assert.That(
                 Physics.GetIgnoreLayerCollision(
                     CityPedestrianCollision.DefaultLayerIndex,
@@ -225,7 +238,7 @@ namespace BarPromenade.Tests.PlayMode
                     cityRoot.Pedestrians.Actors[actorIndex];
                 Assert.That(
                     actor.CollisionEnabled,
-                    Is.EqualTo(actor.HasPresentation));
+                    Is.EqualTo(actor.IsSpawned));
                 Assert.That(
                     actor.gameObject.layer,
                     Is.EqualTo(CityPedestrianCollision.LayerIndex));

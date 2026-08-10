@@ -81,6 +81,20 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 registry.LocalBounds.size.y,
                 Is.EqualTo(1.75f).Within(0.035f));
+            float maximumLocalX = Mathf.Max(
+                Mathf.Abs(registry.LocalBounds.min.x),
+                Mathf.Abs(registry.LocalBounds.max.x));
+            float maximumLocalZ = Mathf.Max(
+                Mathf.Abs(registry.LocalBounds.min.z),
+                Mathf.Abs(registry.LocalBounds.max.z));
+            Assert.That(
+                CityPedestrianActor.VisibilityRadius,
+                Is.GreaterThanOrEqualTo(
+                    Mathf.Sqrt(
+                        (maximumLocalX * maximumLocalX) +
+                        (maximumLocalZ * maximumLocalZ))),
+                "The frustum envelope must contain the complete visual at " +
+                "every yaw.");
             Assert.That(
                 AssetDatabase.GetAssetPath(registry.IdleClip),
                 Is.EqualTo(PlayerAnimationPath));
@@ -110,187 +124,166 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Actor_VerticalContactCorrectionAtEndpointKeepsRootUpright()
+        public void Actor_TurnsAtGraphCornerAndKeepsRootUpright()
         {
-            GameObject actorObject = new GameObject(
-                "Endpoint Upright Pedestrian");
+            GameObject root = new GameObject("Corner Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
             try
             {
-                CityPedestrianActor actor =
-                    actorObject.AddComponent<CityPedestrianActor>();
-                var definition = new CityPedestrianDefinition(
-                    "endpoint-upright",
-                    new[]
-                    {
-                        new RoadEdge(
-                            Vector2Int.zero,
-                            Vector2Int.right)
-                    },
-                    new[]
-                    {
-                        new Vector3(0f, 0.06f, 0f),
-                        new Vector3(1f, 0.06f, 0f)
-                    },
-                    1f,
-                    0.91f,
-                    0f,
-                    0,
-                    1u,
-                    false);
-                actor.Initialize(
-                    definition,
-                    new RoadWalkableArea(
-                        new[]
-                        {
-                            Rect.MinMaxRect(-1f, -1f, 2f, 1f)
-                        }),
-                    CityPedestrianPlanner.AgentRadius);
+                CityPedestrianPlan plan = CreateCornerPlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation);
 
-                // A CharacterController can resolve a curb contact a few
-                // centimetres above the planned waypoint. Endpoint steering
-                // must ignore that vertical correction instead of looking
-                // down and pitching the complete visual rig onto its side.
-                actor.transform.position = new Vector3(0.999f, 0.24f, 0f);
+                // Simulate a small vertical correction from curb contact.
+                // Graph steering must remain planar as the actor turns.
+                actor.CharacterController.enabled = false;
+                actor.transform.position = new Vector3(-0.001f, 0.24f, 0f);
+                actor.CharacterController.enabled = true;
+                Physics.SyncTransforms();
                 actor.Advance(0.02f);
 
-                AssertActorRootIsUpright(actor);
-                Assert.That(
-                    actor.MotionState,
-                    Is.EqualTo(
-                        CityPedestrianMotionState.EndpointPause));
-                Assert.That(actor.Position.x, Is.EqualTo(1f).Within(0.0001f));
-                Assert.That(actor.Position.y, Is.EqualTo(0.24f).Within(0.0001f));
-
-                actor.Advance(
-                    CityPedestrianActor.MaximumEndpointPause + 0.01f);
-                Assert.That(
-                    actor.MotionState,
-                    Is.EqualTo(CityPedestrianMotionState.Turning));
-                AssertActorRootIsUpright(actor);
-
-                actor.Advance(CityPedestrianActor.TurnDuration);
                 Assert.That(
                     actor.MotionState,
                     Is.EqualTo(CityPedestrianMotionState.Walking));
-                Assert.That(actor.RouteDirection, Is.EqualTo(-1));
+                Assert.That(actor.PreviousNodeIndex, Is.EqualTo(1));
+                Assert.That(actor.TargetNodeIndex, Is.EqualTo(2));
+                AssertActorRootIsUpright(actor);
+
+                actor.Advance(0.02f);
+                Assert.That(actor.LastDisplacement.z, Is.GreaterThan(0f));
                 AssertActorRootIsUpright(actor);
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(actorObject);
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [TestCase(0f, true)]
+        [TestCase(1f, false)]
+        public void Actor_AtCrosswalkUsesForcedChoice(
+            float crosswalkRoll,
+            bool shouldCross)
+        {
+            GameObject root = new GameObject("Crosswalk Choice Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateCrosswalkChoicePlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation);
+                actor.ForceNextCrosswalkRoll(crosswalkRoll);
+
+                actor.Advance(1.1f);
+
+                Assert.That(actor.CrosswalkDecisionCount, Is.EqualTo(1));
+                Assert.That(
+                    actor.CrosswalksTaken,
+                    Is.EqualTo(shouldCross ? 1 : 0));
+                Assert.That(
+                    actor.TargetNodeIndex,
+                    Is.EqualTo(shouldCross ? 3 : 2));
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Walking));
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
             }
         }
 
         [Test]
-        public void Factory_SimulatesEveryRouteAndCapsTheVisualPool()
+        public void Factory_SpawnsAtMostTwoUniqueActorsOutsideView()
         {
-            GameObject root = new GameObject("Pedestrian Test Root");
+            GameObject root = new GameObject("Spawn Cap Test Root");
             CityPedestrianDirector director = null;
             try
             {
-                GameObject player = new GameObject("Player");
-                player.transform.SetParent(root.transform, false);
-                CityPedestrianPlan plan = CreateLinearPlan(8, 35f);
-                var walkableArea = new RoadWalkableArea(
-                    new[] { Rect.MinMaxRect(30f, -20f, 45f, 20f) });
+                Transform player = CreatePlayer(root.transform);
+                Camera camera = CreateTestCamera(root.transform);
+                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
+                    new[]
+                    {
+                        new Vector3(0f, 0f, -12f),
+                        new Vector3(0f, 0f, -12f),
+                        new Vector3(4f, 0f, -12f)
+                    });
                 director = CityPedestrianFactory.Create(
-                        root.transform,
-                        plan,
-                        player.transform,
-                        walkableArea,
-                        null,
-                        CityPedestrianResources.LoadPrefab());
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    camera,
+                    CityPedestrianResources.LoadPrefab());
 
-                Assert.That(director.Count, Is.EqualTo(8));
+                Assert.That(
+                    director.Count,
+                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
                 Assert.That(
                     director.PoolCapacity,
-                    Is.EqualTo(
-                        CityPedestrianDirector.MaximumActiveModels));
+                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
+                Assert.That(director.ActiveCount, Is.Zero);
+
+                director.RefreshPresentationPool();
+                director.RefreshPresentationPool();
+                director.RefreshPresentationPool();
+
                 Assert.That(
                     director.ActiveCount,
-                    Is.EqualTo(
-                        CityPedestrianDirector.MaximumActiveModels));
-                AssertRuntimeCollisionContract(director);
-
-                Vector3[] before = director.Actors
-                    .Select(actor => actor.Position)
+                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
+                CityPedestrianActor[] active = director.Actors
+                    .Where(candidate => candidate.IsSpawned)
                     .ToArray();
-                director.Advance(0.5f);
-                for (int index = 0; index < director.Actors.Count; index++)
+                Assert.That(
+                    active.Select(candidate => candidate.SpawnAnchorId)
+                        .Distinct(StringComparer.Ordinal).Count(),
+                    Is.EqualTo(active.Length));
+                Assert.That(
+                    PlanarDistance(active[0].Position, active[1].Position),
+                    Is.GreaterThan(
+                        (CityPedestrianPlanner.AgentRadius * 2f) +
+                        CityPedestrianDirector.CollisionActivationPadding));
+
+                Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+                for (int index = 0; index < active.Length; index++)
                 {
+                    float distance = PlanarDistance(
+                        player.position,
+                        active[index].Position);
                     Assert.That(
-                        director.Actors[index].Position.x,
-                        Is.GreaterThan(before[index].x),
-                        "Virtual routes must advance even without a model.");
-                    if (director.Actors[index].HasPresentation)
-                    {
-                        Assert.That(
-                            director.Actors[index].LastDisplacement.x,
-                            Is.GreaterThan(0f),
-                            "Presented actors must report their actual move.");
-                    }
+                        distance,
+                        Is.InRange(
+                            CityPedestrianDirector.MinimumSpawnDistance,
+                            CityPedestrianDirector.MaximumSpawnDistance));
+                    Assert.That(
+                        GeometryUtility.TestPlanesAABB(
+                            planes,
+                            active[index].VisibilityBounds),
+                        Is.False,
+                        "Spawned pedestrians must begin outside view.");
                 }
 
-                Assert.That(
-                    director.Actors
-                        .Where(actor => actor.HasPresentation)
-                        .All(actor =>
-                            actor.Presentation.WalkWeight == 1f),
-                    Is.True);
-                Vector3[] frozen = director.Actors
-                    .Select(actor => actor.Position)
+                AssertRuntimeCollisionContract(director);
+                Vector3[] frozen = active
+                    .Select(candidate => candidate.Position)
                     .ToArray();
                 director.Advance(0f);
                 CollectionAssert.AreEqual(
                     frozen,
-                    director.Actors
-                        .Select(actor => actor.Position)
-                        .ToArray());
-
-                director.Advance(4f);
-                Assert.That(
-                    director.Actors.All(actor =>
-                        actor.MotionState ==
-                        CityPedestrianMotionState.EndpointPause),
-                    Is.True);
-                director.Advance(
-                    CityPedestrianActor.MaximumEndpointPause + 0.01f);
-                Assert.That(
-                    director.Actors.All(actor =>
-                        actor.MotionState ==
-                        CityPedestrianMotionState.Turning),
-                    Is.True);
-                director.Advance(CityPedestrianActor.TurnDuration);
-                Assert.That(
-                    director.Actors.All(actor =>
-                        actor.MotionState ==
-                        CityPedestrianMotionState.Walking &&
-                        actor.RouteDirection == -1),
-                    Is.True);
-
-                player.transform.position = Vector3.right * 1000f;
-                director.Advance(0f);
-                Assert.That(director.ActiveCount, Is.Zero);
-                Assert.That(
-                    director.Actors.All(actor => !actor.CollisionEnabled),
-                    Is.True);
-                player.transform.position = Vector3.zero;
-                director.RefreshPresentationPool();
-                Assert.That(
-                    director.ActiveCount,
-                    Is.EqualTo(
-                        CityPedestrianDirector.MaximumActiveModels));
-                Assert.That(
-                    director.Actors.All(actor =>
-                        actor.CollisionEnabled == actor.HasPresentation),
-                    Is.True);
-
-                director.Shutdown();
-                Assert.That(
-                    director.Actors.All(actor =>
-                        !actor.HasPresentation &&
-                        !actor.CollisionEnabled),
-                    Is.True);
+                    active.Select(candidate => candidate.Position).ToArray());
             }
             finally
             {
@@ -300,74 +293,97 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Factory_DelaysCollisionWhenPlayerOverlapsSpawn()
+        public void Factory_DelaysSpawnUntilStaticOverlapClears()
         {
             GameObject root = new GameObject("Overlap Test Root");
+            GameObject blocker = null;
             CityPedestrianDirector director = null;
             try
             {
-                GameObject player = new GameObject("Player");
-                player.transform.SetParent(root.transform, false);
-                player.transform.position = new Vector3(35f, 0.08f, 0f);
-                CharacterController playerController =
-                    player.AddComponent<CharacterController>();
-                playerController.height = 1.75f;
-                playerController.radius = 0.32f;
-                playerController.center = new Vector3(0f, 0.875f, 0f);
+                Transform player = CreatePlayer(root.transform);
+                Camera camera = CreateTestCamera(root.transform);
+                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
+                    new[] { new Vector3(0f, 0f, -12f) });
+                blocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                blocker.name = "Spawn Blocker";
+                blocker.transform.SetParent(root.transform, false);
+                blocker.transform.position = new Vector3(0f, 0.85f, -12f);
+                blocker.transform.localScale = new Vector3(2f, 2f, 2f);
+                Physics.SyncTransforms();
 
-                CityPedestrianPlan plan = CreateLinearPlan(1, 35f);
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
-                    player.transform,
-                    new RoadWalkableArea(
-                        new[] { Rect.MinMaxRect(30f, -2f, 45f, 2f) }),
-                    null,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    camera,
                     CityPedestrianResources.LoadPrefab());
+                director.RefreshPresentationPool();
 
-                CityPedestrianActor actor = director.Actors[0];
-                Assert.That(actor.HasPresentation, Is.False);
-                Assert.That(actor.CollisionEnabled, Is.False);
+                Assert.That(director.ActiveCount, Is.Zero);
+                Assert.That(director.Actors[0].CollisionEnabled, Is.False);
 
-                player.transform.position = Vector3.zero;
+                UnityEngine.Object.DestroyImmediate(blocker);
+                blocker = null;
                 Physics.SyncTransforms();
                 director.RefreshPresentationPool();
 
-                Assert.That(actor.HasPresentation, Is.True);
-                Assert.That(actor.CollisionEnabled, Is.True);
+                Assert.That(director.ActiveCount, Is.EqualTo(1));
+                Assert.That(director.Actors[0].CollisionEnabled, Is.True);
             }
             finally
             {
                 director?.Shutdown();
+                if (blocker != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(blocker);
+                }
+
                 UnityEngine.Object.DestroyImmediate(root);
             }
         }
 
         [Test]
-        public void HeadOnActors_UseStablePlanOrderToAvoidMutualYield()
+        public void HeadOnActors_UseStableSlotOrderToAvoidMutualYield()
         {
             GameObject root = new GameObject("Yield Priority Test Root");
             CityPedestrianDirector director = null;
             try
             {
-                GameObject player = new GameObject("Player");
-                player.transform.SetParent(root.transform, false);
-                CityPedestrianPlan plan = CreateHeadOnPlan();
+                Transform player = CreatePlayer(root.transform);
+                Camera camera = CreateTestCamera(root.transform);
+                CityPedestrianPlan plan = CreateHeadOnSpawnPlan();
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
-                    player.transform,
-                    new RoadWalkableArea(
-                        new[] { Rect.MinMaxRect(30f, -2f, 44f, 2f) }),
-                    null,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    camera,
                     CityPedestrianResources.LoadPrefab());
+                director.RefreshPresentationPool();
+                director.RefreshPresentationPool();
 
-                director.Advance(1.7f);
+                Assert.That(director.ActiveCount, Is.EqualTo(2));
+                for (int index = 0; index < director.Actors.Count; index++)
+                {
+                    CityPedestrianActor actor = director.Actors[index];
+                    actor.transform.position = new Vector3(
+                        actor.TravelDirection.x > 0f ? -0.35f : 0.35f,
+                        0f,
+                        -12f);
+                }
+
+                Physics.SyncTransforms();
+                Assert.That(
+                    Vector3.Dot(
+                        director.Actors[0].TravelDirection,
+                        director.Actors[1].TravelDirection),
+                    Is.LessThan(-0.9f));
                 director.Advance(0.1f);
 
                 Assert.That(director.Actors[0].IsYielding, Is.False);
                 Assert.That(
-                    director.Actors[0].LastDisplacement.x,
+                    director.Actors[0].LastDisplacement.sqrMagnitude,
                     Is.GreaterThan(0f));
                 Assert.That(director.Actors[1].IsYielding, Is.True);
                 Assert.That(
@@ -425,39 +441,53 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Director_WithShortFarClip_DoesNotReleaseAndRebind()
+        public void Director_ReleasesSeenActorAfterItLeavesView()
         {
-            GameObject root = new GameObject("Short Fog Test Root");
+            GameObject root = new GameObject("Seen Exit Test Root");
             CityPedestrianDirector director = null;
             try
             {
-                GameObject player = new GameObject("Player");
-                player.transform.SetParent(root.transform, false);
-                GameObject cameraObject = new GameObject("Camera");
-                cameraObject.transform.SetParent(root.transform, false);
-                Camera camera = cameraObject.AddComponent<Camera>();
-                camera.farClipPlane = 30f;
-                CityPedestrianPlan plan = CreateLinearPlan(1, 25f);
-                var walkableArea = new RoadWalkableArea(
-                    new[] { Rect.MinMaxRect(20f, -2f, 32f, 2f) });
+                Transform player = CreatePlayer(root.transform);
+                Camera camera = CreateTestCamera(root.transform);
+                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
+                    new[] { new Vector3(0f, 0f, -12f) });
                 director = CityPedestrianFactory.Create(
-                        root.transform,
-                        plan,
-                        player.transform,
-                        walkableArea,
-                        camera,
-                        CityPedestrianResources.LoadPrefab());
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    camera,
+                    CityPedestrianResources.LoadPrefab());
+                director.RefreshPresentationPool();
 
                 Assert.That(director.ActiveCount, Is.EqualTo(1));
-                player.transform.position = Vector3.left * 10f;
-                director.Advance(0f);
-                Assert.That(director.ActiveCount, Is.Zero);
                 director.Advance(0f);
                 Assert.That(
                     director.ActiveCount,
+                    Is.EqualTo(1),
+                    "An approaching offscreen actor must remain alive until " +
+                    "it has entered view.");
+
+                CityPedestrianActor actor = director.Actors[0];
+                camera.transform.LookAt(actor.VisibilityBounds.center);
+                director.Advance(0f);
+                Assert.That(director.ActiveCount, Is.EqualTo(1));
+
+                camera.transform.rotation = Quaternion.identity;
+                director.Advance(
+                    CityPedestrianDirector.SeenExitGrace - 0.01f);
+                Assert.That(director.ActiveCount, Is.EqualTo(1));
+
+                director.Advance(0.02f);
+                Assert.That(
+                    director.ActiveCount,
                     Is.Zero,
-                    "A model beyond the short fog cap must not thrash " +
-                    "between release and activation.");
+                    "A seen pedestrian must despawn after leaving view.");
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Dormant));
+                Assert.That(actor.SpawnAnchorId, Is.Empty);
+                Assert.That(actor.CollisionEnabled, Is.False);
             }
             finally
             {
@@ -617,86 +647,291 @@ namespace BarPromenade.Tests.EditMode
             return lowest;
         }
 
-        private static CityPedestrianPlan CreateLinearPlan(
-            int count,
-            float startX)
+        private static CityPedestrianActor CreateBoundActor(
+            Transform parent,
+            CityPedestrianPlan plan,
+            CityPedestrianSpawnAnchor anchor,
+            int targetNodeIndex,
+            out CityPedestrianPresentation presentation)
         {
-            var definitions = new List<CityPedestrianDefinition>(count);
-            float center = (count - 1) * 0.5f;
-            for (int index = 0; index < count; index++)
+            GameObject actorObject = new GameObject("Pedestrian Actor");
+            actorObject.layer = CityPedestrianCollision.LayerIndex;
+            actorObject.transform.SetParent(parent, false);
+            CityPedestrianActor actor =
+                actorObject.AddComponent<CityPedestrianActor>();
+            actor.Initialize(
+                CityPedestrianPlanner.CreateWalkableArea(plan),
+                plan.AgentRadius);
+
+            CityPedestrianAssetRegistry registry =
+                CityPedestrianResources.Instantiate(parent);
+            presentation = registry.GetComponent<
+                CityPedestrianPresentation>();
+            if (presentation == null)
             {
-                float z = (index - center) * 4f;
-                definitions.Add(new CityPedestrianDefinition(
-                    $"test-pedestrian:{index}",
-                    new[]
-                    {
-                        new RoadEdge(
-                            Vector2Int.zero,
-                            Vector2Int.right)
-                    },
-                    new[]
-                    {
-                        new Vector3(startX, 0f, z),
-                        new Vector3(startX + 4f, 0f, z)
-                    },
-                    1f,
-                    0.91f,
-                    index / (float)Math.Max(1, count),
-                    index % CityPedestrianPlanner.PaletteVariantCount,
-                    unchecked((uint)(100 + index)),
+                presentation = registry.gameObject.AddComponent<
+                    CityPedestrianPresentation>();
+            }
+
+            presentation.Initialize(registry);
+            actor.PrepareSpawn(
+                plan,
+                anchor,
+                targetNodeIndex,
+                1f,
+                0.91f,
+                0f,
+                0,
+                1u);
+            actor.BindPresentation(presentation);
+            return actor;
+        }
+
+        private static void ReleaseBoundActor(
+            CityPedestrianActor actor,
+            CityPedestrianPresentation presentation,
+            Transform poolRoot)
+        {
+            if (actor != null && actor.IsSpawned)
+            {
+                actor.ReleasePresentation(poolRoot);
+            }
+
+            presentation?.Shutdown();
+        }
+
+        private static Transform CreatePlayer(Transform parent)
+        {
+            GameObject player = new GameObject("Player");
+            player.transform.SetParent(parent, false);
+            return player.transform;
+        }
+
+        private static Camera CreateTestCamera(Transform parent)
+        {
+            GameObject cameraObject = new GameObject("Camera");
+            cameraObject.transform.SetParent(parent, false);
+            cameraObject.transform.position = new Vector3(
+                0f,
+                CityPedestrianActor.VisibilityHeight * 0.5f,
+                0f);
+            cameraObject.transform.rotation = Quaternion.identity;
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = 50f;
+            camera.fieldOfView = 60f;
+            camera.aspect = 1f;
+            return camera;
+        }
+
+        private static CityPedestrianPlan CreateCornerPlan()
+        {
+            return new CityPedestrianPlan(
+                1,
+                2,
+                3u,
+                CityPedestrianPlanner.AgentRadius,
+                new[]
+                {
+                    new CityPedestrianNode(
+                        "approach",
+                        new Vector3(-1f, 0f, 0f),
+                        false),
+                    new CityPedestrianNode(
+                        "corner",
+                        Vector3.zero,
+                        false),
+                    new CityPedestrianNode(
+                        "exit",
+                        new Vector3(0f, 0f, 1f),
+                        false)
+                },
+                new[]
+                {
+                    new CityPedestrianLink(
+                        "approach",
+                        0,
+                        1,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "turn",
+                        1,
+                        2,
+                        CityPedestrianLinkKind.Turn)
+                },
+                new[]
+                {
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:approach",
+                        new Vector3(-0.5f, 0f, 0f),
+                        0,
+                        1)
+                },
+                new[] { Rect.MinMaxRect(-2f, -1f, 1f, 2f) });
+        }
+
+        private static CityPedestrianPlan CreateCrosswalkChoicePlan()
+        {
+            return new CityPedestrianPlan(
+                1,
+                2,
+                3u,
+                CityPedestrianPlanner.AgentRadius,
+                new[]
+                {
+                    new CityPedestrianNode(
+                        "approach",
+                        new Vector3(-2f, 0f, 0f),
+                        false),
+                    new CityPedestrianNode(
+                        "zebra",
+                        Vector3.zero,
+                        true),
+                    new CityPedestrianNode(
+                        "continue",
+                        new Vector3(2f, 0f, 0f),
+                        false),
+                    new CityPedestrianNode(
+                        "cross",
+                        new Vector3(0f, 0f, 2f),
+                        false)
+                },
+                new[]
+                {
+                    new CityPedestrianLink(
+                        "approach",
+                        0,
+                        1,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "continue",
+                        1,
+                        2,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "cross",
+                        1,
+                        3,
+                        CityPedestrianLinkKind.Crosswalk)
+                },
+                new[]
+                {
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:approach",
+                        new Vector3(-1f, 0f, 0f),
+                        0,
+                        1)
+                },
+                new[] { Rect.MinMaxRect(-3f, -1f, 3f, 3f) });
+        }
+
+        private static CityPedestrianPlan CreateOffscreenSpawnPlan(
+            IReadOnlyList<Vector3> anchorPositions)
+        {
+            var nodes = new List<CityPedestrianNode>(
+                anchorPositions.Count * 2);
+            var links = new List<CityPedestrianLink>(
+                anchorPositions.Count);
+            var anchors = new List<CityPedestrianSpawnAnchor>(
+                anchorPositions.Count);
+            var rectangles = new List<Rect>(anchorPositions.Count);
+            for (int index = 0; index < anchorPositions.Count; index++)
+            {
+                Vector3 anchorPosition = anchorPositions[index];
+                int firstNode = nodes.Count;
+                int secondNode = firstNode + 1;
+                nodes.Add(new CityPedestrianNode(
+                    $"route:{index}:first",
+                    anchorPosition + (Vector3.back * 4f),
                     false));
+                nodes.Add(new CityPedestrianNode(
+                    $"route:{index}:second",
+                    anchorPosition + (Vector3.forward * 4f),
+                    false));
+                links.Add(new CityPedestrianLink(
+                    $"route:{index}",
+                    firstNode,
+                    secondNode,
+                    CityPedestrianLinkKind.Sidewalk));
+                anchors.Add(new CityPedestrianSpawnAnchor(
+                    $"spawn:{index}",
+                    anchorPosition,
+                    firstNode,
+                    secondNode));
+                rectangles.Add(Rect.MinMaxRect(
+                    anchorPosition.x - 1f,
+                    anchorPosition.z - 5f,
+                    anchorPosition.x + 1f,
+                    anchorPosition.z + 5f));
             }
 
             return new CityPedestrianPlan(
                 1,
                 2,
                 3u,
-                count,
                 CityPedestrianPlanner.AgentRadius,
-                definitions);
+                nodes,
+                links,
+                anchors,
+                rectangles);
         }
 
-        private static CityPedestrianPlan CreateHeadOnPlan()
+        private static CityPedestrianPlan CreateHeadOnSpawnPlan()
         {
-            var waypoints = new[]
-            {
-                new Vector3(35f, 0f, 0f),
-                new Vector3(39f, 0f, 0f)
-            };
-            var edge = new[]
-            {
-                new RoadEdge(Vector2Int.zero, Vector2Int.right)
-            };
-            var definitions = new List<CityPedestrianDefinition>
-            {
-                new CityPedestrianDefinition(
-                    "head-on:0",
-                    edge,
-                    waypoints,
-                    1f,
-                    1f,
-                    0f,
-                    0,
-                    10u,
-                    false),
-                new CityPedestrianDefinition(
-                    "head-on:1",
-                    edge,
-                    waypoints,
-                    1f,
-                    1f,
-                    0.5f,
-                    1,
-                    11u,
-                    true)
-            };
             return new CityPedestrianPlan(
                 1,
                 2,
                 3u,
-                definitions.Count,
                 CityPedestrianPlanner.AgentRadius,
-                definitions);
+                new[]
+                {
+                    new CityPedestrianNode(
+                        "left",
+                        new Vector3(-4f, 0f, -12f),
+                        false),
+                    new CityPedestrianNode(
+                        "center",
+                        new Vector3(0f, 0f, -12f),
+                        false),
+                    new CityPedestrianNode(
+                        "right",
+                        new Vector3(4f, 0f, -12f),
+                        false)
+                },
+                new[]
+                {
+                    new CityPedestrianLink(
+                        "left-half",
+                        0,
+                        1,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "right-half",
+                        1,
+                        2,
+                        CityPedestrianLinkKind.Sidewalk)
+                },
+                new[]
+                {
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:left",
+                        new Vector3(-2f, 0f, -12f),
+                        0,
+                        1),
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:right",
+                        new Vector3(2f, 0f, -12f),
+                        1,
+                        2)
+                },
+                new[] { Rect.MinMaxRect(-5f, -13f, 5f, -11f) });
+        }
+
+        private static float PlanarDistance(Vector3 first, Vector3 second)
+        {
+            float deltaX = first.x - second.x;
+            float deltaZ = first.z - second.z;
+            return Mathf.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
         }
     }
 }

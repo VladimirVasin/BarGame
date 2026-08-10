@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-08-10 — Passers-by now enter and leave the scene naturally
+
+- The city no longer creates and simulates a fixed crowd at load. Up to two
+  passers-by now appear near the player at different, obstacle-free points
+  outside the camera view, then disappear after they have been seen and leave
+  the frame.
+- Pedestrians keep walking forward through connected sidewalks and can turn at
+  corners instead of pacing back and forth on short segments. Dead-end branches
+  are excluded from their navigation graph.
+- When a walker passes a zebra crossing, they now independently choose whether
+  to continue along the pavement or cross to the other side.
+- Looking out from the apartment balcony now uses the same local population on
+  the reconstructed street below. Walkers exist only during the Balcony shot
+  and are immediately pooled when the player returns indoors.
+
 ### 2026-08-10 — Pedestrians stay upright at route ends
 
 - Ambient walkers no longer pitch their complete model sideways when a curb,

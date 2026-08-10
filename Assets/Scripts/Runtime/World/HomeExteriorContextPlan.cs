@@ -287,4 +287,139 @@ namespace BarPromenade
             return x * x + z * z;
         }
     }
+
+    public static class HomeExteriorPedestrianPlanner
+    {
+        public static CityPedestrianPlan Create(
+            HomeExteriorContextPlan context,
+            int populationSeed)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            CityStreetSurfacePlan streetSurfaces =
+                CityStreetSurfacePlanner.Create(context.Layout);
+            CityPedestrianPlan cityPlan =
+                CityPedestrianPlanner.Create(
+                    context.Layout,
+                    populationSeed,
+                    streetSurfaces);
+            var nodes = new List<CityPedestrianNode>(
+                cityPlan.Nodes.Count);
+            for (int index = 0; index < cityPlan.Nodes.Count; index++)
+            {
+                CityPedestrianNode source = cityPlan.Nodes[index];
+                nodes.Add(new CityPedestrianNode(
+                    source.Id,
+                    PlayerHomeBalconyGeometry.ToHomeLocal(
+                        context.PlayerHome,
+                        source.Position),
+                    source.IsCrosswalkEntry));
+            }
+
+            var links = new List<CityPedestrianLink>(
+                cityPlan.Links.Count);
+            for (int index = 0; index < cityPlan.Links.Count; index++)
+            {
+                CityPedestrianLink source = cityPlan.Links[index];
+                links.Add(new CityPedestrianLink(
+                    source.Id,
+                    source.FirstNodeIndex,
+                    source.SecondNodeIndex,
+                    source.Kind));
+            }
+
+            var anchors = new List<CityPedestrianSpawnAnchor>();
+            for (int index = 0;
+                 index < cityPlan.SpawnAnchors.Count;
+                 index++)
+            {
+                CityPedestrianSpawnAnchor source =
+                    cityPlan.SpawnAnchors[index];
+                Vector3 localPosition =
+                    PlayerHomeBalconyGeometry.ToHomeLocal(
+                        context.PlayerHome,
+                        source.Position);
+                if (!IsRenderedExteriorAnchor(
+                        context,
+                        source.Position,
+                        localPosition,
+                        cityPlan.AgentRadius))
+                {
+                    continue;
+                }
+
+                anchors.Add(new CityPedestrianSpawnAnchor(
+                    source.Id,
+                    localPosition,
+                    source.FirstNodeIndex,
+                    source.SecondNodeIndex));
+            }
+
+            var navigationRectangles = new List<Rect>(
+                cityPlan.NavigationRectangles.Count);
+            for (int index = 0;
+                 index < cityPlan.NavigationRectangles.Count;
+                 index++)
+            {
+                navigationRectangles.Add(
+                    PlayerHomeBalconyGeometry.ToHomeLocalRect(
+                        context.PlayerHome,
+                        cityPlan.NavigationRectangles[index]));
+            }
+
+            return new CityPedestrianPlan(
+                cityPlan.LayoutSeed,
+                cityPlan.PopulationSeed,
+                cityPlan.StableSeed,
+                cityPlan.AgentRadius,
+                nodes,
+                links,
+                anchors,
+                navigationRectangles);
+        }
+
+        private static bool IsRenderedExteriorAnchor(
+            HomeExteriorContextPlan context,
+            Vector3 cityPosition,
+            Vector3 localPosition,
+            float radius)
+        {
+            if (localPosition.x - radius <
+                HomeExteriorViewBuilder.ExteriorMinimumX)
+            {
+                return false;
+            }
+
+            float deltaX =
+                cityPosition.x - context.PlayerHome.DoorPosition.x;
+            float deltaZ =
+                cityPosition.z - context.PlayerHome.DoorPosition.z;
+            float viewRadius = HomeExteriorContextPlanner.ViewRadius;
+            if ((deltaX * deltaX) + (deltaZ * deltaZ) >
+                viewRadius * viewRadius)
+            {
+                return false;
+            }
+
+            for (int index = 0;
+                 index < context.NearbyRoads.Count;
+                 index++)
+            {
+                Rect road = context.Layout.GetRoadRect(
+                    context.NearbyRoads[index]);
+                if (cityPosition.x >= road.xMin &&
+                    cityPosition.x <= road.xMax &&
+                    cityPosition.z >= road.yMin &&
+                    cityPosition.z <= road.yMax)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 }

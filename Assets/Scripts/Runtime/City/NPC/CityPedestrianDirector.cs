@@ -4,31 +4,45 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>
-    /// Advances all virtual routes and assigns a bounded pool of models only
-    /// near the player. Pool changes happen in the dense outer fog band.
-    /// </summary>
-    [DefaultExecutionOrder(90)]
+    [DefaultExecutionOrder(310)]
     [DisallowMultipleComponent]
     public sealed class CityPedestrianDirector : MonoBehaviour
     {
-        public const int MaximumActiveModels = 6;
-        public const float ActivationInnerDistance = 34f;
-        public const float ActivationDistance = 42f;
-        public const float DeactivationDistance = 46f;
-        public const float MinimumPoolHysteresis = 2f;
+        public const int MaximumActiveModels = 2;
+        public const float MinimumSpawnDistance = 7f;
+        public const float MaximumSpawnDistance = 42f;
+        public const float FarClipSpawnPadding = 2f;
+        public const float MinimumSpawnCooldown = 1.5f;
+        public const float MaximumSpawnCooldown = 3.5f;
+        public const float SpawnRetryDelay = 0.5f;
+        public const float SeenExitGrace = 0.15f;
+        public const float UnseenApproachTimeout = 18f;
         public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
         public const float CollisionActivationPadding = 0.05f;
+        public const float StaticClearanceLift = 0.03f;
+
+        private const uint SpeedSalt = 0x53504545u;
+        private const uint AnimationSpeedSalt = 0x414E5350u;
+        private const uint AnimationPhaseSalt = 0x50484153u;
+        private const uint PaletteSalt = 0x50414C45u;
+        private const uint BehaviorSalt = 0x42454856u;
+        private const uint DirectionSalt = 0x44495245u;
+        private const uint CooldownSalt = 0x434F4F4Cu;
 
         private readonly List<CityPedestrianActor> actors =
             new List<CityPedestrianActor>();
         private readonly List<CityPedestrianPresentation> presentationPool =
             new List<CityPedestrianPresentation>();
+        private readonly List<VisibilityState> visibilityStates =
+            new List<VisibilityState>();
+        private readonly Plane[] frustumPlanes = new Plane[6];
         private CityPedestrianPlan plan;
         private Transform player;
         private Transform poolRoot;
         private Camera visibilityCamera;
+        private float spawnCooldown;
+        private uint spawnSequence;
 
         public bool IsInitialized { get; private set; }
         public CityPedestrianPlan Plan => plan;
@@ -42,7 +56,7 @@ namespace BarPromenade
                 int count = 0;
                 for (int index = 0; index < actors.Count; index++)
                 {
-                    if (actors[index].HasPresentation)
+                    if (actors[index].IsSpawned)
                     {
                         count++;
                     }
@@ -58,7 +72,7 @@ namespace BarPromenade
             IReadOnlyList<CityPedestrianPresentation> pooledPresentations,
             Transform playerTransform,
             Transform presentationPoolRoot,
-            Camera camera = null)
+            Camera camera)
         {
             if (IsInitialized)
             {
@@ -75,7 +89,9 @@ namespace BarPromenade
                 ? presentationPoolRoot
                 : throw new ArgumentNullException(
                     nameof(presentationPoolRoot));
-            visibilityCamera = camera;
+            visibilityCamera = camera != null
+                ? camera
+                : throw new ArgumentNullException(nameof(camera));
             if (routeActors == null)
             {
                 throw new ArgumentNullException(nameof(routeActors));
@@ -83,38 +99,29 @@ namespace BarPromenade
 
             if (pooledPresentations == null)
             {
-                throw new ArgumentNullException(
-                    nameof(pooledPresentations));
+                throw new ArgumentNullException(nameof(pooledPresentations));
             }
 
-            if (routeActors.Count != plan.Count)
+            if (routeActors.Count > MaximumActiveModels ||
+                pooledPresentations.Count != routeActors.Count)
             {
                 throw new ArgumentException(
-                    "The route actor count must match the pedestrian plan.",
-                    nameof(routeActors));
-            }
-
-            if (pooledPresentations.Count > MaximumActiveModels ||
-                pooledPresentations.Count > routeActors.Count)
-            {
-                throw new ArgumentException(
-                    "The pedestrian presentation pool exceeds its cap.",
-                    nameof(pooledPresentations));
+                    "Pedestrian actor and presentation pools must match " +
+                    "and stay within the active cap.");
             }
 
             for (int index = 0; index < routeActors.Count; index++)
             {
                 CityPedestrianActor actor = routeActors[index];
-                if (actor == null ||
-                    !actor.IsInitialized ||
-                    actor.Definition != plan.Definitions[index])
+                if (actor == null || !actor.IsInitialized)
                 {
                     throw new ArgumentException(
-                        "Route actors must be initialized in plan order.",
+                        "Every pedestrian slot must be initialized.",
                         nameof(routeActors));
                 }
 
                 actors.Add(actor);
+                visibilityStates.Add(default);
             }
 
             for (int index = 0;
@@ -123,11 +130,11 @@ namespace BarPromenade
             {
                 CityPedestrianPresentation presentation =
                     pooledPresentations[index];
-                if (presentation == null ||
-                    !presentation.IsInitialized)
+                if (presentation == null || !presentation.IsInitialized)
                 {
                     throw new ArgumentException(
-                        "Every pooled pedestrian presentation must be initialized.",
+                        "Every pooled pedestrian presentation must be " +
+                        "initialized.",
                         nameof(pooledPresentations));
                 }
 
@@ -136,8 +143,9 @@ namespace BarPromenade
                 presentationPool.Add(presentation);
             }
 
+            spawnCooldown = 0f;
+            spawnSequence = 0u;
             IsInitialized = true;
-            RefreshPresentationPool(initialPopulation: true);
         }
 
         public bool IsActorPresented(int actorIndex)
@@ -147,7 +155,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(actorIndex));
             }
 
-            return actors[actorIndex].HasPresentation;
+            return actors[actorIndex].IsSpawned;
         }
 
         public void Advance(float deltaTime)
@@ -158,22 +166,45 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            UpdateFrustumPlanes();
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
+                if (!actor.IsSpawned)
+                {
+                    continue;
+                }
+
                 actor.Advance(
                     safeDeltaTime,
                     ShouldYield(actor, index));
             }
 
-            RefreshPresentationPool(initialPopulation: false);
+            RefreshVisibility(safeDeltaTime);
+            spawnCooldown = Mathf.Max(
+                0f,
+                spawnCooldown - safeDeltaTime);
+            if (ActiveCount < presentationPool.Count &&
+                spawnCooldown <= 0f)
+            {
+                bool spawned = TrySpawnOne();
+                spawnCooldown = spawned
+                    ? GetNextSpawnCooldown()
+                    : SpawnRetryDelay;
+            }
         }
 
         public void RefreshPresentationPool()
         {
-            if (IsInitialized)
+            if (!IsInitialized || ActiveCount >= presentationPool.Count)
             {
-                RefreshPresentationPool(initialPopulation: false);
+                return;
+            }
+
+            UpdateFrustumPlanes();
+            if (TrySpawnOne())
+            {
+                spawnCooldown = GetNextSpawnCooldown();
             }
         }
 
@@ -184,11 +215,7 @@ namespace BarPromenade
                 return;
             }
 
-            for (int index = 0; index < actors.Count; index++)
-            {
-                actors[index].ReleasePresentation(poolRoot);
-            }
-
+            ReleaseAllActors();
             for (int index = 0;
                  index < presentationPool.Count;
                  index++)
@@ -204,21 +231,16 @@ namespace BarPromenade
             IsInitialized = false;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             Advance(Time.deltaTime);
         }
 
         private void OnDisable()
         {
-            if (!IsInitialized)
+            if (IsInitialized)
             {
-                return;
-            }
-
-            for (int index = 0; index < actors.Count; index++)
-            {
-                actors[index].ReleasePresentation(poolRoot);
+                ReleaseAllActors();
             }
         }
 
@@ -226,7 +248,7 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                RefreshPresentationPool(initialPopulation: false);
+                spawnCooldown = 0f;
             }
         }
 
@@ -235,11 +257,253 @@ namespace BarPromenade
             Shutdown();
         }
 
+        private void RefreshVisibility(float deltaTime)
+        {
+            for (int index = 0; index < actors.Count; index++)
+            {
+                CityPedestrianActor actor = actors[index];
+                if (!actor.IsSpawned)
+                {
+                    continue;
+                }
+
+                VisibilityState state = visibilityStates[index];
+                bool visible = IsVisible(actor.VisibilityBounds);
+                if (visible)
+                {
+                    state.HasEnteredView = true;
+                    state.ExitElapsed = 0f;
+                }
+                else if (state.HasEnteredView)
+                {
+                    state.ExitElapsed += deltaTime;
+                }
+                else
+                {
+                    state.UnseenElapsed += deltaTime;
+                }
+
+                bool release =
+                    actor.RouteEnded && !visible ||
+                    state.HasEnteredView &&
+                    state.ExitElapsed >= SeenExitGrace ||
+                    !state.HasEnteredView &&
+                    state.UnseenElapsed >= UnseenApproachTimeout;
+                visibilityStates[index] = state;
+                if (release)
+                {
+                    ReleaseActor(index);
+                }
+            }
+        }
+
+        private bool TrySpawnOne()
+        {
+            int actorIndex = FindAvailableActorIndex();
+            CityPedestrianPresentation available =
+                FindAvailablePresentation();
+            if (actorIndex < 0 || available == null ||
+                !TryFindSpawnCandidate(out SpawnCandidate candidate))
+            {
+                return false;
+            }
+
+            CityPedestrianActor actor = actors[actorIndex];
+            uint spawnSeed = CityPedestrianStableHash.Combine(
+                plan.StableSeed,
+                CityPedestrianStableHash.Combine(
+                    spawnSequence,
+                    CityPedestrianStableHash.String(candidate.Anchor.Id)));
+            float speed = LerpFromHash(
+                CityPedestrianPlanner.MinimumSpeed,
+                CityPedestrianPlanner.MaximumSpeed,
+                CityPedestrianStableHash.Combine(spawnSeed, SpeedSalt));
+            float animationSpeed = LerpFromHash(
+                CityPedestrianPlanner.MinimumAnimationSpeed,
+                CityPedestrianPlanner.MaximumAnimationSpeed,
+                CityPedestrianStableHash.Combine(
+                    spawnSeed,
+                    AnimationSpeedSalt));
+            float animationPhase = CityPedestrianStableHash.ToUnitFloat(
+                CityPedestrianStableHash.Combine(
+                    spawnSeed,
+                    AnimationPhaseSalt));
+            int palette = (int)(
+                CityPedestrianStableHash.Combine(spawnSeed, PaletteSalt) %
+                CityPedestrianPlanner.PaletteVariantCount);
+            uint behaviorSeed = CityPedestrianStableHash.Combine(
+                spawnSeed,
+                BehaviorSalt);
+            actor.PrepareSpawn(
+                plan,
+                candidate.Anchor,
+                candidate.TargetNodeIndex,
+                speed,
+                animationSpeed,
+                animationPhase,
+                palette,
+                behaviorSeed);
+            try
+            {
+                Physics.SyncTransforms();
+                if (!IsCollisionActivationSafe(
+                        actor.Position,
+                        actor.AgentRadius,
+                        actor))
+                {
+                    actor.ReleasePresentation(poolRoot);
+                    return false;
+                }
+
+                actor.BindPresentation(available);
+            }
+            catch
+            {
+                actor.ReleasePresentation(poolRoot);
+                throw;
+            }
+
+            visibilityStates[actorIndex] = default;
+            spawnSequence++;
+            return true;
+        }
+
+        private bool TryFindSpawnCandidate(out SpawnCandidate result)
+        {
+            result = default;
+            float minimumDistanceSquared =
+                MinimumSpawnDistance * MinimumSpawnDistance;
+            float maximumDistance = GetMaximumSpawnDistance();
+            float maximumDistanceSquared =
+                maximumDistance * maximumDistance;
+            bool found = false;
+            uint bestRank = uint.MaxValue;
+            for (int index = 0;
+                 index < plan.SpawnAnchors.Count;
+                 index++)
+            {
+                CityPedestrianSpawnAnchor anchor = plan.SpawnAnchors[index];
+                float distance = PlanarSquaredDistance(
+                    anchor.Position,
+                    player.position);
+                if (distance < minimumDistanceSquared ||
+                    distance > maximumDistanceSquared ||
+                    IsAnchorReserved(anchor.Id) ||
+                    IsVisible(
+                        CityPedestrianActor.CreateVisibilityBounds(
+                            anchor.Position)) ||
+                    !IsCollisionActivationSafe(
+                        anchor.Position,
+                        plan.AgentRadius,
+                        null))
+                {
+                    continue;
+                }
+
+                uint rank = CityPedestrianStableHash.Combine(
+                    CityPedestrianStableHash.Combine(
+                        plan.StableSeed,
+                        spawnSequence),
+                    CityPedestrianStableHash.String(anchor.Id));
+                if (found && rank >= bestRank)
+                {
+                    continue;
+                }
+
+                int target = SelectInitialTarget(anchor, rank);
+                result = new SpawnCandidate(anchor, target);
+                bestRank = rank;
+                found = true;
+            }
+
+            return found;
+        }
+
+        private int SelectInitialTarget(
+            CityPedestrianSpawnAnchor anchor,
+            uint rank)
+        {
+            float firstDistance = PlanarSquaredDistance(
+                plan.Nodes[anchor.FirstNodeIndex].Position,
+                player.position);
+            float secondDistance = PlanarSquaredDistance(
+                plan.Nodes[anchor.SecondNodeIndex].Position,
+                player.position);
+            if (Mathf.Abs(firstDistance - secondDistance) <= 0.0001f)
+            {
+                return (CityPedestrianStableHash.Combine(
+                            rank,
+                            DirectionSalt) & 1u) == 0u
+                    ? anchor.FirstNodeIndex
+                    : anchor.SecondNodeIndex;
+            }
+
+            return firstDistance < secondDistance
+                ? anchor.FirstNodeIndex
+                : anchor.SecondNodeIndex;
+        }
+
+        private bool IsCollisionActivationSafe(
+            Vector3 position,
+            float radius,
+            CityPedestrianActor ignoredActor)
+        {
+            float playerRadius = GetControllerRadius(player, radius);
+            if (VerticalCapsulesOverlap(
+                    position,
+                    CityPedestrianActor.CollisionHeight,
+                    player,
+                    CityPedestrianActor.CollisionHeight,
+                    CollisionActivationPadding) &&
+                PlanarCirclesOverlap(
+                    position,
+                    radius,
+                    player.position,
+                    playerRadius,
+                    CollisionActivationPadding))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < actors.Count; index++)
+            {
+                CityPedestrianActor other = actors[index];
+                if (other == ignoredActor || !other.IsSpawned)
+                {
+                    continue;
+                }
+
+                if (PlanarCirclesOverlap(
+                        position,
+                        radius,
+                        other.Position,
+                        other.AgentRadius,
+                        CollisionActivationPadding))
+                {
+                    return false;
+                }
+            }
+
+            float queryRadius = radius * 0.95f;
+            Vector3 bottom = position +
+                (Vector3.up * (radius + StaticClearanceLift));
+            Vector3 top = position +
+                (Vector3.up *
+                 (CityPedestrianActor.CollisionHeight - radius -
+                  StaticClearanceLift));
+            return !Physics.CheckCapsule(
+                bottom,
+                top,
+                queryRadius,
+                CityPedestrianCollision.NonPedestrianMask,
+                QueryTriggerInteraction.Ignore);
+        }
+
         private bool ShouldYield(
             CityPedestrianActor actor,
             int actorIndex)
         {
-            if (!actor.HasPresentation ||
+            if (!actor.IsSpawned ||
                 actor.MotionState != CityPedestrianMotionState.Walking)
             {
                 return false;
@@ -251,7 +515,13 @@ namespace BarPromenade
                 return false;
             }
 
-            if (IsAheadWithin(
+            if (VerticalCapsulesOverlap(
+                    actor.Position,
+                    CityPedestrianActor.CollisionHeight,
+                    player,
+                    CityPedestrianActor.CollisionHeight,
+                    CollisionActivationPadding) &&
+                IsAheadWithin(
                     actor.Position,
                     travel,
                     player.position,
@@ -263,144 +533,61 @@ namespace BarPromenade
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor other = actors[index];
-                if (other == actor || !other.HasPresentation)
+                if (other == actor || !other.IsSpawned)
                 {
                     continue;
                 }
 
-                if (IsAheadWithin(
+                if (!IsAheadWithin(
                         actor.Position,
                         travel,
                         other.Position,
                         PedestrianAvoidanceDistance))
                 {
-                    Vector3 otherTravel = other.TravelDirection;
-                    bool meetingHeadOn =
-                        otherTravel.sqrMagnitude > 0.0001f &&
-                        Vector3.Dot(travel, otherTravel) < -0.20f;
-                    if (!meetingHeadOn || actorIndex > index)
-                    {
-                        return true;
-                    }
+                    continue;
+                }
+
+                Vector3 otherTravel = other.TravelDirection;
+                bool meetingHeadOn =
+                    otherTravel.sqrMagnitude > 0.0001f &&
+                    Vector3.Dot(travel, otherTravel) < -0.20f;
+                if (!meetingHeadOn || actorIndex > index)
+                {
+                    return true;
                 }
             }
 
             return false;
         }
 
-        private void RefreshPresentationPool(bool initialPopulation)
+        private void ReleaseActor(int actorIndex)
         {
-            float deactivationDistance =
-                GetDeactivationDistance();
-            float deactivationDistanceSquared =
-                deactivationDistance * deactivationDistance;
-            for (int index = 0; index < actors.Count; index++)
-            {
-                CityPedestrianActor actor = actors[index];
-                if (!actor.HasPresentation ||
-                    PlanarSquaredDistance(
-                        actor.Position,
-                        player.position) <
-                    deactivationDistanceSquared)
-                {
-                    continue;
-                }
-
-                actor.ReleasePresentation(poolRoot);
-            }
-
-            while (ActiveCount < presentationPool.Count)
-            {
-                CityPedestrianPresentation available =
-                    FindAvailablePresentation();
-                CityPedestrianActor candidate =
-                    FindActivationCandidate(initialPopulation);
-                if (available == null || candidate == null)
-                {
-                    return;
-                }
-
-                candidate.BindPresentation(available);
-            }
+            actors[actorIndex].ReleasePresentation(poolRoot);
+            visibilityStates[actorIndex] = default;
         }
 
-        private CityPedestrianActor FindActivationCandidate(
-            bool initialPopulation)
+        private void ReleaseAllActors()
         {
-            float innerDistance = GetActivationInnerDistance();
-            float innerDistanceSquared = innerDistance * innerDistance;
-            float outerDistance = GetActivationDistance();
-            float outerDistanceSquared =
-                outerDistance * outerDistance;
-            CityPedestrianActor best = null;
-            float bestDistance = float.PositiveInfinity;
             for (int index = 0; index < actors.Count; index++)
             {
-                CityPedestrianActor actor = actors[index];
-                if (actor.HasPresentation)
-                {
-                    continue;
-                }
-
-                if (!IsCollisionActivationSafe(actor))
-                {
-                    continue;
-                }
-
-                float distance = PlanarSquaredDistance(
-                    actor.Position,
-                    player.position);
-                if (distance > outerDistanceSquared ||
-                    (!initialPopulation &&
-                     distance < innerDistanceSquared) ||
-                    distance >= bestDistance)
-                {
-                    continue;
-                }
-
-                best = actor;
-                bestDistance = distance;
+                ReleaseActor(index);
             }
 
-            return best;
+            spawnCooldown = 0f;
         }
 
-        private bool IsCollisionActivationSafe(
-            CityPedestrianActor candidate)
+        private int FindAvailableActorIndex()
         {
-            float playerRadius = GetControllerRadius(
-                player,
-                candidate.AgentRadius);
-            if (PlanarCirclesOverlap(
-                    candidate.Position,
-                    candidate.AgentRadius,
-                    player.position,
-                    playerRadius,
-                    CollisionActivationPadding))
-            {
-                return false;
-            }
-
             for (int index = 0; index < actors.Count; index++)
             {
-                CityPedestrianActor other = actors[index];
-                if (other == candidate || !other.HasPresentation)
+                if (!actors[index].IsSpawned &&
+                    string.IsNullOrEmpty(actors[index].SpawnAnchorId))
                 {
-                    continue;
-                }
-
-                if (PlanarCirclesOverlap(
-                        candidate.Position,
-                        candidate.AgentRadius,
-                        other.Position,
-                        other.AgentRadius,
-                        CollisionActivationPadding))
-                {
-                    return false;
+                    return index;
                 }
             }
 
-            return true;
+            return -1;
         }
 
         private CityPedestrianPresentation FindAvailablePresentation()
@@ -432,50 +619,66 @@ namespace BarPromenade
             return null;
         }
 
-        private float GetActivationInnerDistance()
+        private bool IsAnchorReserved(string anchorId)
         {
-            float outerDistance = GetActivationDistance();
-            if (visibilityCamera == null ||
-                !IsFinite(visibilityCamera.farClipPlane))
+            for (int index = 0; index < actors.Count; index++)
             {
-                return Mathf.Min(
-                    ActivationInnerDistance,
-                    Mathf.Max(
-                        0f,
-                        outerDistance - MinimumPoolHysteresis));
+                if (actors[index].IsSpawned &&
+                    string.Equals(
+                        actors[index].SpawnAnchorId,
+                        anchorId,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
 
-            return Mathf.Min(
+            return false;
+        }
+
+        private void UpdateFrustumPlanes()
+        {
+            GeometryUtility.CalculateFrustumPlanes(
+                visibilityCamera,
+                frustumPlanes);
+        }
+
+        private bool IsVisible(Bounds bounds)
+        {
+            return GeometryUtility.TestPlanesAABB(frustumPlanes, bounds);
+        }
+
+        private float GetMaximumSpawnDistance()
+        {
+            return Mathf.Max(
+                MinimumSpawnDistance,
                 Mathf.Min(
-                    ActivationInnerDistance,
-                    visibilityCamera.farClipPlane * 0.70f),
-                Mathf.Max(
-                    0f,
-                    outerDistance - MinimumPoolHysteresis));
+                    MaximumSpawnDistance,
+                    visibilityCamera.farClipPlane - FarClipSpawnPadding));
         }
 
-        private float GetActivationDistance()
+        private float GetNextSpawnCooldown()
         {
-            return Mathf.Min(
-                ActivationDistance,
-                Mathf.Max(
-                    0f,
-                    GetDeactivationDistance() -
-                    MinimumPoolHysteresis));
+            uint hash = CityPedestrianStableHash.Combine(
+                plan.StableSeed,
+                CityPedestrianStableHash.Combine(
+                    spawnSequence,
+                    CooldownSalt));
+            return Mathf.Lerp(
+                MinimumSpawnCooldown,
+                MaximumSpawnCooldown,
+                CityPedestrianStableHash.ToUnitFloat(hash));
         }
 
-        private float GetDeactivationDistance()
+        private static float LerpFromHash(
+            float minimum,
+            float maximum,
+            uint hash)
         {
-            if (visibilityCamera == null ||
-                !IsFinite(visibilityCamera.farClipPlane) ||
-                visibilityCamera.farClipPlane <= 2f)
-            {
-                return DeactivationDistance;
-            }
-
-            return Mathf.Min(
-                DeactivationDistance,
-                visibilityCamera.farClipPlane - 1f);
+            return Mathf.Lerp(
+                minimum,
+                maximum,
+                CityPedestrianStableHash.ToUnitFloat(hash));
         }
 
         private static bool IsAheadWithin(
@@ -526,6 +729,34 @@ namespace BarPromenade
                 : fallback;
         }
 
+        private static bool VerticalCapsulesOverlap(
+            Vector3 firstRoot,
+            float firstHeight,
+            Transform secondRoot,
+            float fallbackSecondHeight,
+            float padding)
+        {
+            CharacterController controller =
+                secondRoot.GetComponent<CharacterController>();
+            float secondHeight = controller != null &&
+                                 controller.height > 0f
+                ? controller.height
+                : fallbackSecondHeight;
+            float secondCenterOffset = controller != null
+                ? controller.center.y
+                : secondHeight * 0.5f;
+            float firstMinimum = firstRoot.y;
+            float firstMaximum = firstRoot.y + firstHeight;
+            float secondCenter =
+                secondRoot.position.y + secondCenterOffset;
+            float secondMinimum =
+                secondCenter - secondHeight * 0.5f;
+            float secondMaximum =
+                secondCenter + secondHeight * 0.5f;
+            return firstMinimum <= secondMaximum + padding &&
+                   secondMinimum <= firstMaximum + padding;
+        }
+
         private static float SanitizeDeltaTime(float deltaTime)
         {
             return IsFinite(deltaTime)
@@ -536,6 +767,27 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private struct VisibilityState
+        {
+            public bool HasEnteredView;
+            public float UnseenElapsed;
+            public float ExitElapsed;
+        }
+
+        private readonly struct SpawnCandidate
+        {
+            public SpawnCandidate(
+                CityPedestrianSpawnAnchor anchor,
+                int targetNodeIndex)
+            {
+                Anchor = anchor;
+                TargetNodeIndex = targetNodeIndex;
+            }
+
+            public CityPedestrianSpawnAnchor Anchor { get; }
+            public int TargetNodeIndex { get; }
         }
     }
 }

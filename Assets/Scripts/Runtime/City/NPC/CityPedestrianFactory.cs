@@ -42,7 +42,7 @@ namespace BarPromenade
             CityPedestrianPlan plan,
             Transform player,
             RoadWalkableArea walkableArea,
-            Camera camera = null)
+            Camera camera)
         {
             return Create(
                 parent,
@@ -81,7 +81,10 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(walkableArea));
             }
 
-            if (plan.Count > 0 && presentationPrefab == null)
+            int slotCount = Mathf.Min(
+                plan.Count,
+                CityPedestrianDirector.MaximumActiveModels);
+            if (slotCount > 0 && presentationPrefab == null)
             {
                 throw new InvalidOperationException(
                     "The city pedestrian presentation prefab is missing at " +
@@ -103,13 +106,11 @@ namespace BarPromenade
                     runtimeRoot.transform,
                     false);
 
-                var actors = new List<CityPedestrianActor>(plan.Count);
-                for (int index = 0; index < plan.Count; index++)
+                var actors = new List<CityPedestrianActor>(slotCount);
+                for (int index = 0; index < slotCount; index++)
                 {
-                    CityPedestrianDefinition definition =
-                        plan.Definitions[index];
                     GameObject actorObject = new GameObject(
-                        $"Route {definition.Id}");
+                        $"Pedestrian Slot {index + 1:00}");
                     actorObject.layer =
                         CityPedestrianCollision.LayerIndex;
                     actorObject.transform.SetParent(
@@ -118,18 +119,14 @@ namespace BarPromenade
                     CityPedestrianActor actor =
                         actorObject.AddComponent<CityPedestrianActor>();
                     actor.Initialize(
-                        definition,
                         walkableArea,
                         plan.AgentRadius);
                     actors.Add(actor);
                 }
 
-                int poolSize = Mathf.Min(
-                    plan.Count,
-                    CityPedestrianDirector.MaximumActiveModels);
                 var presentations =
-                    new List<CityPedestrianPresentation>(poolSize);
-                for (int index = 0; index < poolSize; index++)
+                    new List<CityPedestrianPresentation>(slotCount);
+                for (int index = 0; index < slotCount; index++)
                 {
                     if (!CityPedestrianResources.TryInstantiate(
                             presentationPrefab,

@@ -30,6 +30,7 @@ namespace BarPromenade
         public Transform FogAnchor { get; private set; }
         public CityFogField FogField { get; private set; }
         public CityNightAtmosphere ExteriorLighting { get; private set; }
+        public CityPedestrianDirector Pedestrians { get; private set; }
         public Volume CityPostProcessVolume { get; private set; }
         public VolumeProfile RuntimeCityProfile => runtimeCityProfile;
 
@@ -95,6 +96,28 @@ namespace BarPromenade
             }
         }
 
+        public void BindPedestrians(
+            CityPedestrianDirector pedestrianDirector)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the Home balcony exterior atmosphere first.");
+            }
+
+            if (Pedestrians != null)
+            {
+                throw new InvalidOperationException(
+                    "The Home balcony pedestrians are already bound.");
+            }
+
+            Pedestrians = pedestrianDirector != null
+                ? pedestrianDirector
+                : throw new ArgumentNullException(
+                    nameof(pedestrianDirector));
+            SetPedestriansActive(IsBalconyVisibilityActive);
+        }
+
         public void ApplyExteriorLighting(
             DayNightVisualSample sample,
             bool updateEnvironment = false)
@@ -129,11 +152,13 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            SetPedestriansActive(false);
             RestoreHomeVisibility();
         }
 
         private void OnDestroy()
         {
+            SetPedestriansActive(false);
             RestoreHomeVisibility();
             DestroyCityPostProcessProfile();
             IsInitialized = false;
@@ -241,15 +266,26 @@ namespace BarPromenade
                 FogField.FogRenderer.enabled = true;
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;
+                SetPedestriansActive(true);
                 return;
             }
 
+            SetPedestriansActive(false);
             FogField.FogRenderer.enabled = false;
             SetExteriorLightingEnabled(false);
             CityPostProcessVolume.weight = 0f;
             homeVisibility.Restore(targetCamera);
             homeLighting.Restore();
             IsBalconyVisibilityActive = false;
+        }
+
+        private void SetPedestriansActive(bool active)
+        {
+            if (Pedestrians != null &&
+                Pedestrians.enabled != active)
+            {
+                Pedestrians.enabled = active;
+            }
         }
 
         private void RestoreHomeVisibility()

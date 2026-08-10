@@ -45,6 +45,9 @@ namespace BarPromenade.Tests.EditMode
             CollectionAssert.AreEqual(
                 first.CrosswalkNodes,
                 second.CrosswalkNodes);
+            CollectionAssert.AreEqual(
+                first.Crosswalks,
+                second.Crosswalks);
         }
 
         [Test]
@@ -175,6 +178,9 @@ namespace BarPromenade.Tests.EditMode
                 plan.CrosswalkWalkableRectangles,
                 Has.Count.EqualTo(expectedApproachCount));
             Assert.That(
+                plan.Crosswalks,
+                Has.Count.EqualTo(expectedApproachCount));
+            Assert.That(
                 plan.CrosswalkMarkings,
                 Has.Count.EqualTo(
                     expectedApproachCount *
@@ -195,6 +201,27 @@ namespace BarPromenade.Tests.EditMode
                         Contains(layout.GetRoadRect(edge), crosswalk)),
                     Is.True,
                     crosswalk.ToString());
+            }
+
+            foreach (CityCrosswalkDescriptor crosswalk in plan.Crosswalks)
+            {
+                Assert.That(
+                    plan.CrosswalkNodes,
+                    Does.Contain(crosswalk.Node));
+                Assert.That(
+                    layout.GetPathKind(crosswalk.ApproachEdge),
+                    Is.EqualTo(CityPathKind.Street));
+                Assert.That(
+                    crosswalk.ApproachEdge.Contains(crosswalk.Node),
+                    Is.True);
+                Assert.That(
+                    plan.CrosswalkWalkableRectangles,
+                    Does.Contain(crosswalk.WalkableBounds));
+                Assert.That(
+                    Vector3.Dot(
+                        crosswalk.AlongDirection,
+                        crosswalk.AcrossDirection),
+                    Is.EqualTo(0f).Within(Tolerance));
             }
 
             foreach (Bounds stripe in plan.CrosswalkMarkings)

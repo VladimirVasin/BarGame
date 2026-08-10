@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -458,6 +459,128 @@ namespace BarPromenade.Tests.PlayMode
                 SceneManager.GetActiveScene().name,
                 Is.EqualTo(SceneIds.HomeInterior));
             LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        public IEnumerator HomeScene_SpawnsPedestriansOnlyOnBalcony()
+        {
+            AsyncOperation load =
+                SceneManager.LoadSceneAsync(
+                    SceneIds.HomeInterior,
+                    LoadSceneMode.Single);
+            Assert.That(load, Is.Not.Null);
+            while (!load.isDone)
+            {
+                yield return null;
+            }
+
+            HomeInteriorRoot home = null;
+            float deadline =
+                Time.realtimeSinceStartup + TimeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                if (home != null && home.IsInitialized)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Assert.That(home, Is.Not.Null);
+            Assert.That(home.PedestrianPlan, Is.Not.Null);
+            Assert.That(home.PedestrianPlan.Count, Is.GreaterThan(0));
+            Assert.That(home.Pedestrians, Is.Not.Null);
+            Assert.That(home.Pedestrians.IsInitialized, Is.True);
+            Assert.That(home.Pedestrians.isActiveAndEnabled, Is.False);
+            AssertPedestriansDormant(home.Pedestrians);
+
+            Rect activation =
+                home.BalconyLayout.BalconyCameraActivationBounds;
+            home.Player.Motor.Teleport(
+                new Vector3(
+                    activation.center.x,
+                    home.Layout.PlayerSpawn.y,
+                    activation.center.y));
+            yield return null;
+
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.Balcony));
+            Assert.That(
+                home.ExteriorAtmosphere.IsBalconyVisibilityActive,
+                Is.True);
+            Assert.That(home.Pedestrians.isActiveAndEnabled, Is.True);
+            home.Pedestrians.RefreshPresentationPool();
+            home.Pedestrians.RefreshPresentationPool();
+            Assert.That(
+                home.Pedestrians.ActiveCount,
+                Is.InRange(
+                    1,
+                    CityPedestrianDirector.MaximumActiveModels));
+
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            Plane[] frustum =
+                GeometryUtility.CalculateFrustumPlanes(camera);
+            var activeAnchorIds = new HashSet<string>();
+            for (int index = 0;
+                 index < home.Pedestrians.Actors.Count;
+                 index++)
+            {
+                CityPedestrianActor actor =
+                    home.Pedestrians.Actors[index];
+                if (!actor.IsSpawned)
+                {
+                    continue;
+                }
+
+                Assert.That(actor.CollisionEnabled, Is.True);
+                Assert.That(
+                    activeAnchorIds.Add(actor.SpawnAnchorId),
+                    Is.True,
+                    "Balcony pedestrians must use unique spawn anchors.");
+                Assert.That(
+                    GeometryUtility.TestPlanesAABB(
+                        frustum,
+                        actor.VisibilityBounds),
+                    Is.False,
+                    "A balcony pedestrian must spawn fully outside the " +
+                    "camera frustum.");
+            }
+
+            home.Player.Motor.Teleport(
+                new Vector3(
+                    0.50f,
+                    home.Layout.PlayerSpawn.y,
+                    -0.50f));
+            yield return null;
+
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            Assert.That(home.Pedestrians.isActiveAndEnabled, Is.False);
+            AssertPedestriansDormant(home.Pedestrians);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void AssertPedestriansDormant(
+            CityPedestrianDirector pedestrians)
+        {
+            Assert.That(pedestrians.ActiveCount, Is.Zero);
+            for (int index = 0;
+                 index < pedestrians.Actors.Count;
+                 index++)
+            {
+                CityPedestrianActor actor = pedestrians.Actors[index];
+                Assert.That(actor.IsSpawned, Is.False);
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Dormant));
+                Assert.That(actor.SpawnAnchorId, Is.Empty);
+                Assert.That(actor.CollisionEnabled, Is.False);
+            }
         }
 
         private static void AssertExteriorLightsActive(

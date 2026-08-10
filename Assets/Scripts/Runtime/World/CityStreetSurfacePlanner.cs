@@ -49,6 +49,7 @@ namespace BarPromenade
             var crosswalkMarkings = new List<Bounds>();
             var sidewalkWalkableRectangles = new List<Rect>();
             var crosswalkWalkableRectangles = new List<Rect>();
+            var crosswalks = new List<CityCrosswalkDescriptor>();
             var markingExclusions = new List<Rect>();
             var edgesWithSidewalks = new HashSet<RoadEdge>();
 
@@ -86,6 +87,7 @@ namespace BarPromenade
                 carriagewayWidth,
                 crosswalkMarkings,
                 crosswalkWalkableRectangles,
+                crosswalks,
                 markingExclusions);
             CreateCenterMarkings(
                 layout,
@@ -102,7 +104,8 @@ namespace BarPromenade
                 crosswalkMarkings,
                 sidewalkWalkableRectangles,
                 crosswalkWalkableRectangles,
-                new List<Vector2Int>(selectedNodes));
+                new List<Vector2Int>(selectedNodes),
+                crosswalks);
         }
 
         private static void CreateBaseSurfaces(
@@ -311,6 +314,7 @@ namespace BarPromenade
             float carriagewayWidth,
             ICollection<Bounds> crosswalkMarkings,
             ICollection<Rect> walkableRectangles,
+            ICollection<CityCrosswalkDescriptor> crosswalks,
             ICollection<Rect> markingExclusions)
         {
             float halfRoad = layout.RoadWidth * 0.5f;
@@ -346,6 +350,13 @@ namespace BarPromenade
                         CrosswalkDepth,
                         carriagewayWidth);
                     walkableRectangles.Add(walkable);
+                    crosswalks.Add(new CityCrosswalkDescriptor(
+                        node,
+                        edge,
+                        walkable,
+                        crosswalkCenter,
+                        outward,
+                        new Vector3(-outward.z, 0f, outward.x)));
                     markingExclusions.Add(walkable);
 
                     for (int stripeIndex = 0;

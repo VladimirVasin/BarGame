@@ -23,6 +23,8 @@ namespace BarPromenade
         public Transform Balcony { get; private set; }
         public Transform ExteriorView { get; private set; }
         public CityNightWorldResult ExteriorNight { get; private set; }
+        public CityPedestrianPlan PedestrianPlan { get; private set; }
+        public CityPedestrianDirector Pedestrians { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public PlayerAnimatedInteractionController AnimatedInteraction
         {
@@ -258,6 +260,17 @@ namespace BarPromenade
                 CreateCameraShots(
                     Layout,
                     BalconyLayout));
+            PedestrianPlan = HomeExteriorPedestrianPlanner.Create(
+                ExteriorContext,
+                GameSessionState.CitySeed);
+            Pedestrians = CityPedestrianFactory.Create(
+                transform,
+                PedestrianPlan,
+                Player.GameObject.transform,
+                CityPedestrianPlanner.CreateWalkableArea(
+                    PedestrianPlan),
+                camera);
+            Pedestrians.enabled = false;
             GameObject musicObject =
                 new GameObject("Home Music");
             musicObject.transform.SetParent(transform, false);
@@ -280,6 +293,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 BalconyLayout,
                 GameSessionState.CitySeed);
+            ExteriorAtmosphere.BindPedestrians(Pedestrians);
             GameObject dayNightObject =
                 new GameObject("Home Day Night");
             dayNightObject.transform.SetParent(transform, false);
@@ -345,6 +359,9 @@ namespace BarPromenade
                 GameLog.Field(
                     "exterior_lot_count",
                     ExteriorContext.NearbyLots.Count),
+                GameLog.Field(
+                    "exterior_pedestrian_spawn_anchor_count",
+                    PedestrianPlan.Count),
                 GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),

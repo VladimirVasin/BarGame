@@ -5,88 +5,41 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public sealed class CityPedestrianDefinition :
-        IEquatable<CityPedestrianDefinition>
+    public enum CityPedestrianLinkKind
     {
-        private readonly ReadOnlyCollection<RoadEdge> routeEdges;
-        private readonly ReadOnlyCollection<Vector3> waypoints;
+        Sidewalk = 0,
+        Turn,
+        Crosswalk
+    }
 
-        internal CityPedestrianDefinition(
+    public sealed class CityPedestrianNode :
+        IEquatable<CityPedestrianNode>
+    {
+        internal CityPedestrianNode(
             string id,
-            IList<RoadEdge> routeEdges,
-            IList<Vector3> waypoints,
-            float speed,
-            float animationSpeed,
-            float animationPhase01,
-            int paletteVariant,
-            uint behaviorSeed,
-            bool startsReversed)
+            Vector3 position,
+            bool isCrosswalkEntry)
         {
             Id = id ?? string.Empty;
-            this.routeEdges = new ReadOnlyCollection<RoadEdge>(
-                new List<RoadEdge>(
-                    routeEdges ??
-                    throw new ArgumentNullException(nameof(routeEdges))));
-            this.waypoints = new ReadOnlyCollection<Vector3>(
-                new List<Vector3>(
-                    waypoints ??
-                    throw new ArgumentNullException(nameof(waypoints))));
-            Speed = speed;
-            AnimationSpeed = animationSpeed;
-            AnimationPhase01 = animationPhase01;
-            PaletteVariant = paletteVariant;
-            BehaviorSeed = behaviorSeed;
-            StartsReversed = startsReversed;
-
-            float length = 0f;
-            for (int index = 1; index < this.waypoints.Count; index++)
-            {
-                length += Vector3.Distance(
-                    this.waypoints[index - 1],
-                    this.waypoints[index]);
-            }
-
-            RouteLength = length;
+            Position = position;
+            IsCrosswalkEntry = isCrosswalkEntry;
         }
 
         public string Id { get; }
-        public IReadOnlyList<RoadEdge> RouteEdges => routeEdges;
-        public IReadOnlyList<Vector3> Waypoints => waypoints;
-        public float RouteLength { get; }
-        public float Speed { get; }
-        public float AnimationSpeed { get; }
-        public float AnimationPhase01 { get; }
-        public int PaletteVariant { get; }
-        public uint BehaviorSeed { get; }
-        public bool StartsReversed { get; }
+        public Vector3 Position { get; }
+        public bool IsCrosswalkEntry { get; }
 
-        public bool Equals(CityPedestrianDefinition other)
+        public bool Equals(CityPedestrianNode other)
         {
-            if (ReferenceEquals(null, other))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return string.Equals(Id, other.Id, StringComparison.Ordinal) &&
-                   SequenceEqual(routeEdges, other.routeEdges) &&
-                   SequenceEqual(waypoints, other.waypoints) &&
-                   RouteLength.Equals(other.RouteLength) &&
-                   Speed.Equals(other.Speed) &&
-                   AnimationSpeed.Equals(other.AnimationSpeed) &&
-                   AnimationPhase01.Equals(other.AnimationPhase01) &&
-                   PaletteVariant == other.PaletteVariant &&
-                   BehaviorSeed == other.BehaviorSeed &&
-                   StartsReversed == other.StartsReversed;
+            return other != null &&
+                   string.Equals(Id, other.Id, StringComparison.Ordinal) &&
+                   Position.Equals(other.Position) &&
+                   IsCrosswalkEntry == other.IsCrosswalkEntry;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is CityPedestrianDefinition other && Equals(other);
+            return obj is CityPedestrianNode other && Equals(other);
         }
 
         public override int GetHashCode()
@@ -94,77 +47,252 @@ namespace BarPromenade
             unchecked
             {
                 int hash = StringComparer.Ordinal.GetHashCode(Id);
-                for (int index = 0; index < routeEdges.Count; index++)
-                {
-                    hash = (hash * 397) ^ routeEdges[index].GetHashCode();
-                }
-
-                for (int index = 0; index < waypoints.Count; index++)
-                {
-                    hash = (hash * 397) ^ waypoints[index].GetHashCode();
-                }
-
-                hash = (hash * 397) ^ RouteLength.GetHashCode();
-                hash = (hash * 397) ^ Speed.GetHashCode();
-                hash = (hash * 397) ^ AnimationSpeed.GetHashCode();
-                hash = (hash * 397) ^ AnimationPhase01.GetHashCode();
-                hash = (hash * 397) ^ PaletteVariant;
-                hash = (hash * 397) ^ BehaviorSeed.GetHashCode();
-                return (hash * 397) ^ StartsReversed.GetHashCode();
+                hash = (hash * 397) ^ Position.GetHashCode();
+                return (hash * 397) ^ IsCrosswalkEntry.GetHashCode();
             }
         }
+    }
 
-        private static bool SequenceEqual<T>(
-            IReadOnlyList<T> first,
-            IReadOnlyList<T> second)
+    public sealed class CityPedestrianLink :
+        IEquatable<CityPedestrianLink>
+    {
+        internal CityPedestrianLink(
+            string id,
+            int firstNodeIndex,
+            int secondNodeIndex,
+            CityPedestrianLinkKind kind)
         {
-            if (first.Count != second.Count)
+            Id = id ?? string.Empty;
+            FirstNodeIndex = firstNodeIndex;
+            SecondNodeIndex = secondNodeIndex;
+            Kind = kind;
+        }
+
+        public string Id { get; }
+        public int FirstNodeIndex { get; }
+        public int SecondNodeIndex { get; }
+        public CityPedestrianLinkKind Kind { get; }
+
+        public int Other(int nodeIndex)
+        {
+            if (nodeIndex == FirstNodeIndex)
             {
-                return false;
+                return SecondNodeIndex;
             }
 
-            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-            for (int index = 0; index < first.Count; index++)
+            if (nodeIndex == SecondNodeIndex)
             {
-                if (!comparer.Equals(first[index], second[index]))
-                {
-                    return false;
-                }
+                return FirstNodeIndex;
             }
 
-            return true;
+            throw new ArgumentOutOfRangeException(
+                nameof(nodeIndex),
+                "The requested node does not belong to this link.");
+        }
+
+        public bool Equals(CityPedestrianLink other)
+        {
+            return other != null &&
+                   string.Equals(Id, other.Id, StringComparison.Ordinal) &&
+                   FirstNodeIndex == other.FirstNodeIndex &&
+                   SecondNodeIndex == other.SecondNodeIndex &&
+                   Kind == other.Kind;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityPedestrianLink other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(Id);
+                hash = (hash * 397) ^ FirstNodeIndex;
+                hash = (hash * 397) ^ SecondNodeIndex;
+                return (hash * 397) ^ (int)Kind;
+            }
+        }
+    }
+
+    public sealed class CityPedestrianSpawnAnchor :
+        IEquatable<CityPedestrianSpawnAnchor>
+    {
+        internal CityPedestrianSpawnAnchor(
+            string id,
+            Vector3 position,
+            int firstNodeIndex,
+            int secondNodeIndex)
+        {
+            Id = id ?? string.Empty;
+            Position = position;
+            FirstNodeIndex = firstNodeIndex;
+            SecondNodeIndex = secondNodeIndex;
+        }
+
+        public string Id { get; }
+        public Vector3 Position { get; }
+        public int FirstNodeIndex { get; }
+        public int SecondNodeIndex { get; }
+
+        public bool Equals(CityPedestrianSpawnAnchor other)
+        {
+            return other != null &&
+                   string.Equals(Id, other.Id, StringComparison.Ordinal) &&
+                   Position.Equals(other.Position) &&
+                   FirstNodeIndex == other.FirstNodeIndex &&
+                   SecondNodeIndex == other.SecondNodeIndex;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityPedestrianSpawnAnchor other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(Id);
+                hash = (hash * 397) ^ Position.GetHashCode();
+                hash = (hash * 397) ^ FirstNodeIndex;
+                return (hash * 397) ^ SecondNodeIndex;
+            }
         }
     }
 
     public sealed class CityPedestrianPlan
     {
+        private readonly ReadOnlyCollection<CityPedestrianNode> nodes;
+        private readonly ReadOnlyCollection<CityPedestrianLink> links;
+        private readonly ReadOnlyCollection<CityPedestrianSpawnAnchor>
+            spawnAnchors;
+        private readonly ReadOnlyCollection<Rect> navigationRectangles;
+        private readonly IReadOnlyList<int>[] linkIndicesByNode;
+
         internal CityPedestrianPlan(
             int layoutSeed,
             int populationSeed,
             uint stableSeed,
-            int desiredCount,
             float agentRadius,
-            IList<CityPedestrianDefinition> definitions)
+            IList<CityPedestrianNode> sourceNodes,
+            IList<CityPedestrianLink> sourceLinks,
+            IList<CityPedestrianSpawnAnchor> sourceSpawnAnchors,
+            IList<Rect> sourceNavigationRectangles)
         {
             LayoutSeed = layoutSeed;
             PopulationSeed = populationSeed;
             StableSeed = stableSeed;
-            DesiredCount = desiredCount;
+            if (!IsFinite(agentRadius) || agentRadius <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(agentRadius));
+            }
+
             AgentRadius = agentRadius;
-            Definitions =
-                new ReadOnlyCollection<CityPedestrianDefinition>(
-                    new List<CityPedestrianDefinition>(
-                        definitions ??
-                        throw new ArgumentNullException(
-                            nameof(definitions))));
+            nodes = Copy(sourceNodes, nameof(sourceNodes));
+            links = Copy(sourceLinks, nameof(sourceLinks));
+            spawnAnchors = Copy(
+                sourceSpawnAnchors,
+                nameof(sourceSpawnAnchors));
+            navigationRectangles = Copy(
+                sourceNavigationRectangles,
+                nameof(sourceNavigationRectangles));
+
+            var mutableAdjacency = new List<int>[nodes.Count];
+            for (int index = 0; index < mutableAdjacency.Length; index++)
+            {
+                mutableAdjacency[index] = new List<int>();
+            }
+
+            for (int index = 0; index < links.Count; index++)
+            {
+                CityPedestrianLink link = links[index] ??
+                    throw new ArgumentException(
+                        "Pedestrian links cannot contain null entries.",
+                        nameof(sourceLinks));
+                ValidateNodeIndex(link.FirstNodeIndex, nameof(sourceLinks));
+                ValidateNodeIndex(link.SecondNodeIndex, nameof(sourceLinks));
+                if (link.FirstNodeIndex == link.SecondNodeIndex)
+                {
+                    throw new ArgumentException(
+                        "A pedestrian link requires two different nodes.",
+                        nameof(sourceLinks));
+                }
+
+                mutableAdjacency[link.FirstNodeIndex].Add(index);
+                mutableAdjacency[link.SecondNodeIndex].Add(index);
+            }
+
+            linkIndicesByNode = new IReadOnlyList<int>[nodes.Count];
+            for (int index = 0; index < mutableAdjacency.Length; index++)
+            {
+                linkIndicesByNode[index] =
+                    new ReadOnlyCollection<int>(mutableAdjacency[index]);
+            }
+
+            for (int index = 0; index < spawnAnchors.Count; index++)
+            {
+                CityPedestrianSpawnAnchor anchor = spawnAnchors[index] ??
+                    throw new ArgumentException(
+                        "Pedestrian spawn anchors cannot contain null entries.",
+                        nameof(sourceSpawnAnchors));
+                ValidateNodeIndex(
+                    anchor.FirstNodeIndex,
+                    nameof(sourceSpawnAnchors));
+                ValidateNodeIndex(
+                    anchor.SecondNodeIndex,
+                    nameof(sourceSpawnAnchors));
+                if (anchor.FirstNodeIndex == anchor.SecondNodeIndex)
+                {
+                    throw new ArgumentException(
+                        "A spawn anchor requires two route directions.",
+                        nameof(sourceSpawnAnchors));
+                }
+            }
         }
 
         public int LayoutSeed { get; }
         public int PopulationSeed { get; }
         public uint StableSeed { get; }
-        public int DesiredCount { get; }
         public float AgentRadius { get; }
-        public IReadOnlyList<CityPedestrianDefinition> Definitions { get; }
-        public int Count => Definitions.Count;
+        public IReadOnlyList<CityPedestrianNode> Nodes => nodes;
+        public IReadOnlyList<CityPedestrianLink> Links => links;
+        public IReadOnlyList<CityPedestrianSpawnAnchor> SpawnAnchors =>
+            spawnAnchors;
+        public IReadOnlyList<Rect> NavigationRectangles =>
+            navigationRectangles;
+        public int Count => spawnAnchors.Count;
+
+        public IReadOnlyList<int> GetLinkIndices(int nodeIndex)
+        {
+            ValidateNodeIndex(nodeIndex, nameof(nodeIndex));
+            return linkIndicesByNode[nodeIndex];
+        }
+
+        private void ValidateNodeIndex(int nodeIndex, string parameterName)
+        {
+            if (nodeIndex < 0 || nodeIndex >= nodes.Count)
+            {
+                throw new ArgumentOutOfRangeException(parameterName);
+            }
+        }
+
+        private static ReadOnlyCollection<T> Copy<T>(
+            IList<T> source,
+            string parameterName)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(parameterName);
+            }
+
+            return new ReadOnlyCollection<T>(new List<T>(source));
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
     }
 }

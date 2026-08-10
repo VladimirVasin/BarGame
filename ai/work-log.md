@@ -2,6 +2,67 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Balcony street pedestrians
+
+- Added a Home-local projection of the seeded City pedestrian graph. Nodes and
+  navigation rectangles use the existing City-to-Home facade transform, while
+  spawn anchors are retained only on the bounded nearby-road set and only when
+  the complete pedestrian radius lies beyond the apartment facade.
+- Composed the existing two-slot pedestrian factory under `HomeInteriorRoot`
+  with the real Main Camera and the player as its locality focus. The balcony
+  atmosphere now enables the director only for the Balcony shot and disables
+  it before restoring indoor visibility, immediately releasing presentations
+  and `CharacterController`s on exit, disable or destruction.
+- Moved pedestrian visibility sampling after all Home contextual camera owners
+  and made player collision/yield checks require vertical capsule overlap, so
+  the player four storeys above does not block street-level spawn or movement.
+- Added a pure graph-transform/filter regression and a focused Home PlayMode
+  lifecycle covering dormant MainRoom slots, unique off-frustum Balcony spawn
+  and complete recycling after returning indoors.
+
+Verification:
+
+- Focused Unity EditMode test
+  `ExteriorPedestrians_TransformCityGraphAndFilterSpawnAnchors` passed `1/1`.
+- Focused Unity PlayMode test
+  `HomeScene_SpawnsPedestriansOnlyOnBalcony` passed `1/1`.
+- The older broad Home balcony presentation test was also attempted but stops
+  before the new pedestrian assertions at its pre-existing collider-free
+  exterior assertion: current street-lamp chunks contain `BoxCollider`s. That
+  unrelated contract was left unchanged. Fast mode omitted complete suites, a
+  player build and scene smoke.
+
+## 2026-08-10 — Local camera-aware street pedestrians
+
+- Replaced the 12 always-simulated two-point routes and six-model distance
+  pool with one deterministic sidewalk graph and exactly two reusable runtime
+  slots. The graph joins street lanes through radius-safe corner turns, prunes
+  all reachable dead ends to its 2-core and consumes explicit zebra descriptors
+  as three-link curb/carriageway connectors.
+- Walkers now spawn only at unique, obstacle-clear anchors inside the player's
+  local far-clip window and fully outside a conservative camera-frustum bound.
+  An offscreen approach remains alive until first seen; after that, leaving the
+  frame releases its controller and presentation after a short grace. An
+  unseen timeout reclaims paths that never enter the shot.
+- Reworked actors as resettable slots that continue forward through graph
+  turns without endpoint reversals. At each zebra entry they make one seeded
+  50% cross/don't-cross choice and automatically complete a chosen crossing.
+  Ordinary despawn disables the `CharacterController` before returning the
+  still-live PlayableGraph presentation to its pool.
+- Added focused planner/runtime coverage for deterministic topology,
+  radius-safe links, dead-end removal, narrow-road zebra rejection, turns,
+  both zebra decisions, unique max-two offscreen spawning, static obstruction,
+  slot yielding and the seen-to-exit lifecycle. Updated the scene smoke
+  assertion for the valid initial population range of zero through two.
+
+Verification:
+
+- Focused Unity EditMode selection
+  `CityPedestrianPlannerTests;CityPedestrianRuntimeTests` passed `15/15`.
+  Unity compiled the affected runtime and EditMode test code in that run.
+- Fast mode intentionally omitted the complete EditMode/PlayMode suites, a
+  player build and scene smoke.
+
 ## 2026-08-10 — Upright pedestrian endpoint steering
 
 - Fixed a latent 3D-facing error exposed by the raised sidewalks. Near a route

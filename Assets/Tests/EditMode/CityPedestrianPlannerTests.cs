@@ -10,7 +10,7 @@ namespace BarPromenade.Tests.EditMode
         private const float PositionTolerance = 0.0001f;
 
         [Test]
-        public void Create_WithSameLayoutAndSeed_ProducesIdenticalPlan()
+        public void Create_WithSameLayoutAndSeed_ProducesIdenticalGraph()
         {
             CityLayout layout = CreateDefaultLayout(9017);
 
@@ -29,99 +29,117 @@ namespace BarPromenade.Tests.EditMode
                     streetSurfacePlan);
 
             Assert.That(second.StableSeed, Is.EqualTo(first.StableSeed));
-            Assert.That(second.DesiredCount, Is.EqualTo(first.DesiredCount));
             Assert.That(second.AgentRadius, Is.EqualTo(first.AgentRadius));
+            CollectionAssert.AreEqual(first.Nodes, second.Nodes);
+            CollectionAssert.AreEqual(first.Links, second.Links);
             CollectionAssert.AreEqual(
-                first.Definitions,
-                second.Definitions);
+                first.SpawnAnchors,
+                second.SpawnAnchors);
             CollectionAssert.AreEqual(
-                first.Definitions,
-                suppliedSurface.Definitions);
+                first.NavigationRectangles,
+                second.NavigationRectangles);
+            CollectionAssert.AreEqual(first.Nodes, suppliedSurface.Nodes);
+            CollectionAssert.AreEqual(first.Links, suppliedSurface.Links);
+            CollectionAssert.AreEqual(
+                first.SpawnAnchors,
+                suppliedSurface.SpawnAnchors);
+            CollectionAssert.AreEqual(
+                first.NavigationRectangles,
+                suppliedSurface.NavigationRectangles);
         }
 
         [Test]
-        public void Create_UsesOnlyRadiusSafeSidewalkSegments()
+        public void Create_BuildsRadiusSafeTurnsAndCrosswalkBranches()
         {
-            CityLayout layout = CreateDefaultLayout(-5107);
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CreateDenseSettings(),
+                -28914);
             CityStreetSurfacePlan streetSurfacePlan =
                 CityStreetSurfacePlanner.Create(layout);
-            RoadWalkableArea sidewalkArea =
-                CityPedestrianPlanner.CreateSidewalkWalkableArea(
-                    streetSurfacePlan);
-
             CityPedestrianPlan plan = CityPedestrianPlanner.Create(
                 layout,
-                2203);
+                2203,
+                streetSurfacePlan);
+            RoadWalkableArea walkableArea =
+                CityPedestrianPlanner.CreateWalkableArea(plan);
 
+            Assert.That(plan.Nodes, Is.Not.Empty);
+            Assert.That(plan.Links, Is.Not.Empty);
+            Assert.That(plan.SpawnAnchors, Is.Not.Empty);
             Assert.That(
-                plan.Count,
-                Is.EqualTo(CityPedestrianPlanner.TargetPedestrianCount));
-            Assert.That(
-                plan.Definitions.Select(definition => definition.Id),
+                plan.Nodes.Select(node => node.Id),
                 Is.Unique);
-            foreach (CityPedestrianDefinition definition
-                     in plan.Definitions)
+            Assert.That(
+                plan.Links.Select(link => link.Id),
+                Is.Unique);
+            Assert.That(
+                plan.SpawnAnchors.Select(anchor => anchor.Id),
+                Is.Unique);
+            Assert.That(
+                plan.Links.Any(link =>
+                    link.Kind == CityPedestrianLinkKind.Sidewalk),
+                Is.True);
+            Assert.That(
+                plan.Links.Any(link =>
+                    link.Kind == CityPedestrianLinkKind.Turn),
+                Is.True);
+            Assert.That(streetSurfacePlan.Crosswalks, Is.Not.Empty);
+            Assert.That(
+                plan.Nodes.Count(node => node.IsCrosswalkEntry),
+                Is.EqualTo(streetSurfacePlan.Crosswalks.Count * 2));
+            Assert.That(
+                plan.Links.Count(link =>
+                    link.Kind == CityPedestrianLinkKind.Crosswalk),
+                Is.EqualTo(streetSurfacePlan.Crosswalks.Count * 3));
+
+            for (int nodeIndex = 0;
+                 nodeIndex < plan.Nodes.Count;
+                 nodeIndex++)
             {
-                Assert.That(definition.RouteEdges, Has.Count.EqualTo(1));
-                Assert.That(definition.Waypoints, Has.Count.EqualTo(2));
-                RoadEdge edge = definition.RouteEdges[0];
+                CityPedestrianNode node = plan.Nodes[nodeIndex];
+                CityPedestrianLinkKind[] incidentKinds = plan
+                    .GetLinkIndices(nodeIndex)
+                    .Select(linkIndex => plan.Links[linkIndex].Kind)
+                    .ToArray();
                 Assert.That(
-                    layout.GetPathKind(edge),
-                    Is.EqualTo(CityPathKind.Street));
+                    incidentKinds.Length,
+                    Is.GreaterThanOrEqualTo(2),
+                    $"Pedestrian graph node '{node.Id}' is a dead end.");
+                bool hasCrosswalk = incidentKinds.Contains(
+                    CityPedestrianLinkKind.Crosswalk);
+                bool hasSidewalk = incidentKinds.Contains(
+                    CityPedestrianLinkKind.Sidewalk);
+                if (node.IsCrosswalkEntry)
+                {
+                    Assert.That(hasCrosswalk, Is.True, node.Id);
+                    Assert.That(hasSidewalk, Is.True, node.Id);
+                }
 
-                Vector3 edgeStart = layout.GetNodeWorldPosition(edge.A);
-                Vector3 edgeEnd = layout.GetNodeWorldPosition(edge.B);
-                Vector3 tangent = (edgeEnd - edgeStart).normalized;
-                Vector3 left = new Vector3(-tangent.z, 0f, tangent.x);
-                Vector3 first = definition.Waypoints[0];
-                Vector3 second = definition.Waypoints[1];
-                float intersectionClearance =
-                    CityPedestrianPlanner.GetIntersectionClearance(layout);
-                float sidewalkCenterOffset =
-                    CityPedestrianPlanner.GetSidewalkCenterOffset(layout);
-                float carriagewayHalfWidth =
-                    (layout.RoadWidth * 0.5f) -
-                    CityStreetSurfacePlanner.SidewalkWidth;
+                if (hasCrosswalk && incidentKinds.Any(kind =>
+                        kind != CityPedestrianLinkKind.Crosswalk))
+                {
+                    Assert.That(node.IsCrosswalkEntry, Is.True, node.Id);
+                }
+            }
 
+            for (int linkIndex = 0;
+                 linkIndex < plan.Links.Count;
+                 linkIndex++)
+            {
+                CityPedestrianLink link = plan.Links[linkIndex];
                 Assert.That(
-                    Vector3.Dot(first - edgeStart, tangent),
-                    Is.EqualTo(intersectionClearance)
-                        .Within(PositionTolerance));
+                    link.FirstNodeIndex,
+                    Is.InRange(0, plan.Nodes.Count - 1));
                 Assert.That(
-                    Vector3.Dot(edgeEnd - second, tangent),
-                    Is.EqualTo(intersectionClearance)
-                        .Within(PositionTolerance));
+                    link.SecondNodeIndex,
+                    Is.InRange(0, plan.Nodes.Count - 1));
+                Vector3 first = plan.Nodes[link.FirstNodeIndex].Position;
+                Vector3 second = plan.Nodes[link.SecondNodeIndex].Position;
                 Assert.That(
-                    intersectionClearance - plan.AgentRadius,
-                    Is.GreaterThan(layout.RoadWidth * 0.5f),
-                    "Route endpoints must leave the pedestrian body " +
-                    "outside the intersection footprint.");
-                Assert.That(
-                    Mathf.Abs(Vector3.Dot(first - edgeStart, left)),
-                    Is.EqualTo(sidewalkCenterOffset)
-                        .Within(PositionTolerance));
-                Assert.That(
-                    Mathf.Abs(Vector3.Dot(first - edgeStart, left)) -
-                    plan.AgentRadius,
-                    Is.GreaterThan(carriagewayHalfWidth),
-                    "The complete pedestrian body must stay outside " +
-                    "the carriageway.");
-                Assert.That(
-                    first.y + CityPedestrianActor.StreetSurfaceHeight,
-                    Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
-                        .Within(PositionTolerance));
-                Assert.That(
-                    second.y + CityPedestrianActor.StreetSurfaceHeight,
-                    Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
-                        .Within(PositionTolerance));
-                Assert.That(
-                    definition.RouteLength,
-                    Is.EqualTo(Vector3.Distance(first, second))
-                        .Within(PositionTolerance));
-                Assert.That(
-                    definition.RouteLength,
-                    Is.GreaterThanOrEqualTo(
-                        CityPedestrianPlanner.MinimumRouteLength));
+                    Mathf.Abs(first.x - second.x) <= PositionTolerance ||
+                    Mathf.Abs(first.z - second.z) <= PositionTolerance,
+                    Is.True,
+                    $"Pedestrian link '{link.Id}' is not axis-aligned.");
 
                 for (int sample = 0; sample <= 16; sample++)
                 {
@@ -130,104 +148,48 @@ namespace BarPromenade.Tests.EditMode
                         second,
                         sample / 16f);
                     Assert.That(
-                        sidewalkArea.Contains(position, plan.AgentRadius),
+                        walkableArea.Contains(position, plan.AgentRadius),
                         Is.True,
-                        $"'{definition.Id}' leaves its safe sidewalk area.");
+                        $"Pedestrian link '{link.Id}' leaves its " +
+                        "radius-safe navigation area.");
                 }
+            }
 
+            Dictionary<string, CityPedestrianLink> linksById =
+                plan.Links.ToDictionary(link => link.Id);
+            foreach (CityPedestrianSpawnAnchor anchor
+                     in plan.SpawnAnchors)
+            {
+                Assert.That(anchor.Id, Does.StartWith("spawn:"));
+                string linkId = anchor.Id.Substring("spawn:".Length);
+                Assert.That(linksById.ContainsKey(linkId), Is.True);
+                CityPedestrianLink link = linksById[linkId];
                 Assert.That(
-                    definition.Speed,
-                    Is.InRange(
-                        CityPedestrianPlanner.MinimumSpeed,
-                        CityPedestrianPlanner.MaximumSpeed));
+                    link.Kind,
+                    Is.EqualTo(CityPedestrianLinkKind.Sidewalk));
                 Assert.That(
-                    definition.AnimationSpeed,
-                    Is.InRange(
-                        CityPedestrianPlanner.MinimumAnimationSpeed,
-                        CityPedestrianPlanner.MaximumAnimationSpeed));
+                    anchor.FirstNodeIndex,
+                    Is.EqualTo(link.FirstNodeIndex));
                 Assert.That(
-                    definition.AnimationPhase01,
-                    Is.GreaterThanOrEqualTo(0f).And.LessThan(1f));
+                    anchor.SecondNodeIndex,
+                    Is.EqualTo(link.SecondNodeIndex));
                 Assert.That(
-                    definition.PaletteVariant,
-                    Is.InRange(
-                        0,
-                        CityPedestrianPlanner.PaletteVariantCount - 1));
+                    anchor.Position,
+                    Is.EqualTo(Vector3.Lerp(
+                        plan.Nodes[link.FirstNodeIndex].Position,
+                        plan.Nodes[link.SecondNodeIndex].Position,
+                        0.5f)));
+                Assert.That(
+                    plan.GetLinkIndices(anchor.FirstNodeIndex).Count,
+                    Is.GreaterThan(1));
+                Assert.That(
+                    plan.GetLinkIndices(anchor.SecondNodeIndex).Count,
+                    Is.GreaterThan(1));
             }
         }
 
         [Test]
-        public void Create_PrioritizesEdgesAtCityFunctions()
-        {
-            CityLayout layout = CreateDefaultLayout(17091);
-            var functionalFrontages = new HashSet<RoadEdge>();
-            foreach (BuildingLot lot in layout.BuildingLots)
-            {
-                if (!lot.IsBar &&
-                    !lot.IsPlayerHome &&
-                    !lot.IsSupermarket)
-                {
-                    continue;
-                }
-
-                Assert.That(
-                    layout.TryGetFrontageEdge(lot, out RoadEdge edge),
-                    Is.True);
-                AddStreetEdge(layout, functionalFrontages, edge);
-            }
-
-            foreach (CityDistrictPointOfInterestDescriptor point
-                     in layout.DistrictPointsOfInterest)
-            {
-                foreach (CityDistrictPointOfInterestAccessDescriptor access
-                         in point.Accesses)
-                {
-                    AddStreetEdge(
-                        layout,
-                        functionalFrontages,
-                        access.FrontageEdge);
-                }
-            }
-
-            foreach (CityOpenAreaAccessDescriptor access
-                     in layout.OpenAreaAccesses)
-            {
-                AddStreetEdge(
-                    layout,
-                    functionalFrontages,
-                    access.FrontageEdge);
-            }
-
-            foreach (CityParkGateDescriptor gate in layout.Park.Gates)
-            {
-                AddStreetEdge(
-                    layout,
-                    functionalFrontages,
-                    FindNearestStreetEdge(layout, gate.Center));
-            }
-
-            int desiredCount = Mathf.Min(4, functionalFrontages.Count);
-
-            CityPedestrianPlan plan = CityPedestrianPlanner.Create(
-                layout,
-                7701,
-                desiredCount);
-
-            Assert.That(desiredCount, Is.GreaterThan(0));
-            Assert.That(plan.Count, Is.EqualTo(desiredCount));
-            foreach (CityPedestrianDefinition definition
-                     in plan.Definitions)
-            {
-                Assert.That(
-                    functionalFrontages.Contains(
-                        definition.RouteEdges[0]),
-                    Is.True,
-                    $"'{definition.Id}' ignored higher-priority functions.");
-            }
-        }
-
-        [Test]
-        public void Create_WithDifferentPopulationSeed_VariesStableData()
+        public void Create_WithDifferentPopulationSeed_PreservesGraph()
         {
             CityLayout layout = CreateDefaultLayout(1297);
 
@@ -239,13 +201,18 @@ namespace BarPromenade.Tests.EditMode
                 2002);
 
             Assert.That(second.StableSeed, Is.Not.EqualTo(first.StableSeed));
-            CollectionAssert.AreNotEqual(
-                first.Definitions,
-                second.Definitions);
+            CollectionAssert.AreEqual(first.Nodes, second.Nodes);
+            CollectionAssert.AreEqual(first.Links, second.Links);
+            CollectionAssert.AreEqual(
+                first.SpawnAnchors,
+                second.SpawnAnchors);
+            CollectionAssert.AreEqual(
+                first.NavigationRectangles,
+                second.NavigationRectangles);
         }
 
         [Test]
-        public void Create_OnSmallCity_ReturnsFewerOrZeroSafely()
+        public void Create_OnSmallCity_ReturnsAValidGraphSafely()
         {
             CityGenerationSettings smallSettings =
                 CityGenerationSettings.Default;
@@ -259,19 +226,49 @@ namespace BarPromenade.Tests.EditMode
                 smallSettings,
                 8123);
 
-            CityPedestrianPlan fewer = CityPedestrianPlanner.Create(
+            CityPedestrianPlan plan = CityPedestrianPlanner.Create(
                 smallLayout,
-                12,
-                CityPedestrianPlanner.MaximumPedestrianCount);
-            CityPedestrianPlan noneRequested =
-                CityPedestrianPlanner.Create(smallLayout, 12, 0);
+                12);
 
-            Assert.That(fewer.Count, Is.GreaterThan(0));
+            Assert.That(plan, Is.Not.Null);
+            Assert.That(plan.Count, Is.LessThanOrEqualTo(plan.Links.Count));
+            for (int index = 0; index < plan.Links.Count; index++)
+            {
+                Assert.That(
+                    plan.Links[index].FirstNodeIndex,
+                    Is.InRange(0, plan.Nodes.Count - 1));
+                Assert.That(
+                    plan.Links[index].SecondNodeIndex,
+                    Is.InRange(0, plan.Nodes.Count - 1));
+            }
+        }
+
+        [Test]
+        public void Create_WithCapsuleNarrowCarriageway_OmitsCrosswalkLinks()
+        {
+            CityGenerationSettings settings = CreateDenseSettings();
+            settings.RoadWidth =
+                (CityStreetSurfacePlanner.SidewalkWidth * 2f) +
+                (CityPedestrianPlanner.AgentRadius * 2f);
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                -28914);
+            CityStreetSurfacePlan surfaces =
+                CityStreetSurfacePlanner.Create(layout);
+
+            CityPedestrianPlan plan = CityPedestrianPlanner.Create(
+                layout,
+                2203,
+                surfaces);
+
+            Assert.That(surfaces.Crosswalks, Is.Not.Empty);
             Assert.That(
-                fewer.Count,
-                Is.LessThan(CityPedestrianPlanner.MaximumPedestrianCount));
-            Assert.That(noneRequested.Count, Is.Zero);
-            Assert.That(noneRequested.DesiredCount, Is.Zero);
+                plan.Links.Any(link =>
+                    link.Kind == CityPedestrianLinkKind.Crosswalk),
+                Is.False);
+            Assert.That(
+                plan.Nodes.Any(node => node.IsCrosswalkEntry),
+                Is.False);
         }
 
         [Test]
@@ -290,51 +287,15 @@ namespace BarPromenade.Tests.EditMode
                 seed);
         }
 
-        private static void AddStreetEdge(
-            CityLayout layout,
-            ISet<RoadEdge> edges,
-            RoadEdge edge)
+        private static CityGenerationSettings CreateDenseSettings()
         {
-            if (layout.HasRoad(edge) &&
-                layout.GetPathKind(edge) == CityPathKind.Street)
-            {
-                edges.Add(edge);
-            }
-        }
-
-        private static RoadEdge FindNearestStreetEdge(
-            CityLayout layout,
-            Vector3 position)
-        {
-            RoadEdge nearest = default;
-            float nearestDistance = float.PositiveInfinity;
-            foreach (RoadEdge edge in layout.RoadEdges)
-            {
-                if (layout.GetPathKind(edge) != CityPathKind.Street)
-                {
-                    continue;
-                }
-
-                Vector3 start = layout.GetNodeWorldPosition(edge.A);
-                Vector3 end = layout.GetNodeWorldPosition(edge.B);
-                Vector3 delta = end - start;
-                float denominator = delta.sqrMagnitude;
-                float amount = denominator <= 0.000001f
-                    ? 0f
-                    : Mathf.Clamp01(
-                        Vector3.Dot(position - start, delta) /
-                        denominator);
-                float distance =
-                    (position - Vector3.Lerp(start, end, amount))
-                    .sqrMagnitude;
-                if (distance < nearestDistance)
-                {
-                    nearest = edge;
-                    nearestDistance = distance;
-                }
-            }
-
-            return nearest;
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BlocksX = 5;
+            settings.BlocksZ = 5;
+            settings.BarCount = 0;
+            settings.LoopChance = 1f;
+            return settings;
         }
     }
 }

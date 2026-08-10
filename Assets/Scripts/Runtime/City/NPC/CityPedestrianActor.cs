@@ -1,47 +1,49 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
 {
     public enum CityPedestrianMotionState
     {
-        Walking = 0,
-        EndpointPause,
-        Turning
+        Dormant = 0,
+        Walking,
+        RouteEnded
     }
 
-    /// <summary>
-    /// Owns one continuously simulated route. A pooled visual can be bound or
-    /// released without resetting the route state.
-    /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [DisallowMultipleComponent]
     public sealed class CityPedestrianActor : MonoBehaviour
     {
-        public const float StreetSurfaceHeight = 0.08f;
         public const float CollisionHeight = 1.7f;
         public const float CollisionCenterHeight = 0.85f;
-        public const float MinimumEndpointPause = 0.45f;
-        public const float MaximumEndpointPause = 0.90f;
-        public const float TurnDuration = 0.42f;
+        public const float VisibilityHeight = 1.85f;
+        public const float VisibilityRadius = 0.85f;
         public const float TurnSpeedDegrees = 360f;
 
-        private CityPedestrianDefinition definition;
+        private readonly List<int> normalCandidates = new List<int>(4);
+        private readonly List<int> crosswalkCandidates = new List<int>(2);
         private IWalkableArea walkableArea;
+        private CityPedestrianPlan plan;
         private CityPedestrianPresentation presentation;
         private CharacterController characterController;
-        private int currentWaypointIndex;
-        private int routeDirection;
+        private int previousNodeIndex = -1;
+        private int targetNodeIndex = -1;
+        private CityPedestrianLinkKind incomingLinkKind;
         private float agentRadius;
-        private float stateElapsed;
-        private float endpointPauseDuration;
-        private Quaternion turnStartRotation;
-        private Quaternion turnTargetRotation;
+        private float speed;
+        private float animationSpeed;
+        private float animationPhase01;
+        private int paletteVariant;
+        private uint randomState;
+        private bool isPrepared;
+        private float? forcedCrosswalkRoll;
 
         public bool IsInitialized { get; private set; }
+        public bool IsSpawned => presentation != null;
         public bool IsYielding { get; private set; }
-        public CityPedestrianDefinition Definition => definition;
-        public CityPedestrianMotionState MotionState { get; private set; }
+        public CityPedestrianMotionState MotionState { get; private set; } =
+            CityPedestrianMotionState.Dormant;
         public CityPedestrianPresentation Presentation => presentation;
         public bool HasPresentation => presentation != null;
         public bool CollisionEnabled =>
@@ -49,13 +51,18 @@ namespace BarPromenade
         public CharacterController CharacterController => characterController;
         public Vector3 Position => transform.position;
         public Vector3 LastDisplacement { get; private set; }
-        public int CurrentWaypointIndex => currentWaypointIndex;
-        public int RouteDirection => routeDirection;
+        public int PreviousNodeIndex => previousNodeIndex;
+        public int TargetNodeIndex => targetNodeIndex;
         public float AgentRadius => agentRadius;
+        public string SpawnAnchorId { get; private set; } = string.Empty;
+        public bool RouteEnded =>
+            MotionState == CityPedestrianMotionState.RouteEnded;
+        public int CrosswalkDecisionCount { get; private set; }
+        public int CrosswalksTaken { get; private set; }
         public Vector3 TravelDirection => GetTravelDirection();
+        public Bounds VisibilityBounds => CreateVisibilityBounds(Position);
 
         public void Initialize(
-            CityPedestrianDefinition pedestrianDefinition,
             IWalkableArea allowedWalkableArea,
             float pedestrianRadius)
         {
@@ -65,26 +72,16 @@ namespace BarPromenade
                     "The city pedestrian actor is already initialized.");
             }
 
-            definition = pedestrianDefinition ??
-                throw new ArgumentNullException(
-                    nameof(pedestrianDefinition));
             walkableArea = allowedWalkableArea ??
-                throw new ArgumentNullException(
-                    nameof(allowedWalkableArea));
-            if (definition.Waypoints.Count < 2 ||
-                !IsFinite(definition.Speed) ||
-                definition.Speed <= 0f ||
-                !IsFinite(pedestrianRadius) ||
-                pedestrianRadius <= 0f)
+                throw new ArgumentNullException(nameof(allowedWalkableArea));
+            if (!IsFinite(pedestrianRadius) || pedestrianRadius <= 0f)
             {
-                throw new ArgumentException(
-                    "A pedestrian requires a finite route, speed and radius.",
-                    nameof(pedestrianDefinition));
+                throw new ArgumentOutOfRangeException(
+                    nameof(pedestrianRadius));
             }
 
             agentRadius = pedestrianRadius;
-            characterController =
-                GetComponent<CharacterController>();
+            characterController = GetComponent<CharacterController>();
             characterController.enabled = false;
             characterController.height = CollisionHeight;
             characterController.radius = agentRadius;
@@ -93,26 +90,86 @@ namespace BarPromenade
                 CollisionCenterHeight,
                 0f);
             characterController.minMoveDistance = 0f;
-            routeDirection = definition.StartsReversed ? -1 : 1;
-            currentWaypointIndex = definition.StartsReversed
-                ? definition.Waypoints.Count - 1
-                : 0;
-            transform.position = GetGroundedWaypoint(
-                currentWaypointIndex);
-            FaceNextWaypointImmediately();
-            MotionState = CityPedestrianMotionState.Walking;
-            endpointPauseDuration = GetEndpointPauseDuration();
-            LastDisplacement = Vector3.zero;
+            characterController.stepOffset = 0.2f;
             IsInitialized = true;
         }
 
-        public void BindPresentation(
-            CityPedestrianPresentation pooledPresentation)
+        public void PrepareSpawn(
+            CityPedestrianPlan pedestrianPlan,
+            CityPedestrianSpawnAnchor anchor,
+            int firstTargetNodeIndex,
+            float movementSpeed,
+            float cycleSpeed,
+            float cyclePhase01,
+            int visualPaletteVariant,
+            uint behaviorSeed)
         {
             if (!IsInitialized)
             {
                 throw new InvalidOperationException(
                     "Initialize the city pedestrian actor first.");
+            }
+
+            if (isPrepared || presentation != null)
+            {
+                throw new InvalidOperationException(
+                    "The city pedestrian actor already owns a spawn state.");
+            }
+
+            plan = pedestrianPlan ??
+                throw new ArgumentNullException(nameof(pedestrianPlan));
+            if (anchor == null)
+            {
+                throw new ArgumentNullException(nameof(anchor));
+            }
+
+            if (firstTargetNodeIndex != anchor.FirstNodeIndex &&
+                firstTargetNodeIndex != anchor.SecondNodeIndex)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(firstTargetNodeIndex));
+            }
+
+            if (!IsFinite(movementSpeed) || movementSpeed <= 0f ||
+                !IsFinite(cycleSpeed) || cycleSpeed <= 0f ||
+                !IsFinite(cyclePhase01))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(movementSpeed),
+                    "Spawn motion values must be finite and positive.");
+            }
+
+            characterController.enabled = false;
+            transform.position = anchor.Position;
+            previousNodeIndex = firstTargetNodeIndex == anchor.FirstNodeIndex
+                ? anchor.SecondNodeIndex
+                : anchor.FirstNodeIndex;
+            targetNodeIndex = firstTargetNodeIndex;
+            incomingLinkKind = CityPedestrianLinkKind.Sidewalk;
+            speed = movementSpeed;
+            animationSpeed = cycleSpeed;
+            animationPhase01 = Mathf.Repeat(cyclePhase01, 1f);
+            paletteVariant = visualPaletteVariant;
+            randomState = behaviorSeed != 0u
+                ? behaviorSeed
+                : 0xA341316Cu;
+            SpawnAnchorId = anchor.Id;
+            MotionState = CityPedestrianMotionState.Walking;
+            IsYielding = false;
+            LastDisplacement = Vector3.zero;
+            CrosswalkDecisionCount = 0;
+            CrosswalksTaken = 0;
+            isPrepared = true;
+            FaceTargetImmediately();
+        }
+
+        public void BindPresentation(
+            CityPedestrianPresentation pooledPresentation)
+        {
+            if (!isPrepared || plan == null)
+            {
+                throw new InvalidOperationException(
+                    "Prepare a spawn before binding its presentation.");
             }
 
             if (presentation != null)
@@ -135,16 +192,10 @@ namespace BarPromenade
             visual.localPosition = Vector3.zero;
             visual.localRotation = Quaternion.identity;
             visual.localScale = Vector3.one;
-            presentation.Registry.ApplyPaletteVariant(
-                definition.PaletteVariant);
+            presentation.Registry.ApplyPaletteVariant(paletteVariant);
             presentation.gameObject.SetActive(true);
-            presentation.ConfigureCycle(
-                definition.AnimationSpeed,
-                definition.AnimationPhase01);
-            presentation.Advance(
-                0f,
-                MotionState == CityPedestrianMotionState.Walking &&
-                !IsYielding);
+            presentation.ConfigureCycle(animationSpeed, animationPhase01);
+            presentation.Advance(0f, true);
             characterController.enabled = true;
         }
 
@@ -156,26 +207,25 @@ namespace BarPromenade
                 characterController.enabled = false;
             }
 
-            LastDisplacement = Vector3.zero;
-            if (presentation == null)
-            {
-                return null;
-            }
-
             CityPedestrianPresentation released = presentation;
             presentation = null;
-            released.SetMoving(false);
-            released.gameObject.SetActive(false);
-            released.transform.SetParent(poolRoot, false);
-            released.transform.localPosition = Vector3.zero;
-            released.transform.localRotation = Quaternion.identity;
-            released.transform.localScale = Vector3.one;
+            if (released != null)
+            {
+                released.SetMoving(false);
+                released.gameObject.SetActive(false);
+                released.transform.SetParent(poolRoot, false);
+                released.transform.localPosition = Vector3.zero;
+                released.transform.localRotation = Quaternion.identity;
+                released.transform.localScale = Vector3.one;
+            }
+
+            ResetSpawnState();
             return released;
         }
 
         public void Advance(float deltaTime, bool shouldYield = false)
         {
-            if (!IsInitialized)
+            if (!IsSpawned)
             {
                 return;
             }
@@ -185,70 +235,64 @@ namespace BarPromenade
             IsYielding = shouldYield &&
                 MotionState == CityPedestrianMotionState.Walking;
             bool moving = false;
-            if (!IsYielding)
+            if (!IsYielding &&
+                MotionState == CityPedestrianMotionState.Walking)
             {
-                switch (MotionState)
-                {
-                    case CityPedestrianMotionState.EndpointPause:
-                        AdvanceEndpointPause(safeDeltaTime);
-                        break;
-                    case CityPedestrianMotionState.Turning:
-                        AdvanceTurn(safeDeltaTime);
-                        break;
-                    default:
-                        moving = AdvanceWalking(safeDeltaTime);
-                        break;
-                }
+                moving = AdvanceWalking(safeDeltaTime);
             }
 
-            if (presentation != null)
-            {
-                bool showWalk =
-                    MotionState == CityPedestrianMotionState.Walking &&
-                    !IsYielding &&
-                    (moving || safeDeltaTime <= 0f);
-                presentation.Advance(safeDeltaTime, showWalk);
-            }
+            presentation.Advance(
+                safeDeltaTime,
+                MotionState == CityPedestrianMotionState.Walking &&
+                !IsYielding &&
+                (moving || safeDeltaTime <= 0f));
+        }
+
+        internal void ForceNextCrosswalkRoll(float roll)
+        {
+            forcedCrosswalkRoll = Mathf.Clamp01(roll);
+        }
+
+        public static Bounds CreateVisibilityBounds(Vector3 groundPosition)
+        {
+            return new Bounds(
+                groundPosition +
+                (Vector3.up * (VisibilityHeight * 0.5f)),
+                new Vector3(
+                    VisibilityRadius * 2f,
+                    VisibilityHeight,
+                    VisibilityRadius * 2f));
         }
 
         private bool AdvanceWalking(float deltaTime)
         {
-            if (deltaTime <= 0f)
+            if (deltaTime <= 0f || targetNodeIndex < 0)
             {
-                return false;
-            }
-
-            int targetIndex = currentWaypointIndex + routeDirection;
-            if (targetIndex < 0 ||
-                targetIndex >= definition.Waypoints.Count)
-            {
-                BeginEndpointPause();
                 return false;
             }
 
             Vector3 current = transform.position;
-            Vector3 target = GetGroundedWaypoint(targetIndex);
-            Vector3 offset = target - current;
-            offset.y = 0f;
-            float distance = offset.magnitude;
+            Vector3 target = plan.Nodes[targetNodeIndex].Position;
+            Vector3 planarOffset = target - current;
+            planarOffset.y = 0f;
+            float distance = planarOffset.magnitude;
             if (distance <= 0.0001f)
             {
-                ReachWaypoint(targetIndex);
+                ReachTargetNode();
                 return false;
             }
 
-            Vector3 direction = offset / distance;
+            Vector3 direction = planarOffset / distance;
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 Quaternion.LookRotation(direction, Vector3.up),
                 TurnSpeedDegrees * deltaTime);
-            float step = definition.Speed * deltaTime;
-            Vector3 desired = step >= distance
-                ? new Vector3(
-                    target.x,
-                    current.y,
-                    target.z)
-                : current + (direction * step);
+            float step = speed * deltaTime;
+            float amount = Mathf.Min(1f, step / distance);
+            Vector3 desired = new Vector3(
+                Mathf.Lerp(current.x, target.x, amount),
+                Mathf.Lerp(current.y, target.y, amount),
+                Mathf.Lerp(current.z, target.z, amount));
             Vector3 constrained = walkableArea.Constrain(
                 current,
                 desired,
@@ -263,73 +307,141 @@ namespace BarPromenade
             }
 
             LastDisplacement = transform.position - current;
-            bool moved = LastDisplacement.sqrMagnitude > 0.000001f;
             Vector3 remaining = transform.position - target;
             remaining.y = 0f;
-            if (step >= distance &&
-                remaining.sqrMagnitude <= 0.0001f)
+            if (amount >= 1f && remaining.sqrMagnitude <= 0.0001f)
             {
-                ReachWaypoint(targetIndex);
+                ReachTargetNode();
             }
 
-            return moved;
+            return LastDisplacement.sqrMagnitude > 0.000001f;
         }
 
-        private void ReachWaypoint(int waypointIndex)
+        private void ReachTargetNode()
         {
-            currentWaypointIndex = waypointIndex;
-            bool reachedEndpoint =
-                (routeDirection > 0 &&
-                 currentWaypointIndex == definition.Waypoints.Count - 1) ||
-                (routeDirection < 0 && currentWaypointIndex == 0);
-            if (reachedEndpoint)
+            int reachedNode = targetNodeIndex;
+            normalCandidates.Clear();
+            crosswalkCandidates.Clear();
+            IReadOnlyList<int> linkIndices =
+                plan.GetLinkIndices(reachedNode);
+            for (int index = 0; index < linkIndices.Count; index++)
             {
-                BeginEndpointPause();
+                int linkIndex = linkIndices[index];
+                CityPedestrianLink link = plan.Links[linkIndex];
+                int other = link.Other(reachedNode);
+                if (other == previousNodeIndex)
+                {
+                    continue;
+                }
+
+                if (link.Kind == CityPedestrianLinkKind.Crosswalk)
+                {
+                    crosswalkCandidates.Add(linkIndex);
+                }
+                else
+                {
+                    normalCandidates.Add(linkIndex);
+                }
             }
-        }
 
-        private void BeginEndpointPause()
-        {
-            MotionState = CityPedestrianMotionState.EndpointPause;
-            stateElapsed = 0f;
-            endpointPauseDuration = GetEndpointPauseDuration();
-        }
-
-        private void AdvanceEndpointPause(float deltaTime)
-        {
-            stateElapsed += deltaTime;
-            if (stateElapsed + 0.000001f < endpointPauseDuration)
+            int selectedLink = -1;
+            bool canChooseCrosswalk =
+                incomingLinkKind != CityPedestrianLinkKind.Crosswalk &&
+                crosswalkCandidates.Count > 0;
+            if (canChooseCrosswalk)
             {
+                CrosswalkDecisionCount++;
+                bool takeCrosswalk = NextCrosswalkRoll() <
+                                     CityPedestrianPlanner
+                                         .CrosswalkChoiceProbability;
+                if (takeCrosswalk || normalCandidates.Count == 0)
+                {
+                    selectedLink = SelectCandidate(crosswalkCandidates);
+                    CrosswalksTaken++;
+                }
+            }
+
+            if (selectedLink < 0 && normalCandidates.Count > 0)
+            {
+                selectedLink = SelectCandidate(normalCandidates);
+            }
+
+            if (selectedLink < 0 && crosswalkCandidates.Count > 0)
+            {
+                selectedLink = SelectCandidate(crosswalkCandidates);
+            }
+
+            if (selectedLink < 0)
+            {
+                targetNodeIndex = -1;
+                MotionState = CityPedestrianMotionState.RouteEnded;
                 return;
             }
 
-            routeDirection = -routeDirection;
-            stateElapsed = 0f;
-            turnStartRotation = transform.rotation;
-            Vector3 direction = GetTravelDirection();
-            turnTargetRotation = direction.sqrMagnitude > 0.0001f
-                ? Quaternion.LookRotation(direction, Vector3.up)
-                : transform.rotation;
-            MotionState = CityPedestrianMotionState.Turning;
+            CityPedestrianLink selected = plan.Links[selectedLink];
+            previousNodeIndex = reachedNode;
+            targetNodeIndex = selected.Other(reachedNode);
+            incomingLinkKind = selected.Kind;
         }
 
-        private void AdvanceTurn(float deltaTime)
+        private int SelectCandidate(IReadOnlyList<int> candidates)
         {
-            stateElapsed += deltaTime;
-            float amount = Mathf.Clamp01(stateElapsed / TurnDuration);
-            transform.rotation = Quaternion.Slerp(
-                turnStartRotation,
-                turnTargetRotation,
-                amount);
-            if (amount >= 1f)
+            int preferredCount = 0;
+            for (int index = 0; index < candidates.Count; index++)
             {
-                transform.rotation = turnTargetRotation;
-                stateElapsed = 0f;
-                MotionState = CityPedestrianMotionState.Walking;
+                CityPedestrianLink link = plan.Links[candidates[index]];
+                int other = link.Other(targetNodeIndex);
+                if (plan.GetLinkIndices(other).Count > 1)
+                {
+                    preferredCount++;
+                }
             }
+
+            int selectableCount = preferredCount > 0
+                ? preferredCount
+                : candidates.Count;
+            int selection = Mathf.FloorToInt(
+                NextRandom01() * selectableCount);
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                CityPedestrianLink link = plan.Links[candidates[index]];
+                int other = link.Other(targetNodeIndex);
+                if (preferredCount > 0 &&
+                    plan.GetLinkIndices(other).Count <= 1)
+                {
+                    continue;
+                }
+
+                if (selection-- == 0)
+                {
+                    return candidates[index];
+                }
+            }
+
+            return candidates[0];
         }
 
-        private void FaceNextWaypointImmediately()
+        private float NextCrosswalkRoll()
+        {
+            if (forcedCrosswalkRoll.HasValue)
+            {
+                float result = forcedCrosswalkRoll.Value;
+                forcedCrosswalkRoll = null;
+                return result;
+            }
+
+            return NextRandom01();
+        }
+
+        private float NextRandom01()
+        {
+            randomState ^= randomState << 13;
+            randomState ^= randomState >> 17;
+            randomState ^= randomState << 5;
+            return CityPedestrianStableHash.ToUnitFloat(randomState);
+        }
+
+        private void FaceTargetImmediately()
         {
             Vector3 direction = GetTravelDirection();
             if (direction.sqrMagnitude > 0.0001f)
@@ -342,45 +454,38 @@ namespace BarPromenade
 
         private Vector3 GetTravelDirection()
         {
-            if (definition == null)
-            {
-                return Vector3.zero;
-            }
-
-            int targetIndex = currentWaypointIndex + routeDirection;
-            if (targetIndex < 0 ||
-                targetIndex >= definition.Waypoints.Count)
+            if (plan == null || targetNodeIndex < 0)
             {
                 return Vector3.zero;
             }
 
             Vector3 direction =
-                GetGroundedWaypoint(targetIndex) - transform.position;
+                plan.Nodes[targetNodeIndex].Position - transform.position;
             direction.y = 0f;
             return direction.sqrMagnitude > 0.0001f
                 ? direction.normalized
                 : Vector3.zero;
         }
 
-        private Vector3 GetGroundedWaypoint(int index)
+        private void ResetSpawnState()
         {
-            Vector3 waypoint = definition.Waypoints[index];
-            waypoint.y += StreetSurfaceHeight;
-            return waypoint;
-        }
-
-        private float GetEndpointPauseDuration()
-        {
-            uint value = definition.BehaviorSeed ^
-                         unchecked((uint)currentWaypointIndex *
-                                   0x9E3779B9u);
-            value ^= value >> 16;
-            float unit = (value & 0x00FFFFFFu) /
-                         16777216f;
-            return Mathf.Lerp(
-                MinimumEndpointPause,
-                MaximumEndpointPause,
-                unit);
+            plan = null;
+            previousNodeIndex = -1;
+            targetNodeIndex = -1;
+            incomingLinkKind = CityPedestrianLinkKind.Sidewalk;
+            speed = 0f;
+            animationSpeed = 0f;
+            animationPhase01 = 0f;
+            paletteVariant = 0;
+            randomState = 0u;
+            isPrepared = false;
+            forcedCrosswalkRoll = null;
+            SpawnAnchorId = string.Empty;
+            MotionState = CityPedestrianMotionState.Dormant;
+            IsYielding = false;
+            LastDisplacement = Vector3.zero;
+            CrosswalkDecisionCount = 0;
+            CrosswalksTaken = 0;
         }
 
         private static float SanitizeDeltaTime(float deltaTime)
