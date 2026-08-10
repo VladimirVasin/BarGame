@@ -24,12 +24,16 @@ and derives first-person arms and the inventory portrait from the same
   navigation graph. At most two ambient walkers exist near the player: they
   spawn one at a time after wide, independently randomized delays at randomly
   ranked obstacle-safe anchors `76-86 m` away, where the fixed City fog has
-  already hidden them. They keep moving forward through graph turns,
+  already hidden them. During daytime their still-distant simulation smoothly
+  accelerates up to `2.75x` and returns to authored pace by `56 m`, so hidden
+  actors approach or recycle without occupying both slots for long. They keep
+  moving forward through graph turns,
   independently choose whether to use each zebra crossing, and return to their
   pool only beyond `88 m` from the hero. Camera direction and frustum state do
   not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is
-  limited to one slot and uses much longer random delays; a second walker
-  already active at dusk is not culled early. Their compatible Generic rig
+  limited to one slot, uses much longer random delays and retains authored
+  simulation pace; a second walker already active at dusk is not culled early.
+  Their compatible Generic rig
   uses the hero's shared Idle and Walk clips. Home maps the same graph into the
   bounded street view below the balcony. Its two slots are enabled only while
   the Balcony camera shot is active; returning indoors releases them as a scene

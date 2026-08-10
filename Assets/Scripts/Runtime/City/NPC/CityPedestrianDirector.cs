@@ -25,6 +25,11 @@ namespace BarPromenade
         public const float MaximumNightSpawnCooldown = 70f;
         public const float MinimumNightSpawnRetryDelay = 4f;
         public const float MaximumNightSpawnRetryDelay = 10f;
+        public const float DaytimeDistantSimulationInnerDistance =
+            RuntimeSceneSetup.CityFarClipPlane + 8f;
+        public const float DaytimeDistantSimulationFullDistance =
+            MinimumSpawnDistance;
+        public const float MaximumDaytimeDistantSimulationMultiplier = 2.75f;
         public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
         public const float CollisionActivationPadding = 0.05f;
@@ -188,7 +193,7 @@ namespace BarPromenade
                 }
 
                 actor.Advance(
-                    safeDeltaTime,
+                    GetActorSimulationDeltaTime(actor, safeDeltaTime),
                     ShouldYield(actor, index));
             }
 
@@ -643,6 +648,30 @@ namespace BarPromenade
                 isNightSpawnMode
                     ? MaximumNightSpawnRetryDelay
                     : MaximumSpawnRetryDelay);
+        }
+
+        private float GetActorSimulationDeltaTime(
+            CityPedestrianActor actor,
+            float deltaTime)
+        {
+            if (isNightSpawnMode || deltaTime <= 0f)
+            {
+                return deltaTime;
+            }
+
+            float distance = Mathf.Sqrt(
+                PlanarSquaredDistance(actor.Position, player.position));
+            float progress = Mathf.InverseLerp(
+                DaytimeDistantSimulationInnerDistance,
+                DaytimeDistantSimulationFullDistance,
+                distance);
+            float smoothProgress =
+                progress * progress * (3f - (2f * progress));
+            float multiplier = Mathf.Lerp(
+                1f,
+                MaximumDaytimeDistantSimulationMultiplier,
+                smoothProgress);
+            return deltaTime * multiplier;
         }
 
         private void RefreshSpawnMode()

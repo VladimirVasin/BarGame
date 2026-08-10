@@ -118,11 +118,15 @@ The vertical slice contains:
   first event waits `1.25-7.5 s`; every later slot or replacement waits its own
   `3.5-12.5 s`, so the two walkers are deliberately staggered. Each walks
   forward through available turns, has an independent 50% choice at a zebra,
-  and is recycled only after moving beyond `88 m` from the hero. Camera
+  and is recycled only after moving beyond `88 m` from the hero. By day, its
+  hidden distant simulation smoothly accelerates from authored pace at `56 m`
+  to at most `2.75x` from `76 m`, bringing an approaching walker inward sooner
+  and sending an outward walker back to the pool sooner. Camera
   direction, frustum membership and far-clip settings do not participate in
   spawn or recycling. Before `06:00` and from `19:00`, fresh population is
   capped at one slot and uses much longer `15-35 s` initial and `30-70 s`
-  replacement delays; the clock never removes an already active dusk walker.
+  replacement delays without distant acceleration; the clock never removes an
+  already active dusk walker.
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.

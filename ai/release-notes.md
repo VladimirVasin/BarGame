@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-08-11 — Daytime passers-by arrive sooner
+
+- Fixed daytime streets feeling much emptier even though `06:00` already uses
+  the daytime population rules. Walkers still appear safely inside the distant
+  fog, but their hidden approach and departure now advance faster until they
+  near the visible street, where they resume their ordinary walking pace.
+- Night remains deliberately sparse with one fresh slot, long delays and no
+  hidden acceleration.
+
 ### 2026-08-10 — Ground between buildings now has a surface
 
 - Exposed land between city buildings now uses a dark, compacted soil texture

@@ -97,8 +97,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `70-degree` 16:9 frustum corner after a conservative combined `6 m` camera
   and full visual-envelope depth offset. It remains active
   regardless of camera direction or frustum membership and returns to the pool
-  only after crossing beyond `88 m` from the player. Strict night is before
-  `06:00` and from `19:00`: it allows only one new population slot, waits
+  only after crossing beyond `88 m` from the player. To prevent both daytime
+  slots remaining occupied by invisible actors, player-distance-only
+  simulation acceleration rises smoothly from authored pace at `56 m` to
+  `2.75x` at and beyond `76 m`; this advances both inward approaches and
+  outward recycling without reintroducing a camera dependency. Strict night is
+  before `06:00` and from `19:00`: it keeps authored simulation pace, allows
+  only one new population slot, waits
   `15-35 s` for the first event and `30-70 s` for a replacement, and retries
   failed searches after `4-10 s`. A second walker already alive at dusk is not
   culled by the clock and leaves only through the same distance rule. Actors

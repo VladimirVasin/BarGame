@@ -2,6 +2,29 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Daytime pedestrian encounter cadence
+
+- Confirmed that the fresh `06:00` start already selects daytime pedestrian
+  rules; the strict night boundary remains `<06:00` / `>=19:00`.
+- Fixed two distant actors monopolizing the complete daytime pool outside the
+  `48 m` City view. Actor simulation now accelerates smoothly from `1x` at
+  `56 m` to at most `2.75x` from `76 m`, so an inward route reaches the player
+  sooner and an outward route crosses the existing `88 m` recycle boundary
+  sooner. Spawn anchors, two-slot cap, randomized delays and camera-independent
+  lifecycle remain unchanged.
+- Kept night actors at authored pace in addition to their existing one-slot cap
+  and longer delays.
+- Added a focused straight-approach regression that bounds the hidden daytime
+  transit and verifies ordinary near-range and night movement speeds.
+
+Verification:
+
+- Focused Unity EditMode
+  `CityPedestrianRuntimeTests.Factory_DaytimeFastForwardsOnlyFogDistantWalkers`
+  passed `1/1`; Unity compiled the affected Runtime and EditMode assemblies.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered City/Home walkthrough.
+
 ## 2026-08-10 — Textured ground between city buildings
 
 - Added one opaque generated compacted-soil albedo at

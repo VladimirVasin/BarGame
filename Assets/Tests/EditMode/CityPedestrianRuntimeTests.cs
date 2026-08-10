@@ -409,6 +409,85 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Factory_DaytimeFastForwardsOnlyFogDistantWalkers()
+        {
+            GameObject root = new GameObject(
+                "Distant Pedestrian Simulation Test Root");
+            CityPedestrianDirector director = null;
+            bool isNight = false;
+            try
+            {
+                Transform player = CreatePlayer(root.transform);
+                CityPedestrianPlan plan = CreateLongApproachPlan();
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    CityPedestrianResources.LoadPrefab(),
+                    () => isNight);
+                AdvanceToNextSpawn(director);
+
+                CityPedestrianActor actor = director.Actors.Single(
+                    candidate => candidate.IsSpawned);
+                const float approachBudget = 18f;
+                const float simulationStep = 0.1f;
+                float elapsed = 0f;
+                while (PlanarDistance(actor.Position, player.position) >
+                           CityPedestrianDirector
+                               .DaytimeDistantSimulationInnerDistance &&
+                       elapsed < approachBudget)
+                {
+                    director.Advance(simulationStep);
+                    elapsed += simulationStep;
+                }
+
+                Assert.That(
+                    PlanarDistance(actor.Position, player.position),
+                    Is.LessThanOrEqualTo(
+                        CityPedestrianDirector
+                            .DaytimeDistantSimulationInnerDistance + 0.01f),
+                    "A daytime walker must clear the hidden approach band " +
+                    "within the encounter budget.");
+
+                actor.transform.position = new Vector3(
+                    0f,
+                    0f,
+                    -CityPedestrianDirector
+                        .DaytimeDistantSimulationInnerDistance + 1f);
+                Physics.SyncTransforms();
+                director.Advance(1f);
+                Assert.That(
+                    actor.LastDisplacement.magnitude,
+                    Is.InRange(
+                        CityPedestrianPlanner.MinimumSpeed - 0.01f,
+                        CityPedestrianPlanner.MaximumSpeed + 0.01f),
+                    "A walker near the renderable range must use its authored " +
+                    "walking speed.");
+
+                isNight = true;
+                actor.transform.position = new Vector3(
+                    0f,
+                    0f,
+                    -CityPedestrianDirector.MaximumSpawnDistance);
+                Physics.SyncTransforms();
+                director.Advance(1f);
+                Assert.That(director.IsNightSpawnMode, Is.True);
+                Assert.That(
+                    actor.LastDisplacement.magnitude,
+                    Is.InRange(
+                        CityPedestrianPlanner.MinimumSpeed - 0.01f,
+                        CityPedestrianPlanner.MaximumSpeed + 0.01f),
+                    "Night walkers must retain their sparse authored pace.");
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void Factory_DelaysSpawnUntilStaticOverlapClears()
         {
             GameObject root = new GameObject("Overlap Test Root");
@@ -1003,6 +1082,46 @@ namespace BarPromenade.Tests.EditMode
                 links,
                 anchors,
                 rectangles);
+        }
+
+        private static CityPedestrianPlan CreateLongApproachPlan()
+        {
+            return new CityPedestrianPlan(
+                1,
+                2,
+                3u,
+                CityPedestrianPlanner.AgentRadius,
+                new[]
+                {
+                    new CityPedestrianNode(
+                        "far",
+                        new Vector3(0f, 0f, -120f),
+                        false),
+                    new CityPedestrianNode(
+                        "near",
+                        Vector3.zero,
+                        false)
+                },
+                new[]
+                {
+                    new CityPedestrianLink(
+                        "approach",
+                        0,
+                        1,
+                        CityPedestrianLinkKind.Sidewalk)
+                },
+                new[]
+                {
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:approach",
+                        new Vector3(
+                            0f,
+                            0f,
+                            -CityPedestrianDirector.MaximumSpawnDistance),
+                        0,
+                        1)
+                },
+                new[] { Rect.MinMaxRect(-1f, -121f, 1f, 1f) });
         }
 
         private static CityPedestrianPlan CreateHeadOnSpawnPlan()
