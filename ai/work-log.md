@@ -2,6 +2,37 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Grounded and laterally anchored intoxicated 3D walking
+
+- Restored the grounded-pose contract lost in the sprite-to-3D transition.
+  The ordinary presentation now caches the neutral deformed boot-sole contour
+  and offsets only the pelvis after Walk plus additive status bones, keeping
+  the lower visible sole at its grounded height without moving the
+  CharacterController root or `ModelRoot`.
+- Made the procedural intoxication/balance layer idempotent by restoring its
+  clean locomotion pose before every graph evaluation, clip sample, repeated
+  late-pose application and lifecycle teardown. Removed the old unconditional
+  intoxication pelvis drop; contextual Fall/Down/Rise and interaction clips
+  remain outside ordinary grounding.
+- Removed procedural pelvis X translation from intoxication and balance. Its
+  intended `0.018` local stagger was multiplied by the imported rig's `100x`
+  hierarchy scale and slid the complete visible skeleton by up to `1.8 m`;
+  pelvis/chest rotation, arm stagger and knee articulation retain the sway
+  without moving the authored horizontal rig anchor.
+- Added a focused PlayMode regression that bakes the production foot meshes,
+  covers a complete Walk cycle and the full `6.38 s` maximum-intoxication
+  horizontal stagger period, rejects floor penetration, hovering and any
+  lateral pelvis envelope beyond the authored Walk, and locks root/model-root
+  stability plus repeated-pose idempotence.
+
+Verification:
+
+- Focused PlayMode verification passed `1/1`:
+  `Player3DOrdinaryPresentationPlayModeTests.MaximumIntoxicationWalk_KeepsVisibleRigAnchored`
+  in `8.37 s`.
+- Fast mode intentionally omitted complete Unity suites, a player build,
+  startup smoke and manual rendered review.
+
 ## 2026-08-09 — Placed a permanent ashtray under the balcony flick
 
 - Sampled the shipped `SmokeExit` discard pose and placed a `0.26 m`

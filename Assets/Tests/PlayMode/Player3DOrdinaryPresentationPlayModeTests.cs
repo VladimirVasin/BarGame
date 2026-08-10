@@ -12,6 +12,9 @@ namespace BarPromenade.Tests.PlayMode
     {
         private GameObject cameraObject;
         private GameObject playerObject;
+        private Mesh bakedFootMesh;
+        private readonly List<Vector3> bakedFootVertices =
+            new List<Vector3>();
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -24,6 +27,11 @@ namespace BarPromenade.Tests.PlayMode
             if (cameraObject != null)
             {
                 Object.Destroy(cameraObject);
+            }
+
+            if (bakedFootMesh != null)
+            {
+                Object.Destroy(bakedFootMesh);
             }
 
             yield return null;
@@ -164,6 +172,223 @@ namespace BarPromenade.Tests.PlayMode
             AssertAuthoredLocomotionJointRanges(
                 presentation,
                 presentation.Registry);
+        }
+
+        [UnityTest]
+        public IEnumerator MaximumIntoxicationWalk_KeepsVisibleRigAnchored()
+        {
+            cameraObject = new GameObject("Player3D Grounding Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.up * PlayerFactory.GroundedRootOffset,
+                camera,
+                null,
+                null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Player3DAssetRegistry registry = presentation.Registry;
+            bakedFootMesh = new Mesh
+            {
+                name = "Player3D Grounding Test Mesh"
+            };
+            Vector3 actorPosition = player.GameObject.transform.position;
+            Vector3 modelLocalPosition = registry.ModelRoot.localPosition;
+            float groundY = actorPosition.y -
+                            PlayerFactory.GroundedRootOffset;
+            presentation.ReapplyLatePresentationPose();
+            float neutralMinimumY = GetLowestVisibleFootY(registry);
+            Assert.That(
+                neutralMinimumY,
+                Is.InRange(
+                    groundY - 0.005f,
+                    groundY + PlayerFactory.GroundedRootOffset + 0.005f),
+                "The production neutral boot geometry must begin near the " +
+                "ground plane.");
+            presentation.SetMotion(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullWalkSpeed);
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.LocomotionBlend < 0.99f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                presentation.LocomotionBlend,
+                Is.GreaterThanOrEqualTo(0.99f),
+                "The grounding regression must sample the full Walk pose.");
+
+            const float WalkCycleSampleSeconds = 1.05f;
+            const float IntoxicationStatusSampleSeconds = 6.5f;
+            float ordinaryMinimumY = float.PositiveInfinity;
+            float ordinaryMaximumY = float.NegativeInfinity;
+            float ordinaryMinimumPelvisX = float.PositiveInfinity;
+            float ordinaryMaximumPelvisX = float.NegativeInfinity;
+            float ordinaryMinimumPelvisZ = float.PositiveInfinity;
+            float ordinaryMaximumPelvisZ = float.NegativeInfinity;
+            float sampleEnd = Time.realtimeSinceStartup +
+                              WalkCycleSampleSeconds;
+            while (Time.realtimeSinceStartup < sampleEnd)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                float lowestVisibleFootY =
+                    GetLowestVisibleFootY(registry);
+                ordinaryMinimumY = Mathf.Min(
+                    ordinaryMinimumY,
+                    lowestVisibleFootY);
+                ordinaryMaximumY = Mathf.Max(
+                    ordinaryMaximumY,
+                    lowestVisibleFootY);
+                Vector3 actorLocalPelvis =
+                    player.GameObject.transform.InverseTransformPoint(
+                        registry.Anchors.Pelvis.position);
+                ordinaryMinimumPelvisX = Mathf.Min(
+                    ordinaryMinimumPelvisX,
+                    actorLocalPelvis.x);
+                ordinaryMaximumPelvisX = Mathf.Max(
+                    ordinaryMaximumPelvisX,
+                    actorLocalPelvis.x);
+                ordinaryMinimumPelvisZ = Mathf.Min(
+                    ordinaryMinimumPelvisZ,
+                    actorLocalPelvis.z);
+                ordinaryMaximumPelvisZ = Mathf.Max(
+                    ordinaryMaximumPelvisZ,
+                    actorLocalPelvis.z);
+            }
+
+            presentation.SetIntoxication(1f);
+            deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.IntoxicationAmount < 0.99f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                presentation.IntoxicationAmount,
+                Is.GreaterThanOrEqualTo(0.99f),
+                "The grounding regression must reach maximum intoxication.");
+
+            float intoxicatedMinimumY = float.PositiveInfinity;
+            float intoxicatedMaximumY = float.NegativeInfinity;
+            float intoxicatedMinimumPelvisX = float.PositiveInfinity;
+            float intoxicatedMaximumPelvisX = float.NegativeInfinity;
+            float intoxicatedMinimumPelvisZ = float.PositiveInfinity;
+            float intoxicatedMaximumPelvisZ = float.NegativeInfinity;
+            sampleEnd = Time.realtimeSinceStartup +
+                        IntoxicationStatusSampleSeconds;
+            while (Time.realtimeSinceStartup < sampleEnd)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                float lowestVisibleFootY =
+                    GetLowestVisibleFootY(registry);
+                intoxicatedMinimumY = Mathf.Min(
+                    intoxicatedMinimumY,
+                    lowestVisibleFootY);
+                intoxicatedMaximumY = Mathf.Max(
+                    intoxicatedMaximumY,
+                    lowestVisibleFootY);
+                Vector3 actorLocalPelvis =
+                    player.GameObject.transform.InverseTransformPoint(
+                        registry.Anchors.Pelvis.position);
+                intoxicatedMinimumPelvisX = Mathf.Min(
+                    intoxicatedMinimumPelvisX,
+                    actorLocalPelvis.x);
+                intoxicatedMaximumPelvisX = Mathf.Max(
+                    intoxicatedMaximumPelvisX,
+                    actorLocalPelvis.x);
+                intoxicatedMinimumPelvisZ = Mathf.Min(
+                    intoxicatedMinimumPelvisZ,
+                    actorLocalPelvis.z);
+                intoxicatedMaximumPelvisZ = Mathf.Max(
+                    intoxicatedMaximumPelvisZ,
+                    actorLocalPelvis.z);
+            }
+
+            Vector3 pelvisBeforeReapply = registry.Anchors.Pelvis.position;
+            Vector3 leftFootBeforeReapply =
+                registry.Anchors.LeftFoot.position;
+            Vector3 rightFootBeforeReapply =
+                registry.Anchors.RightFoot.position;
+            presentation.ReapplyLatePresentationPose();
+
+            Assert.That(
+                ordinaryMinimumY,
+                Is.GreaterThanOrEqualTo(groundY - 0.005f),
+                "The authored ordinary Walk must remain above the floor.");
+            Assert.That(
+                ordinaryMaximumY,
+                Is.LessThanOrEqualTo(neutralMinimumY + 0.005f),
+                "The ordinary Walk must keep a visible boot planted in " +
+                "every sampled pose.");
+            Assert.That(
+                intoxicatedMinimumY,
+                Is.GreaterThanOrEqualTo(ordinaryMinimumY - 0.005f),
+                "The additive intoxication pose must not push either " +
+                "visible boot below the authored Walk grounding.");
+            Assert.That(
+                intoxicatedMinimumY,
+                Is.GreaterThanOrEqualTo(groundY - 0.005f),
+                "Maximum intoxication must not push the visible player " +
+                "through the floor.");
+            Assert.That(
+                intoxicatedMaximumY,
+                Is.LessThanOrEqualTo(neutralMinimumY + 0.005f),
+                "Maximum intoxication must keep a visible boot planted in " +
+                "every sampled pose.");
+            const float HorizontalDriftTolerance = 0.005f;
+            Assert.That(
+                intoxicatedMinimumPelvisX,
+                Is.GreaterThanOrEqualTo(
+                    ordinaryMinimumPelvisX - HorizontalDriftTolerance),
+                "Intoxication must not slide the whole rig sideways.");
+            Assert.That(
+                intoxicatedMaximumPelvisX,
+                Is.LessThanOrEqualTo(
+                    ordinaryMaximumPelvisX + HorizontalDriftTolerance),
+                "Intoxication must not slide the whole rig sideways.");
+            Assert.That(
+                intoxicatedMinimumPelvisZ,
+                Is.GreaterThanOrEqualTo(
+                    ordinaryMinimumPelvisZ - HorizontalDriftTolerance),
+                "Intoxication must not slide the whole rig forward or back.");
+            Assert.That(
+                intoxicatedMaximumPelvisZ,
+                Is.LessThanOrEqualTo(
+                    ordinaryMaximumPelvisZ + HorizontalDriftTolerance),
+                "Intoxication must not slide the whole rig forward or back.");
+            Assert.That(
+                player.GameObject.transform.position,
+                Is.EqualTo(actorPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                registry.ModelRoot.localPosition,
+                Is.EqualTo(modelLocalPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                registry.Anchors.Pelvis.position,
+                Is.EqualTo(pelvisBeforeReapply)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance),
+                "Reapplying the additive pose must not accumulate a pelvis " +
+                "offset.");
+            Assert.That(
+                registry.Anchors.LeftFoot.position,
+                Is.EqualTo(leftFootBeforeReapply)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                registry.Anchors.RightFoot.position,
+                Is.EqualTo(rightFootBeforeReapply)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
         }
 
         [UnityTest]
@@ -453,6 +678,48 @@ namespace BarPromenade.Tests.PlayMode
                    binding != null
                 ? binding.Bone
                 : null;
+        }
+
+        private float GetLowestVisibleFootY(
+            Player3DAssetRegistry registry)
+        {
+            float lowestY = float.PositiveInfinity;
+            for (int index = 0;
+                 index < registry.MeshBindings.Count;
+                 index++)
+            {
+                Player3DMeshBinding binding =
+                    registry.MeshBindings[index];
+                if (binding == null ||
+                    (binding.BoneName != "foot.L" &&
+                     binding.BoneName != "foot.R") ||
+                    binding.Renderer == null ||
+                    !binding.Renderer.enabled ||
+                    !(binding.Renderer is SkinnedMeshRenderer renderer))
+                {
+                    continue;
+                }
+
+                bakedFootMesh.Clear(false);
+                renderer.BakeMesh(bakedFootMesh, true);
+                bakedFootVertices.Clear();
+                bakedFootMesh.GetVertices(bakedFootVertices);
+                for (int vertexIndex = 0;
+                     vertexIndex < bakedFootVertices.Count;
+                     vertexIndex++)
+                {
+                    Vector3 vertex = bakedFootVertices[vertexIndex];
+                    Vector3 worldVertex =
+                        renderer.transform.TransformPoint(vertex);
+                    lowestY = Mathf.Min(lowestY, worldVertex.y);
+                }
+            }
+
+            Assert.That(
+                float.IsPositiveInfinity(lowestY),
+                Is.False,
+                "The production registry must expose visible foot meshes.");
+            return lowestY;
         }
 
         private static void AssertAuthoredLocomotionJointRanges(

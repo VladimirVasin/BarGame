@@ -239,7 +239,12 @@ The vertical slice contains:
   gait cadence follows the blended weight. Root motion stays disabled while
   registered face bones drive neutral, half/closed blink, watchful and tense
   states. Intoxication sway, arm spread, knee bend and balance lean are
-  additive bone poses and reset through the same lifecycle cleanup;
+  additive rotational/limb poses, preserve the authored pelvis position in
+  the actor ground plane and reset through the same lifecycle cleanup. After
+  the ordinary and additive pose is sampled, a cached rigid boot-sole contour
+  offsets only the pelvis vertically so the lower visible sole stays at its
+  neutral grounded height; the physical player root, model root and contextual
+  clips remain untouched;
 - ordinary URP mesh shadows cast from the real character geometry in every
   gameplay root, plus one small light-independent analytic contact patch fixed
   to the grounded player root. The patch follows foot plant and expands,

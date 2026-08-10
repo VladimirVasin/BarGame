@@ -84,6 +84,11 @@ namespace BarPromenade
         private Transform rightThighBone;
         private Transform leftShinBone;
         private Transform rightShinBone;
+        private ProceduralStatusPoseBase proceduralStatusPoseBase;
+        private bool proceduralStatusPoseBaseCaptured;
+        private FootGroundingProbe footGroundingProbe;
+        private float groundedFootHeightOffset;
+        private bool groundedFootHeightOffsetCaptured;
 
         public Player3DAssetRegistry Registry => registry;
         public IReadOnlyList<Renderer> Renderers =>
@@ -171,6 +176,8 @@ namespace BarPromenade
             SetMotion(Vector3.zero);
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
+            footGroundingProbe = FootGroundingProbe.Create(registry);
+            CaptureGroundedFootHeightOffset();
         }
 
         public void SetMotion(Vector3 planarVelocity)
@@ -621,12 +628,14 @@ namespace BarPromenade
 
         private void ApplyProceduralStatusPose()
         {
+            RestoreProceduralStatusPoseBase();
             if (registry == null || IsClipActive ||
                 interactionHandoffLocked)
             {
                 return;
             }
 
+            CaptureProceduralStatusPoseBase();
             float phase = Time.unscaledTime * 1.35f;
             float sway = Mathf.Sin(phase) *
                          intoxicationAmount * 5f;
@@ -635,13 +644,11 @@ namespace BarPromenade
             float lean = balanceLean * 13f;
             if (pelvisBone != null)
             {
+                // Keep the authored horizontal pelvis anchor. Procedural
+                // translation here moves the whole scale-100 imported rig.
                 pelvisBone.localRotation *= Quaternion.AngleAxis(
                     lean + sway,
                     Vector3.forward);
-                pelvisBone.localPosition += new Vector3(
-                    (balanceLean * 0.012f) + (stagger * 0.018f),
-                    -intoxicationAmount * 0.008f,
-                    0f);
             }
 
             if (chestBone != null)
@@ -666,6 +673,8 @@ namespace BarPromenade
             RotateBone(rightThighBone, Vector3.right, -kneeBend);
             RotateBone(leftShinBone, Vector3.right, kneeBend * 1.35f);
             RotateBone(rightShinBone, Vector3.right, kneeBend * 1.35f);
+
+            GroundOrdinaryPose();
         }
 
         private void CaptureStatusBones()
@@ -684,6 +693,102 @@ namespace BarPromenade
                 Player3DAnatomicalPart.LeftShin);
             rightShinBone = GetPartBone(
                 Player3DAnatomicalPart.RightShin);
+            proceduralStatusPoseBaseCaptured = false;
+            footGroundingProbe = null;
+            groundedFootHeightOffsetCaptured = false;
+        }
+
+        private void CaptureProceduralStatusPoseBase()
+        {
+            proceduralStatusPoseBase = new ProceduralStatusPoseBase(
+                pelvisBone,
+                chestBone,
+                leftUpperArmBone,
+                rightUpperArmBone,
+                leftThighBone,
+                rightThighBone,
+                leftShinBone,
+                rightShinBone);
+            proceduralStatusPoseBaseCaptured = true;
+        }
+
+        private void RestoreProceduralStatusPoseBase()
+        {
+            if (!proceduralStatusPoseBaseCaptured)
+            {
+                return;
+            }
+
+            proceduralStatusPoseBase.Restore();
+            proceduralStatusPoseBaseCaptured = false;
+        }
+
+        private bool TryGetLowestFootHeight(out float height)
+        {
+            height = float.PositiveInfinity;
+            if (registry == null)
+            {
+                return false;
+            }
+
+            IncludeFootHeight(registry.Anchors.LeftFoot, ref height);
+            IncludeFootHeight(registry.Anchors.RightFoot, ref height);
+            return !float.IsPositiveInfinity(height);
+        }
+
+        private void CaptureGroundedFootHeightOffset()
+        {
+            groundedFootHeightOffsetCaptured = false;
+            if (actorFacingTransform == null ||
+                !TryGetGroundingHeight(out float footHeight))
+            {
+                return;
+            }
+
+            groundedFootHeightOffset =
+                footHeight - actorFacingTransform.position.y;
+            groundedFootHeightOffsetCaptured = true;
+        }
+
+        private void GroundOrdinaryPose()
+        {
+            if (pelvisBone == null ||
+                actorFacingTransform == null ||
+                !groundedFootHeightOffsetCaptured ||
+                !TryGetGroundingHeight(out float footHeight))
+            {
+                return;
+            }
+
+            // The CharacterController owns the grounded actor root, while
+            // Walk, Idle and intoxication are bone-only presentation. Pin the
+            // lower registered foot to its neutral height so gait, sway and
+            // knee bend cannot push the visible rig through the floor.
+            float targetHeight = actorFacingTransform.position.y +
+                                 groundedFootHeightOffset;
+            pelvisBone.position += Vector3.up *
+                (targetHeight - footHeight);
+        }
+
+        private bool TryGetGroundingHeight(out float height)
+        {
+            if (footGroundingProbe != null &&
+                footGroundingProbe.TryGetLowestHeight(out height))
+            {
+                return true;
+            }
+
+            return TryGetLowestFootHeight(out height);
+        }
+
+        private static void IncludeFootHeight(
+            Transform foot,
+            ref float height)
+        {
+            if (foot != null && IsFinite(foot.position))
+            {
+                height = Mathf.Min(height, foot.position.y);
+            }
         }
 
         private Transform GetPartBone(Player3DAnatomicalPart part)
@@ -834,6 +939,7 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            RestoreProceduralStatusPoseBase();
             if (graph.IsValid())
             {
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
@@ -842,6 +948,7 @@ namespace BarPromenade
 
         private void DestroyGraph()
         {
+            RestoreProceduralStatusPoseBase();
             ResetClipSpatialOffset();
             if (graph.IsValid())
             {
@@ -851,6 +958,208 @@ namespace BarPromenade
             activeClipPlayable = default;
             activeClipBinding = null;
             activeClipOwner = ClipOwner.None;
+        }
+
+        private readonly struct ProceduralStatusPoseBase
+        {
+            private readonly BoneLocalPose pelvis;
+            private readonly BoneLocalPose chest;
+            private readonly BoneLocalPose leftUpperArm;
+            private readonly BoneLocalPose rightUpperArm;
+            private readonly BoneLocalPose leftThigh;
+            private readonly BoneLocalPose rightThigh;
+            private readonly BoneLocalPose leftShin;
+            private readonly BoneLocalPose rightShin;
+
+            public ProceduralStatusPoseBase(
+                Transform pelvisBone,
+                Transform chestBone,
+                Transform leftUpperArmBone,
+                Transform rightUpperArmBone,
+                Transform leftThighBone,
+                Transform rightThighBone,
+                Transform leftShinBone,
+                Transform rightShinBone)
+            {
+                pelvis = new BoneLocalPose(pelvisBone);
+                chest = new BoneLocalPose(chestBone);
+                leftUpperArm = new BoneLocalPose(leftUpperArmBone);
+                rightUpperArm = new BoneLocalPose(rightUpperArmBone);
+                leftThigh = new BoneLocalPose(leftThighBone);
+                rightThigh = new BoneLocalPose(rightThighBone);
+                leftShin = new BoneLocalPose(leftShinBone);
+                rightShin = new BoneLocalPose(rightShinBone);
+            }
+
+            public void Restore()
+            {
+                pelvis.Restore();
+                chest.Restore();
+                leftUpperArm.Restore();
+                rightUpperArm.Restore();
+                leftThigh.Restore();
+                rightThigh.Restore();
+                leftShin.Restore();
+                rightShin.Restore();
+            }
+        }
+
+        private sealed class FootGroundingProbe
+        {
+            private readonly FootContactPoint[] contacts;
+
+            private FootGroundingProbe(FootContactPoint[] contactPoints)
+            {
+                contacts = contactPoints;
+            }
+
+            public static FootGroundingProbe Create(
+                Player3DAssetRegistry assetRegistry)
+            {
+                if (assetRegistry == null)
+                {
+                    return null;
+                }
+
+                var points = new List<FootContactPoint>();
+                IReadOnlyList<Player3DMeshBinding> bindings =
+                    assetRegistry.MeshBindings;
+                for (int index = 0; index < bindings.Count; index++)
+                {
+                    Player3DMeshBinding binding = bindings[index];
+                    if (binding == null ||
+                        binding.Renderer == null ||
+                        binding.Bone == null ||
+                        (binding.BoneName != "foot.L" &&
+                         binding.BoneName != "foot.R") ||
+                        binding.MeshName.IndexOf(
+                            "BootSole",
+                            StringComparison.Ordinal) < 0)
+                    {
+                        continue;
+                    }
+
+                    AddSoleBoundsContacts(
+                        points,
+                        binding.Bone,
+                        binding.Renderer.bounds);
+                }
+
+                return points.Count > 0
+                    ? new FootGroundingProbe(points.ToArray())
+                    : null;
+            }
+
+            public bool TryGetLowestHeight(out float height)
+            {
+                height = float.PositiveInfinity;
+                for (int index = 0; index < contacts.Length; index++)
+                {
+                    FootContactPoint contact = contacts[index];
+                    if (!contact.TryGetWorldPosition(out Vector3 position))
+                    {
+                        continue;
+                    }
+
+                    height = Mathf.Min(height, position.y);
+                }
+
+                return !float.IsPositiveInfinity(height);
+            }
+
+            private static void AddSoleBoundsContacts(
+                ICollection<FootContactPoint> points,
+                Transform bone,
+                Bounds bounds)
+            {
+                AddBoundsFaceContacts(
+                    points,
+                    bone,
+                    bounds,
+                    bounds.min.y);
+                AddBoundsFaceContacts(
+                    points,
+                    bone,
+                    bounds,
+                    bounds.max.y);
+            }
+
+            private static void AddBoundsFaceContacts(
+                ICollection<FootContactPoint> points,
+                Transform bone,
+                Bounds bounds,
+                float y)
+            {
+                points.Add(new FootContactPoint(
+                    bone,
+                    new Vector3(bounds.min.x, y, bounds.min.z)));
+                points.Add(new FootContactPoint(
+                    bone,
+                    new Vector3(bounds.min.x, y, bounds.max.z)));
+                points.Add(new FootContactPoint(
+                    bone,
+                    new Vector3(bounds.max.x, y, bounds.min.z)));
+                points.Add(new FootContactPoint(
+                    bone,
+                    new Vector3(bounds.max.x, y, bounds.max.z)));
+            }
+        }
+
+        private readonly struct FootContactPoint
+        {
+            private readonly Transform bone;
+            private readonly Vector3 boneLocalPosition;
+
+            public FootContactPoint(
+                Transform footBone,
+                Vector3 worldPosition)
+            {
+                bone = footBone;
+                boneLocalPosition = bone != null
+                    ? bone.InverseTransformPoint(worldPosition)
+                    : Vector3.zero;
+            }
+
+            public bool TryGetWorldPosition(out Vector3 position)
+            {
+                if (bone == null)
+                {
+                    position = default;
+                    return false;
+                }
+
+                position = bone.TransformPoint(boneLocalPosition);
+                return IsFinite(position);
+            }
+        }
+
+        private readonly struct BoneLocalPose
+        {
+            private readonly Transform bone;
+            private readonly Vector3 localPosition;
+            private readonly Quaternion localRotation;
+
+            public BoneLocalPose(Transform boneToCapture)
+            {
+                bone = boneToCapture;
+                localPosition = bone != null
+                    ? bone.localPosition
+                    : Vector3.zero;
+                localRotation = bone != null
+                    ? bone.localRotation
+                    : Quaternion.identity;
+            }
+
+            public void Restore()
+            {
+                if (bone == null)
+                {
+                    return;
+                }
+
+                bone.localPosition = localPosition;
+                bone.localRotation = localRotation;
+            }
         }
 
         private static bool IsFinite(Vector3 value)

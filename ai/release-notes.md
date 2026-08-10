@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 2026-08-10 — Drunken walking stays on the floor
+
+- The hero's visible boots now stay planted on the ground throughout the
+  walking cycle, including at maximum intoxication. Sway and bent knees no
+  longer push the 3D body through floors, while physical movement and
+  contextual action clips keep their existing positions.
+- Drunken sway now rotates and articulates the body around its authored
+  position instead of sliding the entire 3D character left and right across
+  the screen.
+
 ### 2026-08-09 — A small lamp now marks the apartment exit
 
 - A compact dirty-amber wall lamp now sits above the apartment entrance door.
