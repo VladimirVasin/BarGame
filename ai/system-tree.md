@@ -159,7 +159,7 @@ Assets/
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
         PlayerContactShadow.cs     planted/fall-aware analytic ground patch
-        PlayerNeedsRules.cs        clamped hunger/stress relief + fractional scaling
+        PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
         PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total
@@ -180,8 +180,8 @@ Assets/
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
       Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
-        PlayerAnimatedInteraction*.cs  grounded positioning, optional held pelvis waypoint + terminal exit hold
-        HomeBedInteraction.cs          first-E sleep, persistent loop, second-E wake
+        PlayerAnimatedInteraction*.cs  grounded positioning, held pelvis waypoint + normal-completion signal
+        HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
@@ -484,7 +484,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                        -> grounded guided walk/turn or stalled cancel
                                        -> neutral 3D rendered settle frame
                                        -> terminal clip pose -> independent exit pose
-                                       -> owner/transition cancel -> complete restoration
+                                       -> normal completion -> session fatigue reset
+                                       -> owner/transition cancel -> complete restoration, fatigue preserved
        -> HomeBalconySmokingPlan -> entry/exit dock at (6.60, 0.04, -1.45)
                                    -> permanent rail ashtray at (7.25, 1.12, -1.67)
                                       -> visual-only dish under exit-flick ember

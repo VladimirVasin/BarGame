@@ -83,6 +83,7 @@ namespace BarPromenade
         public const int DefaultCash = 999;
         public const int DefaultHunger = 0;
         public const int DefaultStress = 0;
+        public const int DefaultFatigue = 0;
 
         private static readonly List<string> plannedBarRoute =
             new List<string>();
@@ -120,6 +121,7 @@ namespace BarPromenade
         public static int IntoxicationLevel { get; private set; }
         public static int HungerLevel { get; private set; } = DefaultHunger;
         public static int StressLevel { get; private set; } = DefaultStress;
+        public static int FatigueLevel { get; private set; } = DefaultFatigue;
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
         public static int CashBalance { get; private set; } = DefaultCash;
@@ -160,6 +162,7 @@ namespace BarPromenade
                 GameLog.Field("cash_balance", CashBalance),
                 GameLog.Field("hunger", HungerLevel),
                 GameLog.Field("stress", StressLevel),
+                GameLog.Field("fatigue", FatigueLevel),
                 GameLog.Field(
                     "home_arrival",
                     HomeArrival.ToString()));
@@ -187,6 +190,7 @@ namespace BarPromenade
             IntoxicationLevel = 0;
             HungerLevel = DefaultHunger;
             StressLevel = DefaultStress;
+            FatigueLevel = DefaultFatigue;
             intoxicationRecoveryElapsed = 0f;
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
@@ -281,6 +285,31 @@ namespace BarPromenade
                 GameLog.Field("hunger", HungerLevel),
                 GameLog.Field("previous_stress", previousStress),
                 GameLog.Field("stress", StressLevel));
+        }
+
+        public static void UpdateFatigue(int fatigue)
+        {
+            int nextFatigue = Mathf.Clamp(
+                fatigue,
+                PlayerNeedsRules.MinimumLevel,
+                PlayerNeedsRules.MaximumLevel);
+            if (FatigueLevel == nextFatigue)
+            {
+                return;
+            }
+
+            int previousFatigue = FatigueLevel;
+            FatigueLevel = nextFatigue;
+            GameLog.Info(
+                "needs",
+                "fatigue_changed",
+                GameLog.Field("previous_fatigue", previousFatigue),
+                GameLog.Field("fatigue", FatigueLevel));
+        }
+
+        public static void ResetFatigueAfterSleep()
+        {
+            UpdateFatigue(DefaultFatigue);
         }
 
         public static InventoryItemUseResult EvaluateInventoryItemUse(

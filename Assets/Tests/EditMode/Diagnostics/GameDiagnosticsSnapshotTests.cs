@@ -15,6 +15,8 @@ namespace BarPromenade.Tests.EditMode
             GameLog.Shutdown("snapshot_test_setup", false);
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.UpdateFatigue(
+                GameSessionState.DefaultFatigue);
             directory = Path.Combine(
                 Path.GetTempPath(),
                 "BarPromenade-SnapshotTests-" +
@@ -29,6 +31,8 @@ namespace BarPromenade.Tests.EditMode
             GameLog.Shutdown("snapshot_test_teardown", false);
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.UpdateFatigue(
+                GameSessionState.DefaultFatigue);
             if (Directory.Exists(directory))
             {
                 Directory.Delete(directory, true);
@@ -42,6 +46,7 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.TryPurchaseDrink(
                     DrinkId.Water).Succeeded,
                 Is.True);
+            GameSessionState.UpdateFatigue(73);
             GameLog.Initialize(
                 new GameLogSettings(
                     GameLogProfile.Basic,
@@ -76,6 +81,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 lines[0],
                 Does.Contain("\"cash_balance\":997"));
+            Assert.That(
+                lines[0],
+                Does.Contain("\"fatigue\":73"));
             Assert.That(
                 lines[0],
                 Does.Contain("\"root_kind\":\"none\""));

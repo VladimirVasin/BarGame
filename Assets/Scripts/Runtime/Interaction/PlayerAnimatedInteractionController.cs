@@ -176,6 +176,12 @@ namespace BarPromenade
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
 
+        /// <summary>
+        /// Raised after a terminal exit clip completes normally. Cancellation
+        /// and lifecycle cleanup do not raise this event.
+        /// </summary>
+        public event Action InteractionCompleted;
+
         public bool IsInitialized { get; private set; }
         public PlayerAnimatedInteractionPhase Phase => isPositioning
             ? PlayerAnimatedInteractionPhase.Positioning
@@ -486,7 +492,7 @@ namespace BarPromenade
             timeline.Advance(Time.deltaTime);
             if (!timeline.IsActive)
             {
-                CompleteInteraction(placeAtExitPose: true);
+                CompleteInteraction(completedNormally: true);
                 return;
             }
 
@@ -523,6 +529,7 @@ namespace BarPromenade
         {
             CompleteInteraction();
             PhaseChanged = null;
+            InteractionCompleted = null;
         }
 
         private void UpdatePositioning()
@@ -657,14 +664,14 @@ namespace BarPromenade
         }
 
         private void CompleteInteraction(
-            bool placeAtExitPose = false)
+            bool completedNormally = false)
         {
             bool shouldNotify =
                 isPositioning ||
                 (timeline != null && timeline.IsActive) ||
                 stateCaptured;
             bool shouldPlaceAtExit =
-                placeAtExitPose &&
+                completedNormally &&
                 placeAtExitOnCompletion &&
                 stateCaptured;
 
@@ -700,6 +707,11 @@ namespace BarPromenade
             RestorePlayerState();
             placeAtExitOnCompletion = false;
             hasPelvisTransition = false;
+
+            if (shouldNotify && completedNormally)
+            {
+                InteractionCompleted?.Invoke();
+            }
 
             if (shouldNotify)
             {

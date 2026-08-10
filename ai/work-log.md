@@ -2,6 +2,32 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Session fatigue and completed bed rest
+
+- Added session-owned fatigue as a clamped integer `0-100` value where higher
+  is worse. New games start at zero, ordinary scene loads preserve it, manual
+  diagnostics record it and a dedicated mutation boundary is ready for a
+  future accumulation system; no runtime source raises it yet.
+- Expanded the inventory Status card to four compact bars and added localized
+  `УСТАЛОСТЬ` / `FATIGUE` captions without moving cash or session time outside
+  the existing `150 x 172` panel.
+- Added an explicit normal-completion event to the shared animated-interaction
+  controller. `HomeBedInteraction` resets fatigue only after the terminal
+  `BedExit`; an accepted wake that is then cancelled by transition, disable or
+  lifecycle cleanup preserves the prior value.
+- Extended session, localization, diagnostic and real Home-bed regression
+  coverage for defaults, clamping, successful rest and cancellation atomicity.
+
+Verification:
+
+- Focused PlayMode
+  `HomeBedInteractionPlayModeTests.Bed_FatigueResetsOnlyAfterCompletedWake`:
+  1/1 passed in 2.01 seconds.
+- Focused EditMode selection for fatigue state, diagnostics and localization:
+  8/8 passed in 0.42 seconds.
+- Fast mode intentionally omitted complete Unity suites, a player build and
+  startup smoke.
+
 ## 2026-08-10 — Bounded hybrid ragdoll for drunken falls
 
 - Added a runtime-composed 13-body ragdoll over the production Generic rig.

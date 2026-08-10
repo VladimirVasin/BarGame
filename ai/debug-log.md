@@ -48,7 +48,7 @@ The important correlation fields are:
 - `sequence` for a scheduled balance challenge;
 - `snapshot_id` for a manual support snapshot.
 
-Manual snapshots include the current `hunger` and `stress` beside
+Manual snapshots include the current `hunger`, `stress` and `fatigue` beside
 `intoxication`, cash and drinking progress.
 
 ## Recorded boundaries
@@ -56,7 +56,7 @@ Manual snapshots include the current `hunger` and `stress` beside
 | Category | Recorded events |
 | --- | --- |
 | `session` | start/end, seed, route, visited bars, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
-| `needs`, `inventory` | hunger/stress mutations, committed alcohol relief and atomic item-use results |
+| `needs`, `inventory` | hunger/stress/fatigue mutations, committed alcohol relief and atomic item-use results |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed |
 | `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings |
 | `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events; path rebuilds are verbose-only |

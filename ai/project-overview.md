@@ -464,11 +464,12 @@ The vertical slice contains:
   and preserves the ambient audio bed; Escape, the same toggle or gamepad East
   restores the exact prior input, camera, HUD and time-scale state without
   opening pause on the same frame. The logical `640x360` screen combines a
-  dedicated transparent portrait rendered from the production 3D hero, three
-  compact intoxication/hunger/stress bars, dollar cash, a five-column point-filtered
+  dedicated transparent portrait rendered from the production 3D hero, four
+  compact intoxication/hunger/stress/fatigue bars, dollar cash, a five-column point-filtered
   icon grid, selected item description and contextual Eat/Drink, Examine and
-  Close commands. Hunger and stress are session-owned `0-100` values that both
-  start at zero and currently have no passive increase. The selected item is a
+  Close commands. Hunger, stress and fatigue are session-owned `0-100` values
+  that start at zero and currently have no passive increase. A normally
+  completed bed sleep resets fatigue to zero. The selected item is a
   live low-resolution 3D model in both the lower panel and Examine view; its
   hidden preview stage rotates on unscaled time and reuses the same procedural
   bottle, egg and open-can geometry as the refrigerator, plus the supermarket's
@@ -557,7 +558,9 @@ The vertical slice contains:
   a second `E` plays `BedExit`; the opening can begin directly in that loop and
   apply its one-shot wake-duration multiplier. Per-sample pelvis alignment
   keeps the sleeper at the authored bed action anchor, with the head at the
-  `xMin` pillow. Localized prompts and all normal/abnormal cleanup remain;
+  `xMin` pillow. Only a normally completed `BedExit` resets session fatigue;
+  cancellation, transition, disable and destroy preserve it. Localized prompts
+  and all normal/abnormal cleanup remain;
 - one bed-relative low-poly nightstand and 3D alarm clock that remain visible
   as ordinary Home dressing. Its reusable 28-segment display begins the
   one-shot opening at `05:59` and flickers all digits and punctuation briefly

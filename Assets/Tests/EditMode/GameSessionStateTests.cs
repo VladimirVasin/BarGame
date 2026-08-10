@@ -216,6 +216,7 @@ namespace BarPromenade.Tests.EditMode
                 67,
                 DrinkId.CognacVsop,
                 4);
+            GameSessionState.UpdateFatigue(64);
             Assert.That(
                 GameSessionState.TryPurchaseDrink(
                     DrinkId.Water).Succeeded,
@@ -262,6 +263,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.Zero);
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(GameSessionState.DefaultFatigue));
             Assert.That(
                 GameSessionState.CashBalance,
                 Is.EqualTo(GameSessionState.DefaultCash));
@@ -425,16 +429,19 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void NewGame_StartsHungerAndStressAtZero()
+        public void NewGame_StartsHungerStressAndFatigueAtZero()
         {
             GameSessionState.UpdateNeeds(73, 81);
+            GameSessionState.UpdateFatigue(59);
 
             GameSessionState.BeginNewGame();
 
             Assert.That(GameSessionState.DefaultHunger, Is.Zero);
             Assert.That(GameSessionState.DefaultStress, Is.Zero);
+            Assert.That(GameSessionState.DefaultFatigue, Is.Zero);
             Assert.That(GameSessionState.HungerLevel, Is.Zero);
             Assert.That(GameSessionState.StressLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
         }
 
         [TestCase(-5, 0, 130, 100)]
@@ -453,6 +460,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.StressLevel,
                 Is.EqualTo(expectedStress));
+        }
+
+        [TestCase(-5, 0)]
+        [TestCase(44, 44)]
+        [TestCase(130, 100)]
+        public void UpdateFatigue_ClampsPublicValue(
+            int fatigue,
+            int expectedFatigue)
+        {
+            GameSessionState.UpdateFatigue(fatigue);
+
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(expectedFatigue));
+        }
+
+        [Test]
+        public void ResetFatigueAfterSleep_ClearsCurrentLevel()
+        {
+            GameSessionState.UpdateFatigue(73);
+
+            GameSessionState.ResetFatigueAfterSleep();
+
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(GameSessionState.DefaultFatigue));
         }
 
         [Test]

@@ -877,6 +877,10 @@
       "value": "STRESS"
     },
     {
+      "key": "inventory.status.fatigue",
+      "value": "FATIGUE"
+    },
+    {
       "key": "inventory.items",
       "value": "IN POCKETS"
     },

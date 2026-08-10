@@ -40,6 +40,7 @@ namespace BarPromenade.Tests.EditMode
             "inventory.status.intoxication",
             "inventory.status.hunger",
             "inventory.status.stress",
+            "inventory.status.fatigue",
             "inventory.items",
             "inventory.selected_item",
             "inventory.command",

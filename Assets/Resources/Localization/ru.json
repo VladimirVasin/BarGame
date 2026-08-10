@@ -877,6 +877,10 @@
       "value": "СТРЕСС"
     },
     {
+      "key": "inventory.status.fatigue",
+      "value": "УСТАЛОСТЬ"
+    },
+    {
       "key": "inventory.items",
       "value": "В КАРМАНАХ"
     },

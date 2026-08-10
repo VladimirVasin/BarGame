@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-08-10 — Sleep now clears fatigue
+
+- The inventory Status panel now includes a fourth localized Fatigue bar
+  alongside buzz, hunger and stress. Fatigue is ready as a persistent `0-100`
+  need but does not accumulate or affect the hero yet, so a new run starts at
+  zero.
+- Finishing the complete bed wake now restores fatigue to zero. Cancelling the
+  sleep interaction or leaving during the wake does not grant the reset.
+
 ### 2026-08-10 — Drunken falls now react physically
 
 - Failing a high-intoxication balance check now hands the hero from the

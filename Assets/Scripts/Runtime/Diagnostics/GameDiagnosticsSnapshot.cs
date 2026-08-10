@@ -54,7 +54,7 @@ namespace BarPromenade
                 return false;
             }
 
-            var fields = new List<GameLogField>(34)
+            var fields = new List<GameLogField>(35)
             {
                 GameLog.Field(
                     "snapshot_id",
@@ -94,6 +94,9 @@ namespace BarPromenade
                 GameLog.Field(
                     "stress",
                     GameSessionState.StressLevel),
+                GameLog.Field(
+                    "fatigue",
+                    GameSessionState.FatigueLevel),
                 GameLog.Field(
                     "last_drink",
                     GameSessionState.LastAlcoholicDrink.ToString()),

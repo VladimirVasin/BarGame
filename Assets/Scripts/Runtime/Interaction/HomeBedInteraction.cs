@@ -69,6 +69,8 @@ namespace BarPromenade
             {
                 CancelOwnedInteraction();
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
 
             controller = interactionController;
@@ -96,6 +98,8 @@ namespace BarPromenade
                     loopFrameExtraHoldSeconds:
                         CreateSleepLoopFrameHolds());
             controller.PhaseChanged += HandlePhaseChanged;
+            controller.InteractionCompleted +=
+                HandleInteractionCompleted;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
@@ -264,6 +268,8 @@ namespace BarPromenade
             if (controller != null)
             {
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
         }
 
@@ -288,6 +294,16 @@ namespace BarPromenade
             {
                 ownsActiveInteraction = false;
             }
+        }
+
+        private void HandleInteractionCompleted()
+        {
+            if (!ownsActiveInteraction)
+            {
+                return;
+            }
+
+            GameSessionState.ResetFatigueAfterSleep();
         }
 
         private void CancelOwnedInteraction()

@@ -34,6 +34,8 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.UpdateFatigue(
+                GameSessionState.DefaultFatigue);
             yield return null;
         }
 
@@ -73,6 +75,8 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
+            GameSessionState.UpdateFatigue(
+                GameSessionState.DefaultFatigue);
             yield return null;
         }
 
@@ -629,6 +633,60 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Player.ContactShadow.enabled, Is.True);
             AssertRigRendererState(home, true);
             Assert.That(surfaceClutter.gameObject.activeSelf, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Bed_FatigueResetsOnlyAfterCompletedWake()
+        {
+            yield return LoadHome();
+
+            GameSessionState.UpdateFatigue(67);
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(67));
+
+            Assert.That(home.Bed.RequestWake(), Is.True);
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(67),
+                "Requesting wake must not reset fatigue before the exit " +
+                "animation completes.");
+
+            Time.timeScale = FastTimeScale;
+            yield return WaitForPhase(
+                home,
+                PlayerAnimatedInteractionPhase.Idle);
+            Time.timeScale = 1f;
+            yield return null;
+
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(GameSessionState.DefaultFatigue));
+
+            GameSessionState.UpdateFatigue(83);
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+            Assert.That(home.Bed.RequestWake(), Is.True);
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+
+            home.Bed.enabled = false;
+            yield return null;
+
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(
+                GameSessionState.FatigueLevel,
+                Is.EqualTo(83),
+                "Cancelling an exiting bed interaction must not count as " +
+                "a completed sleep.");
         }
 
         private static void AssertSleepingHeadToFootOrientation(

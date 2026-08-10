@@ -265,18 +265,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   models as physical refrigerator contents, adds matching keys and lighter,
   rotates on unscaled time and owns a hidden camera/light/RenderTexture stage
   that is inactive outside the inventory. Status keeps the portrait and cash,
-  then fits intoxication, hunger and stress into three compact `0-100` bars.
+  then fits intoxication, hunger, stress and fatigue into four compact `0-100`
+  bars.
   Consumables expose a contextual Eat/Drink command through pointer, `U` and
   gamepad West; unsupported Equip, Combine and Drop commands remain absent.
   Pause executes before
   inventory so Escape sees the occupied lock, then inventory closes later in
   the same frame without leaking that press into pause.
-- **Accepted — Session hunger, stress and atomic inventory consumption:** Hunger
-  and stress are clamped integer `0-100` session values where higher is worse.
-  Both start at `0`, survive ordinary scene loads and reset to `0` with a new
-  game; no current runtime system raises either value. A data-first consumable
-  catalog gives all present food an explicit relief value plus a poor-food
-  minimum hunger of `20`, so repeated cheap food can never fully satisfy the
+- **Accepted — Session needs and atomic inventory consumption:** Hunger, stress
+  and fatigue are clamped integer `0-100` session values where higher is worse.
+  All start at `0`, survive ordinary scene loads and reset to `0` with a new
+  game; no current runtime system raises any of them. Fatigue has a dedicated
+  future mutation seam but no accumulation or gameplay effects yet. A normally
+  completed bed exit resets it to zero through the shared interaction
+  completion boundary; cancellation and lifecycle cleanup do not. A
+  data-first consumable catalog gives all present food an explicit relief
+  value plus a poor-food minimum hunger of `20`, so repeated cheap food can
+  never fully satisfy the
   hero and food at or below its floor is not consumed. The supermarket vodka
   bottle is one atomic four-serving use. `GameSessionState` preflights every
   use, removes exactly one stack only after success is known, then commits food

@@ -153,15 +153,20 @@ namespace BarPromenade
                 GameSessionState.IntoxicationLevel,
                 new Color32(189, 151, 85, 255));
             DrawStatusBar(
-                new Rect(94f, 66f, 58f, 19f),
+                new Rect(94f, 64f, 58f, 19f),
                 "inventory.status.hunger",
                 GameSessionState.HungerLevel,
                 new Color32(184, 119, 72, 255));
             DrawStatusBar(
-                new Rect(94f, 89f, 58f, 19f),
+                new Rect(94f, 85f, 58f, 19f),
                 "inventory.status.stress",
                 GameSessionState.StressLevel,
                 new Color32(171, 82, 77, 255));
+            DrawStatusBar(
+                new Rect(94f, 106f, 58f, 19f),
+                "inventory.status.fatigue",
+                GameSessionState.FatigueLevel,
+                new Color32(83, 132, 167, 255));
             GUI.Label(
                 new Rect(23f, 130f, 128f, 18f),
                 string.Format(
