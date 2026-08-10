@@ -238,7 +238,9 @@ The vertical slice contains:
   ankles. Start and stop use `0.14 s`/`0.20 s` smooth envelopes, and visible
   gait cadence follows the blended weight. Root motion stays disabled while
   registered face bones drive neutral, half/closed blink, watchful and tense
-  states. Intoxication sway, arm spread, knee bend and balance lean are
+  states. A failed balance check may temporarily suspend this graph while the
+  same registered bones are owned by the bounded ragdoll. Intoxication sway,
+  arm spread, knee bend and balance lean are
   additive rotational/limb poses, preserve the authored pelvis position in
   the actor ground plane and reset through the same lifecycle cleanup. After
   the ordinary and additive pose is sampled, a cached rigid boot-sole contour
@@ -292,12 +294,22 @@ The vertical slice contains:
   checks longer and more frequent. Warning and active checks keep locomotion
   enabled, so those same directional controls move the hero while steering
   the balance arrow;
-- a failed balance check samples registered `FallLeft/Right`,
-  `DownLeft/Right` and `RiseLeft/Right` Generic actions over the existing
-  `0.45 s` falling, `1.2 s` down and `1.0 s` rising phases. The upright physical
-  root remains stationary, negative direction uses the left clips, positive
-  direction uses the right clips, and cleanup restores the ordinary neutral
-  rig plus contact shadow;
+- a failed balance check begins with the matching registered
+  `FallLeft/Right` action, then hands its current pose to a 13-body runtime
+  ragdoll after a `0.16 s` directional lead-in. Physics owns the rest of the
+  `0.45 s` falling phase and the `1.2 s` down phase; the pelvis is tethered to
+  a `0.68 m` sphere around the fixed gameplay root, every ragdoll collider
+  ignores both its peers and the upright `CharacterController`, and the
+  expanded analytic contact shadow remains fall-aware. A `0.16 s` kinematic
+  pose blend returns the complete hierarchy to the exact side-down first
+  `RiseLeft/Right` sample. The distinct left/right `50`-source-frame
+  (`1.67 s`) full-body actions then brace and roll prone, hold on all fours,
+  place a lead foot under the body, pass through a low crouch and finish at the
+  exact `Relaxed` seam without any bind/A/T-like fallback. All-fours remains an
+  authored landmark inside the existing `Rising` phase rather than a new
+  gameplay state. Completion, cancellation, transition, disable and destroy
+  all restore the graph, neutral rig, kinematic bodies, disabled ragdoll
+  colliders and ordinary contact shadow;
 - a full-screen city map projected from the blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
   beach, water, lake-shore and cemetery surfaces and paths, player/bar markers,
@@ -701,7 +713,7 @@ The vertical slice contains:
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.
 - Additional bespoke 3D animation polish beyond the current in-place
-  locomotion, face, fall, bed, smoking and cat-feeding action set.
+  locomotion, face, hybrid fall, bed, smoking and cat-feeding action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, income/jobs, a broader
   economy, dialogue, quests, combat, save slots, and online features.

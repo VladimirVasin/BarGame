@@ -55,8 +55,17 @@
   `Face_Tense` preserve deterministic facial timing on registered face bones.
 - Left and right balance failures use `FallLeft/Right`, `DownLeft/Right` and
   `RiseLeft/Right`. Negative status direction selects Left; positive selects
-  Right. The physical player root remains upright while the clip and analytic
-  contact patch present the fall.
+  Right. The Fall clip supplies the directional lead-in, the current pose then
+  transfers to the runtime ragdoll for impact/down, and a short kinematic blend
+  reaches the exact side-down first Rise sample before authored recovery. Each
+  physical side owns a distinct full-body, `50`-source-frame (`1.67 s`)
+  `Rise` action: the hero braces and rolls prone, holds on both hands and knees,
+  steps one lead foot under the body, passes through a low crouch and settles
+  into the exact `Relaxed` seam. Every landmark authors the complete body pose,
+  so no limb can fall back to a Generic bind/A/T-like pose between keys;
+  neither side is produced by runtime mirroring. These are samples inside the
+  existing `Rising` phase, not new gameplay states. The physical player root
+  remains upright and fixed throughout.
 - Bed uses three-second `BedEnter` and `BedExit` clips around the persistent
   `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
   swings both legs onto the mattress and lowers through a supported side pose
@@ -69,7 +78,9 @@
   `CatFeedExit`.
 - Every production action is bone-only and in-place. Gameplay owns normalized
   clip sampling, pelvis alignment and terminal holds; root motion and Animation
-  Events remain disabled.
+  Events remain disabled. The ragdoll is a procedural runtime phase rather than
+  an Action; its ownership flag prevents the manual PlayableGraph and additive
+  late pose from writing the same bones until recovery.
 - Intoxication sway, arm spread, knee bend and signed balance lean are additive
   bone presentation over ordinary locomotion and reset to neutral through the
   shared lifecycle cleanup.
@@ -89,15 +100,18 @@
   rather than cropping a directional sprite atlas.
 - World meshes cast and receive ordinary URP lighting/shadows. The grounded
   analytic `PlayerContactShadow` remains as a stable foot-contact cue and
-  expands/offsets during falls. No sprite shadow proxy is part of the active
-  player runtime.
+  remains expanded/offset during both authored and physics fall phases. No
+  sprite shadow proxy is part of the active player runtime.
 
 ## Source and rebuild
 
 - Rebuild through Blender with `tools/build-player-3d-model.py`; its validators
   own exact height, outward winding, unique mesh data, weights, triangle budget,
   required parts/bones/sockets/actions, no root motion, signature asymmetry and
-  the bed loop's head-to-foot, face-up and closed-eye orientation.
+  the bed loop's head-to-foot, face-up and closed-eye orientation. Fall
+  validation also owns full-body `Down`/`Rise` seams, the two-key all-fours
+  hold, grounded hand/knee/foot contacts, every exported Rise frame's visible
+  floor boundary and the exact final `Relaxed` pose.
 - Direct `.blend` and GLB imports are not production paths. The deterministic
   FBX, animation FBX and JSON manifest are the Unity inputs; the generated
   transparent portrait is a separate Resources asset.

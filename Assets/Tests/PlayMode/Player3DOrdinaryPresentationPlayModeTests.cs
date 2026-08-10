@@ -175,6 +175,220 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RiseClips_PassThroughGroundedAllFoursBeforeNeutral()
+        {
+            cameraObject = new GameObject("Player3D Rise Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.up * PlayerFactory.GroundedRootOffset,
+                camera,
+                null,
+                null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Player3DAssetRegistry registry = presentation.Registry;
+            Transform pelvis = registry.Anchors.Pelvis;
+            Transform chest = registry.Anchors.Chest;
+            Transform leftGrip = registry.Anchors.LeftGrip;
+            Transform rightGrip = registry.Anchors.RightGrip;
+            Transform leftKnee = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.LeftShin);
+            Transform rightKnee = GetPartBone(
+                registry,
+                Player3DAnatomicalPart.RightShin);
+            Assert.That(pelvis, Is.Not.Null);
+            Assert.That(chest, Is.Not.Null);
+            Assert.That(leftGrip, Is.Not.Null);
+            Assert.That(rightGrip, Is.Not.Null);
+            Assert.That(leftKnee, Is.Not.Null);
+            Assert.That(rightKnee, Is.Not.Null);
+
+            bakedFootMesh = new Mesh
+            {
+                name = "Player3D Rise Support Test Mesh"
+            };
+            float canonicalHeight = Mathf.Max(
+                0.01f,
+                registry.Metrics.CanonicalHeight);
+            Transform[] recoveryBones = GetRecoveryPoseBones(registry);
+            Assert.That(presentation.TryBeginClip("Relaxed"), Is.True);
+            presentation.SampleActiveClip(0.5f);
+            yield return null;
+            BonePoseSample[] neutralPose = CaptureBonePose(recoveryBones);
+            float neutralLeftBootY = GetLowestVisibleMeshY(
+                registry,
+                "foot.L");
+            float neutralRightBootY = GetLowestVisibleMeshY(
+                registry,
+                "foot.R");
+            float neutralFloorY = Mathf.Min(
+                neutralLeftBootY,
+                neutralRightBootY);
+            Assert.That(
+                Mathf.Abs(neutralLeftBootY - neutralRightBootY),
+                Is.LessThan(canonicalHeight * 0.015f),
+                "The neutral boots must establish one shared ground plane.");
+            presentation.EndClip();
+
+            Vector3 actorPosition = player.GameObject.transform.position;
+            Quaternion actorRotation = player.GameObject.transform.rotation;
+            Vector3 modelLocalPosition = registry.ModelRoot.localPosition;
+            Quaternion modelLocalRotation = registry.ModelRoot.localRotation;
+            Vector3 modelLocalScale = registry.ModelRoot.localScale;
+            const float AllFoursLandmark = 0.43f;
+            const float FootPlantLandmark = 0.92f;
+            var sides = new[]
+            {
+                new FallSideCase(-1f, "Left"),
+                new FallSideCase(1f, "Right")
+            };
+
+            for (int sideIndex = 0;
+                 sideIndex < sides.Length;
+                 sideIndex++)
+            {
+                FallSideCase side = sides[sideIndex];
+                string clipName = "Rise" + side.Suffix;
+                Assert.That(
+                    registry.TryGetAnimation(
+                        clipName,
+                        out Player3DAnimationBinding binding),
+                    Is.True);
+                Assert.That(binding, Is.Not.Null);
+                Assert.That(
+                    binding.AuthoredDuration,
+                    Is.EqualTo(
+                        IntoxicationStatusController.RisingDuration)
+                        .Within(0.0001f));
+
+                presentation.SetFallPose(side.Direction, 1f);
+                presentation.SetFallAnimation(
+                    PlayerFallAnimationPhase.Rising,
+                    0f);
+                yield return null;
+
+                Assert.That(presentation.ActiveClipName, Is.EqualTo(clipName));
+                AssertRiseStartSupports(
+                    leftGrip,
+                    rightGrip,
+                    GetLowestVisibleMeshY(
+                        registry,
+                        "forearm.L",
+                        "hand.L"),
+                    GetLowestVisibleMeshY(
+                        registry,
+                        "forearm.R",
+                        "hand.R"),
+                    neutralFloorY,
+                    canonicalHeight,
+                    side.Suffix);
+                AssertRootsUnchanged(
+                    player.GameObject.transform,
+                    registry.ModelRoot,
+                    actorPosition,
+                    actorRotation,
+                    modelLocalPosition,
+                    modelLocalRotation,
+                    modelLocalScale);
+
+                AssertDenseRiseFloorSweep(
+                    presentation,
+                    registry,
+                    neutralFloorY,
+                    canonicalHeight,
+                    side.Suffix);
+
+                presentation.SetFallAnimation(
+                    PlayerFallAnimationPhase.Rising,
+                    AllFoursLandmark);
+                yield return null;
+
+                AssertGroundedAllFoursPose(
+                    pelvis,
+                    chest,
+                    leftGrip,
+                    rightGrip,
+                    leftKnee,
+                    rightKnee,
+                    neutralFloorY,
+                    canonicalHeight,
+                    side.Suffix);
+                AssertRootsUnchanged(
+                    player.GameObject.transform,
+                    registry.ModelRoot,
+                    actorPosition,
+                    actorRotation,
+                    modelLocalPosition,
+                    modelLocalRotation,
+                    modelLocalScale);
+
+                presentation.SetFallAnimation(
+                    PlayerFallAnimationPhase.Rising,
+                    FootPlantLandmark);
+                yield return null;
+
+                AssertBootsNearNeutralFloor(
+                    GetLowestVisibleMeshY(registry, "foot.L"),
+                    GetLowestVisibleMeshY(registry, "foot.R"),
+                    neutralFloorY,
+                    canonicalHeight,
+                    side.Suffix);
+                AssertRootsUnchanged(
+                    player.GameObject.transform,
+                    registry.ModelRoot,
+                    actorPosition,
+                    actorRotation,
+                    modelLocalPosition,
+                    modelLocalRotation,
+                    modelLocalScale);
+
+                presentation.SetFallAnimation(
+                    PlayerFallAnimationPhase.Rising,
+                    1f);
+                yield return null;
+
+                AssertBonePoseNear(
+                    neutralPose,
+                    recoveryBones,
+                    canonicalHeight,
+                    side.Suffix);
+                Assert.That(
+                    GetLowestVisibleMeshY(registry, "foot.L"),
+                    Is.EqualTo(neutralLeftBootY)
+                        .Within(canonicalHeight * 0.01f),
+                    $"Rise{side.Suffix}(1) must close the left-boot " +
+                    "neutral seam.");
+                Assert.That(
+                    GetLowestVisibleMeshY(registry, "foot.R"),
+                    Is.EqualTo(neutralRightBootY)
+                        .Within(canonicalHeight * 0.01f),
+                    $"Rise{side.Suffix}(1) must close the right-boot " +
+                    "neutral seam.");
+                AssertRootsUnchanged(
+                    player.GameObject.transform,
+                    registry.ModelRoot,
+                    actorPosition,
+                    actorRotation,
+                    modelLocalPosition,
+                    modelLocalRotation,
+                    modelLocalScale);
+            }
+
+            presentation.SetFallPose(0f, 0f);
+            presentation.SetFallAnimation(
+                PlayerFallAnimationPhase.None,
+                0f);
+        }
+
+        [UnityTest]
         public IEnumerator MaximumIntoxicationWalk_KeepsVisibleRigAnchored()
         {
             cameraObject = new GameObject("Player3D Grounding Test Camera");
@@ -680,9 +894,243 @@ namespace BarPromenade.Tests.PlayMode
                 : null;
         }
 
+        private static Transform[] GetRecoveryPoseBones(
+            Player3DAssetRegistry registry)
+        {
+            IReadOnlyList<Player3DAnatomicalPartBinding> parts =
+                registry.AnatomicalParts;
+            var result = new Transform[parts.Count];
+            for (int index = 0; index < parts.Count; index++)
+            {
+                Player3DAnatomicalPartBinding part = parts[index];
+                Assert.That(part, Is.Not.Null);
+                Assert.That(part.Bone, Is.Not.Null);
+                result[index] = part.Bone;
+            }
+
+            return result;
+        }
+
+        private static BonePoseSample[] CaptureBonePose(
+            IReadOnlyList<Transform> bones)
+        {
+            var result = new BonePoseSample[bones.Count];
+            for (int index = 0; index < bones.Count; index++)
+            {
+                result[index] = new BonePoseSample(bones[index]);
+            }
+
+            return result;
+        }
+
+        private static void AssertGroundedAllFoursPose(
+            Transform pelvis,
+            Transform chest,
+            Transform leftGrip,
+            Transform rightGrip,
+            Transform leftKnee,
+            Transform rightKnee,
+            float neutralFloorY,
+            float canonicalHeight,
+            string side)
+        {
+            float bodyFloor = Mathf.Min(
+                pelvis.position.y,
+                chest.position.y);
+            float minimumBodyClearance = canonicalHeight * 0.055f;
+            var supports = new[]
+            {
+                leftGrip.position.y,
+                rightGrip.position.y,
+                leftKnee.position.y,
+                rightKnee.position.y
+            };
+            float lowestSupport = supports[0];
+            float highestSupport = supports[0];
+            for (int index = 0; index < supports.Length; index++)
+            {
+                lowestSupport = Mathf.Min(lowestSupport, supports[index]);
+                highestSupport = Mathf.Max(highestSupport, supports[index]);
+                Assert.That(
+                    supports[index],
+                    Is.LessThan(bodyFloor - minimumBodyClearance),
+                    $"Rise{side} must keep both hands and knees below the " +
+                    "pelvis and chest at the all-fours landmark.");
+                Assert.That(
+                    Mathf.Abs(supports[index] - neutralFloorY),
+                    Is.LessThan(canonicalHeight * 0.08f),
+                    $"Rise{side} hands and knees must meet the actual " +
+                    "neutral ground plane at the all-fours landmark.");
+            }
+
+            Assert.That(
+                highestSupport - lowestSupport,
+                Is.LessThan(canonicalHeight * 0.18f),
+                $"Rise{side} hands and knees must share a readable support " +
+                "band at the all-fours landmark.");
+            Assert.That(
+                Vector3.Distance(leftGrip.position, rightGrip.position),
+                Is.LessThan(canonicalHeight * 0.72f),
+                $"Rise{side} must not retain a lateral T-pose arm span at " +
+                "the all-fours landmark.");
+        }
+
+        private static void AssertRiseStartSupports(
+            Transform leftGrip,
+            Transform rightGrip,
+            float leftVisibleSupportY,
+            float rightVisibleSupportY,
+            float neutralFloorY,
+            float canonicalHeight,
+            string side)
+        {
+            float gripPenetration = canonicalHeight * 0.025f;
+            Assert.That(
+                leftGrip.position.y,
+                Is.GreaterThanOrEqualTo(neutralFloorY - gripPenetration),
+                $"Rise{side}(0) must not bury the left grip below the " +
+                "neutral floor.");
+            Assert.That(
+                rightGrip.position.y,
+                Is.GreaterThanOrEqualTo(neutralFloorY - gripPenetration),
+                $"Rise{side}(0) must not bury the right grip below the " +
+                "neutral floor.");
+
+            float visiblePenetration = canonicalHeight * 0.02f;
+            Assert.That(
+                leftVisibleSupportY,
+                Is.GreaterThanOrEqualTo(neutralFloorY - visiblePenetration),
+                $"Rise{side}(0) must keep the visible left forearm and " +
+                "hand above the neutral floor.");
+            Assert.That(
+                rightVisibleSupportY,
+                Is.GreaterThanOrEqualTo(neutralFloorY - visiblePenetration),
+                $"Rise{side}(0) must keep the visible right forearm and " +
+                "hand above the neutral floor.");
+        }
+
+        private void AssertDenseRiseFloorSweep(
+            Player3DCharacterPresentation presentation,
+            Player3DAssetRegistry registry,
+            float neutralFloorY,
+            float canonicalHeight,
+            string side)
+        {
+            const int ImportedLastFrame = 40;
+            float maximumPenetration = canonicalHeight * 0.006f;
+            for (int frame = 0; frame <= ImportedLastFrame; frame++)
+            {
+                presentation.SetFallAnimation(
+                    PlayerFallAnimationPhase.Rising,
+                    frame / (float)ImportedLastFrame);
+                float visibleMinimum = GetLowestVisibleMeshY(registry);
+                Assert.That(
+                    visibleMinimum,
+                    Is.GreaterThanOrEqualTo(
+                        neutralFloorY - maximumPenetration),
+                    $"Rise{side} imported frame {frame}/" +
+                    $"{ImportedLastFrame} must keep the complete visible " +
+                    "silhouette above the neutral floor " +
+                    $"({visibleMinimum:F4} vs {neutralFloorY:F4}).");
+            }
+        }
+
+        private static void AssertBootsNearNeutralFloor(
+            float leftBootY,
+            float rightBootY,
+            float neutralFloorY,
+            float canonicalHeight,
+            string side)
+        {
+            float maximumPenetration = canonicalHeight * 0.015f;
+            float maximumLift = canonicalHeight * 0.025f;
+            Assert.That(
+                leftBootY,
+                Is.InRange(
+                    neutralFloorY - maximumPenetration,
+                    neutralFloorY + maximumLift),
+                $"Rise{side}(0.92) must plant the visible left boot on " +
+                "the neutral floor.");
+            Assert.That(
+                rightBootY,
+                Is.InRange(
+                    neutralFloorY - maximumPenetration,
+                    neutralFloorY + maximumLift),
+                $"Rise{side}(0.92) must plant the visible right boot on " +
+                "the neutral floor.");
+        }
+
+        private static void AssertBonePoseNear(
+            IReadOnlyList<BonePoseSample> expected,
+            IReadOnlyList<Transform> bones,
+            float canonicalHeight,
+            string side)
+        {
+            float positionTolerance = canonicalHeight * 0.003f;
+            for (int index = 0; index < bones.Count; index++)
+            {
+                Transform bone = bones[index];
+                Assert.That(
+                    Vector3.Distance(
+                        expected[index].LocalPosition,
+                        bone.localPosition),
+                    Is.LessThan(positionTolerance),
+                    $"Rise{side} must finish near the neutral {bone.name} " +
+                    "position.");
+                Assert.That(
+                    Quaternion.Angle(
+                        expected[index].LocalRotation,
+                        bone.localRotation),
+                    Is.LessThan(2f),
+                    $"Rise{side} must finish near the neutral {bone.name} " +
+                    "rotation.");
+            }
+        }
+
+        private static void AssertRootsUnchanged(
+            Transform actor,
+            Transform modelRoot,
+            Vector3 actorPosition,
+            Quaternion actorRotation,
+            Vector3 modelLocalPosition,
+            Quaternion modelLocalRotation,
+            Vector3 modelLocalScale)
+        {
+            Assert.That(
+                Vector3.Distance(actor.position, actorPosition),
+                Is.LessThan(0.0001f));
+            Assert.That(
+                Quaternion.Angle(actor.rotation, actorRotation),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Distance(
+                    modelRoot.localPosition,
+                    modelLocalPosition),
+                Is.LessThan(0.0001f));
+            Assert.That(
+                Quaternion.Angle(
+                    modelRoot.localRotation,
+                    modelLocalRotation),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Distance(modelRoot.localScale, modelLocalScale),
+                Is.LessThan(0.0001f));
+        }
+
         private float GetLowestVisibleFootY(
             Player3DAssetRegistry registry)
         {
+            return GetLowestVisibleMeshY(
+                registry,
+                "foot.L",
+                "foot.R");
+        }
+
+        private float GetLowestVisibleMeshY(
+            Player3DAssetRegistry registry,
+            params string[] boneNames)
+        {
+            bool filterByBone = boneNames != null && boneNames.Length > 0;
             float lowestY = float.PositiveInfinity;
             for (int index = 0;
                  index < registry.MeshBindings.Count;
@@ -691,8 +1139,10 @@ namespace BarPromenade.Tests.PlayMode
                 Player3DMeshBinding binding =
                     registry.MeshBindings[index];
                 if (binding == null ||
-                    (binding.BoneName != "foot.L" &&
-                     binding.BoneName != "foot.R") ||
+                    (filterByBone &&
+                     !ContainsBoneName(
+                         boneNames,
+                         binding.BoneName)) ||
                     binding.Renderer == null ||
                     !binding.Renderer.enabled ||
                     !(binding.Renderer is SkinnedMeshRenderer renderer))
@@ -718,8 +1168,26 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 float.IsPositiveInfinity(lowestY),
                 Is.False,
-                "The production registry must expose visible foot meshes.");
+                filterByBone
+                    ? "The production registry must expose visible meshes " +
+                      "for " + string.Join(", ", boneNames) + "."
+                    : "The production registry must expose visible meshes.");
             return lowestY;
+        }
+
+        private static bool ContainsBoneName(
+            IReadOnlyList<string> boneNames,
+            string candidate)
+        {
+            for (int index = 0; index < boneNames.Count; index++)
+            {
+                if (boneNames[index] == candidate)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AssertAuthoredLocomotionJointRanges(
@@ -848,6 +1316,18 @@ namespace BarPromenade.Tests.PlayMode
 
             public PlayerFallAnimationPhase Phase { get; }
             public string ClipPrefix { get; }
+        }
+
+        private readonly struct BonePoseSample
+        {
+            public BonePoseSample(Transform bone)
+            {
+                LocalPosition = bone.localPosition;
+                LocalRotation = bone.localRotation;
+            }
+
+            public Vector3 LocalPosition { get; }
+            public Quaternion LocalRotation { get; }
         }
     }
 }

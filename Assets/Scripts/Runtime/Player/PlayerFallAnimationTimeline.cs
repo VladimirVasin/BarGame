@@ -12,7 +12,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Maps the balance fall phases onto one authored 80-frame sequence.
+    /// Maps the balance fall phases onto one authored 100-frame sequence.
     /// The controller owns unscaled time; the visual rig only receives an
     /// explicit phase and normalized progress.
     /// </summary>
@@ -20,7 +20,7 @@ namespace BarPromenade
     {
         public const int FallingFrameCount = 14;
         public const int DownFrameCount = 36;
-        public const int RisingFrameCount = 30;
+        public const int RisingFrameCount = 50;
         public const int FrameCount =
             FallingFrameCount + DownFrameCount + RisingFrameCount;
 

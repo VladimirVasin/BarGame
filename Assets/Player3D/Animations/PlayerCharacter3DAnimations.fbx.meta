@@ -529,7 +529,7 @@ ModelImporter:
       takeName: RIG_Player|RiseLeft
       internalID: -8043127386897731888
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 40
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -558,7 +558,7 @@ ModelImporter:
       takeName: RIG_Player|RiseRight
       internalID: 8573074114696719335
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 40
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

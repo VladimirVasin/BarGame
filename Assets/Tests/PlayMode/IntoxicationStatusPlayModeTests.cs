@@ -15,6 +15,9 @@ namespace BarPromenade.Tests.PlayMode
         private PlayerMotor motor;
         private PlayerInteractor interactor;
         private PlayerCameraFollow cameraFollow;
+        private PlayerRuntime playerRuntime;
+        private Player3DRagdollController ragdoll;
+        private Player3DCharacterPresentation presentation;
         private IntoxicationHudView hud;
         private BalanceCheckView balanceView;
         private IntoxicationStatusController status;
@@ -32,28 +35,27 @@ namespace BarPromenade.Tests.PlayMode
             groundObject.transform.localScale =
                 new Vector3(8f, 0.2f, 8f);
 
-            playerObject = new GameObject(
-                "Intoxication Test Player");
-            CharacterController controller =
-                playerObject.AddComponent<CharacterController>();
-            controller.height = 1.7f;
-            controller.radius = 0.32f;
-            controller.center = new Vector3(0f, 0.85f, 0f);
-            controller.stepOffset = 0.28f;
-            motor = playerObject.AddComponent<PlayerMotor>();
-            interactor =
-                playerObject.AddComponent<PlayerInteractor>();
-
             cameraObject = new GameObject(
                 "Intoxication Test Camera");
             Camera camera = cameraObject.AddComponent<Camera>();
+            playerRuntime = PlayerFactory.Create(
+                null,
+                Vector3.zero,
+                camera,
+                null,
+                null);
+            playerObject = playerRuntime.GameObject;
+            motor = playerRuntime.Motor;
+            interactor = playerRuntime.Interactor;
+            ragdoll = playerRuntime.Ragdoll;
+            presentation =
+                (Player3DCharacterPresentation)playerRuntime.Visual;
             cameraFollow =
                 cameraObject.AddComponent<PlayerCameraFollow>();
             cameraFollow.Initialize(
                 camera,
                 playerObject.transform,
                 false);
-            motor.Initialize(camera, null, null);
 
             uiObject = new GameObject(
                 "Intoxication Test UI");
@@ -222,18 +224,122 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(status.IsFalling, Is.True);
+            Assert.That(status.BalanceStateName, Is.EqualTo("Falling"));
             Assert.That(balanceView.Visible, Is.False);
             Assert.That(motor.InputEnabled, Is.False);
             Assert.That(interactor.InputEnabled, Is.False);
+            Assert.That(ragdoll, Is.Not.Null);
+            Assert.That(ragdoll.IsSimulating, Is.False);
+            Assert.That(presentation.RagdollPoseActive, Is.False);
+            Assert.That(
+                presentation.ActiveClipName,
+                Does.StartWith("Fall"));
 
-            float recoveryDeadline =
-                Time.realtimeSinceStartup + 4f;
-            while (status.IsFalling &&
-                   Time.realtimeSinceStartup < recoveryDeadline)
+            Vector3 rootAtFall = playerObject.transform.position;
+            float ragdollDeadline = Time.realtimeSinceStartup + 1f;
+            while (!ragdoll.IsSimulating &&
+                   Time.realtimeSinceStartup < ragdollDeadline)
             {
                 yield return null;
             }
 
+            Vector3 chestAtHandoff = ragdoll.ChestBody.position;
+            Vector3 pelvisAtHandoff = ragdoll.PelvisBody.position;
+            yield return new WaitForFixedUpdate();
+            yield return null;
+            Assert.That(ragdoll.IsSimulating, Is.True);
+            Assert.That(presentation.RagdollPoseActive, Is.True);
+            Assert.That(ragdoll.PelvisBody.isKinematic, Is.False);
+            Assert.That(ragdoll.ChestBody.isKinematic, Is.False);
+            Assert.That(
+                Vector3.Distance(
+                    chestAtHandoff,
+                    ragdoll.ChestBody.position),
+                Is.GreaterThan(0.001f));
+            Assert.That(
+                Vector3.Distance(
+                    pelvisAtHandoff,
+                    ragdoll.PelvisBody.position),
+                Is.LessThan(0.75f));
+
+            CharacterController primaryCollider =
+                playerObject.GetComponent<CharacterController>();
+            Collider[] playerColliders =
+                playerObject.GetComponentsInChildren<Collider>(true);
+            int enabledRagdollColliders = 0;
+            for (int first = 0; first < playerColliders.Length; first++)
+            {
+                Collider current = playerColliders[first];
+                if (current == primaryCollider)
+                {
+                    continue;
+                }
+
+                enabledRagdollColliders++;
+                Assert.That(current.enabled, Is.True);
+                Assert.That(
+                    Physics.GetIgnoreCollision(
+                        current,
+                        primaryCollider),
+                    Is.True);
+                for (int second = first + 1;
+                     second < playerColliders.Length;
+                     second++)
+                {
+                    Collider other = playerColliders[second];
+                    if (other != primaryCollider)
+                    {
+                        Assert.That(
+                            Physics.GetIgnoreCollision(current, other),
+                            Is.True);
+                    }
+                }
+            }
+
+            Assert.That(
+                enabledRagdollColliders,
+                Is.EqualTo(ragdoll.BodyCount));
+            Assert.That(
+                playerObject.transform.position.x,
+                Is.EqualTo(rootAtFall.x).Within(0.001f));
+            Assert.That(
+                playerObject.transform.position.z,
+                Is.EqualTo(rootAtFall.z).Within(0.001f));
+
+            float risingDeadline = Time.realtimeSinceStartup + 3f;
+            while (status.BalanceStateName != "Rising" &&
+                   Time.realtimeSinceStartup < risingDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(status.BalanceStateName, Is.EqualTo("Rising"));
+            Assert.That(ragdoll.IsActive, Is.False);
+            Assert.That(presentation.RagdollPoseActive, Is.False);
+            Assert.That(ragdoll.PelvisBody.isKinematic, Is.True);
+            Assert.That(ragdoll.ChestBody.isKinematic, Is.True);
+            Assert.That(
+                presentation.ActiveClipName,
+                Does.StartWith("Rise"));
+
+            float recoveryDeadline =
+                Time.realtimeSinceStartup + 4f;
+            bool sawTerminalRisePresentationFrame = false;
+            while (status.IsFalling &&
+                   Time.realtimeSinceStartup < recoveryDeadline)
+            {
+                yield return null;
+                sawTerminalRisePresentationFrame |=
+                    status.BalanceStateName == "Rising" &&
+                    presentation.FallAmount <= 0.001f &&
+                    presentation.ActiveClipName.StartsWith("Rise");
+            }
+
+            Assert.That(
+                sawTerminalRisePresentationFrame,
+                Is.True,
+                "Rise(1) must remain active for one presentation frame " +
+                "before ordinary locomotion is restored.");
             Assert.That(status.IsFalling, Is.False);
             Assert.That(status.IsBalanceCheckActive, Is.False);
             Assert.That(motor.InputEnabled, Is.True);
@@ -249,11 +355,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private PlayerRuntime CreatePlayerRuntime()
         {
-            return new PlayerRuntime(
-                playerObject,
-                motor,
-                interactor,
-                null);
+            return playerRuntime;
         }
 
         private static void ResetSession()

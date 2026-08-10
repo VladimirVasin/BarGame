@@ -12,7 +12,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
-  contact patch are the active player presentation.
+  contact patch are the active player presentation. A runtime-composed
+  13-body companion ragdoll temporarily owns those same bones during failed
+  balance falls; no alternate hero or renderer swap is used.
 
 ## MVP decisions
 
@@ -333,11 +335,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
   bindings, 16 required anatomical parts, metrics and 23 in-place Actions.
   `Player3DCharacterPresentation` owns locomotion, face,
-  intoxication/balance and fall sampling. Bed, smoking and cat feeding drive
-  continuous full-body clips on that same rig; bar drinking and refrigerator
-  reach filter camera-local arms from the prefab, and inventory loads the
-  dedicated transparent 3D portrait. Real meshes cast URP shadows while the
-  analytic contact patch remains grounded and fall-aware. Guided approach,
+  intoxication/balance and authored fall sampling, including the full-body
+  side-down-to-all-fours-to-stand Rise actions; the companion ragdoll owns only
+  the bounded physics interval and its `0.16 s` return bridge. Bed, smoking and
+  cat feeding drive continuous full-body clips on that same rig; bar drinking
+  and refrigerator reach filter camera-local arms from the prefab, and
+  inventory loads the dedicated transparent 3D portrait. Real meshes cast URP
+  shadows while the analytic contact patch remains grounded and fall-aware.
+  Guided approach,
   independent entry/action/exit poses, neutral settle, terminal hold, atomic
   preparation and owned lifecycle cleanup remain mandatory.
 - **Accepted — Grounded endpoint contract for contextual 3D animation:**
@@ -938,16 +943,31 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   hold from `3.0` to `4.5 s`, narrows the safe sector from `48°` to `22°`,
   increases arrow disturbance/frequency and risk gain, and reduces player
   authority.
-- **Accepted — State-preserving balance modal and fall:** A balance-specific
+- **Accepted and implemented 2026-08-10 — State-preserving hybrid balance
+  fall:** A balance-specific
   modal lock leaves motor input live during warning and active play while
   stopping interaction and camera orbit; the intoxication HUD and cinematic
   camera motion remain visible. Scene transitions,
   fullscreen modals, disabled controls or ungrounded movement prevent a check;
   returning from an external block grants at least `3 s` before it can start.
   Success schedules the next normal interval. Failure stops the motor, chooses
-  the arrow side and samples the matching registered left/right `Fall`, `Down`
-  and `Rise` Generic actions through `0.45 s` falling, `1.2 s` down and `1.0 s`
-  rising while the upright `CharacterController` root remains fixed;
-  the contact shadow expands and offsets with the pose. Recovery adds `6 s`
-  to the next normal interval. Dropping intoxication to `60` or below safely
-  cancels the challenge and clears its delay.
+  the arrow side and samples the matching registered `FallLeft/Right` for a
+  `0.16 s` directional lead-in. `Player3DRagdollController` then suspends the
+  manual PlayableGraph and transfers the current pose to 13 runtime-composed,
+  initially kinematic bodies for the remainder of the `0.45 s` fall and the
+  full `1.2 s` down phase. Owned colliders ignore each other and the upright
+  `CharacterController`; a kinematic root joint limits pelvis displacement to
+  `0.68 m` while the gameplay root stays fixed and the existing analytic
+  contact shadow remains expanded. Physics is frozen and the complete bone
+  hierarchy blends for `0.16 s` into the exact side-down first sample of the
+  matching `RiseLeft/Right`. One existing `Rising` gameplay phase then samples
+  its distinct full-body, `50`-source-frame (`1.67 s`) action through brace,
+  prone roll, a two-key all-fours hold, lead-foot plant, low crouch and the exact
+  `Relaxed` seam. Every landmark supplies a complete pose rather than allowing
+  an omitted limb to fall back to a Generic bind/A/T-like pose, and no runtime
+  mirroring is used. All-fours is not a separate gameplay state, event or root
+  transaction. Completion, cancellation, transition, disable and destroy clear
+  velocities, return every body to kinematic, disable owned colliders, resume
+  graph ownership and restore the neutral rig. Recovery adds `6 s` to the next
+  normal interval. Dropping intoxication to `60` or below safely cancels the
+  challenge and clears its delay.

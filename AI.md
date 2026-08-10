@@ -17,8 +17,10 @@ supermarket, instantiates the same modular low-poly 3D hero in all five gameplay
 roots, loads separate bar, supermarket, stairwell and home interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
-for locomotion, falls and contextual actions, and derives first-person arms and
-the inventory portrait from the same production model.
+for locomotion and contextual actions, hands failed balance falls from a
+directional clip into a bounded runtime ragdoll and back into an authored rise,
+and derives first-person arms and the inventory portrait from the same
+production model.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds

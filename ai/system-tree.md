@@ -78,7 +78,7 @@ Assets/
       PlayerCharacter3D.fbx             production Generic model
       PlayerCharacter3D.json            deterministic parts/bones/actions manifest
     Animations/
-      PlayerCharacter3DAnimations.fbx   23 in-place bone-only Actions
+      PlayerCharacter3DAnimations.fbx   23 in-place Actions; full-body 50-frame Rise L/R
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
   Scripts/
@@ -162,11 +162,12 @@ Assets/
         PlayerNeedsRules.cs        clamped hunger/stress relief + fractional scaling
         IntoxicationStageRules.cs   five ranges and interpolated profiles
         BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
-        PlayerFallAnimationTimeline.cs  14/36/30 deterministic phase sampling
+        PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            safe Resources prefab instantiation
-        Player3DCharacterPresentation.cs Idle/Walk, face/status/fall/context clip sampling
+        Player3DCharacterPresentation.cs clips + physics handoff + full-body Rise sampling
+        Player3DRagdollController.cs     bounded 13-body failed-balance physics + pose recovery
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
@@ -271,7 +272,8 @@ Assets/
       SceneMusicPlayerPlayModeTests.cs     fade, pause/resume and scene-exit contracts
       HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
-      Player3DOrdinaryPresentationPlayModeTests.cs  roots, parts, locomotion/status/falls/shadow
+      Player3DOrdinaryPresentationPlayModeTests.cs  locomotion/status/falls/all-fours/shadow
+      IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       Player3DGameplaySceneIntegrationPlayModeTests.cs  all five gameplay roots
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
@@ -286,7 +288,7 @@ ArtSource/
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
-  build-player-3d-model.py          production model/Actions/portrait build + validators
+  build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
   build-player-bed-sleep-atlas.py         retired player-sprite source tooling
@@ -377,6 +379,7 @@ player + seed -> CityFogField (unchanged by time of day)
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> Generic Idle/Walk/face/status/fall Actions
+                                         -> 50-frame full-body Rise via all fours
                                       -> real URP mesh shadows
 player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
@@ -581,7 +584,8 @@ GameSessionState intoxication -> IntoxicationStageRules
                               -> IntoxicationRenderState -> PS1 world composite
                               -> above 60 -> balance scheduler/model
                                  -> BalanceCheckView
-                                 -> success or left/right Generic fall/down/rise clips
+                                 -> success or Fall clip -> bounded ragdoll
+                                    -> one 50-frame Rise phase via all fours/crouch
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
                           -> City test-teleport toggle -> CityMap all-lot selection

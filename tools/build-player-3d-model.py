@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.4.0"
+GENERATOR_VERSION = "2.5.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -228,12 +228,14 @@ class PartRecord:
 
 @dataclass(frozen=True)
 class BonePose:
-    """A bone-local pose delta authored in readable canonical units."""
+    """A pose delta, optionally solved in explicit armature-space units."""
 
     rotation_degrees: tuple[float, float, float] = (0.0, 0.0, 0.0)
     location_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
     scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
     target_direction: tuple[float, float, float] | None = None
+    armature_direction: tuple[float, float, float] | None = None
+    armature_location_m: tuple[float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -2024,7 +2026,25 @@ class CharacterBuilder:
             if transform is None:
                 continue
             pose_bone = rig.pose.bones[bone_name]
-            if transform.target_direction is not None:
+            if transform.armature_direction is not None:
+                # Ancestor deltas authored earlier in this pass must be
+                # evaluated before solving an absolute armature-space axis.
+                bpy.context.view_layer.update()
+                target_direction = Vector(transform.armature_direction).normalized()
+                rest_bone = pose_bone.bone
+                rest_direction = (
+                    rest_bone.tail_local - rest_bone.head_local
+                ).normalized()
+                target_rotation = (
+                    rest_direction.rotation_difference(target_direction)
+                    @ rest_bone.matrix_local.to_quaternion()
+                )
+                pose_bone.matrix = (
+                    Matrix.Translation(pose_bone.head.copy())
+                    @ target_rotation.to_matrix().to_4x4()
+                )
+                bpy.context.view_layer.update()
+            elif transform.target_direction is not None:
                 target_direction = Vector(transform.target_direction).normalized()
                 rest_bone = pose_bone.bone
                 rest_direction = (
@@ -2051,7 +2071,15 @@ class CharacterBuilder:
                     tuple(math.radians(value) for value in transform.rotation_degrees),
                     "XYZ",
                 ).to_quaternion()
-            pose_bone.location = Vector(transform.location_m) * self.scale
+            if transform.armature_location_m is not None:
+                bpy.context.view_layer.update()
+                pose_matrix = pose_bone.matrix.copy()
+                pose_matrix.translation += (
+                    Vector(transform.armature_location_m) * self.scale
+                )
+                pose_bone.matrix = pose_matrix
+            else:
+                pose_bone.location = Vector(transform.location_m) * self.scale
             pose_bone.scale = transform.scale
         bpy.context.view_layer.update()
 
@@ -2091,12 +2119,19 @@ class CharacterBuilder:
         animation_data = rig.animation_data_create()
         animation_data.action = action
         keyed_bones = (*REQUIRED_BONES, *REQUIRED_FACE_BONES)
+        previous_quaternions: dict[str, Quaternion] = {}
         for normalized_time, pose in keys:
             self._reset_pose()
             self._apply_pose(pose)
             frame = round(action.frame_end * normalized_time)
             for bone_name in keyed_bones:
                 pose_bone = rig.pose.bones[bone_name]
+                quaternion = pose_bone.rotation_quaternion.copy()
+                previous_quaternion = previous_quaternions.get(bone_name)
+                if previous_quaternion is not None:
+                    quaternion.make_compatible(previous_quaternion)
+                    pose_bone.rotation_quaternion = quaternion
+                previous_quaternions[bone_name] = quaternion.copy()
                 group_name = bone_name.split(".")[0]
                 pose_bone.keyframe_insert(
                     data_path="location",
@@ -2476,6 +2511,10 @@ class CharacterBuilder:
             )
 
         for side_name, sign in (("Left", 1.0), ("Right", -1.0)):
+            lead_suffix, trail_suffix = (
+                ("L", "R") if side_name == "Left" else ("R", "L")
+            )
+            lead_sign = 1.0 if lead_suffix == "L" else -1.0
             stumble = self.merge_pose(
                 relaxed,
                 {
@@ -2490,24 +2529,551 @@ class CharacterBuilder:
                     ),
                 },
             )
-            down = {
-                "pelvis": BonePose(
-                    rotation_degrees=(6.0, 0.0, sign * 88.0),
-                    location_m=(sign * 0.10, 0.0, -0.52),
-                ),
-                "spine": BonePose(rotation_degrees=(-8.0, 0.0, sign * 6.0)),
-                "chest": BonePose(rotation_degrees=(12.0, 0.0, sign * 5.0)),
-                "head": BonePose(rotation_degrees=(-8.0, 0.0, -sign * 7.0)),
-                "upper_arm.L": BonePose(rotation_degrees=(18.0, 0.0, 20.0)),
-                "upper_arm.R": BonePose(rotation_degrees=(-12.0, 0.0, -18.0)),
-                "thigh.L": BonePose(rotation_degrees=(22.0, 0.0, 4.0)),
-                "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -4.0)),
-                "shin.L": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
-            }
+            down = self.merge_pose(
+                relaxed,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(6.0, 0.0, sign * 88.0),
+                        armature_location_m=(sign * 0.10, 0.0, -0.39),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(-8.0, 0.0, sign * 6.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(12.0, 0.0, sign * 5.0)
+                    ),
+                    "neck": BonePose(
+                        rotation_degrees=(8.0, 0.0, -sign * 3.0)
+                    ),
+                    "head": BonePose(
+                        rotation_degrees=(-8.0, 0.0, -sign * 7.0)
+                    ),
+                    f"upper_arm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.12,
+                            0.08,
+                            -0.24,
+                        )
+                    ),
+                    f"forearm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.02,
+                            0.10,
+                            -0.14,
+                        )
+                    ),
+                    f"hand.{lead_suffix}": BonePose(
+                        armature_direction=(lead_sign * 0.06, 0.03, 0.02)
+                    ),
+                    f"upper_arm.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.07,
+                            -0.22,
+                            0.0,
+                        )
+                    ),
+                    f"forearm.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.02,
+                            -0.18,
+                            0.0,
+                        )
+                    ),
+                    f"hand.{trail_suffix}": BonePose(
+                        armature_direction=(-lead_sign * 0.01, -0.08, 0.0)
+                    ),
+                    "thigh.L": BonePose(
+                        armature_direction=(0.04, 0.34, -0.15)
+                    ),
+                    "thigh.R": BonePose(
+                        armature_direction=(-0.04, 0.34, -0.15)
+                    ),
+                    "shin.L": BonePose(
+                        armature_direction=(0.01, 0.24, 0.02)
+                    ),
+                    "shin.R": BonePose(
+                        armature_direction=(-0.01, 0.24, 0.02)
+                    ),
+                    "foot.L": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                    "foot.R": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                },
+            )
             down_breath = self.merge_pose(
                 down,
                 {"chest": BonePose(rotation_degrees=(14.0, 0.0, sign * 5.0))},
+            )
+            brace = self.merge_pose(
+                down,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(28.0, 0.0, sign * 67.0),
+                        armature_location_m=(sign * 0.08, 0.01, -0.29),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(-14.0, 0.0, sign * 4.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(18.0, 0.0, sign * 3.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                    "head": BonePose(
+                        rotation_degrees=(-12.0, 0.0, -sign * 4.0)
+                    ),
+                    f"upper_arm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.08,
+                            -0.10,
+                            -0.28,
+                        )
+                    ),
+                    f"forearm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.02,
+                            -0.10,
+                            -0.22,
+                        )
+                    ),
+                    f"hand.{lead_suffix}": BonePose(
+                        armature_direction=(lead_sign * 0.01, -0.08, -0.04)
+                    ),
+                    f"upper_arm.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.07,
+                            -0.18,
+                            -0.20,
+                        )
+                    ),
+                    f"forearm.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.02,
+                            -0.17,
+                            -0.13,
+                        )
+                    ),
+                    f"hand.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.01,
+                            -0.08,
+                            0.0,
+                        )
+                    ),
+                    f"thigh.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.04,
+                            0.27,
+                            -0.27,
+                        )
+                    ),
+                    f"shin.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.01,
+                            0.24,
+                            0.02,
+                        )
+                    ),
+                    f"foot.{lead_suffix}": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                    f"thigh.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.04,
+                            0.27,
+                            -0.27,
+                        )
+                    ),
+                    f"shin.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.01,
+                            0.24,
+                            0.02,
+                        )
+                    ),
+                    f"foot.{trail_suffix}": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                },
+            )
+            prone_tuck = self.merge_pose(
+                brace,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(66.0, 0.0, sign * 20.0),
+                        armature_location_m=(sign * 0.045, 0.025, -0.33),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(-10.0, 0.0, sign * 2.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(10.0, 0.0, -sign * 2.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-30.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
+                    "upper_arm.L": BonePose(
+                        armature_direction=(0.07, -0.10, -0.29)
+                    ),
+                    "upper_arm.R": BonePose(
+                        armature_direction=(-0.07, -0.10, -0.29)
+                    ),
+                    "forearm.L": BonePose(
+                        armature_direction=(0.02, -0.10, -0.22)
+                    ),
+                    "forearm.R": BonePose(
+                        armature_direction=(-0.02, -0.10, -0.22)
+                    ),
+                    "hand.L": BonePose(
+                        armature_direction=(0.01, -0.08, -0.04)
+                    ),
+                    "hand.R": BonePose(
+                        armature_direction=(-0.01, -0.08, -0.04)
+                    ),
+                    "thigh.L": BonePose(
+                        armature_direction=(0.04, 0.27, -0.27)
+                    ),
+                    "thigh.R": BonePose(
+                        armature_direction=(-0.04, 0.27, -0.27)
+                    ),
+                    "shin.L": BonePose(
+                        armature_direction=(0.01, 0.24, 0.02)
+                    ),
+                    "shin.R": BonePose(
+                        armature_direction=(-0.01, 0.24, 0.02)
+                    ),
+                    "foot.L": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                    "foot.R": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                },
+            )
+            all_fours = self.merge_pose(
+                prone_tuck,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(68.0, 0.0, sign * 2.0),
+                        armature_location_m=(sign * 0.015, 0.03, -0.38),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(-10.0, 0.0, -sign * 1.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(6.0, 0.0, sign * 1.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-38.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(-22.0, 0.0, 0.0)),
+                    "upper_arm.L": BonePose(
+                        armature_direction=(0.06, -0.10, -0.30)
+                    ),
+                    "upper_arm.R": BonePose(
+                        armature_direction=(-0.06, -0.10, -0.30)
+                    ),
+                    "forearm.L": BonePose(
+                        armature_direction=(0.02, -0.10, -0.22)
+                    ),
+                    "forearm.R": BonePose(
+                        armature_direction=(-0.02, -0.10, -0.22)
+                    ),
+                    "hand.L": BonePose(
+                        armature_direction=(0.01, -0.08, -0.04)
+                    ),
+                    "hand.R": BonePose(
+                        armature_direction=(-0.01, -0.08, -0.04)
+                    ),
+                    "thigh.L": BonePose(
+                        armature_direction=(0.04, 0.29, -0.25)
+                    ),
+                    "thigh.R": BonePose(
+                        armature_direction=(-0.04, 0.29, -0.25)
+                    ),
+                    "shin.L": BonePose(
+                        armature_direction=(0.01, 0.25, 0.02)
+                    ),
+                    "shin.R": BonePose(
+                        armature_direction=(-0.01, 0.25, 0.02)
+                    ),
+                    "foot.L": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                    "foot.R": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                },
+            )
+            all_fours_shift = self.merge_pose(
+                all_fours,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(66.0, 0.0, -sign * 3.0),
+                        armature_location_m=(-sign * 0.018, 0.025, -0.375),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(-8.0, 0.0, sign * 2.0)
+                    ),
+                    f"upper_arm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.055,
+                            -0.11,
+                            -0.30,
+                        )
+                    ),
+                    f"forearm.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.018,
+                            -0.10,
+                            -0.22,
+                        )
+                    ),
+                    f"thigh.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.045,
+                            0.285,
+                            -0.25,
+                        )
+                    ),
+                    f"thigh.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.035,
+                            0.295,
+                            -0.25,
+                        )
+                    ),
+                },
+            )
+            foot_lift = self.merge_pose(
+                all_fours_shift,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(48.0, 0.0, -sign * 4.0),
+                        armature_location_m=(-sign * 0.022, 0.02, -0.295),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(5.0, 0.0, sign * 2.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(-2.0, 0.0, -sign * 1.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-20.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                    f"thigh.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.04,
+                            0.10,
+                            -0.30,
+                        )
+                    ),
+                    f"shin.{lead_suffix}": BonePose(
+                        armature_direction=(lead_sign * 0.01, -0.20, 0.10)
+                    ),
+                    f"foot.{lead_suffix}": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                },
+            )
+            half_kneel = self.merge_pose(
+                all_fours_shift,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(30.0, 0.0, -sign * 5.0),
+                        armature_location_m=(-sign * 0.025, 0.015, -0.22),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(18.0, 0.0, sign * 2.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(-10.0, 0.0, -sign * 2.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                    "upper_arm.L": BonePose(
+                        armature_direction=(0.055, -0.08, -0.30)
+                    ),
+                    "upper_arm.R": BonePose(
+                        armature_direction=(-0.055, -0.08, -0.30)
+                    ),
+                    "forearm.L": BonePose(
+                        armature_direction=(0.018, -0.09, -0.22)
+                    ),
+                    "forearm.R": BonePose(
+                        armature_direction=(-0.018, -0.09, -0.22)
+                    ),
+                    "hand.L": BonePose(
+                        armature_direction=(0.01, -0.08, -0.04)
+                    ),
+                    "hand.R": BonePose(
+                        armature_direction=(-0.01, -0.08, -0.04)
+                    ),
+                    f"thigh.{lead_suffix}": BonePose(
+                        armature_direction=(
+                            lead_sign * 0.04,
+                            -0.25,
+                            -0.28,
+                        )
+                    ),
+                    f"shin.{lead_suffix}": BonePose(
+                        armature_direction=(lead_sign * 0.01, -0.18, -0.06)
+                    ),
+                    f"foot.{lead_suffix}": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                    f"thigh.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.035,
+                            0.15,
+                            -0.38,
+                        )
+                    ),
+                    f"shin.{trail_suffix}": BonePose(
+                        armature_direction=(-lead_sign * 0.01, 0.24, 0.10)
+                    ),
+                    f"foot.{trail_suffix}": BonePose(
+                        armature_direction=(0.0, 0.20, -0.02)
+                    ),
+                },
+            )
+            low_crouch = self.merge_pose(
+                relaxed,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(12.0, 0.0, -sign * 3.0),
+                        armature_location_m=(-sign * 0.015, 0.0, -0.235),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(20.0, 0.0, sign * 2.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(-11.0, 0.0, -sign * 2.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                    "upper_arm.L": BonePose(
+                        armature_direction=(0.07, -0.05, -0.31)
+                    ),
+                    "upper_arm.R": BonePose(
+                        armature_direction=(-0.07, -0.05, -0.31)
+                    ),
+                    "forearm.L": BonePose(
+                        rotation_degrees=(-32.0, 2.0, 14.0)
+                    ),
+                    "forearm.R": BonePose(
+                        rotation_degrees=(-32.0, -2.0, -14.0)
+                    ),
+                    "hand.L": BonePose(
+                        rotation_degrees=(8.0, -8.0, 6.0)
+                    ),
+                    "hand.R": BonePose(
+                        rotation_degrees=(8.0, 8.0, -6.0)
+                    ),
+                    "thigh.L": BonePose(
+                        armature_direction=(0.03, -0.26, -0.30)
+                    ),
+                    "thigh.R": BonePose(
+                        armature_direction=(-0.03, -0.26, -0.30)
+                    ),
+                    "shin.L": BonePose(
+                        armature_direction=(0.01, 0.23, -0.09)
+                    ),
+                    "shin.R": BonePose(
+                        armature_direction=(-0.01, 0.23, -0.09)
+                    ),
+                    "foot.L": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                    "foot.R": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                },
+            )
+            crouch_leg_lift = self.merge_pose(
+                half_kneel,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(20.0, 0.0, -sign * 4.0),
+                        armature_location_m=(-sign * 0.02, 0.008, -0.275),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(20.0, 0.0, sign * 2.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(-11.0, 0.0, -sign * 2.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+                    "thigh.L": BonePose(
+                        armature_direction=(0.03, -0.10, -0.32)
+                    ),
+                    "thigh.R": BonePose(
+                        armature_direction=(-0.03, -0.10, -0.32)
+                    ),
+                    "shin.L": BonePose(
+                        armature_direction=(0.01, -0.20, 0.10)
+                    ),
+                    "shin.R": BonePose(
+                        armature_direction=(-0.01, -0.20, 0.10)
+                    ),
+                    "foot.L": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                    "foot.R": BonePose(
+                        armature_direction=(0.0, -0.20, 0.0)
+                    ),
+                },
+            )
+            near_upright = self.merge_pose(
+                relaxed,
+                {
+                    "pelvis": BonePose(
+                        rotation_degrees=(7.0, 0.0, -sign * 1.5),
+                        armature_location_m=(0.0, 0.0, 0.037),
+                    ),
+                    "spine": BonePose(
+                        rotation_degrees=(13.0, 0.0, sign * 1.0)
+                    ),
+                    "chest": BonePose(
+                        rotation_degrees=(-7.0, 0.0, -sign * 1.0)
+                    ),
+                    "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                    "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                    "upper_arm.L": BonePose(
+                        armature_direction=(0.07, -0.02, -0.32)
+                    ),
+                    "upper_arm.R": BonePose(
+                        armature_direction=(-0.07, -0.02, -0.32)
+                    ),
+                    "forearm.L": BonePose(
+                        rotation_degrees=(-18.0, 2.0, 8.0)
+                    ),
+                    "forearm.R": BonePose(
+                        rotation_degrees=(-18.0, -2.0, -8.0)
+                    ),
+                    "hand.L": BonePose(
+                        rotation_degrees=(4.0, -6.0, 3.0)
+                    ),
+                    "hand.R": BonePose(
+                        rotation_degrees=(4.0, 6.0, -3.0)
+                    ),
+                    "thigh.L": BonePose(
+                        rotation_degrees=(-18.0, 0.0, 2.0)
+                    ),
+                    "thigh.R": BonePose(
+                        rotation_degrees=(-19.0, 0.0, -2.0)
+                    ),
+                    "shin.L": BonePose(
+                        rotation_degrees=(24.0, 0.0, 0.0)
+                    ),
+                    "shin.R": BonePose(
+                        rotation_degrees=(25.0, 0.0, 0.0)
+                    ),
+                    "foot.L": BonePose(
+                        rotation_degrees=(-6.0, 0.0, 0.0)
+                    ),
+                    "foot.R": BonePose(
+                        rotation_degrees=(-6.0, 0.0, 0.0)
+                    ),
+                },
             )
             self._create_action(
                 f"Fall{side_name}", "fall", 0.45, False, 14, 31.111,
@@ -2518,8 +3084,20 @@ class CharacterBuilder:
                 ((0.0, down), (0.5, down_breath), (1.0, down)),
             )
             self._create_action(
-                f"Rise{side_name}", "fall", 1.0, False, 30, 30,
-                ((0.0, down), (0.55, stumble), (1.0, relaxed)),
+                f"Rise{side_name}", "fall", 50.0 / 30.0, False, 50, 30,
+                (
+                    (0.0, down),
+                    (0.10, brace),
+                    (0.24, prone_tuck),
+                    (0.38, all_fours),
+                    (0.48, all_fours_shift),
+                    (0.56, foot_lift),
+                    (0.64, half_kneel),
+                    (0.72, crouch_leg_lift),
+                    (0.80, low_crouch),
+                    (0.92, near_upright),
+                    (1.0, relaxed),
+                ),
             )
 
         bed_edge_bend = self.merge_pose(
@@ -3510,6 +4088,395 @@ def validate_smoking_pose(
         bpy.context.view_layer.update()
 
 
+def validate_fall_recovery_pose(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Verify full-rig fall seams and the supported recovery silhouette."""
+
+    action_names = (
+        "Relaxed",
+        "FallLeft",
+        "DownLeft",
+        "RiseLeft",
+        "FallRight",
+        "DownRight",
+        "RiseRight",
+    )
+    if any(result.actions.get(name) is None for name in action_names):
+        return
+
+    rig = result.rig
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+    identity = Matrix.Identity(4)
+    full_rig_bones = tuple(bone.name for bone in rig.pose.bones)
+    rise_times = (
+        0.0,
+        0.10,
+        0.24,
+        0.38,
+        0.48,
+        0.56,
+        0.64,
+        0.72,
+        0.80,
+        0.92,
+        1.0,
+    )
+
+    def sample(action_record: ActionRecord, normalized_time: float) -> None:
+        animation_data.action = action_record.action
+        frame = round(action_record.action.frame_end * normalized_time)
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+
+    def pose_snapshot(
+        action_record: ActionRecord,
+        normalized_time: float,
+    ) -> dict[str, Matrix]:
+        sample(action_record, normalized_time)
+        return {
+            bone_name: rig.pose.bones[bone_name].matrix.copy()
+            for bone_name in full_rig_bones
+        }
+
+    def matrix_error(left: Matrix, right: Matrix) -> float:
+        return max(
+            abs(left[row][column] - right[row][column])
+            for row in range(4)
+            for column in range(4)
+        )
+
+    def world_head(bone_name: str) -> Vector:
+        return rig.matrix_world @ rig.pose.bones[bone_name].head
+
+    def world_tail(bone_name: str) -> Vector:
+        return rig.matrix_world @ rig.pose.bones[bone_name].tail
+
+    def visible_minimum(
+        bone_names: set[str] | None = None,
+    ) -> tuple[float, PartRecord | None]:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        minimum = math.inf
+        minimum_part = None
+        for part in result.parts:
+            if bone_names is not None and part.bone not in bone_names:
+                continue
+            evaluated = part.obj.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            try:
+                if mesh is None:
+                    continue
+                for vertex in mesh.vertices:
+                    height = (evaluated.matrix_world @ vertex.co).z
+                    if height < minimum:
+                        minimum = height
+                        minimum_part = part
+            finally:
+                evaluated.to_mesh_clear()
+        return minimum, minimum_part
+
+    def visible_min_height(
+        bone_names: set[str] | None = None,
+    ) -> float:
+        return visible_minimum(bone_names)[0]
+
+    try:
+        for side_name in ("Left", "Right"):
+            rise_record = result.actions[f"Rise{side_name}"]
+            if (
+                abs(rise_record.duration_seconds - (50.0 / 30.0)) > 1e-6
+                or rise_record.source_frame_count != 50
+                or abs(rise_record.source_fps - 30.0) > 1e-6
+            ):
+                errors.append(
+                    f"Rise{side_name} must be authored as 50 frames at 30 FPS"
+                )
+
+            expected_frames = [
+                round(rise_record.action.frame_end * normalized_time)
+                for normalized_time in rise_times
+            ]
+            keyed_frames = sorted({
+                round(keyframe.co.x)
+                for fcurve in iter_action_fcurves(rise_record.action)
+                for keyframe in fcurve.keyframe_points
+            })
+            if keyed_frames != expected_frames:
+                errors.append(
+                    f"Rise{side_name} must own exactly the recovery keys at "
+                    "0/.10/.24/.38/.48/.56/.64/.72/.80/.92/1"
+                )
+
+        seam_pairs = (
+            ("FallLeft", 1.0, "DownLeft", 0.0),
+            ("DownLeft", 1.0, "RiseLeft", 0.0),
+            ("RiseLeft", 1.0, "Relaxed", 0.0),
+            ("FallRight", 1.0, "DownRight", 0.0),
+            ("DownRight", 1.0, "RiseRight", 0.0),
+            ("RiseRight", 1.0, "Relaxed", 0.0),
+        )
+        for (
+            first_name,
+            first_time,
+            second_name,
+            second_time,
+        ) in seam_pairs:
+            first_pose = pose_snapshot(
+                result.actions[first_name],
+                first_time,
+            )
+            second_pose = pose_snapshot(
+                result.actions[second_name],
+                second_time,
+            )
+            for bone_name in full_rig_bones:
+                seam_error = matrix_error(
+                    first_pose[bone_name],
+                    second_pose[bone_name],
+                )
+                if seam_error > 1e-5:
+                    errors.append(
+                        f"Fall recovery seam {first_name}->{second_name} "
+                        f"differs on {bone_name} by {seam_error:.7f}"
+                    )
+                    break
+
+        recovery_names = (
+            "FallLeft",
+            "DownLeft",
+            "RiseLeft",
+            "FallRight",
+            "DownRight",
+            "RiseRight",
+        )
+        for action_name in recovery_names:
+            record = result.actions[action_name]
+            keyed_frames = sorted({
+                round(keyframe.co.x)
+                for fcurve in iter_action_fcurves(record.action)
+                for keyframe in fcurve.keyframe_points
+            })
+            animation_data.action = record.action
+            for frame in keyed_frames:
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                root_error = matrix_error(
+                    rig.pose.bones["root"].matrix_basis,
+                    identity,
+                )
+                if root_error > 1e-5:
+                    errors.append(
+                        f"{action_name} must keep the root fixed at every "
+                        "authored recovery phase"
+                    )
+                    break
+
+                finite = all(
+                    math.isfinite(bone.matrix[row][column])
+                    for bone in rig.pose.bones
+                    for row in range(4)
+                    for column in range(4)
+                )
+                if not finite:
+                    errors.append(
+                        f"{action_name} contains a non-finite authored pose"
+                    )
+                    break
+
+        relaxed_record = result.actions["Relaxed"]
+        sample(relaxed_record, 0.0)
+        ground_height = (
+            world_tail("foot.L").z + world_tail("foot.R").z
+        ) * 0.5
+        visible_ground_height = visible_min_height({"foot.L", "foot.R"})
+
+        for side_name in ("Left", "Right"):
+            rise_record = result.actions[f"Rise{side_name}"]
+            down_record = result.actions[f"Down{side_name}"]
+            for normalized_time in rise_times:
+                sample(rise_record, normalized_time)
+                stage_minimum = visible_min_height()
+                if stage_minimum < visible_ground_height - 0.01:
+                    errors.append(
+                        f"Rise{side_name} t={normalized_time:.2f} visible "
+                        "silhouette must not pass below the neutral floor "
+                        f"(minimum {stage_minimum:.4f} m, floor "
+                        f"{visible_ground_height:.4f} m)"
+                    )
+                elif stage_minimum > visible_ground_height + 0.04:
+                    errors.append(
+                        f"Rise{side_name} t={normalized_time:.2f} must keep "
+                        "at least one visible support near the neutral floor "
+                        f"(minimum {stage_minimum:.4f} m, floor "
+                        f"{visible_ground_height:.4f} m)"
+                    )
+
+            dense_minimum = math.inf
+            dense_minimum_frame = 0
+            dense_minimum_part = None
+            animation_data.action = rise_record.action
+            for frame in range(
+                math.ceil(rise_record.action.frame_start),
+                math.floor(rise_record.action.frame_end) + 1,
+            ):
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                frame_minimum, frame_minimum_part = visible_minimum()
+                if frame_minimum < dense_minimum:
+                    dense_minimum = frame_minimum
+                    dense_minimum_frame = frame
+                    dense_minimum_part = frame_minimum_part
+            if dense_minimum < visible_ground_height - 0.01:
+                culprit = (
+                    f", part {dense_minimum_part.role}/"
+                    f"{dense_minimum_part.bone}"
+                    if dense_minimum_part is not None
+                    else ""
+                )
+                errors.append(
+                    f"Rise{side_name} frame {dense_minimum_frame} visible "
+                    "silhouette must not pass below the neutral floor "
+                    f"(minimum {dense_minimum:.4f} m, floor "
+                    f"{visible_ground_height:.4f} m{culprit})"
+                )
+
+            for record, normalized_time in (
+                (down_record, 0.0),
+                (down_record, 0.5),
+                (down_record, 1.0),
+                (rise_record, 0.0),
+            ):
+                sample(record, normalized_time)
+                for hand_side in ("L", "R"):
+                    grip_height = world_head(
+                        f"SOCKET_Grip.{hand_side}"
+                    ).z
+                    if (
+                        grip_height < ground_height - 0.02
+                        or grip_height > ground_height + 0.14
+                    ):
+                        errors.append(
+                            f"{record.action.name} t={normalized_time:.2f} "
+                            f"{hand_side} grip must remain a readable floor "
+                            f"support (height {grip_height:.4f} m, floor "
+                            f"{ground_height:.4f} m)"
+                        )
+
+                arm_minimum = visible_min_height({
+                    "forearm.L",
+                    "hand.L",
+                    "forearm.R",
+                    "hand.R",
+                })
+                if arm_minimum < visible_ground_height - 0.01:
+                    errors.append(
+                        f"{record.action.name} t={normalized_time:.2f} "
+                        "forearms/hands must not pass below the neutral "
+                        f"visible floor (minimum {arm_minimum:.4f} m, floor "
+                        f"{visible_ground_height:.4f} m)"
+                    )
+
+                silhouette_minimum = visible_min_height()
+                if silhouette_minimum < visible_ground_height - 0.01:
+                    errors.append(
+                        f"{record.action.name} t={normalized_time:.2f} "
+                        "fallen silhouette must not pass below the neutral "
+                        f"visible floor (minimum {silhouette_minimum:.4f} m, "
+                        f"floor {visible_ground_height:.4f} m)"
+                    )
+
+            for normalized_time in (0.38, 0.48):
+                sample(rise_record, normalized_time)
+                contact_heights = {
+                    "left hand": world_head("SOCKET_Grip.L").z,
+                    "right hand": world_head("SOCKET_Grip.R").z,
+                    "left knee": world_head("shin.L").z,
+                    "right knee": world_head("shin.R").z,
+                }
+                floor_span = (
+                    max(contact_heights.values()) -
+                    min(contact_heights.values())
+                )
+                if floor_span > 0.12:
+                    errors.append(
+                        f"Rise{side_name} t={normalized_time:.2f} must keep "
+                        "both grips and knees in one 0.12 m floor band "
+                        f"(got {floor_span:.4f} m)"
+                    )
+                for contact_name, height in contact_heights.items():
+                    floor_error = abs(height - ground_height)
+                    if floor_error > 0.14:
+                        errors.append(
+                            f"Rise{side_name} t={normalized_time:.2f} "
+                            f"{contact_name} must stay near the relaxed floor "
+                            f"(error {floor_error:.4f} m)"
+                        )
+
+                pelvis_height = world_head("pelvis").z
+                if pelvis_height < max(contact_heights.values()) + 0.18:
+                    errors.append(
+                        f"Rise{side_name} t={normalized_time:.2f} must place "
+                        "the pelvis visibly above the four floor contacts"
+                    )
+
+            sample(rise_record, 0.80)
+            foot_heights = (
+                world_tail("foot.L").z,
+                world_tail("foot.R").z,
+            )
+            if max(foot_heights) - min(foot_heights) > 0.08:
+                errors.append(
+                    f"Rise{side_name} low crouch must ground both feet in one "
+                    "0.08 m band"
+                )
+            for side, height in zip(("left", "right"), foot_heights):
+                floor_error = abs(height - ground_height)
+                if floor_error > 0.12:
+                    errors.append(
+                        f"Rise{side_name} low crouch {side} foot must stay "
+                        f"grounded (error {floor_error:.4f} m)"
+                    )
+
+            sample(rise_record, 0.92)
+            near_upright_feet = (
+                world_tail("foot.L").z,
+                world_tail("foot.R").z,
+            )
+            for side, height in zip(
+                ("left", "right"),
+                near_upright_feet,
+            ):
+                floor_error = abs(height - ground_height)
+                if floor_error > 0.05:
+                    errors.append(
+                        f"Rise{side_name} near-upright {side} foot must "
+                        f"remain grounded (error {floor_error:.4f} m)"
+                    )
+
+            visible_foot_minimum = visible_min_height({"foot.L", "foot.R"})
+            if visible_foot_minimum < visible_ground_height - 0.01:
+                errors.append(
+                    f"Rise{side_name} near-upright boots must not pass "
+                    "below the neutral visible floor (minimum "
+                    f"{visible_foot_minimum:.4f} m, floor "
+                    f"{visible_ground_height:.4f} m)"
+                )
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
 def validate_result(
     config: BuildConfig,
     result: BuildResult,
@@ -3595,6 +4562,7 @@ def validate_result(
 
     validate_bed_sleep_pose(result, errors)
     validate_smoking_pose(result, errors)
+    validate_fall_recovery_pose(result, errors)
 
     triangle_count = 0
     all_minima: list[Vector] = []

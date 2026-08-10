@@ -69,6 +69,7 @@ namespace BarPromenade
         private float fallAmount;
         private float fallDirection = 1f;
         private float footPlantAmount = 1f;
+        private bool ragdollPoseActive;
         private bool interactionHandoffLocked;
         private bool releaseInteractionHandoffAfterLateUpdate;
         private FacialBoneRest leftEye;
@@ -128,6 +129,7 @@ namespace BarPromenade
         public float BalanceLean => balanceLean;
         public float FallAmount => fallAmount;
         public float FallDirection => fallDirection;
+        public bool RagdollPoseActive => ragdollPoseActive;
         public PlayerFacialExpression CurrentFacialExpression =>
             facialState.CurrentExpression;
         public string ActiveClipName =>
@@ -243,6 +245,11 @@ namespace BarPromenade
             PlayerFallAnimationPhase phase,
             float normalizedProgress)
         {
+            if (ragdollPoseActive)
+            {
+                return;
+            }
+
             if (phase == PlayerFallAnimationPhase.None)
             {
                 if (activeClipOwner == ClipOwner.Fall)
@@ -284,6 +291,26 @@ namespace BarPromenade
             }
 
             SampleActiveClip(normalizedProgress);
+        }
+
+        public void SetRagdollPoseActive(bool active)
+        {
+            if (ragdollPoseActive == active)
+            {
+                return;
+            }
+
+            RestoreProceduralStatusPoseBase();
+            ragdollPoseActive = active;
+            if (active)
+            {
+                RestoreFacialBones();
+                footPlantAmount = 0.25f;
+            }
+            else
+            {
+                EvaluateGraph(0f);
+            }
         }
 
         public bool HasClip(string clipName)
@@ -407,6 +434,12 @@ namespace BarPromenade
                 balanceLeanTarget,
                 StatusBlendSpeed * deltaTime);
 
+            if (ragdollPoseActive)
+            {
+                footPlantAmount = 0.25f;
+                return;
+            }
+
             if (!IsClipActive)
             {
                 ApplyLocomotionWeights(immediate: false);
@@ -427,8 +460,11 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            ApplyProceduralStatusPose();
-            ApplyFacialPose();
+            if (!ragdollPoseActive)
+            {
+                ApplyProceduralStatusPose();
+                ApplyFacialPose();
+            }
 
             if (releaseInteractionHandoffAfterLateUpdate)
             {
@@ -443,8 +479,11 @@ namespace BarPromenade
             // WaitForEndOfFrame is not dispatched. It reapplies the current
             // visible pose after the manual graph has evaluated without
             // advancing any presentation state a second time.
-            ApplyProceduralStatusPose();
-            ApplyFacialExpression(facialState.CurrentExpression);
+            if (!ragdollPoseActive)
+            {
+                ApplyProceduralStatusPose();
+                ApplyFacialExpression(facialState.CurrentExpression);
+            }
         }
 
         private void OnDisable()
@@ -458,6 +497,7 @@ namespace BarPromenade
             fallAmount = 0f;
             fallDirection = 1f;
             footPlantAmount = 1f;
+            ragdollPoseActive = false;
             planarSpeed = 0f;
             targetLocomotionBlend = 0f;
             locomotionBlend = 0f;

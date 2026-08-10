@@ -9,7 +9,9 @@ namespace BarPromenade
     {
         public const float FallDuration = 0.45f;
         public const float DownDuration = 1.2f;
-        public const float RisingDuration = 1f;
+        public const float RisingDuration = 50f / 30f;
+        public const float RagdollRecoveryDuration =
+            Player3DRagdollController.RecoveryBlendDuration;
         public const float ModalExitGraceDuration = 3f;
         public const float PostFallGraceDuration = 6f;
 
@@ -20,6 +22,7 @@ namespace BarPromenade
             Active,
             Falling,
             Down,
+            RagdollRecovering,
             Rising
         }
 
@@ -29,6 +32,7 @@ namespace BarPromenade
         private PlayerMotor motor;
         private PlayerInteractor interactor;
         private IPlayerStatusPresentation playerPresentation;
+        private Player3DRagdollController ragdoll;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
         private BalanceCheckView balanceView;
@@ -45,6 +49,7 @@ namespace BarPromenade
         private int previousRawLevel;
         private bool delayArmed;
         private bool sawExternalBlock;
+        private bool finishFallAfterTerminalRiseFrame;
         private bool initialized;
 
         public IntoxicationProfile CurrentProfile => currentProfile;
@@ -54,7 +59,10 @@ namespace BarPromenade
         public bool IsFalling =>
             balanceState == BalanceState.Falling ||
             balanceState == BalanceState.Down ||
+            balanceState == BalanceState.RagdollRecovering ||
             balanceState == BalanceState.Rising;
+        public bool IsRagdollActive =>
+            ragdoll != null && ragdoll.IsActive;
         public float BalancePosition =>
             challengeModel == null
                 ? warningLean
@@ -74,6 +82,8 @@ namespace BarPromenade
             motor = player.Motor;
             interactor = player.Interactor;
             playerPresentation = player.Visual;
+            ragdoll = player.Ragdoll;
+            ragdoll?.Cancel();
             cameraFollow = follow;
             hud = intoxicationHud;
             balanceView = view;
@@ -160,6 +170,7 @@ namespace BarPromenade
             balanceStateElapsed = 0f;
             warningLean = 0f;
             fallAmount = 0f;
+            finishFallAfterTerminalRiseFrame = false;
             balanceView?.Show(
                 challengeSettings,
                 0f,
@@ -419,6 +430,20 @@ namespace BarPromenade
                 case BalanceState.Falling:
                     fallAmount = Mathf.Clamp01(
                         balanceStateElapsed / FallDuration);
+                    if (balanceStateElapsed >=
+                            Player3DRagdollController.FallHandoffTime &&
+                        ragdoll != null &&
+                        !ragdoll.IsActive)
+                    {
+                        playerPresentation?.SetFallPose(
+                            fallDirection,
+                            fallAmount);
+                        playerPresentation?.SetFallAnimation(
+                            PlayerFallAnimationPhase.Falling,
+                            fallAmount);
+                        ragdoll.Begin(fallDirection);
+                    }
+
                     if (balanceStateElapsed >= FallDuration)
                     {
                         balanceState = BalanceState.Down;
@@ -432,6 +457,29 @@ namespace BarPromenade
                     fallAmount = 1f;
                     if (balanceStateElapsed >= DownDuration)
                     {
+                        balanceState = ragdoll != null &&
+                                       ragdoll.BeginRecovery(fallDirection)
+                            ? BalanceState.RagdollRecovering
+                            : BalanceState.Rising;
+                        balanceStateElapsed = 0f;
+                    }
+
+                    break;
+
+                case BalanceState.RagdollRecovering:
+                    fallAmount = 1f;
+                    if (ragdoll == null || !ragdoll.IsRecovering)
+                    {
+                        balanceState = BalanceState.Rising;
+                        balanceStateElapsed = 0f;
+                        break;
+                    }
+
+                    ragdoll.SetRecoveryProgress(
+                        balanceStateElapsed / RagdollRecoveryDuration);
+                    if (balanceStateElapsed >= RagdollRecoveryDuration)
+                    {
+                        ragdoll.CompleteRecovery();
                         balanceState = BalanceState.Rising;
                         balanceStateElapsed = 0f;
                     }
@@ -439,11 +487,19 @@ namespace BarPromenade
                     break;
 
                 case BalanceState.Rising:
+                    if (finishFallAfterTerminalRiseFrame)
+                    {
+                        FinishFall();
+                        break;
+                    }
+
                     fallAmount = 1f - Mathf.Clamp01(
                         balanceStateElapsed / RisingDuration);
                     if (balanceStateElapsed >= RisingDuration)
                     {
-                        FinishFall();
+                        balanceStateElapsed = RisingDuration;
+                        fallAmount = 0f;
+                        finishFallAfterTerminalRiseFrame = true;
                     }
 
                     break;
@@ -466,6 +522,7 @@ namespace BarPromenade
             balanceStateElapsed = 0f;
             warningLean = 0f;
             fallAmount = 0f;
+            finishFallAfterTerminalRiseFrame = false;
             balanceView?.Hide();
         }
 
@@ -505,11 +562,13 @@ namespace BarPromenade
                 GameLog.Field(
                     "rising_seconds",
                     RisingDuration));
+            ragdoll?.Cancel();
             balanceLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
             warningLean = 0f;
             fallAmount = 0f;
+            finishFallAfterTerminalRiseFrame = false;
             challengeModel = null;
             ScheduleNextCheck(PostFallGraceDuration);
         }
@@ -545,11 +604,13 @@ namespace BarPromenade
                     GameSessionState
                         .BalanceCheckDelayRemaining));
             balanceView?.Hide();
+            ragdoll?.Cancel();
             balanceLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
             warningLean = 0f;
             fallAmount = 0f;
+            finishFallAfterTerminalRiseFrame = false;
             challengeModel = null;
             if (keepGrace &&
                 GameSessionState.IntoxicationLevel >
@@ -735,6 +796,8 @@ namespace BarPromenade
                     return PlayerFallAnimationPhase.Falling;
                 case BalanceState.Down:
                     return PlayerFallAnimationPhase.Down;
+                case BalanceState.RagdollRecovering:
+                    return PlayerFallAnimationPhase.Down;
                 case BalanceState.Rising:
                     return PlayerFallAnimationPhase.Rising;
                 default:
@@ -752,6 +815,8 @@ namespace BarPromenade
                 case BalanceState.Down:
                     return Mathf.Clamp01(
                         balanceStateElapsed / DownDuration);
+                case BalanceState.RagdollRecovering:
+                    return 1f;
                 case BalanceState.Rising:
                     return Mathf.Clamp01(
                         balanceStateElapsed / RisingDuration);

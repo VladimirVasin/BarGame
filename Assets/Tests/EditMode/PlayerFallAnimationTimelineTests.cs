@@ -15,10 +15,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(36));
             Assert.That(
                 PlayerFallAnimationTimeline.RisingFrameCount,
-                Is.EqualTo(30));
+                Is.EqualTo(50));
             Assert.That(
                 PlayerFallAnimationTimeline.FrameCount,
-                Is.EqualTo(80));
+                Is.EqualTo(100));
         }
 
         [TestCase(PlayerFallAnimationPhase.None, 0f, -1)]
@@ -28,8 +28,8 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(PlayerFallAnimationPhase.Down, 0f, 14)]
         [TestCase(PlayerFallAnimationPhase.Down, 1f, 49)]
         [TestCase(PlayerFallAnimationPhase.Rising, 0f, 50)]
-        [TestCase(PlayerFallAnimationPhase.Rising, 1f, 79)]
-        [TestCase(PlayerFallAnimationPhase.Rising, 2f, 79)]
+        [TestCase(PlayerFallAnimationPhase.Rising, 1f, 99)]
+        [TestCase(PlayerFallAnimationPhase.Rising, 2f, 99)]
         public void EvaluateFrame_MapsEveryPhaseToItsAuthoredRange(
             PlayerFallAnimationPhase phase,
             float progress,

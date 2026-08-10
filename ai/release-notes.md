@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### 2026-08-10 — Drunken falls now react physically
+
+- Failing a high-intoxication balance check now hands the hero from the
+  directional stumble into bounded ragdoll physics, so his impact, limbs and
+  brief time on the floor are driven by the surrounding collision geometry.
+- The gameplay position remains safely anchored while the body falls. The hero
+  then settles smoothly onto his side, braces, rolls onto his hands and knees,
+  pauses on all fours, plants one foot, pushes through a low crouch and stands
+  before returning to player control. Both fall sides use complete dedicated
+  poses, so his limbs no longer flash through a stiff default stance while he
+  gets up.
+
 ### 2026-08-10 — Drunken walking stays on the floor
 
 - The hero's visible boots now stay planted on the ground throughout the

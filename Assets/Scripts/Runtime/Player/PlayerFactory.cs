@@ -9,13 +9,15 @@ namespace BarPromenade
             PlayerMotor motor,
             PlayerInteractor interactor,
             IPlayerPresentation visual,
-            PlayerContactShadow contactShadow = null)
+            PlayerContactShadow contactShadow = null,
+            Player3DRagdollController ragdoll = null)
         {
             GameObject = gameObject;
             Motor = motor;
             Interactor = interactor;
             Visual = visual;
             ContactShadow = contactShadow;
+            Ragdoll = ragdoll;
             PresentationVisibility = visual != null
                 ? new PlayerPresentationVisibility(
                     visual,
@@ -28,6 +30,7 @@ namespace BarPromenade
         public PlayerInteractor Interactor { get; }
         public IPlayerPresentation Visual { get; }
         public PlayerContactShadow ContactShadow { get; }
+        public Player3DRagdollController Ragdoll { get; }
         public PlayerPresentationVisibility PresentationVisibility
         {
             get;
@@ -69,6 +72,14 @@ namespace BarPromenade
 
             visual.Initialize(player.transform, registry);
 
+            Player3DRagdollController ragdoll =
+                player.AddComponent<Player3DRagdollController>();
+            ragdoll.Initialize(
+                player.transform,
+                controller,
+                visual,
+                registry);
+
             PlayerContactShadow contactShadow =
                 player.AddComponent<PlayerContactShadow>();
             contactShadow.Initialize(player.transform, visual);
@@ -83,7 +94,8 @@ namespace BarPromenade
                 motor,
                 interactor,
                 visual,
-                contactShadow);
+                contactShadow,
+                ragdoll);
         }
     }
 }

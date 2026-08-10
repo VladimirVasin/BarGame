@@ -2,6 +2,48 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Bounded hybrid ragdoll for drunken falls
+
+- Added a runtime-composed 13-body ragdoll over the production Generic rig.
+  `PlayerFactory` builds kinematic rigidbodies, owned colliders and constrained
+  joints from serialized anatomical bindings, so rebuilding `Player3D.prefab`
+  cannot erase the setup and no alternate hero is introduced.
+- A failed balance check now plays `0.16 s` of the directional Fall action,
+  suspends manual PlayableGraph/late-pose writes and transfers the current bones
+  to physics for the rest of Falling plus Down. Owned colliders ignore each
+  other and the upright `CharacterController`; a `0.68 m` pelvis tether keeps
+  the physical pose near the fixed gameplay root.
+- Recovery freezes physics, disables its colliders and blends the complete bone
+  hierarchy for `0.16 s` into the matching Rise start before returning control
+  to animation. Re-authored both physical sides as distinct full-body,
+  `50`-source-frame (`1.67 s`) Rise actions: exact side-down start, brace and
+  prone roll, a held hands-and-knees pose, lead-foot plant, low crouch and an
+  exact `Relaxed` endpoint. Every landmark supplies the full body pose, avoiding
+  the former bind/A/T-like limbs; the all-fours hold remains inside the existing
+  `Rising` state rather than adding a gameplay phase.
+- Completion, intoxication cancellation, transition and lifecycle cleanup
+  restore the neutral graph-owned rig, kinematic bodies, input and fall-aware
+  contact shadow. The fixed gameplay root remains authoritative throughout.
+- Extended deterministic Blender validation and the focused failed-balance
+  PlayMode contracts around full-body Down/Rise seams, all-fours support,
+  every imported Rise frame's visible floor boundary, physical chest motion,
+  bounded pelvis, owned collision policy, exact recovery and input cleanup.
+
+Verification:
+
+- Blender 5.0.1 production generation and the embedded recovery validator:
+  passed (`BP3D BUILD OK`, 23 actions, 1,534/4,500 triangles). Both Rise sides
+  preserve their full-rig seams and place both hands and knees in the supported
+  all-fours band before the lead-foot plant.
+- Focused Unity PlayMode
+  `FailedBalanceCheck_FallsRecoversAndSchedulesCooldown`: 1/1 passed in
+  7.15 seconds after importing the final animation FBX and runtime prefab.
+  The separate imported-pose contract
+  `RiseClips_PassThroughGroundedAllFoursBeforeNeutral` also passed 1/1 in
+  0.28 seconds for both physical sides, including a dense 41-frame floor sweep.
+- Fast mode intentionally omitted complete Unity suites, a player build and
+  startup smoke.
+
 ## 2026-08-10 — Grounded and laterally anchored intoxicated 3D walking
 
 - Restored the grounded-pose contract lost in the sprite-to-3D transition.

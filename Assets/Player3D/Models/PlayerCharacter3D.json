@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model.py",
-  "generator_version": "2.4.0",
+  "generator_version": "2.5.0",
   "blender_version": "5.0.1",
   "design_source": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "runtime_integrated": true,
@@ -267,23 +267,23 @@
     {
       "name": "RiseLeft",
       "category": "fall",
-      "duration_seconds": 1.0,
+      "duration_seconds": 1.6666666666666667,
       "loop": false,
-      "source_frame_count": 30,
+      "source_frame_count": 50,
       "source_fps": 30,
       "frame_start": 0.0,
-      "frame_end": 24.0,
+      "frame_end": 40.0,
       "root_motion": false
     },
     {
       "name": "RiseRight",
       "category": "fall",
-      "duration_seconds": 1.0,
+      "duration_seconds": 1.6666666666666667,
       "loop": false,
-      "source_frame_count": 30,
+      "source_frame_count": 50,
       "source_fps": 30,
       "frame_start": 0.0,
-      "frame_end": 24.0,
+      "frame_end": 40.0,
       "root_motion": false
     },
     {
