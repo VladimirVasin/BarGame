@@ -112,9 +112,18 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(night.Plan.StreetLamps.Count));
             Assert.That(night.LampAnchors.Count, Is.GreaterThan(0));
             Assert.That(night.TrafficSignals.Count, Is.GreaterThan(0));
-            Assert.That(
-                night.Root.GetComponentsInChildren<Collider>(true),
-                Is.Empty);
+            Collider[] nightColliders =
+                night.Root.GetComponentsInChildren<Collider>(true);
+            Assert.That(nightColliders, Is.Not.Empty);
+            for (int index = 0; index < nightColliders.Length; index++)
+            {
+                Assert.That(nightColliders[index], Is.TypeOf<BoxCollider>());
+                Assert.That(nightColliders[index].isTrigger, Is.False);
+                Assert.That(
+                    nightColliders[index].bounds.size.y,
+                    Is.EqualTo(2.30f).Within(0.01f),
+                    "Night fixtures must block only around their lower pole.");
+            }
 
             CityNightAtmosphere atmosphere = night.Atmosphere;
             Assert.That(atmosphere, Is.Not.Null);
@@ -857,9 +866,27 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(renderers[index].receiveShadows, Is.False);
             }
 
+            Collider[] decorationColliders =
+                world.DecorationRoot.GetComponentsInChildren<Collider>(true);
+            Assert.That(decorationColliders, Is.Not.Empty);
             Assert.That(
-                world.DecorationRoot.GetComponentsInChildren<Collider>(true),
-                Is.Empty);
+                decorationColliders.Length,
+                Is.LessThanOrEqualTo(
+                    world.DecorationPlan.Count *
+                    CityStaticCollisionBuilder.MaximumDecorationProxyCount));
+            for (int index = 0;
+                 index < decorationColliders.Length;
+                 index++)
+            {
+                Assert.That(
+                    decorationColliders[index],
+                    Is.TypeOf<BoxCollider>());
+                Assert.That(decorationColliders[index].isTrigger, Is.False);
+                Assert.That(
+                    decorationColliders[index].transform.name,
+                    Does.StartWith("City Detail Chunk "),
+                    "Logical collision proxies must stay on batched chunks.");
+            }
             Assert.That(
                 world.DecorationRoot.GetComponentsInChildren<Light>(true),
                 Is.Empty);

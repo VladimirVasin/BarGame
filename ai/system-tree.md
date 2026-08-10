@@ -124,18 +124,19 @@ Assets/
         CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
-        CityDecorationPlanner.cs     primary landmarks, lot visuals and clear clusters
+        CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers and clear clusters
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
+        CityDecorationWorldBuilder.cs  six-style visuals + chunked collision proxies
+        CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground, road MPB, facade/window recipe
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
-        RoadFencePlan.cs         typed building/park/public/open-area access openings
-        RoadFencePlanner.cs      exposed street boundary minus all canonical approaches
+        RoadFencePlan.cs         MapBoundary/DeadEnd rails + clearance-opening metadata
+        RoadFencePlanner.cs      unsupported footprint edges + true Street terminals
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         CityDayNightController.cs   session lighting + exterior night factor
-        RoadWalkableArea.cs      street/park/public/open-land XZ union; water excluded
+        RoadWalkableArea.cs      Buildable/Open/road union + radius-safe connectors
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -167,8 +168,8 @@ Assets/
       City/NPC/      deterministic street routes, actors and six-model visual pool
         CityPedestrianPlan.cs          immutable route/population definitions
         CityPedestrianPlanner.cs       function-biased safe street segments
-        CityPedestrianActor.cs         code-owned walking, pause and turn state
-        CityPedestrianDirector.cs      continuous simulation + fog-band pooling
+        CityPedestrianActor.cs         walking state + presentation-gated controller
+        CityPedestrianDirector.cs      simulation, safe pooling + stable yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
@@ -370,18 +371,21 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                            -> shared third-floor balcony facade geometry
                                            -> fresh road-node spawn beside the home
                                             -> RoadWalkableArea
-                                               -> streets + park
-                                               -> beach/lake-shore/cemetery ground
-                                               -> public/open-area approaches
-                                               -> water excluded
+                                               -> streets + park + OpenLand
+                                               -> complete BuildableGround regions
+                                               -> radius-safe road/ground seams
+                                               -> water/unmapped/outside excluded
+                                               -> physical colliders own obstacles
                                               -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
                                                 -> clipped readable viewport
                                                 -> independent X/Y pan when overflowing
                                            -> RoadFencePlanner
-                                              -> bar/home/supermarket/park openings
-                                             -> full public-place sides remain open
+                                              -> water/unmapped/map-boundary rails
+                                              -> true degree-one Street caps
+                                              -> Street + ParkPath degree accounting
+                                              -> openings retained as clearance metadata
                                           -> CityNightFixturePlanner
                                              -> public reservations stay clear
                                              -> chunked lamps + signals
@@ -396,6 +400,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> CityDecorationWorldBuilder
                                                 -> six shared visual styles
                                                 -> shadowless 48 m chunks
+                                                -> tiered simple collision proxies
                                            -> CityMap
                                               -> centered sparse blueprint bounds
                                               -> canonical area surfaces and labels
@@ -412,7 +417,10 @@ layout + seed -> CityPedestrianPlanner -> 12 safe street routes
                                       -> CityPedestrianDirector
                                          -> continuous virtual actors
                                          -> six-model outer-fog pool
+                                            -> safe CharacterController activation
                                             -> shared Player Idle/Walk clips
+                                         -> street-only RoadWalkableArea
+                                         -> stable yield; no NPC/NPC collision
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> Generic Idle/Walk/face/status/fall Actions

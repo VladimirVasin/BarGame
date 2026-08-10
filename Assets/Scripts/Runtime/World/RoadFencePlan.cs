@@ -5,6 +5,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum RoadFenceSegmentPurpose
+    {
+        MapBoundary = 0,
+        DeadEnd = 1
+    }
+
     public enum RoadFenceOpeningKind
     {
         BarEntrance = 0,
@@ -21,16 +27,19 @@ namespace BarPromenade
         internal RoadFenceSegmentDescriptor(
             Vector3 start,
             Vector3 end,
-            Vector3 outwardNormal)
+            Vector3 outwardNormal,
+            RoadFenceSegmentPurpose purpose)
         {
             Start = start;
             End = end;
             OutwardNormal = outwardNormal;
+            Purpose = purpose;
         }
 
         public Vector3 Start { get; }
         public Vector3 End { get; }
         public Vector3 OutwardNormal { get; }
+        public RoadFenceSegmentPurpose Purpose { get; }
         public bool IsHorizontal => Mathf.Abs(End.x - Start.x) > 0f;
         public float Length => Vector3.Distance(Start, End);
         public Vector3 Center => (Start + End) * 0.5f;
@@ -42,7 +51,8 @@ namespace BarPromenade
         {
             return Start.Equals(other.Start) &&
                    End.Equals(other.End) &&
-                   OutwardNormal.Equals(other.OutwardNormal);
+                   OutwardNormal.Equals(other.OutwardNormal) &&
+                   Purpose == other.Purpose;
         }
 
         public override bool Equals(object obj)
@@ -59,6 +69,7 @@ namespace BarPromenade
                 hash = (hash * 31) + Start.GetHashCode();
                 hash = (hash * 31) + End.GetHashCode();
                 hash = (hash * 31) + OutwardNormal.GetHashCode();
+                hash = (hash * 31) + (int)Purpose;
                 return hash;
             }
         }

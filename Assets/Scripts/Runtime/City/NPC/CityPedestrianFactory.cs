@@ -4,6 +4,34 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public static class CityPedestrianCollision
+    {
+        public const string LayerName = "CityPedestrian";
+        public const int LayerIndex = 8;
+        public const int DefaultLayerIndex = 0;
+
+        public static int NonPedestrianMask => ~(1 << LayerIndex);
+
+        public static void EnsureRuntimePolicy()
+        {
+            int configuredLayer = LayerMask.NameToLayer(LayerName);
+            if (configuredLayer != LayerIndex)
+            {
+                throw new InvalidOperationException(
+                    $"The {LayerName} layer must occupy layer {LayerIndex}.");
+            }
+
+            Physics.IgnoreLayerCollision(
+                DefaultLayerIndex,
+                LayerIndex,
+                false);
+            Physics.IgnoreLayerCollision(
+                LayerIndex,
+                LayerIndex,
+                true);
+        }
+    }
+
     public static class CityPedestrianFactory
     {
         public const string RuntimeRootName =
@@ -60,6 +88,8 @@ namespace BarPromenade
                     $"Resources/{CityPedestrianResources.PrefabResourcePath}.");
             }
 
+            CityPedestrianCollision.EnsureRuntimePolicy();
+
             GameObject runtimeRoot = new GameObject(RuntimeRootName);
             runtimeRoot.transform.SetParent(parent, false);
             try
@@ -80,6 +110,8 @@ namespace BarPromenade
                         plan.Definitions[index];
                     GameObject actorObject = new GameObject(
                         $"Route {definition.Id}");
+                    actorObject.layer =
+                        CityPedestrianCollision.LayerIndex;
                     actorObject.transform.SetParent(
                         routesRoot.transform,
                         false);

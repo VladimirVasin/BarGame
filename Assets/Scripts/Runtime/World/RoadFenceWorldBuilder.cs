@@ -72,7 +72,8 @@ namespace BarPromenade
                         "Safety Rails",
                         chunkRoot,
                         geometry.RailBoxes,
-                        RailColor);
+                        RailColor,
+                        true);
                 }
 
                 if (geometry.PostBoxes.Count > 0)

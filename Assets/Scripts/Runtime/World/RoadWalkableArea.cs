@@ -5,6 +5,186 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public sealed class CityGroundTraversalPlan
+    {
+        internal CityGroundTraversalPlan(
+            IList<Rect> groundRectangles,
+            IList<Rect> connectorRectangles)
+        {
+            GroundRectangles = new ReadOnlyCollection<Rect>(
+                new List<Rect>(groundRectangles));
+            ConnectorRectangles = new ReadOnlyCollection<Rect>(
+                new List<Rect>(connectorRectangles));
+        }
+
+        public IReadOnlyList<Rect> GroundRectangles { get; }
+        public IReadOnlyList<Rect> ConnectorRectangles { get; }
+    }
+
+    public static class CityGroundTraversalPlanner
+    {
+        public const float MaximumAgentRadius = 0.35f;
+
+        private const float ConnectorMargin = 0.10f;
+        private const float ConnectorReach =
+            (MaximumAgentRadius * 2f) + ConnectorMargin;
+
+        private static readonly Vector2Int[] CardinalDirections =
+        {
+            Vector2Int.down,
+            Vector2Int.right,
+            Vector2Int.up,
+            Vector2Int.left
+        };
+
+        public static CityGroundTraversalPlan CreatePlan(CityLayout layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            layout.ValidateOrThrow();
+            var eligibleByCell =
+                new Dictionary<Vector2Int, CitySurfaceDescriptor>();
+            var ground = new List<Rect>();
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = layout.Surfaces[index];
+                if (surface.Kind != CitySurfaceKind.BuildableGround &&
+                    !surface.IsWalkable)
+                {
+                    continue;
+                }
+
+                eligibleByCell.Add(surface.Cell, surface);
+                ground.Add(surface.WorldBounds);
+            }
+
+            var connectors = new List<Rect>();
+            foreach (KeyValuePair<Vector2Int, CitySurfaceDescriptor> pair
+                     in eligibleByCell)
+            {
+                AddRoadConnections(
+                    layout,
+                    pair.Key,
+                    pair.Value.WorldBounds,
+                    connectors);
+                AddGroundConnection(
+                    layout,
+                    pair.Key,
+                    pair.Value.WorldBounds,
+                    Vector2Int.right,
+                    eligibleByCell,
+                    connectors);
+                AddGroundConnection(
+                    layout,
+                    pair.Key,
+                    pair.Value.WorldBounds,
+                    Vector2Int.up,
+                    eligibleByCell,
+                    connectors);
+            }
+
+            return new CityGroundTraversalPlan(ground, connectors);
+        }
+
+        private static void AddRoadConnections(
+            CityLayout layout,
+            Vector2Int cell,
+            Rect ground,
+            ICollection<Rect> destination)
+        {
+            for (int index = 0;
+                 index < CardinalDirections.Length;
+                 index++)
+            {
+                Vector2Int direction = CardinalDirections[index];
+                if (!layout.HasRoad(
+                        RoadEdge.ForCellFrontage(cell, direction)))
+                {
+                    continue;
+                }
+
+                if (direction.x != 0)
+                {
+                    float boundary = direction.x < 0
+                        ? ground.xMin
+                        : ground.xMax;
+                    destination.Add(Rect.MinMaxRect(
+                        boundary - ConnectorReach,
+                        ground.yMin,
+                        boundary + ConnectorReach,
+                        ground.yMax));
+                }
+                else
+                {
+                    float boundary = direction.y < 0
+                        ? ground.yMin
+                        : ground.yMax;
+                    destination.Add(Rect.MinMaxRect(
+                        ground.xMin,
+                        boundary - ConnectorReach,
+                        ground.xMax,
+                        boundary + ConnectorReach));
+                }
+            }
+        }
+
+        private static void AddGroundConnection(
+            CityLayout layout,
+            Vector2Int cell,
+            Rect ground,
+            Vector2Int direction,
+            IReadOnlyDictionary<Vector2Int, CitySurfaceDescriptor>
+                eligibleByCell,
+            ICollection<Rect> destination)
+        {
+            Vector2Int neighbourCell = cell + direction;
+            if (!eligibleByCell.TryGetValue(
+                    neighbourCell,
+                    out CitySurfaceDescriptor neighbour) ||
+                layout.HasRoad(
+                    RoadEdge.ForCellFrontage(cell, direction)))
+            {
+                return;
+            }
+
+            Rect other = neighbour.WorldBounds;
+            if (direction.x != 0)
+            {
+                float minimum = Mathf.Max(ground.yMin, other.yMin);
+                float maximum = Mathf.Min(ground.yMax, other.yMax);
+                if (maximum <= minimum)
+                {
+                    return;
+                }
+
+                float boundary = (ground.xMax + other.xMin) * 0.5f;
+                destination.Add(Rect.MinMaxRect(
+                    boundary - ConnectorReach,
+                    minimum,
+                    boundary + ConnectorReach,
+                    maximum));
+                return;
+            }
+
+            float xMinimum = Mathf.Max(ground.xMin, other.xMin);
+            float xMaximum = Mathf.Min(ground.xMax, other.xMax);
+            if (xMaximum <= xMinimum)
+            {
+                return;
+            }
+
+            float zBoundary = (ground.yMax + other.yMin) * 0.5f;
+            destination.Add(Rect.MinMaxRect(
+                xMinimum,
+                zBoundary - ConnectorReach,
+                xMaximum,
+                zBoundary + ConnectorReach));
+        }
+    }
+
     public sealed class RoadWalkableArea : IWalkableArea
     {
         private const float BoundaryEpsilon = 0.0001f;
@@ -44,21 +224,25 @@ namespace BarPromenade
             }
 
             var area = new RoadWalkableArea(layout.CreateRoadRects());
+            CityGroundTraversalPlan groundTraversal =
+                CityGroundTraversalPlanner.CreatePlan(layout);
+            for (int index = 0;
+                 index < groundTraversal.GroundRectangles.Count;
+                 index++)
+            {
+                area.Add(groundTraversal.GroundRectangles[index]);
+            }
+
+            for (int index = 0;
+                 index < groundTraversal.ConnectorRectangles.Count;
+                 index++)
+            {
+                area.Add(groundTraversal.ConnectorRectangles[index]);
+            }
+
             if (layout.Park.IsEnabled)
             {
                 area.Add(layout.Park.WalkableBounds);
-            }
-
-            for (int surfaceIndex = 0;
-                 surfaceIndex < layout.Surfaces.Count;
-                 surfaceIndex++)
-            {
-                CitySurfaceDescriptor surface =
-                    layout.Surfaces[surfaceIndex];
-                if (surface.IsWalkable)
-                {
-                    area.Add(surface.WorldBounds);
-                }
             }
 
             for (int accessIndex = 0;

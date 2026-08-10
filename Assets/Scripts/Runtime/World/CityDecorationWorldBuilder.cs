@@ -92,6 +92,8 @@ namespace BarPromenade
         {
             var chunks = new Dictionary<ChunkCoordinate, ChunkGeometry>();
             var parts = new List<DecorationPart>(15);
+            var collisionBounds = new List<Bounds>(
+                CityStaticCollisionBuilder.MaximumDecorationProxyCount);
             for (int index = 0; index < descriptors.Count; index++)
             {
                 parts.Clear();
@@ -127,6 +129,23 @@ namespace BarPromenade
                         chunks,
                         bounds,
                         part.Style);
+                }
+
+                if (homeContext == null)
+                {
+                    collisionBounds.Clear();
+                    CityStaticCollisionBuilder.AddDecorationProxyBounds(
+                        layout,
+                        descriptors[index],
+                        collisionBounds);
+                    for (int collisionIndex = 0;
+                         collisionIndex < collisionBounds.Count;
+                         collisionIndex++)
+                    {
+                        AddCollisionToChunk(
+                            chunks,
+                            collisionBounds[collisionIndex]);
+                    }
                 }
             }
 
@@ -976,6 +995,24 @@ namespace BarPromenade
                 new Bounds(localCenter, bounds.size));
         }
 
+        private static void AddCollisionToChunk(
+            IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
+            Bounds bounds)
+        {
+            var coordinate = new ChunkCoordinate(
+                Mathf.FloorToInt(bounds.center.x / SpatialChunkSize),
+                Mathf.FloorToInt(bounds.center.z / SpatialChunkSize));
+            if (!chunks.TryGetValue(coordinate, out ChunkGeometry geometry))
+            {
+                geometry = new ChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            geometry.CollisionBoxes.Add(new Bounds(
+                bounds.center - coordinate.Origin,
+                bounds.size));
+        }
+
         private static void BuildChunks(
             Transform parent,
             IDictionary<ChunkCoordinate, ChunkGeometry> chunks)
@@ -993,6 +1030,9 @@ namespace BarPromenade
                     .transform;
                 chunk.SetParent(parent, false);
                 chunk.localPosition = coordinate.Origin;
+                CityStaticCollisionBuilder.AddBoxColliders(
+                    chunk,
+                    geometry.CollisionBoxes);
                 for (int styleIndex = 0;
                      styleIndex < BatchStyleCount;
                      styleIndex++)
@@ -1231,6 +1271,9 @@ namespace BarPromenade
         {
             private readonly BatchGeometry[] batches =
                 new BatchGeometry[BatchStyleCount];
+
+            public List<Bounds> CollisionBoxes { get; } =
+                new List<Bounds>();
 
             public void Add(
                 BatchStyle style,

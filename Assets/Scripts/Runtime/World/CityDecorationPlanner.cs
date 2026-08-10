@@ -192,7 +192,7 @@ namespace BarPromenade
                     anchorKind == CityDecorationAnchorKind.BuildingRoof
                         ? CityDecorationVisibilityTier.Landmark
                         : CityDecorationVisibilityTier.MidRange,
-                    CityDecorationCollisionTier.None));
+                    CityDecorationCollisionCatalog.ResolveTier(kind)));
             }
         }
 
@@ -238,7 +238,7 @@ namespace BarPromenade
                     HashToVariant(variantHash),
                     ResolveDistrictPalette(district, variantHash),
                     CityDecorationVisibilityTier.Landmark,
-                    CityDecorationCollisionTier.None));
+                    CityDecorationCollisionCatalog.ResolveTier(kind)));
             }
         }
 
@@ -375,7 +375,7 @@ namespace BarPromenade
                             lot.Cell.y,
                             FrontagePaletteSalt)),
                     CityDecorationVisibilityTier.Near,
-                    CityDecorationCollisionTier.None));
+                    CityDecorationCollisionCatalog.ResolveTier(kind)));
                 occupiedGroundPositions.Add(position);
             }
         }
@@ -461,7 +461,7 @@ namespace BarPromenade
                         CityDecorationKind.RoadsideRoadworkAndBicycle
                         ? CityDecorationVisibilityTier.Near
                         : CityDecorationVisibilityTier.MidRange,
-                    CityDecorationCollisionTier.None));
+                    CityDecorationCollisionCatalog.ResolveTier(kind)));
                 occupiedGroundPositions.Add(position);
                 added++;
             }
@@ -493,7 +493,8 @@ namespace BarPromenade
                     CityDecorationKind.ParkFountainAndStatue),
                 CityDecorationPalette.ParkStone,
                 CityDecorationVisibilityTier.Landmark,
-                CityDecorationCollisionTier.None,
+                CityDecorationCollisionCatalog.ResolveTier(
+                    CityDecorationKind.ParkFountainAndStatue),
                 ParkLandmarkVariantSalt);
             AddParkDecoration(
                 layout,
@@ -509,7 +510,8 @@ namespace BarPromenade
                     CityDecorationKind.ParkBandstand),
                 CityDecorationPalette.ParkPaint,
                 CityDecorationVisibilityTier.Landmark,
-                CityDecorationCollisionTier.None,
+                CityDecorationCollisionCatalog.ResolveTier(
+                    CityDecorationKind.ParkBandstand),
                 ParkLandmarkVariantSalt ^ 0x9E3779B9u);
         }
 
@@ -541,7 +543,8 @@ namespace BarPromenade
                         CityDecorationKind.ParkChessTables),
                     CityDecorationPalette.ParkStone,
                     CityDecorationVisibilityTier.Near,
-                    CityDecorationCollisionTier.None,
+                    CityDecorationCollisionCatalog.ResolveTier(
+                        CityDecorationKind.ParkChessTables),
                     ParkFeatureVariantSalt);
             }
 
@@ -561,7 +564,8 @@ namespace BarPromenade
                         CityDecorationKind.ParkPlayground),
                     CityDecorationPalette.ParkPaint,
                     CityDecorationVisibilityTier.MidRange,
-                    CityDecorationCollisionTier.None,
+                    CityDecorationCollisionCatalog.ResolveTier(
+                        CityDecorationKind.ParkPlayground),
                     ParkFeatureVariantSalt ^ 0x85EBCA6Bu);
             }
         }

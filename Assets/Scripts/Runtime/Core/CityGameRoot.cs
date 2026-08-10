@@ -213,11 +213,13 @@ namespace BarPromenade
             PedestrianPlan = CityPedestrianPlanner.Create(
                 Layout,
                 GameSessionState.CitySeed);
+            var pedestrianWalkableArea = new RoadWalkableArea(
+                Layout.CreateStreetRects());
             Pedestrians = CityPedestrianFactory.Create(
                 transform,
                 PedestrianPlan,
                 Player.GameObject.transform,
-                World.WalkableArea,
+                pedestrianWalkableArea,
                 camera);
             Night.InitializeLighting(
                 Player.GameObject.transform,

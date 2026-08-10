@@ -102,18 +102,22 @@ The vertical slice contains:
   planar UVs at `12 m` per tile; their shared `RuntimePrimitiveLit` renderer
   receives `_BaseMap`, white tint, `0.10` smoothness and zero metallic
   through a material property block without creating material instances.
-  Park paths, road dashes and collider behavior remain unchanged;
+  Park paths and road dashes remain unchanged, and the street render mesh
+  continues to share its geometry with the existing surface collider;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
 - 12 deterministic ambient street routes biased toward real city functions,
-  continuously simulated behind a pool of at most six visible collider-free
-  low-poly walkers. All instances reuse one bizarre lampshade-hood model, four
-  material-property-block palettes and the hero's exact shared in-place
-  `Idle`/`Walk` clips on a compatible Generic rig;
-- deterministic collider-free street lamps with geometry batched into
-  `48 m` spatial chunks, shadowless spot-light pools and slow out-of-phase
-  amber traffic signals generated from the road graph;
+  continuously simulated behind a pool of at most six visible low-poly
+  walkers. Virtual actors stay on a separate street-only mask; a pooled
+  walker's `CharacterController` is enabled only while its presentation is
+  safely bound. The dedicated layer collides with the player, ignores other
+  pedestrians and is excluded from camera/interaction queries. All instances
+  reuse one lampshade-hood model, four material-property-block palettes and
+  the hero's shared in-place `Idle`/`Walk` clips on a compatible Generic rig;
+- deterministic street lamps with geometry batched into `48 m` spatial
+  chunks, focused lower-pole collision proxies, shadowless spot-light pools
+  and slow out-of-phase amber traffic signals generated from the road graph;
 - scene-local looping music: `city_theme` loads only from
   `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
   `Resources/Audio/BarMusic` in `BarInterior`; the optional
@@ -204,19 +208,29 @@ The vertical slice contains:
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
 - frontage-aware windows and facade details now face each lot's actual road.
-  Decoration geometry is visual-only, shadowless and collider-free, reuses
-  the two packaged shared materials and combines at most six style batches per
-  `48 m` chunk. The bounded Home balcony exterior rebuilds descriptors from
-  the same blueprint ID and seed in Home-local space instead of showing a
-  simpler parallel city;
+  Decoration geometry is shadowless, reuses the two packaged shared materials
+  and combines at most six style batches per `48 m` chunk. A deterministic
+  `None`/`Detail`/`Blocking` catalog gives grounded structural and bulky
+  recipes one to four simple box proxies, while rooftop, hanging and small
+  narrative details stay non-physical. Park benches/hedges, the home mailbox
+  and lower lamp/signal poles also own focused proxies. The bounded Home
+  balcony exterior rebuilds the same descriptors in Home-local space but
+  deliberately remains collision-free;
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- deterministic collider-free ochre guard rails, batched into `48 m` spatial
-  chunks, that trace only street boundaries, close dead ends and leave clear
-  openings around every bar, supermarket and park-gate approach, while
-  removing the full fence interval from every public-place side that meets a
-  street;
+- deterministic ochre guard rails, batched into `48 m` spatial chunks, only
+  where a street faces water, unmapped space or the active map boundary, plus
+  full-width caps at true degree-one street dead ends. Street-to-park
+  continuations count as connected and are not capped. Rails are physical;
+  their narrow posts remain visual-only, and all former entrance/gate/public
+  opening descriptors remain available as decoration-clearance metadata;
+- player navigation now includes complete logical `BuildableGround` regions
+  as well as existing streets, park and `OpenLand`. Radius-safe seams connect
+  road-to-ground and adjacent ground cells for the maximum `0.35 m` agent;
+  water, unmapped cells and outside space stay excluded, while real building,
+  prop, vegetation, pole, fence and pedestrian colliders decide local
+  obstruction;
 - 144 land-use lots in the default road-grid core, including 16 park cells and
   4 open district points of interest, plus 32 northern beach/water surface
   cells, 16 lake cells and 6 cemetery cells. The core still contains exactly 4 reachable bars in four different

@@ -2,6 +2,45 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Physical city obstacles and open ground traversal
+
+- Expanded the player's indexed macro walkable area from streets and explicit
+  approaches to complete logical `BuildableGround` plus existing `OpenLand`.
+  Overlapping road-to-ground and adjacent-ground connectors preserve
+  continuity for the maximum `0.35 m` agent radius; water, unmapped cells and
+  outside space remain excluded. Buildings and props now rely on their actual
+  colliders instead of invisible road-only limits.
+- Reclassified the 24 city-decoration families through deterministic
+  `None`/`Detail`/`Blocking` tiers. Grounded structural and bulky recipes build
+  one to four simple chunk-owned box proxies; rooftop, hanging and small
+  narrative details stay non-physical. Added focused collision for park
+  benches and hedges, the home mailbox, and lower lamp/signal poles while the
+  Home exterior reconstruction remains presentation-only.
+- Replaced continuous road-edge fencing with physical rails only at water,
+  unmapped and active-map boundaries plus full-width true Street dead ends.
+  Terminal degree includes ParkPath edges, so streets entering the park remain
+  open. Existing entrance/gate/public/open-area descriptors remain available
+  as decoration-clearance metadata; narrow posts remain visual-only.
+- Added a dedicated `CityPedestrian` layer and presentation-gated
+  `CharacterController` to pooled walkers. The controller activates only after
+  an overlap-safe bind and disables before pooling; pedestrians collide with
+  the player, ignore one another, are excluded from camera/interaction queries
+  and retain a separate street-only navigation mask with stable head-on yield.
+
+Verification:
+
+- Added focused EditMode contracts for collision tiers/proxies, pedestrian
+  layer and pooling lifecycle, boundary/dead-end fence classification,
+  physical rails and radius-safe ground continuity.
+- Passed the focused PlayMode test
+  `SceneFlowSmokeTests.CityScene_GroundTraversalUsesPhysicalBoundaries`
+  (`1/1`): the real player capsule crossed from a street into a clear yard,
+  stopped against building mass, and the scene exposed the intended fence,
+  park, mailbox, fixture, decoration and visible-pedestrian colliders.
+- The initial targeted EditMode command completed script compilation but quit
+  during its first asset refresh before emitting test results. Per fast-mode
+  scope, no full suite, player build or additional smoke was run.
+
 ## 2026-08-10 — Textured city asphalt
 
 - Added one opaque generated asphalt albedo at

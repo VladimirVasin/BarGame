@@ -14,10 +14,13 @@ namespace BarPromenade
     /// Owns one continuously simulated route. A pooled visual can be bound or
     /// released without resetting the route state.
     /// </summary>
+    [RequireComponent(typeof(CharacterController))]
     [DisallowMultipleComponent]
     public sealed class CityPedestrianActor : MonoBehaviour
     {
         public const float StreetSurfaceHeight = 0.08f;
+        public const float CollisionHeight = 1.7f;
+        public const float CollisionCenterHeight = 0.85f;
         public const float MinimumEndpointPause = 0.45f;
         public const float MaximumEndpointPause = 0.90f;
         public const float TurnDuration = 0.42f;
@@ -26,6 +29,7 @@ namespace BarPromenade
         private CityPedestrianDefinition definition;
         private IWalkableArea walkableArea;
         private CityPedestrianPresentation presentation;
+        private CharacterController characterController;
         private int currentWaypointIndex;
         private int routeDirection;
         private float agentRadius;
@@ -40,7 +44,11 @@ namespace BarPromenade
         public CityPedestrianMotionState MotionState { get; private set; }
         public CityPedestrianPresentation Presentation => presentation;
         public bool HasPresentation => presentation != null;
+        public bool CollisionEnabled =>
+            characterController != null && characterController.enabled;
+        public CharacterController CharacterController => characterController;
         public Vector3 Position => transform.position;
+        public Vector3 LastDisplacement { get; private set; }
         public int CurrentWaypointIndex => currentWaypointIndex;
         public int RouteDirection => routeDirection;
         public float AgentRadius => agentRadius;
@@ -67,7 +75,7 @@ namespace BarPromenade
                 !IsFinite(definition.Speed) ||
                 definition.Speed <= 0f ||
                 !IsFinite(pedestrianRadius) ||
-                pedestrianRadius < 0f)
+                pedestrianRadius <= 0f)
             {
                 throw new ArgumentException(
                     "A pedestrian requires a finite route, speed and radius.",
@@ -75,6 +83,16 @@ namespace BarPromenade
             }
 
             agentRadius = pedestrianRadius;
+            characterController =
+                GetComponent<CharacterController>();
+            characterController.enabled = false;
+            characterController.height = CollisionHeight;
+            characterController.radius = agentRadius;
+            characterController.center = new Vector3(
+                0f,
+                CollisionCenterHeight,
+                0f);
+            characterController.minMoveDistance = 0f;
             routeDirection = definition.StartsReversed ? -1 : 1;
             currentWaypointIndex = definition.StartsReversed
                 ? definition.Waypoints.Count - 1
@@ -84,6 +102,7 @@ namespace BarPromenade
             FaceNextWaypointImmediately();
             MotionState = CityPedestrianMotionState.Walking;
             endpointPauseDuration = GetEndpointPauseDuration();
+            LastDisplacement = Vector3.zero;
             IsInitialized = true;
         }
 
@@ -126,11 +145,18 @@ namespace BarPromenade
                 0f,
                 MotionState == CityPedestrianMotionState.Walking &&
                 !IsYielding);
+            characterController.enabled = true;
         }
 
         public CityPedestrianPresentation ReleasePresentation(
             Transform poolRoot)
         {
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            LastDisplacement = Vector3.zero;
             if (presentation == null)
             {
                 return null;
@@ -155,6 +181,7 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            LastDisplacement = Vector3.zero;
             IsYielding = shouldYield &&
                 MotionState == CityPedestrianMotionState.Walking;
             bool moving = false;
@@ -222,10 +249,19 @@ namespace BarPromenade
                 current,
                 desired,
                 agentRadius);
-            transform.position = constrained;
-            bool moved = (constrained - current).sqrMagnitude > 0.000001f;
+            if (CollisionEnabled)
+            {
+                characterController.Move(constrained - current);
+            }
+            else
+            {
+                transform.position = constrained;
+            }
+
+            LastDisplacement = transform.position - current;
+            bool moved = LastDisplacement.sqrMagnitude > 0.000001f;
             if (step >= distance &&
-                (constrained - target).sqrMagnitude <= 0.0001f)
+                (transform.position - target).sqrMagnitude <= 0.0001f)
             {
                 ReachWaypoint(targetIndex);
             }

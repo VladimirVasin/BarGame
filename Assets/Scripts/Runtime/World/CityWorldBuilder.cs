@@ -401,6 +401,9 @@ namespace BarPromenade
                 park,
                 benchParts,
                 ParkBench);
+            CityStaticCollisionBuilder.AddParkBenchColliders(
+                park,
+                plan.BenchPositions);
             BuildParkHedges(park, plan);
             return park.gameObject;
         }
@@ -448,6 +451,10 @@ namespace BarPromenade
                 parent,
                 hedges,
                 ParkHedge);
+            CityStaticCollisionBuilder.AddColliderGroup(
+                parent,
+                "Park Hedge Colliders",
+                hedges);
         }
 
         private static void AddHorizontalBoundaryParts(
@@ -978,6 +985,10 @@ namespace BarPromenade
                     : new Vector3(0.78f, 0.34f, 0.52f),
                 HomeDoor,
                 false);
+            CityStaticCollisionBuilder.AddHomeMailboxCollider(
+                parent,
+                mailboxBase,
+                frontageIsX);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Roof Accent",
                 parent,

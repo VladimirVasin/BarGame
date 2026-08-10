@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -180,6 +181,175 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void FromLayout_AddsBuildableGroundButExcludesWaterAndOutside()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                731942);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+            CitySurfaceDescriptor[] buildable = layout.Surfaces
+                .Where(surface =>
+                    surface.Kind == CitySurfaceKind.BuildableGround)
+                .ToArray();
+            CitySurfaceDescriptor[] water = layout.Surfaces
+                .Where(surface => surface.IsWater)
+                .ToArray();
+
+            Assert.That(buildable, Is.Not.Empty);
+            foreach (CitySurfaceDescriptor surface in buildable)
+            {
+                Assert.That(
+                    area.Contains(surface.Center, 0.32f),
+                    Is.True,
+                    surface.Cell.ToString());
+            }
+
+            Assert.That(water, Is.Not.Empty);
+            foreach (CitySurfaceDescriptor surface in water)
+            {
+                Assert.That(
+                    area.Contains(surface.Center, 0.32f),
+                    Is.False,
+                    surface.Cell.ToString());
+            }
+
+            Rect bounds = layout.MapWorldXZBounds;
+            Assert.That(
+                area.Contains(
+                    new Vector3(
+                        bounds.xMin - layout.NodeSpacing.x,
+                        0f,
+                        bounds.center.y),
+                    0.32f),
+                Is.False);
+        }
+
+        [Test]
+        public void FromLayout_RoadToBuildableGroundIsRadiusContinuous()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                731942);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+            CitySurfaceDescriptor surface = default;
+            Vector2Int direction = default;
+            bool found = false;
+            Vector2Int[] directions =
+            {
+                Vector2Int.down,
+                Vector2Int.right,
+                Vector2Int.up,
+                Vector2Int.left
+            };
+
+            for (int surfaceIndex = 0;
+                 surfaceIndex < layout.Surfaces.Count && !found;
+                 surfaceIndex++)
+            {
+                CitySurfaceDescriptor candidate =
+                    layout.Surfaces[surfaceIndex];
+                if (candidate.Kind != CitySurfaceKind.BuildableGround)
+                {
+                    continue;
+                }
+
+                for (int directionIndex = 0;
+                     directionIndex < directions.Length;
+                     directionIndex++)
+                {
+                    Vector2Int candidateDirection =
+                        directions[directionIndex];
+                    if (!layout.HasRoad(
+                            RoadEdge.ForCellFrontage(
+                                candidate.Cell,
+                                candidateDirection)))
+                    {
+                        continue;
+                    }
+
+                    surface = candidate;
+                    direction = candidateDirection;
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.That(found, Is.True);
+            Vector3 outward = new Vector3(direction.x, 0f, direction.y);
+            Vector3 boundary = GetBoundaryCenter(surface.WorldBounds, direction);
+            for (int sample = -10; sample <= 10; sample++)
+            {
+                Assert.That(
+                    area.Contains(
+                        boundary + (outward * (sample * 0.1f)),
+                        0.32f),
+                    Is.True,
+                    $"Road/ground sample {sample}");
+            }
+        }
+
+        [Test]
+        public void FromLayout_AdjacentBuildableGroundIsRadiusContinuous()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                731942);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+            var buildable = layout.Surfaces
+                .Where(surface =>
+                    surface.Kind == CitySurfaceKind.BuildableGround)
+                .ToDictionary(surface => surface.Cell);
+            CitySurfaceDescriptor first = default;
+            Vector2Int direction = default;
+            bool found = false;
+
+            foreach (KeyValuePair<Vector2Int, CitySurfaceDescriptor> pair
+                     in buildable)
+            {
+                Vector2Int[] candidates =
+                {
+                    Vector2Int.right,
+                    Vector2Int.up
+                };
+                for (int index = 0; index < candidates.Length; index++)
+                {
+                    Vector2Int candidateDirection = candidates[index];
+                    if (!buildable.ContainsKey(pair.Key + candidateDirection) ||
+                        layout.HasRoad(
+                            RoadEdge.ForCellFrontage(
+                                pair.Key,
+                                candidateDirection)))
+                    {
+                        continue;
+                    }
+
+                    first = pair.Value;
+                    direction = candidateDirection;
+                    found = true;
+                    break;
+                }
+
+                if (found)
+                {
+                    break;
+                }
+            }
+
+            Assert.That(found, Is.True);
+            Vector3 outward = new Vector3(direction.x, 0f, direction.y);
+            Vector3 seam = GetBoundaryCenter(first.WorldBounds, direction);
+            for (int sample = -10; sample <= 10; sample++)
+            {
+                Assert.That(
+                    area.Contains(
+                        seam + (outward * (sample * 0.1f)),
+                        0.32f),
+                    Is.True,
+                    $"Ground seam sample {sample}");
+            }
+        }
+
+        [Test]
         public void SpatialIndex_MatchesLinearReference_ForSeededRectanglesAndBoundaries()
         {
             const int seed = 0x51A7C17;
@@ -223,6 +393,28 @@ namespace BarPromenade.Tests
                 area.Add(input);
                 normalizedRectangles.Add(Normalize(input));
             }
+        }
+
+        private static Vector3 GetBoundaryCenter(
+            Rect bounds,
+            Vector2Int direction)
+        {
+            if (direction.x < 0)
+            {
+                return new Vector3(bounds.xMin, 0f, bounds.center.y);
+            }
+
+            if (direction.x > 0)
+            {
+                return new Vector3(bounds.xMax, 0f, bounds.center.y);
+            }
+
+            if (direction.y < 0)
+            {
+                return new Vector3(bounds.center.x, 0f, bounds.yMin);
+            }
+
+            return new Vector3(bounds.center.x, 0f, bounds.yMax);
         }
 
         private static void AssertEquivalentQueries(

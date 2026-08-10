@@ -153,6 +153,9 @@ namespace BarPromenade
                 origin,
                 new Vector3(0f, 3.10f, 0.67f),
                 new Vector3(0.24f, 0.10f, 0.22f)));
+            geometry.CollisionBoxes.Add(
+                CityStaticCollisionBuilder.CreateLowerPoleBounds(
+                    descriptor.Position - origin));
         }
 
         private static Bounds CreateLampBox(
@@ -194,6 +197,10 @@ namespace BarPromenade
                     .transform;
                 chunk.SetParent(parent, false);
                 chunk.localPosition = coordinate.Origin;
+
+                CityStaticCollisionBuilder.AddBoxColliders(
+                    chunk,
+                    geometry.CollisionBoxes);
 
                 RuntimePrimitiveFactory.CreateCombinedBoxes(
                     "Street Lamp Fixtures",
@@ -276,6 +283,7 @@ namespace BarPromenade
             signal.localRotation = Quaternion.LookRotation(
                 descriptor.Forward,
                 Vector3.up);
+            CityStaticCollisionBuilder.AddLowerPoleCollider(signal);
 
             RuntimePrimitiveFactory.CreateCylinder(
                 "Signal Pole",
@@ -407,6 +415,8 @@ namespace BarPromenade
             public List<Bounds> FixtureBoxes { get; } =
                 new List<Bounds>();
             public List<Bounds> BulbBoxes { get; } =
+                new List<Bounds>();
+            public List<Bounds> CollisionBoxes { get; } =
                 new List<Bounds>();
         }
     }

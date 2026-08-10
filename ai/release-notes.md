@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-08-10 — Streets no longer fence off the city
+
+- The player can now leave the road and explore real open space between
+  buildings wherever no structure or large object blocks the way. Water,
+  missing terrain and the outside edge of the city remain inaccessible.
+- Road rails now appear only at genuine dead ends and unsafe map or water
+  boundaries. They physically stop the player, while streets that continue
+  into the park and ordinary roadside ground stay open.
+- Buildings, bulky street and park decoration, benches, hedges, trees, lamp
+  and signal poles now provide appropriate physical obstacles without making
+  small clutter needlessly snag the player.
+- Nearby passers-by now have a physical presence: the player cannot walk
+  through a visible pedestrian, while walkers avoid blocking one another and
+  remain confined to their street routes.
+
 ### 2026-08-10 — The streets now look like asphalt
 
 - City roads now use a continuous worn gray asphalt surface instead of a flat
@@ -20,7 +35,8 @@
   a lampshade-like hood, dark recessed face, rigid parcel bag and mismatched
   boots. Four muted palettes vary the same silhouette.
 - Nearby walkers reuse the hero's existing Idle and Walk animations. They are
-  passive atmosphere only: no prompts, collisions or gameplay reactions.
+  passive atmosphere with no prompts or gameplay reactions; visible walkers
+  now physically block the player while pooled/off-screen routes stay light.
 
 ### 2026-08-10 — Hunger and fatigue now build over time
 

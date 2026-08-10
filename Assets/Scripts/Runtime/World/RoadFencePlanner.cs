@@ -64,34 +64,292 @@ namespace BarPromenade
                     Vector3.right);
             }
 
-            List<BoundarySpan> merged = Merge(exposedSides);
+            List<BoundarySpan> mapBoundary = KeepUnsupportedBoundary(
+                Merge(exposedSides),
+                layout.Surfaces,
+                CreateParkPathRects(layout));
+            List<BoundarySpan> deadEnds = CreateDeadEndCaps(layout);
+            mapBoundary = SubtractSpans(mapBoundary, deadEnds);
+            mapBoundary = Merge(mapBoundary);
+            deadEnds = Merge(deadEnds);
+            mapBoundary.Sort(CompareSpans);
+            deadEnds.Sort(CompareSpans);
             List<RoadFenceOpeningDescriptor> openings =
                 CreateOpenings(layout);
-            List<BoundarySpan> openedBoundary =
-                SubtractOpenings(merged, openings);
-            openedBoundary.Sort(CompareSpans);
 
             var segments =
                 new List<RoadFenceSegmentDescriptor>(
-                    openedBoundary.Count);
-            for (int index = 0;
-                 index < openedBoundary.Count;
-                 index++)
+                    mapBoundary.Count + deadEnds.Count);
+            AddDescriptors(
+                segments,
+                mapBoundary,
+                RoadFenceSegmentPurpose.MapBoundary);
+            AddDescriptors(
+                segments,
+                deadEnds,
+                RoadFenceSegmentPurpose.DeadEnd);
+            segments.Sort(CompareSegments);
+
+            return new RoadFencePlan(segments, openings);
+        }
+
+        private static void AddDescriptors(
+            ICollection<RoadFenceSegmentDescriptor> destination,
+            IReadOnlyList<BoundarySpan> spans,
+            RoadFenceSegmentPurpose purpose)
+        {
+            for (int index = 0; index < spans.Count; index++)
             {
-                BoundarySpan span = openedBoundary[index];
+                BoundarySpan span = spans[index];
                 Vector3 start = span.Horizontal
                     ? new Vector3(span.Minimum, 0f, span.Fixed)
                     : new Vector3(span.Fixed, 0f, span.Minimum);
                 Vector3 end = span.Horizontal
                     ? new Vector3(span.Maximum, 0f, span.Fixed)
                     : new Vector3(span.Fixed, 0f, span.Maximum);
-                segments.Add(new RoadFenceSegmentDescriptor(
+                destination.Add(new RoadFenceSegmentDescriptor(
                     start,
                     end,
-                    span.Outward));
+                    span.Outward,
+                    purpose));
+            }
+        }
+
+        private static List<BoundarySpan> KeepUnsupportedBoundary(
+            IReadOnlyList<BoundarySpan> boundary,
+            IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            IReadOnlyList<Rect> parkPaths)
+        {
+            var remaining = new List<BoundarySpan>();
+            for (int spanIndex = 0;
+                 spanIndex < boundary.Count;
+                 spanIndex++)
+            {
+                BoundarySpan span = boundary[spanIndex];
+                var fragments = new List<AxisRange>(1)
+                {
+                    new AxisRange(span.Minimum, span.Maximum)
+                };
+
+                for (int surfaceIndex = 0;
+                     surfaceIndex < surfaces.Count && fragments.Count > 0;
+                     surfaceIndex++)
+                {
+                    CitySurfaceDescriptor surface = surfaces[surfaceIndex];
+                    if (surface.IsWater ||
+                        !ExtendsAcrossBoundary(
+                            surface.WorldBounds,
+                            span.Horizontal,
+                            span.Fixed,
+                            span.Outward))
+                    {
+                        continue;
+                    }
+
+                    SubtractRange(
+                        fragments,
+                        span.Horizontal
+                            ? surface.WorldBounds.xMin
+                            : surface.WorldBounds.yMin,
+                        span.Horizontal
+                            ? surface.WorldBounds.xMax
+                            : surface.WorldBounds.yMax);
+                }
+
+                for (int pathIndex = 0;
+                     pathIndex < parkPaths.Count && fragments.Count > 0;
+                     pathIndex++)
+                {
+                    Rect path = parkPaths[pathIndex];
+                    if (!ExtendsAcrossBoundary(
+                            path,
+                            span.Horizontal,
+                            span.Fixed,
+                            span.Outward))
+                    {
+                        continue;
+                    }
+
+                    SubtractRange(
+                        fragments,
+                        span.Horizontal ? path.xMin : path.yMin,
+                        span.Horizontal ? path.xMax : path.yMax);
+                }
+
+                for (int fragmentIndex = 0;
+                     fragmentIndex < fragments.Count;
+                     fragmentIndex++)
+                {
+                    AxisRange fragment = fragments[fragmentIndex];
+                    remaining.Add(new BoundarySpan(
+                        span.Horizontal,
+                        span.Fixed,
+                        fragment.Minimum,
+                        fragment.Maximum,
+                        span.Outward));
+                }
             }
 
-            return new RoadFencePlan(segments, openings);
+            return remaining;
+        }
+
+        private static IReadOnlyList<Rect> CreateParkPathRects(
+            CityLayout layout)
+        {
+            var paths = new List<Rect>();
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                {
+                    paths.Add(layout.GetRoadRect(edge));
+                }
+            }
+
+            return paths;
+        }
+
+        private static List<BoundarySpan> CreateDeadEndCaps(
+            CityLayout layout)
+        {
+            var degreeByNode = new Dictionary<Vector2Int, int>();
+            for (int edgeIndex = 0;
+                 edgeIndex < layout.RoadEdges.Count;
+                 edgeIndex++)
+            {
+                RoadEdge edge = layout.RoadEdges[edgeIndex];
+                IncrementDegree(degreeByNode, edge.A);
+                IncrementDegree(degreeByNode, edge.B);
+            }
+
+            var result = new List<BoundarySpan>();
+            float halfRoad = layout.RoadWidth * 0.5f;
+            for (int edgeIndex = 0;
+                 edgeIndex < layout.RoadEdges.Count;
+                 edgeIndex++)
+            {
+                RoadEdge edge = layout.RoadEdges[edgeIndex];
+                if (layout.GetPathKind(edge) != CityPathKind.Street)
+                {
+                    continue;
+                }
+
+                AddDeadEndIfTerminal(
+                    result,
+                    layout,
+                    edge,
+                    edge.A,
+                    edge.B,
+                    degreeByNode,
+                    halfRoad);
+                AddDeadEndIfTerminal(
+                    result,
+                    layout,
+                    edge,
+                    edge.B,
+                    edge.A,
+                    degreeByNode,
+                    halfRoad);
+            }
+
+            return result;
+        }
+
+        private static void IncrementDegree(
+            IDictionary<Vector2Int, int> degrees,
+            Vector2Int node)
+        {
+            degrees.TryGetValue(node, out int degree);
+            degrees[node] = degree + 1;
+        }
+
+        private static void AddDeadEndIfTerminal(
+            ICollection<BoundarySpan> destination,
+            CityLayout layout,
+            RoadEdge edge,
+            Vector2Int terminalNode,
+            Vector2Int neighbourNode,
+            IReadOnlyDictionary<Vector2Int, int> degreeByNode,
+            float halfRoad)
+        {
+            if (!degreeByNode.TryGetValue(
+                    terminalNode,
+                    out int degree) ||
+                degree != 1)
+            {
+                return;
+            }
+
+            Vector3 terminal = layout.GetNodeWorldPosition(terminalNode);
+            Vector3 neighbour = layout.GetNodeWorldPosition(neighbourNode);
+            Vector3 outward = (terminal - neighbour).normalized;
+            Vector3 center = terminal + (outward * halfRoad);
+            destination.Add(edge.IsHorizontal
+                ? new BoundarySpan(
+                    false,
+                    center.x,
+                    center.z - halfRoad,
+                    center.z + halfRoad,
+                    outward)
+                : new BoundarySpan(
+                    true,
+                    center.z,
+                    center.x - halfRoad,
+                    center.x + halfRoad,
+                    outward));
+        }
+
+        private static List<BoundarySpan> SubtractSpans(
+            IReadOnlyList<BoundarySpan> source,
+            IReadOnlyList<BoundarySpan> blockers)
+        {
+            var remaining = new List<BoundarySpan>(source);
+            for (int blockerIndex = 0;
+                 blockerIndex < blockers.Count;
+                 blockerIndex++)
+            {
+                BoundarySpan blocker = blockers[blockerIndex];
+                var next = new List<BoundarySpan>(remaining.Count + 1);
+                for (int sourceIndex = 0;
+                     sourceIndex < remaining.Count;
+                     sourceIndex++)
+                {
+                    BoundarySpan span = remaining[sourceIndex];
+                    if (!BelongsToSameLine(span, blocker))
+                    {
+                        next.Add(span);
+                        continue;
+                    }
+
+                    float overlapMinimum = Mathf.Max(
+                        span.Minimum,
+                        blocker.Minimum);
+                    float overlapMaximum = Mathf.Min(
+                        span.Maximum,
+                        blocker.Maximum);
+                    if (overlapMaximum - overlapMinimum <=
+                        CoordinateEpsilon)
+                    {
+                        next.Add(span);
+                        continue;
+                    }
+
+                    AddSpanIfPositive(
+                        next,
+                        span,
+                        span.Minimum,
+                        overlapMinimum);
+                    AddSpanIfPositive(
+                        next,
+                        span,
+                        overlapMaximum,
+                        span.Maximum);
+                }
+
+                remaining = next;
+            }
+
+            return remaining;
         }
 
         private static void AddExposedSide(
@@ -502,6 +760,49 @@ namespace BarPromenade
             return minimumComparison != 0
                 ? minimumComparison
                 : left.Maximum.CompareTo(right.Maximum);
+        }
+
+        private static int CompareSegments(
+            RoadFenceSegmentDescriptor left,
+            RoadFenceSegmentDescriptor right)
+        {
+            int purposeComparison = left.Purpose.CompareTo(right.Purpose);
+            if (purposeComparison != 0)
+            {
+                return purposeComparison;
+            }
+
+            if (left.IsHorizontal != right.IsHorizontal)
+            {
+                return left.IsHorizontal ? -1 : 1;
+            }
+
+            int fixedComparison =
+                left.FixedCoordinate.CompareTo(right.FixedCoordinate);
+            if (fixedComparison != 0)
+            {
+                return fixedComparison;
+            }
+
+            int normalXComparison =
+                left.OutwardNormal.x.CompareTo(right.OutwardNormal.x);
+            if (normalXComparison != 0)
+            {
+                return normalXComparison;
+            }
+
+            int normalZComparison =
+                left.OutwardNormal.z.CompareTo(right.OutwardNormal.z);
+            if (normalZComparison != 0)
+            {
+                return normalZComparison;
+            }
+
+            int minimumComparison =
+                left.MinimumCoordinate.CompareTo(right.MinimumCoordinate);
+            return minimumComparison != 0
+                ? minimumComparison
+                : left.MaximumCoordinate.CompareTo(right.MaximumCoordinate);
         }
 
         private static int CompareOpenings(

@@ -138,6 +138,7 @@ namespace BarPromenade.Tests.EditMode
                     director.ActiveCount,
                     Is.EqualTo(
                         CityPedestrianDirector.MaximumActiveModels));
+                AssertRuntimeCollisionContract(director);
 
                 Vector3[] before = director.Actors
                     .Select(actor => actor.Position)
@@ -149,6 +150,13 @@ namespace BarPromenade.Tests.EditMode
                         director.Actors[index].Position.x,
                         Is.GreaterThan(before[index].x),
                         "Virtual routes must advance even without a model.");
+                    if (director.Actors[index].HasPresentation)
+                    {
+                        Assert.That(
+                            director.Actors[index].LastDisplacement.x,
+                            Is.GreaterThan(0f),
+                            "Presented actors must report their actual move.");
+                    }
                 }
 
                 Assert.That(
@@ -191,16 +199,155 @@ namespace BarPromenade.Tests.EditMode
                 player.transform.position = Vector3.right * 1000f;
                 director.Advance(0f);
                 Assert.That(director.ActiveCount, Is.Zero);
+                Assert.That(
+                    director.Actors.All(actor => !actor.CollisionEnabled),
+                    Is.True);
                 player.transform.position = Vector3.zero;
                 director.RefreshPresentationPool();
                 Assert.That(
                     director.ActiveCount,
                     Is.EqualTo(
                         CityPedestrianDirector.MaximumActiveModels));
+                Assert.That(
+                    director.Actors.All(actor =>
+                        actor.CollisionEnabled == actor.HasPresentation),
+                    Is.True);
+
+                director.Shutdown();
+                Assert.That(
+                    director.Actors.All(actor =>
+                        !actor.HasPresentation &&
+                        !actor.CollisionEnabled),
+                    Is.True);
             }
             finally
             {
                 director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Factory_DelaysCollisionWhenPlayerOverlapsSpawn()
+        {
+            GameObject root = new GameObject("Overlap Test Root");
+            CityPedestrianDirector director = null;
+            try
+            {
+                GameObject player = new GameObject("Player");
+                player.transform.SetParent(root.transform, false);
+                player.transform.position = new Vector3(35f, 0.08f, 0f);
+                CharacterController playerController =
+                    player.AddComponent<CharacterController>();
+                playerController.height = 1.75f;
+                playerController.radius = 0.32f;
+                playerController.center = new Vector3(0f, 0.875f, 0f);
+
+                CityPedestrianPlan plan = CreateLinearPlan(1, 35f);
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player.transform,
+                    new RoadWalkableArea(
+                        new[] { Rect.MinMaxRect(30f, -2f, 45f, 2f) }),
+                    null,
+                    CityPedestrianResources.LoadPrefab());
+
+                CityPedestrianActor actor = director.Actors[0];
+                Assert.That(actor.HasPresentation, Is.False);
+                Assert.That(actor.CollisionEnabled, Is.False);
+
+                player.transform.position = Vector3.zero;
+                Physics.SyncTransforms();
+                director.RefreshPresentationPool();
+
+                Assert.That(actor.HasPresentation, Is.True);
+                Assert.That(actor.CollisionEnabled, Is.True);
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void HeadOnActors_UseStablePlanOrderToAvoidMutualYield()
+        {
+            GameObject root = new GameObject("Yield Priority Test Root");
+            CityPedestrianDirector director = null;
+            try
+            {
+                GameObject player = new GameObject("Player");
+                player.transform.SetParent(root.transform, false);
+                CityPedestrianPlan plan = CreateHeadOnPlan();
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player.transform,
+                    new RoadWalkableArea(
+                        new[] { Rect.MinMaxRect(30f, -2f, 44f, 2f) }),
+                    null,
+                    CityPedestrianResources.LoadPrefab());
+
+                director.Advance(1.7f);
+                director.Advance(0.1f);
+
+                Assert.That(director.Actors[0].IsYielding, Is.False);
+                Assert.That(
+                    director.Actors[0].LastDisplacement.x,
+                    Is.GreaterThan(0f));
+                Assert.That(director.Actors[1].IsYielding, Is.True);
+                Assert.That(
+                    director.Actors[1].LastDisplacement,
+                    Is.EqualTo(Vector3.zero));
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void CollisionLayer_IsPhysicalButExcludedFromQueries()
+        {
+            Assert.That(
+                LayerMask.NameToLayer(CityPedestrianCollision.LayerName),
+                Is.EqualTo(CityPedestrianCollision.LayerIndex));
+            CityPedestrianCollision.EnsureRuntimePolicy();
+            Assert.That(
+                Physics.GetIgnoreLayerCollision(
+                    CityPedestrianCollision.DefaultLayerIndex,
+                    CityPedestrianCollision.LayerIndex),
+                Is.False);
+            Assert.That(
+                Physics.GetIgnoreLayerCollision(
+                    CityPedestrianCollision.LayerIndex,
+                    CityPedestrianCollision.LayerIndex),
+                Is.True);
+
+            int pedestrianBit =
+                1 << CityPedestrianCollision.LayerIndex;
+            Assert.That(
+                PlayerInteractor.InteractionLayerMask & pedestrianBit,
+                Is.Zero);
+
+            GameObject root = new GameObject("Camera Mask Test Root");
+            try
+            {
+                Camera camera = root.AddComponent<Camera>();
+                GameObject target = new GameObject("Target");
+                target.transform.SetParent(root.transform, false);
+                PlayerCameraFollow follow =
+                    root.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(camera, target.transform, false);
+                Assert.That(
+                    follow.CollisionLayerMask & pedestrianBit,
+                    Is.Zero);
+            }
+            finally
+            {
                 UnityEngine.Object.DestroyImmediate(root);
             }
         }
@@ -273,6 +420,39 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     materials.All(material => material == sharedMaterial),
                     Is.True);
+            }
+        }
+
+        private static void AssertRuntimeCollisionContract(
+            CityPedestrianDirector director)
+        {
+            Assert.That(
+                director.Actors.Count(actor => actor.CollisionEnabled),
+                Is.EqualTo(director.ActiveCount));
+            for (int index = 0; index < director.Actors.Count; index++)
+            {
+                CityPedestrianActor actor = director.Actors[index];
+                CharacterController controller = actor.CharacterController;
+                Assert.That(controller, Is.Not.Null);
+                Assert.That(
+                    actor.gameObject.layer,
+                    Is.EqualTo(CityPedestrianCollision.LayerIndex));
+                Assert.That(
+                    controller.height,
+                    Is.EqualTo(
+                        CityPedestrianActor.CollisionHeight).Within(0.0001f));
+                Assert.That(
+                    controller.radius,
+                    Is.EqualTo(actor.AgentRadius).Within(0.0001f));
+                Assert.That(
+                    controller.center,
+                    Is.EqualTo(new Vector3(
+                        0f,
+                        CityPedestrianActor.CollisionCenterHeight,
+                        0f)));
+                Assert.That(
+                    actor.CollisionEnabled,
+                    Is.EqualTo(actor.HasPresentation));
             }
         }
 
@@ -389,6 +569,49 @@ namespace BarPromenade.Tests.EditMode
                 2,
                 3u,
                 count,
+                CityPedestrianPlanner.AgentRadius,
+                definitions);
+        }
+
+        private static CityPedestrianPlan CreateHeadOnPlan()
+        {
+            var waypoints = new[]
+            {
+                new Vector3(35f, 0f, 0f),
+                new Vector3(39f, 0f, 0f)
+            };
+            var edge = new[]
+            {
+                new RoadEdge(Vector2Int.zero, Vector2Int.right)
+            };
+            var definitions = new List<CityPedestrianDefinition>
+            {
+                new CityPedestrianDefinition(
+                    "head-on:0",
+                    edge,
+                    waypoints,
+                    1f,
+                    1f,
+                    0f,
+                    0,
+                    10u,
+                    false),
+                new CityPedestrianDefinition(
+                    "head-on:1",
+                    edge,
+                    waypoints,
+                    1f,
+                    1f,
+                    0.5f,
+                    1,
+                    11u,
+                    true)
+            };
+            return new CityPedestrianPlan(
+                1,
+                2,
+                3u,
+                definitions.Count,
                 CityPedestrianPlanner.AgentRadius,
                 definitions);
         }

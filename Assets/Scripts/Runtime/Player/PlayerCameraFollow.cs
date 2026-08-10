@@ -86,6 +86,7 @@ namespace BarPromenade
         public bool CinematicMotionEnabled { get; private set; } = true;
         public Vector3 CurrentFocusPoint => currentFocusPoint;
         public bool FixedPoseActive => fixedPoseActive;
+        public int CollisionLayerMask => collisionMask.value;
         public Pose FixedBasePose =>
             new Pose(
                 fixedBasePosition,
@@ -99,6 +100,9 @@ namespace BarPromenade
             controlledCamera = camera != null ? camera : GetComponent<Camera>();
             followTarget = target;
             isInterior = interior;
+            collisionMask =
+                collisionMask.value &
+                CityPedestrianCollision.NonPedestrianMask;
             fixedPoseActive = false;
             targetYaw = target != null ? target.eulerAngles.y : 0f;
             currentYaw = targetYaw;

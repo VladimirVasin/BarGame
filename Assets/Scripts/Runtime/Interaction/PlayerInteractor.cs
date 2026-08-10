@@ -14,6 +14,8 @@ namespace BarPromenade
 
         public bool InputEnabled { get; private set; } = true;
         public IInteractable ActiveInteractable => activeInteractable;
+        public static int InteractionLayerMask =>
+            CityPedestrianCollision.NonPedestrianMask;
 
         public void Initialize(InteractionPromptView view)
         {
@@ -83,7 +85,7 @@ namespace BarPromenade
                 transform.position + (Vector3.up * 0.8f),
                 InteractionRadius,
                 overlapBuffer,
-                ~0,
+                InteractionLayerMask,
                 QueryTriggerInteraction.Collide);
             IInteractable closest = null;
             float closestDistance = float.PositiveInfinity;

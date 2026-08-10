@@ -227,7 +227,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(IsFinite(descriptor.Forward), Is.True);
                 Assert.That(
                     descriptor.CollisionTier,
-                    Is.EqualTo(CityDecorationCollisionTier.None));
+                    Is.EqualTo(
+                        CityDecorationCollisionCatalog.ResolveTier(
+                            descriptor.Kind)));
                 Assert.That(descriptor.Forward.y, Is.EqualTo(0f));
                 Assert.That(
                     descriptor.Forward.sqrMagnitude,
@@ -249,6 +251,114 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.DoesNotThrow(() =>
                 plan.ValidateOrThrow(layout, fence, night));
+        }
+
+        [Test]
+        public void CollisionCatalog_DefinesEveryVisualFamily()
+        {
+            var expected = new Dictionary<
+                CityDecorationKind,
+                CityDecorationCollisionTier>
+            {
+                { CityDecorationKind.OldTownChimneysAndDormers, CityDecorationCollisionTier.None },
+                { CityDecorationKind.OldTownScaffolding, CityDecorationCollisionTier.Detail },
+                { CityDecorationKind.OldTownStreetMarket, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.OldTownClockTower, CityDecorationCollisionTier.None },
+                { CityDecorationKind.ResidentialBalconies, CityDecorationCollisionTier.None },
+                { CityDecorationKind.ResidentialLaundryAndAntenna, CityDecorationCollisionTier.None },
+                { CityDecorationKind.ResidentialDiscardedFurniture, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.ResidentialRooftopGreenhouse, CityDecorationCollisionTier.None },
+                { CityDecorationKind.IndustrialStacksAndTanks, CityDecorationCollisionTier.None },
+                { CityDecorationKind.IndustrialPipeRack, CityDecorationCollisionTier.Detail },
+                { CityDecorationKind.IndustrialCargo, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.IndustrialGantry, CityDecorationCollisionTier.None },
+                { CityDecorationKind.NightlifeBillboard, CityDecorationCollisionTier.None },
+                { CityDecorationKind.NightlifeFireEscape, CityDecorationCollisionTier.Detail },
+                { CityDecorationKind.NightlifeVendingAndQueue, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.NightlifeCinema, CityDecorationCollisionTier.None },
+                { CityDecorationKind.RoadsideDumpsterAndUtility, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.RoadsidePhoneBooth, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.RoadsideBusShelter, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.RoadsideRoadworkAndBicycle, CityDecorationCollisionTier.Detail },
+                { CityDecorationKind.ParkFountainAndStatue, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.ParkBandstand, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.ParkChessTables, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.ParkPlayground, CityDecorationCollisionTier.Blocking }
+            };
+
+            Array kinds = Enum.GetValues(typeof(CityDecorationKind));
+            Assert.That(expected, Has.Count.EqualTo(kinds.Length));
+            foreach (CityDecorationKind kind in kinds)
+            {
+                Assert.That(
+                    CityDecorationCollisionCatalog.ResolveTier(kind),
+                    Is.EqualTo(expected[kind]),
+                    kind.ToString());
+            }
+        }
+
+        [Test]
+        public void DetailWorld_UsesBoundedChunkProxiesButHomeViewUsesNone()
+        {
+            CityDecorationPlan plan = CreatePlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout,
+                out _,
+                out _);
+            int physicalDescriptorCount = 0;
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                if (plan.Descriptors[index].CollisionTier !=
+                    CityDecorationCollisionTier.None)
+                {
+                    physicalDescriptorCount++;
+                }
+            }
+
+            GameObject parent = new GameObject("City Detail Test Parent");
+            GameObject homeParent = new GameObject("Home Detail Test Parent");
+            try
+            {
+                GameObject cityDetails = CityDecorationWorldBuilder.Build(
+                    parent.transform,
+                    layout,
+                    plan);
+                BoxCollider[] proxies =
+                    cityDetails.GetComponentsInChildren<BoxCollider>(true);
+                Assert.That(
+                    proxies.Length,
+                    Is.InRange(
+                        physicalDescriptorCount,
+                        physicalDescriptorCount *
+                        CityStaticCollisionBuilder
+                            .MaximumDecorationProxyCount));
+                for (int index = 0; index < proxies.Length; index++)
+                {
+                    Assert.That(
+                        proxies[index].transform.name,
+                        Does.StartWith("City Detail Chunk "));
+                    Assert.That(proxies[index].size.x, Is.GreaterThan(0f));
+                    Assert.That(proxies[index].size.y, Is.GreaterThan(0f));
+                    Assert.That(proxies[index].size.z, Is.GreaterThan(0f));
+                }
+
+                HomeExteriorContextPlan context =
+                    HomeExteriorContextPlanner.Generate(
+                        GameSessionState.DefaultCitySeed);
+                GameObject homeDetails =
+                    CityDecorationWorldBuilder.BuildHomeExterior(
+                        homeParent.transform,
+                        context,
+                        context.NearbyDecorations);
+                Assert.That(
+                    homeDetails.GetComponentsInChildren<BoxCollider>(true),
+                    Is.Empty);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+                UnityEngine.Object.DestroyImmediate(homeParent);
+            }
         }
 
         private static CityDecorationPlan CreatePlan(

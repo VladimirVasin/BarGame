@@ -19,6 +19,7 @@ namespace BarPromenade
         public const float MinimumPoolHysteresis = 2f;
         public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
+        public const float CollisionActivationPadding = 0.05f;
 
         private readonly List<CityPedestrianActor> actors =
             new List<CityPedestrianActor>();
@@ -162,7 +163,7 @@ namespace BarPromenade
                 CityPedestrianActor actor = actors[index];
                 actor.Advance(
                     safeDeltaTime,
-                    ShouldYield(actor));
+                    ShouldYield(actor, index));
             }
 
             RefreshPresentationPool(initialPopulation: false);
@@ -234,7 +235,9 @@ namespace BarPromenade
             Shutdown();
         }
 
-        private bool ShouldYield(CityPedestrianActor actor)
+        private bool ShouldYield(
+            CityPedestrianActor actor,
+            int actorIndex)
         {
             if (!actor.HasPresentation ||
                 actor.MotionState != CityPedestrianMotionState.Walking)
@@ -271,7 +274,14 @@ namespace BarPromenade
                         other.Position,
                         PedestrianAvoidanceDistance))
                 {
-                    return true;
+                    Vector3 otherTravel = other.TravelDirection;
+                    bool meetingHeadOn =
+                        otherTravel.sqrMagnitude > 0.0001f &&
+                        Vector3.Dot(travel, otherTravel) < -0.20f;
+                    if (!meetingHeadOn || actorIndex > index)
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -332,6 +342,11 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (!IsCollisionActivationSafe(actor))
+                {
+                    continue;
+                }
+
                 float distance = PlanarSquaredDistance(
                     actor.Position,
                     player.position);
@@ -348,6 +363,44 @@ namespace BarPromenade
             }
 
             return best;
+        }
+
+        private bool IsCollisionActivationSafe(
+            CityPedestrianActor candidate)
+        {
+            float playerRadius = GetControllerRadius(
+                player,
+                candidate.AgentRadius);
+            if (PlanarCirclesOverlap(
+                    candidate.Position,
+                    candidate.AgentRadius,
+                    player.position,
+                    playerRadius,
+                    CollisionActivationPadding))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < actors.Count; index++)
+            {
+                CityPedestrianActor other = actors[index];
+                if (other == candidate || !other.HasPresentation)
+                {
+                    continue;
+                }
+
+                if (PlanarCirclesOverlap(
+                        candidate.Position,
+                        candidate.AgentRadius,
+                        other.Position,
+                        other.AgentRadius,
+                        CollisionActivationPadding))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private CityPedestrianPresentation FindAvailablePresentation()
@@ -448,6 +501,29 @@ namespace BarPromenade
             float deltaX = first.x - second.x;
             float deltaZ = first.z - second.z;
             return (deltaX * deltaX) + (deltaZ * deltaZ);
+        }
+
+        private static bool PlanarCirclesOverlap(
+            Vector3 first,
+            float firstRadius,
+            Vector3 second,
+            float secondRadius,
+            float padding)
+        {
+            float distance = firstRadius + secondRadius + padding;
+            return PlanarSquaredDistance(first, second) <
+                   distance * distance;
+        }
+
+        private static float GetControllerRadius(
+            Transform target,
+            float fallback)
+        {
+            CharacterController controller =
+                target.GetComponent<CharacterController>();
+            return controller != null && controller.radius > 0f
+                ? controller.radius
+                : fallback;
         }
 
         private static float SanitizeDeltaTime(float deltaTime)

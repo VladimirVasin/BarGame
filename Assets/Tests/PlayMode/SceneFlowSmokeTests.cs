@@ -191,7 +191,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityScene_RoadFencesLeaveBarEntrancesClear()
+        public IEnumerator CityScene_GroundTraversalUsesPhysicalBoundaries()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -202,6 +202,44 @@ namespace BarPromenade.Tests.PlayMode
                 () => cityRoot.IsInitialized,
                 "City runtime root did not finish initialization.");
             yield return null;
+
+            BoxCollider[] decorationProxies =
+                cityRoot.World.DecorationRoot.GetComponentsInChildren<
+                    BoxCollider>(true);
+            Assert.That(decorationProxies, Is.Not.Empty);
+            Assert.That(
+                cityRoot.Night.Root.GetComponentsInChildren<BoxCollider>(
+                    true),
+                Is.Not.Empty);
+            Assert.That(cityRoot.Pedestrians.ActiveCount, Is.GreaterThan(0));
+            Assert.That(
+                Physics.GetIgnoreLayerCollision(
+                    CityPedestrianCollision.DefaultLayerIndex,
+                    CityPedestrianCollision.LayerIndex),
+                Is.False);
+            for (int actorIndex = 0;
+                 actorIndex < cityRoot.Pedestrians.Actors.Count;
+                 actorIndex++)
+            {
+                CityPedestrianActor actor =
+                    cityRoot.Pedestrians.Actors[actorIndex];
+                Assert.That(
+                    actor.CollisionEnabled,
+                    Is.EqualTo(actor.HasPresentation));
+                Assert.That(
+                    actor.gameObject.layer,
+                    Is.EqualTo(CityPedestrianCollision.LayerIndex));
+            }
+
+            Transform homeRoot =
+                cityRoot.World.Root.transform.Find("Player Home");
+            Assert.That(homeRoot, Is.Not.Null);
+            Transform mailboxCollider =
+                homeRoot.Find("Home Mailbox Collider");
+            Assert.That(mailboxCollider, Is.Not.Null);
+            Assert.That(
+                mailboxCollider.GetComponent<BoxCollider>(),
+                Is.Not.Null);
 
             Transform fenceRoot = cityRoot.World.Root.transform.Find(
                 "Road Edge Fences");
@@ -238,9 +276,27 @@ namespace BarPromenade.Tests.PlayMode
                     Is.LessThanOrEqualTo(49f));
             }
 
-            Assert.That(
-                fenceRoot.GetComponentsInChildren<Collider>(true),
-                Is.Empty);
+            MeshCollider[] railColliders =
+                fenceRoot.GetComponentsInChildren<MeshCollider>(true);
+            Assert.That(railColliders, Is.Not.Empty);
+            int safetyRailCount = 0;
+            for (int index = 0; index < fenceRenderers.Length; index++)
+            {
+                Renderer renderer = fenceRenderers[index];
+                if (renderer.name == "Safety Rails")
+                {
+                    safetyRailCount++;
+                    Assert.That(
+                        renderer.GetComponent<MeshCollider>(),
+                        Is.Not.Null);
+                }
+                else if (renderer.name == "Fence Posts")
+                {
+                    Assert.That(renderer.GetComponent<Collider>(), Is.Null);
+                }
+            }
+
+            Assert.That(railColliders, Has.Length.EqualTo(safetyRailCount));
             Assert.That(
                 cityRoot.World.FencePlan.ParkGateOpenings,
                 Has.Count.EqualTo(
@@ -337,6 +393,10 @@ namespace BarPromenade.Tests.PlayMode
                         $"Park gate '{gate.Id}' is not continuously walkable.");
                 }
             }
+
+            AssertPlayerCanLeaveRoadAndBuildingBlocks(
+                cityRoot,
+                playerController);
         }
 
         [UnityTest]
@@ -607,11 +667,29 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.World.ParkRoot.transform.Find(
                     "Park Boundary Hedges"),
                 Is.Not.Null);
+            Transform benchColliders =
+                cityRoot.World.ParkRoot.transform.Find(
+                    "Park Bench Colliders");
+            Transform hedgeColliders =
+                cityRoot.World.ParkRoot.transform.Find(
+                    "Park Hedge Colliders");
+            Assert.That(benchColliders, Is.Not.Null);
+            Assert.That(hedgeColliders, Is.Not.Null);
+            Assert.That(
+                benchColliders.GetComponents<BoxCollider>(),
+                Has.Length.EqualTo(
+                    cityRoot.Layout.Park.BenchPositions.Count));
+            Assert.That(
+                hedgeColliders.GetComponents<BoxCollider>(),
+                Is.Not.Empty);
             Assert.That(
                 cityRoot.World.ParkRoot.GetComponentsInChildren<
                     Collider>(true),
                 Has.Length.EqualTo(
-                    cityRoot.Layout.Park.TreePositions.Count + 2));
+                    cityRoot.Layout.Park.TreePositions.Count +
+                    cityRoot.Layout.Park.BenchPositions.Count +
+                    hedgeColliders.GetComponents<BoxCollider>().Length +
+                    2));
 
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
@@ -2287,6 +2365,131 @@ namespace BarPromenade.Tests.PlayMode
 
             opening = default;
             return false;
+        }
+
+        private static void AssertPlayerCanLeaveRoadAndBuildingBlocks(
+            CityGameRoot cityRoot,
+            CharacterController controller)
+        {
+            Transform player = controller.transform;
+            Vector3 originalPosition = player.position;
+            bool controllerWasEnabled = controller.enabled;
+            bool pedestriansWereActive =
+                cityRoot.Pedestrians != null &&
+                cityRoot.Pedestrians.gameObject.activeSelf;
+            if (pedestriansWereActive)
+            {
+                cityRoot.Pedestrians.gameObject.SetActive(false);
+            }
+
+            bool crossedIntoClearYard = false;
+            try
+            {
+                for (int lotIndex = 0;
+                     lotIndex < cityRoot.Layout.BuildingLots.Count;
+                     lotIndex++)
+                {
+                    BuildingLot lot =
+                        cityRoot.Layout.BuildingLots[lotIndex];
+                    if (!lot.HasBuilding ||
+                        !lot.HasRoadFrontage ||
+                        lot.IsBar ||
+                        lot.IsPlayerHome ||
+                        lot.IsSupermarket)
+                    {
+                        continue;
+                    }
+
+                    Vector3 frontage = new Vector3(
+                        lot.FrontageDirection.x,
+                        0f,
+                        lot.FrontageDirection.y);
+                    Vector3 clearYardPoint =
+                        lot.DoorPosition +
+                        frontage * (controller.radius + 0.20f);
+                    clearYardPoint.y = originalPosition.y;
+                    Vector3 roadPoint = lot.ReturnPosition;
+                    roadPoint.y = originalPosition.y;
+                    for (int sample = 0; sample <= 10; sample++)
+                    {
+                        Vector3 point = Vector3.Lerp(
+                            roadPoint,
+                            clearYardPoint,
+                            sample / 10f);
+                        Assert.That(
+                            cityRoot.World.WalkableArea.Contains(
+                                point,
+                                controller.radius),
+                            Is.True,
+                            $"Road-to-yard traversal is masked at " +
+                            $"lot {lot.Cell}, sample {sample}.");
+                    }
+
+                    controller.enabled = false;
+                    player.position = roadPoint;
+                    controller.enabled = true;
+                    Physics.SyncTransforms();
+                    Vector3 clearMove = clearYardPoint - player.position;
+                    clearMove.y = 0f;
+                    controller.Move(clearMove);
+                    Vector3 clearError = clearYardPoint - player.position;
+                    clearError.y = 0f;
+                    if (clearError.magnitude > 0.08f)
+                    {
+                        continue;
+                    }
+
+                    Transform building =
+                        cityRoot.World.Root.transform.Find(
+                            $"Building {lot.Cell.x}-{lot.Cell.y}");
+                    Assert.That(building, Is.Not.Null);
+                    Transform mass = building.Find("Building Mass");
+                    Assert.That(mass, Is.Not.Null);
+                    Collider massCollider = mass.GetComponent<Collider>();
+                    Assert.That(massCollider, Is.Not.Null);
+                    Assert.That(massCollider.isTrigger, Is.False);
+
+                    Vector3 beforeBlockingMove = player.position;
+                    Vector3 requestedMove =
+                        lot.Center - beforeBlockingMove;
+                    requestedMove.y = 0f;
+                    CollisionFlags flags = controller.Move(requestedMove);
+                    Vector3 actualMove = player.position - beforeBlockingMove;
+                    actualMove.y = 0f;
+                    float forwardProgress = Vector3.Dot(
+                        actualMove,
+                        requestedMove.normalized);
+                    Assert.That(
+                        (flags & CollisionFlags.Sides) != 0,
+                        Is.True,
+                        $"Building at {lot.Cell} did not report a side hit.");
+                    Assert.That(
+                        forwardProgress,
+                        Is.LessThan(
+                            requestedMove.magnitude -
+                            controller.radius),
+                        $"Building mass at {lot.Cell} did not block the " +
+                        "player capsule.");
+                    crossedIntoClearYard = true;
+                    break;
+                }
+
+                Assert.That(
+                    crossedIntoClearYard,
+                    Is.True,
+                    "No clear ordinary yard could be entered from a road.");
+            }
+            finally
+            {
+                controller.enabled = false;
+                player.position = originalPosition;
+                controller.enabled = controllerWasEnabled;
+                Physics.SyncTransforms();
+                if (pedestriansWereActive)
+                {
+                    cityRoot.Pedestrians.gameObject.SetActive(true);
+                }
+            }
         }
 
         private static bool TryFindParkGateOpening(

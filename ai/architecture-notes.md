@@ -60,11 +60,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   trigger, fence opening and return point derive from the canonical lot and
   frontage data.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
-  constrained to a spatially indexed union of XZ street, entrance-apron and
-  park-lawn rectangles plus district-public-ground and street-approach
-  rectangles. The park connects to surrounding streets through four explicit
-  gates, while each generated district point of interest connects through
-  every one of its adjacent street sides.
+  constrained to a spatially indexed union of XZ streets, park lawn,
+  blueprint `OpenLand` and the complete logical `BuildableGround` regions.
+  Radius-safe connector rectangles overlap road-to-ground and adjacent
+  ground-to-ground seams for the maximum `0.35 m` agent radius. Water,
+  unmapped cells and space outside the active footprint remain excluded;
+  buildings and other visible obstacles are governed by their physical
+  colliders instead of being carved out of the macro walkable mask.
 - **Accepted — Pooled ambient street pedestrians:** City layout and session
   seed produce 12 immutable short routes on radius-safe street segments,
   prioritized near actual functions instead of distributed uniformly. Every
@@ -72,18 +74,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   six lightweight presentations may be bound near the player and recycling
   happens in the outer `48 m` fog band. The one `1.75 m` lampshade-hood model
   copies the production Generic Avatar contract and directly references the
-  hero's looping in-place `Idle` and `Walk` clips. Walkers have no colliders,
-  rigidbodies, prompts, persistence or gameplay reactions, and their four
-  muted palettes use the existing shared material through property blocks.
-- **Accepted — Entrance-aware visual road boundary:** A pure planner derives
-  the exposed perimeter of street rectangles only, including dead-end caps,
-  and subtracts wider openings around every bar frontage, player-home frontage
-  supermarket frontage and park gate. A district-public-place access subtracts its complete
-  block-side interval rather than creating a narrow gate, so no rail encloses
-  a public lot from an adjacent street.
-  Runtime two-rail fences are collider-free so `RoadWalkableArea` remains the
-  sole movement authority and camera collision does not react to decorative
-  posts; rails and posts are combined into owned `48 m` spatial chunks.
+  hero's looping in-place `Idle` and `Walk` clips. Every virtual route remains
+  constrained to a separate street-only mask. Its `CharacterController`
+  becomes physical only while a presentation is bound, after an overlap-safe
+  activation check, and is disabled before pooling. The dedicated
+  `CityPedestrian` layer collides with the player but not other pedestrians;
+  camera collision and interaction queries ignore it. Stable actor order owns
+  head-on yielding. Walkers retain no prompts, persistence or gameplay
+  reactions, and their four muted palettes use the shared material through
+  property blocks.
+- **Accepted — Logical terminal road boundary:** A pure planner retains rails
+  only along street-union intervals whose outward side is water, unmapped or
+  outside the active non-water footprint, plus full-road-width caps at true
+  degree-one Street terminals. Degree counts both Street and ParkPath edges,
+  so a street continuing into the park is never mistaken for a dead end.
+  Existing entrance/gate/public/open-area opening descriptors remain metadata
+  for decoration clearance. Runtime rails own combined `MeshCollider`s while
+  narrow posts remain visual-only; both stay batched in `48 m` chunks.
 - **Accepted — First-class open district points of interest:** City land use,
   not the late visual-decoration pass, owns public places. After bars, the
   player home and one buildable primary-landmark cell per urban district are
@@ -100,10 +107,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityDistrictPointOfInterestDescriptor` is the
   canonical stable ID/cell/kind/public-bounds/access contract. Its matching lot
   has `CityLandUseKind.DistrictPointOfInterest`, has no building and cannot be a
-  bar, home, park cell or primary landmark. `RoadWalkableArea` adds the public
-  ground and approach rectangles, `RoadFencePlanner` opens each complete
-  street-facing side, and `CityNightFixturePlanner` excludes lamps and signals
-  from the reserved ground/approaches. A dedicated world builder creates the
+  bar, home, park cell or primary landmark. `RoadWalkableArea` includes its
+  active ground and approach rectangles, while `RoadFencePlanner` treats the
+  complete non-water public surface as support and emits no street-side rail;
+  `CityNightFixturePlanner` excludes lamps and signals from the reserved
+  ground/approaches. A dedicated world builder creates the
   physical paving, free-standing recipe and intentional solid colliders; the
   bounded Home exterior rebuilds nearby descriptors through the same
   world-to-local transform without gameplay colliders. The last-route island
@@ -121,11 +129,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   receives a fountain/statue plus bandstand.
   Optional frontage, roadside and park clusters use per-kind footprint
   clearances around entrances, gates, lamps, signals, trees and benches. The 24
-  recipe families orient to actual road frontage and expand as visual-only,
-  collider-free, light-free and shadowless boxes in at most six shared-material
-  batches per `48 m` chunk. Home regenerates and filters the same descriptors,
-  then applies the same recipes after its world-to-local transform and exterior
-  half-space clip.
+  recipe families orient to actual road frontage and expand as light-free,
+  shadowless visuals in at most six shared-material batches per `48 m` chunk.
+  A per-kind `None`/`Detail`/`Blocking` catalog adds one to four simple box
+  proxies only for grounded structural or bulky recipes; rooftop, hanging and
+  small narrative details remain non-physical. Park benches and hedges, the
+  home mailbox, plus the lower sections of lamp and signal poles have focused
+  static proxies. Home regenerates and filters the same visual descriptors
+  after its world-to-local transform and exterior half-space clip, but its
+  bounded exterior reconstruction deliberately creates no gameplay collision.
 - **Superseded 2026-08-04 — Sprite physical/visual split:** The
   `CharacterController` still stays on the player root, but the former
   camera-facing nine-renderer sprite child has been replaced by the
