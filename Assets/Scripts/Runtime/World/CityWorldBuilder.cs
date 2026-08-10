@@ -8,7 +8,6 @@ namespace BarPromenade
     {
         private const float WorldChunkSize = 48f;
 
-        private static readonly Color RoadPaint = new Color(0.58f, 0.52f, 0.34f);
         private static readonly Color ParkGrass =
             new Color(0.16f, 0.30f, 0.18f);
         private static readonly Color ParkPlaza =
@@ -21,7 +20,6 @@ namespace BarPromenade
             new Color(0.38f, 0.22f, 0.10f);
         private static readonly Color ParkHedge =
             new Color(0.10f, 0.24f, 0.13f);
-        private static readonly Color Sidewalk = new Color(0.31f, 0.33f, 0.305f);
         private static readonly Color HomeTrim = new Color(0.66f, 0.82f, 0.80f);
         private static readonly Color HomeDoor =
             new Color(0.08f, 0.20f, 0.22f);
@@ -69,7 +67,7 @@ namespace BarPromenade
                     fencePlan,
                     nightPlan);
             Bounds bounds = BuildGround(world, layout, settings);
-            BuildRoads(world, layout, settings);
+            BuildRoads(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
             GameObject parkRoot = BuildPark(world, layout.Park);
             GameObject districtPointOfInterestRoot =
@@ -212,48 +210,36 @@ namespace BarPromenade
 
         private static void BuildRoads(
             Transform parent,
-            CityLayout layout,
-            CityGenerationSettings settings)
+            CityLayout layout)
         {
             Transform roads = new GameObject("Road Network").transform;
             roads.SetParent(parent, false);
+            CityStreetSurfacePlan plan =
+                CityStreetSurfacePlanner.Create(layout);
             var chunks =
                 new Dictionary<WorldChunkKey, RoadChunkGeometry>();
-
-            for (int i = 0; i < layout.RoadEdges.Count; i++)
-            {
-                RoadEdge edge = layout.RoadEdges[i];
-                Vector3 start = layout.GetNodeWorldPosition(edge.A);
-                Vector3 end = layout.GetNodeWorldPosition(edge.B);
-                Vector3 center = (start + end) * 0.5f;
-                Vector3 delta = end - start;
-                Vector3 size = edge.IsHorizontal
-                    ? new Vector3(Mathf.Abs(delta.x) + settings.RoadWidth, 0.16f, settings.RoadWidth)
-                    : new Vector3(settings.RoadWidth, 0.16f, Mathf.Abs(delta.z) + settings.RoadWidth);
-                WorldChunkKey key = WorldChunkKey.FromPosition(center);
-                if (!chunks.TryGetValue(
-                        key,
-                        out RoadChunkGeometry geometry))
-                {
-                    geometry = new RoadChunkGeometry();
-                    chunks.Add(key, geometry);
-                }
-
-                Bounds surface = new Bounds(center, size);
-                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
-                {
-                    geometry.ParkPaths.Add(surface);
-                }
-                else
-                {
-                    geometry.Streets.Add(surface);
-                    AddRoadDashes(
-                        geometry.Dashes,
-                        start,
-                        end,
-                        edge.IsHorizontal);
-                }
-            }
+            AddRoadGeometry(
+                chunks,
+                plan.StreetSurfaces,
+                (geometry, bounds) => geometry.Streets.Add(bounds));
+            AddRoadGeometry(
+                chunks,
+                plan.ParkPaths,
+                (geometry, bounds) => geometry.ParkPaths.Add(bounds));
+            AddRoadGeometry(
+                chunks,
+                plan.Sidewalks,
+                (geometry, bounds) => geometry.Sidewalks.Add(bounds));
+            AddRoadGeometry(
+                chunks,
+                plan.CenterMarkings,
+                (geometry, bounds) =>
+                    geometry.CenterMarkings.Add(bounds));
+            AddRoadGeometry(
+                chunks,
+                plan.CrosswalkMarkings,
+                (geometry, bounds) =>
+                    geometry.CrosswalkMarkings.Add(bounds));
 
             var keys = new List<WorldChunkKey>(chunks.Keys);
             keys.Sort(WorldChunkKey.Compare);
@@ -275,33 +261,41 @@ namespace BarPromenade
                     geometry.ParkPaths,
                     CityExteriorAppearance.ParkPath,
                     true);
-                BuildCombinedBoxesIfAny(
-                    "Road Dashes",
+                BuildSidewalkSurfaceBoxesIfAny(
+                    "Sidewalk Surfaces",
                     chunk,
-                    geometry.Dashes,
-                    RoadPaint);
+                    geometry.Sidewalks,
+                    true);
+                BuildRoadMarkingBoxesIfAny(
+                    "Road Center Markings",
+                    chunk,
+                    geometry.CenterMarkings);
+                BuildRoadMarkingBoxesIfAny(
+                    "Pedestrian Crossings",
+                    chunk,
+                    geometry.CrosswalkMarkings);
             }
         }
 
-        private static void AddRoadDashes(
-            ICollection<Bounds> target,
-            Vector3 start,
-            Vector3 end,
-            bool horizontal)
+        private static void AddRoadGeometry(
+            IDictionary<WorldChunkKey, RoadChunkGeometry> chunks,
+            IReadOnlyList<Bounds> source,
+            Action<RoadChunkGeometry, Bounds> add)
         {
-            float length = Vector3.Distance(start, end);
-            int dashCount = Mathf.Max(2, Mathf.FloorToInt(length / 5f));
-
-            for (int i = 0; i < dashCount; i++)
+            for (int index = 0; index < source.Count; index++)
             {
-                float t = (i + 0.5f) / dashCount;
-                Vector3 position = Vector3.Lerp(start, end, t);
-                Vector3 size = horizontal
-                    ? new Vector3(Mathf.Min(2.1f, length / dashCount * 0.48f), 0.025f, 0.13f)
-                    : new Vector3(0.13f, 0.025f, Mathf.Min(2.1f, length / dashCount * 0.48f));
-                target.Add(new Bounds(
-                    position + (Vector3.up * 0.095f),
-                    size));
+                Bounds bounds = source[index];
+                WorldChunkKey key =
+                    WorldChunkKey.FromPosition(bounds.center);
+                if (!chunks.TryGetValue(
+                        key,
+                        out RoadChunkGeometry geometry))
+                {
+                    geometry = new RoadChunkGeometry();
+                    chunks.Add(key, geometry);
+                }
+
+                add(geometry, bounds);
             }
         }
 
@@ -812,23 +806,31 @@ namespace BarPromenade
                 lot.FrontageDirection.y);
             CityBarFacadeWorldBuilder.BuildCity(parent, lot);
 
-            Vector3 apronCenter = (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
-            float apronLength = Vector3.Distance(lot.DoorPosition, lot.ReturnPosition);
+            Vector3 apronCenter =
+                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
+            float apronLength = Vector3.Distance(
+                lot.DoorPosition,
+                lot.SidewalkArrivalPosition);
             Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
                 ? new Vector3(
                     apronLength,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     BarEntranceGeometry.WalkwayWidth)
                 : new Vector3(
                     BarEntranceGeometry.WalkwayWidth,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     apronLength);
-            RuntimePrimitiveFactory.CreateBox(
+            BuildSidewalkBox(
                 "Bar Entrance Walkway",
                 parent,
-                apronCenter + (Vector3.up * 0.10f),
-                apronSize,
-                Sidewalk);
+                new Bounds(
+                    apronCenter +
+                    (Vector3.up *
+                     ((CityStreetSurfacePlanner.RoadTop +
+                       CityStreetSurfacePlanner.SidewalkTop) * 0.5f)),
+                    apronSize));
             walkableArea.Add(RectFromCenter(apronCenter, apronSize.x, apronSize.z));
 
             GameObject entranceObject = new GameObject("Interactive Bar Entrance");
@@ -842,7 +844,10 @@ namespace BarPromenade
             entrance.Configure(
                 lot.BarId,
                 lot.BarActivity,
-                lot.ReturnPosition + (Vector3.up * 0.12f));
+                lot.SidewalkArrivalPosition +
+                (Vector3.up *
+                 (CityStreetSurfacePlanner.SidewalkTop +
+                  PlayerFactory.GroundedRootOffset)));
             bars.Add(entrance);
         }
 
@@ -859,25 +864,30 @@ namespace BarPromenade
             CitySupermarketFacadeWorldBuilder.BuildCity(parent, lot);
 
             Vector3 apronCenter =
-                (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
+                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
             float apronLength = Vector3.Distance(
                 lot.DoorPosition,
-                lot.ReturnPosition);
+                lot.SidewalkArrivalPosition);
             Vector3 apronSize = Mathf.Abs(direction.x) > 0.5f
                 ? new Vector3(
                     apronLength,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     SupermarketEntranceGeometry.WalkwayWidth)
                 : new Vector3(
                     SupermarketEntranceGeometry.WalkwayWidth,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     apronLength);
-            RuntimePrimitiveFactory.CreateBox(
+            BuildSidewalkBox(
                 "Supermarket Entrance Walkway",
                 parent,
-                apronCenter + Vector3.up * 0.10f,
-                apronSize,
-                Sidewalk);
+                new Bounds(
+                    apronCenter +
+                    Vector3.up *
+                    ((CityStreetSurfacePlanner.RoadTop +
+                      CityStreetSurfacePlanner.SidewalkTop) * 0.5f),
+                    apronSize));
             walkableArea.Add(
                 RectFromCenter(
                     apronCenter,
@@ -898,7 +908,10 @@ namespace BarPromenade
             supermarket =
                 entranceObject.AddComponent<SupermarketEntrance>();
             supermarket.Configure(
-                lot.ReturnPosition + Vector3.up * 0.12f);
+                lot.SidewalkArrivalPosition +
+                Vector3.up *
+                (CityStreetSurfacePlanner.SidewalkTop +
+                 PlayerFactory.GroundedRootOffset));
         }
 
         private static void BuildHomeFront(
@@ -940,25 +953,30 @@ namespace BarPromenade
                 tangent);
 
             Vector3 apronCenter =
-                (lot.DoorPosition + lot.ReturnPosition) * 0.5f;
+                (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
             float apronLength = Vector3.Distance(
                 lot.DoorPosition,
-                lot.ReturnPosition);
+                lot.SidewalkArrivalPosition);
             Vector3 apronSize = frontageIsX
                 ? new Vector3(
                     apronLength,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     PlayerHomeEntranceGeometry.WalkwayWidth)
                 : new Vector3(
                     PlayerHomeEntranceGeometry.WalkwayWidth,
-                    0.08f,
+                    CityStreetSurfacePlanner.SidewalkTop -
+                    CityStreetSurfacePlanner.RoadTop,
                     apronLength);
-            RuntimePrimitiveFactory.CreateBox(
+            BuildSidewalkBox(
                 "Home Entrance Walkway",
                 parent,
-                apronCenter + (Vector3.up * 0.10f),
-                apronSize,
-                Sidewalk);
+                new Bounds(
+                    apronCenter +
+                    (Vector3.up *
+                     ((CityStreetSurfacePlanner.RoadTop +
+                       CityStreetSurfacePlanner.SidewalkTop) * 0.5f)),
+                    apronSize));
             walkableArea.Add(
                 RectFromCenter(
                     apronCenter,
@@ -1026,7 +1044,10 @@ namespace BarPromenade
             playerHome =
                 entranceObject.AddComponent<HomeEntrance>();
             playerHome.Configure(
-                lot.ReturnPosition + (Vector3.up * 0.12f));
+                lot.SidewalkArrivalPosition +
+                (Vector3.up *
+                 (CityStreetSurfacePlanner.SidewalkTop +
+                  PlayerFactory.GroundedRootOffset)));
         }
 
         internal static void BuildHomeBalconyFacade(
@@ -1436,6 +1457,64 @@ namespace BarPromenade
                 surface.GetComponent<Renderer>());
         }
 
+        private static void BuildSidewalkSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            bool collider)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    collider,
+                    CityExteriorAppearance.SidewalkTextureTileSize);
+            CityExteriorAppearance.ApplySidewalkSurface(
+                surface.GetComponent<Renderer>());
+        }
+
+        private static void BuildRoadMarkingBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject markings =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    false,
+                    CityExteriorAppearance.RoadMarkingTextureTileSize);
+            CityExteriorAppearance.ApplyRoadMarkingSurface(
+                markings.GetComponent<Renderer>());
+        }
+
+        private static void BuildSidewalkBox(
+            string name,
+            Transform parent,
+            Bounds bounds)
+        {
+            var boxes = new[] { bounds };
+            BuildSidewalkSurfaceBoxesIfAny(
+                name,
+                parent,
+                boxes,
+                true);
+        }
+
         private static void BuildCombinedBoxesIfAny(
             string name,
             Transform parent,
@@ -1489,7 +1568,11 @@ namespace BarPromenade
         {
             public readonly List<Bounds> Streets = new List<Bounds>();
             public readonly List<Bounds> ParkPaths = new List<Bounds>();
-            public readonly List<Bounds> Dashes = new List<Bounds>();
+            public readonly List<Bounds> Sidewalks = new List<Bounds>();
+            public readonly List<Bounds> CenterMarkings =
+                new List<Bounds>();
+            public readonly List<Bounds> CrosswalkMarkings =
+                new List<Bounds>();
         }
     }
 }

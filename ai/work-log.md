@@ -2,6 +2,69 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Upright pedestrian endpoint steering
+
+- Fixed a latent 3D-facing error exposed by the raised sidewalks. Near a route
+  endpoint, a small `CharacterController` height correction could dominate the
+  remaining horizontal distance; feeding that vector to `LookRotation` pitched
+  the complete actor and pooled visual close to horizontal throughout the
+  endpoint pause.
+- Pedestrian route distance, facing, final placement and endpoint completion
+  now operate strictly in XZ and preserve the controller's current Y. The
+  existing turn phase already used planar travel direction and remains
+  unchanged.
+- Added a focused regression that injects a vertical mismatch beside the final
+  waypoint and verifies an upright root through endpoint pause, turning and
+  reversed walking.
+
+Verification:
+
+- `dotnet build BarPromenade.EditModeTests.csproj -nologo` passed with zero
+  errors; the 15 `CS0649` manifest DTO warnings are pre-existing.
+- Focused Unity EditMode regression
+  `Actor_VerticalContactCorrectionAtEndpointKeepsRootUpright` passed `1/1`
+  after the user closed the Editor. Fast mode omitted broader suites, a player
+  build and scene smoke.
+
+## 2026-08-10 — Asphalt carriageways, sidewalks and zebra crossings
+
+- Added a pure `CityStreetSurfacePlan` that keeps the canonical road footprint
+  but partitions ordinary `6 m` streets into a dark `4 m` carriageway and two
+  raised `1 m` sidewalks. It also plans intersection pavement, white center
+  dashes, four-stripe zebra approaches, sidewalk/crosswalk walkable rectangles
+  and explicit ParkPath surfaces before GameObjects exist. Generation now
+  rejects widths that cannot leave a positive carriageway.
+- Extracted the deterministic, public-space-safe degree-3+ intersection
+  selector from the night fixture planner. Traffic signals and zebra crossings
+  now share the same ordered set of at most six nodes, and center dashes are
+  omitted from all intersection and crosswalk bounds.
+- Reassigned the previous light road albedo to
+  `Resources/Textures/CitySidewalkAlbedo` while preserving its Unity GUID, and
+  added generated dark-asphalt and worn-white-paint albedos. All three use
+  Repeat XZ UV recipes and material property blocks on the shared
+  `RuntimePrimitiveLit`; no material instances were added.
+- Updated the chunked City builder with physical sidewalk meshes and
+  collider-free markings. Entrance aprons now terminate at the near sidewalk,
+  match its `0.08-0.14 m` curb bounds and return the player to its center rather
+  than the road axis. The bounded Home exterior consumes the same surface plan
+  in local space without collision.
+- Shifted the 12 deterministic ambient routes to sidewalk centers and replaced
+  their separate street mask with the plan's sidewalk-only rectangles. Current
+  walkers still use single-edge routes and stop before intersections; the
+  crosswalk rectangles are available for a later multi-edge connector phase.
+
+Verification:
+
+- Focused Unity EditMode selection passed `28/28`: street-surface geometry,
+  shared signal/crosswalk selection, texture import/seams/MPBs, sidewalk NPC
+  containment, and deterministic frontage sidewalk arrivals.
+- Unity compiled Runtime, Editor, EditMode and PlayMode assemblies during that
+  invocation. Fast mode intentionally omitted complete suites, a player build
+  and scene smoke.
+- Scoped changed-source/document whitespace review is clean. Repository-wide
+  `git diff --check` remains noisy only in the unrelated pre-existing
+  `CityPedestrian3D` prefab/FBX-meta edits.
+
 ## 2026-08-10 — Physical city obstacles and open ground traversal
 
 - Expanded the player's indexed macro walkable area from streets and explicit

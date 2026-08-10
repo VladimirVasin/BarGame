@@ -135,6 +135,7 @@ namespace BarPromenade
             Vector3 spawnPosition = Layout.SpawnWorldPosition;
             string spawnSource = "default";
             string returnBarId = string.Empty;
+            bool spawnOnSidewalk = false;
             if (GameSessionState.TryGetReturnBarId(out string barId))
             {
                 returnBarId = barId;
@@ -142,6 +143,7 @@ namespace BarPromenade
                 {
                     spawnPosition = entrance.ReturnPosition;
                     spawnSource = "bar_return";
+                    spawnOnSidewalk = true;
                 }
                 else
                 {
@@ -162,6 +164,7 @@ namespace BarPromenade
                     spawnPosition =
                         World.PlayerHome.ReturnPosition;
                     spawnSource = "home_return";
+                    spawnOnSidewalk = true;
                 }
                 else
                 {
@@ -182,6 +185,7 @@ namespace BarPromenade
                     spawnPosition =
                         World.Supermarket.ReturnPosition;
                     spawnSource = "supermarket_return";
+                    spawnOnSidewalk = true;
                 }
                 else
                 {
@@ -192,7 +196,11 @@ namespace BarPromenade
                 }
             }
 
-            spawnPosition.y = 0.12f;
+            spawnPosition.y =
+                (spawnOnSidewalk
+                    ? CityStreetSurfacePlanner.SidewalkTop
+                    : CityStreetSurfacePlanner.RoadTop) +
+                PlayerFactory.GroundedRootOffset;
             bool spawnIsWalkable =
                 World.WalkableArea.Contains(spawnPosition);
             GameLog.Info(
@@ -210,11 +218,15 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
+            CityStreetSurfacePlan pedestrianStreetSurfacePlan =
+                CityStreetSurfacePlanner.Create(Layout);
             PedestrianPlan = CityPedestrianPlanner.Create(
                 Layout,
-                GameSessionState.CitySeed);
-            var pedestrianWalkableArea = new RoadWalkableArea(
-                Layout.CreateStreetRects());
+                GameSessionState.CitySeed,
+                pedestrianStreetSurfacePlan);
+            RoadWalkableArea pedestrianWalkableArea =
+                CityPedestrianPlanner.CreateSidewalkWalkableArea(
+                    pedestrianStreetSurfacePlan);
             Pedestrians = CityPedestrianFactory.Create(
                 transform,
                 PedestrianPlan,

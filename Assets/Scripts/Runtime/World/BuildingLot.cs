@@ -20,7 +20,8 @@ namespace BarPromenade
             BarActivityKind barActivity,
             Vector2Int frontageDirection,
             Vector3 doorPosition,
-            Vector3 returnPosition)
+            Vector3 returnPosition,
+            Vector3 sidewalkArrivalPosition)
         {
             Cell = cell;
             Center = center;
@@ -38,6 +39,7 @@ namespace BarPromenade
             FrontageDirection = frontageDirection;
             DoorPosition = doorPosition;
             ReturnPosition = returnPosition;
+            SidewalkArrivalPosition = sidewalkArrivalPosition;
         }
 
         public Vector2Int Cell { get; }
@@ -65,7 +67,12 @@ namespace BarPromenade
         public Vector2Int FrontageDirection { get; }
         public bool HasRoadFrontage => FrontageDirection != Vector2Int.zero;
         public Vector3 DoorPosition { get; }
+
+        // Stable graph anchor on the road centerline. Runtime entrances use
+        // SidewalkArrivalPosition so scene returns do not place the player in
+        // the carriageway.
         public Vector3 ReturnPosition { get; }
+        public Vector3 SidewalkArrivalPosition { get; }
 
         public Bounds WorldBounds
         {

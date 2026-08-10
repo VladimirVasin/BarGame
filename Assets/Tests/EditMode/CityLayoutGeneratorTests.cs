@@ -56,6 +56,9 @@ namespace BarPromenade.Tests
                     Is.EqualTo(expected.FrontageDirection));
                 Assert.That(actual.DoorPosition, Is.EqualTo(expected.DoorPosition));
                 Assert.That(actual.ReturnPosition, Is.EqualTo(expected.ReturnPosition));
+                Assert.That(
+                    actual.SidewalkArrivalPosition,
+                    Is.EqualTo(expected.SidewalkArrivalPosition));
             }
 
             CollectionAssert.AreEqual(
@@ -816,6 +819,12 @@ namespace BarPromenade.Tests
                     ContainsInclusive(road, bar.ReturnPosition),
                     Is.True,
                     bar.BarId);
+                Assert.That(
+                    ContainsInclusive(
+                        road,
+                        bar.SidewalkArrivalPosition),
+                    Is.True,
+                    bar.BarId);
 
                 Vector3 expectedDirection = new Vector3(
                     bar.FrontageDirection.x,
@@ -823,6 +832,8 @@ namespace BarPromenade.Tests
                     bar.FrontageDirection.y);
                 Vector3 doorDirection = bar.DoorPosition - bar.Center;
                 Vector3 returnDirection = bar.ReturnPosition - bar.DoorPosition;
+                Vector3 sidewalkDirection =
+                    bar.SidewalkArrivalPosition - bar.DoorPosition;
                 Assert.That(
                     Vector3.Dot(doorDirection, expectedDirection),
                     Is.GreaterThan(0f),
@@ -830,6 +841,20 @@ namespace BarPromenade.Tests
                 Assert.That(
                     Vector3.Dot(returnDirection, expectedDirection),
                     Is.GreaterThan(0f),
+                    bar.BarId);
+                Assert.That(
+                    Vector3.Dot(sidewalkDirection, expectedDirection),
+                    Is.GreaterThan(0f),
+                    bar.BarId);
+                Assert.That(
+                    Vector3.Dot(
+                        bar.ReturnPosition -
+                        bar.SidewalkArrivalPosition,
+                        expectedDirection),
+                    Is.EqualTo(
+                            layout.RoadWidth * 0.5f -
+                            CityStreetSurfacePlanner.SidewalkWidth * 0.5f)
+                        .Within(0.001f),
                     bar.BarId);
                 Assert.That(
                     Vector3.Cross(doorDirection, expectedDirection).sqrMagnitude,

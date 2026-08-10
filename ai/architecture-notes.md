@@ -67,15 +67,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unmapped cells and space outside the active footprint remain excluded;
   buildings and other visible obstacles are governed by their physical
   colliders instead of being carved out of the macro walkable mask.
-- **Accepted — Pooled ambient street pedestrians:** City layout and session
-  seed produce 12 immutable short routes on radius-safe street segments,
+- **Accepted — Deterministic street corridor:** `CityStreetSurfacePlanner`
+  keeps the canonical road footprint unchanged, but partitions every ordinary
+  `6 m` street into a dark `4 m` carriageway and two `1 m` sidewalks raised
+  from the `0.08 m` road top to `0.14 m`; ParkPath remains independent. The
+  pure plan also owns center dashes, intersection corner pavement,
+  radius-query rectangles and four-stripe zebra approaches. One shared stable
+  selector chooses at most six degree-3+ Street-only intersections that are
+  clear of ParkPath and blocked public space, so signals and crossings cannot
+  drift. Dashes are excluded from intersection and zebra bounds. City builds
+  physical sidewalk surfaces in `48 m` chunks; Home consumes the same plan in
+  local space without collision. Generation settings reject widths that leave
+  no positive carriageway between the two sidewalks. Asphalt, sidewalk and
+  white paint use three
+  packaged albedos through MPBs on the shared Lit material.
+- **Accepted — Pooled ambient sidewalk pedestrians:** City layout and session
+  seed produce 12 immutable short routes on radius-safe sidewalk segments,
   prioritized near actual functions instead of distributed uniformly. Every
   virtual actor keeps moving, pausing and turning under code ownership; only
   six lightweight presentations may be bound near the player and recycling
   happens in the outer `48 m` fog band. The one `1.75 m` lampshade-hood model
   copies the production Generic Avatar contract and directly references the
   hero's looping in-place `Idle` and `Walk` clips. Every virtual route remains
-  constrained to a separate street-only mask. Its `CharacterController`
+  constrained to a separate sidewalk-only mask at the center of one pavement
+  strip. Routes currently stay on one edge and stop before intersections;
+  zebra walkable rectangles are reserved for a future connector phase. Its
+  `CharacterController`
   becomes physical only while a presentation is bound, after an overlap-safe
   activation check, and is disabled before pooling. The dedicated
   `CityPedestrian` layer collides with the player but not other pedestrians;
@@ -714,10 +731,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Resources` shader softens depth intersections, so glow diffuses in fog
   without remaining visible through solid geometry.
 - **Accepted — Data-first night fixtures:** `CityNightFixturePlanner` derives
-  two lamps per road edge and at most six signalized degree-3+ intersections
-  deterministically from the city seed and road graph before GameObjects
-  exist. Visual lamp fixtures and bulbs are combined into separate `48 m`
-  meshes while lightweight anchors preserve the pooled-light contract.
+  two lamps per road edge and consumes the shared street-intersection selector
+  for at most six signalized degree-3+ intersections before GameObjects exist.
+  The same ordered nodes own zebra crossings. Visual lamp fixtures and bulbs
+  are combined into separate `48 m` meshes while lightweight anchors preserve
+  the pooled-light contract.
 - **Accepted — Bounded practical lights:** All bulbs and signal lenses reuse
   one HDR URP Unlit material; a player-relative pool of directed street spot
   lights plus bar entrance point lights keeps the complete exterior at no more

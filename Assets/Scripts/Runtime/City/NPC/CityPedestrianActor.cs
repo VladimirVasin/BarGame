@@ -229,6 +229,7 @@ namespace BarPromenade
             Vector3 current = transform.position;
             Vector3 target = GetGroundedWaypoint(targetIndex);
             Vector3 offset = target - current;
+            offset.y = 0f;
             float distance = offset.magnitude;
             if (distance <= 0.0001f)
             {
@@ -243,7 +244,10 @@ namespace BarPromenade
                 TurnSpeedDegrees * deltaTime);
             float step = definition.Speed * deltaTime;
             Vector3 desired = step >= distance
-                ? target
+                ? new Vector3(
+                    target.x,
+                    current.y,
+                    target.z)
                 : current + (direction * step);
             Vector3 constrained = walkableArea.Constrain(
                 current,
@@ -260,8 +264,10 @@ namespace BarPromenade
 
             LastDisplacement = transform.position - current;
             bool moved = LastDisplacement.sqrMagnitude > 0.000001f;
+            Vector3 remaining = transform.position - target;
+            remaining.y = 0f;
             if (step >= distance &&
-                (transform.position - target).sqrMagnitude <= 0.0001f)
+                remaining.sqrMagnitude <= 0.0001f)
             {
                 ReachWaypoint(targetIndex);
             }

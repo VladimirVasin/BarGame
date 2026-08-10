@@ -229,13 +229,42 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        [Test]
-        public void RoadSurfaceUsesPackagedTextureAndSharedMaterialProperties()
+        [TestCase(
+            ExteriorSurfaceKind.Road,
+            "Textures/CityRoadAsphaltAlbedo",
+            12f,
+            0.10f)]
+        [TestCase(
+            ExteriorSurfaceKind.Sidewalk,
+            "Textures/CitySidewalkAlbedo",
+            6f,
+            0.08f)]
+        [TestCase(
+            ExteriorSurfaceKind.RoadMarking,
+            "Textures/CityRoadMarkingAlbedo",
+            2f,
+            0.12f)]
+        public void ExteriorSurfaceUsesPackagedTextureAndSharedMaterialProperties(
+            ExteriorSurfaceKind surfaceKind,
+            string expectedResourcePath,
+            float expectedTileSize,
+            float expectedSmoothness)
         {
+            ResolveSurfaceRecipe(
+                surfaceKind,
+                out string resourcePath,
+                out Texture2D cachedTexture,
+                out float tileSize,
+                out float smoothness);
+            Assert.That(resourcePath, Is.EqualTo(expectedResourcePath));
+            Assert.That(tileSize, Is.EqualTo(expectedTileSize));
+            Assert.That(smoothness, Is.EqualTo(expectedSmoothness));
+
             Texture2D texture = Resources.Load<Texture2D>(
-                CityExteriorAppearance.RoadTextureResourcePath);
+                resourcePath);
 
             Assert.That(texture, Is.Not.Null);
+            Assert.That(cachedTexture, Is.SameAs(texture));
             Assert.That(texture.width, Is.EqualTo(512));
             Assert.That(texture.height, Is.EqualTo(512));
             Assert.That(texture.isReadable, Is.False);
@@ -257,7 +286,9 @@ namespace BarPromenade.Tests.EditMode
                 importer.textureCompression,
                 Is.EqualTo(TextureImporterCompression.Uncompressed));
             Assert.That(importer.isReadable, Is.False);
-            AssertRoadTextureSourceIsOpaqueAndTileable(assetPath);
+            AssertTextureSourceIsOpaqueAndTileable(
+                assetPath,
+                surfaceKind.ToString());
 
             Bounds[] boxes =
             {
@@ -265,25 +296,25 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(0f, 0.08f, 0f),
                     new Vector3(12f, 0.16f, 6f))
             };
-            GameObject road =
+            GameObject surface =
                 RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Road Surface",
+                    $"{surfaceKind} Surface",
                     null,
                     boxes,
-                    CityExteriorAppearance.Asphalt,
+                    Color.magenta,
                     true,
-                    CityExteriorAppearance.RoadTextureTileSize);
+                    tileSize);
 
             try
             {
-                Renderer renderer = road.GetComponent<Renderer>();
+                Renderer renderer = surface.GetComponent<Renderer>();
                 int preservedId =
-                    Shader.PropertyToID("_RoadSurfacePreservedTest");
+                    Shader.PropertyToID("_SurfacePreservedTest");
                 var properties = new MaterialPropertyBlock();
                 properties.SetFloat(preservedId, 0.42f);
                 renderer.SetPropertyBlock(properties);
 
-                CityExteriorAppearance.ApplyRoadSurface(renderer);
+                ApplySurfaceRecipe(surfaceKind, renderer);
 
                 properties.Clear();
                 renderer.GetPropertyBlock(properties);
@@ -305,7 +336,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     properties.GetFloat(
                         Shader.PropertyToID("_Smoothness")),
-                    Is.EqualTo(CityExteriorAppearance.RoadSmoothness)
+                    Is.EqualTo(smoothness)
                         .Within(0.0001f));
                 Assert.That(
                     properties.GetFloat(
@@ -317,12 +348,78 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
-                Object.DestroyImmediate(road);
+                Object.DestroyImmediate(surface);
             }
         }
 
-        private static void AssertRoadTextureSourceIsOpaqueAndTileable(
-            string assetPath)
+        private static void ResolveSurfaceRecipe(
+            ExteriorSurfaceKind surfaceKind,
+            out string resourcePath,
+            out Texture2D texture,
+            out float tileSize,
+            out float smoothness)
+        {
+            switch (surfaceKind)
+            {
+                case ExteriorSurfaceKind.Road:
+                    resourcePath = CityExteriorAppearance
+                        .RoadTextureResourcePath;
+                    texture = CityExteriorAppearance.RoadTexture;
+                    tileSize = CityExteriorAppearance.RoadTextureTileSize;
+                    smoothness = CityExteriorAppearance.RoadSmoothness;
+                    return;
+                case ExteriorSurfaceKind.Sidewalk:
+                    resourcePath = CityExteriorAppearance
+                        .SidewalkTextureResourcePath;
+                    texture = CityExteriorAppearance.SidewalkTexture;
+                    tileSize = CityExteriorAppearance
+                        .SidewalkTextureTileSize;
+                    smoothness = CityExteriorAppearance
+                        .SidewalkSmoothness;
+                    return;
+                case ExteriorSurfaceKind.RoadMarking:
+                    resourcePath = CityExteriorAppearance
+                        .RoadMarkingTextureResourcePath;
+                    texture = CityExteriorAppearance.RoadMarkingTexture;
+                    tileSize = CityExteriorAppearance
+                        .RoadMarkingTextureTileSize;
+                    smoothness = CityExteriorAppearance
+                        .RoadMarkingSmoothness;
+                    return;
+                default:
+                    throw new System.ArgumentOutOfRangeException(
+                        nameof(surfaceKind),
+                        surfaceKind,
+                        null);
+            }
+        }
+
+        private static void ApplySurfaceRecipe(
+            ExteriorSurfaceKind surfaceKind,
+            Renderer renderer)
+        {
+            switch (surfaceKind)
+            {
+                case ExteriorSurfaceKind.Road:
+                    CityExteriorAppearance.ApplyRoadSurface(renderer);
+                    return;
+                case ExteriorSurfaceKind.Sidewalk:
+                    CityExteriorAppearance.ApplySidewalkSurface(renderer);
+                    return;
+                case ExteriorSurfaceKind.RoadMarking:
+                    CityExteriorAppearance.ApplyRoadMarkingSurface(renderer);
+                    return;
+                default:
+                    throw new System.ArgumentOutOfRangeException(
+                        nameof(surfaceKind),
+                        surfaceKind,
+                        null);
+            }
+        }
+
+        private static void AssertTextureSourceIsOpaqueAndTileable(
+            string assetPath,
+            string surfaceName)
         {
             byte[] pngBytes = File.ReadAllBytes(
                 Path.GetFullPath(assetPath));
@@ -330,7 +427,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 pngBytes[25],
                 Is.EqualTo(2),
-                "Road albedo must use opaque RGB PNG storage.");
+                $"{surfaceName} albedo must use opaque RGB PNG storage.");
 
             var source = new Texture2D(
                 2,
@@ -369,7 +466,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     meanChannelDelta,
                     Is.LessThanOrEqualTo(16.0),
-                    "Road albedo edges diverge too much for Repeat sampling.");
+                    $"{surfaceName} albedo edges diverge too much " +
+                    "for Repeat sampling.");
             }
             finally
             {
@@ -382,6 +480,13 @@ namespace BarPromenade.Tests.EditMode
             return Mathf.Abs(first.r - second.r) +
                    Mathf.Abs(first.g - second.g) +
                    Mathf.Abs(first.b - second.b);
+        }
+
+        public enum ExteriorSurfaceKind
+        {
+            Road,
+            Sidewalk,
+            RoadMarking
         }
     }
 }

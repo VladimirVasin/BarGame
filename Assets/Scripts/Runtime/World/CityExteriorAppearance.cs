@@ -12,8 +12,16 @@ namespace BarPromenade
     {
         public const string RoadTextureResourcePath =
             "Textures/CityRoadAsphaltAlbedo";
+        public const string SidewalkTextureResourcePath =
+            "Textures/CitySidewalkAlbedo";
+        public const string RoadMarkingTextureResourcePath =
+            "Textures/CityRoadMarkingAlbedo";
         public const float RoadTextureTileSize = 12f;
+        public const float SidewalkTextureTileSize = 6f;
+        public const float RoadMarkingTextureTileSize = 2f;
         public const float RoadSmoothness = 0.10f;
+        public const float SidewalkSmoothness = 0.08f;
+        public const float RoadMarkingSmoothness = 0.12f;
 
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -27,6 +35,8 @@ namespace BarPromenade
             Shader.PropertyToID("_Metallic");
 
         private static Texture2D roadTexture;
+        private static Texture2D sidewalkTexture;
+        private static Texture2D roadMarkingTexture;
 
         public static readonly Color Asphalt =
             new Color(0.175f, 0.195f, 0.195f);
@@ -59,20 +69,32 @@ namespace BarPromenade
         {
             get
             {
-                if (roadTexture == null)
-                {
-                    roadTexture = Resources.Load<Texture2D>(
-                        RoadTextureResourcePath);
-                }
+                return LoadSurfaceTexture(
+                    ref roadTexture,
+                    RoadTextureResourcePath,
+                    "road");
+            }
+        }
 
-                if (roadTexture == null)
-                {
-                    throw new InvalidOperationException(
-                        "Missing road surface texture " +
-                        $"'{RoadTextureResourcePath}'.");
-                }
+        public static Texture2D SidewalkTexture
+        {
+            get
+            {
+                return LoadSurfaceTexture(
+                    ref sidewalkTexture,
+                    SidewalkTextureResourcePath,
+                    "sidewalk");
+            }
+        }
 
-                return roadTexture;
+        public static Texture2D RoadMarkingTexture
+        {
+            get
+            {
+                return LoadSurfaceTexture(
+                    ref roadMarkingTexture,
+                    RoadMarkingTextureResourcePath,
+                    "road marking");
             }
         }
 
@@ -83,14 +105,77 @@ namespace BarPromenade
                 return;
             }
 
+            ApplySurface(
+                renderer,
+                RoadTexture,
+                RoadSmoothness);
+        }
+
+        public static void ApplySidewalkSurface(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            ApplySurface(
+                renderer,
+                SidewalkTexture,
+                SidewalkSmoothness);
+        }
+
+        public static void ApplyRoadMarkingSurface(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            ApplySurface(
+                renderer,
+                RoadMarkingTexture,
+                RoadMarkingSmoothness);
+        }
+
+        private static void ApplySurface(
+            Renderer renderer,
+            Texture2D texture,
+            float smoothness)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, RoadTexture);
+            properties.SetTexture(BaseMapId, texture);
             properties.SetColor(BaseColorId, Color.white);
             properties.SetColor(ColorId, Color.white);
-            properties.SetFloat(SmoothnessId, RoadSmoothness);
+            properties.SetFloat(SmoothnessId, smoothness);
             properties.SetFloat(MetallicId, 0f);
             renderer.SetPropertyBlock(properties);
+        }
+
+        private static Texture2D LoadSurfaceTexture(
+            ref Texture2D cachedTexture,
+            string resourcePath,
+            string surfaceName)
+        {
+            if (cachedTexture == null)
+            {
+                cachedTexture = Resources.Load<Texture2D>(resourcePath);
+            }
+
+            if (cachedTexture == null)
+            {
+                throw new InvalidOperationException(
+                    $"Missing {surfaceName} surface texture " +
+                    $"'{resourcePath}'.");
+            }
+
+            return cachedTexture;
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -98,6 +183,8 @@ namespace BarPromenade
         private static void ResetCachedResources()
         {
             roadTexture = null;
+            sidewalkTexture = null;
+            roadMarkingTexture = null;
         }
 
         public static Color CreateNightFacadeColor(

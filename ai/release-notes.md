@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### 2026-08-10 — Pedestrians stay upright at route ends
+
+- Ambient walkers no longer pitch their complete model sideways when a curb,
+  entrance apron or controller contact leaves a small height difference at the
+  final waypoint. Route-facing and endpoint completion now use only the XZ
+  plane, while physical height correction remains independent.
+
+### 2026-08-10 — Roads now have sidewalks and zebra crossings
+
+- Ordinary streets now read as dark asphalt carriageways bordered by raised
+  pedestrian sidewalks on both sides. The previous light road texture has
+  been retained for the pavement instead of discarded.
+- Center dashes are now textured white traffic paint. Selected ordinary
+  signalized intersections also receive four-stripe zebra crossings, with no
+  center markings drawn through them; park paths remain visually separate.
+- Ambient walkers now travel along sidewalk centers instead of the roadway,
+  and returns from bars, Home or the supermarket place the player on the
+  frontage sidewalk. The Home balcony view reconstructs the same street
+  surfaces and markings without adding collision.
+
 ### 2026-08-10 — Streets no longer fence off the city
 
 - The player can now leave the road and explore real open space between

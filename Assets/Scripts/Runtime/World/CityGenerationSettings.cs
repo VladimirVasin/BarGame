@@ -14,7 +14,7 @@ namespace BarPromenade
         [Min(0f)] public float MinimumBarRouteDistance = 120f;
         [Min(1f)] public float BlockWidth = 18f;
         [Min(1f)] public float BlockDepth = 18f;
-        [Min(0.1f)] public float RoadWidth = 6f;
+        [Min(2.01f)] public float RoadWidth = 6f;
         [Range(0f, 1f)] public float LoopChance = 0.28f;
         [Min(0f)] public float BuildingInset = 1.25f;
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;
@@ -194,6 +194,16 @@ namespace BarPromenade
             RequirePositiveFinite(BlockWidth, nameof(BlockWidth));
             RequirePositiveFinite(BlockDepth, nameof(BlockDepth));
             RequirePositiveFinite(RoadWidth, nameof(RoadWidth));
+            if (RoadWidth <=
+                CityStreetSurfacePlanner.SidewalkWidth * 2f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(RoadWidth),
+                    RoadWidth,
+                    "Road width must leave positive carriageway space " +
+                    "between both sidewalks.");
+            }
+
             RequireNonNegativeFinite(BuildingInset, nameof(BuildingInset));
             RequirePositiveFinite(MinimumBuildingHeight, nameof(MinimumBuildingHeight));
             RequirePositiveFinite(MaximumBuildingHeight, nameof(MaximumBuildingHeight));

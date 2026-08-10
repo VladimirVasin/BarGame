@@ -685,6 +685,10 @@ namespace BarPromenade.Tests.PlayMode
                 AssertRequiredObject(
                     home.ExteriorView,
                     "Home Exterior Street Surfaces"));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    home.ExteriorView,
+                    "Home Exterior Sidewalk Surfaces"));
         }
 
         private static void AssertRenderedExteriorBarFacade(
@@ -931,6 +935,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(renderers, Is.Not.Empty);
             bool foundGround = false;
             bool foundStreet = false;
+            bool foundSidewalk = false;
             bool foundBuilding = false;
             for (int index = 0;
                  index < renderers.Length;
@@ -954,6 +959,9 @@ namespace BarPromenade.Tests.PlayMode
                 foundStreet |=
                     renderer.name ==
                     "Home Exterior Street Surfaces";
+                foundSidewalk |=
+                    renderer.name ==
+                    "Home Exterior Sidewalk Surfaces";
                 foundBuilding |=
                     renderer.name ==
                     "Exterior Building Mass";
@@ -961,6 +969,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(foundGround, Is.True);
             Assert.That(foundStreet, Is.True);
+            Assert.That(foundSidewalk, Is.True);
             Assert.That(
                 foundBuilding,
                 Is.True,

@@ -65,7 +65,7 @@ namespace BarPromenade
             root.SetParent(parent, false);
 
             BuildTerminalEnvironment(root, balcony);
-            BuildRoads(root, balcony, context);
+            BuildRoads(root, context);
             BuildBuildings(root, context);
             CityDistrictPointOfInterestWorldBuilder
                 .BuildHomeExterior(root, context);
@@ -152,50 +152,51 @@ namespace BarPromenade
 
         private static void BuildRoads(
             Transform parent,
-            HomeBalconyLayoutPlan balcony,
             HomeExteriorContextPlan context)
         {
-            var streets = new List<Bounds>(
+            CityStreetSurfacePlan plan =
+                CityStreetSurfacePlanner.Create(context.Layout);
+            var nearbyRoadRectangles = new List<Rect>(
                 context.NearbyRoads.Count);
-            var parkPaths = new List<Bounds>();
             for (int index = 0;
                  index < context.NearbyRoads.Count;
                  index++)
             {
-                RoadEdge edge = context.NearbyRoads[index];
-                Rect cityRect =
-                    context.Layout.GetRoadRect(edge);
-                Rect localRect =
-                    PlayerHomeBalconyGeometry
-                        .ToHomeLocalRect(
-                            context.PlayerHome,
-                            cityRect);
-                var surface = new Bounds(
-                    new Vector3(
-                        localRect.center.x,
-                        balcony.StreetGroundY,
-                        localRect.center.y),
-                    new Vector3(
-                        localRect.width,
-                        0.16f,
-                        localRect.height));
-                if (!TryClipToExteriorHalfSpace(
-                        surface,
-                        out Bounds exteriorSurface))
-                {
-                    continue;
-                }
-
-                if (context.Layout.GetPathKind(edge) ==
-                    CityPathKind.ParkPath)
-                {
-                    parkPaths.Add(exteriorSurface);
-                }
-                else
-                {
-                    streets.Add(exteriorSurface);
-                }
+                nearbyRoadRectangles.Add(
+                    context.Layout.GetRoadRect(
+                        context.NearbyRoads[index]));
             }
+
+            var streets = new List<Bounds>();
+            var parkPaths = new List<Bounds>();
+            var sidewalks = new List<Bounds>();
+            var centerMarkings = new List<Bounds>();
+            var crosswalkMarkings = new List<Bounds>();
+            AddHomeLocalStreetGeometry(
+                plan.StreetSurfaces,
+                nearbyRoadRectangles,
+                context,
+                streets);
+            AddHomeLocalStreetGeometry(
+                plan.ParkPaths,
+                nearbyRoadRectangles,
+                context,
+                parkPaths);
+            AddHomeLocalStreetGeometry(
+                plan.Sidewalks,
+                nearbyRoadRectangles,
+                context,
+                sidewalks);
+            AddHomeLocalStreetGeometry(
+                plan.CenterMarkings,
+                nearbyRoadRectangles,
+                context,
+                centerMarkings);
+            AddHomeLocalStreetGeometry(
+                plan.CrosswalkMarkings,
+                nearbyRoadRectangles,
+                context,
+                crosswalkMarkings);
 
             BuildRoadSurfaceBoxesIfAny(
                 "Home Exterior Street Surfaces",
@@ -206,6 +207,71 @@ namespace BarPromenade
                 parent,
                 parkPaths,
                 CityExteriorAppearance.ParkPath);
+            BuildSidewalkSurfaceBoxesIfAny(
+                "Home Exterior Sidewalk Surfaces",
+                parent,
+                sidewalks);
+            BuildRoadMarkingBoxesIfAny(
+                "Home Exterior Road Center Markings",
+                parent,
+                centerMarkings);
+            BuildRoadMarkingBoxesIfAny(
+                "Home Exterior Pedestrian Crossings",
+                parent,
+                crosswalkMarkings);
+        }
+
+        private static void AddHomeLocalStreetGeometry(
+            IReadOnlyList<Bounds> source,
+            IReadOnlyList<Rect> nearbyRoadRectangles,
+            HomeExteriorContextPlan context,
+            ICollection<Bounds> target)
+        {
+            for (int index = 0; index < source.Count; index++)
+            {
+                Bounds cityBounds = source[index];
+                if (!ContainsAnyRoadCenter(
+                        cityBounds.center,
+                        nearbyRoadRectangles))
+                {
+                    continue;
+                }
+
+                var localBounds = new Bounds(
+                    PlayerHomeBalconyGeometry.ToHomeLocal(
+                        context.PlayerHome,
+                        cityBounds.center),
+                    PlayerHomeBalconyGeometry.ToHomeLocalSize(
+                        context.PlayerHome,
+                        cityBounds.size));
+                if (TryClipToExteriorHalfSpace(
+                        localBounds,
+                        out Bounds exteriorBounds))
+                {
+                    target.Add(exteriorBounds);
+                }
+            }
+        }
+
+        private static bool ContainsAnyRoadCenter(
+            Vector3 center,
+            IReadOnlyList<Rect> roadRectangles)
+        {
+            for (int index = 0;
+                 index < roadRectangles.Count;
+                 index++)
+            {
+                Rect road = roadRectangles[index];
+                if (center.x >= road.xMin &&
+                    center.x <= road.xMax &&
+                    center.z >= road.yMin &&
+                    center.z <= road.yMax)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void BuildBuildings(
@@ -681,6 +747,50 @@ namespace BarPromenade
                     CityExteriorAppearance.RoadTextureTileSize);
             CityExteriorAppearance.ApplyRoadSurface(
                 surface.GetComponent<Renderer>());
+        }
+
+        private static void BuildSidewalkSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    false,
+                    CityExteriorAppearance.SidewalkTextureTileSize);
+            CityExteriorAppearance.ApplySidewalkSurface(
+                surface.GetComponent<Renderer>());
+        }
+
+        private static void BuildRoadMarkingBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject markings =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    Color.white,
+                    false,
+                    CityExteriorAppearance.RoadMarkingTextureTileSize);
+            CityExteriorAppearance.ApplyRoadMarkingSurface(
+                markings.GetComponent<Renderer>());
         }
 
         private static void BuildCombinedBoxesIfAny(

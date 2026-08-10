@@ -1319,6 +1319,12 @@ namespace BarPromenade
                     : settings.NodeSpacing.y * 0.5f;
             Vector3 doorPosition = center + (direction * buildingHalfDistance);
             Vector3 returnPosition = center + (direction * roadDistance);
+            float sidewalkCenterOffset =
+                (settings.RoadWidth * 0.5f) -
+                (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);
+            Vector3 sidewalkArrivalPosition =
+                returnPosition -
+                (direction * Mathf.Max(0f, sidewalkCenterOffset));
             Color color = CreateBuildingColor(
                 ref random,
                 isBar,
@@ -1345,7 +1351,8 @@ namespace BarPromenade
                 barActivity,
                 frontage,
                 doorPosition,
-                returnPosition);
+                returnPosition,
+                sidewalkArrivalPosition);
         }
 
         private static Color CreateBuildingColor(

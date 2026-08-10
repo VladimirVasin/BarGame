@@ -95,21 +95,23 @@ The vertical slice contains:
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;
-- one opaque generated
-  `Resources/Textures/CityRoadAsphaltAlbedo` road albedo, imported at
-  `512x512` with Repeat, Bilinear filtering, mipmaps, anisotropy `4` and
-  no compression. Only City and Home exterior street surfaces opt into XZ
-  planar UVs at `12 m` per tile; their shared `RuntimePrimitiveLit` renderer
-  receives `_BaseMap`, white tint, `0.10` smoothness and zero metallic
-  through a material property block without creating material instances.
-  Park paths and road dashes remain unchanged, and the street render mesh
-  continues to share its geometry with the existing surface collider;
+- three opaque generated exterior albedos: dark ordinary asphalt, the former
+  light road texture reassigned to sidewalks, and worn white traffic paint.
+  They retain Repeat/Bilinear/mipmap import settings and use XZ planar UVs at
+  `12 m`, `6 m` and `2 m` per tile through material property blocks on the one
+  shared `RuntimePrimitiveLit`, without material instances. A deterministic
+  `CityStreetSurfacePlan` keeps the existing `6 m` road footprint, divides
+  ordinary streets into a `4 m` carriageway plus two raised `1 m` sidewalks,
+  keeps park paths separate, textures the center dashes white and adds zebra
+  crossings on up to six eligible ordinary intersections. City colliders and
+  the bounded Home reconstruction consume the same geometry plan;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
-- 12 deterministic ambient street routes biased toward real city functions,
+- 12 deterministic ambient sidewalk routes biased toward real city functions,
   continuously simulated behind a pool of at most six visible low-poly
-  walkers. Virtual actors stay on a separate street-only mask; a pooled
+  walkers. Virtual actors stay on a separate sidewalk-only mask and walk at
+  the center of either pavement strip rather than in the carriageway; a pooled
   walker's `CharacterController` is enabled only while its presentation is
   safely bound. The dedicated layer collides with the player, ignores other
   pedestrians and is excluded from camera/interaction queries. All instances
@@ -249,7 +251,7 @@ The vertical slice contains:
   from their shared street approach under default spacing; custom-layout
   fallback placement remains bounded to `48 m` by traversable street distance,
   and returning from a bar, home or supermarket interior restores that
-  entrance's own return point;
+  entrance's own sidewalk arrival point rather than the road centerline;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one production `Resources/Player/Player3D` prefab used by City, BarInterior,
@@ -519,8 +521,9 @@ The vertical slice contains:
   another scene load, onto a walkable third-floor balcony at `4.7 m` street
   elevation; open-looking rails retain invisible safety colliders, while the
   view rebuilds only a bounded same-blueprint-and-seed slice of the actual
-  street's roads, lots, windows, lamps and signals. City and Home share the
-  exterior ground, road, facade, window and passive bar-front appearance
+  street's asphalt, sidewalks, road markings, lots, windows, lamps and
+  signals. City and Home share the exterior ground, street-surface, facade,
+  window and passive bar-front appearance
   recipe. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
   background, `48 m` visibility cap, current time-of-day lighting, grading,

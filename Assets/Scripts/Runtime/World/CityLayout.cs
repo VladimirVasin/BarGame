@@ -622,10 +622,14 @@ namespace BarPromenade
                             GetRoadRect(supermarketFrontage);
                         if (!ContainsInclusive(
                                 supermarketRoad,
-                                lot.ReturnPosition))
+                                lot.ReturnPosition) ||
+                            !ContainsInclusive(
+                                supermarketRoad,
+                                lot.SidewalkArrivalPosition))
                         {
                             throw new InvalidOperationException(
-                                "The supermarket return point must lie on " +
+                                "The supermarket road anchor and sidewalk " +
+                                "arrival must lie on " +
                                 "its frontage road.");
                         }
 
@@ -661,10 +665,14 @@ namespace BarPromenade
                     Rect homeRoad = GetRoadRect(homeFrontage);
                     if (!ContainsInclusive(
                             homeRoad,
-                            lot.ReturnPosition))
+                            lot.ReturnPosition) ||
+                        !ContainsInclusive(
+                            homeRoad,
+                            lot.SidewalkArrivalPosition))
                     {
                         throw new InvalidOperationException(
-                            "The player home return point must lie on " +
+                            "The player home road anchor and sidewalk " +
+                            "arrival must lie on " +
                             "its frontage road.");
                     }
 
@@ -714,10 +722,14 @@ namespace BarPromenade
                 }
 
                 Rect road = GetRoadRect(frontage);
-                if (!ContainsInclusive(road, lot.ReturnPosition))
+                if (!ContainsInclusive(road, lot.ReturnPosition) ||
+                    !ContainsInclusive(
+                        road,
+                        lot.SidewalkArrivalPosition))
                 {
                     throw new InvalidOperationException(
-                        $"Bar {lot.BarId} has a return point outside its frontage road.");
+                        $"Bar {lot.BarId} has a road anchor or sidewalk " +
+                        "arrival outside its frontage road.");
                 }
 
                 bars.Add(lot);

@@ -8,13 +8,12 @@ namespace BarPromenade
     {
         public const float FirstLampEdgeT = 0.28f;
         public const float SecondLampEdgeT = 0.72f;
-        public const int MaximumSignalIntersections = 6;
+        public const int MaximumSignalIntersections =
+            CityStreetIntersectionSelector.MaximumIntersectionCount;
 
         private const float FixtureRoadClearance = 0.75f;
         private const float PublicSpaceFixtureClearance = 1.0f;
         private const uint LampSideSalt = 0x4C414D50u;
-        private const uint SignalSelectionSalt = 0x53454C45u;
-        private const uint SignalCornerSalt = 0x434F524Eu;
         private const uint SignalPhaseSalt = 0x50484153u;
 
         public static CityNightFixturePlan CreatePlan(CityLayout layout)
@@ -134,98 +133,31 @@ namespace BarPromenade
             CityLayout layout,
             ICollection<TrafficSignalDescriptor> target)
         {
-            Dictionary<Vector2Int, int> degrees = CountNodeDegrees(layout);
-            var candidates = new List<SignalCandidate>();
-
-            foreach (KeyValuePair<Vector2Int, int> pair in degrees)
-            {
-                if (pair.Value < 3 ||
-                    TouchesParkPath(layout, pair.Key))
-                {
-                    continue;
-                }
-
-                uint rank = StableHash(
-                    layout.Seed,
-                    pair.Key.x,
-                    pair.Key.y,
-                    SignalSelectionSalt);
-                candidates.Add(new SignalCandidate(pair.Key, rank));
-            }
-
-            candidates.Sort(CompareSignalCandidates);
-            int addedIntersectionCount = 0;
-            for (int index = 0;
-                 index < candidates.Count &&
-                 addedIntersectionCount < MaximumSignalIntersections;
-                 index++)
-            {
-                if (TryCreateTrafficSignalPair(
+            IReadOnlyList<Vector2Int> selectedNodes =
+                CityStreetIntersectionSelector.Select(
                     layout,
-                    candidates[index].Node,
-                    target))
-                {
-                    addedIntersectionCount++;
-                }
+                    MaximumSignalIntersections);
+            for (int index = 0; index < selectedNodes.Count; index++)
+            {
+                CreateTrafficSignalPair(
+                    layout,
+                    selectedNodes[index],
+                    target);
             }
         }
 
-        private static bool TouchesParkPath(
-            CityLayout layout,
-            Vector2Int node)
-        {
-            for (int index = 0;
-                 index < layout.RoadEdges.Count;
-                 index++)
-            {
-                RoadEdge edge = layout.RoadEdges[index];
-                if (edge.Contains(node) &&
-                    layout.GetPathKind(edge) ==
-                    CityPathKind.ParkPath)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static Dictionary<Vector2Int, int> CountNodeDegrees(
-            CityLayout layout)
-        {
-            var degrees = new Dictionary<Vector2Int, int>(
-                layout.Nodes.Count);
-            for (int index = 0; index < layout.Nodes.Count; index++)
-            {
-                degrees.Add(layout.Nodes[index], 0);
-            }
-
-            for (int index = 0; index < layout.RoadEdges.Count; index++)
-            {
-                RoadEdge edge = layout.RoadEdges[index];
-                degrees[edge.A] = degrees[edge.A] + 1;
-                degrees[edge.B] = degrees[edge.B] + 1;
-            }
-
-            return degrees;
-        }
-
-        private static bool TryCreateTrafficSignalPair(
+        private static void CreateTrafficSignalPair(
             CityLayout layout,
             Vector2Int node,
             ICollection<TrafficSignalDescriptor> target)
         {
-            uint cornerHash = StableHash(
-                layout.Seed,
-                node.x,
-                node.y,
-                SignalCornerSalt);
-            float zSign = (cornerHash & 1u) == 0u ? 1f : -1f;
-            Vector3 cornerDirection = new Vector3(1f, 0f, zSign);
-            float offset = (layout.RoadWidth * 0.5f) + FixtureRoadClearance;
             Vector3 nodePosition = layout.GetNodeWorldPosition(node);
-            Vector3 firstPosition = nodePosition + (cornerDirection * offset);
-            Vector3 secondPosition = nodePosition - (cornerDirection * offset);
+            Vector3 pairedOffset =
+                CityStreetIntersectionSelector.GetPairedFixtureOffset(
+                    layout,
+                    node);
+            Vector3 firstPosition = nodePosition + pairedOffset;
+            Vector3 secondPosition = nodePosition - pairedOffset;
             float phase = HashToUnitFloat(StableHash(
                 layout.Seed,
                 node.x,
@@ -244,15 +176,8 @@ namespace BarPromenade
                 secondPosition,
                 (nodePosition - secondPosition).normalized,
                 phase);
-            if (IsFixtureBlocked(layout, first.Position) ||
-                IsFixtureBlocked(layout, second.Position))
-            {
-                return false;
-            }
-
             target.Add(first);
             target.Add(second);
-            return true;
         }
 
         private static bool IsFixtureBlocked(
@@ -313,22 +238,6 @@ namespace BarPromenade
                    point.y <= bounds.yMax + expansion;
         }
 
-        private static int CompareSignalCandidates(
-            SignalCandidate left,
-            SignalCandidate right)
-        {
-            int rankComparison = left.Rank.CompareTo(right.Rank);
-            if (rankComparison != 0)
-            {
-                return rankComparison;
-            }
-
-            int xComparison = left.Node.x.CompareTo(right.Node.x);
-            return xComparison != 0
-                ? xComparison
-                : left.Node.y.CompareTo(right.Node.y);
-        }
-
         private static float HashToUnitFloat(uint hash)
         {
             return (hash >> 8) * (1f / 16777216f);
@@ -376,16 +285,5 @@ namespace BarPromenade
             return hash == 0u ? 0xA341316Cu : hash;
         }
 
-        private readonly struct SignalCandidate
-        {
-            public SignalCandidate(Vector2Int node, uint rank)
-            {
-                Node = node;
-                Rank = rank;
-            }
-
-            public Vector2Int Node { get; }
-            public uint Rank { get; }
-        }
     }
 }

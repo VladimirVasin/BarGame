@@ -110,6 +110,78 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Actor_VerticalContactCorrectionAtEndpointKeepsRootUpright()
+        {
+            GameObject actorObject = new GameObject(
+                "Endpoint Upright Pedestrian");
+            try
+            {
+                CityPedestrianActor actor =
+                    actorObject.AddComponent<CityPedestrianActor>();
+                var definition = new CityPedestrianDefinition(
+                    "endpoint-upright",
+                    new[]
+                    {
+                        new RoadEdge(
+                            Vector2Int.zero,
+                            Vector2Int.right)
+                    },
+                    new[]
+                    {
+                        new Vector3(0f, 0.06f, 0f),
+                        new Vector3(1f, 0.06f, 0f)
+                    },
+                    1f,
+                    0.91f,
+                    0f,
+                    0,
+                    1u,
+                    false);
+                actor.Initialize(
+                    definition,
+                    new RoadWalkableArea(
+                        new[]
+                        {
+                            Rect.MinMaxRect(-1f, -1f, 2f, 1f)
+                        }),
+                    CityPedestrianPlanner.AgentRadius);
+
+                // A CharacterController can resolve a curb contact a few
+                // centimetres above the planned waypoint. Endpoint steering
+                // must ignore that vertical correction instead of looking
+                // down and pitching the complete visual rig onto its side.
+                actor.transform.position = new Vector3(0.999f, 0.24f, 0f);
+                actor.Advance(0.02f);
+
+                AssertActorRootIsUpright(actor);
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(
+                        CityPedestrianMotionState.EndpointPause));
+                Assert.That(actor.Position.x, Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(actor.Position.y, Is.EqualTo(0.24f).Within(0.0001f));
+
+                actor.Advance(
+                    CityPedestrianActor.MaximumEndpointPause + 0.01f);
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Turning));
+                AssertActorRootIsUpright(actor);
+
+                actor.Advance(CityPedestrianActor.TurnDuration);
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Walking));
+                Assert.That(actor.RouteDirection, Is.EqualTo(-1));
+                AssertActorRootIsUpright(actor);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(actorObject);
+            }
+        }
+
+        [Test]
         public void Factory_SimulatesEveryRouteAndCapsTheVisualPool()
         {
             GameObject root = new GameObject("Pedestrian Test Root");
@@ -454,6 +526,17 @@ namespace BarPromenade.Tests.EditMode
                     actor.CollisionEnabled,
                     Is.EqualTo(actor.HasPresentation));
             }
+        }
+
+        private static void AssertActorRootIsUpright(
+            CityPedestrianActor actor)
+        {
+            Assert.That(
+                Vector3.Dot(actor.transform.up, Vector3.up),
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(
+                actor.transform.forward.y,
+                Is.EqualTo(0f).Within(0.0001f));
         }
 
         private static void AssertWalkSolesStayGrounded(GameObject prefab)

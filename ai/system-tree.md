@@ -22,7 +22,9 @@ Assets/
       Ps1Composite.mat
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Textures/
-      CityRoadAsphaltAlbedo.png    opaque generated road albedo; 512 runtime, Repeat/mips
+      CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
+      CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
+      CityRoadMarkingAlbedo.png    generated worn white traffic-paint material tile
     Rendering/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
@@ -114,7 +116,10 @@ Assets/
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
         CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
-        CityWorldBuilder.cs      chunked physical surfaces + textured street batches
+        CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
+        CityStreetSurfacePlan.cs immutable carriageway/sidewalk/marking geometry
+        CityStreetSurfacePlanner.cs  street split, corners, dashes + zebra approaches
+        CityWorldBuilder.cs      chunked physical asphalt/sidewalk + marking batches
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery landmark descriptors
         CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
@@ -128,7 +133,7 @@ Assets/
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style visuals + chunked collision proxies
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
-        CityExteriorAppearance.cs    shared City/Home ground, road MPB, facade/window recipe
+        CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
@@ -143,7 +148,7 @@ Assets/
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
         HomeExteriorContextPlan.cs  bounded same-blueprint/seed street view descriptors
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
-        HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + textured streets
+        HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + full street plan
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
@@ -167,7 +172,7 @@ Assets/
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       City/NPC/      deterministic street routes, actors and six-model visual pool
         CityPedestrianPlan.cs          immutable route/population definitions
-        CityPedestrianPlanner.cs       function-biased safe street segments
+        CityPedestrianPlanner.cs       function-biased sidewalk-centered segments
         CityPedestrianActor.cs         walking state + presentation-gated controller
         CityPedestrianDirector.cs      simulation, safe pooling + stable yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
@@ -250,7 +255,7 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
-      RuntimePrimitiveFactoryTests.cs road asset/import/seam/MPB/UV/collider contract
+      RuntimePrimitiveFactoryTests.cs three street assets/import/seam/MPB/UV contract
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
@@ -261,7 +266,8 @@ Assets/
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
       Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
-      CityPedestrianPlannerTests.cs     deterministic safe function-biased routes
+      CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
+      CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
@@ -413,13 +419,17 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
 player + seed -> CityFogField (unchanged by time of day)
-layout + seed -> CityPedestrianPlanner -> 12 safe street routes
+layout -> CityStreetSurfacePlanner -> dark carriageway + two raised sidewalks
+                                 -> white center dashes + selected zebra crossings
+                                 -> shared City/Home presentation geometry
+                                 -> sidewalk/crosswalk walkable rectangles
+layout + seed -> CityPedestrianPlanner -> 12 safe sidewalk routes
                                       -> CityPedestrianDirector
                                          -> continuous virtual actors
                                          -> six-model outer-fog pool
                                             -> safe CharacterController activation
                                             -> shared Player Idle/Walk clips
-                                         -> street-only RoadWalkableArea
+                                         -> sidewalk-only RoadWalkableArea
                                          -> stable yield; no NPC/NPC collision
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts

@@ -10,7 +10,9 @@ namespace BarPromenade
         public const int MaximumPedestrianCount = 24;
         public const int PaletteVariantCount = 4;
         public const float AgentRadius = 0.35f;
-        public const float RoadCenterOffset = 0.9f;
+        public const float SidewalkWaypointHeight =
+            CityStreetSurfacePlanner.SidewalkTop -
+            CityPedestrianActor.StreetSurfaceHeight;
         public const float IntersectionClearanceMargin = 0.25f;
         public const float MinimumRouteLength = 5f;
         public const float MinimumSpeed = 1f;
@@ -18,8 +20,7 @@ namespace BarPromenade
         public const float MinimumAnimationSpeed = 0.88f;
         public const float MaximumAnimationSpeed = 0.94f;
 
-        private const float RoadEdgeClearance = 0.15f;
-        private const float MinimumSideOffset = 0.2f;
+        private const float MinimumCarriagewayWidth = 0.0001f;
         private const int RouteSafetySamples = 8;
         private const uint CandidateRankSalt = 0x52414E4Bu;
         private const uint RouteSideSalt = 0x53494445u;
@@ -33,6 +34,19 @@ namespace BarPromenade
         public static CityPedestrianPlan Create(
             CityLayout layout,
             int populationSeed,
+            int desiredCount = TargetPedestrianCount)
+        {
+            return Create(
+                layout,
+                populationSeed,
+                null,
+                desiredCount);
+        }
+
+        public static CityPedestrianPlan Create(
+            CityLayout layout,
+            int populationSeed,
+            CityStreetSurfacePlan streetSurfacePlan,
             int desiredCount = TargetPedestrianCount)
         {
             if (layout == null)
@@ -52,7 +66,8 @@ namespace BarPromenade
             var definitions = new List<CityPedestrianDefinition>(
                 boundedDesiredCount);
 
-            if (boundedDesiredCount > 0)
+            if (boundedDesiredCount > 0 &&
+                CanFitSidewalkRoute(layout))
             {
                 Dictionary<RoadEdge, int> attractionScores =
                     CreateAttractionScores(layout);
@@ -61,8 +76,14 @@ namespace BarPromenade
                     stableSeed,
                     attractionScores);
                 candidates.Sort(CompareCandidates);
-                RoadWalkableArea streetArea =
-                    new RoadWalkableArea(layout.CreateStreetRects());
+                if (streetSurfacePlan == null)
+                {
+                    streetSurfacePlan =
+                        CityStreetSurfacePlanner.Create(layout);
+                }
+
+                RoadWalkableArea sidewalkArea =
+                    CreateSidewalkWalkableArea(streetSurfacePlan);
 
                 for (int index = 0;
                      index < candidates.Count &&
@@ -71,7 +92,7 @@ namespace BarPromenade
                 {
                     if (TryCreateDefinition(
                             layout,
-                            streetArea,
+                            sidewalkArea,
                             stableSeed,
                             candidates[index].Edge,
                             out CityPedestrianDefinition definition))
@@ -101,6 +122,29 @@ namespace BarPromenade
             return (layout.RoadWidth * 0.5f) +
                    AgentRadius +
                    IntersectionClearanceMargin;
+        }
+
+        public static float GetSidewalkCenterOffset(CityLayout layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            return (layout.RoadWidth * 0.5f) -
+                   (CityStreetSurfacePlanner.SidewalkWidth * 0.5f);
+        }
+
+        public static RoadWalkableArea CreateSidewalkWalkableArea(
+            CityStreetSurfacePlan streetSurfacePlan)
+        {
+            if (streetSurfacePlan == null)
+            {
+                throw new ArgumentNullException(nameof(streetSurfacePlan));
+            }
+
+            return new RoadWalkableArea(
+                streetSurfacePlan.SidewalkWalkableRectangles);
         }
 
         private static Dictionary<RoadEdge, int> CreateAttractionScores(
@@ -249,7 +293,7 @@ namespace BarPromenade
 
         private static bool TryCreateDefinition(
             CityLayout layout,
-            RoadWalkableArea streetArea,
+            RoadWalkableArea sidewalkArea,
             uint stableSeed,
             RoadEdge edge,
             out CityPedestrianDefinition definition)
@@ -263,12 +307,7 @@ namespace BarPromenade
                 GetIntersectionClearance(layout);
             float requiredLength =
                 (intersectionClearance * 2f) + MinimumRouteLength;
-            float maximumSideOffset =
-                (layout.RoadWidth * 0.5f) -
-                AgentRadius -
-                RoadEdgeClearance;
-            if (edgeLength < requiredLength ||
-                maximumSideOffset < MinimumSideOffset)
+            if (edgeLength < requiredLength)
             {
                 definition = null;
                 return false;
@@ -283,9 +322,7 @@ namespace BarPromenade
                     RouteSideSalt) & 1u) == 0u
                     ? -1f
                     : 1f;
-            float sideOffset = Mathf.Min(
-                RoadCenterOffset,
-                maximumSideOffset);
+            float sideOffset = GetSidewalkCenterOffset(layout);
             Vector3 laneOffset = left * (side * sideOffset);
             Vector3 first =
                 start +
@@ -295,7 +332,9 @@ namespace BarPromenade
                 end -
                 (tangent * intersectionClearance) +
                 laneOffset;
-            if (!IsRouteSafe(streetArea, first, second))
+            first.y = SidewalkWaypointHeight;
+            second.y = SidewalkWaypointHeight;
+            if (!IsRouteSafe(sidewalkArea, first, second))
             {
                 definition = null;
                 return false;
@@ -344,7 +383,7 @@ namespace BarPromenade
         }
 
         private static bool IsRouteSafe(
-            RoadWalkableArea streetArea,
+            RoadWalkableArea sidewalkArea,
             Vector3 start,
             Vector3 end)
         {
@@ -354,13 +393,22 @@ namespace BarPromenade
                     start,
                     end,
                     index / (float)RouteSafetySamples);
-                if (!streetArea.Contains(point, AgentRadius))
+                if (!sidewalkArea.Contains(point, AgentRadius))
                 {
                     return false;
                 }
             }
 
             return true;
+        }
+
+        private static bool CanFitSidewalkRoute(CityLayout layout)
+        {
+            return CityStreetSurfacePlanner.SidewalkWidth >=
+                       AgentRadius * 2f &&
+                   layout.RoadWidth -
+                       (CityStreetSurfacePlanner.SidewalkWidth * 2f) >
+                   MinimumCarriagewayWidth;
         }
 
         private static float SquaredDistanceToSegment(

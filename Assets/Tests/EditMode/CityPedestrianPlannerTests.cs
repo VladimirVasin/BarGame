@@ -20,6 +20,13 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianPlan second = CityPedestrianPlanner.Create(
                 layout,
                 4411);
+            CityStreetSurfacePlan streetSurfacePlan =
+                CityStreetSurfacePlanner.Create(layout);
+            CityPedestrianPlan suppliedSurface =
+                CityPedestrianPlanner.Create(
+                    layout,
+                    4411,
+                    streetSurfacePlan);
 
             Assert.That(second.StableSeed, Is.EqualTo(first.StableSeed));
             Assert.That(second.DesiredCount, Is.EqualTo(first.DesiredCount));
@@ -27,14 +34,20 @@ namespace BarPromenade.Tests.EditMode
             CollectionAssert.AreEqual(
                 first.Definitions,
                 second.Definitions);
+            CollectionAssert.AreEqual(
+                first.Definitions,
+                suppliedSurface.Definitions);
         }
 
         [Test]
-        public void Create_UsesOnlySafeOffsetStreetSegments()
+        public void Create_UsesOnlyRadiusSafeSidewalkSegments()
         {
             CityLayout layout = CreateDefaultLayout(-5107);
-            RoadWalkableArea streetArea =
-                new RoadWalkableArea(layout.CreateStreetRects());
+            CityStreetSurfacePlan streetSurfacePlan =
+                CityStreetSurfacePlanner.Create(layout);
+            RoadWalkableArea sidewalkArea =
+                CityPedestrianPlanner.CreateSidewalkWalkableArea(
+                    streetSurfacePlan);
 
             CityPedestrianPlan plan = CityPedestrianPlanner.Create(
                 layout,
@@ -64,6 +77,11 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 second = definition.Waypoints[1];
                 float intersectionClearance =
                     CityPedestrianPlanner.GetIntersectionClearance(layout);
+                float sidewalkCenterOffset =
+                    CityPedestrianPlanner.GetSidewalkCenterOffset(layout);
+                float carriagewayHalfWidth =
+                    (layout.RoadWidth * 0.5f) -
+                    CityStreetSurfacePlanner.SidewalkWidth;
 
                 Assert.That(
                     Vector3.Dot(first - edgeStart, tangent),
@@ -80,7 +98,21 @@ namespace BarPromenade.Tests.EditMode
                     "outside the intersection footprint.");
                 Assert.That(
                     Mathf.Abs(Vector3.Dot(first - edgeStart, left)),
-                    Is.EqualTo(CityPedestrianPlanner.RoadCenterOffset)
+                    Is.EqualTo(sidewalkCenterOffset)
+                        .Within(PositionTolerance));
+                Assert.That(
+                    Mathf.Abs(Vector3.Dot(first - edgeStart, left)) -
+                    plan.AgentRadius,
+                    Is.GreaterThan(carriagewayHalfWidth),
+                    "The complete pedestrian body must stay outside " +
+                    "the carriageway.");
+                Assert.That(
+                    first.y + CityPedestrianActor.StreetSurfaceHeight,
+                    Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
+                        .Within(PositionTolerance));
+                Assert.That(
+                    second.y + CityPedestrianActor.StreetSurfaceHeight,
+                    Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
                         .Within(PositionTolerance));
                 Assert.That(
                     definition.RouteLength,
@@ -98,9 +130,9 @@ namespace BarPromenade.Tests.EditMode
                         second,
                         sample / 16f);
                     Assert.That(
-                        streetArea.Contains(position, plan.AgentRadius),
+                        sidewalkArea.Contains(position, plan.AgentRadius),
                         Is.True,
-                        $"'{definition.Id}' leaves its safe street area.");
+                        $"'{definition.Id}' leaves its safe sidewalk area.");
                 }
 
                 Assert.That(
@@ -213,7 +245,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Create_OnSmallOrNarrowCity_ReturnsFewerOrZeroSafely()
+        public void Create_OnSmallCity_ReturnsFewerOrZeroSafely()
         {
             CityGenerationSettings smallSettings =
                 CityGenerationSettings.Default;
@@ -240,17 +272,6 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(CityPedestrianPlanner.MaximumPedestrianCount));
             Assert.That(noneRequested.Count, Is.Zero);
             Assert.That(noneRequested.DesiredCount, Is.Zero);
-
-            CityGenerationSettings narrowSettings = smallSettings.Copy();
-            narrowSettings.RoadWidth = 0.6f;
-            CityLayout narrowLayout = CityLayoutGenerator.Generate(
-                narrowSettings,
-                8123);
-            CityPedestrianPlan narrow = CityPedestrianPlanner.Create(
-                narrowLayout,
-                12);
-
-            Assert.That(narrow.Count, Is.Zero);
         }
 
         [Test]
