@@ -95,6 +95,14 @@ The vertical slice contains:
 - shared 8-sided cylinder geometry, one explicitly packaged shared URP/Lit
   material for ordinary runtime primitives, hard directional shadows and
   disabled camera MSAA for a deliberate low-poly silhouette;
+- one opaque generated
+  `Resources/Textures/CityRoadAsphaltAlbedo` road albedo, imported at
+  `512x512` with Repeat, Bilinear filtering, mipmaps, anisotropy `4` and
+  no compression. Only City and Home exterior street surfaces opt into XZ
+  planar UVs at `12 m` per tile; their shared `RuntimePrimitiveLit` renderer
+  receives `_BaseMap`, white tint, `0.10` smoothness and zero metallic
+  through a material property block without creating material instances.
+  Park paths, road dashes and collider behavior remain unchanged;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;

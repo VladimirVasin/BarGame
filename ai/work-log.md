@@ -2,6 +2,32 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Textured city asphalt
+
+- Added one opaque generated asphalt albedo at
+  `Resources/Textures/CityRoadAsphaltAlbedo`. Unity imports it at runtime
+  `512x512` with sRGB, Repeat, Bilinear filtering, mipmaps, anisotropy `4`,
+  no compression and no readable CPU copy.
+- Extended `RuntimePrimitiveFactory` with opt-in XZ planar UVs and applied a
+  stable `12 m` tile size only to the City street batches and their
+  collider-free Home exterior reconstruction.
+- Kept the one shared `RuntimePrimitiveLit` material. Road renderers receive
+  the albedo, white tint, `0.10` smoothness and zero metallic through their
+  existing material property blocks, without per-surface material instances.
+  Park paths, road dashes and City collider mesh ownership remain unchanged.
+- Expanded focused `RuntimePrimitiveFactoryTests` coverage for the packaged
+  asset/importer, opaque PNG and Repeat-edge seam threshold, road MPB and
+  shared material, XZ UV density and unchanged shared collider mesh.
+
+Verification:
+
+- Focused Unity EditMode
+  `BarPromenade.Tests.EditMode.RuntimePrimitiveFactoryTests` passed `6/6`
+  tests in Unity `6000.5.5f1`.
+- Documentation diff review and `git diff --check` passed.
+- Fast mode intentionally omitted complete Unity suites, a player build and
+  startup smoke.
+
 ## 2026-08-10 — Ambient city street pedestrians
 
 - Added 12 deterministic short pedestrian routes to `CityGameRoot`, biased

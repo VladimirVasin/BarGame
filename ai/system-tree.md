@@ -21,6 +21,8 @@ Assets/
       HomeOccluderDither.mat       shared opaque Home foreground cutaway
       Ps1Composite.mat
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
+    Textures/
+      CityRoadAsphaltAlbedo.png    opaque generated road albedo; 512 runtime, Repeat/mips
     Rendering/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
@@ -94,6 +96,7 @@ Assets/
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
         GameTimeRuntime.cs        persistent scaled-delta driver
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
+        RuntimePrimitiveFactory.cs shared material primitives + opt-in XZ planar UVs
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
@@ -111,6 +114,7 @@ Assets/
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
         CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
+        CityWorldBuilder.cs      chunked physical surfaces + textured street batches
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery landmark descriptors
         CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
@@ -123,7 +127,7 @@ Assets/
         CityDecorationPlanner.cs     primary landmarks, lot visuals and clear clusters
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style, 48 m chunked visual recipes
-        CityExteriorAppearance.cs    shared City/Home ground, facade and window recipe
+        CityExteriorAppearance.cs    shared City/Home ground, road MPB, facade/window recipe
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
@@ -138,7 +142,7 @@ Assets/
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
         HomeExteriorContextPlan.cs  bounded same-blueprint/seed street view descriptors
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
-        HomeExteriorViewBuilder.cs   collider-free roads/lots/windows/night fixtures
+        HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + textured streets
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
@@ -245,6 +249,7 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+      RuntimePrimitiveFactoryTests.cs road asset/import/seam/MPB/UV/collider contract
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation

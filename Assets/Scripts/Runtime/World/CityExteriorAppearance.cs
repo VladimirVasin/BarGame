@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -9,6 +10,24 @@ namespace BarPromenade
     /// </summary>
     internal static class CityExteriorAppearance
     {
+        public const string RoadTextureResourcePath =
+            "Textures/CityRoadAsphaltAlbedo";
+        public const float RoadTextureTileSize = 12f;
+        public const float RoadSmoothness = 0.10f;
+
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId =
+            Shader.PropertyToID("_Color");
+        private static readonly int SmoothnessId =
+            Shader.PropertyToID("_Smoothness");
+        private static readonly int MetallicId =
+            Shader.PropertyToID("_Metallic");
+
+        private static Texture2D roadTexture;
+
         public static readonly Color Asphalt =
             new Color(0.175f, 0.195f, 0.195f);
         public static readonly Color ParkPath =
@@ -35,6 +54,51 @@ namespace BarPromenade
             new Color(0.82f, 1.10f, 1.22f);
         public static readonly Color SupermarketWindow =
             new Color(0.50f, 0.82f, 0.66f);
+
+        public static Texture2D RoadTexture
+        {
+            get
+            {
+                if (roadTexture == null)
+                {
+                    roadTexture = Resources.Load<Texture2D>(
+                        RoadTextureResourcePath);
+                }
+
+                if (roadTexture == null)
+                {
+                    throw new InvalidOperationException(
+                        "Missing road surface texture " +
+                        $"'{RoadTextureResourcePath}'.");
+                }
+
+                return roadTexture;
+            }
+        }
+
+        public static void ApplyRoadSurface(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture(BaseMapId, RoadTexture);
+            properties.SetColor(BaseColorId, Color.white);
+            properties.SetColor(ColorId, Color.white);
+            properties.SetFloat(SmoothnessId, RoadSmoothness);
+            properties.SetFloat(MetallicId, 0f);
+            renderer.SetPropertyBlock(properties);
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCachedResources()
+        {
+            roadTexture = null;
+        }
 
         public static Color CreateNightFacadeColor(
             BuildingLot lot)

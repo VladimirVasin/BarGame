@@ -197,11 +197,10 @@ namespace BarPromenade
                 }
             }
 
-            BuildCombinedBoxesIfAny(
+            BuildRoadSurfaceBoxesIfAny(
                 "Home Exterior Street Surfaces",
                 parent,
-                streets,
-                CityExteriorAppearance.Asphalt);
+                streets);
             BuildCombinedBoxesIfAny(
                 "Home Exterior Park Paths",
                 parent,
@@ -660,6 +659,28 @@ namespace BarPromenade
                 color,
                 material,
                 false);
+        }
+
+        private static void BuildRoadSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    CityExteriorAppearance.Asphalt,
+                    false,
+                    CityExteriorAppearance.RoadTextureTileSize);
+            CityExteriorAppearance.ApplyRoadSurface(
+                surface.GetComponent<Renderer>());
         }
 
         private static void BuildCombinedBoxesIfAny(

@@ -264,11 +264,10 @@ namespace BarPromenade
                 Transform chunk = new GameObject(
                     $"Road Chunk {key.X}-{key.Z}").transform;
                 chunk.SetParent(roads, false);
-                BuildCombinedBoxesIfAny(
+                BuildRoadSurfaceBoxesIfAny(
                     "Street Surfaces",
                     chunk,
                     geometry.Streets,
-                    CityExteriorAppearance.Asphalt,
                     true);
                 BuildCombinedBoxesIfAny(
                     "Park Paths",
@@ -1401,6 +1400,29 @@ namespace BarPromenade
                     0f,
                     lot.FrontageDirection.y)
                 : Vector3.back;
+        }
+
+        private static void BuildRoadSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            bool collider)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    CityExteriorAppearance.Asphalt,
+                    collider,
+                    CityExteriorAppearance.RoadTextureTileSize);
+            CityExteriorAppearance.ApplyRoadSurface(
+                surface.GetComponent<Renderer>());
         }
 
         private static void BuildCombinedBoxesIfAny(

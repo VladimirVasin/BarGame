@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-08-10 — The streets now look like asphalt
+
+- City roads now use a continuous worn gray asphalt surface instead of a flat
+  color. Its grain keeps a consistent scale through straight segments and
+  intersections rather than stretching across each generated road piece.
+- The apartment balcony view reconstructs the same road appearance outside
+  Home. Park paths, painted road dashes and the shape or collision of every
+  walking surface remain unchanged.
+
 ### 2026-08-10 — The city now has passers-by
 
 - City streets now feel inhabited by a small ambient population that walks

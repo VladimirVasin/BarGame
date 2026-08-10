@@ -187,6 +187,50 @@ namespace BarPromenade
             Material sharedMaterial,
             bool collider)
         {
+            return CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                sharedMaterial,
+                collider,
+                null);
+        }
+
+        public static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            bool collider,
+            float xzPlanarUvTileSize)
+        {
+            if (!IsPositiveFinite(xzPlanarUvTileSize))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(xzPlanarUvTileSize),
+                    "XZ planar UV tile size must be finite and positive.");
+            }
+
+            return CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                null,
+                collider,
+                xzPlanarUvTileSize);
+        }
+
+        private static GameObject CreateCombinedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            Material sharedMaterial,
+            bool collider,
+            float? xzPlanarUvTileSize)
+        {
             if (boxes == null)
             {
                 throw new ArgumentNullException(nameof(boxes));
@@ -256,6 +300,13 @@ namespace BarPromenade
                 true,
                 true,
                 false);
+            if (xzPlanarUvTileSize.HasValue)
+            {
+                ApplyXZPlanarUvs(
+                    combinedMesh,
+                    xzPlanarUvTileSize.Value);
+            }
+
             combinedMesh.RecalculateBounds();
             meshFilter.sharedMesh = combinedMesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
@@ -269,6 +320,24 @@ namespace BarPromenade
 
             combinedMesh.UploadMeshData(!collider);
             return result;
+        }
+
+        private static void ApplyXZPlanarUvs(
+            Mesh mesh,
+            float tileSize)
+        {
+            Vector3[] vertices = mesh.vertices;
+            var uvs = new Vector2[vertices.Length];
+            float tilesPerMeter = 1f / tileSize;
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                Vector3 vertex = vertices[index];
+                uvs[index] = new Vector2(
+                    vertex.x * tilesPerMeter,
+                    vertex.z * tilesPerMeter);
+            }
+
+            mesh.uv = uvs;
         }
 
         private static GameObject CreatePrimitive(
