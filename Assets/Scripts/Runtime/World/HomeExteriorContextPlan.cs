@@ -290,6 +290,8 @@ namespace BarPromenade
 
     public static class HomeExteriorPedestrianPlanner
     {
+        public const float SpawnContextRadius = 100f;
+
         public static CityPedestrianPlan Create(
             HomeExteriorContextPlan context,
             int populationSeed)
@@ -342,7 +344,7 @@ namespace BarPromenade
                     PlayerHomeBalconyGeometry.ToHomeLocal(
                         context.PlayerHome,
                         source.Position);
-                if (!IsRenderedExteriorAnchor(
+                if (!IsEligibleExteriorAnchor(
                         context,
                         source.Position,
                         localPosition,
@@ -381,7 +383,7 @@ namespace BarPromenade
                 navigationRectangles);
         }
 
-        private static bool IsRenderedExteriorAnchor(
+        private static bool IsEligibleExteriorAnchor(
             HomeExteriorContextPlan context,
             Vector3 cityPosition,
             Vector3 localPosition,
@@ -397,29 +399,14 @@ namespace BarPromenade
                 cityPosition.x - context.PlayerHome.DoorPosition.x;
             float deltaZ =
                 cityPosition.z - context.PlayerHome.DoorPosition.z;
-            float viewRadius = HomeExteriorContextPlanner.ViewRadius;
+            float viewRadius = SpawnContextRadius;
             if ((deltaX * deltaX) + (deltaZ * deltaZ) >
                 viewRadius * viewRadius)
             {
                 return false;
             }
 
-            for (int index = 0;
-                 index < context.NearbyRoads.Count;
-                 index++)
-            {
-                Rect road = context.Layout.GetRoadRect(
-                    context.NearbyRoads[index]);
-                if (cityPosition.x >= road.xMin &&
-                    cityPosition.x <= road.xMax &&
-                    cityPosition.z >= road.yMin &&
-                    cityPosition.z <= road.yMax)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return true;
         }
     }
 }

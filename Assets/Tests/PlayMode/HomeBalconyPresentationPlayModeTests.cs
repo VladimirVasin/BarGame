@@ -512,18 +512,24 @@ namespace BarPromenade.Tests.PlayMode
                 home.ExteriorAtmosphere.IsBalconyVisibilityActive,
                 Is.True);
             Assert.That(home.Pedestrians.isActiveAndEnabled, Is.True);
-            home.Pedestrians.RefreshPresentationPool();
-            home.Pedestrians.RefreshPresentationPool();
+            home.Pedestrians.Advance(
+                home.Pedestrians.TimeUntilNextSpawn + 0.01f);
             Assert.That(
                 home.Pedestrians.ActiveCount,
+                Is.EqualTo(1),
+                "The first randomized event must activate only one slot.");
+            float minimumNextDelay = home.Pedestrians.IsNightSpawnMode
+                ? CityPedestrianDirector.MinimumNightSpawnCooldown
+                : CityPedestrianDirector.MinimumSpawnCooldown;
+            float maximumNextDelay = home.Pedestrians.IsNightSpawnMode
+                ? CityPedestrianDirector.MaximumNightSpawnCooldown
+                : CityPedestrianDirector.MaximumSpawnCooldown;
+            Assert.That(
+                home.Pedestrians.TimeUntilNextSpawn,
                 Is.InRange(
-                    1,
-                    CityPedestrianDirector.MaximumActiveModels));
+                    minimumNextDelay,
+                    maximumNextDelay));
 
-            Camera camera = Camera.main;
-            Assert.That(camera, Is.Not.Null);
-            Plane[] frustum =
-                GeometryUtility.CalculateFrustumPlanes(camera);
             var activeAnchorIds = new HashSet<string>();
             for (int index = 0;
                  index < home.Pedestrians.Actors.Count;
@@ -541,13 +547,18 @@ namespace BarPromenade.Tests.PlayMode
                     activeAnchorIds.Add(actor.SpawnAnchorId),
                     Is.True,
                     "Balcony pedestrians must use unique spawn anchors.");
+                float distance = Vector2.Distance(
+                    new Vector2(
+                        home.Player.GameObject.transform.position.x,
+                        home.Player.GameObject.transform.position.z),
+                    new Vector2(actor.Position.x, actor.Position.z));
                 Assert.That(
-                    GeometryUtility.TestPlanesAABB(
-                        frustum,
-                        actor.VisibilityBounds),
-                    Is.False,
-                    "A balcony pedestrian must spawn fully outside the " +
-                    "camera frustum.");
+                    distance,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumSpawnDistance,
+                        CityPedestrianDirector.MaximumSpawnDistance),
+                    "Balcony pedestrians must spawn in the fog-hidden " +
+                    "player-relative band.");
             }
 
             home.Player.Motor.Teleport(

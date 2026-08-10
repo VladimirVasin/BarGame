@@ -2,12 +2,20 @@
 
 ## Unreleased
 
-### 2026-08-10 — Passers-by now enter and leave the scene naturally
+### 2026-08-10 — Passers-by now follow the hero, not the camera
 
 - The city no longer creates and simulates a fixed crowd at load. Up to two
-  passers-by now appear near the player at different, obstacle-free points
-  outside the camera view, then disappear after they have been seen and leave
-  the frame.
+  passers-by now appear at different, obstacle-free points `76-86 m` from the
+  hero, where the City fog already hides them, and disappear only after moving
+  beyond `88 m`. Looking away no longer makes a nearby walker vanish, and the
+  camera no longer controls where one can appear.
+- Spawn timing and placement now vary strongly between runs. The first walker
+  waits a random moment, and the second receives a separate wider delay, so
+  streets can naturally contain zero, one or two walkers instead of filling
+  both slots together.
+- At night (`19:00-06:00`), new walkers are much rarer and only one slot may
+  spawn. A second walker already on the street at dusk is allowed to leave
+  naturally instead of popping out when the clock crosses `19:00`.
 - Pedestrians keep walking forward through connected sidewalks and can turn at
   corners instead of pacing back and forth on short segments. Dead-end branches
   are excluded from their navigation graph.
@@ -71,7 +79,7 @@
   boots. Four muted palettes vary the same silhouette.
 - Nearby walkers reuse the hero's existing Idle and Walk animations. They are
   passive atmosphere with no prompts or gameplay reactions; visible walkers
-  now physically block the player while pooled/off-screen routes stay light.
+  now physically block the player while pooled/distant routes stay light.
 
 ### 2026-08-10 — Hunger and fatigue now build over time
 

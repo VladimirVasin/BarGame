@@ -79,6 +79,21 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(Tolerance));
         }
 
+        [TestCase(359.999d, true)]
+        [TestCase(360d, false)]
+        [TestCase(1139.999d, false)]
+        [TestCase(1140d, true)]
+        [TestCase(-1d, true)]
+        [TestCase(1440d, true)]
+        public void IsNight_UsesStrictNightPhaseBoundaries(
+            double minute,
+            bool expected)
+        {
+            Assert.That(
+                GameTimeDayNightRules.IsNight(minute),
+                Is.EqualTo(expected));
+        }
+
         [Test]
         public void Evaluate_Day_HoldsOneStableVisualSample()
         {

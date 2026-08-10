@@ -230,8 +230,7 @@ namespace BarPromenade
                 transform,
                 PedestrianPlan,
                 Player.GameObject.transform,
-                pedestrianWalkableArea,
-                camera);
+                pedestrianWalkableArea);
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed);

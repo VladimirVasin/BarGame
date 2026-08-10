@@ -68,16 +68,10 @@ namespace BarPromenade
 
         public static DayNightVisualSample Evaluate(double timeOfDayMinutes)
         {
-            if (double.IsNaN(timeOfDayMinutes) ||
-                double.IsInfinity(timeOfDayMinutes))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(timeOfDayMinutes),
-                    "Time of day must be finite.");
-            }
+            ValidateTimeOfDay(timeOfDayMinutes);
 
             double minute = NormalizeMinute(timeOfDayMinutes);
-            if (minute < DawnStartMinutes || minute >= DuskEndMinutes)
+            if (IsNightMinute(minute))
             {
                 return CreateNightSample();
             }
@@ -107,6 +101,28 @@ namespace BarPromenade
                 CreateDaySample(),
                 CreateNightSample(),
                 duskProgress);
+        }
+
+        public static bool IsNight(double timeOfDayMinutes)
+        {
+            ValidateTimeOfDay(timeOfDayMinutes);
+            return IsNightMinute(NormalizeMinute(timeOfDayMinutes));
+        }
+
+        private static bool IsNightMinute(double minute)
+        {
+            return minute < DawnStartMinutes || minute >= DuskEndMinutes;
+        }
+
+        private static void ValidateTimeOfDay(double timeOfDayMinutes)
+        {
+            if (double.IsNaN(timeOfDayMinutes) ||
+                double.IsInfinity(timeOfDayMinutes))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeOfDayMinutes),
+                    "Time of day must be finite.");
+            }
         }
 
         private static DayNightVisualSample CreateNightSample()

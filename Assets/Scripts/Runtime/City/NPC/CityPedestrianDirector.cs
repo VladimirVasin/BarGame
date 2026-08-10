@@ -9,14 +9,22 @@ namespace BarPromenade
     public sealed class CityPedestrianDirector : MonoBehaviour
     {
         public const int MaximumActiveModels = 2;
-        public const float MinimumSpawnDistance = 7f;
-        public const float MaximumSpawnDistance = 42f;
-        public const float FarClipSpawnPadding = 2f;
-        public const float MinimumSpawnCooldown = 1.5f;
-        public const float MaximumSpawnCooldown = 3.5f;
-        public const float SpawnRetryDelay = 0.5f;
-        public const float SeenExitGrace = 0.15f;
-        public const float UnseenApproachTimeout = 18f;
+        public const int NightMaximumActiveModels = 1;
+        public const float MinimumSpawnDistance = 76f;
+        public const float MaximumSpawnDistance = 86f;
+        public const float DespawnDistance = 88f;
+        public const float MinimumInitialSpawnDelay = 1.25f;
+        public const float MaximumInitialSpawnDelay = 7.5f;
+        public const float MinimumSpawnCooldown = 3.5f;
+        public const float MaximumSpawnCooldown = 12.5f;
+        public const float MinimumSpawnRetryDelay = 0.8f;
+        public const float MaximumSpawnRetryDelay = 2.4f;
+        public const float MinimumNightInitialSpawnDelay = 15f;
+        public const float MaximumNightInitialSpawnDelay = 35f;
+        public const float MinimumNightSpawnCooldown = 30f;
+        public const float MaximumNightSpawnCooldown = 70f;
+        public const float MinimumNightSpawnRetryDelay = 4f;
+        public const float MaximumNightSpawnRetryDelay = 10f;
         public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
         public const float CollisionActivationPadding = 0.05f;
@@ -28,27 +36,30 @@ namespace BarPromenade
         private const uint PaletteSalt = 0x50414C45u;
         private const uint BehaviorSalt = 0x42454856u;
         private const uint DirectionSalt = 0x44495245u;
-        private const uint CooldownSalt = 0x434F4F4Cu;
+        private const uint RandomFallbackSeed = 0xA341316Cu;
 
         private readonly List<CityPedestrianActor> actors =
             new List<CityPedestrianActor>();
         private readonly List<CityPedestrianPresentation> presentationPool =
             new List<CityPedestrianPresentation>();
-        private readonly List<VisibilityState> visibilityStates =
-            new List<VisibilityState>();
-        private readonly Plane[] frustumPlanes = new Plane[6];
         private CityPedestrianPlan plan;
         private Transform player;
         private Transform poolRoot;
-        private Camera visibilityCamera;
+        private Func<bool> nightModeProvider;
         private float spawnCooldown;
-        private uint spawnSequence;
+        private uint randomState;
+        private bool isNightSpawnMode;
 
         public bool IsInitialized { get; private set; }
         public CityPedestrianPlan Plan => plan;
         public IReadOnlyList<CityPedestrianActor> Actors => actors;
         public int Count => actors.Count;
         public int PoolCapacity => presentationPool.Count;
+        public float TimeUntilNextSpawn => spawnCooldown;
+        public bool IsNightSpawnMode => isNightSpawnMode;
+        public int CurrentActiveLimit => isNightSpawnMode
+            ? NightMaximumActiveModels
+            : MaximumActiveModels;
         public int ActiveCount
         {
             get
@@ -72,7 +83,7 @@ namespace BarPromenade
             IReadOnlyList<CityPedestrianPresentation> pooledPresentations,
             Transform playerTransform,
             Transform presentationPoolRoot,
-            Camera camera)
+            Func<bool> runtimeNightModeProvider = null)
         {
             if (IsInitialized)
             {
@@ -89,9 +100,8 @@ namespace BarPromenade
                 ? presentationPoolRoot
                 : throw new ArgumentNullException(
                     nameof(presentationPoolRoot));
-            visibilityCamera = camera != null
-                ? camera
-                : throw new ArgumentNullException(nameof(camera));
+            nightModeProvider = runtimeNightModeProvider ??
+                IsSessionNight;
             if (routeActors == null)
             {
                 throw new ArgumentNullException(nameof(routeActors));
@@ -121,7 +131,6 @@ namespace BarPromenade
                 }
 
                 actors.Add(actor);
-                visibilityStates.Add(default);
             }
 
             for (int index = 0;
@@ -143,8 +152,11 @@ namespace BarPromenade
                 presentationPool.Add(presentation);
             }
 
-            spawnCooldown = 0f;
-            spawnSequence = 0u;
+            randomState = CreateRuntimeRandomSeed(
+                plan.StableSeed,
+                GetEntityId().GetHashCode());
+            isNightSpawnMode = nightModeProvider();
+            spawnCooldown = GetNextInitialSpawnDelay();
             IsInitialized = true;
         }
 
@@ -166,7 +178,7 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
-            UpdateFrustumPlanes();
+            RefreshSpawnMode();
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
@@ -180,31 +192,19 @@ namespace BarPromenade
                     ShouldYield(actor, index));
             }
 
-            RefreshVisibility(safeDeltaTime);
             spawnCooldown = Mathf.Max(
                 0f,
                 spawnCooldown - safeDeltaTime);
-            if (ActiveCount < presentationPool.Count &&
+            ReleaseDistantActors();
+            if (ActiveCount < Mathf.Min(
+                    presentationPool.Count,
+                    CurrentActiveLimit) &&
                 spawnCooldown <= 0f)
             {
                 bool spawned = TrySpawnOne();
                 spawnCooldown = spawned
                     ? GetNextSpawnCooldown()
-                    : SpawnRetryDelay;
-            }
-        }
-
-        public void RefreshPresentationPool()
-        {
-            if (!IsInitialized || ActiveCount >= presentationPool.Count)
-            {
-                return;
-            }
-
-            UpdateFrustumPlanes();
-            if (TrySpawnOne())
-            {
-                spawnCooldown = GetNextSpawnCooldown();
+                    : GetNextSpawnRetryDelay();
             }
         }
 
@@ -248,7 +248,8 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                spawnCooldown = 0f;
+                isNightSpawnMode = nightModeProvider();
+                spawnCooldown = GetNextInitialSpawnDelay();
             }
         }
 
@@ -257,8 +258,11 @@ namespace BarPromenade
             Shutdown();
         }
 
-        private void RefreshVisibility(float deltaTime)
+        private void ReleaseDistantActors()
         {
+            float despawnDistanceSquared =
+                DespawnDistance * DespawnDistance;
+            bool releasedAny = false;
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
@@ -267,33 +271,18 @@ namespace BarPromenade
                     continue;
                 }
 
-                VisibilityState state = visibilityStates[index];
-                bool visible = IsVisible(actor.VisibilityBounds);
-                if (visible)
-                {
-                    state.HasEnteredView = true;
-                    state.ExitElapsed = 0f;
-                }
-                else if (state.HasEnteredView)
-                {
-                    state.ExitElapsed += deltaTime;
-                }
-                else
-                {
-                    state.UnseenElapsed += deltaTime;
-                }
-
-                bool release =
-                    actor.RouteEnded && !visible ||
-                    state.HasEnteredView &&
-                    state.ExitElapsed >= SeenExitGrace ||
-                    !state.HasEnteredView &&
-                    state.UnseenElapsed >= UnseenApproachTimeout;
-                visibilityStates[index] = state;
-                if (release)
+                if (PlanarSquaredDistance(
+                        actor.Position,
+                        player.position) > despawnDistanceSquared)
                 {
                     ReleaseActor(index);
+                    releasedAny = true;
                 }
+            }
+
+            if (releasedAny)
+            {
+                spawnCooldown = GetNextSpawnCooldown();
             }
         }
 
@@ -310,10 +299,8 @@ namespace BarPromenade
 
             CityPedestrianActor actor = actors[actorIndex];
             uint spawnSeed = CityPedestrianStableHash.Combine(
-                plan.StableSeed,
-                CityPedestrianStableHash.Combine(
-                    spawnSequence,
-                    CityPedestrianStableHash.String(candidate.Anchor.Id)));
+                NextRandomUInt(),
+                CityPedestrianStableHash.String(candidate.Anchor.Id));
             float speed = LerpFromHash(
                 CityPedestrianPlanner.MinimumSpeed,
                 CityPedestrianPlanner.MaximumSpeed,
@@ -363,8 +350,6 @@ namespace BarPromenade
                 throw;
             }
 
-            visibilityStates[actorIndex] = default;
-            spawnSequence++;
             return true;
         }
 
@@ -373,9 +358,8 @@ namespace BarPromenade
             result = default;
             float minimumDistanceSquared =
                 MinimumSpawnDistance * MinimumSpawnDistance;
-            float maximumDistance = GetMaximumSpawnDistance();
             float maximumDistanceSquared =
-                maximumDistance * maximumDistance;
+                MaximumSpawnDistance * MaximumSpawnDistance;
             bool found = false;
             uint bestRank = uint.MaxValue;
             for (int index = 0;
@@ -389,9 +373,6 @@ namespace BarPromenade
                 if (distance < minimumDistanceSquared ||
                     distance > maximumDistanceSquared ||
                     IsAnchorReserved(anchor.Id) ||
-                    IsVisible(
-                        CityPedestrianActor.CreateVisibilityBounds(
-                            anchor.Position)) ||
                     !IsCollisionActivationSafe(
                         anchor.Position,
                         plan.AgentRadius,
@@ -400,11 +381,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                uint rank = CityPedestrianStableHash.Combine(
-                    CityPedestrianStableHash.Combine(
-                        plan.StableSeed,
-                        spawnSequence),
-                    CityPedestrianStableHash.String(anchor.Id));
+                uint rank = NextRandomUInt();
                 if (found && rank >= bestRank)
                 {
                     continue;
@@ -563,7 +540,6 @@ namespace BarPromenade
         private void ReleaseActor(int actorIndex)
         {
             actors[actorIndex].ReleasePresentation(poolRoot);
-            visibilityStates[actorIndex] = default;
         }
 
         private void ReleaseAllActors()
@@ -636,38 +612,90 @@ namespace BarPromenade
             return false;
         }
 
-        private void UpdateFrustumPlanes()
+        private float GetNextInitialSpawnDelay()
         {
-            GeometryUtility.CalculateFrustumPlanes(
-                visibilityCamera,
-                frustumPlanes);
-        }
-
-        private bool IsVisible(Bounds bounds)
-        {
-            return GeometryUtility.TestPlanesAABB(frustumPlanes, bounds);
-        }
-
-        private float GetMaximumSpawnDistance()
-        {
-            return Mathf.Max(
-                MinimumSpawnDistance,
-                Mathf.Min(
-                    MaximumSpawnDistance,
-                    visibilityCamera.farClipPlane - FarClipSpawnPadding));
+            return GetRandomRange(
+                isNightSpawnMode
+                    ? MinimumNightInitialSpawnDelay
+                    : MinimumInitialSpawnDelay,
+                isNightSpawnMode
+                    ? MaximumNightInitialSpawnDelay
+                    : MaximumInitialSpawnDelay);
         }
 
         private float GetNextSpawnCooldown()
         {
-            uint hash = CityPedestrianStableHash.Combine(
-                plan.StableSeed,
-                CityPedestrianStableHash.Combine(
-                    spawnSequence,
-                    CooldownSalt));
+            return GetRandomRange(
+                isNightSpawnMode
+                    ? MinimumNightSpawnCooldown
+                    : MinimumSpawnCooldown,
+                isNightSpawnMode
+                    ? MaximumNightSpawnCooldown
+                    : MaximumSpawnCooldown);
+        }
+
+        private float GetNextSpawnRetryDelay()
+        {
+            return GetRandomRange(
+                isNightSpawnMode
+                    ? MinimumNightSpawnRetryDelay
+                    : MinimumSpawnRetryDelay,
+                isNightSpawnMode
+                    ? MaximumNightSpawnRetryDelay
+                    : MaximumSpawnRetryDelay);
+        }
+
+        private void RefreshSpawnMode()
+        {
+            bool nextNightMode = nightModeProvider();
+            if (nextNightMode == isNightSpawnMode)
+            {
+                return;
+            }
+
+            isNightSpawnMode = nextNightMode;
+            spawnCooldown = GetNextInitialSpawnDelay();
+        }
+
+        private static bool IsSessionNight()
+        {
+            return GameTimeDayNightRules.IsNight(
+                GameSessionState.GameTimeOfDayMinutes);
+        }
+
+        private float GetRandomRange(float minimum, float maximum)
+        {
             return Mathf.Lerp(
-                MinimumSpawnCooldown,
-                MaximumSpawnCooldown,
-                CityPedestrianStableHash.ToUnitFloat(hash));
+                minimum,
+                maximum,
+                CityPedestrianStableHash.ToUnitFloat(
+                    NextRandomUInt()));
+        }
+
+        private uint NextRandomUInt()
+        {
+            randomState ^= randomState << 13;
+            randomState ^= randomState >> 17;
+            randomState ^= randomState << 5;
+            if (randomState == 0u)
+            {
+                randomState = RandomFallbackSeed;
+            }
+
+            return randomState;
+        }
+
+        private static uint CreateRuntimeRandomSeed(
+            uint stableSeed,
+            int instanceId)
+        {
+            uint timeSeed = unchecked((uint)DateTime.UtcNow.Ticks);
+            uint seed = CityPedestrianStableHash.Combine(
+                stableSeed,
+                CityPedestrianStableHash.Combine(
+                    timeSeed,
+                    unchecked((uint)instanceId)));
+            return seed != 0u ? seed : RandomFallbackSeed;
         }
 
         private static float LerpFromHash(
@@ -767,13 +795,6 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
-
-        private struct VisibilityState
-        {
-            public bool HasEnteredView;
-            public float UnseenElapsed;
-            public float ExitElapsed;
         }
 
         private readonly struct SpawnCandidate

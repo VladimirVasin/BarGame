@@ -81,17 +81,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   no positive carriageway between the two sidewalks. Asphalt, sidewalk and
   white paint use three
   packaged albedos through MPBs on the shared Lit material.
-- **Accepted — Local camera-aware street pedestrians:** City layout and session
+- **Accepted — Local player-relative street pedestrians:** City layout and session
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
   removes every reachable dead-end branch before runtime. Long sidewalk links
   expose deterministic spawn anchors; two reusable actor/presentation slots are the
-  complete runtime population. A slot may activate only at a unique,
-  obstacle-safe anchor inside the player's local far-clip window and outside
-  the full camera frustum. Its lifecycle is `not seen -> seen -> left view`,
-  with a short exit grace and a timeout for an approach that never enters the
-  frame, so an offscreen spawn is not immediately reclaimed. Actors never
-  reverse at artificial route endpoints: they continue through graph turns,
+  complete runtime population. A director-local runtime random stream mixes
+  plan seed, activation time and instance identity, then independently samples
+  candidate rank, motion/palette values and every delay. The first event waits
+  `1.25-7.5 s`; each later slot or replacement waits `3.5-12.5 s`, and one
+  event activates at most one slot. Failed searches retry after a randomized
+  `0.8-2.4 s`. A slot may activate only at a unique, obstacle-safe anchor
+  `76-86 m` from the player. With City's fixed `0.070` Exp2 fog, the inner edge
+  retains less than `0.2%` scene transmittance even at the widest production
+  `70-degree` 16:9 frustum corner after a conservative combined `6 m` camera
+  and full visual-envelope depth offset. It remains active
+  regardless of camera direction or frustum membership and returns to the pool
+  only after crossing beyond `88 m` from the player. Strict night is before
+  `06:00` and from `19:00`: it allows only one new population slot, waits
+  `15-35 s` for the first event and `30-70 s` for a replacement, and retries
+  failed searches after `4-10 s`. A second walker already alive at dusk is not
+  culled by the clock and leaves only through the same distance rule. Actors
+  never reverse at artificial route endpoints: they continue through graph turns,
   avoid immediate backtracking and make one seeded 50% cross/don't-cross
   choice when passing each zebra entry. The one `1.75 m` lampshade-hood model
   copies the production Generic Avatar contract and directly references the
@@ -103,11 +114,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   prompts, persistence or gameplay reactions, and their four muted palettes
   use the shared material through property blocks. Home transforms this same
   graph and navigation mask through `PlayerHomeBalconyGeometry`, filters spawn
-  anchors to nearby reconstructed roads wholly beyond the facade and enables
-  the director only for the Balcony shot. The director samples the final
-  LateUpdate camera after contextual overrides, while vertical capsule overlap
-  keeps the player four storeys above from blocking or attracting walkers on
-  the street below.
+  anchors to a bounded `100 m` fog-hidden approach context wholly beyond the
+  facade while retaining the existing `48 m` rendered street slice, and enables
+  the director only for the Balcony shot as a Home scene-composition boundary.
+  The director itself has no camera dependency, while vertical capsule overlap
+  keeps the player four storeys above from blocking walkers on the street below.
 - **Accepted — Logical terminal road boundary:** A pure planner retains rails
   only along street-union intervals whose outward side is water, unmapped or
   outside the active non-water footprint, plus full-road-width caps at true

@@ -110,18 +110,25 @@ The vertical slice contains:
   and active signals;
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
-  active inside the player's local far-clip window: each starts outside the
-  camera frustum, walks forward through available turns, has an independent
-  50% choice at a zebra, and is recycled only after it has entered and then
-  left view (or never approaches before its timeout). A slot's
-  `CharacterController` is enabled only after a unique, obstacle-safe spawn
-  and disabled before pooling. The dedicated layer collides with the player,
+  active near the player: one randomized runtime event activates one slot at a
+  randomly ranked obstacle-safe anchor in the fog-hidden `76-86 m` band. The
+  first event waits `1.25-7.5 s`; every later slot or replacement waits its own
+  `3.5-12.5 s`, so the two walkers are deliberately staggered. Each walks
+  forward through available turns, has an independent 50% choice at a zebra,
+  and is recycled only after moving beyond `88 m` from the hero. Camera
+  direction, frustum membership and far-clip settings do not participate in
+  spawn or recycling. Before `06:00` and from `19:00`, fresh population is
+  capped at one slot and uses much longer `15-35 s` initial and `30-70 s`
+  replacement delays; the clock never removes an already active dusk walker.
+  A slot's `CharacterController` is enabled only after a unique, obstacle-safe
+  spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
   Both slots reuse one lampshade-hood model, four material-property-block
   palettes and the hero's shared in-place `Idle`/`Walk` clips on a compatible
   Generic rig. Home transforms that same graph into its local exterior,
-  filters spawn anchors to the reconstructed nearby roads beyond the facade
-  and runs the slots only while the Balcony shot is active;
+  retains a bounded `100 m` fog-hidden approach context beyond the facade while
+  rendering its existing `48 m` street slice, and runs the slots only while the
+  Balcony shot is active;
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
@@ -535,8 +542,9 @@ The vertical slice contains:
   local fog field and bounded `12`-light street/bar pool, then restores the
   captured Home visibility and lighting for MainRoom, Bathroom, disable and
   destroy. During that shot only, the same two-slot pedestrian runtime supplies
-  offscreen passers-by on the reconstructed street below; leaving the shot
-  immediately pools them. Fog and the City grade remain identical at every
+  distance-managed passers-by in the fog-hidden band on the reconstructed
+  street below; leaving the shot immediately pools them. Fog and the City
+  grade remain identical at every
   hour. It never creates a second City root, player or camera;
 - one modal balcony-smoking vignette at the Home-local dock around
   `(6.60, 0.04, -1.45)`: the first `E` locks manual input while the ordinary 3D

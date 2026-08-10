@@ -273,14 +273,17 @@ namespace BarPromenade.Tests.EditMode
                         HomeExteriorViewBuilder.ExteriorMinimumX -
                         0.0001f),
                     $"Spawn anchor '{anchor.Id}' crosses the Home facade.");
+                float deltaX = sourceAnchor.Position.x -
+                    context.PlayerHome.DoorPosition.x;
+                float deltaZ = sourceAnchor.Position.z -
+                    context.PlayerHome.DoorPosition.z;
                 Assert.That(
-                    context.NearbyRoads.Any(
-                        edge => Contains(
-                            context.Layout.GetRoadRect(edge),
-                            sourceAnchor.Position)),
-                    Is.True,
-                    $"Spawn anchor '{anchor.Id}' is outside the rendered " +
-                    "nearby-road set.");
+                    (deltaX * deltaX) + (deltaZ * deltaZ),
+                    Is.LessThanOrEqualTo(
+                        HomeExteriorPedestrianPlanner.SpawnContextRadius *
+                        HomeExteriorPedestrianPlanner.SpawnContextRadius),
+                    $"Spawn anchor '{anchor.Id}' is outside the bounded " +
+                    "Home approach context.");
             }
 
             RoadWalkableArea walkable =

@@ -2,6 +2,40 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Player-relative pedestrian lifecycle
+
+- Removed the Main Camera from `CityPedestrianDirector` and factory inputs.
+  Spawn selection, active lifetime and pooling no longer read camera direction,
+  frustum membership or far-clip settings.
+- Moved unique obstacle-safe spawns into the `76-86 m` player-relative band.
+  At its inner edge the fixed `0.070` Exp2 City fog retains less than `0.2%`
+  scene transmittance even at the widest production `70-degree` 16:9 frustum
+  corner after a conservative combined `6 m` camera and full visual-envelope
+  depth offset; actors remain active through camera turns and return to the
+  pool only after moving beyond `88 m` from the hero.
+- Replaced the immediate deterministic fill with a director-local runtime
+  random stream for candidate rank, motion/palette variation and timing. The
+  first one-slot event waits `1.25-7.5 s`, each later slot or replacement gets
+  a separate `3.5-12.5 s` delay, and failed searches retry after `0.8-2.4 s`.
+- Added a strict `<06:00` / `>=19:00` spawn mode with one fresh-population slot,
+  `15-35 s` initial delays, `30-70 s` replacement delays and `4-10 s` retries.
+  Entering night does not cull either of two walkers already active at dusk.
+- Kept Home's Balcony-only enable/disable as a scene-composition boundary while
+  applying the same distance lifecycle whenever its local street runtime is
+  active. Its transformed graph now retains a bounded `100 m` approach-anchor
+  context beyond the facade while the rendered street slice remains `48 m`.
+  Replaced the old seen/left-view assertions with player-distance,
+  camera-independence and staggered-scheduling coverage.
+
+Verification:
+
+- Focused Unity EditMode selection covering staggered/random and night spawn
+  schedules, strict time boundaries, camera-independent distance recycling,
+  stable head-on yielding and the expanded Home anchor context passed `11/11`;
+  Unity also compiled the affected Runtime, EditMode and PlayMode assemblies.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and scene smoke.
+
 ## 2026-08-10 — Balcony street pedestrians
 
 - Added a Home-local projection of the seeded City pedestrian graph. Nodes and

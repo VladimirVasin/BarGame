@@ -41,15 +41,13 @@ namespace BarPromenade
             Transform parent,
             CityPedestrianPlan plan,
             Transform player,
-            RoadWalkableArea walkableArea,
-            Camera camera)
+            RoadWalkableArea walkableArea)
         {
             return Create(
                 parent,
                 plan,
                 player,
                 walkableArea,
-                camera,
                 CityPedestrianResources.LoadPrefab());
         }
 
@@ -58,8 +56,8 @@ namespace BarPromenade
             CityPedestrianPlan plan,
             Transform player,
             IWalkableArea walkableArea,
-            Camera camera,
-            GameObject presentationPrefab)
+            GameObject presentationPrefab,
+            Func<bool> nightModeProvider = null)
         {
             if (parent == null)
             {
@@ -163,7 +161,7 @@ namespace BarPromenade
                     presentations,
                     player,
                     modelPoolRoot.transform,
-                    camera);
+                    nightModeProvider);
                 return director;
             }
             catch

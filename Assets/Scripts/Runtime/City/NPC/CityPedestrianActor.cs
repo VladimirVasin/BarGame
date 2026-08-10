@@ -17,8 +17,6 @@ namespace BarPromenade
     {
         public const float CollisionHeight = 1.7f;
         public const float CollisionCenterHeight = 0.85f;
-        public const float VisibilityHeight = 1.85f;
-        public const float VisibilityRadius = 0.85f;
         public const float TurnSpeedDegrees = 360f;
 
         private readonly List<int> normalCandidates = new List<int>(4);
@@ -60,7 +58,6 @@ namespace BarPromenade
         public int CrosswalkDecisionCount { get; private set; }
         public int CrosswalksTaken { get; private set; }
         public Vector3 TravelDirection => GetTravelDirection();
-        public Bounds VisibilityBounds => CreateVisibilityBounds(Position);
 
         public void Initialize(
             IWalkableArea allowedWalkableArea,
@@ -251,17 +248,6 @@ namespace BarPromenade
         internal void ForceNextCrosswalkRoll(float roll)
         {
             forcedCrosswalkRoll = Mathf.Clamp01(roll);
-        }
-
-        public static Bounds CreateVisibilityBounds(Vector3 groundPosition)
-        {
-            return new Bounds(
-                groundPosition +
-                (Vector3.up * (VisibilityHeight * 0.5f)),
-                new Vector3(
-                    VisibilityRadius * 2f,
-                    VisibilityHeight,
-                    VisibilityRadius * 2f));
         }
 
         private bool AdvanceWalking(float deltaTime)

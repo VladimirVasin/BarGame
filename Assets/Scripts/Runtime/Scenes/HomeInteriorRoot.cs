@@ -268,8 +268,7 @@ namespace BarPromenade
                 PedestrianPlan,
                 Player.GameObject.transform,
                 CityPedestrianPlanner.CreateWalkableArea(
-                    PedestrianPlan),
-                camera);
+                    PedestrianPlan));
             Pedestrians.enabled = false;
             GameObject musicObject =
                 new GameObject("Home Music");

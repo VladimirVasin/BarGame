@@ -170,11 +170,11 @@ Assets/
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
-      City/NPC/      local camera-aware graph walkers with two reusable slots
+      City/NPC/      local player-relative graph walkers with two reusable slots
         CityPedestrianPlan.cs          immutable nodes, links and spawn anchors
         CityPedestrianPlanner.cs       sidewalk turns + zebra connector graph
         CityPedestrianActor.cs         forward graph walk + seeded zebra choice
-        CityPedestrianDirector.cs      offscreen lifecycle, safe pooling + yielding
+        CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
@@ -428,8 +428,12 @@ layout + seed -> CityPedestrianPlanner -> sidewalk/turn/zebra graph
                                       -> unique long-segment spawn anchors
                                       -> CityPedestrianDirector
                                          -> two local reusable actor/model slots
-                                         -> outside-frustum spawn
-                                         -> seen-then-left-view recycling
+                                         -> runtime-random one-slot spawn events
+                                         -> `1.25-7.5 s` first / `3.5-12.5 s` later delays
+                                         -> fog-hidden `76-86 m` spawn band
+                                         -> player-distance recycling beyond `88 m`
+                                         -> night cap `1`; `15-35 s` / `30-70 s` delays
+                                         -> no camera/frustum lifecycle dependency
                                          -> safe CharacterController activation
                                          -> forward turns + 50% zebra choice
                                          -> shared Player Idle/Walk clips
@@ -501,11 +505,11 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> no second City root/player/camera
                     -> HomeExteriorPedestrianPlanner
                        -> same sidewalk/turn/zebra graph in Home coordinates
-                       -> anchors filtered to rendered roads beyond the facade
+                       -> bounded `100 m` approach anchors beyond the facade
                     -> Balcony-only City visibility, fog field and light pool
                        -> exact City fog/background/48 m cap/current light/grade
                        -> at most 12 street/bar lights scaled by night factor
-                       -> enable two offscreen pedestrian slots only in shot
+                       -> enable two distance-managed pedestrian slots only in shot
                        -> captured Home render state restored on exit/disable
        -> HomeInteriorAtmosphere -> two aligned practical Light/emitter/halo pairs
                                  -> synchronized cold shadowed bathroom-spill Spot

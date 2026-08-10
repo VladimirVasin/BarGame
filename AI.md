@@ -22,12 +22,18 @@ directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
   production model. City streets also host a deterministic sidewalk and zebra
   navigation graph. At most two ambient walkers exist near the player: they
-  spawn outside the camera frustum, keep moving forward through graph turns,
+  spawn one at a time after wide, independently randomized delays at randomly
+  ranked obstacle-safe anchors `76-86 m` away, where the fixed City fog has
+  already hidden them. They keep moving forward through graph turns,
   independently choose whether to use each zebra crossing, and return to their
-  pool after entering and then leaving view. Their compatible Generic rig uses
-  the hero's shared Idle and Walk clips. Home maps the same graph into the
-  bounded street view below the balcony and enables its two slots only while
-  the Balcony camera shot is active; returning indoors releases them.
+  pool only beyond `88 m` from the hero. Camera direction and frustum state do
+  not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is
+  limited to one slot and uses much longer random delays; a second walker
+  already active at dusk is not culled early. Their compatible Generic rig
+  uses the hero's shared Idle and Walk clips. Home maps the same graph into the
+  bounded street view below the balcony. Its two slots are enabled only while
+  the Balcony camera shot is active; returning indoors releases them as a scene
+  boundary.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds

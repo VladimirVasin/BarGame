@@ -81,20 +81,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 registry.LocalBounds.size.y,
                 Is.EqualTo(1.75f).Within(0.035f));
-            float maximumLocalX = Mathf.Max(
-                Mathf.Abs(registry.LocalBounds.min.x),
-                Mathf.Abs(registry.LocalBounds.max.x));
-            float maximumLocalZ = Mathf.Max(
-                Mathf.Abs(registry.LocalBounds.min.z),
-                Mathf.Abs(registry.LocalBounds.max.z));
-            Assert.That(
-                CityPedestrianActor.VisibilityRadius,
-                Is.GreaterThanOrEqualTo(
-                    Mathf.Sqrt(
-                        (maximumLocalX * maximumLocalX) +
-                        (maximumLocalZ * maximumLocalZ))),
-                "The frustum envelope must contain the complete visual at " +
-                "every yaw.");
             Assert.That(
                 AssetDatabase.GetAssetPath(registry.IdleClip),
                 Is.EqualTo(PlayerAnimationPath));
@@ -206,28 +192,27 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Factory_SpawnsAtMostTwoUniqueActorsOutsideView()
+        public void Factory_StaggersRandomizedFogBandSpawns()
         {
             GameObject root = new GameObject("Spawn Cap Test Root");
             CityPedestrianDirector director = null;
             try
             {
                 Transform player = CreatePlayer(root.transform);
-                Camera camera = CreateTestCamera(root.transform);
-                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
+                CityPedestrianPlan plan = CreateDistanceSpawnPlan(
                     new[]
                     {
-                        new Vector3(0f, 0f, -12f),
-                        new Vector3(0f, 0f, -12f),
-                        new Vector3(4f, 0f, -12f)
+                        new Vector3(0f, 0f, -76f),
+                        new Vector3(0f, 0f, -76f),
+                        new Vector3(4f, 0f, -76f)
                     });
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    camera,
-                    CityPedestrianResources.LoadPrefab());
+                    CityPedestrianResources.LoadPrefab(),
+                    () => false);
 
                 Assert.That(
                     director.Count,
@@ -237,9 +222,36 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
                 Assert.That(director.ActiveCount, Is.Zero);
 
-                director.RefreshPresentationPool();
-                director.RefreshPresentationPool();
-                director.RefreshPresentationPool();
+                float initialDelay = director.TimeUntilNextSpawn;
+                Assert.That(
+                    initialDelay,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumInitialSpawnDelay,
+                        CityPedestrianDirector.MaximumInitialSpawnDelay));
+                director.Advance(initialDelay * 0.5f);
+                Assert.That(
+                    director.ActiveCount,
+                    Is.Zero,
+                    "The first pedestrian must honor its random delay.");
+                director.Advance((initialDelay * 0.5f) + 0.01f);
+                Assert.That(director.ActiveCount, Is.EqualTo(1));
+
+                float secondDelay = director.TimeUntilNextSpawn;
+                Assert.That(
+                    secondDelay,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumSpawnCooldown,
+                        CityPedestrianDirector.MaximumSpawnCooldown));
+                Assert.That(
+                    CityPedestrianDirector.MaximumSpawnCooldown -
+                    CityPedestrianDirector.MinimumSpawnCooldown,
+                    Is.GreaterThanOrEqualTo(9f));
+                director.Advance(secondDelay * 0.5f);
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(1),
+                    "The second slot must use an independent random delay.");
+                director.Advance((secondDelay * 0.5f) + 0.01f);
 
                 Assert.That(
                     director.ActiveCount,
@@ -257,23 +269,48 @@ namespace BarPromenade.Tests.EditMode
                         (CityPedestrianPlanner.AgentRadius * 2f) +
                         CityPedestrianDirector.CollisionActivationPadding));
 
-                Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+                const float productionAspect = 16f / 9f;
+                const float widestProductionFieldOfView = 70f;
+                const float conservativeCameraAndVisualDepth = 6f;
+                float verticalTangent = Mathf.Tan(
+                    widestProductionFieldOfView * 0.5f * Mathf.Deg2Rad);
+                float horizontalTangent =
+                    verticalTangent * productionAspect;
+                float cornerDepthRatio = 1f / Mathf.Sqrt(
+                    1f +
+                    (verticalTangent * verticalTangent) +
+                    (horizontalTangent * horizontalTangent));
+                float conservativeFogDepth =
+                    (CityPedestrianDirector.MinimumSpawnDistance *
+                     cornerDepthRatio) -
+                    conservativeCameraAndVisualDepth;
+                float fogTransmittanceAtSpawnEdge = Mathf.Exp(
+                    -Mathf.Pow(
+                        RuntimeSceneSetup.CityFogDensity *
+                        conservativeFogDepth,
+                        2f));
+                Assert.That(
+                    fogTransmittanceAtSpawnEdge,
+                    Is.LessThan(0.002f),
+                    "The spawn band must stay hidden even at the widest " +
+                    "production 16:9 frustum corner after camera and full " +
+                    "visual-envelope depth offsets.");
                 for (int index = 0; index < active.Length; index++)
                 {
+                    CityPedestrianSpawnAnchor spawnAnchor =
+                        plan.SpawnAnchors.Single(
+                            candidate => string.Equals(
+                                candidate.Id,
+                                active[index].SpawnAnchorId,
+                                StringComparison.Ordinal));
                     float distance = PlanarDistance(
                         player.position,
-                        active[index].Position);
+                        spawnAnchor.Position);
                     Assert.That(
                         distance,
                         Is.InRange(
                             CityPedestrianDirector.MinimumSpawnDistance,
                             CityPedestrianDirector.MaximumSpawnDistance));
-                    Assert.That(
-                        GeometryUtility.TestPlanesAABB(
-                            planes,
-                            active[index].VisibilityBounds),
-                        Is.False,
-                        "Spawned pedestrians must begin outside view.");
                 }
 
                 AssertRuntimeCollisionContract(director);
@@ -293,6 +330,85 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Factory_NightSpawnsMuchLessOftenAndOnlyOneActor()
+        {
+            GameObject root = new GameObject("Night Spawn Test Root");
+            CityPedestrianDirector director = null;
+            bool isNight = true;
+            try
+            {
+                Transform player = CreatePlayer(root.transform);
+                CityPedestrianPlan plan = CreateDistanceSpawnPlan(
+                    new[]
+                    {
+                        new Vector3(0f, 0f, -76f),
+                        new Vector3(4f, 0f, -76f)
+                    });
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    CityPedestrianResources.LoadPrefab(),
+                    () => isNight);
+
+                Assert.That(director.IsNightSpawnMode, Is.True);
+                Assert.That(
+                    director.CurrentActiveLimit,
+                    Is.EqualTo(
+                        CityPedestrianDirector.NightMaximumActiveModels));
+                Assert.That(
+                    director.TimeUntilNextSpawn,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumNightInitialSpawnDelay,
+                        CityPedestrianDirector.MaximumNightInitialSpawnDelay));
+                Assert.That(
+                    CityPedestrianDirector.MinimumNightInitialSpawnDelay,
+                    Is.GreaterThanOrEqualTo(
+                        CityPedestrianDirector.MaximumInitialSpawnDelay *
+                        2f));
+
+                AdvanceToNextSpawn(director);
+                Assert.That(director.ActiveCount, Is.EqualTo(1));
+                Assert.That(
+                    director.TimeUntilNextSpawn,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumNightSpawnCooldown,
+                        CityPedestrianDirector.MaximumNightSpawnCooldown));
+                Assert.That(
+                    CityPedestrianDirector.MinimumNightSpawnCooldown,
+                    Is.GreaterThanOrEqualTo(
+                        CityPedestrianDirector.MaximumSpawnCooldown * 2f));
+
+                director.Advance(
+                    CityPedestrianDirector.MaximumNightSpawnCooldown + 1f);
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(1),
+                    "Night must never fill the second pedestrian slot.");
+
+                isNight = false;
+                director.Advance(0f);
+                Assert.That(director.IsNightSpawnMode, Is.False);
+                Assert.That(
+                    director.TimeUntilNextSpawn,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumInitialSpawnDelay,
+                        CityPedestrianDirector.MaximumInitialSpawnDelay));
+                AdvanceToNextSpawn(director);
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(2),
+                    "Day mode may fill the independently delayed second slot.");
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void Factory_DelaysSpawnUntilStaticOverlapClears()
         {
             GameObject root = new GameObject("Overlap Test Root");
@@ -301,13 +417,12 @@ namespace BarPromenade.Tests.EditMode
             try
             {
                 Transform player = CreatePlayer(root.transform);
-                Camera camera = CreateTestCamera(root.transform);
-                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
-                    new[] { new Vector3(0f, 0f, -12f) });
+                CityPedestrianPlan plan = CreateDistanceSpawnPlan(
+                    new[] { new Vector3(0f, 0f, -76f) });
                 blocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 blocker.name = "Spawn Blocker";
                 blocker.transform.SetParent(root.transform, false);
-                blocker.transform.position = new Vector3(0f, 0.85f, -12f);
+                blocker.transform.position = new Vector3(0f, 0.85f, -76f);
                 blocker.transform.localScale = new Vector3(2f, 2f, 2f);
                 Physics.SyncTransforms();
 
@@ -316,9 +431,9 @@ namespace BarPromenade.Tests.EditMode
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    camera,
-                    CityPedestrianResources.LoadPrefab());
-                director.RefreshPresentationPool();
+                    CityPedestrianResources.LoadPrefab(),
+                    () => false);
+                AdvanceToNextSpawn(director);
 
                 Assert.That(director.ActiveCount, Is.Zero);
                 Assert.That(director.Actors[0].CollisionEnabled, Is.False);
@@ -326,7 +441,7 @@ namespace BarPromenade.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(blocker);
                 blocker = null;
                 Physics.SyncTransforms();
-                director.RefreshPresentationPool();
+                AdvanceToNextSpawn(director);
 
                 Assert.That(director.ActiveCount, Is.EqualTo(1));
                 Assert.That(director.Actors[0].CollisionEnabled, Is.True);
@@ -351,17 +466,16 @@ namespace BarPromenade.Tests.EditMode
             try
             {
                 Transform player = CreatePlayer(root.transform);
-                Camera camera = CreateTestCamera(root.transform);
                 CityPedestrianPlan plan = CreateHeadOnSpawnPlan();
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    camera,
-                    CityPedestrianResources.LoadPrefab());
-                director.RefreshPresentationPool();
-                director.RefreshPresentationPool();
+                    CityPedestrianResources.LoadPrefab(),
+                    () => false);
+                AdvanceToNextSpawn(director);
+                AdvanceToNextSpawn(director);
 
                 Assert.That(director.ActiveCount, Is.EqualTo(2));
                 for (int index = 0; index < director.Actors.Count; index++)
@@ -370,7 +484,7 @@ namespace BarPromenade.Tests.EditMode
                     actor.transform.position = new Vector3(
                         actor.TravelDirection.x > 0f ? -0.35f : 0.35f,
                         0f,
-                        -12f);
+                        -72f);
                 }
 
                 Physics.SyncTransforms();
@@ -441,48 +555,63 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Director_ReleasesSeenActorAfterItLeavesView()
+        public void Director_IgnoresCameraAndReleasesBeyondPlayerRange()
         {
-            GameObject root = new GameObject("Seen Exit Test Root");
+            GameObject root = new GameObject("Distance Lifecycle Test Root");
             CityPedestrianDirector director = null;
             try
             {
                 Transform player = CreatePlayer(root.transform);
                 Camera camera = CreateTestCamera(root.transform);
-                CityPedestrianPlan plan = CreateOffscreenSpawnPlan(
-                    new[] { new Vector3(0f, 0f, -12f) });
+                Vector3 spawnPosition = new Vector3(0f, 0f, -76f);
+                camera.transform.LookAt(
+                    spawnPosition +
+                    (Vector3.up *
+                     CityPedestrianActor.CollisionCenterHeight));
+                CityPedestrianPlan plan = CreateDistanceSpawnPlan(
+                    new[] { spawnPosition });
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    camera,
-                    CityPedestrianResources.LoadPrefab());
-                director.RefreshPresentationPool();
+                    CityPedestrianResources.LoadPrefab(),
+                    () => false);
+                AdvanceToNextSpawn(director);
 
                 Assert.That(director.ActiveCount, Is.EqualTo(1));
-                director.Advance(0f);
+                CityPedestrianActor actor = director.Actors[0];
+                Vector3 viewport = camera.WorldToViewportPoint(
+                    actor.Position +
+                    (Vector3.up *
+                     CityPedestrianActor.CollisionCenterHeight));
+                Assert.That(
+                    viewport.z,
+                    Is.GreaterThan(0f));
+                Assert.That(viewport.x, Is.InRange(0f, 1f));
+                Assert.That(viewport.y, Is.InRange(0f, 1f));
+
+                camera.transform.rotation = Quaternion.identity;
+                director.Advance(0.2f);
                 Assert.That(
                     director.ActiveCount,
                     Is.EqualTo(1),
-                    "An approaching offscreen actor must remain alive until " +
-                    "it has entered view.");
+                    "Camera direction must not affect pedestrian lifetime.");
 
-                CityPedestrianActor actor = director.Actors[0];
-                camera.transform.LookAt(actor.VisibilityBounds.center);
+                player.position = actor.Position +
+                    (Vector3.forward *
+                     (CityPedestrianDirector.DespawnDistance + 0.01f));
                 director.Advance(0f);
-                Assert.That(director.ActiveCount, Is.EqualTo(1));
-
-                camera.transform.rotation = Quaternion.identity;
-                director.Advance(
-                    CityPedestrianDirector.SeenExitGrace - 0.01f);
-                Assert.That(director.ActiveCount, Is.EqualTo(1));
-
-                director.Advance(0.02f);
                 Assert.That(
                     director.ActiveCount,
                     Is.Zero,
-                    "A seen pedestrian must despawn after leaving view.");
+                    "A pedestrian must despawn beyond the player radius.");
+                Assert.That(
+                    director.TimeUntilNextSpawn,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumSpawnCooldown,
+                        CityPedestrianDirector.MaximumSpawnCooldown),
+                    "A released slot must receive a fresh randomized delay.");
                 Assert.That(
                     actor.MotionState,
                     Is.EqualTo(CityPedestrianMotionState.Dormant));
@@ -713,12 +842,12 @@ namespace BarPromenade.Tests.EditMode
             cameraObject.transform.SetParent(parent, false);
             cameraObject.transform.position = new Vector3(
                 0f,
-                CityPedestrianActor.VisibilityHeight * 0.5f,
+                CityPedestrianActor.CollisionCenterHeight,
                 0f);
             cameraObject.transform.rotation = Quaternion.identity;
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.nearClipPlane = 0.1f;
-            camera.farClipPlane = 50f;
+            camera.farClipPlane = 100f;
             camera.fieldOfView = 60f;
             camera.aspect = 1f;
             return camera;
@@ -825,7 +954,7 @@ namespace BarPromenade.Tests.EditMode
                 new[] { Rect.MinMaxRect(-3f, -1f, 3f, 3f) });
         }
 
-        private static CityPedestrianPlan CreateOffscreenSpawnPlan(
+        private static CityPedestrianPlan CreateDistanceSpawnPlan(
             IReadOnlyList<Vector3> anchorPositions)
         {
             var nodes = new List<CityPedestrianNode>(
@@ -887,15 +1016,15 @@ namespace BarPromenade.Tests.EditMode
                 {
                     new CityPedestrianNode(
                         "left",
-                        new Vector3(-4f, 0f, -12f),
+                        new Vector3(-120f, 0f, -72f),
                         false),
                     new CityPedestrianNode(
                         "center",
-                        new Vector3(0f, 0f, -12f),
+                        new Vector3(0f, 0f, -72f),
                         false),
                     new CityPedestrianNode(
                         "right",
-                        new Vector3(4f, 0f, -12f),
+                        new Vector3(120f, 0f, -72f),
                         false)
                 },
                 new[]
@@ -915,16 +1044,16 @@ namespace BarPromenade.Tests.EditMode
                 {
                     new CityPedestrianSpawnAnchor(
                         "spawn:left",
-                        new Vector3(-2f, 0f, -12f),
+                        new Vector3(-35f, 0f, -72f),
                         0,
                         1),
                     new CityPedestrianSpawnAnchor(
                         "spawn:right",
-                        new Vector3(2f, 0f, -12f),
+                        new Vector3(35f, 0f, -72f),
                         1,
                         2)
                 },
-                new[] { Rect.MinMaxRect(-5f, -13f, 5f, -11f) });
+                new[] { Rect.MinMaxRect(-121f, -73f, 121f, -71f) });
         }
 
         private static float PlanarDistance(Vector3 first, Vector3 second)
@@ -932,6 +1061,12 @@ namespace BarPromenade.Tests.EditMode
             float deltaX = first.x - second.x;
             float deltaZ = first.z - second.z;
             return Mathf.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
+        }
+
+        private static void AdvanceToNextSpawn(
+            CityPedestrianDirector director)
+        {
+            director.Advance(director.TimeUntilNextSpawn + 0.01f);
         }
     }
 }
