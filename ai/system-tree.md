@@ -63,6 +63,8 @@ Assets/
     Player/
       Player3D.prefab                   one production modular hero prefab
       Player3DPortrait.png              transparent inventory portrait from 3D model
+    Pedestrians/
+      CityPedestrian3D.prefab           pooled Lampshade Walker presentation
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -81,6 +83,10 @@ Assets/
       PlayerCharacter3DAnimations.fbx   23 in-place Actions; full-body 50-frame Rise L/R
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
+  Pedestrians/
+    Models/
+      CityPedestrian3D.fbx              compatible Generic street-walker model
+      CityPedestrian3D.json             deterministic geometry/rig manifest
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -154,6 +160,13 @@ Assets/
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
+      City/NPC/      deterministic street routes, actors and six-model visual pool
+        CityPedestrianPlan.cs          immutable route/population definitions
+        CityPedestrianPlanner.cs       function-biased safe street segments
+        CityPedestrianActor.cs         code-owned walking, pause and turn state
+        CityPedestrianDirector.cs      continuous simulation + fog-band pooling
+        CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
+        CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
@@ -228,6 +241,7 @@ Assets/
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       Player3D/       deterministic model/animation/portrait import + prefab setup
+      City/NPC/       pedestrian Generic import, dependency validation + prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
@@ -241,6 +255,8 @@ Assets/
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
       Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
+      CityPedestrianPlannerTests.cs     deterministic safe function-biased routes
+      CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
@@ -283,6 +299,8 @@ Assets/
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
+  Pedestrians/
+    Blender/                    Lampshade Walker .blend and deterministic preview
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     Blender/                    production .blend, transparent preview and authoring notes
@@ -292,6 +310,7 @@ ArtSource/
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
+  build-city-pedestrian-3d-model.py  compatible rig/model/export validator
   build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
@@ -384,6 +403,11 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
 player + seed -> CityFogField (unchanged by time of day)
+layout + seed -> CityPedestrianPlanner -> 12 safe street routes
+                                      -> CityPedestrianDirector
+                                         -> continuous virtual actors
+                                         -> six-model outer-fog pool
+                                            -> shared Player Idle/Walk clips
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> Generic Idle/Walk/face/status/fall Actions

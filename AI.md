@@ -20,7 +20,10 @@ independent body meshes on one Generic rig, uses continuous in-place 3D clips
 for locomotion and contextual actions, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
-production model.
+production model. City streets also host a deterministic ambient population:
+12 short function-biased routes are simulated continuously while a six-model
+pool renders nearby collider-free walkers on a compatible Generic rig using
+the hero's shared Idle and Walk clips.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds

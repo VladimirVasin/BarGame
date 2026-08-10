@@ -98,6 +98,11 @@ The vertical slice contains:
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
+- 12 deterministic ambient street routes biased toward real city functions,
+  continuously simulated behind a pool of at most six visible collider-free
+  low-poly walkers. All instances reuse one bizarre lampshade-hood model, four
+  material-property-block palettes and the hero's exact shared in-place
+  `Idle`/`Walk` clips on a compatible Generic rig;
 - deterministic collider-free street lamps with geometry batched into
   `48 m` spatial chunks, shadowless spot-light pools and slow out-of-phase
   amber traffic signals generated from the road graph;

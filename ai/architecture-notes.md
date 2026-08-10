@@ -65,6 +65,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rectangles. The park connects to surrounding streets through four explicit
   gates, while each generated district point of interest connects through
   every one of its adjacent street sides.
+- **Accepted — Pooled ambient street pedestrians:** City layout and session
+  seed produce 12 immutable short routes on radius-safe street segments,
+  prioritized near actual functions instead of distributed uniformly. Every
+  virtual actor keeps moving, pausing and turning under code ownership; only
+  six lightweight presentations may be bound near the player and recycling
+  happens in the outer `48 m` fog band. The one `1.75 m` lampshade-hood model
+  copies the production Generic Avatar contract and directly references the
+  hero's looping in-place `Idle` and `Walk` clips. Walkers have no colliders,
+  rigidbodies, prompts, persistence or gameplay reactions, and their four
+  muted palettes use the existing shared material through property blocks.
 - **Accepted — Entrance-aware visual road boundary:** A pure planner derives
   the exposed perimeter of street rectangles only, including dead-end caps,
   and subtracts wider openings around every bar frontage, player-home frontage
@@ -632,9 +642,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unavailable and supplies the stable ambient-occlusion cue beneath the feet.
   Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
-  shared interior are built at runtime. The hero loads as the production 3D
-  prefab; cocktail, beer-pong, Split-the-G, tincture, NPC and cat bitmaps still
-  load from `Resources` and are sliced or drawn at runtime.
+  shared interior are built at runtime. The hero and ambient City pedestrians
+  load as low-poly 3D prefabs; cocktail, beer-pong, Split-the-G, tincture, Bar
+  NPC and stairwell-cat bitmaps still load from `Resources` and are sliced or
+  drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
   the serialized Resources `RuntimePrimitiveLit` URP material so Player builds

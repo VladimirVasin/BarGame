@@ -71,7 +71,8 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (Player3DAssetSetup.IsBuilding)
+            if (Player3DAssetSetup.IsBuilding ||
+                CityPedestrianAssetSetup.IsBuilding)
             {
                 return;
             }

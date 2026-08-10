@@ -15,6 +15,8 @@ namespace BarPromenade
         public CityMusicPlayer Music { get; private set; }
         public CityAmbiencePlayer Ambience { get; private set; }
         public PlayerRuntime Player { get; private set; }
+        public CityPedestrianPlan PedestrianPlan { get; private set; }
+        public CityPedestrianDirector Pedestrians { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -208,6 +210,15 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
+            PedestrianPlan = CityPedestrianPlanner.Create(
+                Layout,
+                GameSessionState.CitySeed);
+            Pedestrians = CityPedestrianFactory.Create(
+                transform,
+                PedestrianPlan,
+                Player.GameObject.transform,
+                World.WalkableArea,
+                camera);
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed);
@@ -274,7 +285,10 @@ namespace BarPromenade
                     Night.LampAnchors.Count),
                 GameLog.Field(
                     "signal_count",
-                    Night.TrafficSignals.Count));
+                    Night.TrafficSignals.Count),
+                GameLog.Field(
+                    "pedestrian_count",
+                    PedestrianPlan.Count));
         }
 
         private static void ReportLayout(CityLayout layout)

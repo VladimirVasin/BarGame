@@ -2,6 +2,47 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Ambient city street pedestrians
+
+- Added 12 deterministic short pedestrian routes to `CityGameRoot`, biased
+  toward bar/home/supermarket frontages, district public places, open-area
+  accesses and park gates. Endpoints remain outside intersections using the
+  actual road width plus actor radius; every virtual actor continuously walks,
+  pauses and turns while staying inside the street mask.
+- Added a bounded pool of six visible presentations with outer-fog activation,
+  camera-relative hysteresis and lightweight yielding near the player or
+  another presented walker. The actors own no colliders, rigidbodies,
+  interactions, prompts or persistent gameplay state, and scaled zero delta
+  freezes route and animation progress.
+- Authored the first resident, the `1.75 m` Lampshade Walker: a long dark-green
+  coat, recessed face with one amber mark, rigid parcel bag, mismatched boots
+  and a trapezoid hood. Its deterministic Blender source produces 38 rigidly
+  skinned parts at 1,160 triangles on the exact 31-bone Player hierarchy, with
+  no Actions, colliders, lights or emissive parts.
+- Imported that model through the production Player Generic Avatar, one shared
+  instanced `Player3DLit` material and four muted MPB palettes. Each pooled
+  presentation directly references the Player animation FBX's looping `Idle`
+  and `Walk`, keeps root motion off and grounds the animated boot-sole geometry
+  while route motion remains code-owned. Explicit teardown now destroys every
+  manual PlayableGraph in scene, test and failed-factory lifecycles; mutual
+  builder guards prevent the pedestrian and Player importers from requeuing
+  each other indefinitely.
+
+Verification:
+
+- Blender 5.0.1 deterministic build/validator passed: 31 matching bones,
+  38 meshes, 1,160/1,200 triangles, grounded `1.75 m` bounds and zero Actions;
+  generated signature
+  `0e29c300259a698cba443f2d2ae9f37f9ac30c18478edf966f68d19b20a90b5d`.
+- Unity importer/prefab validator passed in batch mode with the external Player
+  Avatar, shared material and direct `Idle`/`Walk` references.
+- Focused EditMode pedestrian selection passed 9/9 in 0.89 seconds, including
+  plan stability/safety/function bias, active-pool cap/hysteresis, pause/turn,
+  passive prefab contracts and 12 sampled Walk sole-contact phases. The final
+  run exited without leaked PlayableGraphs.
+- Fast mode intentionally omitted complete Unity suites, a player build,
+  startup smoke and a rendered City walkthrough.
+
 ## 2026-08-10 — Clock-driven hunger and fatigue
 
 - Connected hunger and fatigue to the one persistent scaled session clock.

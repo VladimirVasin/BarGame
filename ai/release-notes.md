@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-08-10 — The city now has passers-by
+
+- City streets now feel inhabited by a small ambient population that walks
+  short routes, pauses at route ends and turns back. Routes favor entrances,
+  public places and park gates instead of spreading people uniformly.
+- The first resident is a slightly bizarre low-poly figure in a long coat with
+  a lampshade-like hood, dark recessed face, rigid parcel bag and mismatched
+  boots. Four muted palettes vary the same silhouette.
+- Nearby walkers reuse the hero's existing Idle and Walk animations. They are
+  passive atmosphere only: no prompts, collisions or gameplay reactions.
+
 ### 2026-08-10 — Hunger and fatigue now build over time
 
 - After the opening Wake, hunger now rises from `0` to `100` over 24 game hours
