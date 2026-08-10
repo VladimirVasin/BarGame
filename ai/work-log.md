@@ -2,6 +2,25 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-10 — Scrollable city-map line clipping
+
+- Fixed the scrollable full-screen City map leaking and scattering roads, park
+  paths and short landmark strokes across the title and surrounding panel.
+- Composed the rotated line transform around the active map-group origin under
+  the retro canvas matrix, then clipped each visible segment to the local
+  viewport while accounting for its direction and thickness. Route-panel
+  legend lines remain outside that map-only clipping context.
+- Extended the existing line-rendering coverage with the nested scaled-group
+  transform and horizontal, vertical, diagonal, fully external and already
+  visible clipping cases.
+
+Verification:
+
+- Focused Unity EditMode map-line selection passed `2/2`; Unity compiled the
+  affected Runtime and EditMode assemblies without errors.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered City walkthrough.
+
 ## 2026-08-10 — Player-relative pedestrian lifecycle
 
 - Removed the Main Camera from `CityPedestrianDirector` and factory inputs.

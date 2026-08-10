@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 2026-08-10 — City map stays inside its frame
+
+- Roads, park paths and landmark strokes on the scrollable full-screen map no
+  longer spill into the title or scatter across the surrounding interface.
+  Panning now keeps every line cleanly clipped to the map viewport.
+
 ### 2026-08-10 — Passers-by now follow the hero, not the camera
 
 - The city no longer creates and simulates a fixed crowd at load. Up to two

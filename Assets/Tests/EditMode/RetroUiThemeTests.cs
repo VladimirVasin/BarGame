@@ -136,7 +136,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CityMapLine_ComposesInsideScaledLogicalCanvas()
+        public void CityMapLine_ComposesInsideScaledLogicalGroup()
         {
             MethodInfo createLineMatrix = typeof(CityMapView).GetMethod(
                 "CreateLineMatrix",
@@ -154,6 +154,7 @@ namespace BarPromenade.Tests.EditMode
                 new Vector3(canvas.Scale, canvas.Scale, 1f));
             Vector2 logicalStart = new Vector2(80f, 70f);
             Vector2 logicalEnd = new Vector2(110f, 95f);
+            Vector2 groupOffset = new Vector2(19f, 41f);
             float logicalLength =
                 Vector2.Distance(logicalStart, logicalEnd);
             Matrix4x4 lineMatrix = (Matrix4x4)createLineMatrix.Invoke(
@@ -162,35 +163,130 @@ namespace BarPromenade.Tests.EditMode
                 {
                     canvasMatrix,
                     logicalStart,
-                    logicalEnd
+                    logicalEnd,
+                    groupOffset
                 });
 
             Vector2 transformedStart =
-                lineMatrix.MultiplyPoint3x4(Vector3.zero);
+                lineMatrix.MultiplyPoint3x4(groupOffset);
             Vector2 transformedEnd =
                 lineMatrix.MultiplyPoint3x4(
-                    Vector3.right * logicalLength);
+                    groupOffset + Vector2.right * logicalLength);
 
             Assert.That(
                 transformedStart.x,
                 Is.EqualTo(
-                    canvas.LogicalToScreen(logicalStart).x)
+                    canvas.LogicalToScreen(
+                        groupOffset + logicalStart).x)
                     .Within(0.001f));
             Assert.That(
                 transformedStart.y,
                 Is.EqualTo(
-                    canvas.LogicalToScreen(logicalStart).y)
+                    canvas.LogicalToScreen(
+                        groupOffset + logicalStart).y)
                     .Within(0.001f));
             Assert.That(
                 transformedEnd.x,
                 Is.EqualTo(
-                    canvas.LogicalToScreen(logicalEnd).x)
+                    canvas.LogicalToScreen(
+                        groupOffset + logicalEnd).x)
                     .Within(0.001f));
             Assert.That(
                 transformedEnd.y,
                 Is.EqualTo(
-                    canvas.LogicalToScreen(logicalEnd).y)
+                    canvas.LogicalToScreen(
+                        groupOffset + logicalEnd).y)
                     .Within(0.001f));
+        }
+
+        [Test]
+        public void CityMapLine_ClipsScrollableViewportOverflow()
+        {
+            var viewport = new Rect(0f, 0f, 423f, 311f);
+            Vector2 verticalStart = new Vector2(200f, -50f);
+            Vector2 verticalEnd = new Vector2(200f, 350f);
+            Assert.That(
+                CityMapView.TryClipLineToRect(
+                    viewport,
+                    8f,
+                    ref verticalStart,
+                    ref verticalEnd),
+                Is.True);
+            Assert.That(verticalStart, Is.EqualTo(new Vector2(200f, 0f)));
+            Assert.That(verticalEnd, Is.EqualTo(new Vector2(200f, 311f)));
+
+            Vector2 horizontalStart = new Vector2(-50f, 150f);
+            Vector2 horizontalEnd = new Vector2(500f, 150f);
+            Assert.That(
+                CityMapView.TryClipLineToRect(
+                    viewport,
+                    8f,
+                    ref horizontalStart,
+                    ref horizontalEnd),
+                Is.True);
+            Assert.That(
+                horizontalStart,
+                Is.EqualTo(new Vector2(0f, 150f)));
+            Assert.That(
+                horizontalEnd,
+                Is.EqualTo(new Vector2(423f, 150f)));
+
+            Vector2 crossingStart = new Vector2(-40f, -40f);
+            Vector2 crossingEnd = new Vector2(463f, 351f);
+
+            bool crossingVisible = CityMapView.TryClipLineToRect(
+                viewport,
+                8f,
+                ref crossingStart,
+                ref crossingEnd);
+
+            Assert.That(crossingVisible, Is.True);
+            Vector2 direction = (crossingEnd - crossingStart).normalized;
+            Vector2 halfWidthOffset = new Vector2(
+                -direction.y,
+                direction.x) * 4f;
+            Vector2[] corners =
+            {
+                crossingStart + halfWidthOffset,
+                crossingStart - halfWidthOffset,
+                crossingEnd + halfWidthOffset,
+                crossingEnd - halfWidthOffset
+            };
+            foreach (Vector2 corner in corners)
+            {
+                Assert.That(
+                    corner.x,
+                    Is.InRange(viewport.xMin - 0.001f,
+                        viewport.xMax + 0.001f));
+                Assert.That(
+                    corner.y,
+                    Is.InRange(viewport.yMin - 0.001f,
+                        viewport.yMax + 0.001f));
+            }
+
+            Vector2 outsideStart = new Vector2(-20f, 20f);
+            Vector2 outsideEnd = new Vector2(-20f, 290f);
+            Assert.That(
+                CityMapView.TryClipLineToRect(
+                    viewport,
+                    8f,
+                    ref outsideStart,
+                    ref outsideEnd),
+                Is.False);
+
+            Vector2 insideStart = new Vector2(20f, 20f);
+            Vector2 insideEnd = new Vector2(400f, 290f);
+            Vector2 expectedInsideStart = insideStart;
+            Vector2 expectedInsideEnd = insideEnd;
+            Assert.That(
+                CityMapView.TryClipLineToRect(
+                    viewport,
+                    2f,
+                    ref insideStart,
+                    ref insideEnd),
+                Is.True);
+            Assert.That(insideStart, Is.EqualTo(expectedInsideStart));
+            Assert.That(insideEnd, Is.EqualTo(expectedInsideEnd));
         }
 
         [TestCase(1280, 720, 2f)]

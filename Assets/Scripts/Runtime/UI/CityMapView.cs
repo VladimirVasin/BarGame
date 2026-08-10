@@ -144,6 +144,9 @@ namespace BarPromenade
         private Vector2 previousPanPointer;
         private Vector2 hoverCoordinateOffset;
         private Rect hoverClipRect;
+        private bool isMapLineContextActive;
+        private Rect mapLineClipRect;
+        private Vector2 mapLineGroupOffset;
         private GUIStyle titleStyle;
         private GUIStyle subtitleStyle;
         private GUIStyle centeredStyle;
@@ -276,12 +279,18 @@ namespace BarPromenade
                 GUI.BeginGroup(mapArea);
                 try
                 {
+                    isMapLineContextActive = true;
+                    mapLineClipRect = new Rect(
+                        Vector2.zero,
+                        mapArea.size);
+                    mapLineGroupOffset = mapArea.position;
                     MapProjection projection = CreateProjection(
                         mapViewport.ContentRect);
                     DrawMap(projection);
                 }
                 finally
                 {
+                    isMapLineContextActive = false;
                     GUI.EndGroup();
                     hoverCoordinateOffset = Vector2.zero;
                 }
@@ -561,7 +570,7 @@ namespace BarPromenade
             }
         }
 
-        private static void DrawOpenPublicPlaceLot(
+        private void DrawOpenPublicPlaceLot(
             Rect lotRect,
             Color districtColor)
         {
@@ -1551,12 +1560,22 @@ namespace BarPromenade
                 maximumZ);
         }
 
-        private static void DrawLine(
+        private void DrawLine(
             Vector2 start,
             Vector2 end,
             float width,
             Color color)
         {
+            if (isMapLineContextActive &&
+                !TryClipLineToRect(
+                    mapLineClipRect,
+                    width,
+                    ref start,
+                    ref end))
+            {
+                return;
+            }
+
             Vector2 delta = end - start;
             float length = delta.magnitude;
             if (length <= 0.01f)
@@ -1570,7 +1589,10 @@ namespace BarPromenade
             GUI.matrix = CreateLineMatrix(
                 previousMatrix,
                 start,
-                end);
+                end,
+                isMapLineContextActive
+                    ? mapLineGroupOffset
+                    : Vector2.zero);
             GUI.DrawTexture(
                 new Rect(0f, -width * 0.5f, length, width),
                 Texture2D.whiteTexture);
@@ -1578,7 +1600,7 @@ namespace BarPromenade
             GUI.color = previousColor;
         }
 
-        private static void DrawPointOfInterestMarker(
+        private void DrawPointOfInterestMarker(
             CityDistrictPointOfInterestKind kind,
             Vector2 center,
             Color districtColor,
@@ -1603,7 +1625,7 @@ namespace BarPromenade
                 districtColor);
         }
 
-        private static void DrawPointOfInterestOutline(
+        private void DrawPointOfInterestOutline(
             CityDistrictPointOfInterestKind kind,
             Vector2 center,
             float halfSize,
@@ -1656,7 +1678,7 @@ namespace BarPromenade
             }
         }
 
-        private static void DrawOpenOctagonOutline(
+        private void DrawOpenOctagonOutline(
             Vector2 center,
             float radius,
             float width,
@@ -1689,7 +1711,7 @@ namespace BarPromenade
             }
         }
 
-        private static void DrawDiamondOutline(
+        private void DrawDiamondOutline(
             Vector2 top,
             Vector2 right,
             Vector2 bottom,
@@ -1703,10 +1725,102 @@ namespace BarPromenade
             DrawLine(left, top, width, color);
         }
 
+        internal static bool TryClipLineToRect(
+            Rect clipRect,
+            float width,
+            ref Vector2 start,
+            ref Vector2 end)
+        {
+            Vector2 origin = start;
+            Vector2 delta = end - origin;
+            if (delta.sqrMagnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            Vector2 direction = delta.normalized;
+            float halfWidth = Mathf.Max(0f, width * 0.5f);
+            float horizontalInset = Mathf.Abs(direction.y) * halfWidth;
+            float verticalInset = Mathf.Abs(direction.x) * halfWidth;
+            float xMin = clipRect.xMin + horizontalInset;
+            float xMax = clipRect.xMax - horizontalInset;
+            float yMin = clipRect.yMin + verticalInset;
+            float yMax = clipRect.yMax - verticalInset;
+            if (xMin > xMax || yMin > yMax)
+            {
+                return false;
+            }
+
+            float minimumTime = 0f;
+            float maximumTime = 1f;
+            if (!TryClipLineParameter(
+                    -delta.x,
+                    origin.x - xMin,
+                    ref minimumTime,
+                    ref maximumTime) ||
+                !TryClipLineParameter(
+                    delta.x,
+                    xMax - origin.x,
+                    ref minimumTime,
+                    ref maximumTime) ||
+                !TryClipLineParameter(
+                    -delta.y,
+                    origin.y - yMin,
+                    ref minimumTime,
+                    ref maximumTime) ||
+                !TryClipLineParameter(
+                    delta.y,
+                    yMax - origin.y,
+                    ref minimumTime,
+                    ref maximumTime))
+            {
+                return false;
+            }
+
+            start = origin + delta * minimumTime;
+            end = origin + delta * maximumTime;
+            return (end - start).sqrMagnitude > 0.0001f;
+        }
+
+        private static bool TryClipLineParameter(
+            float denominator,
+            float numerator,
+            ref float minimumTime,
+            ref float maximumTime)
+        {
+            if (Mathf.Abs(denominator) <= Mathf.Epsilon)
+            {
+                return numerator >= 0f;
+            }
+
+            float time = numerator / denominator;
+            if (denominator < 0f)
+            {
+                if (time > maximumTime)
+                {
+                    return false;
+                }
+
+                minimumTime = Mathf.Max(minimumTime, time);
+            }
+            else
+            {
+                if (time < minimumTime)
+                {
+                    return false;
+                }
+
+                maximumTime = Mathf.Min(maximumTime, time);
+            }
+
+            return true;
+        }
+
         private static Matrix4x4 CreateLineMatrix(
             Matrix4x4 parentMatrix,
             Vector2 start,
-            Vector2 end)
+            Vector2 end,
+            Vector2 groupOffset)
         {
             Vector2 direction = (end - start).normalized;
             var logicalLineTransform = Matrix4x4.identity;
@@ -1716,7 +1830,16 @@ namespace BarPromenade
             logicalLineTransform.m10 = direction.y;
             logicalLineTransform.m11 = direction.x;
             logicalLineTransform.m13 = start.y;
-            return parentMatrix * logicalLineTransform;
+            // BeginGroup contributes its offset before GUI.matrix. Conjugate
+            // the line transform so rotation cannot rotate that group origin.
+            Matrix4x4 groupTransform = Matrix4x4.Translate(
+                new Vector3(groupOffset.x, groupOffset.y, 0f));
+            Matrix4x4 inverseGroupTransform = Matrix4x4.Translate(
+                new Vector3(-groupOffset.x, -groupOffset.y, 0f));
+            return parentMatrix *
+                   groupTransform *
+                   logicalLineTransform *
+                   inverseGroupTransform;
         }
 
         private static void DrawSolidRect(Rect rectangle, Color color)
