@@ -2,6 +2,29 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Bus doors fold inward from real hinges
+
+- Rebuilt both production bus doorways as independent double-leaf assemblies.
+  Each leaf now owns its panel, glass and moving trim on an outer hinge, while
+  the doorway's outer posts remain fixed to the body instead of rotating as one
+  wide central slab.
+- Updated the runtime registry, prefab builder and presentation to bind all four
+  leaves. Opposed world-space rotations use the bus vertical, fold into the
+  cabin and restore the exact authored pose before pooling. The deterministic
+  Blender source/FBX/manifest and Resources prefab now share generator version
+  `1.1.0`, `41` meshes and `3804` triangles.
+- Added a production-prefab regression that checks both doorways, vertical
+  rotation, equal opposed angles, inward movement, fixed posts and exact reset.
+
+Verification:
+
+- The Blender generator validator completed and a dedicated fully-open review
+  render showed two clear, upright doorways with both leaf pairs folded inward.
+- Focused Unity EditMode
+  `CityBusAssetImportTests.DoorPresentation_UsesOpposedInwardHingedLeaves`
+  passed `1/1`. Fast mode intentionally omitted the full EditMode/PlayMode
+  suites, a player build and a packaged smoke check.
+
 ## 2026-08-11 — Winding Route 01 reaches district places and Home
 
 - Replaced the Central Park ring selection with a deterministic target-derived

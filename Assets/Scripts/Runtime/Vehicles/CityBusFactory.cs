@@ -188,8 +188,10 @@ namespace BarPromenade
         {
             if (registry.ModelRoot == null ||
                 registry.Body == null ||
-                registry.FrontDoor == null ||
-                registry.RearDoor == null ||
+                registry.FrontDoorForwardLeaf == null ||
+                registry.FrontDoorRearwardLeaf == null ||
+                registry.RearDoorForwardLeaf == null ||
+                registry.RearDoorRearwardLeaf == null ||
                 registry.FrontLeftWheel == null ||
                 registry.FrontRightWheel == null ||
                 registry.RearLeftWheel == null ||

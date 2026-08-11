@@ -55,8 +55,9 @@ after wide, independently randomized delays at randomly
 One full-size ambient midibus may also be active near the player, although its
 fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
-twelve-seat interior, driver area, two animated doors, steering and rolling
-wheels, a synthesized engine loop and time-of-day head, tail and cabin lights.
+twelve-seat interior, driver area, two animated double-leaf doors that fold
+inward around fixed outer posts, steering and rolling wheels, a synthesized
+engine loop and time-of-day head, tail and cabin lights.
 Route 01 is one deterministic right-hand, Street-only closed winding service
 loop. The planner targets every district point of interest that actually exists
 in the layout and then the player home; the default city therefore has five

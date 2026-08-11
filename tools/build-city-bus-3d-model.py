@@ -35,7 +35,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 DESIGN_ID = "road_v2_midibus_v1"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
@@ -53,6 +53,28 @@ SOURCE_COLLECTION = "SOURCE_CityBus3D"
 PRESENTATION_COLLECTION = "PRESENTATION_CityBus3D"
 ROOT_NAME = "SRC_CityBus3D"
 BODY_NAME = "ROOT_Body"
+
+DOOR_SIDE_X = -1.205
+DOOR_CENTER_Z = 1.58
+DOOR_HINGE_OFFSET = 0.76
+DOORWAY_SPECS = (
+    (
+        "Front",
+        -3.05,
+        (
+            ("Forward", -1.0, "front_door_forward_leaf"),
+            ("Rearward", 1.0, "front_door_rearward_leaf"),
+        ),
+    ),
+    (
+        "Rear",
+        1.34,
+        (
+            ("Forward", -1.0, "rear_door_forward_leaf"),
+            ("Rearward", 1.0, "rear_door_rearward_leaf"),
+        ),
+    ),
+)
 
 
 MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, float]] = {
@@ -615,53 +637,62 @@ class CityBusBuilder:
         self.add_accumulator("INT_Handrails", rails, "handrails", "Rail")
 
     def _build_doors(self) -> None:
-        for prefix, y, role in (
-            ("Front", -3.05, "front_door"),
-            ("Rear", 1.34, "rear_door"),
-        ):
-            pivot = self.add_pivot(
-                f"PIVOT_{prefix}Door",
-                role,
-                self.body,
-                (-1.205, y, 1.58),
-            )
+        for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
             self.add_boxes(
-                f"GEO_{prefix}DoorPanels",
+                f"GEO_{doorway_name}DoorOuterPosts",
                 [
-                    ((0.0, -0.39, -0.46), (0.07, 0.70, 0.58)),
-                    ((0.0, 0.39, -0.46), (0.07, 0.70, 0.58)),
-                    ((0.0, -0.39, 0.69), (0.07, 0.70, 0.22)),
-                    ((0.0, 0.39, 0.69), (0.07, 0.70, 0.22)),
+                    (
+                        (DOOR_SIDE_X, doorway_y - DOOR_HINGE_OFFSET, 1.68),
+                        (0.085, 0.07, 1.72),
+                    ),
+                    (
+                        (DOOR_SIDE_X, doorway_y + DOOR_HINGE_OFFSET, 1.68),
+                        (0.085, 0.07, 1.72),
+                    ),
                 ],
-                "door_panel",
-                "Body",
-                pivot,
-            )
-            self.add_boxes(
-                f"GEO_{prefix}DoorFrames",
-                [
-                    ((0.0, -0.76, 0.10), (0.085, 0.07, 1.72)),
-                    ((0.0, 0.00, 0.10), (0.085, 0.08, 1.72)),
-                    ((0.0, 0.76, 0.10), (0.085, 0.07, 1.72)),
-                    ((0.0, -0.39, -0.12), (0.085, 0.70, 0.07)),
-                    ((0.0, 0.39, -0.12), (0.085, 0.70, 0.07)),
-                    ((0.0, -0.39, 0.80), (0.085, 0.70, 0.07)),
-                    ((0.0, 0.39, 0.80), (0.085, 0.70, 0.07)),
-                ],
-                "door_frame",
+                "door_post",
                 "Trim",
-                pivot,
             )
-            self.add_boxes(
-                f"GLS_{prefix}DoorGlass",
-                [
-                    ((-0.006, -0.39, 0.33), (0.025, 0.61, 0.82)),
-                    ((-0.006, 0.39, 0.33), (0.025, 0.61, 0.82)),
-                ],
-                "door_glass",
-                "Glass",
-                pivot,
-            )
+            for leaf_name, direction, role in leaf_specs:
+                hinge_y = direction * DOOR_HINGE_OFFSET
+                panel_y = direction * 0.39 - hinge_y
+                center_stile_y = direction * 0.02 - hinge_y
+                pivot = self.add_pivot(
+                    f"PIVOT_{doorway_name}Door{leaf_name}Leaf",
+                    role,
+                    self.body,
+                    (DOOR_SIDE_X, doorway_y + hinge_y, DOOR_CENTER_Z),
+                )
+                self.add_boxes(
+                    f"GEO_{doorway_name}Door{leaf_name}LeafPanels",
+                    [
+                        ((0.0, panel_y, -0.46), (0.07, 0.70, 0.58)),
+                        ((0.0, panel_y, 0.69), (0.07, 0.70, 0.22)),
+                    ],
+                    "door_panel",
+                    "Body",
+                    pivot,
+                )
+                self.add_boxes(
+                    f"GEO_{doorway_name}Door{leaf_name}LeafFrames",
+                    [
+                        ((0.0, center_stile_y, 0.10), (0.085, 0.04, 1.72)),
+                        ((0.0, panel_y, -0.12), (0.085, 0.70, 0.07)),
+                        ((0.0, panel_y, 0.80), (0.085, 0.70, 0.07)),
+                    ],
+                    "door_frame",
+                    "Trim",
+                    pivot,
+                )
+                self.add_boxes(
+                    f"GLS_{doorway_name}Door{leaf_name}LeafGlass",
+                    [
+                        ((-0.006, panel_y, 0.33), (0.025, 0.61, 0.82)),
+                    ],
+                    "door_glass",
+                    "Glass",
+                    pivot,
+                )
 
     def _build_wheels(self) -> None:
         wheel_specs = (
@@ -870,22 +901,63 @@ def validate_result(result: BuildResult) -> ValidationReport:
     roles = {part.role for part in result.parts}
     for required_role in (
         "body_shell", "glass", "passenger_seats", "handrails", "dashboard",
-        "steering_wheel", "front_door", "headlight", "tail_light", "cabin_light",
+        "steering_wheel", "door_panel", "door_frame", "door_glass", "door_post",
+        "headlight", "tail_light", "cabin_light",
     ):
-        if required_role == "front_door":
-            if not any(pivot.role == required_role for pivot in result.pivots):
-                errors.append(f"Missing required pivot role {required_role}")
-        elif required_role not in roles:
+        if required_role not in roles:
             errors.append(f"Missing required mesh role {required_role}")
 
     pivot_roles = {pivot.role for pivot in result.pivots}
     for required_role in (
-        "front_door", "rear_door", "front_left_steering", "front_right_steering",
+        "front_door_forward_leaf", "front_door_rearward_leaf",
+        "rear_door_forward_leaf", "rear_door_rearward_leaf",
+        "front_left_steering", "front_right_steering",
         "front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel",
         "driver_seat_anchor", "front_door_entry", "rear_door_entry",
     ):
         if required_role not in pivot_roles:
             errors.append(f"Missing required pivot role {required_role}")
+
+    pivots_by_name = {pivot.obj.name: pivot for pivot in result.pivots}
+    expected_leaf_roles: dict[str, tuple[str, tuple[float, float, float]]] = {}
+    for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
+        for leaf_name, direction, role in leaf_specs:
+            expected_leaf_roles[f"PIVOT_{doorway_name}Door{leaf_name}Leaf"] = (
+                role,
+                (
+                    DOOR_SIDE_X,
+                    doorway_y + direction * DOOR_HINGE_OFFSET,
+                    DOOR_CENTER_Z,
+                ),
+            )
+    for name, (role, expected_location) in expected_leaf_roles.items():
+        pivot = pivots_by_name.get(name)
+        if pivot is None:
+            errors.append(f"Missing required door leaf pivot {name}")
+            continue
+        if pivot.role != role:
+            errors.append(f"Door leaf pivot {name} has role {pivot.role}, expected {role}")
+        if pivot.obj.parent is not result.body:
+            errors.append(f"Door leaf pivot {name} must be parented to {BODY_NAME}")
+        if any(
+            abs(actual - expected) > 1e-6
+            for actual, expected in zip(pivot.obj.location, expected_location)
+        ):
+            errors.append(f"Door leaf pivot {name} is not on its outer hinge")
+        child_parts = [part for part in result.parts if part.obj.parent is pivot.obj]
+        child_roles = sorted(part.role for part in child_parts)
+        if child_roles != ["door_frame", "door_glass", "door_panel"]:
+            errors.append(
+                f"Door leaf pivot {name} must own one panel, frame and glass mesh"
+            )
+    for legacy_name in ("PIVOT_FrontDoor", "PIVOT_RearDoor"):
+        if legacy_name in pivots_by_name:
+            errors.append(f"Legacy central doorway pivot {legacy_name} is not allowed")
+    door_posts = [part for part in result.parts if part.role == "door_post"]
+    if len(door_posts) != 2 or any(
+        part.obj.parent is not result.body for part in door_posts
+    ):
+        errors.append("Both fixed doorway-post meshes must be parented to ROOT_Body")
     if sum(pivot.role == "passenger_seat_anchor" for pivot in result.pivots) < 10:
         errors.append("Bus interior needs at least ten passenger seat anchors")
 

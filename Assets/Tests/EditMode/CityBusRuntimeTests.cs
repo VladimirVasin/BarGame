@@ -944,8 +944,10 @@ namespace BarPromenade.Tests.EditMode
                 registry.Configure(
                     model.transform,
                     body,
-                    CreateChild("Front Door", body),
-                    CreateChild("Rear Door", body),
+                    CreateChild("Front Door Forward Leaf", body),
+                    CreateChild("Front Door Rearward Leaf", body),
+                    CreateChild("Rear Door Forward Leaf", body),
+                    CreateChild("Rear Door Rearward Leaf", body),
                     frontLeftWheel,
                     frontRightWheel,
                     rearLeftWheel,

@@ -21,8 +21,10 @@ namespace BarPromenade
 
         private MaterialPropertyBlock lightProperties;
         private CityBusAssetRegistry registry;
-        private TransformPose frontDoorBase;
-        private TransformPose rearDoorBase;
+        private TransformPose frontDoorForwardLeafBase;
+        private TransformPose frontDoorRearwardLeafBase;
+        private TransformPose rearDoorForwardLeafBase;
+        private TransformPose rearDoorRearwardLeafBase;
         private TransformPose frontLeftWheelBase;
         private TransformPose frontRightWheelBase;
         private TransformPose rearLeftWheelBase;
@@ -102,8 +104,18 @@ namespace BarPromenade
             DoorOpenness = IsFinite(openness01)
                 ? Mathf.Clamp01(openness01)
                 : 0f;
-            ApplyDoorPose(frontDoorBase, DoorOpenness);
-            ApplyDoorPose(rearDoorBase, DoorOpenness);
+            ApplyDoorLeafPose(
+                frontDoorForwardLeafBase,
+                DoorOpenness);
+            ApplyDoorLeafPose(
+                frontDoorRearwardLeafBase,
+                -DoorOpenness);
+            ApplyDoorLeafPose(
+                rearDoorForwardLeafBase,
+                DoorOpenness);
+            ApplyDoorLeafPose(
+                rearDoorRearwardLeafBase,
+                -DoorOpenness);
         }
 
         public void SetNightFactor(float factor)
@@ -131,8 +143,10 @@ namespace BarPromenade
             DoorOpenness = 0f;
             NightFactor = 0f;
             brakeFactor = 0f;
-            RestorePose(frontDoorBase);
-            RestorePose(rearDoorBase);
+            RestorePose(frontDoorForwardLeafBase);
+            RestorePose(frontDoorRearwardLeafBase);
+            RestorePose(rearDoorForwardLeafBase);
+            RestorePose(rearDoorRearwardLeafBase);
             RestorePose(frontLeftWheelBase);
             RestorePose(frontRightWheelBase);
             RestorePose(rearLeftWheelBase);
@@ -152,8 +166,14 @@ namespace BarPromenade
 
         private void CaptureBasePoses()
         {
-            frontDoorBase = new TransformPose(registry.FrontDoor);
-            rearDoorBase = new TransformPose(registry.RearDoor);
+            frontDoorForwardLeafBase = new TransformPose(
+                registry.FrontDoorForwardLeaf);
+            frontDoorRearwardLeafBase = new TransformPose(
+                registry.FrontDoorRearwardLeaf);
+            rearDoorForwardLeafBase = new TransformPose(
+                registry.RearDoorForwardLeaf);
+            rearDoorRearwardLeafBase = new TransformPose(
+                registry.RearDoorRearwardLeaf);
             frontLeftWheelBase = new TransformPose(
                 registry.FrontLeftWheel);
             frontRightWheelBase = new TransformPose(
@@ -214,9 +234,9 @@ namespace BarPromenade
             }
         }
 
-        private static void ApplyDoorPose(
+        private void ApplyDoorLeafPose(
             TransformPose pose,
-            float openness)
+            float signedOpenness)
         {
             if (pose.Target == null)
             {
@@ -224,10 +244,12 @@ namespace BarPromenade
             }
 
             pose.Target.localPosition = pose.LocalPosition;
-            pose.Target.localRotation = pose.LocalRotation *
+            pose.Target.localRotation = pose.LocalRotation;
+            pose.Target.rotation =
                 Quaternion.AngleAxis(
-                    MaximumDoorAngle * openness,
-                    Vector3.up);
+                    MaximumDoorAngle * signedOpenness,
+                    transform.up) *
+                pose.Target.rotation;
         }
 
         private static void ApplyWheelPose(

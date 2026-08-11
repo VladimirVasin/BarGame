@@ -541,8 +541,18 @@ namespace BarPromenade.Editor
                 registry.Configure(
                     model.transform,
                     RequireTransform(transformsByName, "ROOT_Body"),
-                    RequireTransform(transformsByName, "PIVOT_FrontDoor"),
-                    RequireTransform(transformsByName, "PIVOT_RearDoor"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_FrontDoorForwardLeaf"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_FrontDoorRearwardLeaf"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_RearDoorForwardLeaf"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_RearDoorRearwardLeaf"),
                     RequireTransform(transformsByName, "PIVOT_WheelFLRoll"),
                     RequireTransform(transformsByName, "PIVOT_WheelFRRoll"),
                     RequireTransform(transformsByName, "PIVOT_WheelRLRoll"),
@@ -652,8 +662,10 @@ namespace BarPromenade.Editor
             {
                 registry.ModelRoot,
                 registry.Body,
-                registry.FrontDoor,
-                registry.RearDoor,
+                registry.FrontDoorForwardLeaf,
+                registry.FrontDoorRearwardLeaf,
+                registry.RearDoorForwardLeaf,
+                registry.RearDoorRearwardLeaf,
                 registry.FrontLeftWheel,
                 registry.FrontRightWheel,
                 registry.RearLeftWheel,
@@ -676,6 +688,16 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City bus prefab is missing an articulation, seat, light " +
                     "or renderer binding.");
+            }
+
+            if (registry.FrontDoorForwardLeaf.parent != registry.Body ||
+                registry.FrontDoorRearwardLeaf.parent != registry.Body ||
+                registry.RearDoorForwardLeaf.parent != registry.Body ||
+                registry.RearDoorRearwardLeaf.parent != registry.Body)
+            {
+                throw new InvalidOperationException(
+                    "Door leaf pivots must remain direct children of the " +
+                    "bus body.");
             }
 
             if (registry.FrontLeftWheel.parent !=
@@ -1056,8 +1078,10 @@ namespace BarPromenade.Editor
 
         private static readonly string[] RequiredPivotRoles =
         {
-            "front_door",
-            "rear_door",
+            "front_door_forward_leaf",
+            "front_door_rearward_leaf",
+            "rear_door_forward_leaf",
+            "rear_door_rearward_leaf",
             "front_left_steering",
             "front_right_steering",
             "front_left_wheel",

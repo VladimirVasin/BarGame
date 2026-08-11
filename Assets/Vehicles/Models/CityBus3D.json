@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-bus-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "1.1.0",
   "blender_version": "5.0.1",
   "design_id": "road_v2_midibus_v1",
   "display_name": "Road v2 City Midibus",
@@ -14,8 +14,8 @@
     "wheelbase": 4.5,
     "wheel_radius": 0.43
   },
-  "mesh_count": 33,
-  "triangle_count": 3780,
+  "mesh_count": 41,
+  "triangle_count": 3804,
   "bounds_min": [
     -1.36,
     -4.183,
@@ -31,7 +31,7 @@
   "animations": [],
   "visible_interior": true,
   "passenger_seat_count": 12,
-  "build_signature": "fb03d7d366641eaeb65ea2077d1a378093ae15b9b5b9d37742d29b556360573a",
+  "build_signature": "92efb9c338eb7a87197e69d4aeb7f478c624f9bc2e7b6cc63e48099f37dee316",
   "parts": [
     {
       "name": "GEO_BodyAccent",
@@ -55,18 +55,39 @@
       "triangles": 72
     },
     {
-      "name": "GEO_FrontDoorFrames",
+      "name": "GEO_FrontDoorForwardLeafFrames",
       "role": "door_frame",
       "material_slot": "Trim",
-      "vertices": 56,
-      "triangles": 84
+      "vertices": 24,
+      "triangles": 36
     },
     {
-      "name": "GEO_FrontDoorPanels",
+      "name": "GEO_FrontDoorForwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
-      "vertices": 32,
-      "triangles": 48
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_FrontDoorOuterPosts",
+      "role": "door_post",
+      "material_slot": "Trim",
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_FrontDoorRearwardLeafFrames",
+      "role": "door_frame",
+      "material_slot": "Trim",
+      "vertices": 24,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_FrontDoorRearwardLeafPanels",
+      "role": "door_panel",
+      "material_slot": "Body",
+      "vertices": 16,
+      "triangles": 24
     },
     {
       "name": "GEO_HubFL",
@@ -104,18 +125,39 @@
       "triangles": 56
     },
     {
-      "name": "GEO_RearDoorFrames",
+      "name": "GEO_RearDoorForwardLeafFrames",
       "role": "door_frame",
       "material_slot": "Trim",
-      "vertices": 56,
-      "triangles": 84
+      "vertices": 24,
+      "triangles": 36
     },
     {
-      "name": "GEO_RearDoorPanels",
+      "name": "GEO_RearDoorForwardLeafPanels",
       "role": "door_panel",
       "material_slot": "Body",
-      "vertices": 32,
-      "triangles": 48
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_RearDoorOuterPosts",
+      "role": "door_post",
+      "material_slot": "Trim",
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_RearDoorRearwardLeafFrames",
+      "role": "door_frame",
+      "material_slot": "Trim",
+      "vertices": 24,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_RearDoorRearwardLeafPanels",
+      "role": "door_panel",
+      "material_slot": "Body",
+      "vertices": 16,
+      "triangles": 24
     },
     {
       "name": "GEO_TireFL",
@@ -167,18 +209,32 @@
       "triangles": 40
     },
     {
-      "name": "GLS_FrontDoorGlass",
+      "name": "GLS_FrontDoorForwardLeafGlass",
       "role": "door_glass",
       "material_slot": "Glass",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 8,
+      "triangles": 12
     },
     {
-      "name": "GLS_RearDoorGlass",
+      "name": "GLS_FrontDoorRearwardLeafGlass",
       "role": "door_glass",
       "material_slot": "Glass",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GLS_RearDoorForwardLeafGlass",
+      "role": "door_glass",
+      "material_slot": "Glass",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GLS_RearDoorRearwardLeafGlass",
+      "role": "door_glass",
+      "material_slot": "Glass",
+      "vertices": 8,
+      "triangles": 12
     },
     {
       "name": "GLS_Windows",
@@ -417,22 +473,42 @@
       ]
     },
     {
-      "name": "PIVOT_FrontDoor",
-      "role": "front_door",
+      "name": "PIVOT_FrontDoorForwardLeaf",
+      "role": "front_door_forward_leaf",
       "parent": "ROOT_Body",
       "local_position": [
         -1.205,
-        -3.05,
+        -3.81,
         1.58
       ]
     },
     {
-      "name": "PIVOT_RearDoor",
-      "role": "rear_door",
+      "name": "PIVOT_FrontDoorRearwardLeaf",
+      "role": "front_door_rearward_leaf",
       "parent": "ROOT_Body",
       "local_position": [
         -1.205,
-        1.34,
+        -2.29,
+        1.58
+      ]
+    },
+    {
+      "name": "PIVOT_RearDoorForwardLeaf",
+      "role": "rear_door_forward_leaf",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -1.205,
+        0.58,
+        1.58
+      ]
+    },
+    {
+      "name": "PIVOT_RearDoorRearwardLeaf",
+      "role": "rear_door_rearward_leaf",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -1.205,
+        2.1,
         1.58
       ]
     },

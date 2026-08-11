@@ -155,8 +155,10 @@ The vertical slice contains:
 - one passive ambient midibus with a strict single-slot cap. The production
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
-  passenger seats, rails, dashboard, two animated doors, rolling wheels and
-  front steering. Canonical Route 01 is an immutable right-hand, Street-only
+  passenger seats, rails, dashboard, two animated double-leaf doors, rolling
+  wheels and front steering. Each door keeps its outer posts fixed while its
+  two independently hinged leaves fold inward around the bus vertical. Canonical
+  Route 01 is an immutable right-hand, Street-only
   closed winding service loop. Its target planner orders every district point
   of interest that actually exists, followed by `PlayerHome`; the default
   sequence is Industrial, Nightlife, Residential, Old Town and Home. It assigns

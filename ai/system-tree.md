@@ -204,7 +204,7 @@ Assets/
         CityBusActor.cs            fixed-loop motion, yielding, per-lap dwell + engine loop
         CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
-        CityBusPresentation.cs     doors, wheels, steering + night/brake emission
+        CityBusPresentation.cs     inward double-leaf doors, wheels, steering + light emission
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
@@ -514,12 +514,12 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> preferred hidden `76-86 m` activation
                             -> `56-86 m` fallback only with forward encounter path
                             -> player/pedestrian yielding
-                            -> `3-5 s` stop dwell once per lap + two doors
+                            -> `3-5 s` stop dwell once per lap + two double-leaf doors
                             -> full-body recycling from `92 m`
                             -> no camera/frustum lifecycle dependency
                             -> CityBusActor kinematic box + engine
                             -> CityBusPresentation
-                               -> wheels/steering/night lights
+                               -> inward door leaves + wheels/steering/night lights
                          -> CityMapBusOverlay
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend

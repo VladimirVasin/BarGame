@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-11 — Bus doors now fold correctly
+
+- Fixed both bus doorways rotating their complete frame and paired panels as
+  one wide central slab. Each doorway now keeps its outer posts fixed and folds
+  two upright leaves inward from their real outer hinges, then closes cleanly
+  before the bus leaves the stop or returns to its pool.
+
 ### 2026-08-11 — Route 01 now winds through the whole city
 
 - Route 01 is no longer a square loop around Central Park. Its deterministic

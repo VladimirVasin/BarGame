@@ -85,8 +85,10 @@ namespace BarPromenade
 
         [SerializeField] private Transform modelRoot;
         [SerializeField] private Transform body;
-        [SerializeField] private Transform frontDoor;
-        [SerializeField] private Transform rearDoor;
+        [SerializeField] private Transform frontDoorForwardLeaf;
+        [SerializeField] private Transform frontDoorRearwardLeaf;
+        [SerializeField] private Transform rearDoorForwardLeaf;
+        [SerializeField] private Transform rearDoorRearwardLeaf;
         [SerializeField] private Transform frontLeftWheel;
         [SerializeField] private Transform frontRightWheel;
         [SerializeField] private Transform rearLeftWheel;
@@ -117,8 +119,10 @@ namespace BarPromenade
 
         public Transform ModelRoot => modelRoot;
         public Transform Body => body;
-        public Transform FrontDoor => frontDoor;
-        public Transform RearDoor => rearDoor;
+        public Transform FrontDoorForwardLeaf => frontDoorForwardLeaf;
+        public Transform FrontDoorRearwardLeaf => frontDoorRearwardLeaf;
+        public Transform RearDoorForwardLeaf => rearDoorForwardLeaf;
+        public Transform RearDoorRearwardLeaf => rearDoorRearwardLeaf;
         public Transform FrontLeftWheel => frontLeftWheel;
         public Transform FrontRightWheel => frontRightWheel;
         public Transform RearLeftWheel => rearLeftWheel;
@@ -151,8 +155,10 @@ namespace BarPromenade
         public void Configure(
             Transform configuredModelRoot,
             Transform configuredBody,
-            Transform configuredFrontDoor,
-            Transform configuredRearDoor,
+            Transform configuredFrontDoorForwardLeaf,
+            Transform configuredFrontDoorRearwardLeaf,
+            Transform configuredRearDoorForwardLeaf,
+            Transform configuredRearDoorRearwardLeaf,
             Transform configuredFrontLeftWheel,
             Transform configuredFrontRightWheel,
             Transform configuredRearLeftWheel,
@@ -177,8 +183,10 @@ namespace BarPromenade
         {
             modelRoot = configuredModelRoot;
             body = configuredBody;
-            frontDoor = configuredFrontDoor;
-            rearDoor = configuredRearDoor;
+            frontDoorForwardLeaf = configuredFrontDoorForwardLeaf;
+            frontDoorRearwardLeaf = configuredFrontDoorRearwardLeaf;
+            rearDoorForwardLeaf = configuredRearDoorForwardLeaf;
+            rearDoorRearwardLeaf = configuredRearDoorRearwardLeaf;
             frontLeftWheel = configuredFrontLeftWheel;
             frontRightWheel = configuredFrontRightWheel;
             rearLeftWheel = configuredRearLeftWheel;
@@ -207,8 +215,10 @@ namespace BarPromenade
 
         public void ResetArticulation()
         {
-            ResetRotation(frontDoor);
-            ResetRotation(rearDoor);
+            ResetRotation(frontDoorForwardLeaf);
+            ResetRotation(frontDoorRearwardLeaf);
+            ResetRotation(rearDoorForwardLeaf);
+            ResetRotation(rearDoorRearwardLeaf);
             ResetRotation(frontLeftSteeringPivot);
             ResetRotation(frontRightSteeringPivot);
             ResetRotation(frontLeftWheel);

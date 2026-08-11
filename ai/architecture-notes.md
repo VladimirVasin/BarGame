@@ -137,8 +137,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   body uses the dedicated `CityBus` layer: it collides with the player and
   pedestrians, ignores another bus and is excluded from camera and interaction
   queries. The passive production prefab stays collider-free, owns a modeled
-  driver area, dashboard, twelve passenger seats, rails and two doors, and
-  matches the same real dimensions without runtime scale correction.
+  driver area, dashboard, twelve passenger seats, rails and two double-leaf
+  doors, and matches the same real dimensions without runtime scale correction.
+  Each doorway keeps its outer posts fixed while independently hinged leaves
+  rotate in opposite directions around the vehicle vertical and fold inward.
   Presentation articulates steering and wheel travel, synthesizes a `22050 Hz`
   engine loop, and scales head, tail/brake and cabin emission with motion and
   current night factor; all state resets before pooling. The City map consumes
