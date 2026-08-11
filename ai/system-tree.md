@@ -76,7 +76,7 @@ Assets/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
     Stairwell/
-      Textures/                         eight active RGB albedos + retained sources
+      Textures/                         eight active RGB albedos
         StairwellWallPaintAlbedoV2.png  active higher-contrast plaster/bands
         StairwellConcreteAlbedo.png     floor, ceiling and columns
         StairwellStairConcreteAlbedo.png  steps and landings
@@ -85,7 +85,6 @@ Assets/
         StairwellDamageAlbedo.png       damp, chips and puddle
         StairwellDirtyWoodAlbedo.png    wardrobe and debris planks
         StairwellDebrisAlbedo.png       paper, bottle, mattress and sacks
-        Stairwell{WallPaint,CorrodedMetal,DoorPaint}Albedo.png retained originals
       Cat/
         StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
         StairwellCatFeedingAtlas.png    512x128, top-first 8x2 feeding atlas

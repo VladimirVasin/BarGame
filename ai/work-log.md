@@ -2,6 +2,28 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Repository artifact cleanup
+
+- Removed the unused stock URP tutorial scaffold (`Assets/Readme.asset` and
+  `Assets/TutorialInfo`). Its GUIDs and editor types had no references outside
+  the scaffold, and it was unrelated to the runtime-composed project.
+- Removed three superseded Stairwell albedos and their metas from `Resources`:
+  wall paint, corroded metal and door paint. Runtime, tests and documentation
+  use only their active `V2` replacements, so the old versions unnecessarily
+  increased repository and packaged Resource size by about `6.8 MB`.
+- Cleared ignored, reproducible local output: two old player builds, 829 test
+  result files, Python bytecode and five stale diagnostic logs. Active Unity
+  caches, IDE project files and user settings remain untouched. Total local
+  space reclaimed was about `550 MB`.
+
+Verification:
+
+- Asset GUID/path audit found no external references to the deleted tracked
+  files; all remaining Unity assets retain matching metas and unique GUIDs.
+- `BarPromenade.Runtime.csproj` built with `0` warnings and `0` errors, and the
+  scoped staged diff check passed. A focused Unity runner exited before test
+  discovery and produced no result XML, so no Unity test result is claimed.
+
 ## 2026-08-11 — Road v2.1 three-way pedestrian junction fix
 
 - Fixed the Home-loading exception introduced when Road v2.1 began accepting
