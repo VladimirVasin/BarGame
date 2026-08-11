@@ -9,6 +9,7 @@ namespace BarPromenade
     public sealed class CityMapView : MonoBehaviour
     {
         private const int PointOfInterestHoverPriority = 10;
+        internal const int BusStopHoverPriority = 15;
         private const int BarHoverPriority = 20;
         private const int LandmarkHoverPriority = 30;
         private const float MinimumMapCellPixels = 22f;
@@ -119,6 +120,10 @@ namespace BarPromenade
             RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.78f);
         private static readonly Color Route =
             RetroUiTheme.Accent;
+        private static readonly Color BusRoute =
+            new Color32(91, 143, 209, 255);
+        private static readonly Color BusStop =
+            RetroUiTheme.AccentPale;
         private static readonly Color UnselectedBar =
             RetroUiTheme.MapBar;
         private static readonly Color VisitedBar =
@@ -131,6 +136,8 @@ namespace BarPromenade
             new Color32(224, 194, 91, 255);
         private static readonly Color TooltipBackdrop =
             new Color32(19, 15, 25, 250);
+
+        internal static Color BusRouteColor => BusRoute;
 
         private readonly List<MapHoverTarget> hoverTargets =
             new List<MapHoverTarget>(160);
@@ -323,13 +330,16 @@ namespace BarPromenade
             DrawSurfaces(projection);
             DrawBuildings(projection);
             DrawRoads(projection);
+            DrawBusRoute(projection);
             DrawDistrictLabels(projection);
             DrawRoute(projection);
+            DrawBusStops(projection);
             DrawPointsOfInterest(projection);
             DrawSupermarket(projection);
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
+            DrawBusLegend();
         }
 
         private void HandlePointerScrolling(
@@ -677,6 +687,43 @@ namespace BarPromenade
             }
         }
 
+        private void DrawBusRoute(MapProjection projection)
+        {
+            IReadOnlyList<Vector3> points =
+                controller.BusOverlay.RoutePoints;
+            if (points.Count < 2)
+            {
+                return;
+            }
+
+            DrawBusRoutePass(
+                projection,
+                points,
+                4f,
+                RetroUiTheme.Ink);
+            DrawBusRoutePass(
+                projection,
+                points,
+                2f,
+                BusRoute);
+        }
+
+        private void DrawBusRoutePass(
+            MapProjection projection,
+            IReadOnlyList<Vector3> points,
+            float width,
+            Color color)
+        {
+            for (int index = 1; index < points.Count; index++)
+            {
+                DrawLine(
+                    projection.WorldToScreen(points[index - 1]),
+                    projection.WorldToScreen(points[index]),
+                    width,
+                    color);
+            }
+        }
+
         private static Vector3 ResolveAreaLabelPosition(
             CityLayout layout,
             CityAreaPlacement area)
@@ -727,6 +774,143 @@ namespace BarPromenade
                     3f,
                     Route);
             }
+        }
+
+        private void DrawBusStops(MapProjection projection)
+        {
+            IReadOnlyList<CityMapBusStopMarker> stops =
+                controller.BusOverlay.Stops;
+            for (int index = 0; index < stops.Count; index++)
+            {
+                CityMapBusStopMarker stop = stops[index];
+                Vector2 position = projection.WorldToScreen(
+                    stop.WorldPosition);
+                RegisterHoverTarget(
+                    CreateCenteredRect(position, 17f, 17f),
+                    position,
+                    controller.GetBusStopLabel(index),
+                    BusStopHoverPriority);
+                DrawBusStopMarker(
+                    position,
+                    stop.Ordinal.ToString());
+            }
+        }
+
+        private void DrawBusStopMarker(
+            Vector2 center,
+            string ordinal)
+        {
+            Rect marker = CreateCenteredRect(center, 11f, 11f);
+            DrawSolidRect(marker, RetroUiTheme.Ink);
+            DrawSolidRect(
+                new Rect(
+                    marker.x + 2f,
+                    marker.y + 2f,
+                    marker.width - 4f,
+                    marker.height - 4f),
+                BusStop);
+            if (!string.IsNullOrEmpty(ordinal))
+            {
+                GUI.Label(marker, ordinal, routeBadgeStyle);
+            }
+        }
+
+        private void DrawBusLegend()
+        {
+            CityMapBusOverlay overlay = controller.BusOverlay;
+            if (overlay.IsEmpty)
+            {
+                return;
+            }
+
+            bool includeStop = overlay.Stops.Count > 0;
+            Rect legend = CreateBusLegendRect(
+                mapLineClipRect,
+                includeStop);
+            RemoveHoverTargetsUnderLegend(legend);
+            DrawSolidRect(
+                legend,
+                RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.9f));
+            RetroUiTheme.StrokeRect(
+                legend,
+                1f,
+                RetroUiTheme.BorderMuted);
+
+            float routeY = legend.y + 9f;
+            DrawLine(
+                new Vector2(legend.x + 7f, routeY),
+                new Vector2(legend.x + 25f, routeY),
+                4f,
+                RetroUiTheme.Ink);
+            DrawLine(
+                new Vector2(legend.x + 7f, routeY),
+                new Vector2(legend.x + 25f, routeY),
+                2f,
+                BusRoute);
+            GUI.Label(
+                new Rect(
+                    legend.x + 31f,
+                    legend.y + 2f,
+                    legend.width - 35f,
+                    14f),
+                LocalizationService.Get("map.bus.route"),
+                pointOfInterestItemStyle);
+
+            if (!includeStop)
+            {
+                return;
+            }
+
+            float stopY = legend.y + 24f;
+            DrawBusStopMarker(
+                new Vector2(legend.x + 16f, stopY),
+                string.Empty);
+            GUI.Label(
+                new Rect(
+                    legend.x + 31f,
+                    legend.y + 17f,
+                    legend.width - 35f,
+                    14f),
+                LocalizationService.Get("map.bus.stop_legend"),
+                pointOfInterestItemStyle);
+        }
+
+        private void RemoveHoverTargetsUnderLegend(Rect localLegend)
+        {
+            Rect globalLegend = new Rect(
+                localLegend.position + hoverCoordinateOffset,
+                localLegend.size);
+            for (int index = hoverTargets.Count - 1;
+                 index >= 0;
+                 index--)
+            {
+                Rect overlap = Intersect(
+                    hoverTargets[index].Hitbox,
+                    globalLegend);
+                if (overlap.width > 0f && overlap.height > 0f)
+                {
+                    hoverTargets.RemoveAt(index);
+                }
+            }
+        }
+
+        internal static Rect CreateBusLegendRect(
+            Rect visibleMapRect,
+            bool includeStop)
+        {
+            const float margin = 5f;
+            float width = Mathf.Min(
+                132f,
+                Mathf.Max(1f, visibleMapRect.width - margin * 2f));
+            float requestedHeight = includeStop ? 33f : 18f;
+            float height = Mathf.Min(
+                requestedHeight,
+                Mathf.Max(1f, visibleMapRect.height - margin * 2f));
+            return RetroUiTheme.SnapRect(new Rect(
+                visibleMapRect.x + margin,
+                visibleMapRect.y + margin,
+                width,
+                height));
         }
 
         private void DrawBars(MapProjection projection)

@@ -84,6 +84,8 @@ namespace BarPromenade
         public IReadOnlyList<BuildingLot> Bars => bars;
         public IReadOnlyList<CityMapPointOfInterest> PointsOfInterest =>
             pointsOfInterest;
+        public CityMapBusOverlay BusOverlay { get; private set; } =
+            CityMapBusOverlay.Empty;
         public IReadOnlyList<BuildingLot> MapObjects =>
             Layout?.BuildingLots ?? Array.Empty<BuildingLot>();
         public BuildingLot PlayerHome => Layout?.PlayerHome;
@@ -129,10 +131,26 @@ namespace BarPromenade
             PlayerCameraFollow follow,
             IntoxicationHudView hud)
         {
+            Initialize(
+                layout,
+                playerRuntime,
+                follow,
+                hud,
+                null);
+        }
+
+        public void Initialize(
+            CityLayout layout,
+            PlayerRuntime playerRuntime,
+            PlayerCameraFollow follow,
+            IntoxicationHudView hud,
+            CityBusPlan busPlan)
+        {
             Layout = layout ?? throw new ArgumentNullException(nameof(layout));
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
+            BusOverlay = CityMapBusOverlayBuilder.Create(busPlan);
 
             bars.Clear();
             for (int index = 0; index < Layout.BuildingLots.Count; index++)
@@ -168,6 +186,15 @@ namespace BarPromenade
                     "point_of_interest_count",
                     pointsOfInterest.Count),
                 GameLog.Field(
+                    "bus_route_id",
+                    BusOverlay.RouteId),
+                GameLog.Field(
+                    "bus_route_point_count",
+                    BusOverlay.RoutePoints.Count),
+                GameLog.Field(
+                    "bus_stop_count",
+                    BusOverlay.Stops.Count),
+                GameLog.Field(
                     "selected_bar_index",
                     SelectedBarIndex),
                 GameLog.Field(
@@ -194,6 +221,23 @@ namespace BarPromenade
                 playerRuntime,
                 follow,
                 hud);
+        }
+
+        public void Initialize(
+            CityLayout layout,
+            CityDecorationPlan decorationPlan,
+            CityBusPlan busPlan,
+            PlayerRuntime playerRuntime,
+            PlayerCameraFollow follow,
+            IntoxicationHudView hud)
+        {
+            _ = decorationPlan;
+            Initialize(
+                layout,
+                playerRuntime,
+                follow,
+                hud,
+                busPlan);
         }
 
         public bool Open()
@@ -419,6 +463,35 @@ namespace BarPromenade
         public string GetSupermarketLabel()
         {
             return LocalizationService.Get("map.supermarket");
+        }
+
+        public string GetBusStopLabel(int busStopIndex)
+        {
+            if (busStopIndex < 0 ||
+                busStopIndex >= BusOverlay.Stops.Count)
+            {
+                return string.Empty;
+            }
+
+            CityMapBusStopMarker marker =
+                BusOverlay.Stops[busStopIndex];
+            if (!string.IsNullOrWhiteSpace(
+                    marker.LabelLocalizationKey))
+            {
+                string localized = LocalizationService.Get(
+                    marker.LabelLocalizationKey);
+                if (!string.Equals(
+                        localized,
+                        marker.LabelLocalizationKey,
+                        StringComparison.Ordinal))
+                {
+                    return localized;
+                }
+            }
+
+            return string.Format(
+                LocalizationService.Get("map.bus.stop"),
+                marker.Ordinal);
         }
 
         public string GetMapObjectLabel(int mapObjectIndex)

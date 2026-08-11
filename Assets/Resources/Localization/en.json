@@ -781,6 +781,34 @@
       "value": "Grocery shop"
     },
     {
+      "key": "map.bus.route",
+      "value": "Route 01"
+    },
+    {
+      "key": "map.bus.stop",
+      "value": "Stop {0}"
+    },
+    {
+      "key": "map.bus.stop_legend",
+      "value": "Bus stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.industrial",
+      "value": "Industrial stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.nightlife",
+      "value": "Nightlife stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.residential",
+      "value": "Residential stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.old_town",
+      "value": "Old Town stop"
+    },
+    {
       "key": "map.clear",
       "value": "Clear route"
     },

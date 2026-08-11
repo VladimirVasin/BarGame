@@ -15,7 +15,8 @@ namespace BarPromenade
         public bool InputEnabled { get; private set; } = true;
         public IInteractable ActiveInteractable => activeInteractable;
         public static int InteractionLayerMask =>
-            CityPedestrianCollision.NonPedestrianMask;
+            CityPedestrianCollision.NonPedestrianMask &
+            CityBusCollision.NonBusMask;
 
         public void Initialize(InteractionPromptView view)
         {

@@ -2,6 +2,75 @@
 
 ## Unreleased
 
+### 2026-08-11 — Three-way bus junctions no longer break walkers
+
+- Fixed Home initialization failing when a pedestrian route reached a
+  three-way Road v2.1 bus junction. Walkers now stay on continuous,
+  axis-aligned one-metre sidewalks around the widened corner, while the bus
+  keeps its full clear turning apron.
+
+### 2026-08-11 — Route 01 now has a real loop, stops and map identity
+
+- The city bus now repeats one counter-clockwise Route 01 around Central Park,
+  always passing Industrial, Nightlife, Residential and Old Town in that order.
+  It no longer chooses random street branches or changes its route to chase the
+  hero.
+- Four named stops now belong to the route itself. Each has a physical blue
+  `01` pole in the city and receives one `3-5 s` door-open call per lap; random
+  roadside decoration no longer places misleading bus shelters.
+- The route deliberately passes the street beside Nightlife's Last Route
+  Island but does not stop there, so the abandoned island remains a non-working
+  stop rather than becoming new transport infrastructure.
+- The city map now shows the blue ink-outlined bus loop beneath the orange bar
+  itinerary, four numbered localized stop markers with hover labels, and a
+  compact route/stop legend. Live bus tracking and boarding remain deferred.
+- Fog-hidden activation now chooses only positions whose forward travel on the
+  same loop can bring the bus toward the hero. It prefers `76-86 m`, uses the
+  denser-fog `56-86 m` fallback only when necessary, and still keeps at most one
+  bus active or potentially visible.
+
+### 2026-08-11 — One real bus now crosses the city
+
+- Added a full-size `8.25 m` ambient city bus with a visible driver area,
+  dashboard, handrails and twelve passenger seats behind its windows. Its two
+  doors, steering, wheels, engine sound, headlights, brake/tail lights and
+  cabin lighting respond to the trip instead of remaining a static prop.
+- The bus follows the right side of ordinary streets and calls at compatible
+  roadside shelters first. If its retained route reaches none, it receives
+  exactly one deterministic service point on the route itself rather than
+  pretending that a distant shelter belongs to it. The bus yields to the hero
+  and passers-by, stops for a few seconds with both doors open, then continues
+  without offering a boarding interaction yet.
+- At most one bus can be active or potentially visible. It enters and leaves
+  through the distant fog, so quiet intervals with no bus on screen are an
+  intentional part of the street rhythm rather than a failed spawn.
+- The ambient bus is intentionally limited to City. The real street below the
+  Home balcony ends visibly and has no pass-through with two fog-hidden seams
+  that can contain the complete vehicle. Pedestrians remain below the balcony,
+  but the view does not invent another road or pop a bus in and out when the
+  camera shot changes.
+
+### 2026-08-11 — Road v2.1 opens real turning space
+
+- Selected four-way intersections now move their small corner sidewalk pads
+  outward and cut their raised approach curbs back by `4.5 m`, leaving a flush
+  shared asphalt apron clear for the bus's proven long-body left turn while
+  keeping the pedestrian route continuous.
+- Walkers follow those displaced corners, and the Home balcony reconstruction
+  shows the same junction geometry. Signalized zebra intersections remain
+  separate, avoiding poles and crossing paint inside the bus turning apron.
+
+### 2026-08-11 — Road v2 gives the city room for traffic
+
+- Ordinary streets are now `8 m` wide, with a `6 m` asphalt carriageway and
+  the existing raised `1 m` sidewalk on each side.
+- Intersections expand with the streets, keeping a clear `6 x 6 m` driving
+  apron inside each `8 x 8 m` junction core; zebra crossings now span the full
+  carriageway.
+- The generated grid step grows from `24 m` to `26 m`. Buildings, entrances,
+  pedestrians, roadside fixtures, fences, the city map and the street below
+  the Home balcony all follow the new canonical dimensions automatically.
+
 ### 2026-08-11 — Passers-by now reach a waiting player
 
 - Fixed pedestrians spawning beyond the City camera and then choosing random

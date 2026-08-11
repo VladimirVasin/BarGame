@@ -6,6 +6,8 @@ namespace BarPromenade
     [Serializable]
     public sealed class CityGenerationSettings
     {
+        public const float DefaultRoadWidth = 8f;
+
         [Min(1)] public int BlocksX = 12;
         [Min(1)] public int BlocksZ = 12;
         [Min(0)] public int BarCount = 4;
@@ -14,7 +16,7 @@ namespace BarPromenade
         [Min(0f)] public float MinimumBarRouteDistance = 120f;
         [Min(1f)] public float BlockWidth = 18f;
         [Min(1f)] public float BlockDepth = 18f;
-        [Min(2.01f)] public float RoadWidth = 6f;
+        [Min(2.01f)] public float RoadWidth = DefaultRoadWidth;
         [Range(0f, 1f)] public float LoopChance = 0.28f;
         [Min(0f)] public float BuildingInset = 1.25f;
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;

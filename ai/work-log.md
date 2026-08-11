@@ -2,6 +2,149 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Road v2.1 three-way pedestrian junction fix
+
+- Fixed the Home-loading exception introduced when Road v2.1 began accepting
+  safe three-way bus aprons. The pedestrian graph and its physical closed-side
+  sidewalk now share the displaced `4.5 m` corner coordinate, so every link
+  remains axis-aligned instead of connecting a new corner to the old `3.5 m`
+  mouth.
+- The closed side is a continuous `1 x 8 m` raised strip outside the clear
+  `8 x 8 m` bus core. It meets both corner pads, retains the exact `1 m`
+  pedestrian corridor and does not occupy any real bus approach.
+
+Verification:
+
+- Focused Unity EditMode regressions for the production Home pedestrian graph
+  and the physical three-way sidewalk mouth passed `2/2`; the shared Road v2
+  apron and raised-sidewalk contracts also passed `2/2`. Fast mode intentionally
+  omitted the full EditMode/PlayMode suites and a player build.
+
+## 2026-08-11 — Canonical Route 01, physical stops and map overlay
+
+- Replaced the retained branching bus graph with the immutable
+  `bus-route:default-coastal:ring-01:ccw`: one right-hand counter-clockwise
+  Street ring around Central Park. Every link now has one ordered successor and
+  every lap repeats Industrial, Nightlife, Residential and Old Town without
+  route RNG or player pursuit. Sampled full-body clearance still admits the
+  proven straight and `6 m` left-turn geometry and rejects unsafe tight turns.
+- Added four semantic route-owned stops on safe straights in that district
+  order, including stable IDs, localization keys, lap distances and roadside
+  poses. `CityBusStopWorldBuilder` gives each one a physical blue Route `01`
+  pole; the random roadside decoration selector no longer emits bus shelters.
+  The actor serves every stop once per lap with its existing seeded `3-5 s`
+  two-door dwell, then resets service state at the loop seam.
+- The canonical ring deliberately traverses the frontage street beside
+  Nightlife's Last Route Island, superseding the earlier edge exclusion, while
+  stop placement still excludes that frontage. The island therefore remains a
+  non-working abandoned stop rather than becoming Route 01 infrastructure.
+- Reworked one-slot activation around the fixed loop. Dynamic obstacle-safe
+  poses prefer the fog-hidden `76-86 m` band and fall back to `56-86 m` only
+  when forward loop distance reaches a player-side encounter sample; a loop
+  with no forward encounter sample is rejected. Recycling still waits for `92 m`
+  complete-body clearance, and camera/frustum state remains irrelevant.
+- Added an immutable simplified bus-map overlay. The City map draws the blue
+  ink-outlined loop below the orange player itinerary, four numbered localized
+  hover stops and a compact route/stop legend; a live bus marker and boarding
+  remain deferred.
+- Expanded Road v2.1 apron selection from safe four-way nodes to safe three- or
+  four-way nodes, while retaining full-core, real-approach and pedestrian
+  clearance checks. Added focused planner, runtime, map-overlay, localization
+  and scene-composition coverage for the new contracts.
+
+Verification:
+
+- The focused Unity EditMode selection covered the planner, fixed-loop
+  runtime, map overlay, random-decoration exclusion and RU/EN catalogs:
+  `25/26` passed initially. Its only failure exposed an over-permissive
+  synthetic road-edge fixture, not production behavior; after narrowing that
+  fixture to its intended spawn segment, the exact failed regression passed
+  `1/1` and the complete focused `CityBusRuntimeTests` fixture passed `13/13`.
+- Scoped source/documentation diff review and `git diff --check` passed. Fast
+  mode intentionally omitted full EditMode/PlayMode suites, a player build and
+  a rendered walkthrough.
+
+## 2026-08-11 — Ambient city bus and Road v2.1 junctions
+
+- Added the accepted production design vehicle at its real
+  `8.25 x 2.38 x 2.95 m` dimensions and `4.5 m` wheelbase. The generated FBX,
+  manifest and Resources prefab contain the exterior shell plus a visible
+  driver area, dashboard, twelve passenger seats, rails, two articulated doors,
+  four wheels, steering pivots and registered head/tail/cabin light renderers;
+  runtime never shrinks the model to make the road fit.
+- Extended the shared street surface to Road v2.1. A stable selector reserves
+  eligible Street-only four-way nodes outside the zebra/signal set, moves their
+  four `1 x 1 m` corner sidewalk pads onto clear adjacent ground, exposes a
+  full `8 x 8 m` asphalt core and cuts each raised approach curb back by
+  `4.5 m`. The resulting flush shared apron preserves the pedestrian line while
+  clearing the bus's rear-body sweep. Home retains the same geometry in its
+  bounded reconstruction.
+- Added a deterministic right-hand, Street-only bus graph with sampled
+  long-body clearance. It admits straight links and analytic `6 m`-radius left
+  turns through Road v2.1 aprons, rejects the tighter `3 m` right-turn
+  candidates and retains a cyclic strongly connected route. Compatible
+  roadside bus shelters map to stops first; when the strict retained route has
+  none, it receives exactly one deterministic route-native stop on a safe
+  retained straight. That fallback owns `CityBusStopOrigin.RouteNative` and an
+  empty `SourceDecorationId`, never a fabricated shelter identity. The
+  Nightlife last-route-island frontage is intentionally outside the drivable
+  graph. Route, anchor and mapped-shelter stop counts stay derived data rather
+  than content constants.
+- Added one pooled ambient-bus slot in City. Obstacle-safe spawning prefers the
+  fog-hidden `76-86 m` band; initial routing approaches the player and then
+  releases into ordinary roam.
+  The bus yields to the player and active pedestrians, serves stops with a
+  randomized `3-5 s` dwell and two-door animation, and recycles only after the
+  closest point of its complete body reaches `92 m`. Camera direction, frustum
+  state and far clip never drive this lifecycle. The one-slot cap deliberately
+  permits intervals with no active or visible bus.
+- Kept the runtime deliberately out of Home. No real Street pass-through in
+  the balcony exterior has both complete-body seams at or beyond the hidden
+  `56 m` boundary, and the default facade faces a visible road terminal.
+  Fabricating another road would contradict the generated city; owning spawn
+  or pooling from the Balcony camera would create a visible pop. The existing
+  pedestrian exterior runtime remains unchanged.
+- Added a kinematic physical body on the dedicated `CityBus` layer, rolling and
+  steering wheels, brake/night-sensitive emission and a generated `22050 Hz`
+  engine loop. Presentation and audio reset before pooling; the passive prefab
+  itself remains collider-free and non-interactive.
+
+Verification:
+
+- Focused Unity EditMode selection passed `13/13`: `CityBusPlannerTests`,
+  `CityBusRuntimeTests`, `CityBusAssetImportTests`, the Road v2.1 surface
+  regression and the pedestrian-apron regression.
+- Focused Unity PlayMode City scene smoke passed `1/1`.
+- Fast mode intentionally omits complete EditMode/PlayMode suites, a player
+  build and a broad rendered walkthrough.
+
+## 2026-08-11 — Road v2 street cross-section
+
+- Raised the canonical default street footprint from `6 m` to `8 m`. With the
+  existing two `1 m` sidewalks, ordinary streets now expose a `6 m`
+  carriageway, an `8 x 8 m` junction core and a clear `6 x 6 m` carriageway
+  apron. The unchanged `18 m` blocks now produce a `26 m` grid step and a
+  `312 m` default 12-block core span.
+- Kept the migration data-first: entrances and sidewalk arrivals, pedestrian
+  lanes, fences, night fixtures, decoration clearance, map projection and the
+  bounded Home reconstruction continue to derive from `RoadWidth` and
+  `NodeSpacing`, so no duplicated scene geometry was introduced.
+- Replaced the pedestrian production regression's obsolete fixed home
+  coordinate with the generated sidewalk arrival, and added focused Road v2
+  coverage for the default width, pitch, carriageway, junction apron and
+  widened zebra.
+- Recorded the scope boundary explicitly: the cross-section is ready for a
+  vehicle route plan, but a long bus still requires a swept-turn proof using
+  its final body, axle and steering dimensions before bus runtime is added.
+
+Verification:
+
+- Focused Unity EditMode selection passed `4/4`: the Road v2 surface contract,
+  default city dimensions, stationary-player pedestrian approach and Home
+  exterior pedestrian transform.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered City walkthrough.
+
 ## 2026-08-11 — Stationary-player pedestrian encounters
 
 - Confirmed from the reported session log that City initialized 210 pedestrian

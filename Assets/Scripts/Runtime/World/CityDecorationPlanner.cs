@@ -980,14 +980,15 @@ namespace BarPromenade
 
         private static CityDecorationKind ResolveRoadsideKind(uint hash)
         {
-            switch (hash % 4u)
+            // Bus stops are route infrastructure, not random roadside dressing.
+            // Keeping the ambient decoration pool shelter-free guarantees that
+            // every visible bus-stop marker belongs to the canonical bus route.
+            switch (hash % 3u)
             {
                 case 0u:
                     return CityDecorationKind.RoadsideDumpsterAndUtility;
                 case 1u:
                     return CityDecorationKind.RoadsidePhoneBooth;
-                case 2u:
-                    return CityDecorationKind.RoadsideBusShelter;
                 default:
                     return CityDecorationKind.RoadsideRoadworkAndBicycle;
             }

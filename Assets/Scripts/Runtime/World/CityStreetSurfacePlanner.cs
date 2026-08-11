@@ -10,6 +10,7 @@ namespace BarPromenade
         public const float RoadTop = 0.08f;
         public const float SidewalkTop = 0.14f;
         public const float CrosswalkDepth = 2.4f;
+        public const float BusApproachApronLength = 4.5f;
         public const int CrosswalkStripeCount = 4;
         public const int MaximumCrosswalkIntersections =
             CityStreetIntersectionSelector.MaximumIntersectionCount;
@@ -55,6 +56,8 @@ namespace BarPromenade
 
             Dictionary<Vector2Int, NodeConnections> connections =
                 CreateNodeConnections(layout);
+            var busIntersections = new HashSet<Vector2Int>(
+                CityBusIntersectionSelector.Select(layout));
             List<RoadEdge> sortedEdges = CreateSortedEdges(layout);
             CreateBaseSurfaces(
                 layout,
@@ -65,12 +68,14 @@ namespace BarPromenade
                 layout,
                 sortedEdges,
                 connections,
+                busIntersections,
                 sidewalks,
                 sidewalkWalkableRectangles,
                 edgesWithSidewalks);
             CreateIntersectionSidewalks(
                 layout,
                 connections,
+                busIntersections,
                 sidewalks,
                 sidewalkWalkableRectangles,
                 markingExclusions);
@@ -145,6 +150,7 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<RoadEdge> sortedEdges,
             IReadOnlyDictionary<Vector2Int, NodeConnections> connections,
+            ISet<Vector2Int> busIntersections,
             ICollection<Bounds> sidewalks,
             ICollection<Rect> walkableRectangles,
             ISet<RoadEdge> edgesWithSidewalks)
@@ -164,10 +170,16 @@ namespace BarPromenade
                 Vector3 tangent = (roadEnd - roadStart).normalized;
                 float startInset = ResolveEndpointInset(
                     connections[edge.A],
-                    halfRoad);
+                    halfRoad) +
+                    (busIntersections.Contains(edge.A)
+                        ? BusApproachApronLength
+                        : 0f);
                 float endInset = ResolveEndpointInset(
                     connections[edge.B],
-                    halfRoad);
+                    halfRoad) +
+                    (busIntersections.Contains(edge.B)
+                        ? BusApproachApronLength
+                        : 0f);
                 Vector3 start = roadStart + (tangent * startInset);
                 Vector3 end = roadEnd - (tangent * endInset);
                 float length = Vector3.Distance(start, end);
@@ -202,6 +214,7 @@ namespace BarPromenade
         private static void CreateIntersectionSidewalks(
             CityLayout layout,
             IReadOnlyDictionary<Vector2Int, NodeConnections> connections,
+            ISet<Vector2Int> busIntersections,
             ICollection<Bounds> sidewalks,
             ICollection<Rect> walkableRectangles,
             ICollection<Rect> markingExclusions)
@@ -233,14 +246,19 @@ namespace BarPromenade
                     continue;
                 }
 
+                float cornerOffset = busIntersections.Contains(node)
+                    ? CityBusIntersectionSelector
+                        .GetCornerCenterOffset(layout)
+                    : sideOffset;
+
                 for (int xSign = -1; xSign <= 1; xSign += 2)
                 {
                     for (int zSign = -1; zSign <= 1; zSign += 2)
                     {
                         Vector3 center = nodePosition + new Vector3(
-                            xSign * sideOffset,
+                            xSign * cornerOffset,
                             (RoadTop + SidewalkTop) * 0.5f,
-                            zSign * sideOffset);
+                            zSign * cornerOffset);
                         AddSidewalk(
                             new Bounds(
                                 center,
@@ -256,8 +274,7 @@ namespace BarPromenade
                 AddClosedIntersectionMouths(
                     nodePosition,
                     nodeConnections,
-                    carriagewayWidth,
-                    sideOffset,
+                    cornerOffset,
                     sidewalks,
                     walkableRectangles);
             }
@@ -266,11 +283,11 @@ namespace BarPromenade
         private static void AddClosedIntersectionMouths(
             Vector3 nodePosition,
             NodeConnections connections,
-            float carriagewayWidth,
-            float sideOffset,
+            float cornerOffset,
             ICollection<Bounds> sidewalks,
             ICollection<Rect> walkableRectangles)
         {
+            float mouthSpan = (cornerOffset * 2f) - SidewalkWidth;
             Vector2Int[] directions =
             {
                 Vector2Int.left,
@@ -287,16 +304,16 @@ namespace BarPromenade
                 }
 
                 Vector3 center = nodePosition + new Vector3(
-                    direction.x * sideOffset,
+                    direction.x * cornerOffset,
                     (RoadTop + SidewalkTop) * 0.5f,
-                    direction.y * sideOffset);
+                    direction.y * cornerOffset);
                 Vector3 size = direction.x != 0
                     ? new Vector3(
                         SidewalkWidth,
                         SidewalkHeight,
-                        carriagewayWidth)
+                        mouthSpan)
                     : new Vector3(
-                        carriagewayWidth,
+                        mouthSpan,
                         SidewalkHeight,
                         SidewalkWidth);
                 AddSidewalk(

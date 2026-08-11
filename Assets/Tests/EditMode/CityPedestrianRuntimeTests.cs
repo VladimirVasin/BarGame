@@ -563,7 +563,11 @@ namespace BarPromenade.Tests.EditMode
                     citySeed,
                     surfaces);
                 Transform player = CreatePlayer(root.transform);
-                player.position = new Vector3(132f, 0.18f, -2.5f);
+                player.position =
+                    layout.PlayerHome.SidewalkArrivalPosition +
+                    Vector3.up *
+                    (CityStreetSurfacePlanner.SidewalkTop +
+                     PlayerFactory.GroundedRootOffset);
                 int closestPlanNodeIndex = Enumerable.Range(
                         0,
                         plan.Nodes.Count)
@@ -797,8 +801,12 @@ namespace BarPromenade.Tests.EditMode
 
             int pedestrianBit =
                 1 << CityPedestrianCollision.LayerIndex;
+            int busBit = 1 << CityBusCollision.LayerIndex;
             Assert.That(
                 PlayerInteractor.InteractionLayerMask & pedestrianBit,
+                Is.Zero);
+            Assert.That(
+                PlayerInteractor.InteractionLayerMask & busBit,
                 Is.Zero);
 
             GameObject root = new GameObject("Camera Mask Test Root");
@@ -812,6 +820,9 @@ namespace BarPromenade.Tests.EditMode
                 follow.Initialize(camera, target.transform, false);
                 Assert.That(
                     follow.CollisionLayerMask & pedestrianBit,
+                    Is.Zero);
+                Assert.That(
+                    follow.CollisionLayerMask & busBit,
                     Is.Zero);
             }
             finally

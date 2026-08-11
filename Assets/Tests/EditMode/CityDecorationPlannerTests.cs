@@ -121,6 +121,15 @@ namespace BarPromenade.Tests.EditMode
             foreach (CityDecorationKind kind in
                      Enum.GetValues(typeof(CityDecorationKind)))
             {
+                if (kind == CityDecorationKind.RoadsideBusShelter)
+                {
+                    Assert.That(
+                        plan.GetCount(kind),
+                        Is.Zero,
+                        "Bus shelters are route-owned infrastructure, not random decoration.");
+                    continue;
+                }
+
                 Assert.That(
                     plan.GetCount(kind),
                     Is.GreaterThan(0),

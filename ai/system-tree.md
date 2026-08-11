@@ -70,6 +70,8 @@ Assets/
       Player3DPortrait.png              transparent inventory portrait from 3D model
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
+    Vehicles/
+      CityBus3D.prefab                  passive real-scale pooled midibus presentation
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -102,6 +104,11 @@ Assets/
     Models/
       CityPedestrian3D.fbx              compatible Generic street-walker model
       CityPedestrian3D.json             deterministic geometry/rig manifest
+  Vehicles/
+    Models/
+      CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
+      CityBus3D.json                    deterministic dimensions/bindings manifest
+    Materials/                          14 shared URP bus surface materials
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -128,6 +135,7 @@ Assets/
         CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
         CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
+        CityBusIntersectionSelector.cs safe Road v2.1 three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  street split, corners, dashes + zebra approaches
         CityWorldBuilder.cs      chunked physical asphalt/sidewalk + marking batches
@@ -157,7 +165,7 @@ Assets/
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
-        HomeExteriorContextPlan.cs  bounded street descriptors + local pedestrian graph
+        HomeExteriorContextPlan.cs  bounded street/decoration + pedestrian context
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
         HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + full street plan
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
@@ -189,6 +197,16 @@ Assets/
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
+      Vehicles/      one-slot real-scale ambient midibus route and presentation
+        CityBusPlan.cs             immutable ordered Route 01 loop, anchors + semantic stops
+        CityBusPlanner.cs          CCW park ring + four stops + full-body clearance proof
+        CityBusActor.cs            fixed-loop motion, yielding, per-lap dwell + engine loop
+        CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
+        CityBusStopWorldBuilder.cs four physical blue Route 01 stop poles
+        CityBusPresentation.cs     doors, wheels, steering + night/brake emission
+        CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
+        CityBusResources.cs        passive Resources prefab loading
+        CityBusFactory.cs          physical slot/layer composition + validation
       Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
@@ -247,10 +265,11 @@ Assets/
       BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
       SplitTheG/     pure timing/scoring session, controller, view and sprites
       TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
-      UI/            retro UI, pause/inventory, segmented HUD, district/public-place map and F9 debug
+      UI/            retro UI, pause/inventory, segmented HUD, district/bus map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
-        CityMapController.cs        canonical lot selection, debug teleport and bar-route state
-        CityMapView.cs              all-lot debug selection plus shop/POI/bar presentation
+        CityMapBusOverlay.cs        simplified blue loop + ordered localized stop markers
+        CityMapController.cs        bus overlay, canonical lots, debug teleport + bar route
+        CityMapView.cs              bus/stop legend plus shop/POI/bar map presentation
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
@@ -264,6 +283,7 @@ Assets/
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       Player3D/       deterministic model/animation/portrait import + prefab setup
       City/NPC/       pedestrian Generic import, dependency validation + prefab setup
+      City/Traffic/   bus FBX import, shared materials + Resources prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
@@ -281,6 +301,11 @@ Assets/
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
+      CityBusPlannerTests.cs            canonical ring/order/stops + turn-envelope proof
+      CityBusRuntimeTests.cs            forward encounter, fixed loop, dwell + one-slot reset
+      CityBusAssetImportTests.cs        dimensions, interior, bindings + passive prefab
+      CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
+      HomeBalconyLayoutTests.cs         Home exterior layout/pedestrian transform
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
@@ -308,7 +333,7 @@ Assets/
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, running clock and cleanup
-      HomeBalconyPresentationPlayModeTests.cs  time lighting + fog invariants
+      HomeBalconyPresentationPlayModeTests.cs  time/fog invariants + pedestrian gate
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
       HomeBalconySmokingInteractionPlayModeTests.cs  rail ashtray, 3D clips, mouth plume, drift + restore
@@ -324,6 +349,8 @@ Assets/
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
+  Vehicles/
+    Blender/                    generated bus .blend and deterministic preview
   Pedestrians/
     Blender/                    Lampshade Walker .blend and deterministic preview
   Player/
@@ -335,6 +362,7 @@ ArtSource/
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
+  build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
   build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
   build-player-puppet-atlas.py      retired 2D player source tooling
@@ -432,7 +460,12 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
 player + seed -> CityFogField (unchanged by time of day)
-layout -> CityStreetSurfacePlanner -> dark carriageway + two raised sidewalks
+layout -> CityStreetSurfacePlanner -> Road v2: `8 m` street / `6 m` carriageway
+                                 -> two raised `1 m` sidewalks
+                                 -> ordinary clear `6 x 6 m` junction apron
+                                 -> Road v2.1 selected three-/four-way bus nodes
+                                    -> four `1 m` corner pads displaced outward
+                                    -> complete clear `8 x 8 m` asphalt apron
                                  -> white center dashes + selected zebra crossings
                                  -> shared City/Home presentation geometry
                                  -> sidewalk/crosswalk walkable rectangles
@@ -454,6 +487,32 @@ layout + seed -> CityPedestrianPlanner -> sidewalk/turn/zebra graph
                                          -> forward turns + 50% zebra choice
                                          -> shared Player Idle/Walk clips
                                          -> stable yield; no NPC/NPC collision
+layout -> CityBusPlanner -> canonical right-hand Route 01
+                         -> fixed CCW Street ring around Central Park
+                            -> Industrial -> Nightlife -> Residential -> Old Town
+                            -> one ordered successor per link; no random routing/pursuit
+                         -> sampled full-body clearance envelope
+                            -> straight + analytic left-turn links
+                            -> Road v2.1 safe three-/four-way aprons
+                         -> four semantic route-owned stops on safe straights
+                            -> no stop at Last Route Island frontage
+                            -> CityBusStopWorldBuilder -> physical blue `01` poles
+                         -> fog-band spawn poses
+                         -> CityBusDirector
+                            -> one reusable actor/model slot
+                            -> preferred hidden `76-86 m` activation
+                            -> `56-86 m` fallback only with forward encounter path
+                            -> player/pedestrian yielding
+                            -> `3-5 s` stop dwell once per lap + two doors
+                            -> full-body recycling from `92 m`
+                            -> no camera/frustum lifecycle dependency
+                            -> CityBusActor kinematic box + engine
+                            -> CityBusPresentation
+                               -> wheels/steering/night lights
+                         -> CityMapBusOverlay
+                            -> simplified blue ink-outlined closed route
+                            -> four numbered localized hover stops + compact legend
+                            -> below orange player route; no live bus marker
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> Generic Idle/Walk/face/status/fall Actions
@@ -530,6 +589,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> HomeExteriorPedestrianPlanner
                        -> same sidewalk/turn/zebra graph in Home coordinates
                        -> bounded `100 m` approach anchors beyond the facade
+                    -> no ambient bus
+                       -> visible default road terminal
+                       -> no real Street pass-through with two `56 m` body-safe seams
+                       -> no fabricated road or camera-owned visible pop
                     -> Balcony-only City visibility, fog field and light pool
                        -> exact City fog/background/48 m cap/current light/grade
                        -> at most 12 street/bar lights scaled by night factor

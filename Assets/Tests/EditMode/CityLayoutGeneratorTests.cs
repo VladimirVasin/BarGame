@@ -84,13 +84,19 @@ namespace BarPromenade.Tests
 
             Assert.That(settings.BlocksX, Is.EqualTo(12));
             Assert.That(settings.BlocksZ, Is.EqualTo(12));
+            Assert.That(
+                settings.RoadWidth,
+                Is.EqualTo(CityGenerationSettings.DefaultRoadWidth));
+            Assert.That(
+                settings.NodeSpacing,
+                Is.EqualTo(new Vector2(26f, 26f)));
             Assert.That(layout.BuildingLots, Has.Count.EqualTo(144));
             Assert.That(
                 Vector3.Distance(
                     layout.GetNodeWorldPosition(Vector2Int.zero),
                     layout.GetNodeWorldPosition(
                         new Vector2Int(settings.BlocksX, 0))),
-                Is.EqualTo(288f).Within(0.001f));
+                Is.EqualTo(312f).Within(0.001f));
             Assert.That(layout.Districts, Has.Count.EqualTo(5));
             Assert.That(
                 layout.Districts.Select(district => district.Kind),

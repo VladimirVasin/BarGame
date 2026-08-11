@@ -7,6 +7,8 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class HomeBalconyLayoutTests
     {
+        private const float PositionTolerance = 0.0001f;
+
         [Test]
         public void Generate_CreatesConnectedThirdFloorBalcony()
         {
@@ -177,6 +179,45 @@ namespace BarPromenade.Tests.EditMode
                     cityPosition,
                     roundTrip),
                 Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void
+            ExteriorPedestrians_DefaultThreeWayBusApronsRemainAxisAligned()
+        {
+            int seed = GameSessionState.DefaultCitySeed;
+            HomeExteriorContextPlan context =
+                HomeExteriorContextPlanner.Generate(seed);
+            Vector2Int[] threeWayBusIntersections =
+                CityBusIntersectionSelector
+                    .Select(context.Layout)
+                    .Where(node =>
+                        context.Layout.RoadEdges.Count(edge =>
+                            edge.Contains(node)) == 3)
+                    .ToArray();
+
+            Assert.That(
+                threeWayBusIntersections,
+                Is.Not.Empty,
+                "Regression setup requires a selected three-way Road v2.1 " +
+                "bus apron in the production city.");
+
+            CityPedestrianPlan exterior =
+                HomeExteriorPedestrianPlanner.Create(context, seed);
+            for (int index = 0; index < exterior.Links.Count; index++)
+            {
+                CityPedestrianLink link = exterior.Links[index];
+                Vector3 first =
+                    exterior.Nodes[link.FirstNodeIndex].Position;
+                Vector3 second =
+                    exterior.Nodes[link.SecondNodeIndex].Position;
+                Assert.That(
+                    Mathf.Abs(first.x - second.x) <= PositionTolerance ||
+                    Mathf.Abs(first.z - second.z) <= PositionTolerance,
+                    Is.True,
+                    $"Home pedestrian link '{link.Id}' is not " +
+                    "axis-aligned.");
+            }
         }
 
         [Test]

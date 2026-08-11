@@ -228,8 +228,8 @@ namespace BarPromenade
             for (int index = 0; index < source.Count; index++)
             {
                 Bounds cityBounds = source[index];
-                if (!ContainsAnyRoadCenter(
-                        cityBounds.center,
+                if (!TouchesAnyRoad(
+                        cityBounds,
                         nearbyRoadRectangles))
                 {
                     continue;
@@ -251,8 +251,8 @@ namespace BarPromenade
             }
         }
 
-        private static bool ContainsAnyRoadCenter(
-            Vector3 center,
+        private static bool TouchesAnyRoad(
+            Bounds bounds,
             IReadOnlyList<Rect> roadRectangles)
         {
             for (int index = 0;
@@ -260,10 +260,10 @@ namespace BarPromenade
                  index++)
             {
                 Rect road = roadRectangles[index];
-                if (center.x >= road.xMin &&
-                    center.x <= road.xMax &&
-                    center.z >= road.yMin &&
-                    center.z <= road.yMax)
+                if (bounds.max.x >= road.xMin &&
+                    bounds.min.x <= road.xMax &&
+                    bounds.max.z >= road.yMin &&
+                    bounds.min.z <= road.yMax)
                 {
                     return true;
                 }

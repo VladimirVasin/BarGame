@@ -58,6 +58,8 @@ namespace BarPromenade
                 CityPedestrianStableHash.String(layout.BlueprintId));
             Dictionary<Vector2Int, ConnectionInfo> connections =
                 CreateConnections(layout);
+            var busIntersections = new HashSet<Vector2Int>(
+                CityBusIntersectionSelector.Select(layout));
             List<RoadEdge> sortedEdges = new List<RoadEdge>(
                 layout.RoadEdges);
             sortedEdges.Sort(RoadEdge.Compare);
@@ -106,6 +108,7 @@ namespace BarPromenade
                 layout,
                 connections,
                 endpointsByNode,
+                busIntersections,
                 graph);
             if (supportsCrosswalkNavigation)
             {
@@ -269,6 +272,7 @@ namespace BarPromenade
             IReadOnlyDictionary<Vector2Int, ConnectionInfo> connections,
             IReadOnlyDictionary<Vector2Int, List<LaneEndpoint>>
                 endpointsByNode,
+            ISet<Vector2Int> busIntersections,
             GraphBuilder graph)
         {
             var nodes = new List<Vector2Int>(layout.Nodes);
@@ -283,6 +287,12 @@ namespace BarPromenade
                 if (connection.IsIntersectionCore &&
                     connection.StreetCount > 0)
                 {
+                    bool usesWideTurnSidewalk =
+                        busIntersections.Contains(gridNode);
+                    float cornerOffset = usesWideTurnSidewalk
+                        ? CityBusIntersectionSelector
+                            .GetCornerCenterOffset(layout)
+                        : sideOffset;
                     var corners = new Dictionary<CornerKey, int>();
                     for (int xSign = -1; xSign <= 1; xSign += 2)
                     {
@@ -295,9 +305,9 @@ namespace BarPromenade
                                     $"junction:{gridNode.x}:{gridNode.y}:" +
                                     $"corner:{xSign}:{zSign}",
                                     new Vector3(
-                                        center.x + (xSign * sideOffset),
+                                        center.x + (xSign * cornerOffset),
                                         CityStreetSurfacePlanner.SidewalkTop,
-                                        center.z + (zSign * sideOffset)),
+                                        center.z + (zSign * cornerOffset)),
                                     false));
                         }
                     }
@@ -309,13 +319,26 @@ namespace BarPromenade
                         var key = new CornerKey(
                             SignNonZero(offset.x),
                             SignNonZero(offset.z));
-                        graph.AddLink(
-                            $"turn:{gridNode.x}:{gridNode.y}:" +
-                            $"{EdgeId(endpoint.Edge)}:{index}",
-                            endpoint.NodeIndex,
-                            corners[key],
-                            CityPedestrianLinkKind.Turn,
-                            false);
+                        if (usesWideTurnSidewalk)
+                        {
+                            ConnectWideTurnEndpoint(
+                                gridNode,
+                                endpoint,
+                                index,
+                                graph.Nodes[corners[key]].Position,
+                                corners[key],
+                                graph);
+                        }
+                        else
+                        {
+                            graph.AddLink(
+                                $"turn:{gridNode.x}:{gridNode.y}:" +
+                                $"{EdgeId(endpoint.Edge)}:{index}",
+                                endpoint.NodeIndex,
+                                corners[key],
+                                CityPedestrianLinkKind.Turn,
+                                false);
+                        }
                     }
 
                     for (int directionIndex = 0;
@@ -333,9 +356,9 @@ namespace BarPromenade
                             $"junction:{gridNode.x}:{gridNode.y}:" +
                             $"mouth:{direction.x}:{direction.y}",
                             new Vector3(
-                                center.x + (direction.x * sideOffset),
+                                center.x + (direction.x * cornerOffset),
                                 CityStreetSurfacePlanner.SidewalkTop,
-                                center.z + (direction.y * sideOffset)),
+                                center.z + (direction.y * cornerOffset)),
                             false);
                         GetMouthCorners(
                             direction,
@@ -362,6 +385,44 @@ namespace BarPromenade
 
                 ConnectStraightSeams(gridNode, endpoints, graph);
             }
+        }
+
+        private static void ConnectWideTurnEndpoint(
+            Vector2Int gridNode,
+            LaneEndpoint endpoint,
+            int endpointIndex,
+            Vector3 cornerPosition,
+            int cornerNodeIndex,
+            GraphBuilder graph)
+        {
+            Vector3 accessPosition = endpoint.Edge.IsHorizontal
+                ? new Vector3(
+                    cornerPosition.x,
+                    cornerPosition.y,
+                    endpoint.Position.z)
+                : new Vector3(
+                    endpoint.Position.x,
+                    cornerPosition.y,
+                    cornerPosition.z);
+            string idPrefix =
+                $"turn:{gridNode.x}:{gridNode.y}:" +
+                $"{EdgeId(endpoint.Edge)}:{endpointIndex}";
+            int accessNode = graph.AddNode(
+                idPrefix + ":wide-access",
+                accessPosition,
+                false);
+            graph.AddLink(
+                idPrefix + ":wide-entry",
+                endpoint.NodeIndex,
+                accessNode,
+                CityPedestrianLinkKind.Turn,
+                false);
+            graph.AddLink(
+                idPrefix + ":wide-corner",
+                accessNode,
+                cornerNodeIndex,
+                CityPedestrianLinkKind.Turn,
+                false);
         }
 
         private static void ConnectStraightSeams(

@@ -244,6 +244,44 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(CityPedestrianCollision.LayerIndex));
             }
 
+            Assert.That(cityRoot.BusPlan, Is.Not.Null);
+            Assert.That(cityRoot.BusPlan.IsEmpty, Is.False);
+            Assert.That(cityRoot.BusPlan.SpawnAnchors, Is.Not.Empty);
+            Assert.That(cityRoot.BusStops, Is.Not.Null);
+            Assert.That(
+                cityRoot.BusStops.transform.childCount,
+                Is.EqualTo(cityRoot.BusPlan.Stops.Count));
+            Assert.That(cityRoot.Bus, Is.Not.Null);
+            Assert.That(cityRoot.Bus.IsInitialized, Is.True);
+            Assert.That(cityRoot.Bus.Count, Is.EqualTo(1));
+            Assert.That(cityRoot.Bus.PoolCapacity, Is.EqualTo(1));
+            Assert.That(
+                cityRoot.Bus.ActiveCount,
+                Is.InRange(0, CityBusDirector.MaximumActiveModels));
+            Assert.That(cityRoot.Bus.Actor, Is.Not.Null);
+            Assert.That(
+                cityRoot.Bus.Actor.gameObject.layer,
+                Is.EqualTo(CityBusCollision.LayerIndex));
+            Assert.That(
+                Physics.GetIgnoreLayerCollision(
+                    CityBusCollision.DefaultLayerIndex,
+                    CityBusCollision.LayerIndex),
+                Is.False);
+            Assert.That(
+                Physics.GetIgnoreLayerCollision(
+                    CityPedestrianCollision.LayerIndex,
+                    CityBusCollision.LayerIndex),
+                Is.False);
+
+            cityRoot.Bus.Advance(
+                cityRoot.Bus.TimeUntilNextSpawn + 0.01f);
+            Assert.That(
+                cityRoot.Bus.ActiveCount,
+                Is.EqualTo(1),
+                "The production City bus must find a fog-hidden route " +
+                "anchor from the default home-return spawn instead of " +
+                "retrying invisibly forever.");
+
             Transform homeRoot =
                 cityRoot.World.Root.transform.Find("Player Home");
             Assert.That(homeRoot, Is.Not.Null);

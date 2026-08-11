@@ -102,7 +102,8 @@ namespace BarPromenade
             isInterior = interior;
             collisionMask =
                 collisionMask.value &
-                CityPedestrianCollision.NonPedestrianMask;
+                CityPedestrianCollision.NonPedestrianMask &
+                CityBusCollision.NonBusMask;
             fixedPoseActive = false;
             targetYaw = target != null ? target.eulerAngles.y : 0f;
             currentYaw = targetYaw;

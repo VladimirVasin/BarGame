@@ -51,6 +51,146 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Create_DefaultRoadV2_PreservesFullBusJunctionApron()
+        {
+            CityGenerationSettings settings = CreateDenseSettings();
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                19743);
+            CityStreetSurfacePlan plan =
+                CityStreetSurfacePlanner.Create(layout);
+
+            Assert.That(
+                layout.RoadWidth,
+                Is.EqualTo(CityGenerationSettings.DefaultRoadWidth));
+            Assert.That(
+                layout.NodeSpacing,
+                Is.EqualTo(new Vector2(26f, 26f)));
+            Assert.That(
+                CityStreetSurfacePlanner.SidewalkWidth,
+                Is.EqualTo(1f));
+            Assert.That(plan.CarriagewayWidth, Is.EqualTo(6f));
+            IReadOnlyList<Vector2Int> busIntersections =
+                CityBusIntersectionSelector.Select(layout);
+            Assert.That(busIntersections, Is.Not.Empty);
+
+            Vector3 nodePosition = layout.GetNodeWorldPosition(
+                busIntersections[0]);
+            float halfRoad = layout.RoadWidth * 0.5f;
+            Rect junctionApron = Rect.MinMaxRect(
+                nodePosition.x - halfRoad,
+                nodePosition.z - halfRoad,
+                nodePosition.x + halfRoad,
+                nodePosition.z + halfRoad);
+            Assert.That(
+                plan.SidewalkWalkableRectangles.Any(sidewalk =>
+                    HasPositiveOverlap(sidewalk, junctionApron)),
+                Is.False,
+                "Road v2.1 must keep the full 8 m junction apron clear of " +
+                "raised sidewalk geometry for the design bus.");
+            Assert.That(
+                CityStreetSurfacePlanner.BusApproachApronLength,
+                Is.EqualTo(4.5f));
+            Vector2Int[] directions =
+            {
+                Vector2Int.left,
+                Vector2Int.right,
+                Vector2Int.down,
+                Vector2Int.up
+            };
+            for (int index = 0; index < directions.Length; index++)
+            {
+                Vector2Int direction = directions[index];
+                Vector2Int node = busIntersections[0];
+                if (!layout.HasRoad(node, node + direction))
+                {
+                    continue;
+                }
+
+                float length = CityStreetSurfacePlanner
+                    .BusApproachApronLength;
+                Vector2 center = new Vector2(
+                    nodePosition.x + direction.x *
+                        (halfRoad + length * 0.5f),
+                    nodePosition.z + direction.y *
+                        (halfRoad + length * 0.5f));
+                Rect approachApron = direction.x != 0
+                    ? Rect.MinMaxRect(
+                        center.x - length * 0.5f,
+                        center.y - halfRoad,
+                        center.x + length * 0.5f,
+                        center.y + halfRoad)
+                    : Rect.MinMaxRect(
+                        center.x - halfRoad,
+                        center.y - length * 0.5f,
+                        center.x + halfRoad,
+                        center.y + length * 0.5f);
+                Assert.That(
+                    plan.SidewalkWalkableRectangles.Any(sidewalk =>
+                        HasPositiveOverlap(sidewalk, approachApron)),
+                    Is.False,
+                    "Road v2.1 must cut raised curbs back from each bus " +
+                    "junction's real Street approaches.");
+            }
+            Assert.That(
+                plan.CrosswalkWalkableRectangles.Any(crosswalk =>
+                    HasDimensions(
+                        crosswalk,
+                        CityStreetSurfacePlanner.CrosswalkDepth,
+                        6f)),
+                Is.True);
+        }
+
+        [Test]
+        public void Create_DefaultThreeWayBusApron_ClosesWideSidewalkMouth()
+        {
+            CityLayout layout = HomeExteriorContextPlanner
+                .Generate(GameSessionState.DefaultCitySeed)
+                .Layout;
+            CityStreetSurfacePlan plan =
+                CityStreetSurfacePlanner.Create(layout);
+            Vector2Int[] directions =
+            {
+                Vector2Int.left,
+                Vector2Int.right,
+                Vector2Int.down,
+                Vector2Int.up
+            };
+            Vector2Int node = CityBusIntersectionSelector
+                .Select(layout)
+                .First(candidate =>
+                    layout.RoadEdges.Count(edge =>
+                        edge.Contains(candidate)) == 3);
+            Vector2Int missingDirection = directions.Single(direction =>
+                !layout.HasRoad(node, node + direction));
+            Vector3 nodePosition = layout.GetNodeWorldPosition(node);
+            float offset = CityBusIntersectionSelector
+                .GetCornerCenterOffset(layout);
+            float span = (offset * 2f) -
+                         CityStreetSurfacePlanner.SidewalkWidth;
+            Rect expected = missingDirection.x != 0
+                ? new Rect(
+                    nodePosition.x + (missingDirection.x * offset) -
+                        (CityStreetSurfacePlanner.SidewalkWidth * 0.5f),
+                    nodePosition.z - (span * 0.5f),
+                    CityStreetSurfacePlanner.SidewalkWidth,
+                    span)
+                : new Rect(
+                    nodePosition.x - (span * 0.5f),
+                    nodePosition.z + (missingDirection.y * offset) -
+                        (CityStreetSurfacePlanner.SidewalkWidth * 0.5f),
+                    span,
+                    CityStreetSurfacePlanner.SidewalkWidth);
+
+            Assert.That(
+                plan.SidewalkWalkableRectangles.Any(sidewalk =>
+                    Approximately(sidewalk, expected)),
+                Is.True,
+                "A wide three-way bus apron must close its missing side " +
+                "with one axis-aligned sidewalk spanning both corner pads.");
+        }
+
+        [Test]
         public void Create_KeepsRaisedSidewalksInsideStreetCorridors()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -130,9 +270,11 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(CreateRect(sidewalk)));
                 Assert.That(
                     streetCorridors.Any(corridor =>
-                        Contains(corridor, walkable)),
+                        Contains(corridor, walkable)) ||
+                    IsBusIntersectionSidewalk(layout, walkable),
                     Is.True,
-                    $"Sidewalk {walkable} left every street corridor.");
+                    $"Sidewalk {walkable} left both its street corridor " +
+                    "and every selected Road v2.1 junction sidewalk.");
                 Assert.That(
                     Mathf.Approximately(
                         walkable.width,
@@ -388,6 +530,81 @@ namespace BarPromenade.Tests.EditMode
                        Mathf.Max(first.xMin, second.xMin) > Tolerance &&
                    Mathf.Min(first.yMax, second.yMax) -
                        Mathf.Max(first.yMin, second.yMin) > Tolerance;
+        }
+
+        private static bool IsBusIntersectionSidewalk(
+            CityLayout layout,
+            Rect sidewalk)
+        {
+            float offset = CityBusIntersectionSelector
+                .GetCornerCenterOffset(layout);
+            IReadOnlyList<Vector2Int> nodes =
+                CityBusIntersectionSelector.Select(layout);
+            for (int index = 0; index < nodes.Count; index++)
+            {
+                Vector3 center = layout.GetNodeWorldPosition(nodes[index]);
+                for (int xSign = -1; xSign <= 1; xSign += 2)
+                {
+                    for (int zSign = -1; zSign <= 1; zSign += 2)
+                    {
+                        Rect expected = new Rect(
+                            center.x + (xSign * offset) - 0.5f,
+                            center.z + (zSign * offset) - 0.5f,
+                            CityStreetSurfacePlanner.SidewalkWidth,
+                            CityStreetSurfacePlanner.SidewalkWidth);
+                        if (Contains(expected, sidewalk))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                Vector2Int[] directions =
+                {
+                    Vector2Int.left,
+                    Vector2Int.right,
+                    Vector2Int.down,
+                    Vector2Int.up
+                };
+                float span = (offset * 2f) -
+                             CityStreetSurfacePlanner.SidewalkWidth;
+                for (int directionIndex = 0;
+                     directionIndex < directions.Length;
+                     directionIndex++)
+                {
+                    Vector2Int direction = directions[directionIndex];
+                    if (layout.HasRoad(nodes[index], nodes[index] + direction))
+                    {
+                        continue;
+                    }
+
+                    Rect expected = direction.x != 0
+                        ? new Rect(
+                            center.x + (direction.x * offset) - 0.5f,
+                            center.z - (span * 0.5f),
+                            CityStreetSurfacePlanner.SidewalkWidth,
+                            span)
+                        : new Rect(
+                            center.x - (span * 0.5f),
+                            center.z + (direction.y * offset) - 0.5f,
+                            span,
+                            CityStreetSurfacePlanner.SidewalkWidth);
+                    if (Contains(expected, sidewalk))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Approximately(Rect first, Rect second)
+        {
+            return Mathf.Abs(first.x - second.x) <= Tolerance &&
+                   Mathf.Abs(first.y - second.y) <= Tolerance &&
+                   Mathf.Abs(first.width - second.width) <= Tolerance &&
+                   Mathf.Abs(first.height - second.height) <= Tolerance;
         }
 
         private static CityGenerationSettings CreateDenseSettings()

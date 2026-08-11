@@ -1,0 +1,889 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace BarPromenade
+{
+    [DefaultExecutionOrder(320)]
+    [DisallowMultipleComponent]
+    public sealed class CityBusDirector : MonoBehaviour
+    {
+        public const int MaximumActiveModels = 1;
+        public const float MinimumSpawnDistance = 76f;
+        public const float MaximumSpawnDistance = 86f;
+        public const float RecycleDistance = 92f;
+        public const float FogHiddenDistance =
+            RuntimeSceneSetup.CityFarClipPlane + 8f;
+        public const float InitialApproachCompletionDistance = 24f;
+        public const float MaximumInitialApproachPathDistance = 180f;
+        public const float MaximumInitialApproachDuration = 60f;
+        public const float SpawnCandidateSpacing = 2f;
+        public const float SpawnLinkEndPadding = 0.25f;
+        public const float MinimumInitialSpawnDelay = 2f;
+        public const float MaximumInitialSpawnDelay = 6f;
+        public const float MinimumSpawnCooldown = 12f;
+        public const float MaximumSpawnCooldown = 24f;
+        public const float MinimumSpawnRetryDelay = 1.5f;
+        public const float MaximumSpawnRetryDelay = 4f;
+        public const float PlayerPredictionSeconds = 0.75f;
+        public const float PedestrianPredictionSeconds = 1.15f;
+        public const float MinimumObstacleLookAhead = 12f;
+
+        private const uint RandomFallbackSeed = 0xA341316Cu;
+        private const uint RuntimeSequenceSalt = 0x42555352u;
+        private const uint SpawnBehaviorSalt = 0x42555342u;
+
+        private CityBusPlan plan;
+        private CityBusActor actor;
+        private CityBusPresentation presentation;
+        private Transform player;
+        private CityPedestrianDirector pedestrians;
+        private Transform poolRoot;
+        private Func<float> nightFactorProvider;
+        private float spawnCooldown;
+        private uint randomState;
+        private uint successfulSpawnOrdinal;
+        private bool initialApproachCompleted;
+        private float initialApproachElapsed;
+        private int[] orderedLoopLinkIndices = Array.Empty<int>();
+        private float[] orderedLoopLinkStarts = Array.Empty<float>();
+        private float[] loopStartByLinkIndex = Array.Empty<float>();
+        private readonly List<float> encounterLoopDistances =
+            new List<float>();
+        private float loopLength;
+        private Vector3 previousPlayerPosition;
+        private Vector3 playerVelocity;
+        private bool hasPlayerSample;
+
+        public bool IsInitialized { get; private set; }
+        public CityBusPlan Plan => plan;
+        public CityBusActor Actor => actor;
+        public int Count => actor != null ? 1 : 0;
+        public int PoolCapacity => presentation != null ? 1 : 0;
+        public int ActiveCount => actor != null && actor.IsSpawned ? 1 : 0;
+        public float TimeUntilNextSpawn => spawnCooldown;
+        public bool IsInInitialApproach =>
+            ActiveCount > 0 && !initialApproachCompleted;
+
+        public void Initialize(
+            CityBusPlan busPlan,
+            CityBusActor routeActor,
+            CityBusPresentation pooledPresentation,
+            Transform playerTransform,
+            CityPedestrianDirector pedestrianDirector,
+            Transform presentationPoolRoot,
+            Func<float> runtimeNightFactorProvider = null)
+        {
+            if (IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "The city bus director is already initialized.");
+            }
+
+            plan = busPlan ?? throw new ArgumentNullException(nameof(busPlan));
+            player = playerTransform != null
+                ? playerTransform
+                : throw new ArgumentNullException(nameof(playerTransform));
+            poolRoot = presentationPoolRoot != null
+                ? presentationPoolRoot
+                : throw new ArgumentNullException(
+                    nameof(presentationPoolRoot));
+            pedestrians = pedestrianDirector;
+            nightFactorProvider = runtimeNightFactorProvider ??
+                GetSessionNightFactor;
+
+            bool hasRuntimeSlot = routeActor != null ||
+                                  pooledPresentation != null;
+            if (hasRuntimeSlot &&
+                (routeActor == null || pooledPresentation == null))
+            {
+                throw new ArgumentException(
+                    "The city bus actor and presentation must be supplied " +
+                    "as one complete slot.");
+            }
+
+            if (!plan.IsEmpty && !hasRuntimeSlot)
+            {
+                throw new ArgumentException(
+                    "A non-empty city bus plan requires one runtime slot.");
+            }
+
+            if (routeActor != null && !routeActor.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The city bus actor must be initialized.",
+                    nameof(routeActor));
+            }
+
+            if (pooledPresentation != null &&
+                !pooledPresentation.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The city bus presentation must be initialized.",
+                    nameof(pooledPresentation));
+            }
+
+            actor = routeActor;
+            presentation = pooledPresentation;
+            BuildFixedLoopMetadata();
+            if (presentation != null)
+            {
+                presentation.ResetForPool();
+                presentation.gameObject.SetActive(false);
+                presentation.transform.SetParent(poolRoot, false);
+            }
+
+            randomState = CreateDeterministicRandomSeed(plan.StableSeed);
+            successfulSpawnOrdinal = 0u;
+            spawnCooldown = GetRandomRange(
+                MinimumInitialSpawnDelay,
+                MaximumInitialSpawnDelay);
+            previousPlayerPosition = player.position;
+            hasPlayerSample = true;
+            IsInitialized = true;
+        }
+
+        public void Advance(float deltaTime)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            RefreshPlayerVelocity(safeDeltaTime);
+            if (actor != null && actor.IsSpawned)
+            {
+                if (!initialApproachCompleted)
+                {
+                    initialApproachElapsed += safeDeltaTime;
+                }
+
+                RefreshInitialApproach();
+                actor.Advance(
+                    safeDeltaTime,
+                    ResolveObstacleState(),
+                    GetNightFactor());
+                RefreshInitialApproach();
+                bool mayRecycle = initialApproachCompleted ||
+                                  initialApproachElapsed >=
+                                  MaximumInitialApproachDuration;
+                if (mayRecycle &&
+                    actor.GetClosestPlanarBodyDistance(player.position) >=
+                        RecycleDistance)
+                {
+                    ReleaseActor();
+                    spawnCooldown = GetRandomRange(
+                        MinimumSpawnCooldown,
+                        MaximumSpawnCooldown);
+                }
+            }
+
+            spawnCooldown = Mathf.Max(
+                0f,
+                spawnCooldown - safeDeltaTime);
+            if (actor != null &&
+                !actor.IsSpawned &&
+                !plan.IsEmpty &&
+                spawnCooldown <= 0f)
+            {
+                bool spawned = TrySpawnOne();
+                spawnCooldown = spawned
+                    ? GetRandomRange(
+                        MinimumSpawnCooldown,
+                        MaximumSpawnCooldown)
+                    : GetRandomRange(
+                        MinimumSpawnRetryDelay,
+                        MaximumSpawnRetryDelay);
+            }
+        }
+
+        public void Shutdown()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            ReleaseActor();
+            if (presentation != null)
+            {
+                presentation.ResetForPool();
+            }
+
+            IsInitialized = false;
+        }
+
+        private void LateUpdate()
+        {
+            Advance(Time.deltaTime);
+        }
+
+        private void OnDisable()
+        {
+            if (IsInitialized)
+            {
+                ReleaseActor();
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            spawnCooldown = GetRandomRange(
+                MinimumInitialSpawnDelay,
+                MaximumInitialSpawnDelay);
+            previousPlayerPosition = player.position;
+            playerVelocity = Vector3.zero;
+            hasPlayerSample = true;
+        }
+
+        private void OnDestroy()
+        {
+            Shutdown();
+        }
+
+        private bool TrySpawnOne()
+        {
+            if (!BuildEncounterLoopDistances())
+            {
+                return false;
+            }
+
+            if (!TrySelectSpawnCandidate(
+                    MinimumSpawnDistance,
+                    MaximumSpawnDistance,
+                    out CityBusSpawnAnchor selected) &&
+                !TrySelectSpawnCandidate(
+                    FogHiddenDistance,
+                    MaximumSpawnDistance,
+                    out selected))
+            {
+                return false;
+            }
+
+            uint behaviorSeed = CityPedestrianStableHash.Combine(
+                CityPedestrianStableHash.Combine(
+                    plan.StableSeed,
+                    SpawnBehaviorSalt),
+                CityPedestrianStableHash.Combine(
+                    successfulSpawnOrdinal,
+                    CityPedestrianStableHash.String(selected.Id)));
+            initialApproachCompleted = false;
+            initialApproachElapsed = 0f;
+            actor.PrepareSpawn(
+                plan,
+                selected,
+                behaviorSeed);
+            try
+            {
+                actor.BindPresentation(presentation);
+                Physics.SyncTransforms();
+                successfulSpawnOrdinal++;
+            }
+            catch
+            {
+                actor.ReleasePresentation(poolRoot);
+                throw;
+            }
+
+            return true;
+        }
+
+        private bool TrySelectSpawnCandidate(
+            float minimumBodyDistance,
+            float maximumBodyDistance,
+            out CityBusSpawnAnchor selected)
+        {
+            selected = null;
+            float selectedApproachDistance = float.PositiveInfinity;
+            uint selectedRank = uint.MaxValue;
+            float longitudinalExtent =
+                Mathf.Abs(actor.LocalVisualBounds.center.z) +
+                actor.LocalVisualBounds.extents.z;
+            float safeEndDistance = longitudinalExtent +
+                                    SpawnLinkEndPadding;
+            float minimumStopApproachDistance =
+                ((CityBusActor.CruiseSpeed *
+                  CityBusActor.CruiseSpeed) /
+                 (2f * CityBusActor.ServiceDeceleration)) +
+                CityBusActor.ObstacleStopPadding +
+                longitudinalExtent;
+            for (int orderIndex = 0;
+                 orderIndex < orderedLoopLinkIndices.Length;
+                 orderIndex++)
+            {
+                int linkIndex = orderedLoopLinkIndices[orderIndex];
+                CityBusRouteLink link = plan.Links[linkIndex];
+                if (link.Kind != CityBusRouteLinkKind.Straight ||
+                    plan.Nodes[link.FromNodeIndex].RoadEdge !=
+                    plan.Nodes[link.ToNodeIndex].RoadEdge)
+                {
+                    continue;
+                }
+
+                float firstDistance = safeEndDistance;
+                float lastDistance = link.Length - safeEndDistance;
+                if (lastDistance < firstDistance)
+                {
+                    continue;
+                }
+
+                int intervalCount = Mathf.Max(
+                    1,
+                    Mathf.CeilToInt(
+                        (lastDistance - firstDistance) /
+                        SpawnCandidateSpacing));
+                for (int interval = 0;
+                     interval <= intervalCount;
+                     interval++)
+                {
+                    float t = intervalCount > 0
+                        ? interval / (float)intervalCount
+                        : 0f;
+                    float distanceAlongLink = Mathf.Lerp(
+                        firstDistance,
+                        lastDistance,
+                        t);
+                    EvaluateLink(
+                        link,
+                        distanceAlongLink,
+                        out Vector3 position,
+                        out Vector3 forward);
+                    if (!IsSpawnPoseEligible(
+                            position,
+                            forward,
+                            minimumBodyDistance,
+                            maximumBodyDistance))
+                    {
+                        continue;
+                    }
+
+                    float candidateLoopDistance =
+                        orderedLoopLinkStarts[orderIndex] +
+                        distanceAlongLink;
+                    if (GetForwardStopDistance(
+                            candidateLoopDistance) <
+                        minimumStopApproachDistance)
+                    {
+                        continue;
+                    }
+
+                    float approachDistance =
+                        GetForwardEncounterDistance(
+                            candidateLoopDistance);
+                    if (approachDistance >
+                        MaximumInitialApproachPathDistance)
+                    {
+                        continue;
+                    }
+
+                    uint rank = NextRandomUInt();
+                    if (selected != null &&
+                        (approachDistance >
+                             selectedApproachDistance + 0.001f ||
+                         (Mathf.Abs(
+                              approachDistance -
+                              selectedApproachDistance) <= 0.001f &&
+                          rank >= selectedRank)))
+                    {
+                        continue;
+                    }
+
+                    RoadEdge roadEdge = plan.Nodes[
+                        link.FromNodeIndex].RoadEdge;
+                    selected = new CityBusSpawnAnchor(
+                        $"{link.Id}:runtime-spawn:" +
+                        Mathf.RoundToInt(distanceAlongLink * 100f),
+                        linkIndex,
+                        distanceAlongLink,
+                        position,
+                        forward,
+                        roadEdge);
+                    selectedApproachDistance = approachDistance;
+                    selectedRank = rank;
+                }
+            }
+
+            return selected != null;
+        }
+
+        private bool IsSpawnPoseEligible(
+            Vector3 position,
+            Vector3 forward,
+            float minimumBodyDistance,
+            float maximumBodyDistance)
+        {
+            if (forward.sqrMagnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                forward.normalized,
+                Vector3.up);
+            float bodyDistance = CityBusActor.GetClosestPlanarBodyDistance(
+                player.position,
+                position,
+                rotation,
+                actor.LocalVisualBounds);
+            if (bodyDistance < minimumBodyDistance ||
+                bodyDistance > maximumBodyDistance ||
+                bodyDistance < FogHiddenDistance)
+            {
+                return false;
+            }
+
+            if (OverlapsDynamicObstacle(
+                    position,
+                    rotation,
+                    player.position,
+                    GetControllerRadius(player, 0.32f)))
+            {
+                return false;
+            }
+
+            if (pedestrians == null)
+            {
+                return true;
+            }
+
+            IReadOnlyList<CityPedestrianActor> actors = pedestrians.Actors;
+            for (int index = 0; index < actors.Count; index++)
+            {
+                CityPedestrianActor pedestrian = actors[index];
+                if (pedestrian.IsSpawned &&
+                    OverlapsDynamicObstacle(
+                        position,
+                        rotation,
+                        pedestrian.Position,
+                        pedestrian.AgentRadius))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void EvaluateLink(
+            CityBusRouteLink link,
+            float distance,
+            out Vector3 position,
+            out Vector3 forward)
+        {
+            IReadOnlyList<CityBusPathSample> samples = link.Samples;
+            float clamped = Mathf.Clamp(distance, 0f, link.Length);
+            for (int index = 1; index < samples.Count; index++)
+            {
+                CityBusPathSample second = samples[index];
+                if (clamped > second.Distance + 0.001f)
+                {
+                    continue;
+                }
+
+                CityBusPathSample first = samples[index - 1];
+                float span = second.Distance - first.Distance;
+                float t = span > 0.001f
+                    ? Mathf.Clamp01((clamped - first.Distance) / span)
+                    : 0f;
+                position = Vector3.Lerp(
+                    first.Position,
+                    second.Position,
+                    t);
+                forward = Vector3.Lerp(
+                    first.Forward,
+                    second.Forward,
+                    t);
+                forward.y = 0f;
+                forward = forward.sqrMagnitude > 0.0001f
+                    ? forward.normalized
+                    : Vector3.forward;
+                return;
+            }
+
+            CityBusPathSample last = samples[samples.Count - 1];
+            position = last.Position;
+            forward = last.Forward;
+            forward.y = 0f;
+            forward = forward.sqrMagnitude > 0.0001f
+                ? forward.normalized
+                : Vector3.forward;
+        }
+
+        private bool OverlapsDynamicObstacle(
+            Vector3 busPosition,
+            Quaternion busRotation,
+            Vector3 obstaclePosition,
+            float obstacleRadius)
+        {
+            float distance = CityBusActor.GetClosestPlanarBodyDistance(
+                obstaclePosition,
+                busPosition,
+                busRotation,
+                actor.LocalVisualBounds);
+            return distance < obstacleRadius +
+                              CityBusActor.ObstacleStopPadding;
+        }
+
+        private CityBusObstacleState ResolveObstacleState()
+        {
+            float lookAhead = Mathf.Max(
+                MinimumObstacleLookAhead,
+                actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
+            float clearance = float.PositiveInfinity;
+            CheckObstacle(
+                player.position,
+                GetControllerRadius(player, 0.32f),
+                lookAhead,
+                ref clearance);
+            if (playerVelocity.sqrMagnitude > 0.0001f)
+            {
+                CheckObstacle(
+                    player.position +
+                    (playerVelocity * PlayerPredictionSeconds),
+                    GetControllerRadius(player, 0.32f),
+                    lookAhead,
+                    ref clearance);
+            }
+
+            if (pedestrians != null)
+            {
+                IReadOnlyList<CityPedestrianActor> actors =
+                    pedestrians.Actors;
+                for (int index = 0; index < actors.Count; index++)
+                {
+                    CityPedestrianActor pedestrian = actors[index];
+                    if (!pedestrian.IsSpawned)
+                    {
+                        continue;
+                    }
+
+                    CheckObstacle(
+                        pedestrian.Position,
+                        pedestrian.AgentRadius,
+                        lookAhead,
+                        ref clearance);
+                    Vector3 travel = pedestrian.TravelDirection;
+                    if (travel.sqrMagnitude > 0.0001f)
+                    {
+                        CheckObstacle(
+                            pedestrian.Position +
+                            (travel *
+                             CityPedestrianPlanner.MaximumSpeed *
+                             PedestrianPredictionSeconds),
+                            pedestrian.AgentRadius,
+                            lookAhead,
+                            ref clearance);
+                    }
+                }
+            }
+
+            return float.IsPositiveInfinity(clearance)
+                ? CityBusObstacleState.Clear
+                : new CityBusObstacleState(true, clearance);
+        }
+
+        private void CheckObstacle(
+            Vector3 position,
+            float radius,
+            float lookAhead,
+            ref float minimumClearance)
+        {
+            if (actor.TryGetPathObstacleClearance(
+                    position,
+                    radius,
+                    lookAhead,
+                    out float clearance))
+            {
+                minimumClearance = Mathf.Min(
+                    minimumClearance,
+                    clearance);
+            }
+        }
+
+        private void RefreshInitialApproach()
+        {
+            if (initialApproachCompleted ||
+                actor == null ||
+                !actor.IsSpawned)
+            {
+                return;
+            }
+
+            if (actor.GetClosestPlanarBodyDistance(player.position) <=
+                InitialApproachCompletionDistance)
+            {
+                initialApproachCompleted = true;
+                actor.CompleteInitialApproach();
+            }
+        }
+
+        private void BuildFixedLoopMetadata()
+        {
+            orderedLoopLinkIndices = Array.Empty<int>();
+            orderedLoopLinkStarts = Array.Empty<float>();
+            loopStartByLinkIndex = Array.Empty<float>();
+            loopLength = 0f;
+            if (plan.IsEmpty)
+            {
+                return;
+            }
+
+            IReadOnlyList<int> ordered = plan.OrderedLinkIndices;
+            if (ordered.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "A non-empty city bus plan requires one ordered " +
+                    "route loop.");
+            }
+
+            orderedLoopLinkIndices = new int[ordered.Count];
+            orderedLoopLinkStarts = new float[ordered.Count];
+            loopStartByLinkIndex = new float[plan.Links.Count];
+            for (int index = 0;
+                 index < loopStartByLinkIndex.Length;
+                 index++)
+            {
+                loopStartByLinkIndex[index] = -1f;
+            }
+
+            for (int index = 0; index < ordered.Count; index++)
+            {
+                int linkIndex = ordered[index];
+                orderedLoopLinkIndices[index] = linkIndex;
+                orderedLoopLinkStarts[index] = loopLength;
+                loopStartByLinkIndex[linkIndex] = loopLength;
+                CityBusRouteLink link = plan.Links[linkIndex];
+                if (!IsFinite(link.Length) || link.Length <= 0f)
+                {
+                    throw new InvalidOperationException(
+                        "Every fixed city bus route link must have a " +
+                        "positive finite length.");
+                }
+
+                int nextLinkIndex = ordered[
+                    (index + 1) % ordered.Count];
+                if (plan.GetNextOrderedLinkIndex(linkIndex) !=
+                        nextLinkIndex ||
+                    link.ToNodeIndex !=
+                        plan.Links[nextLinkIndex].FromNodeIndex)
+                {
+                    throw new InvalidOperationException(
+                        "The ordered city bus route must be one " +
+                        "topologically connected ring.");
+                }
+
+                loopLength += link.Length;
+            }
+
+            if (!IsFinite(plan.LoopLength) || plan.LoopLength <= 0f ||
+                Mathf.Abs(plan.LoopLength - loopLength) > 0.01f)
+            {
+                throw new InvalidOperationException(
+                    "The city bus route loop length does not match its " +
+                    "ordered links.");
+            }
+
+            loopLength = plan.LoopLength;
+        }
+
+        private bool BuildEncounterLoopDistances()
+        {
+            encounterLoopDistances.Clear();
+            for (int orderIndex = 0;
+                 orderIndex < orderedLoopLinkIndices.Length;
+                 orderIndex++)
+            {
+                CityBusRouteLink link = plan.Links[
+                    orderedLoopLinkIndices[orderIndex]];
+                int intervalCount = Mathf.Max(
+                    1,
+                    Mathf.CeilToInt(
+                        link.Length / SpawnCandidateSpacing));
+                for (int interval = 0;
+                     interval <= intervalCount;
+                     interval++)
+                {
+                    float distanceAlongLink = link.Length *
+                        (interval / (float)intervalCount);
+                    EvaluateLink(
+                        link,
+                        distanceAlongLink,
+                        out Vector3 position,
+                        out Vector3 forward);
+                    Quaternion rotation = Quaternion.LookRotation(
+                        forward,
+                        Vector3.up);
+                    float bodyDistance =
+                        CityBusActor.GetClosestPlanarBodyDistance(
+                            player.position,
+                            position,
+                            rotation,
+                            actor.LocalVisualBounds);
+                    if (bodyDistance <=
+                        InitialApproachCompletionDistance)
+                    {
+                        encounterLoopDistances.Add(
+                            orderedLoopLinkStarts[orderIndex] +
+                            distanceAlongLink);
+                    }
+                }
+            }
+
+            return encounterLoopDistances.Count > 0;
+        }
+
+        private float GetForwardEncounterDistance(
+            float candidateLoopDistance)
+        {
+            float result = float.PositiveInfinity;
+            for (int index = 0;
+                 index < encounterLoopDistances.Count;
+                 index++)
+            {
+                float distance = encounterLoopDistances[index] -
+                                 candidateLoopDistance;
+                if (distance < 0f)
+                {
+                    distance += loopLength;
+                }
+
+                result = Mathf.Min(result, distance);
+            }
+
+            return result;
+        }
+
+        private float GetForwardStopDistance(
+            float candidateLoopDistance)
+        {
+            float result = float.PositiveInfinity;
+            for (int index = 0; index < plan.Stops.Count; index++)
+            {
+                CityBusStopDescriptor stop = plan.Stops[index];
+                float linkStart = loopStartByLinkIndex[stop.LinkIndex];
+                if (linkStart < 0f)
+                {
+                    continue;
+                }
+
+                float distance = linkStart +
+                                 stop.DistanceAlongLink -
+                                 candidateLoopDistance;
+                if (distance < 0f)
+                {
+                    distance += loopLength;
+                }
+
+                result = Mathf.Min(result, distance);
+            }
+
+            return result;
+        }
+
+        private void ReleaseActor()
+        {
+            if (actor != null && actor.IsSpawned)
+            {
+                actor.ReleasePresentation(poolRoot);
+            }
+
+            initialApproachCompleted = false;
+            initialApproachElapsed = 0f;
+            encounterLoopDistances.Clear();
+        }
+
+        private void RefreshPlayerVelocity(float deltaTime)
+        {
+            Vector3 current = player.position;
+            if (!hasPlayerSample || deltaTime <= 0.0001f)
+            {
+                playerVelocity = Vector3.zero;
+            }
+            else
+            {
+                playerVelocity = (current - previousPlayerPosition) /
+                                 deltaTime;
+                playerVelocity.y = 0f;
+                if (playerVelocity.sqrMagnitude > 64f)
+                {
+                    playerVelocity = playerVelocity.normalized * 8f;
+                }
+            }
+
+            previousPlayerPosition = current;
+            hasPlayerSample = true;
+        }
+
+        private float GetNightFactor()
+        {
+            float factor = nightFactorProvider();
+            return IsFinite(factor) ? Mathf.Clamp01(factor) : 0f;
+        }
+
+        private static float GetSessionNightFactor()
+        {
+            return GameTimeDayNightRules.IsNight(
+                GameSessionState.GameTimeOfDayMinutes)
+                ? 1f
+                : 0f;
+        }
+
+        private float GetRandomRange(float minimum, float maximum)
+        {
+            return Mathf.Lerp(
+                minimum,
+                maximum,
+                CityPedestrianStableHash.ToUnitFloat(NextRandomUInt()));
+        }
+
+        private uint NextRandomUInt()
+        {
+            randomState ^= randomState << 13;
+            randomState ^= randomState >> 17;
+            randomState ^= randomState << 5;
+            if (randomState == 0u)
+            {
+                randomState = RandomFallbackSeed;
+            }
+
+            return randomState;
+        }
+
+        private static uint CreateDeterministicRandomSeed(uint stableSeed)
+        {
+            uint seed = CityPedestrianStableHash.Combine(
+                stableSeed,
+                RuntimeSequenceSalt);
+            return seed != 0u ? seed : RandomFallbackSeed;
+        }
+
+        private static float GetControllerRadius(
+            Transform target,
+            float fallback)
+        {
+            CharacterController controller =
+                target.GetComponent<CharacterController>();
+            return controller != null && controller.radius > 0f
+                ? controller.radius
+                : fallback;
+        }
+
+        private static float SanitizeDeltaTime(float deltaTime)
+        {
+            return IsFinite(deltaTime)
+                ? Mathf.Max(0f, deltaTime)
+                : 0f;
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+    }
+}

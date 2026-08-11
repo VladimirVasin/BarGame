@@ -374,6 +374,69 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(park, Is.GreaterThanOrEqualTo(2f));
         }
 
+        [Test]
+        public void BusRoute_UsesExactOpaqueBlueDistinctFromOtherLines()
+        {
+            Color bus = CityMapView.BusRouteColor;
+            Color street = InvokePrivate<Color>(
+                "GetPathColor",
+                CityPathKind.Street);
+
+            Assert.That(bus.r, Is.EqualTo(91f / 255f).Within(0.0001f));
+            Assert.That(bus.g, Is.EqualTo(143f / 255f).Within(0.0001f));
+            Assert.That(bus.b, Is.EqualTo(209f / 255f).Within(0.0001f));
+            Assert.That(bus.a, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(bus, Is.Not.EqualTo(street));
+            Assert.That(bus, Is.Not.EqualTo(RetroUiTheme.Accent));
+        }
+
+        [TestCase(false, 18f)]
+        [TestCase(true, 33f)]
+        public void BusLegend_IsFixedAndContainedInVisibleMap(
+            bool includeStop,
+            float expectedHeight)
+        {
+            var map = new Rect(0f, 0f, 452f, 311f);
+            Rect legend = CityMapView.CreateBusLegendRect(
+                map,
+                includeStop);
+
+            Assert.That(legend.x, Is.EqualTo(map.x + 5f));
+            Assert.That(legend.y, Is.EqualTo(map.y + 5f));
+            Assert.That(legend.width, Is.EqualTo(132f));
+            Assert.That(legend.height, Is.EqualTo(expectedHeight));
+            Assert.That(legend.xMax, Is.LessThan(map.xMax));
+            Assert.That(legend.yMax, Is.LessThan(map.yMax));
+        }
+
+        [Test]
+        public void BusStopHoverPriority_SitsBetweenPoiAndBar()
+        {
+            var hitbox = new Rect(90f, 90f, 20f, 20f);
+            var anchor = new Vector2(100f, 100f);
+            var targets = new[]
+            {
+                new CityMapView.MapHoverTarget(
+                    hitbox,
+                    anchor,
+                    "poi",
+                    10),
+                new CityMapView.MapHoverTarget(
+                    hitbox,
+                    anchor,
+                    "stop",
+                    CityMapView.BusStopHoverPriority)
+            };
+
+            Assert.That(CityMapView.BusStopHoverPriority, Is.EqualTo(15));
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(targets, anchor),
+                Is.EqualTo("stop"));
+            Assert.That(
+                CityMapView.BusStopHoverPriority,
+                Is.LessThan(20));
+        }
+
         private static T InvokePrivate<T>(
             string methodName,
             params object[] arguments)

@@ -17,6 +17,9 @@ namespace BarPromenade
         public PlayerRuntime Player { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
+        public CityBusPlan BusPlan { get; private set; }
+        public GameObject BusStops { get; private set; }
+        public CityBusDirector Bus { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -236,6 +239,18 @@ namespace BarPromenade
                 Layout.Seed);
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
+            BusPlan = CityBusPlanner.Create(
+                Layout,
+                World.DecorationPlan);
+            BusStops = CityBusStopWorldBuilder.Build(
+                transform,
+                BusPlan);
+            Bus = CityBusFactory.Create(
+                transform,
+                BusPlan,
+                Player.GameObject.transform,
+                Pedestrians,
+                () => Night.NightFactor);
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 
@@ -263,7 +278,8 @@ namespace BarPromenade
                 Layout,
                 Player,
                 follow,
-                intoxicationHud);
+                intoxicationHud,
+                BusPlan);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,
@@ -303,7 +319,28 @@ namespace BarPromenade
                     PedestrianPlan.Count),
                 GameLog.Field(
                     "pedestrian_active_cap",
-                    CityPedestrianDirector.MaximumActiveModels));
+                    CityPedestrianDirector.MaximumActiveModels),
+                GameLog.Field(
+                    "bus_route_link_count",
+                    BusPlan.Links.Count),
+                GameLog.Field(
+                    "bus_route_id",
+                    BusPlan.RouteId),
+                GameLog.Field(
+                    "bus_loop_length",
+                    BusPlan.LoopLength),
+                GameLog.Field(
+                    "bus_spawn_anchor_count",
+                    BusPlan.SpawnAnchors.Count),
+                GameLog.Field(
+                    "bus_stop_count",
+                    BusPlan.Stops.Count),
+                GameLog.Field(
+                    "bus_clearance_rejection_count",
+                    BusPlan.ClearanceFailures.Count),
+                GameLog.Field(
+                    "bus_active_cap",
+                    CityBusDirector.MaximumActiveModels));
         }
 
         private static void ReportLayout(CityLayout layout)
