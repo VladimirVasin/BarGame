@@ -92,14 +92,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `1.25-7.5 s`; each later slot or replacement waits `3.5-12.5 s`, and one
   event activates at most one slot. Failed searches retry after a randomized
   `0.8-2.4 s`. A slot may activate only at a unique, obstacle-safe anchor
-  `76-86 m` from the player. With City's fixed `0.070` Exp2 fog, the inner edge
+  in a preferred `76-86 m` band from the player. With City's fixed `0.070` Exp2 fog, the inner edge
   retains less than `0.2%` scene transmittance even at the widest production
   `70-degree` 16:9 frustum corner after a conservative combined `6 m` camera
-  and full visual-envelope depth offset. It remains active
+  and full visual-envelope depth offset. When that narrow band offers only
+  disconnected sidewalk components whose closest point remains outside the
+  `24 m` encounter radius, selection falls back to a connected obstacle-safe
+  anchor at `32-86 m`; the nearer bound remains inside dense fog. It remains active
   regardless of camera direction or frustum membership and returns to the pool
   only after crossing beyond `88 m` from the player. To prevent both daytime
-  slots remaining occupied by invisible actors, player-distance-only
-  simulation acceleration rises smoothly from authored pace at `56 m` to
+  slots remaining occupied by invisible actors, each new walker temporarily
+  follows the eligible non-backtracking continuation with the shortest physical
+  graph distance to the nearest player-side node in its connected component
+  until it first enters a `24 m` encounter radius. This guidance
+  then stays disabled for that spawn so ordinary seeded roaming resumes instead
+  of turning into pursuit. Player-distance-only simulation acceleration rises
+  smoothly from authored pace at `32 m` to
   `2.75x` at and beyond `76 m`; this advances both inward approaches and
   outward recycling without reintroducing a camera dependency. Strict night is
   before `06:00` and from `19:00`: it keeps authored simulation pace, allows

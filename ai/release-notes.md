@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### 2026-08-11 — Passers-by now reach a waiting player
+
+- Fixed pedestrians spawning beyond the City camera and then choosing random
+  distant turns indefinitely. A fresh walker now follows sidewalk branches
+  toward a stationary player until reaching the nearby `24 m` encounter area.
+- The original `76-86 m` spawn band remains preferred. Where the generated
+  sidewalks split into disconnected components, a linked point from `32 m`
+  may be used instead; dense fog still hides the activation.
+- The assistance ends after that first approach, so pedestrians resume ordinary
+  random roaming rather than following the player. Zebra-crossing choices,
+  population limits and sparse night timing are unchanged.
+
+### 2026-08-11 — The stairwell now shows its age
+
+- The apartment stairwell's walls, concrete floors and steps, rusty metalwork,
+  battered doors, damp patches, discarded rubbish and blocked upper flight now
+  have distinct worn surface textures instead of flat colors.
+- Texture variation stays consistent across repeated steps and fixtures while
+  preserving the existing cold green palette, warm apartment landing, fixed
+  cameras, lighting, cat encounter and fully unchanged walkable route.
+- The maps now preserve the stairwell's previous average surface brightness
+  instead of multiplying it into near-black, while broader wall, door and
+  metal wear remains visible through the low-resolution presentation.
+
 ### 2026-08-11 — Daytime passers-by arrive sooner
 
 - Fixed daytime streets feeling much emptier even though `06:00` already uses

@@ -74,42 +74,54 @@ namespace BarPromenade
             float height = plan.RoomHeight;
             const float wallThickness = 0.24f;
 
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Stairwell Ground Floor",
                 root,
                 new Vector3(0f, -0.12f, 0f),
                 new Vector3(width, 0.24f, depth),
-                Concrete);
-            RuntimePrimitiveFactory.CreateBox(
+                Concrete,
+                StairwellSurfaceKind.Concrete,
+                StairwellSurfaceProjection.BoxXZ);
+            CreateSurfaceBox(
                 "Stairwell Ceiling",
                 root,
                 new Vector3(0f, height + 0.10f, 0f),
                 new Vector3(width, 0.20f, depth),
-                new Color(0.075f, 0.085f, 0.077f));
-            RuntimePrimitiveFactory.CreateBox(
+                new Color(0.075f, 0.085f, 0.077f),
+                StairwellSurfaceKind.Concrete,
+                StairwellSurfaceProjection.BoxXZ);
+            CreateSurfaceBox(
                 "Stairwell Back Wall",
                 root,
                 new Vector3(0f, height * 0.5f, depth * 0.5f),
                 new Vector3(width, height, wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxXY);
+            CreateSurfaceBox(
                 "Stairwell Front Wall",
                 root,
                 new Vector3(0f, height * 0.5f, -depth * 0.5f),
                 new Vector3(width, height, wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxXY);
+            CreateSurfaceBox(
                 "Stairwell Left Wall",
                 root,
                 new Vector3(-width * 0.5f, height * 0.5f, 0f),
                 new Vector3(wallThickness, height, depth),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxZY);
+            CreateSurfaceBox(
                 "Stairwell Right Wall",
                 root,
                 new Vector3(width * 0.5f, height * 0.5f, 0f),
                 new Vector3(wallThickness, height, depth),
-                Wall);
+                Wall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxZY);
 
             BuildLowerWallBand(root, plan);
             BuildStructuralColumns(root, plan);
@@ -123,7 +135,7 @@ namespace BarPromenade
             float halfDepth = plan.RoomSize.y * 0.5f;
             const float bandHeight = 1.18f;
             const float inset = 0.135f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Back Dirty Wall Band",
                 root,
                 new Vector3(0f, bandHeight * 0.5f, halfDepth - inset),
@@ -132,8 +144,10 @@ namespace BarPromenade
                     bandHeight,
                     0.025f),
                 LowerWall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Front Dirty Wall Band",
                 root,
                 new Vector3(0f, bandHeight * 0.5f, -halfDepth + inset),
@@ -142,8 +156,10 @@ namespace BarPromenade
                     bandHeight,
                     0.025f),
                 LowerWall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Left Dirty Wall Band",
                 root,
                 new Vector3(-halfWidth + inset, bandHeight * 0.5f, 0f),
@@ -152,8 +168,10 @@ namespace BarPromenade
                     bandHeight,
                     plan.RoomSize.y - 0.28f),
                 LowerWall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxZY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Right Dirty Wall Band",
                 root,
                 new Vector3(halfWidth - inset, bandHeight * 0.5f, 0f),
@@ -162,6 +180,8 @@ namespace BarPromenade
                     bandHeight,
                     plan.RoomSize.y - 0.28f),
                 LowerWall,
+                StairwellSurfaceKind.WallPaint,
+                StairwellSurfaceProjection.BoxZY,
                 false);
         }
 
@@ -176,12 +196,14 @@ namespace BarPromenade
             };
             for (int index = 0; index < positions.Length; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Stairwell Column {index + 1}",
                     root,
                     positions[index],
                     new Vector3(0.34f, plan.RoomHeight, 0.34f),
-                    Concrete);
+                    Concrete,
+                    StairwellSurfaceKind.Concrete,
+                    StairwellSurfaceProjection.BoxXY);
             }
         }
 
@@ -198,12 +220,14 @@ namespace BarPromenade
                  index < flight.StepCount;
                  index++)
             {
-                GameObject step = RuntimePrimitiveFactory.CreateBox(
+                GameObject step = CreateSurfaceBox(
                     $"{label} Stair {index + 1:00}",
                     root,
                     flight.GetStepCenter(index),
                     flight.GetStepSize(index),
                     Stair,
+                    StairwellSurfaceKind.StairConcrete,
+                    StairwellSurfaceProjection.BoxXZ,
                     false);
                 step.transform.localRotation =
                     Quaternion.Euler(0f, yaw, 0f);
@@ -275,7 +299,7 @@ namespace BarPromenade
             Rect bounds,
             float elevation)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 name,
                 root,
                 new Vector3(
@@ -286,7 +310,9 @@ namespace BarPromenade
                     bounds.width,
                     0.24f,
                     bounds.height),
-                Stair);
+                Stair,
+                StairwellSurfaceKind.StairConcrete,
+                StairwellSurfaceProjection.BoxXZ);
         }
 
         private static void BuildRailings(
@@ -304,7 +330,8 @@ namespace BarPromenade
                 root,
                 "Middle Landing Back Rail",
                 new Vector3(0f, plan.MiddleElevation + 0.58f, 2.32f),
-                new Vector3(4.75f, 1.16f, 0.10f));
+                new Vector3(4.75f, 1.16f, 0.10f),
+                StairwellSurfaceProjection.BoxXY);
             BuildRailSegment(
                 root,
                 "Apartment Landing Center Rail",
@@ -312,7 +339,8 @@ namespace BarPromenade
                     0f,
                     plan.ApartmentElevation + 0.58f,
                     -2.96f),
-                new Vector3(1.20f, 1.16f, 0.10f));
+                new Vector3(1.20f, 1.16f, 0.10f),
+                StairwellSurfaceProjection.BoxXY);
             BuildRailSegment(
                 root,
                 "Apartment Landing Right Rail",
@@ -320,7 +348,8 @@ namespace BarPromenade
                     3.16f,
                     plan.ApartmentElevation + 0.58f,
                     -2.96f),
-                new Vector3(1.65f, 1.16f, 0.10f));
+                new Vector3(1.65f, 1.16f, 0.10f),
+                StairwellSurfaceProjection.BoxXY);
             BuildRailSegment(
                 root,
                 "Apartment Landing Left Edge",
@@ -328,7 +357,8 @@ namespace BarPromenade
                     -2.48f,
                     plan.ApartmentElevation + 0.58f,
                     -3.20f),
-                new Vector3(0.10f, 1.16f, 2.35f));
+                new Vector3(0.10f, 1.16f, 2.35f),
+                StairwellSurfaceProjection.BoxZY);
         }
 
         private static void BuildFlightRailings(
@@ -356,7 +386,7 @@ namespace BarPromenade
                         side *
                         (flight.Width * 0.5f + 0.055f) *
                         sideIndex;
-                    RuntimePrimitiveFactory.CreateBox(
+                    CreateSurfaceBox(
                         $"{label} Rail Curb {index + 1:00} " +
                         (sideIndex < 0 ? "A" : "B"),
                         root,
@@ -368,7 +398,9 @@ namespace BarPromenade
                             0.11f,
                             0.68f,
                             flight.StepDepth + 0.02f),
-                        Metal);
+                        Metal,
+                        StairwellSurfaceKind.CorrodedMetal,
+                        StairwellSurfaceProjection.BoxZY);
                 }
             }
 
@@ -416,20 +448,25 @@ namespace BarPromenade
             Transform root,
             string name,
             Vector3 center,
-            Vector3 size)
+            Vector3 size,
+            StairwellSurfaceProjection projection)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 name,
                 root,
                 center,
                 size,
-                Metal);
-            RuntimePrimitiveFactory.CreateBox(
+                Metal,
+                StairwellSurfaceKind.CorrodedMetal,
+                projection);
+            CreateSurfaceBox(
                 name + " Top",
                 root,
                 center + Vector3.up * (size.y * 0.5f),
                 new Vector3(size.x + 0.08f, 0.10f, size.z + 0.08f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXZ,
                 false);
         }
 
@@ -438,15 +475,17 @@ namespace BarPromenade
             Transform grille =
                 new GameObject("Under Stair Grille").transform;
             grille.SetParent(root, false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Under Stair Grille Blocker",
                 grille,
                 new Vector3(1.45f, 0.92f, -2.95f),
                 new Vector3(1.78f, 1.84f, 0.10f),
-                Metal);
+                Metal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY);
             for (int index = 0; index < 7; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Under Stair Grille Bar {index + 1}",
                     grille,
                     new Vector3(
@@ -455,6 +494,8 @@ namespace BarPromenade
                         -3.01f),
                     new Vector3(0.045f, 1.84f, 0.045f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
             }
         }
@@ -470,12 +511,14 @@ namespace BarPromenade
                     plan.StreetExitPosition.x,
                     0f,
                     -plan.RoomSize.y * 0.5f + 0.13f);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Street Door Leaf",
                 door,
                 new Vector3(0f, 1.18f, 0f),
                 new Vector3(1.72f, 2.36f, 0.13f),
                 StreetDoor,
+                StairwellSurfaceKind.DoorPaint,
+                StairwellSurfaceProjection.BoxXY,
                 false);
             BuildDoorFrame(
                 door,
@@ -498,12 +541,14 @@ namespace BarPromenade
                     plan.RoomSize.x * 0.5f - 0.13f,
                     plan.ApartmentElevation,
                     plan.ApartmentEntrancePosition.z);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Apartment Door Leaf",
                 door,
                 new Vector3(0f, 1.16f, 0f),
                 new Vector3(0.13f, 2.32f, 1.62f),
                 ApartmentDoor,
+                StairwellSurfaceKind.DoorPaint,
+                StairwellSurfaceProjection.BoxZY,
                 false);
             BuildDoorFrame(
                 door,
@@ -525,26 +570,32 @@ namespace BarPromenade
             frame.SetParent(parent, false);
             frame.localPosition = position;
             frame.localRotation = rotation;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Door Frame Left",
                 frame,
                 new Vector3(-width * 0.5f - 0.08f, height * 0.5f, 0f),
                 new Vector3(0.16f, height + 0.20f, 0.20f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Door Frame Right",
                 frame,
                 new Vector3(width * 0.5f + 0.08f, height * 0.5f, 0f),
                 new Vector3(0.16f, height + 0.20f, 0.20f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Door Frame Lintel",
                 frame,
                 new Vector3(0f, height + 0.10f, 0f),
                 new Vector3(width + 0.32f, 0.18f, 0.20f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false);
         }
 
@@ -568,6 +619,31 @@ namespace BarPromenade
             return blocker.GetComponent<Collider>();
         }
 
+        private static GameObject CreateSurfaceBox(
+            string name,
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            Color color,
+            StairwellSurfaceKind surfaceKind,
+            StairwellSurfaceProjection projection,
+            bool collider = true)
+        {
+            GameObject box = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                position,
+                size,
+                color,
+                collider);
+            StairwellSurfaceAppearance.Apply(
+                box.GetComponent<Renderer>(),
+                surfaceKind,
+                projection,
+                color);
+            return box;
+        }
+
         private static void CreateBeamBetween(
             string name,
             Transform parent,
@@ -577,7 +653,7 @@ namespace BarPromenade
             Color color)
         {
             Vector3 direction = end - start;
-            GameObject beam = RuntimePrimitiveFactory.CreateBox(
+            GameObject beam = CreateSurfaceBox(
                 name,
                 parent,
                 (start + end) * 0.5f,
@@ -586,6 +662,8 @@ namespace BarPromenade
                     thickness,
                     direction.magnitude),
                 color,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxZY,
                 false);
             beam.transform.localRotation =
                 Quaternion.LookRotation(direction.normalized, Vector3.up);

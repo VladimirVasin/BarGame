@@ -2,6 +2,96 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Stationary-player pedestrian encounters
+
+- Confirmed from the reported session log that City initialized 210 pedestrian
+  anchors without errors and then ran for roughly 104 seconds without a visible
+  encounter. The presentation prefab and all 38 renderer bindings remained
+  valid; the failure was in the distance lifecycle.
+- Kept obstacle-safe `76-86 m` as the preferred hidden spawn band. The reported
+  home-return position exposed that both anchors in that ring belonged to
+  sidewalk components whose closest point was still `38.5 m` away, while the
+  player-linked component had anchors only at roughly `34-49 m`. Added a
+  dense-fog `32-86 m` connected fallback for that topology.
+- Added a one-shot approach phase: until a walker first reaches `24 m`, eligible
+  non-backtracking turns follow shortest physical graph distance to the nearest
+  player-side node in their own connected component. Once reached,
+  that slot permanently returns to seeded random roaming for the rest of the
+  spawn, while its independent zebra decision remains intact.
+- Extended hidden daytime acceleration down to `32 m`, still inside dense fog,
+  so the guaranteed approach does not spend most of its time beyond the `48 m`
+  camera. Night keeps its authored movement speed and sparse timing.
+- Added focused coverage for a branch whose seeded ordinary choice points away,
+  guided zebra decisions, the bounded stationary-player approach, the exact
+  default seed/home-return graph and the no-reacquisition contract.
+
+Verification:
+
+- `dotnet build BarPromenade.EditModeTests.csproj -nologo` passed with zero
+  errors and 15 existing `CS0649` manifest-field warnings.
+- Focused Unity EditMode `CityPedestrianRuntimeTests` passed `13/13`, including
+  the exact `20260727` home-return stationary-player regression.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered City walkthrough.
+
+## 2026-08-11 — Restored readable stairwell textures
+
+- Corrected the first stairwell texture pass after live inspection showed that
+  URP/Lit multiplied the new maps by palette colors authored for a white map,
+  removing another `56-74%` of surface light and crushing texture variation.
+- Added per-recipe linear-albedo compensation (`2.17x-3.98x`) to map the
+  original semantic color to a display tint whose textured mean matches the
+  former flat-color brightness. Lighting, post exposure, hero/cat presentation
+  and emissive fixtures remain unchanged.
+- Added higher-macro-contrast ImageGen V2 wall, door and corroded-metal maps;
+  the original lower-contrast sources remain beside them. The active eight-map
+  set now enforces opaque RGB storage, Repeat-safe edges, at least `24/255`
+  sampled `p95-p05` contrast and a compensated linear mean within `0.08` of
+  the original brightness.
+
+Verification:
+
+- `dotnet build BarPromenade.EditModeTests.csproj -nologo` passed with zero
+  errors and 15 existing `CS0649` manifest-field warnings.
+- A direct validator passed all eight active sources for opacity, contrast,
+  Repeat-edge delta and compensated mean brightness.
+- Focused Unity EditMode `StairwellSurfaceAppearanceTests` passed `20/20`,
+  including active-map imports, compensated brightness, projection-aware
+  tiling and enabled-renderer coverage.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a rendered Stairwell walkthrough.
+
+## 2026-08-11 — Textured stairwell surfaces
+
+- Added eight opaque RGB ImageGen albedos under
+  `Resources/Stairwell/Textures`: wall paint, ordinary concrete, worn stair
+  concrete, corroded metal, door paint, damp/damage, dirty wood and mixed
+  debris. Unity imports each at runtime as `512x512` sRGB with Repeat, Bilinear
+  filtering, mipmaps, anisotropy `4`, no compression and no readable CPU copy.
+- Added `StairwellSurfaceAppearance` as the single recipe/cache boundary. It
+  retains native primitive UVs, maps visible box planes and cylinder
+  circumference/length explicitly, derives deterministic physical scale and
+  stable hierarchy-based offsets, and writes `_BaseMap`, `_BaseMap_ST`,
+  smoothness and metallic through material property blocks while preserving
+  the existing `_BaseColor`/`_Color` tint and shared `RuntimePrimitiveLit`
+  material.
+- Routed every enabled ordinary renderer from `StairwellWorldBuilder` and
+  `StairwellDressingBuilder` through the new surface wrappers: walls and dirty
+  bands; ground, ceiling and columns; steps and landings; rails, grilles, doors
+  and frames; pipes, vents, cabinets and radiator; damage, litter and upper
+  debris; and all non-emissive fluorescent hardware.
+- Left hidden walkable ramps and the upper safety blocker untextured, and kept
+  emissive tubes, halos, the production hero, cat and dust/VFX on their existing
+  specialized presentation paths. Geometry, colliders, cameras, lighting and
+  stairwell traversal did not change.
+
+Verification:
+
+- Focused Unity EditMode `StairwellSurfaceAppearanceTests` passed `20/20`,
+  including tall-cylinder and first/last-step texel-density regressions.
+- Fast mode intentionally omitted complete EditMode/PlayMode suites, a player
+  build and a manual rendered Stairwell walkthrough.
+
 ## 2026-08-11 — Daytime pedestrian encounter cadence
 
 - Confirmed that the fresh `06:00` start already selects daytime pedestrian

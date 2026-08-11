@@ -23,11 +23,16 @@ and derives first-person arms and the inventory portrait from the same
   production model. City streets also host a deterministic sidewalk and zebra
   navigation graph. At most two ambient walkers exist near the player: they
   spawn one at a time after wide, independently randomized delays at randomly
-  ranked obstacle-safe anchors `76-86 m` away, where the fixed City fog has
-  already hidden them. During daytime their still-distant simulation smoothly
-  accelerates up to `2.75x` and returns to authored pace by `56 m`, so hidden
-  actors approach or recycle without occupying both slots for long. They keep
-  moving forward through graph turns,
+  ranked obstacle-safe anchors in the preferred `76-86 m` band, where the
+  fixed City fog has already hidden them. If those anchors belong only to graph
+  components that cannot reach the player, the director falls back to a linked
+  fog-hidden anchor `32-86 m` away. Until a fresh walker first reaches the `24 m` encounter
+  radius, eligible graph turns favor the continuation closest to the current
+  player position; that one-shot guidance then ends and ordinary random roaming
+  resumes. During daytime their still-distant simulation smoothly accelerates
+  up to `2.75x` and returns to authored pace by `32 m`, so hidden actors approach
+  or recycle without occupying both slots for long. They keep moving forward
+  through graph turns,
   independently choose whether to use each zebra crossing, and return to their
   pool only beyond `88 m` from the hero. Camera direction and frustum state do
   not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is

@@ -12,6 +12,7 @@ namespace BarPromenade
         public const int NightMaximumActiveModels = 1;
         public const float MinimumSpawnDistance = 76f;
         public const float MaximumSpawnDistance = 86f;
+        public const float MinimumConnectedSpawnDistance = 32f;
         public const float DespawnDistance = 88f;
         public const float MinimumInitialSpawnDelay = 1.25f;
         public const float MaximumInitialSpawnDelay = 7.5f;
@@ -25,8 +26,10 @@ namespace BarPromenade
         public const float MaximumNightSpawnCooldown = 70f;
         public const float MinimumNightSpawnRetryDelay = 4f;
         public const float MaximumNightSpawnRetryDelay = 10f;
+        public const float InitialApproachCompletionDistance =
+            RuntimeSceneSetup.CityFarClipPlane * 0.5f;
         public const float DaytimeDistantSimulationInnerDistance =
-            RuntimeSceneSetup.CityFarClipPlane + 8f;
+            InitialApproachCompletionDistance + 8f;
         public const float DaytimeDistantSimulationFullDistance =
             MinimumSpawnDistance;
         public const float MaximumDaytimeDistantSimulationMultiplier = 2.75f;
@@ -47,6 +50,8 @@ namespace BarPromenade
             new List<CityPedestrianActor>();
         private readonly List<CityPedestrianPresentation> presentationPool =
             new List<CityPedestrianPresentation>();
+        private readonly List<bool> initialApproachCompleted =
+            new List<bool>();
         private CityPedestrianPlan plan;
         private Transform player;
         private Transform poolRoot;
@@ -54,6 +59,12 @@ namespace BarPromenade
         private float spawnCooldown;
         private uint randomState;
         private bool isNightSpawnMode;
+        private int[] initialApproachComponentByNode = Array.Empty<int>();
+        private int initialApproachComponentCount;
+        private int[] initialApproachTargetNodes = Array.Empty<int>();
+        private float[] initialApproachComponentTargetSquaredDistances =
+            Array.Empty<float>();
+        private float[] initialApproachNodeDistances = Array.Empty<float>();
 
         public bool IsInitialized { get; private set; }
         public CityPedestrianPlan Plan => plan;
@@ -136,6 +147,7 @@ namespace BarPromenade
                 }
 
                 actors.Add(actor);
+                initialApproachCompleted.Add(false);
             }
 
             for (int index = 0;
@@ -184,6 +196,11 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshSpawnMode();
+            if (HasActiveInitialApproach())
+            {
+                RefreshInitialApproachRoutes();
+            }
+
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
@@ -192,9 +209,17 @@ namespace BarPromenade
                     continue;
                 }
 
+                RefreshInitialApproachState(index, actor.Position);
                 actor.Advance(
                     GetActorSimulationDeltaTime(actor, safeDeltaTime),
-                    ShouldYield(actor, index));
+                    ShouldYield(actor, index),
+                    initialApproachCompleted[index]
+                        ? null
+                        : player.position,
+                    initialApproachCompleted[index]
+                        ? null
+                        : initialApproachNodeDistances);
+                RefreshInitialApproachState(index, actor.Position);
             }
 
             spawnCooldown = Mathf.Max(
@@ -206,6 +231,7 @@ namespace BarPromenade
                     CurrentActiveLimit) &&
                 spawnCooldown <= 0f)
             {
+                RefreshInitialApproachRoutes();
                 bool spawned = TrySpawnOne();
                 spawnCooldown = spawned
                     ? GetNextSpawnCooldown()
@@ -234,6 +260,31 @@ namespace BarPromenade
             }
 
             IsInitialized = false;
+        }
+
+        internal bool IsActorInInitialApproach(int actorIndex)
+        {
+            if (actorIndex < 0 || actorIndex >= actors.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(actorIndex));
+            }
+
+            return actors[actorIndex].IsSpawned &&
+                   !initialApproachCompleted[actorIndex];
+        }
+
+        private bool HasActiveInitialApproach()
+        {
+            for (int index = 0; index < actors.Count; index++)
+            {
+                if (actors[index].IsSpawned &&
+                    !initialApproachCompleted[index])
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void LateUpdate()
@@ -303,6 +354,7 @@ namespace BarPromenade
             }
 
             CityPedestrianActor actor = actors[actorIndex];
+            initialApproachCompleted[actorIndex] = false;
             uint spawnSeed = CityPedestrianStableHash.Combine(
                 NextRandomUInt(),
                 CityPedestrianStableHash.String(candidate.Anchor.Id));
@@ -360,11 +412,38 @@ namespace BarPromenade
 
         private bool TryFindSpawnCandidate(out SpawnCandidate result)
         {
+            if (TryFindSpawnCandidate(
+                    MinimumSpawnDistance,
+                    MaximumSpawnDistance,
+                    true,
+                    out result) ||
+                TryFindSpawnCandidate(
+                    MinimumConnectedSpawnDistance,
+                    MaximumSpawnDistance,
+                    true,
+                    out result))
+            {
+                return true;
+            }
+
+            return TryFindSpawnCandidate(
+                MinimumSpawnDistance,
+                MaximumSpawnDistance,
+                false,
+                out result);
+        }
+
+        private bool TryFindSpawnCandidate(
+            float minimumSpawnDistance,
+            float maximumSpawnDistance,
+            bool requireConnectedApproach,
+            out SpawnCandidate result)
+        {
             result = default;
             float minimumDistanceSquared =
-                MinimumSpawnDistance * MinimumSpawnDistance;
+                minimumSpawnDistance * minimumSpawnDistance;
             float maximumDistanceSquared =
-                MaximumSpawnDistance * MaximumSpawnDistance;
+                maximumSpawnDistance * maximumSpawnDistance;
             bool found = false;
             uint bestRank = uint.MaxValue;
             for (int index = 0;
@@ -377,6 +456,8 @@ namespace BarPromenade
                     player.position);
                 if (distance < minimumDistanceSquared ||
                     distance > maximumDistanceSquared ||
+                    (requireConnectedApproach &&
+                     !CanApproachEncounterRange(anchor)) ||
                     IsAnchorReserved(anchor.Id) ||
                     !IsCollisionActivationSafe(
                         anchor.Position,
@@ -401,10 +482,45 @@ namespace BarPromenade
             return found;
         }
 
+        private bool CanApproachEncounterRange(
+            CityPedestrianSpawnAnchor anchor)
+        {
+            if (initialApproachComponentByNode.Length != plan.Nodes.Count ||
+                initialApproachComponentTargetSquaredDistances.Length !=
+                initialApproachComponentCount)
+            {
+                return false;
+            }
+
+            int component = initialApproachComponentByNode[
+                anchor.FirstNodeIndex];
+            float encounterDistance =
+                InitialApproachCompletionDistance;
+            return component >= 0 &&
+                   component <
+                   initialApproachComponentTargetSquaredDistances.Length &&
+                   initialApproachComponentTargetSquaredDistances[
+                       component] <= encounterDistance * encounterDistance;
+        }
+
         private int SelectInitialTarget(
             CityPedestrianSpawnAnchor anchor,
             uint rank)
         {
+            if (initialApproachNodeDistances.Length == plan.Nodes.Count)
+            {
+                float firstCost = initialApproachNodeDistances[
+                    anchor.FirstNodeIndex];
+                float secondCost = initialApproachNodeDistances[
+                    anchor.SecondNodeIndex];
+                if (Mathf.Abs(firstCost - secondCost) > 0.0001f)
+                {
+                    return firstCost < secondCost
+                        ? anchor.FirstNodeIndex
+                        : anchor.SecondNodeIndex;
+                }
+            }
+
             float firstDistance = PlanarSquaredDistance(
                 plan.Nodes[anchor.FirstNodeIndex].Position,
                 player.position);
@@ -545,6 +661,208 @@ namespace BarPromenade
         private void ReleaseActor(int actorIndex)
         {
             actors[actorIndex].ReleasePresentation(poolRoot);
+            initialApproachCompleted[actorIndex] = false;
+        }
+
+        private void RefreshInitialApproachState(
+            int actorIndex,
+            Vector3 actorPosition)
+        {
+            if (initialApproachCompleted[actorIndex])
+            {
+                return;
+            }
+
+            float completionDistance =
+                InitialApproachCompletionDistance;
+            if (PlanarSquaredDistance(actorPosition, player.position) <=
+                completionDistance * completionDistance)
+            {
+                initialApproachCompleted[actorIndex] = true;
+            }
+        }
+
+        private void RefreshInitialApproachRoutes()
+        {
+            int nodeCount = plan.Nodes.Count;
+            if (nodeCount == 0)
+            {
+                initialApproachComponentByNode = Array.Empty<int>();
+                initialApproachComponentCount = 0;
+                initialApproachTargetNodes = Array.Empty<int>();
+                initialApproachComponentTargetSquaredDistances =
+                    Array.Empty<float>();
+                initialApproachNodeDistances = Array.Empty<float>();
+                return;
+            }
+
+            EnsureInitialApproachComponents();
+            var nextTargetNodes = new int[initialApproachComponentCount];
+            var nextTargetDistances =
+                new float[initialApproachComponentCount];
+            for (int index = 0;
+                 index < initialApproachComponentCount;
+                 index++)
+            {
+                nextTargetNodes[index] = -1;
+                nextTargetDistances[index] = float.PositiveInfinity;
+            }
+
+            for (int index = 0; index < nodeCount; index++)
+            {
+                int component = initialApproachComponentByNode[index];
+                float distance = PlanarSquaredDistance(
+                    plan.Nodes[index].Position,
+                    player.position);
+                if (distance < nextTargetDistances[component])
+                {
+                    nextTargetDistances[component] = distance;
+                    nextTargetNodes[component] = index;
+                }
+            }
+
+            initialApproachComponentTargetSquaredDistances =
+                nextTargetDistances;
+            bool targetsUnchanged =
+                initialApproachTargetNodes.Length ==
+                nextTargetNodes.Length;
+            if (targetsUnchanged)
+            {
+                for (int index = 0;
+                     index < nextTargetNodes.Length;
+                     index++)
+                {
+                    if (initialApproachTargetNodes[index] !=
+                        nextTargetNodes[index])
+                    {
+                        targetsUnchanged = false;
+                        break;
+                    }
+                }
+            }
+
+            if (targetsUnchanged &&
+                initialApproachNodeDistances.Length == nodeCount)
+            {
+                return;
+            }
+
+            initialApproachTargetNodes = nextTargetNodes;
+            initialApproachNodeDistances = new float[nodeCount];
+            var visited = new bool[nodeCount];
+            for (int index = 0; index < nodeCount; index++)
+            {
+                initialApproachNodeDistances[index] =
+                    float.PositiveInfinity;
+            }
+
+            for (int index = 0;
+                 index < initialApproachTargetNodes.Length;
+                 index++)
+            {
+                int targetNode = initialApproachTargetNodes[index];
+                if (targetNode >= 0)
+                {
+                    initialApproachNodeDistances[targetNode] = 0f;
+                }
+            }
+
+            for (int iteration = 0;
+                 iteration < nodeCount;
+                 iteration++)
+            {
+                int node = -1;
+                float nodeDistance = float.PositiveInfinity;
+                for (int index = 0; index < nodeCount; index++)
+                {
+                    if (!visited[index] &&
+                        initialApproachNodeDistances[index] < nodeDistance)
+                    {
+                        node = index;
+                        nodeDistance =
+                            initialApproachNodeDistances[index];
+                    }
+                }
+
+                if (node < 0)
+                {
+                    break;
+                }
+
+                visited[node] = true;
+                IReadOnlyList<int> linkIndices =
+                    plan.GetLinkIndices(node);
+                for (int index = 0; index < linkIndices.Count; index++)
+                {
+                    int other = plan.Links[linkIndices[index]].Other(node);
+                    float edgeLength = Mathf.Sqrt(
+                        PlanarSquaredDistance(
+                            plan.Nodes[node].Position,
+                            plan.Nodes[other].Position));
+                    float nextDistance = nodeDistance + edgeLength;
+                    if (initialApproachNodeDistances[other] <=
+                        nextDistance)
+                    {
+                        continue;
+                    }
+
+                    initialApproachNodeDistances[other] = nextDistance;
+                }
+            }
+        }
+
+        private void EnsureInitialApproachComponents()
+        {
+            int nodeCount = plan.Nodes.Count;
+            if (initialApproachComponentByNode.Length == nodeCount)
+            {
+                return;
+            }
+
+            initialApproachComponentByNode = new int[nodeCount];
+            for (int index = 0; index < nodeCount; index++)
+            {
+                initialApproachComponentByNode[index] = -1;
+            }
+
+            initialApproachComponentCount = 0;
+            var pending = new Queue<int>();
+            for (int start = 0; start < nodeCount; start++)
+            {
+                if (initialApproachComponentByNode[start] >= 0)
+                {
+                    continue;
+                }
+
+                int component = initialApproachComponentCount++;
+                initialApproachComponentByNode[start] = component;
+                pending.Enqueue(start);
+                while (pending.Count > 0)
+                {
+                    int node = pending.Dequeue();
+                    IReadOnlyList<int> linkIndices =
+                        plan.GetLinkIndices(node);
+                    for (int index = 0;
+                         index < linkIndices.Count;
+                         index++)
+                    {
+                        int other = plan.Links[
+                            linkIndices[index]].Other(node);
+                        if (initialApproachComponentByNode[other] >= 0)
+                        {
+                            continue;
+                        }
+
+                        initialApproachComponentByNode[other] = component;
+                        pending.Enqueue(other);
+                    }
+                }
+            }
+
+            initialApproachTargetNodes = Array.Empty<int>();
+            initialApproachComponentTargetSquaredDistances =
+                Array.Empty<float>();
+            initialApproachNodeDistances = Array.Empty<float>();
         }
 
         private void ReleaseAllActors()

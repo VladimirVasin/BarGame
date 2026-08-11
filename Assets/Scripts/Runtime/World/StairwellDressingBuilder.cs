@@ -76,7 +76,7 @@ namespace BarPromenade
 
             for (int index = 0; index < 5; index++)
             {
-                RuntimePrimitiveFactory.CreateCylinder(
+                CreateSurfaceCylinder(
                     $"Pipe Clamp {index + 1}",
                     root,
                     new Vector3(
@@ -85,10 +85,12 @@ namespace BarPromenade
                         1.72f),
                     new Vector3(0.17f, 0.025f, 0.17f),
                     DarkMetal,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.CylinderCapXZ,
                     false);
             }
 
-            RuntimePrimitiveFactory.CreateCylinder(
+            CreateSurfaceCylinder(
                 "Pipe Shutoff Valve",
                 root,
                 new Vector3(
@@ -97,6 +99,8 @@ namespace BarPromenade
                     1.72f),
                 new Vector3(0.22f, 0.035f, 0.22f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.CylinderCapXZ,
                 false).transform.localRotation =
                 Quaternion.Euler(90f, 0f, 0f);
         }
@@ -106,16 +110,18 @@ namespace BarPromenade
             StairwellLayoutPlan plan)
         {
             float backZ = plan.RoomSize.y * 0.5f - 0.145f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Large Vent Recess",
                 root,
                 new Vector3(0.72f, 3.92f, backZ),
                 new Vector3(1.90f, 1.12f, 0.08f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false);
             for (int index = 0; index < 8; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Large Vent Slat {index + 1}",
                     root,
                     new Vector3(
@@ -124,19 +130,23 @@ namespace BarPromenade
                         backZ - 0.055f),
                     new Vector3(1.70f, 0.045f, 0.045f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Ground Vent Recess",
                 root,
                 new Vector3(-3.10f, 0.82f, backZ),
                 new Vector3(1.12f, 0.78f, 0.08f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false);
             for (int index = 0; index < 5; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Ground Vent Slat {index + 1}",
                     root,
                     new Vector3(
@@ -145,6 +155,8 @@ namespace BarPromenade
                         backZ - 0.055f),
                     new Vector3(0.94f, 0.04f, 0.045f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
             }
         }
@@ -154,21 +166,25 @@ namespace BarPromenade
             StairwellLayoutPlan plan)
         {
             float rightX = plan.RoomSize.x * 0.5f - 0.145f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Ground Electrical Cabinet",
                 root,
                 new Vector3(rightX, 1.16f, -0.38f),
                 new Vector3(0.10f, 1.48f, 1.12f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxZY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Ground Electrical Cabinet Door",
                 root,
                 new Vector3(rightX - 0.065f, 1.16f, -0.38f),
                 new Vector3(0.05f, 1.34f, 0.98f),
                 new Color(0.12f, 0.135f, 0.115f),
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxZY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Apartment Fuse Box",
                 root,
                 new Vector3(
@@ -177,10 +193,12 @@ namespace BarPromenade
                     -0.55f),
                 new Vector3(0.10f, 0.82f, 0.68f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxZY,
                 false);
             for (int index = 0; index < 4; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Loose Cable {index + 1}",
                     root,
                     new Vector3(
@@ -189,6 +207,8 @@ namespace BarPromenade
                         -0.82f + index * 0.18f),
                     new Vector3(0.035f, 0.035f, 0.72f),
                     new Color(0.025f, 0.027f, 0.023f),
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxZY,
                     false);
             }
         }
@@ -200,7 +220,7 @@ namespace BarPromenade
             radiator.SetParent(root, false);
             for (int index = 0; index < 7; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Radiator Rib {index + 1}",
                     radiator,
                     new Vector3(
@@ -209,6 +229,8 @@ namespace BarPromenade
                         -3.82f + index * 0.13f),
                     new Vector3(0.18f, 0.92f, 0.075f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxZY,
                     false);
             }
 
@@ -242,18 +264,20 @@ namespace BarPromenade
             };
             for (int index = 0; index < dampPatches.Length; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Damp Wall Patch {index + 1}",
                     root,
                     dampPatches[index],
                     dampSizes[index],
                     Damp,
+                    StairwellSurfaceKind.Damage,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
             }
 
             for (int index = 0; index < 6; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Peeling Paint Chip {index + 1}",
                     root,
                     new Vector3(
@@ -265,15 +289,19 @@ namespace BarPromenade
                         0.18f,
                         0.018f),
                     new Color(0.28f, 0.29f, 0.23f),
+                    StairwellSurfaceKind.Damage,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
             }
 
-            RuntimePrimitiveFactory.CreateCylinder(
+            CreateSurfaceCylinder(
                 "Ground Damp Puddle",
                 root,
                 new Vector3(-2.80f, 0.012f, -3.05f),
                 new Vector3(0.82f, 0.008f, 0.48f),
                 new Color(0.025f, 0.055f, 0.050f),
+                StairwellSurfaceKind.Damage,
+                StairwellSurfaceProjection.CylinderCapXZ,
                 false);
         }
 
@@ -292,12 +320,14 @@ namespace BarPromenade
                  index < paperPositions.Length;
                  index++)
             {
-                GameObject paper = RuntimePrimitiveFactory.CreateBox(
+                GameObject paper = CreateSurfaceBox(
                     $"Discarded Paper {index + 1}",
                     root,
                     paperPositions[index],
                     new Vector3(0.38f, 0.012f, 0.26f),
                     Paper,
+                    StairwellSurfaceKind.Debris,
+                    StairwellSurfaceProjection.BoxXZ,
                     false);
                 paper.transform.localRotation =
                     Quaternion.Euler(
@@ -306,12 +336,14 @@ namespace BarPromenade
                         (index % 2 == 0) ? 3f : -4f);
             }
 
-            RuntimePrimitiveFactory.CreateCylinder(
+            CreateSurfaceCylinder(
                 "Empty Bottle",
                 root,
                 new Vector3(3.48f, 3.29f, -2.48f),
                 new Vector3(0.075f, 0.22f, 0.075f),
                 new Color(0.095f, 0.18f, 0.11f),
+                StairwellSurfaceKind.Debris,
+                StairwellSurfaceProjection.CylinderSide,
                 false).transform.localRotation =
                 Quaternion.Euler(0f, 0f, 78f);
         }
@@ -325,50 +357,58 @@ namespace BarPromenade
                 new GameObject("Impassable Upper Debris").transform;
             debris.SetParent(root, false);
 
-            GameObject wardrobe = RuntimePrimitiveFactory.CreateBox(
+            GameObject wardrobe = CreateSurfaceBox(
                 "Collapsed Wardrobe",
                 debris,
                 blocker.center +
                 new Vector3(-0.30f, 0.06f, -0.06f),
                 new Vector3(1.18f, 1.72f, 0.42f),
                 new Color(0.16f, 0.075f, 0.038f),
+                StairwellSurfaceKind.DirtyWood,
+                StairwellSurfaceProjection.BoxXY,
                 false);
             wardrobe.transform.localRotation =
                 Quaternion.Euler(8f, 18f, 63f);
 
-            GameObject mattress = RuntimePrimitiveFactory.CreateBox(
+            GameObject mattress = CreateSurfaceBox(
                 "Mouldy Mattress",
                 debris,
                 blocker.center +
                 new Vector3(0.28f, -0.08f, 0.10f),
                 new Vector3(1.42f, 0.26f, 1.82f),
                 new Color(0.24f, 0.22f, 0.16f),
+                StairwellSurfaceKind.Debris,
+                StairwellSurfaceProjection.BoxXZ,
                 false);
             mattress.transform.localRotation =
                 Quaternion.Euler(72f, -10f, 13f);
 
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Broken Metal Cabinet",
                 debris,
                 blocker.center +
                 new Vector3(0.38f, -0.28f, -0.15f),
                 new Vector3(0.72f, 1.05f, 0.56f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false).transform.localRotation =
                 Quaternion.Euler(6f, -21f, -18f);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 "Wire Mesh Sheet",
                 debris,
                 blocker.center +
                 new Vector3(0f, 0.18f, -0.42f),
                 new Vector3(1.66f, 1.28f, 0.055f),
                 Rust,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXY,
                 false).transform.localRotation =
                 Quaternion.Euler(0f, 8f, 11f);
 
             for (int index = 0; index < 5; index++)
             {
-                GameObject plank = RuntimePrimitiveFactory.CreateBox(
+                GameObject plank = CreateSurfaceBox(
                     $"Debris Plank {index + 1}",
                     debris,
                     blocker.center +
@@ -378,6 +418,8 @@ namespace BarPromenade
                         -0.42f + (index % 3) * 0.20f),
                     new Vector3(0.16f, 1.48f, 0.10f),
                     new Color(0.19f, 0.105f, 0.052f),
+                    StairwellSurfaceKind.DirtyWood,
+                    StairwellSurfaceProjection.BoxXY,
                     false);
                 plank.transform.localRotation =
                     Quaternion.Euler(
@@ -388,7 +430,7 @@ namespace BarPromenade
 
             for (int index = 0; index < 3; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"Debris Sack {index + 1}",
                     debris,
                     blocker.center +
@@ -398,6 +440,8 @@ namespace BarPromenade
                         -0.14f + index * 0.16f),
                     new Vector3(0.55f, 0.42f, 0.58f),
                     new Color(0.105f, 0.11f, 0.085f),
+                    StairwellSurfaceKind.Debris,
+                    StairwellSurfaceProjection.BoxXZ,
                     false);
             }
         }
@@ -432,12 +476,14 @@ namespace BarPromenade
             float supportY,
             Color color)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfaceBox(
                 $"{label} Fluorescent Housing",
                 root,
                 position + Vector3.up * 0.13f,
                 new Vector3(1.34f, 0.10f, 0.30f),
                 DarkMetal,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.BoxXZ,
                 false);
             GameObject tube = RuntimePrimitiveFactory.CreateBox(
                 $"{label} Fluorescent Tube",
@@ -449,7 +495,7 @@ namespace BarPromenade
                 false);
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfaceBox(
                     $"{label} Fluorescent End Cap " +
                     (side < 0 ? "Left" : "Right"),
                     root,
@@ -457,10 +503,12 @@ namespace BarPromenade
                     new Vector3(side * 0.64f, 0.015f, 0f),
                     new Vector3(0.10f, 0.16f, 0.22f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.BoxZY,
                     false);
                 float suspensionHeight =
                     supportY - position.y - 0.18f;
-                RuntimePrimitiveFactory.CreateCylinder(
+                CreateSurfaceCylinder(
                     $"{label} Fluorescent Suspension " +
                     (side < 0 ? "Left" : "Right"),
                     root,
@@ -474,6 +522,8 @@ namespace BarPromenade
                         suspensionHeight * 0.5f,
                         0.035f),
                     Rust,
+                    StairwellSurfaceKind.CorrodedMetal,
+                    StairwellSurfaceProjection.CylinderSide,
                     false);
             }
 
@@ -500,6 +550,56 @@ namespace BarPromenade
                     0.03f));
         }
 
+        private static GameObject CreateSurfaceBox(
+            string name,
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            Color color,
+            StairwellSurfaceKind surfaceKind,
+            StairwellSurfaceProjection projection,
+            bool collider = true)
+        {
+            GameObject box = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                position,
+                size,
+                color,
+                collider);
+            StairwellSurfaceAppearance.Apply(
+                box.GetComponent<Renderer>(),
+                surfaceKind,
+                projection,
+                color);
+            return box;
+        }
+
+        private static GameObject CreateSurfaceCylinder(
+            string name,
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            Color color,
+            StairwellSurfaceKind surfaceKind,
+            StairwellSurfaceProjection projection,
+            bool collider = true)
+        {
+            GameObject cylinder = RuntimePrimitiveFactory.CreateCylinder(
+                name,
+                parent,
+                position,
+                size,
+                color,
+                collider);
+            StairwellSurfaceAppearance.Apply(
+                cylinder.GetComponent<Renderer>(),
+                surfaceKind,
+                projection,
+                color);
+            return cylinder;
+        }
+
         private static void CreatePipe(
             string name,
             Transform parent,
@@ -508,12 +608,14 @@ namespace BarPromenade
             Quaternion rotation,
             Color color)
         {
-            GameObject pipe = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject pipe = CreateSurfaceCylinder(
                 name,
                 parent,
                 position,
                 size,
                 color,
+                StairwellSurfaceKind.CorrodedMetal,
+                StairwellSurfaceProjection.CylinderSide,
                 false);
             pipe.transform.localRotation = rotation;
         }

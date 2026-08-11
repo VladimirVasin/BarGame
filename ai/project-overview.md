@@ -114,12 +114,18 @@ The vertical slice contains:
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
-  randomly ranked obstacle-safe anchor in the fog-hidden `76-86 m` band. The
+  randomly ranked obstacle-safe anchor in the preferred fog-hidden `76-86 m`
+  band. If that band contains no anchor in a graph component capable of reaching
+  the player, a linked dense-fog fallback may use `32-86 m`. The
   first event waits `1.25-7.5 s`; every later slot or replacement waits its own
   `3.5-12.5 s`, so the two walkers are deliberately staggered. Each walks
   forward through available turns, has an independent 50% choice at a zebra,
-  and is recycled only after moving beyond `88 m` from the hero. By day, its
-  hidden distant simulation smoothly accelerates from authored pace at `56 m`
+  and is recycled only after moving beyond `88 m` from the hero. Before a fresh
+  walker first reaches `24 m`, eligible non-backtracking turns follow the
+  shortest physical graph distance to the closest node in that sidewalk
+  component; after that first encounter the guidance stays
+  off and ordinary random roaming resumes. By day, its hidden distant
+  simulation smoothly accelerates from authored pace at `32 m`
   to at most `2.75x` from `76 m`, bringing an approaching walker inward sooner
   and sending an outward walker back to the pool sooner. Camera
   direction, frustum membership and far-clip settings do not participate in
@@ -398,15 +404,29 @@ The vertical slice contains:
   arrival restores the player beside the correct door;
 - a decayed industrial-horror stairwell treatment with stained concrete,
   rusty rails, exposed pipes, ventilation grilles, electrical cabinets,
-  radiators, damp damage, trash and dense upper-floor junk; three bounded
-  fixed camera shots cut between the lower flight, middle flight and apartment
-  landing with height hysteresis; each shot keeps its exposed suspended HDR
-  fluorescent tube and halo visible, while three stronger flickering
-  practical-light pools, a green desaturated Bloom/vignette/grain profile, at
-  most 14 dust particles, a concrete ambience bed, spatial ventilation and
-  electrical layers, sparse positional industrial cues, a long dark
-  reverb/moderate echo snapshot and the separate optional `stairwell_theme`
-  music slot establish the atmosphere;
+  radiators, damp damage, trash and dense upper-floor junk. Eight opaque RGB
+  ImageGen albedos under `Resources/Stairwell/Textures` cover wall paint,
+  ordinary concrete, stair concrete, corroded metal, door paint, damage, dirty
+  wood and mixed debris; the active wall, door and metal variants use stronger
+  macro contrast for the low-resolution presentation. `StairwellSurfaceAppearance`
+  caches those recipes and applies projection-aware deterministic per-renderer
+  native-UV `_BaseMap_ST` scale/offset plus smoothness and metallic through
+  material property blocks. Per-recipe linear-albedo compensation converts the
+  original semantic tint into a brighter display tint so Lit multiplication
+  preserves the former flat-color mean brightness and the one shared
+  `RuntimePrimitiveLit` material. Every enabled ordinary shell and dressing
+  renderer is covered, including walls/bands, floors, steps, landings, rails,
+  doors/frames, pipes, vents, cabinets, radiator, damage, litter, upper debris
+  and non-emissive fluorescent parts. Hidden walkable ramps and the upper
+  safety blocker, emissive tubes and halos, the hero, cat and dust/VFX remain
+  outside that surface layer. Three bounded fixed camera shots cut between the
+  lower flight, middle flight and apartment landing with height hysteresis;
+  each shot keeps its exposed suspended HDR fluorescent tube and halo visible,
+  while three stronger flickering practical-light pools, a green desaturated
+  Bloom/vignette/grain profile, at most 14 dust particles, a concrete ambience
+  bed, spatial ventilation and electrical layers, sparse positional industrial
+  cues, a long dark reverb/moderate echo snapshot and the separate optional
+  `stairwell_theme` music slot establish the atmosphere;
 - one clickable pixel-art cat sits with its back to the camera on the
   `Middle Landing Back Rail`; a camera-plane billboard preserves that
   composition through the stairwell's fixed shots while authored look

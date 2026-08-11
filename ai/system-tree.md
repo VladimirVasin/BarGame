@@ -74,6 +74,16 @@ Assets/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
     Stairwell/
+      Textures/                         eight active RGB albedos + retained sources
+        StairwellWallPaintAlbedoV2.png  active higher-contrast plaster/bands
+        StairwellConcreteAlbedo.png     floor, ceiling and columns
+        StairwellStairConcreteAlbedo.png  steps and landings
+        StairwellCorrodedMetalAlbedoV2.png active rails/pipes/metal dressing
+        StairwellDoorPaintAlbedoV2.png  active street/apartment door leaves
+        StairwellDamageAlbedo.png       damp, chips and puddle
+        StairwellDirtyWoodAlbedo.png    wardrobe and debris planks
+        StairwellDebrisAlbedo.png       paper, bottle, mattress and sacks
+        Stairwell{WallPaint,CorrodedMetal,DoorPaint}Albedo.png retained originals
       Cat/
         StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
         StairwellCatFeedingAtlas.png    512x128, top-first 8x2 feeding atlas
@@ -167,6 +177,7 @@ Assets/
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
+        StairwellSurfaceAppearance.cs  cached recipes + projection-aware UV MPBs
       Stairwell/Cat/ deterministic perch, idle/look and feeding presentation
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
@@ -276,6 +287,7 @@ Assets/
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
       CatFeedingAnimationAssetTests.cs    cat sprite-track import and timing contract
+      StairwellSurfaceAppearanceTests.cs  8 imports, shared MPBs and renderer coverage
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
@@ -432,6 +444,9 @@ layout + seed -> CityPedestrianPlanner -> sidewalk/turn/zebra graph
                                          -> runtime-random one-slot spawn events
                                          -> `1.25-7.5 s` first / `3.5-12.5 s` later delays
                                          -> fog-hidden `76-86 m` spawn band
+                                         -> linked dense-fog fallback from `32 m`
+                                         -> one-shot shortest graph approach to `24 m`
+                                         -> ordinary random roaming after encounter
                                          -> player-distance recycling beyond `88 m`
                                          -> night cap `1`; `15-35 s` / `30-70 s` delays
                                          -> no camera/frustum lifecycle dependency
@@ -461,6 +476,14 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                     -> 48 visual steps + three physical ramps
                                     -> lower/middle/apartment landings
                                     -> sealed upper-flight debris
+                                    -> StairwellDressingBuilder -> visible decay/clutter
+                                    -> StairwellSurfaceAppearance
+                                       -> cache 8 Resources albedo recipes
+                                       -> native-UV _BaseMap_ST + surface MPB values
+                                       -> shared RuntimePrimitiveLit + retained tint
+                                       -> ordinary visible renderers only
+                                          (not hidden ramps/blocker, tubes/halos,
+                                           hero/cat or dust/VFX)
        -> StairwellInteriorAtmosphere -> three flickering practicals
                                       -> green grade + sparse dust
        -> StairwellFixedCameraController -> lower/middle/apartment hard cuts

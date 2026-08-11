@@ -36,6 +36,8 @@ namespace BarPromenade
         private uint randomState;
         private bool isPrepared;
         private float? forcedCrosswalkRoll;
+        private Vector3? approachTarget;
+        private IReadOnlyList<float> approachNodeDistances;
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
@@ -220,7 +222,11 @@ namespace BarPromenade
             return released;
         }
 
-        public void Advance(float deltaTime, bool shouldYield = false)
+        public void Advance(
+            float deltaTime,
+            bool shouldYield = false,
+            Vector3? initialApproachTarget = null,
+            IReadOnlyList<float> initialApproachNodeDistances = null)
         {
             if (!IsSpawned)
             {
@@ -228,6 +234,8 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            approachTarget = initialApproachTarget;
+            approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
             IsYielding = shouldYield &&
                 MotionState == CityPedestrianMotionState.Walking;
@@ -238,6 +246,8 @@ namespace BarPromenade
                 moving = AdvanceWalking(safeDeltaTime);
             }
 
+            approachTarget = null;
+            approachNodeDistances = null;
             presentation.Advance(
                 safeDeltaTime,
                 MotionState == CityPedestrianMotionState.Walking &&
@@ -383,6 +393,14 @@ namespace BarPromenade
                 }
             }
 
+            if (approachTarget.HasValue)
+            {
+                return SelectClosestCandidate(
+                    candidates,
+                    preferredCount > 0,
+                    approachTarget.Value);
+            }
+
             int selectableCount = preferredCount > 0
                 ? preferredCount
                 : candidates.Count;
@@ -405,6 +423,50 @@ namespace BarPromenade
             }
 
             return candidates[0];
+        }
+
+        private int SelectClosestCandidate(
+            IReadOnlyList<int> candidates,
+            bool preferConnectedNodes,
+            Vector3 target)
+        {
+            int selectedLink = -1;
+            float selectedGraphDistance = float.PositiveInfinity;
+            float selectedDistance = float.PositiveInfinity;
+            bool hasGraphDistances =
+                approachNodeDistances != null &&
+                approachNodeDistances.Count == plan.Nodes.Count;
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                CityPedestrianLink link = plan.Links[candidates[index]];
+                int other = link.Other(targetNodeIndex);
+                if (preferConnectedNodes &&
+                    plan.GetLinkIndices(other).Count <= 1)
+                {
+                    continue;
+                }
+
+                Vector3 position = plan.Nodes[other].Position;
+                float deltaX = position.x - target.x;
+                float deltaZ = position.z - target.z;
+                float distance = (deltaX * deltaX) +
+                                 (deltaZ * deltaZ);
+                float graphDistance = hasGraphDistances
+                    ? approachNodeDistances[other]
+                    : float.PositiveInfinity;
+                if (selectedLink < 0 ||
+                    graphDistance < selectedGraphDistance - 0.0001f ||
+                    (Mathf.Abs(
+                         graphDistance - selectedGraphDistance) <= 0.0001f &&
+                     distance < selectedDistance))
+                {
+                    selectedGraphDistance = graphDistance;
+                    selectedDistance = distance;
+                    selectedLink = candidates[index];
+                }
+            }
+
+            return selectedLink >= 0 ? selectedLink : candidates[0];
         }
 
         private float NextCrosswalkRoll()
@@ -466,6 +528,8 @@ namespace BarPromenade
             randomState = 0u;
             isPrepared = false;
             forcedCrosswalkRoll = null;
+            approachTarget = null;
+            approachNodeDistances = null;
             SpawnAnchorId = string.Empty;
             MotionState = CityPedestrianMotionState.Dormant;
             IsYielding = false;

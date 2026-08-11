@@ -151,6 +151,45 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Actor_InitialApproachChoosesClosestBranch()
+        {
+            GameObject root = new GameObject("Approach Branch Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateApproachBranchPlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation,
+                    0xA341316Cu);
+
+                actor.Advance(
+                    2.1f,
+                    false,
+                    Vector3.zero,
+                    new[] { 2f, 1f, 0f, 2f });
+
+                Assert.That(
+                    actor.PreviousNodeIndex,
+                    Is.EqualTo(1));
+                Assert.That(
+                    actor.TargetNodeIndex,
+                    Is.EqualTo(2),
+                    "A hidden walker must take the branch that continues " +
+                    "toward the stationary player.");
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         [TestCase(0f, true)]
         [TestCase(1f, false)]
         public void Actor_AtCrosswalkUsesForcedChoice(
@@ -171,7 +210,10 @@ namespace BarPromenade.Tests.EditMode
                     out presentation);
                 actor.ForceNextCrosswalkRoll(crosswalkRoll);
 
-                actor.Advance(1.1f);
+                actor.Advance(
+                    1.1f,
+                    false,
+                    Vector3.zero);
 
                 Assert.That(actor.CrosswalkDecisionCount, Is.EqualTo(1));
                 Assert.That(
@@ -409,7 +451,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Factory_DaytimeFastForwardsOnlyFogDistantWalkers()
+        public void Factory_DaytimeFastForwardsAndCompletesInitialApproach()
         {
             GameObject root = new GameObject(
                 "Distant Pedestrian Simulation Test Root");
@@ -430,12 +472,12 @@ namespace BarPromenade.Tests.EditMode
 
                 CityPedestrianActor actor = director.Actors.Single(
                     candidate => candidate.IsSpawned);
-                const float approachBudget = 18f;
+                const float approachBudget = 50f;
                 const float simulationStep = 0.1f;
                 float elapsed = 0f;
                 while (PlanarDistance(actor.Position, player.position) >
                            CityPedestrianDirector
-                               .DaytimeDistantSimulationInnerDistance &&
+                               .InitialApproachCompletionDistance &&
                        elapsed < approachBudget)
                 {
                     director.Advance(simulationStep);
@@ -446,9 +488,23 @@ namespace BarPromenade.Tests.EditMode
                     PlanarDistance(actor.Position, player.position),
                     Is.LessThanOrEqualTo(
                         CityPedestrianDirector
-                            .DaytimeDistantSimulationInnerDistance + 0.01f),
-                    "A daytime walker must clear the hidden approach band " +
-                    "within the encounter budget.");
+                            .InitialApproachCompletionDistance + 0.01f),
+                    "A daytime walker must enter the encounter radius " +
+                    "while the player remains stationary.");
+                const int actorIndex = 0;
+                Assert.That(
+                    director.IsActorInInitialApproach(actorIndex),
+                    Is.False,
+                    "Approach guidance must end after the first encounter.");
+
+                actor.transform.position = new Vector3(0f, 0f, -70f);
+                Physics.SyncTransforms();
+                director.Advance(0f);
+                Assert.That(
+                    director.IsActorInInitialApproach(actorIndex),
+                    Is.False,
+                    "A walker must not resume pursuing the player after " +
+                    "ordinary roaming carries it away.");
 
                 actor.transform.position = new Vector3(
                     0f,
@@ -479,6 +535,137 @@ namespace BarPromenade.Tests.EditMode
                         CityPedestrianPlanner.MinimumSpeed - 0.01f,
                         CityPedestrianPlanner.MaximumSpeed + 0.01f),
                     "Night walkers must retain their sparse authored pace.");
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Factory_DefaultHomeReturnReachesStationaryPlayer()
+        {
+            GameObject root = new GameObject(
+                "Production Pedestrian Approach Test Root");
+            CityPedestrianDirector director = null;
+            try
+            {
+                const int citySeed = 20260727;
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default,
+                    citySeed);
+                CityStreetSurfacePlan surfaces =
+                    CityStreetSurfacePlanner.Create(layout);
+                CityPedestrianPlan plan = CityPedestrianPlanner.Create(
+                    layout,
+                    citySeed,
+                    surfaces);
+                Transform player = CreatePlayer(root.transform);
+                player.position = new Vector3(132f, 0.18f, -2.5f);
+                int closestPlanNodeIndex = Enumerable.Range(
+                        0,
+                        plan.Nodes.Count)
+                    .OrderBy(index => PlanarDistance(
+                        plan.Nodes[index].Position,
+                        player.position))
+                    .First();
+                CityPedestrianNode closestPlanNode =
+                    plan.Nodes[closestPlanNodeIndex];
+                float closestPlanNodeDistance = PlanarDistance(
+                    closestPlanNode.Position,
+                    player.position);
+                HashSet<int> playerComponent = CollectReachableNodes(
+                    plan,
+                    closestPlanNodeIndex);
+                float[] playerComponentAnchorDistances = plan.SpawnAnchors
+                    .Where(anchor => playerComponent.Contains(
+                        anchor.FirstNodeIndex))
+                    .Select(anchor => PlanarDistance(
+                        anchor.Position,
+                        player.position))
+                    .OrderBy(distance => distance)
+                    .ToArray();
+                int anchorsInSpawnBand = plan.SpawnAnchors.Count(
+                    anchor => PlanarDistance(
+                        anchor.Position,
+                        player.position) >=
+                              CityPedestrianDirector.MinimumSpawnDistance &&
+                              PlanarDistance(
+                                  anchor.Position,
+                                  player.position) <=
+                              CityPedestrianDirector.MaximumSpawnDistance);
+                Physics.SyncTransforms();
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    CityPedestrianResources.LoadPrefab(),
+                    () => false);
+
+                const float encounterBudget = 60f;
+                const float simulationStep = 0.1f;
+                bool encountered = false;
+                int maximumActiveCount = 0;
+                float closestActorDistance = float.PositiveInfinity;
+                float elapsed = 0f;
+                while (!encountered && elapsed < encounterBudget)
+                {
+                    director.Advance(simulationStep);
+                    elapsed += simulationStep;
+                    maximumActiveCount = Mathf.Max(
+                        maximumActiveCount,
+                        director.ActiveCount);
+                    for (int index = 0;
+                         index < director.Actors.Count;
+                         index++)
+                    {
+                        CityPedestrianActor actor =
+                            director.Actors[index];
+                        if (!actor.IsSpawned)
+                        {
+                            continue;
+                        }
+
+                        float actorDistance = PlanarDistance(
+                            actor.Position,
+                            player.position);
+                        closestActorDistance = Mathf.Min(
+                            closestActorDistance,
+                            actorDistance);
+                        if (actorDistance <=
+                            CityPedestrianDirector
+                                .InitialApproachCompletionDistance + 0.01f)
+                        {
+                            encountered = true;
+                            break;
+                        }
+                    }
+                }
+
+                Assert.That(
+                    encountered,
+                    Is.True,
+                    "The production home-return graph must deliver a " +
+                    "walker to a stationary player within the daytime " +
+                    $"encounter budget. Anchors in band: " +
+                    $"{anchorsInSpawnBand}; maximum active: " +
+                    $"{maximumActiveCount}; closest distance: " +
+                    $"{closestActorDistance:0.00} m; closest graph node: " +
+                    $"{closestPlanNode.Id} at " +
+                    $"{closestPlanNodeDistance:0.00} m; player-component " +
+                    $"anchor distances: " +
+                    $"{string.Join(",", playerComponentAnchorDistances)}; " +
+                    "actors: " +
+                    string.Join(
+                        "; ",
+                        director.Actors.Select(actor =>
+                            $"{actor.Position} target=" +
+                            $"{actor.TargetNodeIndex} previous=" +
+                            $"{actor.PreviousNodeIndex} state=" +
+                            $"{actor.MotionState}")));
             }
             finally
             {
@@ -860,7 +1047,8 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianPlan plan,
             CityPedestrianSpawnAnchor anchor,
             int targetNodeIndex,
-            out CityPedestrianPresentation presentation)
+            out CityPedestrianPresentation presentation,
+            uint behaviorSeed = 1u)
         {
             GameObject actorObject = new GameObject("Pedestrian Actor");
             actorObject.layer = CityPedestrianCollision.LayerIndex;
@@ -890,7 +1078,7 @@ namespace BarPromenade.Tests.EditMode
                 0.91f,
                 0f,
                 0,
-                1u);
+                behaviorSeed);
             actor.BindPresentation(presentation);
             return actor;
         }
@@ -1084,6 +1272,61 @@ namespace BarPromenade.Tests.EditMode
                 rectangles);
         }
 
+        private static CityPedestrianPlan CreateApproachBranchPlan()
+        {
+            return new CityPedestrianPlan(
+                1,
+                2,
+                3u,
+                CityPedestrianPlanner.AgentRadius,
+                new[]
+                {
+                    new CityPedestrianNode(
+                        "far",
+                        new Vector3(0f, 0f, -80f),
+                        false),
+                    new CityPedestrianNode(
+                        "junction",
+                        new Vector3(0f, 0f, -76f),
+                        false),
+                    new CityPedestrianNode(
+                        "near",
+                        new Vector3(0f, 0f, -60f),
+                        false),
+                    new CityPedestrianNode(
+                        "side",
+                        new Vector3(20f, 0f, -76f),
+                        false)
+                },
+                new[]
+                {
+                    new CityPedestrianLink(
+                        "approach",
+                        0,
+                        1,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "near",
+                        1,
+                        2,
+                        CityPedestrianLinkKind.Sidewalk),
+                    new CityPedestrianLink(
+                        "side",
+                        1,
+                        3,
+                        CityPedestrianLinkKind.Sidewalk)
+                },
+                new[]
+                {
+                    new CityPedestrianSpawnAnchor(
+                        "spawn:approach",
+                        new Vector3(0f, 0f, -78f),
+                        0,
+                        1)
+                },
+                new[] { Rect.MinMaxRect(-1f, -81f, 21f, -59f) });
+        }
+
         private static CityPedestrianPlan CreateLongApproachPlan()
         {
             return new CityPedestrianPlan(
@@ -1180,6 +1423,30 @@ namespace BarPromenade.Tests.EditMode
             float deltaX = first.x - second.x;
             float deltaZ = first.z - second.z;
             return Mathf.Sqrt((deltaX * deltaX) + (deltaZ * deltaZ));
+        }
+
+        private static HashSet<int> CollectReachableNodes(
+            CityPedestrianPlan plan,
+            int startNode)
+        {
+            var result = new HashSet<int> { startNode };
+            var pending = new Queue<int>();
+            pending.Enqueue(startNode);
+            while (pending.Count > 0)
+            {
+                int node = pending.Dequeue();
+                IReadOnlyList<int> linkIndices = plan.GetLinkIndices(node);
+                for (int index = 0; index < linkIndices.Count; index++)
+                {
+                    int other = plan.Links[linkIndices[index]].Other(node);
+                    if (result.Add(other))
+                    {
+                        pending.Enqueue(other);
+                    }
+                }
+            }
+
+            return result;
         }
 
         private static void AdvanceToNextSpawn(
