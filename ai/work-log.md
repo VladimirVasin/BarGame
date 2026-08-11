@@ -2,6 +2,56 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Bus suspension corrected to runtime axes
+
+- Fixed the production FBX basis turning the intended vertical suspension
+  heave into a visible forward/backward slide. The sprung pivot now captures
+  its neutral pose relative to the bus presentation and applies heave along the
+  runtime bus vertical, with pitch and roll composed around the runtime right
+  and forward axes before the imported neutral rotation.
+- Added a production-prefab regression that requires non-zero heave to project
+  only onto bus height, rejects longitudinal or lateral drift, verifies the
+  pitch/roll rotation basis and checks exact pooled reset. The actor transform,
+  collider, wheel contacts and ten-second dwell are unchanged.
+
+Verification:
+
+- `dotnet build BarPromenade.EditModeTests.csproj -nologo` succeeded with zero
+  errors and the existing `32` JSON-manifest `CS0649` warnings.
+- The exact Unity EditMode production-prefab regression
+  `SuspensionPresentation_UsesBusVerticalAndBodyAxes` passed `1/1`; scoped
+  `git diff --check` passed for the bug-fix files.
+
+## 2026-08-11 — City bus rides on cartoon suspension
+
+- Added a presentation-only `Suspension Visual` pivot around the bus body.
+  The four wheel assemblies remain grounded outside that pivot while the body,
+  doors, cabin and lights receive a bounded distance-driven heave, acceleration
+  and braking pitch, and steering roll. The route transform, kinematic body,
+  collider, planner bounds and recycling distances remain unchanged. Door
+  hinges preserve their production neutral axis and follow the sprung body
+  vertical while it is pitched or rolled.
+- Capped the authored ride at `0.045 m` heave, `0.8°` pitch and `1°` roll,
+  eased it back to neutral at rest and restored the exact neutral hierarchy,
+  articulation and procedural phase whenever the model returns to its pool.
+- Replaced the seeded `3-5 s` stop range with one fixed `10 s` total dwell.
+  The existing `0.70 s` door opening and closing transitions remain inside
+  those ten seconds.
+- Added focused regressions for a moving body over grounded wheel contacts,
+  unchanged actor/collider state, exact pooled reset and the ten-second dwell
+  boundary.
+
+Verification:
+
+- Focused Unity EditMode `CityBusRuntimeTests` passed `15/15`. Fast mode
+  passed `15/15`; the one production-prefab door regression passed `1/1`
+  after the runtime hierarchy change. Fast mode intentionally omitted the full
+  EditMode/PlayMode suites, a player build and a packaged smoke check.
+- Scoped `git diff --check` passed for the implementation, tests and
+  documentation. The full dirty-worktree check still reports the pre-existing
+  Unity serializer whitespace churn in modified prefab, material and FBX meta
+  files, which this change deliberately preserves.
+
 ## 2026-08-11 — Bus doors fold inward from real hinges
 
 - Rebuilt both production bus doorways as independent double-leaf assemblies.

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### 2026-08-11 — Bus suspension now moves vertically
+
+- Fixed the production bus interpreting its imported FBX-local axis as world
+  height, which made the cartoon bounce slide the vehicle forward and backward.
+  The body now moves only along the bus vertical, while pitch and roll use its
+  actual runtime right/forward axes.
+
+### 2026-08-11 — The bus now rides on cartoon suspension
+
+- The moving bus body now bobs, pitches and leans gently on its springs while
+  all four wheels stay planted on the road. Its route and collision remain as
+  stable as before.
+- Every Route 01 stop now lasts exactly ten seconds in total, including the
+  existing door-opening and door-closing transitions.
+
 ### 2026-08-11 — Bus doors now fold correctly
 
 - Fixed both bus doorways rotating their complete frame and paired panels as

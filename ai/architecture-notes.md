@@ -121,10 +121,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The default layout owns five target-derived stops with stable IDs,
   localization keys, lap distances and roadside poses; random roadside
   decoration does not emit bus shelters. The actor serves every stop once per
-  lap, clears its service set at the loop seam and holds a seeded `3-5 s`
-  two-door dwell. Nightlife's Last Route Island has a working Route 01 pole
-  nearby but outside its public ground and approaches. The abandoned island
-  structures remain a distinct place rather than becoming the live pole.
+  lap, clears its service set at the loop seam and holds a fixed `10 s` total
+  dwell, including the existing `0.70 s` opening and `0.70 s` closing
+  transitions for both doors. Nightlife's Last Route Island has a working
+  Route 01 pole nearby but outside its public ground and approaches. The
+  abandoned island structures remain a distinct place rather than becoming
+  the live pole.
   Runtime owns exactly one reusable actor/model slot. Obstacle-safe activation
   prefers the fixed-fog `76-86 m` band and falls back to `56-86 m` only when
   forward travel on the same loop can approach the player; no spawn is accepted
@@ -141,10 +143,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   doors, and matches the same real dimensions without runtime scale correction.
   Each doorway keeps its outer posts fixed while independently hinged leaves
   rotate in opposite directions around the vehicle vertical and fold inward.
-  Presentation articulates steering and wheel travel, synthesizes a `22050 Hz`
-  engine loop, and scales head, tail/brake and cabin emission with motion and
-  current night factor; all state resets before pooling. The City map consumes
-  the same immutable plan, simplifies its closed geometry, draws a blue
+  Presentation inserts one runtime-only `Suspension Visual` pivot above the
+  imported body and keeps all four wheel assemblies outside that sprung
+  hierarchy. Travel distance and speed drive cartoon road heave capped at
+  `0.045 m`, acceleration contributes pitch capped at `0.8` degrees, and
+  steering plus the road wave contribute roll capped at `1` degree. The wheels
+  remain grounded, while the authoritative actor transform, kinematic collider
+  and route pose stay unchanged. Presentation also articulates steering and
+  wheel travel, synthesizes a `22050 Hz` engine loop, and scales head,
+  tail/brake and cabin emission with motion and current night factor; all
+  suspension and articulation state resets before pooling. The City map
+  consumes the same immutable plan, simplifies its closed geometry, draws a blue
   ink-outlined loop below the orange player itinerary and adds five numbered
   localized stops in the default layout plus a compact legend. It deliberately
   has no live bus marker. The bus has no prompt, boarding, persistence or traffic-signal

@@ -57,7 +57,10 @@ fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
 twelve-seat interior, driver area, two animated double-leaf doors that fold
 inward around fixed outer posts, steering and rolling wheels, a synthesized
-engine loop and time-of-day head, tail and cabin lights.
+engine loop and time-of-day head, tail and cabin lights. While it travels, a
+presentation-only sprung body adds speed-scaled cartoon heave up to `0.045 m`,
+pitch up to `0.8` degrees and roll up to `1` degree while the four wheel
+assemblies remain grounded; the route actor and collider do not move with it.
 Route 01 is one deterministic right-hand, Street-only closed winding service
 loop. The planner targets every district point of interest that actually exists
 in the layout and then the player home; the default city therefore has five
@@ -73,8 +76,9 @@ clear core and a symmetric S-return over the outgoing Street; it owns both
 physical edges so routing cannot bypass a stop-bearing edge. Ordinary tight
 `3 m` right turns remain rejected. Route selection has no random branching or
 player pursuit, and a repeated physical link receives a unique ordered route
-occurrence. Every stop is served once per lap with a randomized `3-5 s`
-door-open dwell. Random roadside decoration does not create bus shelters.
+occurrence. Every stop is served once per lap with a fixed `10 s` total dwell,
+including the existing `0.70 s` door-opening and `0.70 s` door-closing
+transitions. Random roadside decoration does not create bus shelters.
 Nightlife's Last Route Island now has a working Route 01 pole nearby but outside
 the POI itself, so its abandoned island structures remain distinct from the
 live stop. Spawning prefers obstacle-safe, fog-hidden route poses `76-86 m` from

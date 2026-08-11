@@ -201,10 +201,10 @@ Assets/
         CityBusPlanner.cs          accepted Street graph + full-body clearance proof
         CityBusTargetRoutePlanner.cs POI/Home candidates + deterministic winding loop solver
         CityBusWideTurnPlanner.cs  selected-apron two-edge safe-right macro
-        CityBusActor.cs            fixed-loop motion, yielding, per-lap dwell + engine loop
+        CityBusActor.cs            fixed-loop motion, yielding, fixed 10 s per-lap dwell + engine loop
         CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
-        CityBusPresentation.cs     inward double-leaf doors, wheels, steering + light emission
+        CityBusPresentation.cs     sprung-body heave/pitch/roll, grounded wheels, doors, steering + lights
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
@@ -303,7 +303,7 @@ Assets/
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
-      CityBusRuntimeTests.cs            forward encounter, fixed loop, dwell + one-slot reset
+      CityBusRuntimeTests.cs            forward encounter, fixed loop, 10 s dwell, suspension + reset
       CityBusAssetImportTests.cs        dimensions, interior, bindings + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
@@ -514,12 +514,17 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> preferred hidden `76-86 m` activation
                             -> `56-86 m` fallback only with forward encounter path
                             -> player/pedestrian yielding
-                            -> `3-5 s` stop dwell once per lap + two double-leaf doors
+                            -> fixed `10 s` total stop dwell once per lap
+                               -> `0.70 s` open + `0.70 s` close transitions
+                               -> two double-leaf doors
                             -> full-body recycling from `92 m`
                             -> no camera/frustum lifecycle dependency
                             -> CityBusActor kinematic box + engine
                             -> CityBusPresentation
-                               -> inward door leaves + wheels/steering/night lights
+                               -> grounded wheels + sprung `Suspension Visual` body
+                                  -> heave `0.045 m` / pitch `0.8°` / roll `1°` caps
+                                  -> actor/collider/route pose unchanged
+                               -> inward door leaves + steering/night lights
                          -> CityMapBusOverlay
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend

@@ -9,6 +9,15 @@ namespace BarPromenade
     {
         public const float MaximumDoorAngle = 72f;
         public const float MaximumSteeringAngle = 28f;
+        public const float MaximumSuspensionHeave = 0.045f;
+        public const float MaximumSuspensionPitch = 0.8f;
+        public const float MaximumSuspensionRoll = 1f;
+
+        private const float SuspensionWaveLength = 2.8f;
+        private const float SuspensionResponse = 7f;
+        private const float AccelerationPitchScale = 0.12f;
+        private const float SteeringRollScale = 0.78f;
+        private const string SuspensionVisualName = "Suspension Visual";
 
         private static readonly int EmissionColorId =
             Shader.PropertyToID("_EmissionColor");
@@ -21,6 +30,10 @@ namespace BarPromenade
 
         private MaterialPropertyBlock lightProperties;
         private CityBusAssetRegistry registry;
+        private Transform suspensionVisual;
+        private TransformPose suspensionVisualBase;
+        private Vector3 suspensionPositionInPresentation;
+        private Quaternion suspensionRotationInPresentation;
         private TransformPose frontDoorForwardLeafBase;
         private TransformPose frontDoorRearwardLeafBase;
         private TransformPose rearDoorForwardLeafBase;
@@ -33,6 +46,11 @@ namespace BarPromenade
         private TransformPose frontRightSteeringBase;
         private float wheelRotationDegrees;
         private float brakeFactor;
+        private float suspensionPhase;
+        private float suspensionHeave;
+        private float suspensionPitch;
+        private float suspensionRoll;
+        private Vector3 doorHingeAxisLocal = Vector3.up;
 
         public bool IsInitialized { get; private set; }
         public CityBusAssetRegistry Registry => registry;
@@ -40,6 +58,10 @@ namespace BarPromenade
         public float SteeringAngle { get; private set; }
         public float NightFactor { get; private set; }
         public float BrakeFactor => brakeFactor;
+        public Transform SuspensionVisual => suspensionVisual;
+        public float SuspensionHeave => suspensionHeave;
+        public float SuspensionPitch => suspensionPitch;
+        public float SuspensionRoll => suspensionRoll;
 
         public void Initialize(CityBusAssetRegistry assetRegistry)
         {
@@ -53,6 +75,8 @@ namespace BarPromenade
                 ? assetRegistry
                 : throw new ArgumentNullException(nameof(assetRegistry));
             lightProperties = new MaterialPropertyBlock();
+            CreateSuspensionHierarchy();
+            CaptureDoorHingeAxis();
             CaptureBasePoses();
             IsInitialized = true;
             ResetForPool();
@@ -60,8 +84,11 @@ namespace BarPromenade
 
         public void SetMotion(
             float signedDistance,
+            float speedMetersPerSecond,
+            float longitudinalAcceleration,
             float steeringAngleDegrees,
-            bool braking)
+            bool braking,
+            float deltaTime)
         {
             if (!IsInitialized)
             {
@@ -91,6 +118,12 @@ namespace BarPromenade
             ApplyWheelPose(rearRightWheelBase, wheelRotationDegrees);
             ApplySteeringPose(frontLeftSteeringBase, SteeringAngle);
             ApplySteeringPose(frontRightSteeringBase, SteeringAngle);
+            AdvanceSuspension(
+                signedDistance,
+                speedMetersPerSecond,
+                longitudinalAcceleration,
+                SteeringAngle,
+                deltaTime);
             SetBrakeFactor(braking ? 1f : 0f);
         }
 
@@ -143,6 +176,11 @@ namespace BarPromenade
             DoorOpenness = 0f;
             NightFactor = 0f;
             brakeFactor = 0f;
+            suspensionPhase = 0f;
+            suspensionHeave = 0f;
+            suspensionPitch = 0f;
+            suspensionRoll = 0f;
+            RestorePose(suspensionVisualBase);
             RestorePose(frontDoorForwardLeafBase);
             RestorePose(frontDoorRearwardLeafBase);
             RestorePose(rearDoorForwardLeafBase);
@@ -166,6 +204,16 @@ namespace BarPromenade
 
         private void CaptureBasePoses()
         {
+            suspensionVisualBase = new TransformPose(suspensionVisual);
+            if (suspensionVisual != null)
+            {
+                suspensionPositionInPresentation =
+                    transform.InverseTransformPoint(
+                        suspensionVisual.position);
+                suspensionRotationInPresentation =
+                    Quaternion.Inverse(transform.rotation) *
+                    suspensionVisual.rotation;
+            }
             frontDoorForwardLeafBase = new TransformPose(
                 registry.FrontDoorForwardLeaf);
             frontDoorRearwardLeafBase = new TransformPose(
@@ -186,6 +234,181 @@ namespace BarPromenade
                 registry.FrontLeftSteeringPivot);
             frontRightSteeringBase = new TransformPose(
                 registry.FrontRightSteeringPivot);
+        }
+
+        private void CreateSuspensionHierarchy()
+        {
+            Transform body = registry.Body;
+            if (body == null || body.parent == null)
+            {
+                return;
+            }
+
+            Transform bodyParent = body.parent;
+            GameObject suspensionObject = new GameObject(
+                SuspensionVisualName);
+            suspensionObject.layer = gameObject.layer;
+            suspensionVisual = suspensionObject.transform;
+            suspensionVisual.SetParent(bodyParent, false);
+            suspensionVisual.localPosition = body.localPosition;
+            suspensionVisual.localRotation = body.localRotation;
+            suspensionVisual.localScale = body.localScale;
+
+            var detachedRoots = new HashSet<Transform>();
+            DetachWheelAssembly(
+                registry.FrontLeftSteeringPivot,
+                body,
+                bodyParent,
+                detachedRoots);
+            DetachWheelAssembly(
+                registry.FrontRightSteeringPivot,
+                body,
+                bodyParent,
+                detachedRoots);
+            DetachWheelAssembly(
+                registry.RearLeftWheel,
+                body,
+                bodyParent,
+                detachedRoots);
+            DetachWheelAssembly(
+                registry.RearRightWheel,
+                body,
+                bodyParent,
+                detachedRoots);
+            body.SetParent(suspensionVisual, true);
+        }
+
+        private void CaptureDoorHingeAxis()
+        {
+            if (suspensionVisual == null)
+            {
+                doorHingeAxisLocal = Vector3.up;
+                return;
+            }
+
+            doorHingeAxisLocal = suspensionVisual
+                .InverseTransformDirection(transform.up)
+                .normalized;
+        }
+
+        private static void DetachWheelAssembly(
+            Transform target,
+            Transform body,
+            Transform destination,
+            ISet<Transform> detachedRoots)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            Transform assemblyRoot = target;
+            while (assemblyRoot.parent != null &&
+                   assemblyRoot.parent != body)
+            {
+                assemblyRoot = assemblyRoot.parent;
+            }
+
+            if (assemblyRoot.parent == body &&
+                detachedRoots.Add(assemblyRoot))
+            {
+                assemblyRoot.SetParent(destination, true);
+            }
+        }
+
+        private void AdvanceSuspension(
+            float signedDistance,
+            float speedMetersPerSecond,
+            float longitudinalAcceleration,
+            float steeringAngleDegrees,
+            float deltaTime)
+        {
+            if (suspensionVisual == null)
+            {
+                return;
+            }
+
+            float safeDistance = IsFinite(signedDistance)
+                ? Mathf.Abs(signedDistance)
+                : 0f;
+            float safeSpeed = IsFinite(speedMetersPerSecond)
+                ? Mathf.Max(0f, speedMetersPerSecond)
+                : 0f;
+            float safeAcceleration = IsFinite(longitudinalAcceleration)
+                ? longitudinalAcceleration
+                : 0f;
+            float safeDeltaTime = IsFinite(deltaTime)
+                ? Mathf.Max(0f, deltaTime)
+                : 0f;
+            suspensionPhase = Mathf.Repeat(
+                suspensionPhase +
+                ((safeDistance / SuspensionWaveLength) * Mathf.PI * 2f),
+                Mathf.PI * 2f);
+
+            float motionFactor = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(safeSpeed / CityBusActor.CruiseSpeed));
+            float primaryWave = Mathf.Sin(suspensionPhase);
+            float secondaryWave = Mathf.Sin(
+                (suspensionPhase * 2f) + 0.85f);
+            float targetHeave = MaximumSuspensionHeave * motionFactor *
+                ((primaryWave * 0.72f) + (secondaryWave * 0.28f));
+            float roadPitch = MaximumSuspensionPitch * 0.24f *
+                motionFactor * Mathf.Sin(suspensionPhase + 1.35f);
+            float accelerationPitch = Mathf.Clamp(
+                -safeAcceleration * AccelerationPitchScale,
+                -MaximumSuspensionPitch * 0.78f,
+                MaximumSuspensionPitch * 0.78f);
+            float targetPitch = Mathf.Clamp(
+                roadPitch + accelerationPitch,
+                -MaximumSuspensionPitch,
+                MaximumSuspensionPitch);
+            float steeringRoll = -Mathf.Clamp(
+                steeringAngleDegrees / MaximumSteeringAngle,
+                -1f,
+                1f) * SteeringRollScale;
+            float roadRoll = MaximumSuspensionRoll * 0.20f *
+                motionFactor * Mathf.Sin(
+                    (suspensionPhase * 2f) + 2.15f);
+            float targetRoll = Mathf.Clamp(
+                steeringRoll + roadRoll,
+                -MaximumSuspensionRoll,
+                MaximumSuspensionRoll);
+            float response = safeDeltaTime > 0f
+                ? 1f - Mathf.Exp(-SuspensionResponse * safeDeltaTime)
+                : 0f;
+            suspensionHeave = Mathf.Lerp(
+                suspensionHeave,
+                targetHeave,
+                response);
+            suspensionPitch = Mathf.Lerp(
+                suspensionPitch,
+                targetPitch,
+                response);
+            suspensionRoll = Mathf.Lerp(
+                suspensionRoll,
+                targetRoll,
+                response);
+            ApplySuspensionPose();
+        }
+
+        private void ApplySuspensionPose()
+        {
+            Vector3 neutralWorldPosition = transform.TransformPoint(
+                suspensionPositionInPresentation);
+            Quaternion worldRotation =
+                transform.rotation *
+                Quaternion.Euler(
+                    suspensionPitch,
+                    0f,
+                    suspensionRoll) *
+                suspensionRotationInPresentation;
+            suspensionVisual.SetPositionAndRotation(
+                neutralWorldPosition +
+                (transform.up * suspensionHeave),
+                worldRotation);
+            suspensionVisual.localScale = suspensionVisualBase.LocalScale;
         }
 
         private void SetBrakeFactor(float factor)
@@ -245,11 +468,26 @@ namespace BarPromenade
 
             pose.Target.localPosition = pose.LocalPosition;
             pose.Target.localRotation = pose.LocalRotation;
+            Vector3 hingeAxis = ResolveDoorHingeAxis();
             pose.Target.rotation =
                 Quaternion.AngleAxis(
                     MaximumDoorAngle * signedOpenness,
-                    transform.up) *
+                    hingeAxis) *
                 pose.Target.rotation;
+        }
+
+        private Vector3 ResolveDoorHingeAxis()
+        {
+            if (suspensionVisual == null)
+            {
+                return transform.up;
+            }
+
+            Vector3 hingeAxis = suspensionVisual.TransformDirection(
+                doorHingeAxisLocal);
+            return hingeAxis.sqrMagnitude > 0.0001f
+                ? hingeAxis.normalized
+                : transform.up;
         }
 
         private static void ApplyWheelPose(

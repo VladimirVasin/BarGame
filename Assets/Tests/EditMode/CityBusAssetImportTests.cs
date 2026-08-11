@@ -275,6 +275,161 @@ namespace BarPromenade.Tests
                             rearwardClosedRotations[index]),
                         Is.LessThan(0.001f));
                 }
+
+                Quaternion neutralSuspensionRotation =
+                    presentation.SuspensionVisual.rotation;
+                presentation.SetMotion(
+                    0.67f,
+                    CityBusActor.CruiseSpeed,
+                    -CityBusActor.ServiceDeceleration,
+                    14f,
+                    true,
+                    0.2f);
+                Assert.That(
+                    Quaternion.Angle(
+                        presentation.SuspensionVisual.rotation,
+                        neutralSuspensionRotation),
+                    Is.GreaterThan(0.05f));
+                Quaternion suspensionDelta =
+                    presentation.SuspensionVisual.rotation *
+                    Quaternion.Inverse(neutralSuspensionRotation);
+                Vector3 sprungHingeAxis =
+                    suspensionDelta * instance.transform.up;
+                Vector3 sprungReference =
+                    suspensionDelta * instance.transform.forward;
+                Quaternion[] sprungForwardClosedRotations =
+                {
+                    forwardLeaves[0].rotation,
+                    forwardLeaves[1].rotation
+                };
+                Quaternion[] sprungRearwardClosedRotations =
+                {
+                    rearwardLeaves[0].rotation,
+                    rearwardLeaves[1].rotation
+                };
+                Vector3[] sprungForwardClosedPositions =
+                {
+                    forwardLeaves[0].position,
+                    forwardLeaves[1].position
+                };
+                Vector3[] sprungRearwardClosedPositions =
+                {
+                    rearwardLeaves[0].position,
+                    rearwardLeaves[1].position
+                };
+
+                presentation.SetDoors(1f);
+
+                for (int index = 0; index < forwardLeaves.Length; index++)
+                {
+                    float forwardAngle = AssertDoorLeafPose(
+                        forwardLeaves[index],
+                        sprungForwardClosedRotations[index],
+                        sprungForwardClosedPositions[index],
+                        sprungHingeAxis,
+                        sprungReference);
+                    float rearwardAngle = AssertDoorLeafPose(
+                        rearwardLeaves[index],
+                        sprungRearwardClosedRotations[index],
+                        sprungRearwardClosedPositions[index],
+                        sprungHingeAxis,
+                        sprungReference);
+                    Assert.That(
+                        Mathf.Abs(forwardAngle),
+                        Is.EqualTo(CityBusPresentation.MaximumDoorAngle)
+                            .Within(0.01f));
+                    Assert.That(
+                        forwardAngle,
+                        Is.EqualTo(-rearwardAngle).Within(0.01f));
+                }
+
+                presentation.ResetForPool();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void SuspensionPresentation_UsesBusVerticalAndBodyAxes()
+        {
+            GameObject prefab = CityBusResources.LoadPrefab();
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                CityBusAssetRegistry registry =
+                    instance.GetComponent<CityBusAssetRegistry>();
+                Assert.That(registry, Is.Not.Null);
+                CityBusPresentation presentation =
+                    instance.AddComponent<CityBusPresentation>();
+                presentation.Initialize(registry);
+                Transform suspension = presentation.SuspensionVisual;
+                Assert.That(suspension, Is.Not.Null);
+                Vector3 neutralPosition = suspension.position;
+                Quaternion neutralRotation = suspension.rotation;
+
+                presentation.SetMotion(
+                    0.67f,
+                    CityBusActor.CruiseSpeed,
+                    0f,
+                    0f,
+                    false,
+                    1f);
+
+                Vector3 displacement =
+                    suspension.position - neutralPosition;
+                float verticalDisplacement = Vector3.Dot(
+                    displacement,
+                    instance.transform.up);
+                float longitudinalDisplacement = Mathf.Abs(Vector3.Dot(
+                    displacement,
+                    instance.transform.forward));
+                float lateralDisplacement = Mathf.Abs(Vector3.Dot(
+                    displacement,
+                    instance.transform.right));
+                Assert.That(
+                    Mathf.Abs(presentation.SuspensionHeave),
+                    Is.GreaterThan(0.005f));
+                Assert.That(
+                    verticalDisplacement,
+                    Is.EqualTo(presentation.SuspensionHeave)
+                        .Within(0.0001f),
+                    "Suspension heave must use the bus vertical rather " +
+                    "than the imported FBX body's longitudinal axis.");
+                Assert.That(
+                    longitudinalDisplacement,
+                    Is.LessThan(0.0001f));
+                Assert.That(
+                    lateralDisplacement,
+                    Is.LessThan(0.0001f));
+
+                Quaternion neutralRotationInPresentation =
+                    Quaternion.Inverse(instance.transform.rotation) *
+                    neutralRotation;
+                Quaternion expectedRotation =
+                    instance.transform.rotation *
+                    Quaternion.Euler(
+                        presentation.SuspensionPitch,
+                        0f,
+                        presentation.SuspensionRoll) *
+                    neutralRotationInPresentation;
+                Assert.That(
+                    Quaternion.Angle(
+                        suspension.rotation,
+                        expectedRotation),
+                    Is.LessThan(0.001f),
+                    "Pitch and roll must also use the bus presentation " +
+                    "axes rather than imported FBX-local axes.");
+
+                presentation.ResetForPool();
+                Assert.That(suspension.position, Is.EqualTo(neutralPosition));
+                Assert.That(
+                    Quaternion.Angle(
+                        suspension.rotation,
+                        neutralRotation),
+                    Is.LessThan(0.0001f));
             }
             finally
             {
@@ -288,12 +443,27 @@ namespace BarPromenade.Tests
             Vector3 closedPosition,
             Transform busRoot)
         {
+            return AssertDoorLeafPose(
+                leaf,
+                closedRotation,
+                closedPosition,
+                busRoot.up,
+                busRoot.forward);
+        }
+
+        private static float AssertDoorLeafPose(
+            Transform leaf,
+            Quaternion closedRotation,
+            Vector3 closedPosition,
+            Vector3 hingeAxis,
+            Vector3 reference)
+        {
             Quaternion worldDelta =
                 leaf.rotation * Quaternion.Inverse(closedRotation);
             Assert.That(
                 Vector3.Angle(
-                    worldDelta * busRoot.up,
-                    busRoot.up),
+                    worldDelta * hingeAxis,
+                    hingeAxis),
                 Is.LessThan(0.01f),
                 "Each imported leaf must rotate around the bus's " +
                 "vertical axis.");
@@ -302,11 +472,10 @@ namespace BarPromenade.Tests
                 Is.LessThan(0.0001f),
                 "Opening a leaf must not move its hinge pivot.");
 
-            Vector3 reference = busRoot.forward;
             return Vector3.SignedAngle(
                 reference,
                 worldDelta * reference,
-                busRoot.up);
+                hingeAxis);
         }
 
         private static float GetLateralDistance(

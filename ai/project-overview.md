@@ -157,8 +157,12 @@ The vertical slice contains:
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
   passenger seats, rails, dashboard, two animated double-leaf doors, rolling
   wheels and front steering. Each door keeps its outer posts fixed while its
-  two independently hinged leaves fold inward around the bus vertical. Canonical
-  Route 01 is an immutable right-hand, Street-only
+  two independently hinged leaves fold inward around the bus vertical. A
+  runtime-only sprung presentation pivot gives the moving body speed-scaled
+  cartoon heave up to `0.045 m`, acceleration/road pitch up to `0.8` degrees
+  and steering/road roll up to `1` degree. All four wheel assemblies stay
+  outside that pivot and grounded while the actor, collider and route pose
+  remain unchanged. Canonical Route 01 is an immutable right-hand, Street-only
   closed winding service loop. Its target planner orders every district point
   of interest that actually exists, followed by `PlayerHome`; the default
   sequence is Industrial, Nightlife, Residential, Old Town and Home. It assigns
@@ -175,23 +179,25 @@ The vertical slice contains:
   recur in a connector, but every ordered occurrence receives a unique route
   link/node ID. Route selection has no random branch or player pursuit. The
   default five semantic stops each have a physical blue `01` pole and are served
-  once per lap with a randomized `3-5 s` two-door dwell. Random roadside
-  decoration does not emit bus shelters. Nightlife's last-route island now has a working pole nearby
-  but outside its public ground and approaches, leaving the abandoned island
-  structures distinct from the live stop. A pooled actor prefers obstacle-safe
-  fog-hidden route poses `76-86 m` from the player and falls back to `56-86 m`
-  only when forward travel on the same loop can approach the player. The cap
-  means at most one bus can be active or potentially visible rather than
-  guaranteeing that one is always on screen. It yields to the player and
+  once per lap with a fixed `10 s` total dwell, including `0.70 s` opening and
+  `0.70 s` closing transitions for both doors. Random roadside decoration does
+  not emit bus shelters. Nightlife's last-route island now has a working pole
+  nearby but outside its public ground and approaches, leaving the abandoned
+  island structures distinct from the live stop. A pooled actor prefers
+  obstacle-safe fog-hidden route poses `76-86 m` from the player and falls back
+  to `56-86 m` only when forward travel on the same loop can approach the
+  player. The cap means at most one bus can be active or potentially visible
+  rather than guaranteeing that one is always on screen. It yields to the player and
   pedestrians and recycles only when its full body is at least `92 m` away.
-  Wheel/steering articulation, a synthesized engine loop and night-scaled head,
-  tail and cabin emission reset with the pool. Camera direction and frustum
-  membership never participate in the lifecycle. The moving ambient-bus runtime
-  is City-only. Home's bounded exterior regenerates the same route plan and
-  reconstructs the nearby Home stop as a static collider-free pole, but it has
-  no bus actor or director: no real Street pass-through offers both complete-body
-  seams at or beyond the fog-hidden `56 m` boundary, and the default facade
-  faces a visible road terminal. A fabricated continuation or
+  Suspension, wheel/steering articulation, a synthesized engine loop and
+  night-scaled head, tail and cabin emission reset with the pool. Camera
+  direction and frustum membership never participate in the lifecycle. The
+  moving ambient-bus runtime is City-only. Home's bounded exterior regenerates
+  the same route plan and reconstructs the nearby Home stop as a static
+  collider-free pole, but it has no bus actor or director: no real Street
+  pass-through offers both complete-body seams at or beyond the fog-hidden
+  `56 m` boundary, and the default facade faces a visible road terminal. A
+  fabricated continuation or
   Balcony-camera-owned activation would create a visible pop, so neither is
   introduced;
 - deterministic street lamps with geometry batched into `48 m` spatial

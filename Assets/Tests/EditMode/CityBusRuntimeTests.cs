@@ -101,6 +101,232 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PresentationSuspension_MovesBodyRelativeToGroundedWheels_AndPoolResetRestoresNeutralPose()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Suspension",
+                    CreateCyclicPlan(false));
+                fixture.SpawnDirectly();
+
+                CityBusPresentation presentation = fixture.Presentation;
+                CityBusAssetRegistry registry = presentation.Registry;
+                Transform suspension = presentation.SuspensionVisual;
+                Assert.That(suspension, Is.Not.Null);
+                Assert.That(registry.Body.parent, Is.SameAs(suspension));
+
+                Transform[] wheelRoots =
+                {
+                    registry.FrontLeftSteeringPivot,
+                    registry.FrontRightSteeringPivot,
+                    registry.RearLeftWheel,
+                    registry.RearRightWheel
+                };
+                Vector3[] groundedWheelPositions =
+                    new Vector3[wheelRoots.Length];
+                Quaternion[] wheelRotations =
+                    new Quaternion[wheelRoots.Length];
+                for (int index = 0; index < wheelRoots.Length; index++)
+                {
+                    Assert.That(
+                        wheelRoots[index].IsChildOf(suspension),
+                        Is.False,
+                        "Wheel assemblies must stay outside the sprung " +
+                        "body hierarchy.");
+                    groundedWheelPositions[index] =
+                        presentation.transform.InverseTransformPoint(
+                            wheelRoots[index].position);
+                    wheelRotations[index] = wheelRoots[index].localRotation;
+                }
+
+                Vector3 neutralSuspensionPosition =
+                    suspension.localPosition;
+                Quaternion neutralSuspensionRotation =
+                    suspension.localRotation;
+                Vector3 neutralBodyPosition =
+                    presentation.transform.InverseTransformPoint(
+                        registry.Body.position);
+                Vector3 actorPosition = fixture.Actor.Position;
+                Quaternion actorRotation = fixture.Actor.Rotation;
+                Vector3 colliderCenter = fixture.Actor.BodyCollider.center;
+                Vector3 colliderSize = fixture.Actor.BodyCollider.size;
+                float maximumBodyDisplacement = 0f;
+
+                for (int step = 0; step < 12; step++)
+                {
+                    presentation.SetMotion(
+                        0.37f,
+                        4.8f,
+                        step < 6
+                            ? CityBusActor.Acceleration
+                            : -CityBusActor.ServiceDeceleration,
+                        14f,
+                        step >= 6,
+                        0.1f);
+                    maximumBodyDisplacement = Mathf.Max(
+                        maximumBodyDisplacement,
+                        Vector3.Distance(
+                            neutralBodyPosition,
+                            presentation.transform.InverseTransformPoint(
+                                registry.Body.position)));
+                    for (int index = 0;
+                         index < wheelRoots.Length;
+                         index++)
+                    {
+                        Assert.That(
+                            presentation.transform.InverseTransformPoint(
+                                wheelRoots[index].position),
+                            Is.EqualTo(groundedWheelPositions[index]));
+                    }
+                }
+
+                Assert.That(
+                    maximumBodyDisplacement,
+                    Is.GreaterThan(0.001f),
+                    "Moving suspension must visibly displace the body " +
+                    "relative to grounded wheel contacts.");
+                Assert.That(
+                    Mathf.Abs(presentation.SuspensionHeave),
+                    Is.LessThanOrEqualTo(
+                        CityBusPresentation.MaximumSuspensionHeave +
+                        0.0001f));
+                Assert.That(
+                    Mathf.Abs(presentation.SuspensionPitch),
+                    Is.LessThanOrEqualTo(
+                        CityBusPresentation.MaximumSuspensionPitch +
+                        0.0001f));
+                Assert.That(
+                    Mathf.Abs(presentation.SuspensionRoll),
+                    Is.LessThanOrEqualTo(
+                        CityBusPresentation.MaximumSuspensionRoll +
+                        0.0001f));
+                Assert.That(fixture.Actor.Position, Is.EqualTo(actorPosition));
+                Assert.That(
+                    fixture.Actor.Rotation,
+                    Is.EqualTo(actorRotation));
+                Assert.That(
+                    fixture.Actor.BodyCollider.center,
+                    Is.EqualTo(colliderCenter));
+                Assert.That(
+                    fixture.Actor.BodyCollider.size,
+                    Is.EqualTo(colliderSize));
+
+                presentation.ResetForPool();
+
+                Assert.That(presentation.SuspensionHeave, Is.Zero);
+                Assert.That(presentation.SuspensionPitch, Is.Zero);
+                Assert.That(presentation.SuspensionRoll, Is.Zero);
+                Assert.That(
+                    suspension.localPosition,
+                    Is.EqualTo(neutralSuspensionPosition));
+                Assert.That(
+                    Quaternion.Angle(
+                        suspension.localRotation,
+                        neutralSuspensionRotation),
+                    Is.LessThan(0.0001f));
+                for (int index = 0; index < wheelRoots.Length; index++)
+                {
+                    Assert.That(
+                        presentation.transform.InverseTransformPoint(
+                            wheelRoots[index].position),
+                        Is.EqualTo(groundedWheelPositions[index]));
+                    Assert.That(
+                        Quaternion.Angle(
+                            wheelRoots[index].localRotation,
+                            wheelRotations[index]),
+                        Is.LessThan(0.0001f));
+                }
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        [Test]
+        public void StopDwell_HoldsForTenSecondsBeforeResuming()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Ten Second Dwell",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+
+                for (int guard = 0;
+                     guard < 1200 &&
+                     fixture.Actor.MotionState !=
+                         CityBusMotionState.Dwelling;
+                     guard++)
+                {
+                    fixture.Actor.Advance(
+                        0.05f,
+                        CityBusObstacleState.Clear,
+                        0f);
+                }
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dwelling));
+                Assert.That(
+                    CityBusActor.DwellDuration,
+                    Is.EqualTo(10f));
+                Assert.That(
+                    CityBusActor.MinimumDwellDuration,
+                    Is.EqualTo(CityBusActor.DwellDuration));
+                Assert.That(
+                    CityBusActor.MaximumDwellDuration,
+                    Is.EqualTo(CityBusActor.DwellDuration));
+                Vector3 stoppedPosition = fixture.Actor.Position;
+                const float boundaryMargin = 0.01f;
+                float fullyOpenSample =
+                    CityBusActor.DoorTransitionDuration + 0.01f;
+
+                fixture.Actor.Advance(
+                    fullyOpenSample,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                Assert.That(
+                    fixture.Presentation.DoorOpenness,
+                    Is.EqualTo(1f).Within(0.0001f));
+                fixture.Actor.Advance(
+                    CityBusActor.DwellDuration -
+                    fullyOpenSample -
+                    boundaryMargin,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dwelling),
+                    "The bus must remain stopped immediately before the " +
+                    "ten-second boundary.");
+                Assert.That(
+                    fixture.Actor.Position,
+                    Is.EqualTo(stoppedPosition));
+                fixture.Actor.Advance(
+                    boundaryMargin * 2f,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.Not.EqualTo(CityBusMotionState.Dwelling));
+                Assert.That(fixture.Actor.Position, Is.EqualTo(stoppedPosition));
+                Assert.That(fixture.Presentation.DoorOpenness, Is.Zero);
+                Assert.That(fixture.Actor.DwellCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        [Test]
         public void RemoteCycleWithoutEncounter_DoesNotSpawnInvisibleBus()
         {
             RuntimeFixture fixture = null;

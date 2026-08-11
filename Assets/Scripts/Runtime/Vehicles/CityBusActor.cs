@@ -54,8 +54,9 @@ namespace BarPromenade
         public const float ObstacleStopPadding = 0.38f;
         public const float ObstacleLateralPadding = 0.20f;
         public const float DoorTransitionDuration = 0.70f;
-        public const float MinimumDwellDuration = 3f;
-        public const float MaximumDwellDuration = 5f;
+        public const float DwellDuration = 10f;
+        public const float MinimumDwellDuration = DwellDuration;
+        public const float MaximumDwellDuration = DwellDuration;
         public const float EnteringTravelDistance = 5f;
         public const int EngineSampleRate = 22050;
         public const float EngineIdlePitch = 0.72f;
@@ -312,7 +313,13 @@ namespace BarPromenade
                 IsBraking = true;
                 speed = 0f;
                 presentation.SetDoors(0f);
-                presentation.SetMotion(0f, 0f, true);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    safeDeltaTime);
                 UpdateEngineAudio();
                 return;
             }
@@ -539,7 +546,13 @@ namespace BarPromenade
         {
             if (deltaTime <= 0f)
             {
-                presentation.SetMotion(0f, ResolveSteeringAngle(), false);
+                presentation.SetMotion(
+                    0f,
+                    speed,
+                    0f,
+                    ResolveSteeringAngle(),
+                    false,
+                    0f);
                 return;
             }
 
@@ -558,7 +571,13 @@ namespace BarPromenade
                 speed <= DistanceTolerance)
             {
                 BeginDwell(stopIndex);
-                presentation.SetMotion(0f, 0f, true);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    deltaTime);
                 return;
             }
 
@@ -630,8 +649,11 @@ namespace BarPromenade
             presentation.SetDoors(0f);
             presentation.SetMotion(
                 travelled,
+                speed,
+                (speed - previousSpeed) / deltaTime,
                 ResolveSteeringAngle(),
-                IsBraking);
+                IsBraking,
+                deltaTime);
             UpdateEngineAudio();
         }
 
@@ -719,7 +741,13 @@ namespace BarPromenade
                 (dwellDuration - dwellElapsed) /
                 DoorTransitionDuration);
             presentation.SetDoors(Mathf.Min(opening, closing));
-            presentation.SetMotion(0f, 0f, true);
+            presentation.SetMotion(
+                0f,
+                0f,
+                0f,
+                0f,
+                true,
+                deltaTime);
             UpdateEngineAudio();
             if (dwellElapsed < dwellDuration)
             {
