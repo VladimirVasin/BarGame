@@ -312,7 +312,7 @@ namespace BarPromenade
                 IsYielding = false;
                 IsBraking = true;
                 speed = 0f;
-                presentation.SetDoors(0f);
+                presentation.SetDriverDoorSample(default);
                 presentation.SetMotion(
                     0f,
                     0f,
@@ -646,7 +646,19 @@ namespace BarPromenade
                             : CityBusMotionState.Cruising;
             }
 
-            presentation.SetDoors(0f);
+            if (MotionState == CityBusMotionState.RouteEnded)
+            {
+                presentation.SetDriverDoorSample(default);
+            }
+            else if (MotionState != CityBusMotionState.Dwelling)
+            {
+                CityBusDriverDoorSample driverDoor = approachingStop
+                    ? CityBusDriverDoorTimeline.SampleApproach(
+                        Mathf.Max(0f, distanceToStop - travelled),
+                        speed)
+                    : default;
+                presentation.SetDriverDoorSample(driverDoor);
+            }
             presentation.SetMotion(
                 travelled,
                 speed,
@@ -727,7 +739,11 @@ namespace BarPromenade
             IsYielding = false;
             IsBraking = true;
             MotionState = CityBusMotionState.Dwelling;
-            presentation.SetDoors(0f);
+            presentation.SetDriverDoorSample(
+                CityBusDriverDoorTimeline.SampleDwell(
+                    0f,
+                    dwellDuration,
+                    DoorTransitionDuration));
         }
 
         private void AdvanceDwell(float deltaTime)
@@ -735,12 +751,11 @@ namespace BarPromenade
             dwellElapsed = Mathf.Min(
                 dwellDuration,
                 dwellElapsed + deltaTime);
-            float opening = Mathf.Clamp01(
-                dwellElapsed / DoorTransitionDuration);
-            float closing = Mathf.Clamp01(
-                (dwellDuration - dwellElapsed) /
-                DoorTransitionDuration);
-            presentation.SetDoors(Mathf.Min(opening, closing));
+            presentation.SetDriverDoorSample(
+                CityBusDriverDoorTimeline.SampleDwell(
+                    dwellElapsed,
+                    dwellDuration,
+                    DoorTransitionDuration));
             presentation.SetMotion(
                 0f,
                 0f,
@@ -758,7 +773,7 @@ namespace BarPromenade
             dwellElapsed = 0f;
             dwellDuration = 0f;
             IsBraking = false;
-            presentation.SetDoors(0f);
+            presentation.SetDriverDoorSample(default);
             MotionState = distanceSinceSpawn < EnteringTravelDistance
                 ? CityBusMotionState.Entering
                 : CityBusMotionState.Cruising;

@@ -128,6 +128,7 @@ namespace BarPromenade
             BuildFixedLoopMetadata();
             if (presentation != null)
             {
+                presentation.SetDriverFocusTarget(player);
                 presentation.ResetForPool();
                 presentation.gameObject.SetActive(false);
                 presentation.transform.SetParent(poolRoot, false);

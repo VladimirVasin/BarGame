@@ -2,6 +2,34 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Route 01 production driver
+
+- Added the separate passive `CityBusDriver3D`: a normal low-poly head with
+  long horizontal eyes, the shared `Player3DLit` material and the exact 31-bone
+  rig used as a procedural presentation target.
+- Added seated IK that keeps both hands on the rotating steering-wheel grips.
+  The deterministic door timeline moves the right hand to the dashboard button
+  for each open/close command, drives its real `12 mm` travel while the left
+  hand stays planted, and now holds the real head turn for the complete open
+  phase before returning during closing.
+- Added deterministic blinking and proximity focus on the main player's real
+  head at the outside of the front entrance. The connected neck/head segment
+  stretches up to `0.10 m` with a `1.35x` limit and restores its exact local
+  scale when focus ends or the bus returns to its pool.
+- Preserved the fixed `10 s` stop dwell and `0.70 s` opening/closing transitions.
+  Wheel, button, hands, head/look and timeline state now reset with the bus pool.
+
+Verification:
+
+- The deterministic Blender driver generator/export validator completed, and
+  focused `CityBusDriverAssetContractTests` verification passed `1/1`.
+- The rebuilt production bus prefab passed `CityBusAssetSetup.RunBatch`; focused
+  `DriverPresentation_TracksWheelPressesButtonAndLooksAtDoor` verification then
+  passed `1/1`, covering wheel/grip contact, both button presses, the actual
+  face-bone direction throughout the open hold, player focus/stretch, blinking
+  and pool reset. Complete Unity suites, a player build and a packaged smoke
+  check were intentionally omitted in fast mode.
+
 ## 2026-08-11 — Bus headlights and soft cabin light
 
 - Added two warm, shadowless runtime headlight Spots that follow the sprung bus

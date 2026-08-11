@@ -389,6 +389,12 @@ namespace BarPromenade.Tests.EditMode
                     fixture.Actor.MotionState,
                     Is.EqualTo(CityBusMotionState.Dwelling));
                 Assert.That(
+                    fixture.Presentation.DoorPhase,
+                    Is.EqualTo(CityBusDoorPhase.Opening));
+                Assert.That(
+                    fixture.Presentation.DriverDoorSample.ButtonPress01,
+                    Is.EqualTo(1f));
+                Assert.That(
                     CityBusActor.DwellDuration,
                     Is.EqualTo(10f));
                 Assert.That(
@@ -410,6 +416,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Presentation.DoorOpenness,
                     Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(
+                    fixture.Presentation.DoorPhase,
+                    Is.EqualTo(CityBusDoorPhase.Open));
                 fixture.Actor.Advance(
                     CityBusActor.DwellDuration -
                     fullyOpenSample -
@@ -423,6 +432,9 @@ namespace BarPromenade.Tests.EditMode
                     "The bus must remain stopped immediately before the " +
                     "ten-second boundary.");
                 Assert.That(
+                    fixture.Presentation.DoorPhase,
+                    Is.EqualTo(CityBusDoorPhase.Closing));
+                Assert.That(
                     fixture.Actor.Position,
                     Is.EqualTo(stoppedPosition));
                 fixture.Actor.Advance(
@@ -435,6 +447,9 @@ namespace BarPromenade.Tests.EditMode
                     Is.Not.EqualTo(CityBusMotionState.Dwelling));
                 Assert.That(fixture.Actor.Position, Is.EqualTo(stoppedPosition));
                 Assert.That(fixture.Presentation.DoorOpenness, Is.Zero);
+                Assert.That(
+                    fixture.Presentation.DoorPhase,
+                    Is.EqualTo(CityBusDoorPhase.Closed));
                 Assert.That(fixture.Actor.DwellCount, Is.EqualTo(1));
             }
             finally

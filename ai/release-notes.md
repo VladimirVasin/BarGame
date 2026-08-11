@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### 2026-08-11 — Route 01 now has a working driver
+
+- The city bus now carries a seated low-poly driver with a normal head and
+  unusually long horizontal eyes. Both hands follow the steering wheel as it
+  turns instead of resting in a static pose.
+- At each stop, the driver keeps one hand on the wheel, presses the dashboard
+  button with the other to open and close the doors, and now keeps watching the
+  front entrance for the whole open-door pause.
+- The driver now blinks. If the hero approaches the outside of the front door,
+  the long eyes lock onto the hero and the driver's neck and head stretch
+  slightly toward them before snapping smoothly back to the authored shape.
+
 ### 2026-08-11 — The night bus now lights its way
 
 - At night, the moving bus now casts two warm headlight pools onto the road and

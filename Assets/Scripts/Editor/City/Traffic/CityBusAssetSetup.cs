@@ -29,6 +29,7 @@ namespace BarPromenade.Editor
         private const float ExpectedHeight = 2.95f;
         private const float ExpectedWheelbase = 4.50f;
         private const float ExpectedWheelRadius = 0.43f;
+        private const float ExpectedDoorButtonTravel = 0.012f;
         private const int MinimumTriangleCount = 900;
         private const int MaximumTriangleCount = 12000;
 
@@ -291,6 +292,7 @@ namespace BarPromenade.Editor
                 if (part == null ||
                     string.IsNullOrWhiteSpace(part.name) ||
                     string.IsNullOrWhiteSpace(part.role) ||
+                    string.IsNullOrWhiteSpace(part.parent) ||
                     !names.Add(part.name) ||
                     !Enum.TryParse(
                         part.material_slot,
@@ -319,6 +321,9 @@ namespace BarPromenade.Editor
         {
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> roles = new HashSet<string>(StringComparer.Ordinal);
+            Dictionary<string, CityBusManifestPivot> pivotsByName =
+                new Dictionary<string, CityBusManifestPivot>(
+                    StringComparer.Ordinal);
             int passengerSeats = 0;
             for (int index = 0; index < manifest.pivots.Length; index++)
             {
@@ -329,6 +334,8 @@ namespace BarPromenade.Editor
                     string.IsNullOrWhiteSpace(pivot.parent) ||
                     pivot.local_position == null ||
                     pivot.local_position.Length != 3 ||
+                    pivot.local_rotation_degrees == null ||
+                    pivot.local_rotation_degrees.Length != 3 ||
                     !names.Add(pivot.name))
                 {
                     throw new InvalidOperationException(
@@ -336,6 +343,7 @@ namespace BarPromenade.Editor
                 }
 
                 roles.Add(pivot.role);
+                pivotsByName.Add(pivot.name, pivot);
                 if (pivot.role == "passenger_seat_anchor")
                 {
                     passengerSeats++;
@@ -356,6 +364,93 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City bus passenger seat anchor count is stale.");
             }
+
+            CityBusManifestPivot steering = RequireManifestPivot(
+                pivotsByName,
+                "PIVOT_SteeringWheel",
+                "steering_wheel",
+                "ROOT_Body");
+            AssertVectorNear(
+                steering.local_position,
+                new Vector3(0.60f, -3.32f, 1.57f),
+                "steering-wheel source position");
+            AssertVectorNear(
+                steering.local_rotation_degrees,
+                new Vector3(-90f, 0f, 0f),
+                "steering-wheel source rotation");
+            if (!string.Equals(
+                    steering.runtime_axis_local,
+                    "+Z",
+                    StringComparison.Ordinal) ||
+                Mathf.Abs(steering.travel_m) > 0.0001f)
+            {
+                throw new InvalidOperationException(
+                    "City bus steering-wheel local-axis contract is invalid.");
+            }
+
+            float gripTop = Mathf.Sqrt(0.18f * 0.18f - 0.14f * 0.14f);
+            CityBusManifestPivot leftGrip = RequireManifestPivot(
+                pivotsByName,
+                "ANCHOR_SteeringGrip.L",
+                "left_steering_grip",
+                "PIVOT_SteeringWheel");
+            CityBusManifestPivot rightGrip = RequireManifestPivot(
+                pivotsByName,
+                "ANCHOR_SteeringGrip.R",
+                "right_steering_grip",
+                "PIVOT_SteeringWheel");
+            AssertVectorNear(
+                leftGrip.local_position,
+                new Vector3(0.14f, -gripTop, 0.020f),
+                "left steering-grip source position");
+            AssertVectorNear(
+                rightGrip.local_position,
+                new Vector3(-0.14f, -gripTop, 0.020f),
+                "right steering-grip source position");
+
+            CityBusManifestPivot doorButton = RequireManifestPivot(
+                pivotsByName,
+                "PIVOT_DoorButton",
+                "door_button",
+                "ROOT_Body");
+            AssertVectorNear(
+                doorButton.local_position,
+                new Vector3(0.30f, -3.335f, 1.50f),
+                "door-button source position");
+            AssertVectorNear(
+                doorButton.local_rotation_degrees,
+                new Vector3(0f, 0f, 180f),
+                "door-button source rotation");
+            if (!string.Equals(
+                    doorButton.runtime_axis_local,
+                    "+Y",
+                    StringComparison.Ordinal) ||
+                Mathf.Abs(doorButton.travel_m - ExpectedDoorButtonTravel) >
+                    0.0001f)
+            {
+                throw new InvalidOperationException(
+                    "City bus door-button local-travel contract is invalid.");
+            }
+
+            CityBusManifestPivot pressAnchor = RequireManifestPivot(
+                pivotsByName,
+                "ANCHOR_DoorButtonPress",
+                "door_button_press",
+                "PIVOT_DoorButton");
+            AssertVectorNear(
+                pressAnchor.local_position,
+                new Vector3(0f, -0.0265f, 0f),
+                "door-button press-anchor source position");
+
+            CityBusManifestPivot doorLook = RequireManifestPivot(
+                pivotsByName,
+                "ANCHOR_DriverDoorLook",
+                "driver_door_look",
+                "ROOT_Body");
+            AssertVectorNear(
+                doorLook.local_position,
+                new Vector3(-0.90f, -3.05f, 2.12f),
+                "driver door-look source position");
         }
 
         private static Dictionary<CityBusMaterialSlot, Material> BuildMaterials()
@@ -578,7 +673,25 @@ namespace BarPromenade.Editor
                     manifest.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_SteeringWheel"),
+                    RequireTransform(
+                        transformsByName,
+                        "ANCHOR_SteeringGrip.L"),
+                    RequireTransform(
+                        transformsByName,
+                        "ANCHOR_SteeringGrip.R"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_DoorButton"),
+                    RequireTransform(
+                        transformsByName,
+                        "ANCHOR_DoorButtonPress"),
+                    RequireTransform(
+                        transformsByName,
+                        "ANCHOR_DriverDoorLook"));
                 registry.ResetArticulation();
 
                 PrefabUtility.SaveAsPrefabAsset(prefabRoot, PrefabPath);
@@ -645,6 +758,22 @@ namespace BarPromenade.Editor
                 }
             }
 
+            for (int index = 0; index < manifest.parts.Length; index++)
+            {
+                CityBusManifestPart source = manifest.parts[index];
+                Transform part = RequireTransform(transforms, source.name);
+                if (part.parent == null ||
+                    !string.Equals(
+                        part.parent.name,
+                        source.parent,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"City bus mesh '{source.name}' lost parent " +
+                        $"'{source.parent}'.");
+                }
+            }
+
             if (model.GetComponentsInChildren<Collider>(true).Length != 0 ||
                 model.GetComponentsInChildren<Animator>(true).Length != 0 ||
                 model.GetComponentsInChildren<Light>(true).Length != 0)
@@ -672,6 +801,12 @@ namespace BarPromenade.Editor
                 registry.RearRightWheel,
                 registry.FrontLeftSteeringPivot,
                 registry.FrontRightSteeringPivot,
+                registry.SteeringWheelPivot,
+                registry.LeftSteeringGrip,
+                registry.RightSteeringGrip,
+                registry.DoorButtonPivot,
+                registry.DoorButtonPressAnchor,
+                registry.DriverDoorLookAnchor,
                 registry.DriverSeatAnchor,
                 registry.FrontDoorEntryAnchor,
                 registry.RearDoorEntryAnchor
@@ -707,6 +842,99 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Front wheel roll pivots must remain under steering pivots.");
+            }
+
+            if (registry.SteeringWheelPivot.parent != registry.Body ||
+                registry.LeftSteeringGrip.parent !=
+                    registry.SteeringWheelPivot ||
+                registry.RightSteeringGrip.parent !=
+                    registry.SteeringWheelPivot ||
+                registry.DoorButtonPivot.parent != registry.Body ||
+                registry.DoorButtonPressAnchor.parent !=
+                    registry.DoorButtonPivot ||
+                registry.DriverDoorLookAnchor.parent != registry.Body)
+            {
+                throw new InvalidOperationException(
+                    "Driver control pivots and anchors lost their authored " +
+                    "hierarchy.");
+            }
+
+            if (Vector3.Distance(
+                    registry.SteeringWheelAxisLocal,
+                    Vector3.forward) > 0.0001f)
+            {
+                throw new InvalidOperationException(
+                    "Driver control local-axis bindings are stale.");
+            }
+
+            Vector3 steeringAxis = registry.SteeringWheelPivot
+                .TransformDirection(registry.SteeringWheelAxisLocal)
+                .normalized;
+            Vector3 leftGripOffset =
+                registry.LeftSteeringGrip.position -
+                registry.SteeringWheelPivot.position;
+            Vector3 rightGripOffset =
+                registry.RightSteeringGrip.position -
+                registry.SteeringWheelPivot.position;
+            float leftGripRadius = (
+                leftGripOffset - Vector3.Project(
+                    leftGripOffset,
+                    steeringAxis)).magnitude;
+            float rightGripRadius = (
+                rightGripOffset - Vector3.Project(
+                    rightGripOffset,
+                    steeringAxis)).magnitude;
+            Vector3 buttonTravelWorld = registry.DoorButtonPivot.parent
+                .TransformVector(registry.DoorButtonTravelLocal);
+            Vector3 buttonFaceOffset =
+                registry.DoorButtonPressAnchor.position -
+                registry.DoorButtonPivot.position;
+            float buttonTravelAlignment = buttonTravelWorld.sqrMagnitude >
+                    0.000001f && buttonFaceOffset.sqrMagnitude > 0.000001f
+                ? Vector3.Dot(
+                    buttonTravelWorld.normalized,
+                    -buttonFaceOffset.normalized)
+                : -1f;
+            if (Mathf.Abs(leftGripRadius - 0.18f) > 0.001f ||
+                Mathf.Abs(rightGripRadius - 0.18f) > 0.001f ||
+                Mathf.Abs(buttonFaceOffset.magnitude - 0.0265f) > 0.001f ||
+                Mathf.Abs(
+                    buttonTravelWorld.magnitude -
+                    ExpectedDoorButtonTravel) > 0.0001f ||
+                buttonTravelAlignment < 0.999f)
+            {
+                throw new InvalidOperationException(
+                    "Driver hand-contact anchors lost the wheel rim or " +
+                    $"button face (left radius {leftGripRadius:F6}, " +
+                    $"right radius {rightGripRadius:F6}, button face " +
+                    $"{buttonFaceOffset.magnitude:F6}, travel " +
+                    $"{buttonTravelWorld.magnitude:F6}, alignment " +
+                    $"{buttonTravelAlignment:F6}).");
+            }
+
+            CityBusRendererBinding steeringWheel = registry.RendererBindings
+                .SingleOrDefault(binding =>
+                    binding != null &&
+                    string.Equals(
+                        binding.SourceName,
+                        "INT_SteeringWheel",
+                        StringComparison.Ordinal));
+            CityBusRendererBinding doorButton = registry.RendererBindings
+                .SingleOrDefault(binding =>
+                    binding != null &&
+                    string.Equals(
+                        binding.SourceName,
+                        "INT_DoorButton",
+                        StringComparison.Ordinal));
+            if (steeringWheel?.Renderer == null ||
+                steeringWheel.Renderer.transform.parent !=
+                    registry.SteeringWheelPivot ||
+                doorButton?.Renderer == null ||
+                doorButton.Renderer.transform.parent !=
+                    registry.DoorButtonPivot)
+            {
+                throw new InvalidOperationException(
+                    "Visible steering-wheel or door-button mesh lost its pivot.");
             }
         }
 
@@ -1053,6 +1281,44 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static CityBusManifestPivot RequireManifestPivot(
+            IReadOnlyDictionary<string, CityBusManifestPivot> pivots,
+            string name,
+            string role,
+            string parent)
+        {
+            if (!pivots.TryGetValue(name, out CityBusManifestPivot pivot) ||
+                pivot == null ||
+                !string.Equals(pivot.role, role, StringComparison.Ordinal) ||
+                !string.Equals(
+                    pivot.parent,
+                    parent,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"City bus pivot '{name}' lost role '{role}' or " +
+                    $"parent '{parent}'.");
+            }
+
+            return pivot;
+        }
+
+        private static void AssertVectorNear(
+            float[] actual,
+            Vector3 expected,
+            string label)
+        {
+            if (actual == null ||
+                actual.Length != 3 ||
+                Mathf.Abs(actual[0] - expected.x) > 0.0001f ||
+                Mathf.Abs(actual[1] - expected.y) > 0.0001f ||
+                Mathf.Abs(actual[2] - expected.z) > 0.0001f)
+            {
+                throw new InvalidOperationException(
+                    $"City bus {label} is invalid.");
+            }
+        }
+
         private static void EnsureFolderForAsset(string assetPath)
         {
             string directory = Path.GetDirectoryName(assetPath)
@@ -1088,6 +1354,12 @@ namespace BarPromenade.Editor
             "front_right_wheel",
             "rear_left_wheel",
             "rear_right_wheel",
+            "steering_wheel",
+            "left_steering_grip",
+            "right_steering_grip",
+            "door_button",
+            "door_button_press",
+            "driver_door_look",
             "driver_seat_anchor",
             "front_door_entry",
             "rear_door_entry",
@@ -1131,6 +1403,7 @@ namespace BarPromenade.Editor
             public string name;
             public string role;
             public string material_slot;
+            public string parent;
             public int vertices;
             public int triangles;
         }
@@ -1142,6 +1415,9 @@ namespace BarPromenade.Editor
             public string role;
             public string parent;
             public float[] local_position;
+            public float[] local_rotation_degrees;
+            public string runtime_axis_local;
+            public float travel_m;
         }
     }
 }

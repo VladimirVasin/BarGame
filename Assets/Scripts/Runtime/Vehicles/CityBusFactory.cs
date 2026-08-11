@@ -53,6 +53,7 @@ namespace BarPromenade
                 player,
                 pedestrians,
                 CityBusResources.LoadPrefab(),
+                CityBusDriverResources.LoadPrefab(),
                 nightFactorProvider);
         }
 
@@ -63,6 +64,25 @@ namespace BarPromenade
             CityPedestrianDirector pedestrians,
             GameObject presentationPrefab,
             Func<float> nightFactorProvider = null)
+        {
+            return Create(
+                parent,
+                plan,
+                player,
+                pedestrians,
+                presentationPrefab,
+                CityBusDriverResources.LoadPrefab(),
+                nightFactorProvider);
+        }
+
+        public static CityBusDirector Create(
+            Transform parent,
+            CityBusPlan plan,
+            Transform player,
+            CityPedestrianDirector pedestrians,
+            GameObject presentationPrefab,
+            GameObject driverPrefab,
+            Func<float> nightFactorProvider)
         {
             if (parent == null)
             {
@@ -84,6 +104,13 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The city bus presentation prefab is missing at " +
                     $"Resources/{CityBusResources.PrefabResourcePath}.");
+            }
+
+            if (!plan.IsEmpty && driverPrefab == null)
+            {
+                throw new InvalidOperationException(
+                    "The city bus driver prefab is missing at " +
+                    $"Resources/{CityBusDriverResources.PrefabResourcePath}.");
             }
 
             CityBusCollision.EnsureRuntimePolicy();
@@ -123,6 +150,18 @@ namespace BarPromenade
                     }
 
                     presentation.Initialize(registry);
+                    if (!CityBusDriverResources.TryInstantiate(
+                            driverPrefab,
+                            registry.transform,
+                            out CityBusDriverAssetRegistry driverRegistry))
+                    {
+                        throw new InvalidOperationException(
+                            "The city bus driver prefab must own a " +
+                            "CityBusDriverAssetRegistry on its root.");
+                    }
+
+                    ValidatePassiveDriver(driverRegistry);
+                    presentation.AttachDriver(driverRegistry);
                     presentation.gameObject.SetActive(false);
 
                     GameObject actorObject =
@@ -182,6 +221,32 @@ namespace BarPromenade
             }
         }
 
+        private static void ValidatePassiveDriver(
+            CityBusDriverAssetRegistry registry)
+        {
+            if (registry.GetComponentsInChildren<Collider>(true).Length > 0 ||
+                registry.GetComponentsInChildren<Collider2D>(true).Length > 0 ||
+                registry.GetComponentsInChildren<Rigidbody>(true).Length > 0 ||
+                registry.GetComponentsInChildren<Rigidbody2D>(true).Length > 0 ||
+                registry.GetComponentsInChildren<Light>(true).Length > 0)
+            {
+                throw new InvalidOperationException(
+                    "City bus driver prefabs must remain collider, rigidbody " +
+                    "and Light free.");
+            }
+
+            MonoBehaviour[] behaviours =
+                registry.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (behaviours[index] is IInteractable)
+                {
+                    throw new InvalidOperationException(
+                        "City bus drivers must not be interactive.");
+                }
+            }
+        }
+
         private static void ValidateRegistry(
             CityBusAssetRegistry registry,
             CityBusDesignVehicle vehicle)
@@ -197,7 +262,14 @@ namespace BarPromenade
                 registry.RearLeftWheel == null ||
                 registry.RearRightWheel == null ||
                 registry.FrontLeftSteeringPivot == null ||
-                registry.FrontRightSteeringPivot == null)
+                registry.FrontRightSteeringPivot == null ||
+                registry.SteeringWheelPivot == null ||
+                registry.LeftSteeringGrip == null ||
+                registry.RightSteeringGrip == null ||
+                registry.DoorButtonPivot == null ||
+                registry.DoorButtonPressAnchor == null ||
+                registry.DriverDoorLookAnchor == null ||
+                registry.DriverSeatAnchor == null)
             {
                 throw new InvalidOperationException(
                     "The city bus registry is missing a required runtime " +

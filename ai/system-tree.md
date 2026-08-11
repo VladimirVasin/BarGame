@@ -72,6 +72,7 @@ Assets/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
+      CityBusDriver3D.prefab            passive 31-bone seated production driver
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
@@ -108,6 +109,10 @@ Assets/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
       CityBus3D.json                    deterministic dimensions/bindings manifest
     Materials/                          14 shared URP bus surface materials
+    Drivers/
+      Models/
+        CityBusDriver3D.fbx             exact 31-bone low-poly production driver
+        CityBusDriver3D.json            deterministic parts/rig/bindings manifest
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -204,7 +209,11 @@ Assets/
         CityBusActor.cs            fixed-loop motion, yielding, fixed 10 s per-lap dwell + engine loop
         CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
-        CityBusPresentation.cs     sprung body, articulation, emission + four runtime night Spots
+        CityBusDriverDoorTimeline.cs deterministic approach/dwell hand, button + look samples
+        CityBusDriverPresentation.cs seated IK, door/player focus, rubber-neck stretch + blink
+        CityBusDriverAssetRegistry.cs exact 31-bone passive rig bindings
+        CityBusDriverResources.cs  passive driver Resources prefab loading
+        CityBusPresentation.cs     sprung body, controls, driver handoff, emission + night Spots
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
@@ -284,7 +293,7 @@ Assets/
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       Player3D/       deterministic model/animation/portrait import + prefab setup
       City/NPC/       pedestrian Generic import, dependency validation + prefab setup
-      City/Traffic/   bus FBX import, shared materials + Resources prefab setup
+      City/Traffic/   bus/driver FBX import, shared materials + Resources prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
@@ -304,7 +313,9 @@ Assets/
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
       CityBusRuntimeTests.cs            forward encounter, fixed loop, 10 s dwell, suspension + reset
-      CityBusAssetImportTests.cs        dimensions, interior, bindings + passive prefab
+      CityBusAssetImportTests.cs        dimensions, interior, wheel/button controls + passive prefab
+      CityBusDriverDoorTimelineTests.cs phase, contact + chunk-independent samples
+      CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
@@ -352,6 +363,7 @@ Assets/
 ArtSource/
   Vehicles/
     Blender/                    generated bus .blend and deterministic preview
+    Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
     Blender/                    Lampshade Walker .blend and deterministic preview
   Player/
@@ -364,6 +376,7 @@ ArtSource/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
+  build-city-bus-driver-3d-model.py  driver model/rig/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
   build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
   build-player-puppet-atlas.py      retired 2D player source tooling
@@ -517,6 +530,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> fixed `10 s` total stop dwell once per lap
                                -> `0.70 s` open + `0.70 s` close transitions
                                -> two double-leaf doors
+                               -> CityBusDriverDoorTimeline deterministic sample
                             -> full-body recycling from `92 m`
                             -> no camera/frustum lifecycle dependency
                             -> CityBusActor kinematic box + engine
@@ -524,7 +538,15 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> grounded wheels + sprung `Suspension Visual` body
                                   -> heave `0.045 m` / pitch `0.8°` / roll `1°` caps
                                   -> actor/collider/route pose unchanged
-                               -> inward door leaves + steering/night emission
+                               -> inward door leaves + rotating steering wheel
+                               -> dashboard door button with `12 mm` travel
+                               -> CityBusDriverPresentation seated procedural IK
+                                  -> both hands follow rotating wheel grips
+                                  -> right hand presses button; left keeps its grip
+                                  -> normal head + long eyes hold the open-door look
+                                  -> nearby hero-head focus + capped rubber-neck stretch
+                                  -> deterministic blink + exact pooled reset
+                               -> night-factor emission
                                -> 2 headlight + 2 soft cabin runtime Spots
                                   -> sprung-body children; NightFactor/pool controlled
                          -> CityMapBusOverlay

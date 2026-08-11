@@ -157,7 +157,17 @@ The vertical slice contains:
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
   passenger seats, rails, dashboard, two animated double-leaf doors, rolling
   wheels and front steering. Each door keeps its outer posts fixed while its
-  two independently hinged leaves fold inward around the bus vertical. A
+  two independently hinged leaves fold inward around the bus vertical. The
+  separate passive `CityBusDriver3D` uses the shared `Player3DLit` material, an
+  exact 31-bone rig, a normal low-poly head and long horizontal eyes.
+  Procedural seated IK keeps both hands on the rotating wheel grips. For each
+  door command, a deterministic timeline moves only the right hand to the
+  dashboard button with `12 mm` travel while the left stays planted, and turns
+  the driver toward the front door for the open-door hold before returning
+  during closing. The long eyes blink on a deterministic cycle. A nearby hero
+  on the outside of the front entrance takes focus priority: the driver tracks
+  the hero's real head while the neck/head segment extends by up to `0.10 m`
+  with a `1.35x` cap, then restores its exact base scale when the hero leaves. A
   runtime-only sprung presentation pivot gives the moving body speed-scaled
   cartoon heave up to `0.045 m`, acceleration/road pitch up to `0.8` degrees
   and steering/road roll up to `1` degree. All four wheel assemblies stay
@@ -179,9 +189,10 @@ The vertical slice contains:
   recur in a connector, but every ordered occurrence receives a unique route
   link/node ID. Route selection has no random branch or player pursuit. The
   default five semantic stops each have a physical blue `01` pole and are served
-  once per lap with a fixed `10 s` total dwell, including `0.70 s` opening and
-  `0.70 s` closing transitions for both doors. Random roadside decoration does
-  not emit bus shelters. Nightlife's last-route island now has a working pole
+  once per lap by that deterministic door/driver timeline with a fixed `10 s`
+  total dwell, including `0.70 s` opening and `0.70 s` closing transitions for
+  both doors. Random roadside decoration does not emit bus shelters.
+  Nightlife's last-route island now has a working pole
   nearby but outside its public ground and approaches, leaving the abandoned
   island structures distinct from the live stop. A pooled actor prefers
   obstacle-safe fog-hidden route poses `76-86 m` from the player and falls back
@@ -189,8 +200,9 @@ The vertical slice contains:
   player. The cap means at most one bus can be active or potentially visible
   rather than guaranteeing that one is always on screen. It yields to the player and
   pedestrians and recycles only when its full body is at least `92 m` away.
-  Suspension, wheel/steering articulation, a synthesized engine loop and
-  night-scaled head, tail and cabin emission reset with the pool. Two
+  Suspension, wheel/steering articulation, button travel, driver hands/look, the
+  door timeline, a synthesized engine loop and night-scaled head, tail and cabin
+  emission reset with the pool. Two
   shadowless runtime headlight Spots illuminate the road ahead and two soft
   downward cabin Spots light the interior; the shared night factor scales all
   four and pooling switches them fully off. Camera

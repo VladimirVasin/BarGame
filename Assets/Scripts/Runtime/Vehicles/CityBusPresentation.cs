@@ -9,6 +9,7 @@ namespace BarPromenade
     {
         public const float MaximumDoorAngle = 72f;
         public const float MaximumSteeringAngle = 28f;
+        public const float MaximumSteeringWheelAngle = 100f;
         public const float MaximumSuspensionHeave = 0.045f;
         public const float MaximumSuspensionPitch = 0.8f;
         public const float MaximumSuspensionRoll = 1f;
@@ -17,6 +18,7 @@ namespace BarPromenade
         private const float SuspensionResponse = 7f;
         private const float AccelerationPitchScale = 0.12f;
         private const float SteeringRollScale = 0.78f;
+        private const float SteeringWheelRatio = 3.55f;
         private const float HeadlightBaseIntensity = 14f;
         private const float HeadlightRange = 22f;
         private const float HeadlightSpotAngle = 48f;
@@ -59,6 +61,11 @@ namespace BarPromenade
         private TransformPose rearRightWheelBase;
         private TransformPose frontLeftSteeringBase;
         private TransformPose frontRightSteeringBase;
+        private TransformPose steeringWheelBase;
+        private TransformPose doorButtonBase;
+        private CityBusDriverPresentation driverPresentation;
+        private Transform driverFocusTarget;
+        private CityBusDriverDoorSample driverDoorSample;
         private float wheelRotationDegrees;
         private float brakeFactor;
         private float suspensionPhase;
@@ -71,6 +78,12 @@ namespace BarPromenade
         public CityBusAssetRegistry Registry => registry;
         public float DoorOpenness { get; private set; }
         public float SteeringAngle { get; private set; }
+        public float SteeringWheelAngle { get; private set; }
+        public float DoorButtonPressFactor { get; private set; }
+        public CityBusDoorPhase DoorPhase => driverDoorSample.DoorPhase;
+        public CityBusDriverDoorSample DriverDoorSample => driverDoorSample;
+        public CityBusDriverPresentation DriverPresentation =>
+            driverPresentation;
         public float NightFactor { get; private set; }
         public float BrakeFactor => brakeFactor;
         public Transform SuspensionVisual => suspensionVisual;
@@ -98,6 +111,51 @@ namespace BarPromenade
             CaptureBasePoses();
             IsInitialized = true;
             ResetForPool();
+        }
+
+        public void AttachDriver(CityBusDriverAssetRegistry driverRegistry)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the city bus presentation before attaching " +
+                    "its driver.");
+            }
+
+            if (driverPresentation != null)
+            {
+                throw new InvalidOperationException(
+                    "The city bus presentation already owns a driver.");
+            }
+
+            if (driverRegistry == null)
+            {
+                throw new ArgumentNullException(nameof(driverRegistry));
+            }
+
+            driverPresentation = driverRegistry.GetComponent<
+                CityBusDriverPresentation>();
+            if (driverPresentation == null)
+            {
+                driverPresentation = driverRegistry.gameObject.AddComponent<
+                    CityBusDriverPresentation>();
+            }
+
+            driverPresentation.Initialize(
+                driverRegistry,
+                registry,
+                transform);
+            driverPresentation.SetPlayerFocusTarget(driverFocusTarget);
+            driverPresentation.ResetForPool();
+        }
+
+        public void SetDriverFocusTarget(Transform playerRoot)
+        {
+            driverFocusTarget = playerRoot;
+            if (driverPresentation != null)
+            {
+                driverPresentation.SetPlayerFocusTarget(playerRoot);
+            }
         }
 
         public void SetMotion(
@@ -136,6 +194,14 @@ namespace BarPromenade
             ApplyWheelPose(rearRightWheelBase, wheelRotationDegrees);
             ApplySteeringPose(frontLeftSteeringBase, SteeringAngle);
             ApplySteeringPose(frontRightSteeringBase, SteeringAngle);
+            SteeringWheelAngle = Mathf.Clamp(
+                SteeringAngle * SteeringWheelRatio,
+                -MaximumSteeringWheelAngle,
+                MaximumSteeringWheelAngle);
+            ApplyAxisPose(
+                steeringWheelBase,
+                SteeringWheelAngle,
+                registry.SteeringWheelAxisLocal);
             AdvanceSuspension(
                 signedDistance,
                 speedMetersPerSecond,
@@ -143,6 +209,19 @@ namespace BarPromenade
                 SteeringAngle,
                 deltaTime);
             SetBrakeFactor(braking ? 1f : 0f);
+            ApplyDriverControls(deltaTime);
+        }
+
+        public void SetDriverDoorSample(
+            CityBusDriverDoorSample sample)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            driverDoorSample = sample;
+            SetDoors(sample.DoorOpenness);
         }
 
         public void SetDoors(float openness01)
@@ -191,7 +270,10 @@ namespace BarPromenade
 
             wheelRotationDegrees = 0f;
             SteeringAngle = 0f;
+            SteeringWheelAngle = 0f;
             DoorOpenness = 0f;
+            DoorButtonPressFactor = 0f;
+            driverDoorSample = default;
             NightFactor = 0f;
             brakeFactor = 0f;
             suspensionPhase = 0f;
@@ -209,6 +291,12 @@ namespace BarPromenade
             RestorePose(rearRightWheelBase);
             RestorePose(frontLeftSteeringBase);
             RestorePose(frontRightSteeringBase);
+            RestorePose(steeringWheelBase);
+            RestorePose(doorButtonBase);
+            if (driverPresentation != null)
+            {
+                driverPresentation.ResetForPool();
+            }
             RefreshLights();
         }
 
@@ -252,6 +340,10 @@ namespace BarPromenade
                 registry.FrontLeftSteeringPivot);
             frontRightSteeringBase = new TransformPose(
                 registry.FrontRightSteeringPivot);
+            steeringWheelBase = new TransformPose(
+                registry.SteeringWheelPivot);
+            doorButtonBase = new TransformPose(
+                registry.DoorButtonPivot);
         }
 
         private void CreateSuspensionHierarchy()
@@ -585,6 +677,31 @@ namespace BarPromenade
             }
         }
 
+        private void ApplyDriverControls(float deltaTime)
+        {
+            DoorButtonPressFactor = IsFinite(
+                    driverDoorSample.ButtonPress01)
+                ? Mathf.Clamp01(driverDoorSample.ButtonPress01)
+                : 0f;
+            if (doorButtonBase.Target != null)
+            {
+                doorButtonBase.Target.localPosition =
+                    doorButtonBase.LocalPosition +
+                    registry.DoorButtonTravelLocal *
+                    DoorButtonPressFactor;
+                doorButtonBase.Target.localRotation =
+                    doorButtonBase.LocalRotation;
+            }
+
+            if (driverPresentation != null)
+            {
+                driverPresentation.ApplyPose(
+                    driverDoorSample.RightHandButtonBlend,
+                    driverDoorSample.DoorLook01,
+                    deltaTime);
+            }
+        }
+
         private void ApplyDoorLeafPose(
             TransformPose pose,
             float signedOpenness)
@@ -644,6 +761,24 @@ namespace BarPromenade
             pose.Target.localPosition = pose.LocalPosition;
             pose.Target.localRotation = pose.LocalRotation *
                 Quaternion.AngleAxis(steeringAngle, Vector3.up);
+        }
+
+        private static void ApplyAxisPose(
+            TransformPose pose,
+            float angle,
+            Vector3 localAxis)
+        {
+            if (pose.Target == null)
+            {
+                return;
+            }
+
+            Vector3 axis = localAxis.sqrMagnitude > 0.0001f
+                ? localAxis.normalized
+                : Vector3.up;
+            pose.Target.localPosition = pose.LocalPosition;
+            pose.Target.localRotation = pose.LocalRotation *
+                Quaternion.AngleAxis(angle, axis);
         }
 
         private static void RestorePose(TransformPose pose)

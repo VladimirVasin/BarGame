@@ -57,7 +57,16 @@ fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
 twelve-seat interior, driver area, two animated double-leaf doors that fold
 inward around fixed outer posts, steering and rolling wheels, a synthesized
-engine loop and time-of-day head, tail and cabin lights. While it travels, a
+engine loop and time-of-day head, tail and cabin lights. Its separate passive
+`CityBusDriver3D` uses the shared `Player3DLit` material and exact 31-bone rig,
+with a normal low-poly head and long horizontal eyes. Procedural seated IK keeps
+both hands on the rotating wheel grips; the deterministic door timeline moves
+only the right hand to a real dashboard button with `12 mm` travel, keeps the
+left hand planted, and keeps the head turned toward the front door while it is
+open before returning it during closing. The long eyes blink independently;
+when the hero comes within `2.75 m` of the outside of the front entrance, the
+driver focuses on the hero's actual head and the neck/head segment stretches
+up to `0.10 m` with a deliberately uncanny `1.35x` cap. While the bus travels, a
 presentation-only sprung body adds speed-scaled cartoon heave up to `0.045 m`,
 pitch up to `0.8` degrees and roll up to `1` degree while the four wheel
 assemblies remain grounded; the route actor and collider do not move with it.
@@ -76,15 +85,17 @@ clear core and a symmetric S-return over the outgoing Street; it owns both
 physical edges so routing cannot bypass a stop-bearing edge. Ordinary tight
 `3 m` right turns remain rejected. Route selection has no random branching or
 player pursuit, and a repeated physical link receives a unique ordered route
-occurrence. Every stop is served once per lap with a fixed `10 s` total dwell,
-including the existing `0.70 s` door-opening and `0.70 s` door-closing
-transitions. Random roadside decoration does not create bus shelters.
+occurrence. A deterministic door/driver timeline serves every stop once per lap
+with a fixed `10 s` total dwell, including the existing `0.70 s` door-opening
+and `0.70 s` door-closing transitions. Random roadside decoration does not
+create bus shelters.
 Nightlife's Last Route Island now has a working Route 01 pole nearby but outside
 the POI itself, so its abandoned island structures remain distinct from the
 live stop. Spawning prefers obstacle-safe, fog-hidden route poses `76-86 m` from
 the player and may fall back to `56-86 m` only when forward travel on the same
 loop can approach them; recycling uses the complete vehicle bounds only after
-they are at least `92 m` from the hero. The bus yields to the player and active
+they are at least `92 m` from the hero, and resets the wheel, button, driver
+hands and head to neutral. The bus yields to the player and active
 pedestrians, while camera direction and frustum state never control its
 lifecycle. The City map draws Route 01 as a blue ink-outlined line beneath the
 orange player itinerary, plus five numbered localized stop markers in the

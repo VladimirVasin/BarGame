@@ -35,7 +35,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.1.0"
+GENERATOR_VERSION = "1.2.1"
 DESIGN_ID = "road_v2_midibus_v1"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
@@ -76,6 +76,19 @@ DOORWAY_SPECS = (
     ),
 )
 
+STEERING_WHEEL_CENTER = (0.60, -3.32, 1.57)
+STEERING_WHEEL_MAJOR_RADIUS = 0.18
+STEERING_WHEEL_MINOR_RADIUS = 0.022
+STEERING_GRIP_X = 0.14
+STEERING_GRIP_TOP = math.sqrt(
+    STEERING_WHEEL_MAJOR_RADIUS ** 2 - STEERING_GRIP_X ** 2
+)
+STEERING_GRIP_AXIS_OFFSET = 0.020
+DOOR_BUTTON_CENTER = (0.30, -3.335, 1.50)
+DOOR_BUTTON_DEPTH = 0.045
+DOOR_BUTTON_TRAVEL = 0.012
+DRIVER_DOOR_LOOK_POSITION = (-0.90, -3.05, 2.12)
+
 
 MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, float]] = {
     # slot: (rgba, metallic, roughness, emission strength)
@@ -107,6 +120,8 @@ class Part:
 class Pivot:
     obj: bpy.types.Object
     role: str
+    runtime_axis_local: str
+    travel_m: float
 
 
 @dataclass(frozen=True)
@@ -272,6 +287,42 @@ class MeshAccumulator:
                     )
                 )
 
+    def add_torus_z(
+        self,
+        center: Sequence[float],
+        major_radius: float,
+        minor_radius: float,
+        major_segments: int = 12,
+        minor_segments: int = 4,
+    ) -> None:
+        cx, cy, cz = center
+        base = len(self.vertices)
+        for major in range(major_segments):
+            major_angle = math.tau * major / major_segments
+            radial_x = math.cos(major_angle)
+            radial_y = math.sin(major_angle)
+            for minor in range(minor_segments):
+                minor_angle = math.tau * minor / minor_segments
+                radial_distance = major_radius + minor_radius * math.cos(minor_angle)
+                self.vertices.append(
+                    (
+                        cx + radial_x * radial_distance,
+                        cy + radial_y * radial_distance,
+                        cz + minor_radius * math.sin(minor_angle),
+                    )
+                )
+        for major in range(major_segments):
+            next_major = (major + 1) % major_segments
+            for minor in range(minor_segments):
+                next_minor = (minor + 1) % minor_segments
+                self.faces.append(
+                    (
+                        base + major * minor_segments + minor,
+                        base + next_major * minor_segments + minor,
+                        base + next_major * minor_segments + next_minor,
+                        base + major * minor_segments + next_minor,
+                    )
+                )
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -366,13 +417,14 @@ def create_empty(
     collection: bpy.types.Collection,
     parent: bpy.types.Object | None,
     location: Sequence[float] = (0.0, 0.0, 0.0),
+    rotation_euler: Sequence[float] = (0.0, 0.0, 0.0),
     display_size: float = 0.14,
 ) -> bpy.types.Object:
     obj = bpy.data.objects.new(name, None)
     collection.objects.link(obj)
     obj.parent = parent
     obj.location = location
-    obj.rotation_euler = (0.0, 0.0, 0.0)
+    obj.rotation_euler = rotation_euler
     obj.scale = (1.0, 1.0, 1.0)
     obj.empty_display_type = "PLAIN_AXES"
     obj.empty_display_size = display_size
@@ -466,10 +518,23 @@ class CityBusBuilder:
         role: str,
         parent: bpy.types.Object,
         location: Sequence[float],
+        rotation_euler: Sequence[float] = (0.0, 0.0, 0.0),
+        runtime_axis_local: str = "",
+        travel_m: float = 0.0,
     ) -> bpy.types.Object:
-        pivot = create_empty(name, self.collection, parent, location)
+        pivot = create_empty(
+            name,
+            self.collection,
+            parent,
+            location,
+            rotation_euler,
+        )
         pivot["bp_role"] = role
-        self.pivots.append(Pivot(pivot, role))
+        if runtime_axis_local:
+            pivot["bp_runtime_axis_local"] = runtime_axis_local
+        if travel_m > 0.0:
+            pivot["bp_travel_m"] = travel_m
+        self.pivots.append(Pivot(pivot, role, runtime_axis_local, travel_m))
         return pivot
 
     def build(self) -> BuildResult:
@@ -617,12 +682,107 @@ class CityBusBuilder:
             "dashboard",
             "Dashboard",
         )
+        steering_column = MeshAccumulator()
+        steering_column.add_cylinder_between(
+            STEERING_WHEEL_CENTER,
+            (0.60, -3.52, 1.36),
+            0.035,
+            8,
+        )
+        self.add_accumulator(
+            "INT_SteeringColumn",
+            steering_column,
+            "steering_column",
+            "Trim",
+        )
+
+        steering_pivot = self.add_pivot(
+            "PIVOT_SteeringWheel",
+            "steering_wheel",
+            self.body,
+            STEERING_WHEEL_CENTER,
+            (-math.pi * 0.5, 0.0, 0.0),
+            "+Z",
+        )
         steering = MeshAccumulator()
-        steering.add_torus_y((0.60, -3.32, 1.57), 0.18, 0.022, 12, 4)
-        steering.add_cylinder_between((0.60, -3.32, 1.57), (0.60, -3.52, 1.36), 0.035, 8)
-        steering.add_cylinder_between((0.60, -3.32, 1.57), (0.45, -3.32, 1.57), 0.018, 6)
-        steering.add_cylinder_between((0.60, -3.32, 1.57), (0.75, -3.32, 1.57), 0.018, 6)
-        self.add_accumulator("INT_SteeringWheel", steering, "steering_wheel", "Trim")
+        steering.add_torus_z(
+            (0.0, 0.0, 0.0),
+            STEERING_WHEEL_MAJOR_RADIUS,
+            STEERING_WHEEL_MINOR_RADIUS,
+            12,
+            4,
+        )
+        steering.add_cylinder_between(
+            (0.0, 0.0, -0.018),
+            (0.0, 0.0, 0.018),
+            0.045,
+            8,
+        )
+        steering.add_cylinder_between(
+            (0.0, 0.0, 0.0),
+            (0.15, 0.0, 0.0),
+            0.018,
+            6,
+        )
+        steering.add_cylinder_between(
+            (0.0, 0.0, 0.0),
+            (-0.15, 0.0, 0.0),
+            0.018,
+            6,
+        )
+        steering.add_cylinder_between(
+            (0.0, 0.0, 0.0),
+            (0.0, 0.13, 0.0),
+            0.018,
+            6,
+        )
+        self.add_accumulator(
+            "INT_SteeringWheel",
+            steering,
+            "steering_wheel",
+            "Trim",
+            steering_pivot,
+        )
+        for side, role_prefix, x in (
+            ("L", "left", STEERING_GRIP_X),
+            ("R", "right", -STEERING_GRIP_X),
+        ):
+            grip_angle = math.atan2(-STEERING_GRIP_TOP, x)
+            self.add_pivot(
+                f"ANCHOR_SteeringGrip.{side}",
+                f"{role_prefix}_steering_grip",
+                steering_pivot,
+                (x, -STEERING_GRIP_TOP, STEERING_GRIP_AXIS_OFFSET),
+                (0.0, 0.0, grip_angle),
+            )
+
+        door_button_pivot = self.add_pivot(
+            "PIVOT_DoorButton",
+            "door_button",
+            self.body,
+            DOOR_BUTTON_CENTER,
+            (0.0, 0.0, math.pi),
+            "+Y",
+            DOOR_BUTTON_TRAVEL,
+        )
+        door_button = MeshAccumulator()
+        door_button.add_box(
+            (0.0, 0.0, 0.0),
+            (0.10, DOOR_BUTTON_DEPTH, 0.10),
+        )
+        self.add_accumulator(
+            "INT_DoorButton",
+            door_button,
+            "door_button",
+            "Accent",
+            door_button_pivot,
+        )
+        self.add_pivot(
+            "ANCHOR_DoorButtonPress",
+            "door_button_press",
+            door_button_pivot,
+            (0.0, -DOOR_BUTTON_DEPTH * 0.5 - 0.004, 0.0),
+        )
 
         rails = MeshAccumulator()
         rails.add_cylinder_between((-0.50, -2.90, 2.54), (-0.50, 3.45, 2.54), 0.025, 8)
@@ -802,6 +962,12 @@ class CityBusBuilder:
             self.body,
             (-0.72, 1.34, 0.66),
         )
+        self.add_pivot(
+            "ANCHOR_DriverDoorLook",
+            "driver_door_look",
+            self.body,
+            DRIVER_DOOR_LOOK_POSITION,
+        )
         seat_positions = [
             (0.66, -1.82), (0.66, -0.82), (0.66, 0.18),
             (0.66, 1.18), (0.66, 2.18), (0.66, 3.12),
@@ -857,6 +1023,7 @@ def build_signature(result: BuildResult) -> str:
                 "name": part.obj.name,
                 "role": part.role,
                 "slot": part.material_slot,
+                "parent": part.obj.parent.name if part.obj.parent else "",
                 "vertices": [
                     [stable_float(value) for value in vertex.co]
                     for vertex in mesh.vertices
@@ -871,6 +1038,11 @@ def build_signature(result: BuildResult) -> str:
                 "role": pivot.role,
                 "parent": pivot.obj.parent.name if pivot.obj.parent else "",
                 "location": [stable_float(value) for value in pivot.obj.location],
+                "rotation_euler": [
+                    stable_float(value) for value in pivot.obj.rotation_euler
+                ],
+                "runtime_axis_local": pivot.runtime_axis_local,
+                "travel_m": stable_float(pivot.travel_m),
             }
         )
     encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
@@ -901,8 +1073,9 @@ def validate_result(result: BuildResult) -> ValidationReport:
     roles = {part.role for part in result.parts}
     for required_role in (
         "body_shell", "glass", "passenger_seats", "handrails", "dashboard",
-        "steering_wheel", "door_panel", "door_frame", "door_glass", "door_post",
-        "headlight", "tail_light", "cabin_light",
+        "steering_column", "steering_wheel", "door_button", "door_panel",
+        "door_frame", "door_glass", "door_post", "headlight", "tail_light",
+        "cabin_light",
     ):
         if required_role not in roles:
             errors.append(f"Missing required mesh role {required_role}")
@@ -913,12 +1086,108 @@ def validate_result(result: BuildResult) -> ValidationReport:
         "rear_door_forward_leaf", "rear_door_rearward_leaf",
         "front_left_steering", "front_right_steering",
         "front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel",
+        "steering_wheel", "left_steering_grip", "right_steering_grip",
+        "door_button", "door_button_press", "driver_door_look",
         "driver_seat_anchor", "front_door_entry", "rear_door_entry",
     ):
         if required_role not in pivot_roles:
             errors.append(f"Missing required pivot role {required_role}")
 
     pivots_by_name = {pivot.obj.name: pivot for pivot in result.pivots}
+
+    def validate_control_pivot(
+        name: str,
+        role: str,
+        parent: bpy.types.Object,
+        location: Sequence[float],
+        rotation_euler: Sequence[float] = (0.0, 0.0, 0.0),
+        runtime_axis_local: str = "",
+        travel_m: float = 0.0,
+    ) -> Pivot | None:
+        pivot = pivots_by_name.get(name)
+        if pivot is None:
+            errors.append(f"Missing required control pivot {name}")
+            return None
+        if pivot.role != role:
+            errors.append(f"Control pivot {name} has role {pivot.role}, expected {role}")
+        if pivot.obj.parent is not parent:
+            errors.append(f"Control pivot {name} has the wrong parent")
+        if any(
+            abs(actual - expected) > 1e-6
+            for actual, expected in zip(pivot.obj.location, location)
+        ):
+            errors.append(f"Control pivot {name} has a stale local position")
+        if any(
+            abs(actual - expected) > 1e-6
+            for actual, expected in zip(pivot.obj.rotation_euler, rotation_euler)
+        ):
+            errors.append(f"Control pivot {name} has a stale local rotation")
+        if pivot.runtime_axis_local != runtime_axis_local:
+            errors.append(f"Control pivot {name} has a stale runtime axis")
+        if abs(pivot.travel_m - travel_m) > 1e-6:
+            errors.append(f"Control pivot {name} has a stale travel contract")
+        return pivot
+
+    steering_pivot = validate_control_pivot(
+        "PIVOT_SteeringWheel",
+        "steering_wheel",
+        result.body,
+        STEERING_WHEEL_CENTER,
+        (-math.pi * 0.5, 0.0, 0.0),
+        "+Z",
+    )
+    if steering_pivot is not None:
+        wheel_parts = [
+            part for part in result.parts
+            if part.obj.parent is steering_pivot.obj and part.role == "steering_wheel"
+        ]
+        if len(wheel_parts) != 1 or wheel_parts[0].obj.name != "INT_SteeringWheel":
+            errors.append(
+                "PIVOT_SteeringWheel must directly own the steering-wheel mesh"
+            )
+        for side, role_prefix, x in (
+            ("L", "left", STEERING_GRIP_X),
+            ("R", "right", -STEERING_GRIP_X),
+        ):
+            grip_angle = math.atan2(-STEERING_GRIP_TOP, x)
+            validate_control_pivot(
+                f"ANCHOR_SteeringGrip.{side}",
+                f"{role_prefix}_steering_grip",
+                steering_pivot.obj,
+                (x, -STEERING_GRIP_TOP, STEERING_GRIP_AXIS_OFFSET),
+                (0.0, 0.0, grip_angle),
+            )
+
+    door_button_pivot = validate_control_pivot(
+        "PIVOT_DoorButton",
+        "door_button",
+        result.body,
+        DOOR_BUTTON_CENTER,
+        (0.0, 0.0, math.pi),
+        "+Y",
+        DOOR_BUTTON_TRAVEL,
+    )
+    if door_button_pivot is not None:
+        button_parts = [
+            part for part in result.parts
+            if part.obj.parent is door_button_pivot.obj and part.role == "door_button"
+        ]
+        if len(button_parts) != 1 or button_parts[0].obj.name != "INT_DoorButton":
+            errors.append("PIVOT_DoorButton must directly own its visible mesh")
+        validate_control_pivot(
+            "ANCHOR_DoorButtonPress",
+            "door_button_press",
+            door_button_pivot.obj,
+            (0.0, -DOOR_BUTTON_DEPTH * 0.5 - 0.004, 0.0),
+        )
+
+    validate_control_pivot(
+        "ANCHOR_DriverDoorLook",
+        "driver_door_look",
+        result.body,
+        DRIVER_DOOR_LOOK_POSITION,
+    )
+
     expected_leaf_roles: dict[str, tuple[str, tuple[float, float, float]]] = {}
     for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:
         for leaf_name, direction, role in leaf_specs:
@@ -1102,6 +1371,7 @@ def write_manifest(path: Path, result: BuildResult, report: ValidationReport) ->
                 "name": part.obj.name,
                 "role": part.role,
                 "material_slot": part.material_slot,
+                "parent": part.obj.parent.name if part.obj.parent else "",
                 "vertices": len(part.obj.data.vertices),
                 "triangles": triangulated_count(part.obj.data),
             }
@@ -1113,6 +1383,12 @@ def write_manifest(path: Path, result: BuildResult, report: ValidationReport) ->
                 "role": pivot.role,
                 "parent": pivot.obj.parent.name if pivot.obj.parent else "",
                 "local_position": [stable_float(value) for value in pivot.obj.location],
+                "local_rotation_degrees": [
+                    stable_float(math.degrees(value))
+                    for value in pivot.obj.rotation_euler
+                ],
+                "runtime_axis_local": pivot.runtime_axis_local,
+                "travel_m": stable_float(pivot.travel_m),
             }
             for pivot in result.pivots
         ],

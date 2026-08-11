@@ -29,6 +29,7 @@ namespace BarPromenade.Tests
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
             Assert.That(manifest.mesh_count, Is.EqualTo(manifest.parts.Length));
+            Assert.That(manifest.pivots, Is.Not.Null.And.Not.Empty);
             Assert.That(manifest.triangle_count, Is.InRange(900, 12000));
             Assert.That(manifest.passenger_seat_count, Is.GreaterThanOrEqualTo(10));
             Assert.That(manifest.dimensions_m.length, Is.EqualTo(8.25f));
@@ -36,6 +37,53 @@ namespace BarPromenade.Tests
             Assert.That(manifest.dimensions_m.height, Is.EqualTo(2.95f));
             Assert.That(manifest.dimensions_m.wheelbase, Is.EqualTo(4.50f));
             Assert.That(manifest.dimensions_m.wheel_radius, Is.EqualTo(0.43f));
+
+            CityBusPivotManifest steeringSource = manifest.pivots.Single(
+                pivot => pivot.name == "PIVOT_SteeringWheel");
+            Assert.That(steeringSource.role, Is.EqualTo("steering_wheel"));
+            Assert.That(steeringSource.parent, Is.EqualTo("ROOT_Body"));
+            Assert.That(steeringSource.runtime_axis_local, Is.EqualTo("+Z"));
+            Assert.That(steeringSource.travel_m, Is.Zero);
+            AssertSourceVector(
+                steeringSource.local_position,
+                new Vector3(0.60f, -3.32f, 1.57f));
+            AssertSourceVector(
+                steeringSource.local_rotation_degrees,
+                new Vector3(-90f, 0f, 0f));
+            AssertPivotSource(
+                manifest,
+                "ANCHOR_SteeringGrip.L",
+                "left_steering_grip",
+                "PIVOT_SteeringWheel");
+            AssertPivotSource(
+                manifest,
+                "ANCHOR_SteeringGrip.R",
+                "right_steering_grip",
+                "PIVOT_SteeringWheel");
+
+            CityBusPivotManifest buttonSource = AssertPivotSource(
+                manifest,
+                "PIVOT_DoorButton",
+                "door_button",
+                "ROOT_Body");
+            Assert.That(buttonSource.runtime_axis_local, Is.EqualTo("+Y"));
+            Assert.That(buttonSource.travel_m, Is.EqualTo(0.012f));
+            AssertSourceVector(
+                buttonSource.local_position,
+                new Vector3(0.30f, -3.335f, 1.50f));
+            AssertPivotSource(
+                manifest,
+                "ANCHOR_DoorButtonPress",
+                "door_button_press",
+                "PIVOT_DoorButton");
+            CityBusPivotManifest lookSource = AssertPivotSource(
+                manifest,
+                "ANCHOR_DriverDoorLook",
+                "driver_door_look",
+                "ROOT_Body");
+            AssertSourceVector(
+                lookSource.local_position,
+                new Vector3(-0.90f, -3.05f, 2.12f));
 
             ModelImporter importer =
                 AssetImporter.GetAtPath(ModelPath) as ModelImporter;
@@ -82,6 +130,33 @@ namespace BarPromenade.Tests
                     Is.SameAs(registry.Body));
                 Assert.That(registry.FrontLeftSteeringPivot, Is.Not.Null);
                 Assert.That(registry.FrontRightSteeringPivot, Is.Not.Null);
+                Assert.That(registry.SteeringWheelPivot, Is.Not.Null);
+                Assert.That(registry.LeftSteeringGrip, Is.Not.Null);
+                Assert.That(registry.RightSteeringGrip, Is.Not.Null);
+                Assert.That(registry.DoorButtonPivot, Is.Not.Null);
+                Assert.That(registry.DoorButtonPressAnchor, Is.Not.Null);
+                Assert.That(registry.DriverDoorLookAnchor, Is.Not.Null);
+                Assert.That(
+                    registry.SteeringWheelPivot.parent,
+                    Is.SameAs(registry.Body));
+                Assert.That(
+                    registry.LeftSteeringGrip.parent,
+                    Is.SameAs(registry.SteeringWheelPivot));
+                Assert.That(
+                    registry.RightSteeringGrip.parent,
+                    Is.SameAs(registry.SteeringWheelPivot));
+                Assert.That(
+                    registry.DoorButtonPivot.parent,
+                    Is.SameAs(registry.Body));
+                Assert.That(
+                    registry.DoorButtonPressAnchor.parent,
+                    Is.SameAs(registry.DoorButtonPivot));
+                Assert.That(
+                    registry.DriverDoorLookAnchor.parent,
+                    Is.SameAs(registry.Body));
+                Assert.That(
+                    registry.SteeringWheelAxisLocal,
+                    Is.EqualTo(Vector3.forward));
                 Assert.That(
                     registry.FrontLeftWheel.parent,
                     Is.SameAs(registry.FrontLeftSteeringPivot));
@@ -107,6 +182,84 @@ namespace BarPromenade.Tests
                     registry.RendererBindings.Any(
                         binding => binding.Role == "steering_wheel"),
                     Is.True);
+                CityBusRendererBinding steeringWheel =
+                    registry.RendererBindings.Single(
+                        binding =>
+                            binding.SourceName == "INT_SteeringWheel");
+                CityBusRendererBinding doorButton =
+                    registry.RendererBindings.Single(
+                        binding => binding.SourceName == "INT_DoorButton");
+                Assert.That(
+                    steeringWheel.Renderer.transform.parent,
+                    Is.SameAs(registry.SteeringWheelPivot));
+                Assert.That(
+                    doorButton.Renderer.transform.parent,
+                    Is.SameAs(registry.DoorButtonPivot));
+                AssertGripOnRim(
+                    registry.SteeringWheelPivot,
+                    registry.LeftSteeringGrip,
+                    registry.SteeringWheelAxisLocal);
+                AssertGripOnRim(
+                    registry.SteeringWheelPivot,
+                    registry.RightSteeringGrip,
+                    registry.SteeringWheelAxisLocal);
+                Vector3 buttonTravelWorld =
+                    registry.DoorButtonPivot.parent.TransformVector(
+                        registry.DoorButtonTravelLocal);
+                Vector3 buttonFaceOffset =
+                    registry.DoorButtonPressAnchor.position -
+                    registry.DoorButtonPivot.position;
+                Assert.That(
+                    buttonTravelWorld.magnitude,
+                    Is.EqualTo(0.012f).Within(0.0001f));
+                Assert.That(
+                    buttonFaceOffset.magnitude,
+                    Is.EqualTo(0.0265f).Within(0.001f));
+                Assert.That(
+                    Vector3.Dot(
+                        buttonTravelWorld.normalized,
+                        -buttonFaceOffset.normalized),
+                    Is.GreaterThan(0.999f));
+                Assert.That(
+                    instance.transform.InverseTransformPoint(
+                        registry.DriverDoorLookAnchor.position).y,
+                    Is.GreaterThan(
+                        instance.transform.InverseTransformPoint(
+                            registry.DriverSeatAnchor.position).y + 0.8f));
+
+                Quaternion steeringRest =
+                    registry.SteeringWheelPivot.localRotation;
+                Vector3 buttonRest = registry.DoorButtonPivot.localPosition;
+                Vector3 buttonWorldRest = registry.DoorButtonPivot.position;
+                Quaternion buttonRotationRest =
+                    registry.DoorButtonPivot.localRotation;
+                registry.SteeringWheelPivot.localRotation =
+                    steeringRest * Quaternion.AngleAxis(
+                        47f,
+                        registry.SteeringWheelAxisLocal);
+                registry.DoorButtonPivot.localPosition =
+                    buttonRest + registry.DoorButtonTravelLocal;
+                Assert.That(
+                    Vector3.Distance(
+                        registry.DoorButtonPivot.position,
+                        buttonWorldRest),
+                    Is.EqualTo(0.012f).Within(0.0001f));
+                registry.DoorButtonPivot.localRotation *=
+                    Quaternion.AngleAxis(8f, Vector3.right);
+                registry.ResetArticulation();
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.SteeringWheelPivot.localRotation,
+                        steeringRest),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    registry.DoorButtonPivot.localPosition,
+                    Is.EqualTo(buttonRest));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.DoorButtonPivot.localRotation,
+                        buttonRotationRest),
+                    Is.LessThan(0.001f));
                 Assert.That(registry.LocalBounds.min.y, Is.EqualTo(0f).Within(0.03f));
                 Assert.That(
                     registry.LocalBounds.size.y,
@@ -134,6 +287,47 @@ namespace BarPromenade.Tests
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        private static CityBusPivotManifest AssertPivotSource(
+            CityBusManifest manifest,
+            string name,
+            string role,
+            string parent)
+        {
+            CityBusPivotManifest pivot = manifest.pivots.Single(
+                candidate => candidate.name == name);
+            Assert.That(pivot.role, Is.EqualTo(role));
+            Assert.That(pivot.parent, Is.EqualTo(parent));
+            Assert.That(pivot.local_position, Has.Length.EqualTo(3));
+            Assert.That(
+                pivot.local_rotation_degrees,
+                Has.Length.EqualTo(3));
+            return pivot;
+        }
+
+        private static void AssertSourceVector(
+            float[] actual,
+            Vector3 expected)
+        {
+            Assert.That(actual, Has.Length.EqualTo(3));
+            Assert.That(actual[0], Is.EqualTo(expected.x).Within(0.0001f));
+            Assert.That(actual[1], Is.EqualTo(expected.y).Within(0.0001f));
+            Assert.That(actual[2], Is.EqualTo(expected.z).Within(0.0001f));
+        }
+
+        private static void AssertGripOnRim(
+            Transform steeringWheel,
+            Transform grip,
+            Vector3 axisLocal)
+        {
+            Vector3 axis = steeringWheel.TransformDirection(
+                axisLocal).normalized;
+            Vector3 offset = grip.position - steeringWheel.position;
+            Vector3 radial = offset - Vector3.Project(
+                offset,
+                axis);
+            Assert.That(radial.magnitude, Is.EqualTo(0.18f).Within(0.001f));
         }
 
         [Test]
@@ -352,6 +546,323 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void DriverPresentation_TracksWheelPressesButtonAndLooksAtDoor()
+        {
+            GameObject busPrefab = CityBusResources.LoadPrefab();
+            GameObject driverPrefab = CityBusDriverResources.LoadPrefab();
+            Assert.That(busPrefab, Is.Not.Null);
+            Assert.That(driverPrefab, Is.Not.Null);
+            GameObject bus = UnityEngine.Object.Instantiate(busPrefab);
+            GameObject driver = UnityEngine.Object.Instantiate(
+                driverPrefab,
+                bus.transform,
+                false);
+            try
+            {
+                CityBusAssetRegistry busRegistry =
+                    bus.GetComponent<CityBusAssetRegistry>();
+                CityBusDriverAssetRegistry driverRegistry =
+                    driver.GetComponent<CityBusDriverAssetRegistry>();
+                Assert.That(busRegistry, Is.Not.Null);
+                Assert.That(driverRegistry, Is.Not.Null);
+
+                CityBusPresentation presentation =
+                    bus.AddComponent<CityBusPresentation>();
+                presentation.Initialize(busRegistry);
+                presentation.AttachDriver(driverRegistry);
+                CityBusDriverPresentation driverPresentation =
+                    presentation.DriverPresentation;
+                Assert.That(driverPresentation, Is.Not.Null);
+
+                presentation.SetDriverDoorSample(default);
+                presentation.SetMotion(
+                    0f,
+                    3f,
+                    0f,
+                    20f,
+                    false,
+                    1f / 60f);
+
+                Assert.That(
+                    Mathf.Abs(presentation.SteeringWheelAngle),
+                    Is.GreaterThan(60f));
+                Assert.That(
+                    driverPresentation.LeftGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+                Assert.That(
+                    driverPresentation.RightGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+
+                CityBusDriverDoorSample openingContact =
+                    CityBusDriverDoorTimeline.SampleDwell(
+                        0f,
+                        CityBusActor.DwellDuration,
+                        CityBusActor.DoorTransitionDuration);
+                presentation.SetDriverDoorSample(openingContact);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    1f / 60f);
+
+                Assert.That(
+                    presentation.DoorButtonPressFactor,
+                    Is.EqualTo(1f));
+                Assert.That(
+                    driverPresentation.RightHandButtonDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+                Assert.That(
+                    driverPresentation.LeftGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+                Quaternion neutralHeadRotation =
+                    driverRegistry.Head.rotation;
+                Vector3 neutralFaceDirection =
+                    ResolveDriverFaceDirection(driverRegistry, bus.transform.up);
+
+                CityBusDriverDoorSample openingLook =
+                    CityBusDriverDoorTimeline.SampleDwell(
+                        CityBusActor.DwellDuration * 0.5f,
+                        CityBusActor.DwellDuration,
+                        CityBusActor.DoorTransitionDuration);
+                presentation.SetDriverDoorSample(openingLook);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    1f / 60f);
+                Assert.That(
+                    driverPresentation.DoorLookWeight,
+                    Is.EqualTo(1f).Within(0.0001f));
+                Vector3 doorDirection = Vector3.ProjectOnPlane(
+                    busRegistry.DriverDoorLookAnchor.position -
+                    driverRegistry.Head.position,
+                    bus.transform.up).normalized;
+                Vector3 turnedFaceDirection =
+                    ResolveDriverFaceDirection(driverRegistry, bus.transform.up);
+                float neutralDoorAlignment = Vector3.Dot(
+                    neutralFaceDirection,
+                    doorDirection);
+                float turnedDoorAlignment = Vector3.Dot(
+                    turnedFaceDirection,
+                    doorDirection);
+                Assert.That(
+                    Quaternion.Angle(
+                        neutralHeadRotation,
+                        driverRegistry.Head.rotation),
+                    Is.GreaterThan(55f),
+                    "The visible head bone must make a readable door turn.");
+                Assert.That(
+                    turnedDoorAlignment,
+                    Is.GreaterThan(neutralDoorAlignment + 0.35f),
+                    "The actual face direction must turn toward the door.");
+                Assert.That(
+                    turnedDoorAlignment,
+                    Is.GreaterThan(0.90f),
+                    "The driver's visible face must point toward the door.");
+                Assert.That(
+                    driverPresentation.DoorLookAlignment,
+                    Is.EqualTo(turnedDoorAlignment).Within(0.001f));
+
+                Transform focusRoot = new GameObject(
+                    "Driver Focus Test Player").transform;
+                focusRoot.SetParent(bus.transform, true);
+                Vector3 doorOutward = Vector3.ProjectOnPlane(
+                    busRegistry.FrontDoorEntryAnchor.position -
+                    busRegistry.DriverSeatAnchor.position,
+                    bus.transform.up).normalized;
+                focusRoot.position =
+                    busRegistry.FrontDoorEntryAnchor.position +
+                    doorOutward * 1.2f;
+                presentation.SetDriverFocusTarget(focusRoot);
+                float neutralNeckLength = Vector3.Distance(
+                    driverRegistry.Neck.position,
+                    driverRegistry.Head.position);
+                Vector3 neutralHeadPosition = driverRegistry.Head.position;
+                Vector3 neutralNeckScale = driverRegistry.Neck.localScale;
+
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    0.5f);
+
+                float stretchedNeckRatio = Vector3.Distance(
+                        driverRegistry.Neck.position,
+                        driverRegistry.Head.position) /
+                    neutralNeckLength;
+                Vector3 playerDirection = Vector3.ProjectOnPlane(
+                    driverPresentation.PlayerFocusPoint -
+                    driverRegistry.Head.position,
+                    bus.transform.up).normalized;
+                float playerAlignment = Vector3.Dot(
+                    ResolveDriverFaceDirection(
+                        driverRegistry,
+                        bus.transform.up),
+                    playerDirection);
+                Assert.That(
+                    driverPresentation.IsPlayerNearFrontDoor,
+                    Is.True);
+                Assert.That(
+                    driverPresentation.PlayerFocusWeight,
+                    Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(
+                    playerAlignment,
+                    Is.GreaterThan(0.90f));
+                Assert.That(
+                    stretchedNeckRatio,
+                    Is.InRange(
+                        1.10f,
+                        CityBusDriverPresentation
+                            .MaximumNeckStretchRatio + 0.001f));
+                Assert.That(
+                    Vector3.Distance(
+                        neutralHeadPosition,
+                        driverRegistry.Head.position),
+                    Is.GreaterThan(0.05f));
+                Assert.That(
+                    driverPresentation.LeftGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+                Assert.That(
+                    driverPresentation.RightGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+
+                focusRoot.position =
+                    busRegistry.FrontDoorEntryAnchor.position +
+                    doorOutward *
+                    (CityBusDriverPresentation.PlayerFocusZeroDistance + 1f);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    0.7f);
+                Assert.That(
+                    driverPresentation.IsPlayerNearFrontDoor,
+                    Is.False);
+                Assert.That(driverPresentation.PlayerFocusWeight, Is.Zero);
+                Assert.That(
+                    Vector3.Distance(
+                        driverRegistry.Neck.position,
+                        driverRegistry.Head.position),
+                    Is.EqualTo(neutralNeckLength).Within(0.001f));
+                Assert.That(
+                    driverRegistry.Neck.localScale,
+                    Is.EqualTo(neutralNeckScale));
+
+                float closingStart =
+                    CityBusActor.DwellDuration -
+                    CityBusActor.DoorTransitionDuration;
+                CityBusDriverDoorSample closingContact =
+                    CityBusDriverDoorTimeline.SampleDwell(
+                        closingStart,
+                        CityBusActor.DwellDuration,
+                        CityBusActor.DoorTransitionDuration);
+                presentation.SetDriverDoorSample(closingContact);
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    true,
+                    1f / 60f);
+                Assert.That(
+                    driverPresentation.RightHandButtonDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+
+                Renderer[] blinkingEyes = driverRegistry.RendererBindings
+                    .Where(binding =>
+                        binding.Role == "long_horizontal_eye" ||
+                        binding.Role == "visible_eye_pupil")
+                    .Select(binding => binding.Renderer)
+                    .ToArray();
+                Assert.That(blinkingEyes, Has.Length.EqualTo(4));
+
+                presentation.ResetForPool();
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    false,
+                    CityBusDriverPresentation.BlinkStartTime +
+                    CityBusDriverPresentation.BlinkCloseDuration +
+                    CityBusDriverPresentation.BlinkHoldDuration * 0.5f);
+                Assert.That(driverPresentation.EyesClosed, Is.True);
+                Assert.That(driverPresentation.BlinkClosure, Is.EqualTo(1f));
+                Assert.That(
+                    blinkingEyes.All(renderer => renderer.forceRenderingOff),
+                    Is.True);
+
+                presentation.SetMotion(
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    false,
+                    CityBusDriverPresentation.BlinkHoldDuration +
+                    CityBusDriverPresentation.BlinkOpenDuration);
+                Assert.That(driverPresentation.EyesClosed, Is.False);
+                Assert.That(driverPresentation.BlinkClosure, Is.Zero);
+                Assert.That(
+                    blinkingEyes.All(renderer => !renderer.forceRenderingOff),
+                    Is.True);
+
+                presentation.ResetForPool();
+                Assert.That(presentation.SteeringWheelAngle, Is.Zero);
+                Assert.That(presentation.DoorButtonPressFactor, Is.Zero);
+                Assert.That(driverPresentation.RightHandButtonBlend, Is.Zero);
+                Assert.That(driverPresentation.DoorLookWeight, Is.Zero);
+                Assert.That(driverPresentation.PlayerFocusWeight, Is.Zero);
+                Assert.That(driverPresentation.FocusStretchDistance, Is.Zero);
+                Assert.That(driverPresentation.NeckStretchRatio, Is.EqualTo(1f));
+                Assert.That(driverPresentation.BlinkClosure, Is.Zero);
+                Assert.That(driverPresentation.EyesClosed, Is.False);
+                Assert.That(
+                    blinkingEyes.All(renderer => !renderer.forceRenderingOff),
+                    Is.True);
+                Assert.That(
+                    driverPresentation.LeftGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+                Assert.That(
+                    driverPresentation.RightGripDistance,
+                    Is.LessThanOrEqualTo(
+                        CityBusDriverPresentation.MaximumGripError));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(bus);
+            }
+        }
+
+        private static Vector3 ResolveDriverFaceDirection(
+            CityBusDriverAssetRegistry registry,
+            Vector3 up)
+        {
+            Vector3 eyeCenter =
+                (registry.FaceEyeLeft.position +
+                 registry.FaceEyeRight.position) * 0.5f;
+            return Vector3.ProjectOnPlane(
+                    eyeCenter - registry.Head.position,
+                    up)
+                .normalized;
+        }
+
+        [Test]
         public void SuspensionPresentation_UsesBusVerticalAndBodyAxes()
         {
             GameObject prefab = CityBusResources.LoadPrefab();
@@ -509,6 +1020,7 @@ namespace BarPromenade.Tests
             public bool visible_interior;
             public int passenger_seat_count;
             public CityBusPartManifest[] parts;
+            public CityBusPivotManifest[] pivots;
         }
 
         [Serializable]
@@ -525,6 +1037,18 @@ namespace BarPromenade.Tests
         private sealed class CityBusPartManifest
         {
             public string name;
+        }
+
+        [Serializable]
+        private sealed class CityBusPivotManifest
+        {
+            public string name;
+            public string role;
+            public string parent;
+            public float[] local_position;
+            public float[] local_rotation_degrees;
+            public string runtime_axis_local;
+            public float travel_m;
         }
     }
 }

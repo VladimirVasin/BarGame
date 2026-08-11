@@ -142,6 +142,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   a modeled driver area, dashboard, twelve passenger seats, rails and two
   double-leaf doors, and matches the same real dimensions without runtime scale
   correction.
+  The separate passive `CityBusDriver3D` production prefab uses the shared
+  `Player3DLit` material and an exact 31-bone rig. Its normal low-poly head keeps
+  the slightly bizarre identity in long horizontal eyes rather than distorted
+  anatomy. Runtime procedural seated IK keeps both hands aligned to the rotating
+  steering-wheel grips. The deterministic door/driver timeline moves only the
+  right hand to the physical dashboard button for opening and closing, drives
+  its real `12 mm` press travel and leaves the left hand on the wheel. During
+  `Opening` the driver turns toward the front door, holds that look through the
+  open phase, then returns during `Closing`. The four separate eye renderers
+  provide deterministic pooled blinking. A hero within the `2.25-2.75 m`
+  front-entry focus band on the door side overrides the static look anchor;
+  the driver tracks the hero head and extends the connected neck/head segment
+  by up to `0.10 m`, capped at `1.35x`, before restoring position and scale. The
+  timeline preserves the fixed `10 s` dwell and `0.70 s` opening/closing
+  transitions; driver bones, wheel, button, look and timeline all return to
+  neutral when the actor enters its pool.
   Each doorway keeps its outer posts fixed while independently hinged leaves
   rotate in opposite directions around the vehicle vertical and fold inward.
   Presentation inserts one runtime-only `Suspension Visual` pivot above the

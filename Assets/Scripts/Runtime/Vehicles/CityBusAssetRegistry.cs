@@ -82,6 +82,7 @@ namespace BarPromenade
     public sealed class CityBusAssetRegistry : MonoBehaviour
     {
         public const string PrefabResourcePath = "Vehicles/CityBus3D";
+        public const float DoorButtonTravelDistance = 0.012f;
 
         [SerializeField] private Transform modelRoot;
         [SerializeField] private Transform body;
@@ -95,6 +96,20 @@ namespace BarPromenade
         [SerializeField] private Transform rearRightWheel;
         [SerializeField] private Transform frontLeftSteeringPivot;
         [SerializeField] private Transform frontRightSteeringPivot;
+        [SerializeField] private Transform steeringWheelPivot;
+        [SerializeField] private Transform leftSteeringGrip;
+        [SerializeField] private Transform rightSteeringGrip;
+        [SerializeField] private Transform doorButtonPivot;
+        [SerializeField] private Transform doorButtonPressAnchor;
+        [SerializeField] private Transform driverDoorLookAnchor;
+        [SerializeField] private Vector3 steeringWheelAxisLocal =
+            Vector3.forward;
+        [SerializeField] private Vector3 doorButtonTravelLocal;
+        [SerializeField] private Vector3 doorButtonRestLocalPosition;
+        [SerializeField] private Quaternion steeringWheelRestLocalRotation =
+            Quaternion.identity;
+        [SerializeField] private Quaternion doorButtonRestLocalRotation =
+            Quaternion.identity;
         [SerializeField] private Transform driverSeatAnchor;
         [SerializeField] private Transform frontDoorEntryAnchor;
         [SerializeField] private Transform rearDoorEntryAnchor;
@@ -129,6 +144,14 @@ namespace BarPromenade
         public Transform RearRightWheel => rearRightWheel;
         public Transform FrontLeftSteeringPivot => frontLeftSteeringPivot;
         public Transform FrontRightSteeringPivot => frontRightSteeringPivot;
+        public Transform SteeringWheelPivot => steeringWheelPivot;
+        public Transform LeftSteeringGrip => leftSteeringGrip;
+        public Transform RightSteeringGrip => rightSteeringGrip;
+        public Transform DoorButtonPivot => doorButtonPivot;
+        public Transform DoorButtonPressAnchor => doorButtonPressAnchor;
+        public Transform DriverDoorLookAnchor => driverDoorLookAnchor;
+        public Vector3 SteeringWheelAxisLocal => steeringWheelAxisLocal;
+        public Vector3 DoorButtonTravelLocal => doorButtonTravelLocal;
         public Transform DriverSeatAnchor => driverSeatAnchor;
         public Transform FrontDoorEntryAnchor => frontDoorEntryAnchor;
         public Transform RearDoorEntryAnchor => rearDoorEntryAnchor;
@@ -179,7 +202,13 @@ namespace BarPromenade
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Transform configuredSteeringWheelPivot = null,
+            Transform configuredLeftSteeringGrip = null,
+            Transform configuredRightSteeringGrip = null,
+            Transform configuredDoorButtonPivot = null,
+            Transform configuredDoorButtonPressAnchor = null,
+            Transform configuredDriverDoorLookAnchor = null)
         {
             modelRoot = configuredModelRoot;
             body = configuredBody;
@@ -193,6 +222,26 @@ namespace BarPromenade
             rearRightWheel = configuredRearRightWheel;
             frontLeftSteeringPivot = configuredFrontLeftSteeringPivot;
             frontRightSteeringPivot = configuredFrontRightSteeringPivot;
+            steeringWheelPivot = configuredSteeringWheelPivot;
+            leftSteeringGrip = configuredLeftSteeringGrip;
+            rightSteeringGrip = configuredRightSteeringGrip;
+            doorButtonPivot = configuredDoorButtonPivot;
+            doorButtonPressAnchor = configuredDoorButtonPressAnchor;
+            driverDoorLookAnchor = configuredDriverDoorLookAnchor;
+            steeringWheelAxisLocal = Vector3.forward;
+            doorButtonTravelLocal = ResolveParentLocalTravel(
+                doorButtonPivot,
+                doorButtonPressAnchor,
+                DoorButtonTravelDistance);
+            doorButtonRestLocalPosition = doorButtonPivot != null
+                ? doorButtonPivot.localPosition
+                : Vector3.zero;
+            steeringWheelRestLocalRotation = steeringWheelPivot != null
+                ? steeringWheelPivot.localRotation
+                : Quaternion.identity;
+            doorButtonRestLocalRotation = doorButtonPivot != null
+                ? doorButtonPivot.localRotation
+                : Quaternion.identity;
             driverSeatAnchor = configuredDriverSeatAnchor;
             frontDoorEntryAnchor = configuredFrontDoorEntryAnchor;
             rearDoorEntryAnchor = configuredRearDoorEntryAnchor;
@@ -221,6 +270,11 @@ namespace BarPromenade
             ResetRotation(rearDoorRearwardLeaf);
             ResetRotation(frontLeftSteeringPivot);
             ResetRotation(frontRightSteeringPivot);
+            ResetRotation(
+                steeringWheelPivot,
+                steeringWheelRestLocalRotation);
+            ResetRotation(doorButtonPivot, doorButtonRestLocalRotation);
+            ResetPosition(doorButtonPivot, doorButtonRestLocalPosition);
             ResetRotation(frontLeftWheel);
             ResetRotation(frontRightWheel);
             ResetRotation(rearLeftWheel);
@@ -233,6 +287,48 @@ namespace BarPromenade
             {
                 target.localRotation = Quaternion.identity;
             }
+        }
+
+        private static void ResetRotation(
+            Transform target,
+            Quaternion rotation)
+        {
+            if (target != null)
+            {
+                target.localRotation = rotation;
+            }
+        }
+
+        private static void ResetPosition(Transform target, Vector3 position)
+        {
+            if (target != null)
+            {
+                target.localPosition = position;
+            }
+        }
+
+        private static Vector3 ResolveParentLocalTravel(
+            Transform target,
+            Transform surfaceAnchor,
+            float worldDistance)
+        {
+            if (target == null ||
+                target.parent == null ||
+                surfaceAnchor == null ||
+                worldDistance <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 worldDirection =
+                target.position - surfaceAnchor.position;
+            if (worldDirection.sqrMagnitude < 0.000001f)
+            {
+                return Vector3.zero;
+            }
+
+            return target.parent.InverseTransformVector(
+                worldDirection.normalized * worldDistance);
         }
     }
 }
