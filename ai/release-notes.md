@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### 2026-08-12 — Route 01 now carries the hero
+
+- When Route 01 stops and opens its doors, the standard localized interaction
+  prompt now appears at both the front and rear passenger entrances. The hero
+  visibly boards through the nearer door and takes window seat `07` on the
+  side opposite the driver;
+  the bus waits for the transfer to finish before continuing along its route.
+- Waiting beside either entrance no longer makes the approaching bus mistake
+  its future passenger for a road obstacle and stop short of the service pose.
+  The door prompt also remains discoverable across the ordinary low curb from
+  the road surface to the sidewalk.
+- Boarding now uses the actual ground under each door. In particular, the
+  front door at the Home stop stands on a flat road apron, so pressing the
+  prompt targets player root `Y=0.12` instead of stalling against the raised
+  sidewalk height `Y=0.18`.
+- The seated hero now travels inside the moving, gently sprung cabin under a
+  dedicated passenger camera. It starts from a level aisle-side angle aimed
+  through the nearest window and can be turned with RMB mouse look or the
+  gamepad right stick, including vertical look, while its position stays safely
+  inside the cabin. Its horizon no longer rolls with the bus suspension or
+  during the boarding transition, and horizontal/vertical controls no longer
+  bleed into each other. The ordinary character model stays visible through the
+  authored boarding, seated and alighting animations.
+- The exit prompt appears at the next and every later stop, but never during the
+  same stop used for boarding. Leaving uses the same front or rear passenger
+  door selected during boarding and places the hero back on a safe grounded
+  roadside surface before restoring normal movement and camera control.
+- If the scene or bus lifecycle ends unexpectedly, the ride releases the hero
+  safely instead of pooling the occupied bus or leaving movement, collision or
+  camera state disabled. The hero now stays in the normal player hierarchy
+  while riding, so stopping Play Mode or deactivating the bus no longer attempts
+  a forbidden parent/sibling change. Fares, destination selection, NPC
+  passengers, passenger persistence and live map tracking are outside this MVP.
+
 ### 2026-08-11 — Route 01 now has a working driver
 
 - The city bus now carries a seated low-poly driver with a normal head and

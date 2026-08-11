@@ -44,9 +44,33 @@ namespace BarPromenade.Tests
             Assert.That(manifest.parts, Has.Length.EqualTo(manifest.mesh_count));
             Assert.That(manifest.triangle_count, Is.InRange(1, 4500));
             Assert.That(manifest.actions, Has.Length.EqualTo(manifest.action_count));
-            Assert.That(manifest.action_count, Is.EqualTo(23));
+            Assert.That(manifest.action_count, Is.EqualTo(26));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
+            AssertActionMetadata(
+                manifest,
+                "BusBoardEnter",
+                "bus_ride",
+                3f,
+                false,
+                36,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "BusRideLoop",
+                "bus_ride",
+                2f,
+                true,
+                16,
+                8f);
+            AssertActionMetadata(
+                manifest,
+                "BusAlightExit",
+                "bus_ride",
+                3f,
+                false,
+                36,
+                12f);
 
             ModelImporter importer =
                 AssetImporter.GetAtPath(ModelPath) as ModelImporter;
@@ -235,6 +259,33 @@ namespace BarPromenade.Tests
             }
         }
 
+        private static void AssertActionMetadata(
+            Player3DManifest manifest,
+            string name,
+            string category,
+            float durationSeconds,
+            bool looping,
+            int sourceFrameCount,
+            float sourceFramesPerSecond)
+        {
+            Player3DManifestAction action = Array.Find(
+                manifest.actions,
+                candidate => string.Equals(
+                    candidate.name,
+                    name,
+                    StringComparison.Ordinal));
+            Assert.That(action, Is.Not.Null, $"Missing action '{name}'.");
+            Assert.That(action.category, Is.EqualTo(category));
+            Assert.That(
+                action.duration_seconds,
+                Is.EqualTo(durationSeconds).Within(0.0001f));
+            Assert.That(action.loop, Is.EqualTo(looping));
+            Assert.That(action.source_frame_count, Is.EqualTo(sourceFrameCount));
+            Assert.That(
+                action.source_fps,
+                Is.EqualTo(sourceFramesPerSecond).Within(0.0001f));
+        }
+
         private static void AssertAnatomicalParts(
             Player3DAssetRegistry registry)
         {
@@ -377,6 +428,8 @@ namespace BarPromenade.Tests
             public string category;
             public float duration_seconds;
             public bool loop;
+            public int source_frame_count;
+            public float source_fps;
         }
     }
 }

@@ -54,6 +54,7 @@ namespace BarPromenade
         private Vector3 previousPlayerPosition;
         private Vector3 playerVelocity;
         private bool hasPlayerSample;
+        private Action passengerCleanup;
 
         public bool IsInitialized { get; private set; }
         public CityBusPlan Plan => plan;
@@ -64,6 +65,31 @@ namespace BarPromenade
         public float TimeUntilNextSpawn => spawnCooldown;
         public bool IsInInitialApproach =>
             ActiveCount > 0 && !initialApproachCompleted;
+
+        public void RegisterPassengerCleanup(Action cleanup)
+        {
+            if (cleanup == null)
+            {
+                throw new ArgumentNullException(nameof(cleanup));
+            }
+
+            if (passengerCleanup != null && passengerCleanup != cleanup)
+            {
+                throw new InvalidOperationException(
+                    "The city bus director already has a passenger " +
+                    "cleanup callback.");
+            }
+
+            passengerCleanup = cleanup;
+        }
+
+        public void UnregisterPassengerCleanup(Action cleanup)
+        {
+            if (cleanup != null && passengerCleanup == cleanup)
+            {
+                passengerCleanup = null;
+            }
+        }
 
         public void Initialize(
             CityBusPlan busPlan,
@@ -170,10 +196,11 @@ namespace BarPromenade
                                   initialApproachElapsed >=
                                   MaximumInitialApproachDuration;
                 if (mayRecycle &&
+                    !actor.HasPassenger &&
                     actor.GetClosestPlanarBodyDistance(player.position) >=
                         RecycleDistance)
                 {
-                    ReleaseActor();
+                    ReleaseActor(false);
                     spawnCooldown = GetRandomRange(
                         MinimumSpawnCooldown,
                         MaximumSpawnCooldown);
@@ -206,12 +233,13 @@ namespace BarPromenade
                 return;
             }
 
-            ReleaseActor();
+            ReleaseActor(true);
             if (presentation != null)
             {
                 presentation.ResetForPool();
             }
 
+            passengerCleanup = null;
             IsInitialized = false;
         }
 
@@ -224,7 +252,7 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
-                ReleaseActor();
+                ReleaseActor(true);
             }
         }
 
@@ -537,19 +565,22 @@ namespace BarPromenade
                 MinimumObstacleLookAhead,
                 actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
             float clearance = float.PositiveInfinity;
-            CheckObstacle(
-                player.position,
-                GetControllerRadius(player, 0.32f),
-                lookAhead,
-                ref clearance);
-            if (playerVelocity.sqrMagnitude > 0.0001f)
+            if (!actor.HasPassenger)
             {
                 CheckObstacle(
-                    player.position +
-                    (playerVelocity * PlayerPredictionSeconds),
+                    player.position,
                     GetControllerRadius(player, 0.32f),
                     lookAhead,
                     ref clearance);
+                if (playerVelocity.sqrMagnitude > 0.0001f)
+                {
+                    CheckObstacle(
+                        player.position +
+                        (playerVelocity * PlayerPredictionSeconds),
+                        GetControllerRadius(player, 0.32f),
+                        lookAhead,
+                        ref clearance);
+                }
             }
 
             if (pedestrians != null)
@@ -787,10 +818,21 @@ namespace BarPromenade
             return result;
         }
 
-        private void ReleaseActor()
+        private void ReleaseActor(bool forcePassengerCleanup)
         {
             if (actor != null && actor.IsSpawned)
             {
+                if (forcePassengerCleanup)
+                {
+                    passengerCleanup?.Invoke();
+                    if (actor.HasPassenger)
+                    {
+                        throw new InvalidOperationException(
+                            "Passenger cleanup must release the city bus " +
+                            "passenger before its presentation is pooled.");
+                    }
+                }
+
                 actor.ReleasePresentation(poolRoot);
             }
 

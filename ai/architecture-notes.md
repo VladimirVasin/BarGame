@@ -94,7 +94,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Pedestrian corner links follow the displaced pads and the Home reconstruction
   includes every surface whose bounds touch its retained road slice. Ordinary
   intersections retain their `6 x 6 m` clear apron.
-- **Accepted — One passive real-scale ambient bus on canonical Route 01:** City
+- **Accepted — One route-driven real-scale bus on canonical Route 01:** City
   layout produces immutable `bus-route:default-coastal:route-01`, one
   deterministic right-hand, Street-only closed winding service loop. The target
   sequence contains every district point of interest that actually exists and
@@ -133,9 +133,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   when the route is directed away from every encounter sample. Recycling waits
   until the closest point of the complete oriented body is at least `92 m` from
   the player. The slot cap means at most one active or potentially visible
-  vehicle, not a guarantee that a bus is always visible. It yields to predicted
-  player and pedestrian motion and never uses camera direction, frustum
-  membership or far-clip state for spawning or recycling. The kinematic box
+  vehicle, not a guarantee that a bus is always visible. While the hero is
+  outside it yields to predicted player and pedestrian motion. While the hero
+  is attached as the sole passenger, that same hero is omitted from obstacle
+  prediction but pedestrian yielding remains active. Camera direction, frustum
+  membership and far-clip state never control spawning or recycling. The kinematic box
   body uses the dedicated `CityBus` layer: it collides with the player and
   pedestrians, ignores another bus and is excluded from camera and interaction
   queries. The passive production prefab stays collider- and `Light`-free, owns
@@ -178,8 +180,65 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   consumes the same immutable plan, simplifies its closed geometry, draws a blue
   ink-outlined loop below the orange player itinerary and adds five numbered
   localized stops in the default layout plus a compact legend. It deliberately
-  has no live bus marker. The bus has no prompt, boarding, persistence or traffic-signal
-  simulation. Its runtime scope is City-only. A valid Home/Balcony route would
+  has no live bus marker.
+  The City-only passenger MVP uses three ordinary Default-layer trigger children
+  instead of admitting the solid `CityBus` body to general interaction queries:
+  one at each front/rear passenger door and one at passenger seat `07`
+  (zero-based anchor index `6`), the first window seat on the lateral side
+  opposite the driver.
+  Both exterior triggers use the ordinary `PlayerInteractor` and
+  `InteractionPromptView` E/Enter/gamepad/pointer path. A board prompt is valid
+  only while the bus is dwelling with doors fully open and a deterministic
+  walkable external dock exists. Each dock keeps the complete player capsule
+  outside the bus obstacle corridor, so a waiting passenger does not make the
+  bus yield before reaching its service pose. The controller resolves the
+  closest valid door-specific plan and retains that front/rear choice for the
+  later exit. Every entry and exit candidate resolves its grounded root height
+  from the same deterministic `CityStreetSurfacePlan.Sidewalks` bounds used to
+  construct physical City geometry: a raised sidewalk uses its `Bounds.max.y`,
+  while a cut-back bus-intersection apron uses `RoadTop`, in both cases plus the
+  player grounded-root offset. A road-to-sidewalk curb delta is accepted only
+  when it fits the live `CharacterController.stepOffset`; the shared positioned
+  approach still rejects genuinely unreachable levels.
+  `CityBusRideController` acquires an owner-scoped service hold so the `10 s`
+  dwell cannot close the doors mid-transfer, then uses the shared
+  positioned-interaction path and `BusBoardEnter` to pass through the selected
+  live doorway waypoint into that fixed opposite-driver seat. The production
+  rig remains
+  visible; its pelvis follows the sprung seat Transform during entry and the
+  looping `BusRideLoop`. At loop handoff the gameplay root remains under its
+  original parent while ordinary motor, `CharacterController` and contact
+  shadow are disabled. `CityBusRideController` runs after the director and
+  late-synchronizes that root to the stable actor-local seat pose; this preserves
+  moving-frame alignment without making Player a child of a slot that may be
+  deactivated. A seated camera follows the sprung seat position from a fixed,
+  safe aisle-side offset, but derives orientation from actor forward and world
+  up so suspension pitch/roll cannot tilt its horizon or couple its axes. Its
+  zero-input direction is derived from the selected seat's lateral side and
+  looks through the nearest window instead of inward or down. Entry and exit
+  rotation blends interpolate look directions and reconstruct against world up,
+  avoiding transient quaternion roll. While riding, the controller consumes
+  the shared orbit sample: RMB
+  mouse movement and the gamepad right stick rotate bounded yaw and pitch in
+  place, while the existing orbit-input flag remains a modal-lock gate rather
+  than bus ownership. Entry/exit blends and exact ordinary-camera restoration
+  remain fixed-pose transactions.
+  The actor records one passenger owner and cannot be pooled or released while
+  that owner remains. The director owns a passenger-cleanup callback for forced
+  disable/shutdown. The exit prompt is unavailable until the service ordinal is
+  strictly greater than its boarding value, which permits the next or any later
+  stop but rejects the same dwell. Exiting reacquires the service hold, detaches
+  the logical moving-frame binding, freezes the moving seat target and requests
+  the independent `BusAlightExit` pose through the same selected live door
+  waypoint onto a walkable grounded roadside dock. The camera blends to the
+  ordinary resolved chase pose. Normal completion and every
+  cancellation/lifecycle path restore motor, collider, contact shadow and
+  camera exactly once without Transform hierarchy mutation, release
+  service/passenger ownership and use the last safe exterior dock when an
+  authored exit cannot finish. Fare/payment, destination selection, NPC
+  passengers, passenger persistence, traffic-signal simulation and live bus
+  tracking remain deferred.
+  The moving runtime remains City-only. A valid Home/Balcony route would
   require a real Street pass-through whose two complete-body seams both lie at
   or beyond the fog-hidden `56 m` boundary; none exists, and the default home
   facade faces a visible road terminal. Extending that road only for

@@ -107,6 +107,8 @@ namespace BarPromenade.Tests.EditMode
             "common.no",
             "interaction.choice.talk",
             "interaction.choice.interact",
+            "interaction.board_bus",
+            "interaction.exit_bus",
             "drinking.intoxication",
             "intoxication.stage.sober",
             "intoxication.stage.light_buzz",

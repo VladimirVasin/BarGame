@@ -61,6 +61,14 @@
       "value": "Interact"
     },
     {
+      "key": "interaction.board_bus",
+      "value": "E \u2014 board Route 01"
+    },
+    {
+      "key": "interaction.exit_bus",
+      "value": "E \u2014 get off the bus"
+    },
+    {
       "key": "interaction.enter_bar",
       "value": "E — enter the bar"
     },

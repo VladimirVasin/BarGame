@@ -459,6 +459,96 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PassengerServiceHold_FreezesOpenDwell_AndForcedCleanupOwnsRelease()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Passenger Service Hold",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+
+                for (int guard = 0;
+                     guard < 1200 &&
+                     fixture.Actor.MotionState !=
+                         CityBusMotionState.Dwelling;
+                     guard++)
+                {
+                    fixture.Actor.Advance(
+                        0.05f,
+                        CityBusObstacleState.Clear,
+                        0f);
+                }
+
+                fixture.Actor.Advance(
+                    CityBusActor.DoorTransitionDuration + 0.01f,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                object owner = new object();
+                object otherOwner = new object();
+                Assert.That(fixture.Actor.CurrentStopIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(fixture.Actor.CurrentStop, Is.Not.Null);
+                Assert.That(fixture.Actor.DoorsFullyOpen, Is.True);
+                Assert.That(fixture.Actor.ServiceOrdinal, Is.EqualTo(1));
+                Assert.That(
+                    fixture.Actor.CurrentDwellDuration,
+                    Is.EqualTo(CityBusActor.DwellDuration));
+                Assert.That(
+                    fixture.Actor.TryAcquireServiceHold(owner),
+                    Is.True);
+                Assert.That(
+                    fixture.Actor.TryAcquireServiceHold(otherOwner),
+                    Is.False);
+
+                float heldElapsed = fixture.Actor.DwellElapsed;
+                fixture.Actor.Advance(
+                    CityBusActor.DwellDuration * 2f,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                Assert.That(
+                    fixture.Actor.DwellElapsed,
+                    Is.EqualTo(heldElapsed));
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dwelling));
+                Assert.That(fixture.Actor.DoorsFullyOpen, Is.True);
+                Assert.That(fixture.Actor.HasServiceHold, Is.True);
+                Assert.That(fixture.Actor.TryAttachPassenger(owner), Is.True);
+                Assert.That(fixture.Actor.HasPassenger, Is.True);
+                Assert.That(
+                    fixture.Actor.ReleasePassenger(otherOwner),
+                    Is.False);
+                Assert.That(
+                    fixture.Actor.ReleaseServiceHold(otherOwner),
+                    Is.False);
+
+                bool cleanupCalled = false;
+                fixture.Director.RegisterPassengerCleanup(() =>
+                {
+                    cleanupCalled = true;
+                    fixture.Actor.ReleasePassenger(owner);
+                    fixture.Actor.ReleaseServiceHold(owner);
+                });
+                fixture.Director.Shutdown();
+
+                Assert.That(cleanupCalled, Is.True);
+                Assert.That(fixture.Actor.HasPassenger, Is.False);
+                Assert.That(fixture.Actor.HasServiceHold, Is.False);
+                Assert.That(fixture.Director.ActiveCount, Is.Zero);
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dormant));
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        [Test]
         public void RemoteCycleWithoutEncounter_DoesNotSpawnInvisibleBus()
         {
             RuntimeFixture fixture = null;

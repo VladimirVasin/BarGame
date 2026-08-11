@@ -19,7 +19,8 @@ namespace BarPromenade.Editor
                 "Walk",
                 "BedSleepLoop",
                 "SmokeLoop",
-                "CatFeedLoop"
+                "CatFeedLoop",
+                "BusRideLoop"
             };
 
         private void OnPreprocessModel()

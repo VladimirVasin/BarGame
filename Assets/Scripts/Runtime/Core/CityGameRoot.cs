@@ -20,6 +20,7 @@ namespace BarPromenade
         public CityBusPlan BusPlan { get; private set; }
         public GameObject BusStops { get; private set; }
         public CityBusDirector Bus { get; private set; }
+        public CityBusRideController BusRide { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -261,6 +262,13 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            BusRide = CityBusRideController.Create(
+                Bus,
+                Player,
+                World.WalkableArea,
+                camera,
+                follow,
+                pedestrianStreetSurfacePlan);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -340,7 +348,10 @@ namespace BarPromenade
                     BusPlan.ClearanceFailures.Count),
                 GameLog.Field(
                     "bus_active_cap",
-                    CityBusDirector.MaximumActiveModels));
+                    CityBusDirector.MaximumActiveModels),
+                GameLog.Field(
+                    "bus_boarding_enabled",
+                    BusRide != null));
         }
 
         private static void ReportLayout(CityLayout layout)

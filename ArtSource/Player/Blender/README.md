@@ -108,7 +108,8 @@ library contains:
 - falls: `FallLeft/Right`, `DownLeft/Right`, `RiseLeft/Right`;
 - bed: `BedEnter`, `BedSleepLoop`, `BedExit`;
 - smoking: `SmokeEnter`, `SmokeLoop`, `SmokeExit`;
-- cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`.
+- cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`;
+- bus riding: `BusBoardEnter`, `BusRideLoop`, `BusAlightExit`.
 
 `Idle` is a four-second loop with an exact `Relaxed` seam. Two asymmetric
 breaths shift weight through the pelvis and legs while the spine, chest, head,
@@ -138,6 +139,13 @@ to `Relaxed`. The cigarette runs from the right socket head along its local
 `+Y` head-to-tail axis; the mouth-contact pose aligns that axis with
 `SOCKET_Mouth`.
 
+`BusBoardEnter` starts at the exact `Relaxed` pose, climbs through an in-place
+two-step boarding gesture and settles into a forward-facing passenger seat.
+`BusRideLoop` is a two-second seated breathing and road-sway loop with an exact
+full-rig seam. `BusAlightExit` starts at that identical seated endpoint, rises,
+steps down and returns exactly to `Relaxed`. Runtime owns the moving bus-local
+action anchor; all three source Actions keep the root bone fixed.
+
 The Actions intentionally contain no gameplay events or root motion. Unity's
 deterministic interaction timelines own exact playback, terminal holds,
 inventory commits and cancellation.
@@ -163,8 +171,10 @@ Before saving, the script fails with a non-zero Blender exit code unless:
   source facing `-Y`, holds the cigarette at least `0.40 m` from the mouth at
   rest, and brings it within `25 mm` with socket-axis alignment above `0.85`
   during the inhale;
+- the bus boarding, seated loop and alighting Actions keep the root fixed and
+  match across the complete `Relaxed -> seated -> Relaxed` endpoint chain;
 - presentation-only objects cannot enter an export selection.
 
 The production model currently builds as 73 independent mesh objects, 31 bones
-(including six sockets), 23 Actions and `1,534` triangles. Exact counts are
+(including six sockets), 26 Actions and `1,534` triangles. Exact counts are
 reported by the script and manifest.

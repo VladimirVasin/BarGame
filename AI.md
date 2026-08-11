@@ -95,12 +95,44 @@ live stop. Spawning prefers obstacle-safe, fog-hidden route poses `76-86 m` from
 the player and may fall back to `56-86 m` only when forward travel on the same
 loop can approach them; recycling uses the complete vehicle bounds only after
 they are at least `92 m` from the hero, and resets the wheel, button, driver
-hands and head to neutral. The bus yields to the player and active
-pedestrians, while camera direction and frustum state never control its
-lifecycle. The City map draws Route 01 as a blue ink-outlined line beneath the
-orange player itinerary, plus five numbered localized stop markers in the
-default layout and a compact legend; live bus tracking and boarding are not
-implemented. The moving bus runtime is deliberately City-only. Home's balcony
+hands and head to neutral. While the hero is outside, the bus yields to the
+player and active pedestrians. An attached passenger is excluded from the
+player-obstacle test, but the bus still yields to pedestrians and cannot be
+pooled or released before passenger cleanup. Camera direction and frustum state
+never control its lifecycle.
+
+Route 01 now has a City-only passenger MVP. At either fully open passenger
+door, the ordinary localized E/Enter/gamepad/pointer prompt lets the hero
+board into fixed window seat `07` on the side opposite the driver. The
+controller selects the nearest
+valid front- or rear-door dock and records that door-specific transfer; the bus
+holds its stop timer while the visible `BusBoardEnter` action passes through
+the selected live doorway, then carries the ordinary 3D rig in `BusRideLoop`.
+The shared contextual animation controller aligns the pelvis to live sprung
+door/seat anchors rather than hiding a teleport. A seat-relative seated
+camera position follows that sprung seat, while its yaw/pitch axes and horizon
+remain world-level instead of inheriting body roll. It starts on the aisle side
+of the hero and looks through the nearest side window; RMB mouse look and the
+gamepad right stick rotate independent yaw and bounded pitch in place without
+moving the camera outside the cabin. During travel the
+gameplay root stays in
+its original hierarchy and is late-synchronized to the actor-local seat pose,
+so bus-slot or scene deactivation cannot disable the hero through reparenting.
+The exit prompt becomes available only
+after the service ordinal advances, so the hero can leave at the next or any
+later stop through the same selected passenger door and `BusAlightExit` onto a
+validated grounded roadside dock. Its root height comes from the same street
+surface plan as the physical road and sidewalks, so a door on a flat bus apron
+does not target the raised curb. Boarding/alighting holds the doors, and
+cancellation, scene teardown or bus lifecycle cleanup restores the motor,
+collider, contact shadow and camera at a safe exterior pose while leaving the
+player hierarchy unchanged.
+Fare/payment, destination selection, NPC passengers, passenger persistence and
+live bus tracking are deferred. The City map still draws Route 01 as a blue
+ink-outlined line beneath the orange player itinerary, plus five numbered
+localized stop markers in the default layout and a compact legend; it has no
+live bus marker. The moving bus runtime is deliberately City-only. Home's
+balcony
 reconstructs the nearby Home stop as a static collider-free `01` pole but has no
 bus actor or director: the real exterior has no Street pass-through with both
 complete-body seams hidden at `56 m`, and the default home faces a visible road

@@ -30,7 +30,9 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float teleportSnapDistance = 1.75f;
         [SerializeField, Min(0f)] private float distanceRecoverySmoothTime = 0.32f;
         [SerializeField, Min(0f)] private float mouseYawSensitivity = 0.16f;
+        [SerializeField, Min(0f)] private float mousePitchSensitivity = 0.14f;
         [SerializeField, Min(0f)] private float gamepadYawSpeed = 150f;
+        [SerializeField, Min(0f)] private float gamepadPitchSpeed = 120f;
 
         [Header("Cinematic Motion")]
         [SerializeField, Range(0f, 1f)] private float cinematicMotionAmount = 1f;
@@ -94,6 +96,9 @@ namespace BarPromenade
         public Vector3 FixedBasePosition => fixedBasePosition;
         public Quaternion FixedBaseRotation => fixedBaseRotation;
         public float FixedBaseFieldOfView => fixedBaseFieldOfView;
+        public float FollowFieldOfView => isInterior
+            ? interiorFieldOfView
+            : exteriorFieldOfView;
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
@@ -190,6 +195,42 @@ namespace BarPromenade
             Snap();
         }
 
+        /// <summary>
+        /// Resolves the ordinary chase-camera pose for a prospective target
+        /// root without changing the current fixed/free camera state. Moving
+        /// contextual interactions use this to blend back to gameplay before
+        /// releasing their fixed-pose ownership.
+        /// </summary>
+        public Pose ResolveFollowPose(Vector3 targetRootPosition)
+        {
+            if (controlledCamera == null)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the player camera before resolving a " +
+                    "follow pose.");
+            }
+
+            if (!IsFinite(targetRootPosition))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(targetRootPosition),
+                    "The prospective follow target must be finite.");
+            }
+
+            float focusHeight = isInterior
+                ? interiorFocusHeight
+                : exteriorFocusHeight;
+            Vector3 focusPoint =
+                targetRootPosition + Vector3.up * focusHeight;
+            Quaternion rotation = GetDesiredRotation();
+            float distance = GetCollisionAdjustedDistance(
+                focusPoint,
+                rotation);
+            return new Pose(
+                focusPoint - rotation * Vector3.forward * distance,
+                rotation);
+        }
+
         public void RotateYaw(float degrees)
         {
             if (fixedPoseActive)
@@ -198,6 +239,40 @@ namespace BarPromenade
             }
 
             targetYaw = Mathf.Repeat(targetYaw + degrees, 360f);
+        }
+
+        /// <summary>
+        /// Samples the same orbit controls used by the ordinary chase camera.
+        /// A camera owner can consume both axes while a fixed pose is active;
+        /// modal UI continues to suppress the sample through
+        /// <see cref="OrbitInputEnabled"/>.
+        /// </summary>
+        public Vector2 SampleOrbitInputDegrees(float unscaledDeltaTime)
+        {
+            if (!OrbitInputEnabled)
+            {
+                return Vector2.zero;
+            }
+
+            Vector2 degrees = Vector2.zero;
+            Mouse mouse = Mouse.current;
+            if (mouse != null && mouse.rightButton.isPressed)
+            {
+                Vector2 delta = mouse.delta.ReadValue();
+                degrees.x += delta.x * mouseYawSensitivity;
+                degrees.y -= delta.y * mousePitchSensitivity;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            if (gamepad != null)
+            {
+                Vector2 stick = gamepad.rightStick.ReadValue();
+                float deltaTime = Mathf.Max(0f, unscaledDeltaTime);
+                degrees.x += stick.x * gamepadYawSpeed * deltaTime;
+                degrees.y -= stick.y * gamepadPitchSpeed * deltaTime;
+            }
+
+            return degrees;
         }
 
         public void Snap()
@@ -595,25 +670,7 @@ namespace BarPromenade
 
         private void ReadYawInput(float deltaTime)
         {
-            if (!OrbitInputEnabled)
-            {
-                return;
-            }
-
-            Mouse mouse = Mouse.current;
-            if (mouse != null && mouse.rightButton.isPressed)
-            {
-                RotateYaw(mouse.delta.ReadValue().x * mouseYawSensitivity);
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad != null)
-            {
-                RotateYaw(
-                    gamepad.rightStick.ReadValue().x *
-                    gamepadYawSpeed *
-                    deltaTime);
-            }
+            RotateYaw(SampleOrbitInputDegrees(deltaTime).x);
         }
 
         private void ConfigureCamera()

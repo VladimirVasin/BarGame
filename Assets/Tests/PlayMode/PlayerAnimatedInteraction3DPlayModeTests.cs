@@ -106,6 +106,206 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator PositionedRig_FollowsMovingActionTarget_AndUsesIndependentExit()
+        {
+            GameObject cameraObject =
+                new GameObject("Moving Contextual Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            GameObject playerObject =
+                new GameObject("Moving Contextual Player");
+            PlayerClipPresentationTestDouble presentation =
+                playerObject.AddComponent<
+                    PlayerClipPresentationTestDouble>();
+            PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
+            PlayerInteractor interactor =
+                playerObject.AddComponent<PlayerInteractor>();
+            motor.Initialize(camera, null, presentation);
+            interactor.Initialize(null);
+            PlayerRuntime player = new PlayerRuntime(
+                playerObject,
+                motor,
+                interactor,
+                presentation);
+            PlayerAnimatedInteractionController controller =
+                new GameObject("Moving Contextual Controller")
+                    .AddComponent<PlayerAnimatedInteractionController>();
+            GameObject anchorObject =
+                new GameObject("Moving Action Pelvis Target");
+
+            try
+            {
+                controller.Initialize(player, camera);
+                var definition = new PlayerAnimatedInteractionDefinition(
+                    "TestEnter",
+                    "TestLoop",
+                    "TestExit",
+                    enterFrameCount: 8,
+                    enterFramesPerSecond: 20f,
+                    loopFrameCount: 1,
+                    loopFramesPerSecond: 5f,
+                    exitFrameCount: 8,
+                    exitFramesPerSecond: 20f);
+                Vector3 standPelvis = new Vector3(0f, 0.72f, 0f);
+                var entryPose = new PlayerAnimatedInteractionPose(
+                    Vector3.zero,
+                    Quaternion.identity,
+                    standPelvis);
+                anchorObject.transform.position =
+                    new Vector3(2f, 1.15f, -3f);
+                var initialExitPose = new PlayerAnimatedInteractionPose(
+                    Vector3.zero,
+                    Quaternion.identity,
+                    standPelvis);
+
+                Assert.That(
+                    controller.BeginPositioned(
+                        definition,
+                        entryPose,
+                        anchorObject.transform.position,
+                        initialExitPose),
+                    Is.True);
+                Assert.That(
+                    controller.BindActionPelvisTarget(
+                        anchorObject.transform),
+                    Is.True);
+
+                yield return WaitForPhase(
+                    controller,
+                    PlayerAnimatedInteractionPhase.Entering);
+                yield return null;
+
+                float enteringPelvisX = presentation.PelvisPosition.x;
+                anchorObject.transform.position +=
+                    new Vector3(4f, 0f, 0f);
+                Assert.That(
+                    controller.RefreshActiveClipAlignment(),
+                    Is.True);
+                Assert.That(
+                    presentation.PelvisPosition.x,
+                    Is.GreaterThan(enteringPelvisX),
+                    "The moving target must affect the in-progress entry.");
+
+                yield return WaitForPhase(
+                    controller,
+                    PlayerAnimatedInteractionPhase.Looping);
+
+                Vector3 loopTarget = new Vector3(8f, 1.3f, -4f);
+                anchorObject.transform.position = loopTarget;
+                Assert.That(
+                    controller.RefreshActiveClipAlignment(),
+                    Is.True);
+                Assert.That(
+                    presentation.PelvisPosition,
+                    Is.EqualTo(loopTarget));
+
+                Assert.That(
+                    controller.FreezeActionPelvisTarget(),
+                    Is.True);
+                anchorObject.transform.position =
+                    new Vector3(20f, 5f, 20f);
+                controller.RefreshActiveClipAlignment();
+                Assert.That(
+                    presentation.PelvisPosition,
+                    Is.EqualTo(loopTarget));
+
+                Vector3 exitStart = new Vector3(9f, 1.25f, 2f);
+                anchorObject.transform.position = exitStart;
+                Assert.That(
+                    controller.BindActionPelvisTarget(
+                        anchorObject.transform),
+                    Is.True);
+                var exitPose = new PlayerAnimatedInteractionPose(
+                    new Vector3(5f, 0f, 6f),
+                    Quaternion.Euler(0f, 90f, 0f),
+                    new Vector3(5f, 0.72f, 6f));
+                Vector3 exitWaypoint =
+                    exitStart + new Vector3(0f, 0f, 1f);
+                var exitTransition =
+                    new PlayerAnimatedInteractionPelvisTransition(
+                        exitWaypoint,
+                        enterArrivalProgress: 0.25f,
+                        enterDepartureProgress: 0.5f,
+                        exitArrivalProgress: 0.25f,
+                        exitDepartureProgress: 0.5f);
+
+                Assert.That(
+                    controller.RequestExit(
+                        exitPose,
+                        exitStart,
+                        durationMultiplier: 1f,
+                        transition: exitTransition),
+                    Is.True);
+                Assert.That(
+                    presentation.PelvisPosition,
+                    Is.EqualTo(exitStart));
+                anchorObject.transform.position =
+                    new Vector3(-30f, 8f, -30f);
+                controller.RefreshActiveClipAlignment();
+                Assert.That(
+                    presentation.PelvisPosition,
+                    Is.EqualTo(exitStart),
+                    "RequestExit must freeze the supplied action pelvis.");
+
+                float waypointDeadline = Time.realtimeSinceStartup + 1f;
+                while (controller.Phase ==
+                           PlayerAnimatedInteractionPhase.Exiting &&
+                       Vector3.Distance(
+                           presentation.PelvisPosition,
+                           exitWaypoint) > 0.001f &&
+                       Time.realtimeSinceStartup < waypointDeadline)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    Vector3.Distance(
+                        presentation.PelvisPosition,
+                        exitWaypoint),
+                    Is.LessThan(0.001f),
+                    "The exit request must replace the pelvis transition.");
+
+                yield return WaitForPhase(
+                    controller,
+                    PlayerAnimatedInteractionPhase.Idle);
+
+                Assert.That(
+                    playerObject.transform.position,
+                    Is.EqualTo(exitPose.RootPosition));
+                Assert.That(
+                    Quaternion.Angle(
+                        playerObject.transform.rotation,
+                        exitPose.RootRotation),
+                    Is.LessThan(0.001f));
+
+                Vector3 staticActionPelvis =
+                    new Vector3(-2f, 0.9f, 3f);
+                Assert.That(
+                    controller.BeginLooping(
+                        definition,
+                        standPelvis,
+                        staticActionPelvis),
+                    Is.True);
+                anchorObject.transform.position =
+                    new Vector3(40f, 10f, 40f);
+                controller.RefreshActiveClipAlignment();
+                Assert.That(
+                    presentation.PelvisPosition,
+                    Is.EqualTo(staticActionPelvis),
+                    "A completed interaction must not retain its anchor.");
+                Assert.That(
+                    controller.CancelActiveInteraction(),
+                    Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(anchorObject);
+                UnityEngine.Object.Destroy(controller.gameObject);
+                UnityEngine.Object.Destroy(playerObject);
+                UnityEngine.Object.Destroy(cameraObject);
+            }
+        }
+
         private static IEnumerator WaitForPhase(
             PlayerAnimatedInteractionController controller,
             PlayerAnimatedInteractionPhase expected)

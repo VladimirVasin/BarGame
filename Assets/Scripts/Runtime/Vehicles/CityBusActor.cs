@@ -90,6 +90,8 @@ namespace BarPromenade
         private float dwellDuration;
         private uint randomState;
         private bool isPrepared;
+        private object serviceHoldOwner;
+        private object passengerOwner;
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
@@ -107,7 +109,25 @@ namespace BarPromenade
         public float Speed => speed;
         public int CurrentLinkIndex => currentLinkIndex;
         public float DistanceAlongLink => distanceAlongLink;
+        public int CurrentStopIndex => currentStopIndex;
+        public CityBusStopDescriptor CurrentStop =>
+            plan != null &&
+            currentStopIndex >= 0 &&
+            currentStopIndex < plan.Stops.Count
+                ? plan.Stops[currentStopIndex]
+                : null;
+        public float DwellElapsed => dwellElapsed;
+        public float CurrentDwellDuration => dwellDuration;
         public int DwellCount { get; private set; }
+        public int ServiceOrdinal => DwellCount;
+        public bool DoorsFullyOpen =>
+            MotionState == CityBusMotionState.Dwelling &&
+            presentation != null &&
+            presentation.DriverDoorSample.DoorPhase ==
+                CityBusDoorPhase.Open &&
+            presentation.DoorOpenness >= 0.9999f;
+        public bool HasServiceHold => serviceHoldOwner != null;
+        public bool HasPassenger => passengerOwner != null;
         public string SpawnAnchorId { get; private set; } = string.Empty;
         public Bounds LocalVisualBounds => localVisualBounds;
         public Bounds WorldBodyBounds => CreateWorldBounds(
@@ -265,6 +285,13 @@ namespace BarPromenade
 
         public CityBusPresentation ReleasePresentation(Transform poolRoot)
         {
+            if (HasPassenger)
+            {
+                throw new InvalidOperationException(
+                    "Release the city bus passenger before pooling its " +
+                    "presentation.");
+            }
+
             bodyCollider.enabled = false;
             rigidBody.detectCollisions = false;
             StopEngineAudio();
@@ -287,6 +314,64 @@ namespace BarPromenade
         public void CompleteInitialApproach()
         {
             approachNodeDistances = null;
+        }
+
+        public bool TryAcquireServiceHold(object owner)
+        {
+            if (owner == null ||
+                MotionState != CityBusMotionState.Dwelling ||
+                !DoorsFullyOpen)
+            {
+                return false;
+            }
+
+            if (serviceHoldOwner != null)
+            {
+                return ReferenceEquals(serviceHoldOwner, owner);
+            }
+
+            serviceHoldOwner = owner;
+            return true;
+        }
+
+        public bool ReleaseServiceHold(object owner)
+        {
+            if (owner == null ||
+                !ReferenceEquals(serviceHoldOwner, owner))
+            {
+                return false;
+            }
+
+            serviceHoldOwner = null;
+            return true;
+        }
+
+        public bool TryAttachPassenger(object owner)
+        {
+            if (owner == null || !IsSpawned)
+            {
+                return false;
+            }
+
+            if (passengerOwner != null)
+            {
+                return ReferenceEquals(passengerOwner, owner);
+            }
+
+            passengerOwner = owner;
+            return true;
+        }
+
+        public bool ReleasePassenger(object owner)
+        {
+            if (owner == null ||
+                !ReferenceEquals(passengerOwner, owner))
+            {
+                return false;
+            }
+
+            passengerOwner = null;
+            return true;
         }
 
         public void Advance(
@@ -748,9 +833,13 @@ namespace BarPromenade
 
         private void AdvanceDwell(float deltaTime)
         {
-            dwellElapsed = Mathf.Min(
-                dwellDuration,
-                dwellElapsed + deltaTime);
+            if (serviceHoldOwner == null)
+            {
+                dwellElapsed = Mathf.Min(
+                    dwellDuration,
+                    dwellElapsed + deltaTime);
+            }
+
             presentation.SetDriverDoorSample(
                 CityBusDriverDoorTimeline.SampleDwell(
                     dwellElapsed,
@@ -951,6 +1040,8 @@ namespace BarPromenade
             dwellDuration = 0f;
             randomState = 0u;
             isPrepared = false;
+            serviceHoldOwner = null;
+            passengerOwner = null;
             servedStopIds.Clear();
             DwellCount = 0;
             SpawnAnchorId = string.Empty;

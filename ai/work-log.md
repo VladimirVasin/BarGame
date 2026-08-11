@@ -2,6 +2,95 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-12 — Route 01 passenger MVP
+
+- Added standard localized E/Enter/gamepad/pointer boarding through both fully
+  open passenger doors and exit from fixed window seat `07` on the side
+  opposite the driver. The bus
+  now holds its service dwell during each visible transfer, admits one
+  owner-scoped passenger and refuses recycling or actor release until passenger
+  cleanup has completed.
+- Added deterministic front/rear exterior entry/exit docks, nearest-door
+  selection, a retained door-specific live waypoint and seat `07` binding.
+  The exterior clearance now keeps the waiting player capsule outside the bus
+  obstacle corridor, preventing a self-created yield before the service dwell;
+  each entry/exit root now derives its height from the deterministic physical
+  street-surface plan, choosing the raised sidewalk or flat road apron at that
+  exact door position. A curb-height difference within the real
+  `CharacterController.stepOffset`
+  remains a visible, reachable positioned approach instead of hiding the
+  prompt.
+  Boarding uses `BusBoardEnter`, travel holds `BusRideLoop`, and the exit prompt
+  becomes available only after the service ordinal advances to the next or any
+  later stop before `BusAlightExit` returns the hero through the selected door
+  to a validated grounded roadside pose.
+- Extended the shared positioned-interaction controller with a moving pelvis
+  target plus an independently requested exit pose. The production 3D hero
+  remains visible across the transfer and follows the sprung seat instead of
+  using a hidden teleport or renderer fade.
+- Added a seat-following seated ride camera whose safe aisle-side default looks
+  through the nearest window instead of inward/down. Its horizon stays level in
+  world space while suspension pitches/rolls, and direction-vector blending
+  avoids transient roll during boarding/alighting. RMB mouse look and the
+  gamepad right stick now rotate independent bounded yaw/pitch in place, reuse the
+  ordinary modal orbit-input gate and preserve a continuous blend back to the
+  chase pose. The gameplay root remains in its original
+  hierarchy and late-synchronizes to the actor-local seat after bus movement,
+  avoiding forbidden parent/sibling mutations when the bus slot or scene is
+  deactivated. Normal exit, cancellation, scene teardown and forced bus cleanup
+  restore the player motor, collider, contact shadow and camera while releasing
+  both service and passenger ownership.
+- Kept the MVP City-only and deliberately limited to one fixed seat. Fare and
+  payment, destination selection, NPC passengers, passenger persistence and a
+  live map marker remain deferred.
+
+Verification:
+
+- The deterministic Blender player generator/export validator completed with
+  `26` Actions, including the new three-second board, looping two-second ride
+  and three-second alight clips on the production Generic rig.
+- Unity imported the regenerated animation FBX, rebuilt the production Player3D
+  prefab with all three bus clips and compiled Runtime, Editor, EditMode and
+  PlayMode assemblies without errors.
+- Focused PlayMode regression
+  `Passenger_BoardsRidesAndExitsAtLaterStop` was extended to exercise ordinary
+  `PlayerInteractor` discovery at both exterior doors, nearest rear-door
+  selection, same-stop rejection, attached movement without self-yield or
+  recycling, later-stop exit through the retained door and exact player/camera
+  restoration. The updated focused selection passed `1/1` in `0.56 s`, including
+  the real localized clickable `InteractionPromptView` at both doors. Focused
+  actor-ownership and moving-pelvis regressions remain in place; complete
+  suites, a player build and a packaged smoke check remain intentionally
+  omitted in fast mode.
+- Production-city regression
+  `ProductionCityRoute_AllStopsExposeBothDoorPrompts` passed `1/1` in `1.05 s`.
+  It covers the default seed's five stops and both doors, the real localized
+  clickable prompt from road height, and a passenger waiting before arrival
+  while the real `CityBusDirector` resolves obstacles and still reaches its
+  open-door dwell.
+- Focused physical-ground regression
+  `ProductionCityDoorDocks_MatchPhysicalSurfaceHeight` passed `1/1` in `1.50 s`.
+  It compared all five stops, both doors and both entry/exit poses against the
+  real generated colliders: nine door points use sidewalk top `0.14`, while
+  Home/front correctly uses apron top `0.08` and grounded root `Y=0.12`.
+  The strengthened production prompt regression then passed `1/1` in `1.08 s`,
+  including a real click at that Home/front dock and the next-frame transition
+  from `Positioning` to `Entering`.
+- The focused ride regression was extended with stable actor-local following
+  while Player retains its original parent, followed by bus-slot deactivation
+  during `Riding`. It passed `1/1` in `0.78 s`, restoring passenger/service
+  ownership, motor, collider, shadow and camera without either Unity hierarchy
+  error.
+- The same regression now also requires a level default view through the
+  nearest window and feeds real queued RMB mouse delta plus gamepad right-stick
+  input through the passenger camera. Runtime and PlayMode test projects
+  compile with `0` warnings and `0` errors.
+- Corrected the fixed seat from same-side `Seat_01` to opposite-driver
+  `Seat_07`, and strengthened the same regression to prove the side contract,
+  a level horizon on every boarding-blend frame and under forced suspension
+  pitch/roll, plus unmixed direction-correct X/Y input for both mouse and right
+  stick. The focused selection passed `1/1` in `0.97 s`.
+
 ## 2026-08-11 — Route 01 production driver
 
 - Added the separate passive `CityBusDriver3D`: a normal low-poly head with

@@ -160,6 +160,7 @@ namespace BarPromenade
         private PlayerAnimatedInteractionTimeline timeline;
         private Vector3 standHip;
         private Vector3 actionHip;
+        private Transform actionPelvisTarget;
         private Vector3 exitHip;
         private PlayerAnimatedInteractionPelvisTransition pelvisTransition;
         private bool hasPelvisTransition;
@@ -316,16 +317,43 @@ namespace BarPromenade
                 transition);
         }
 
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            PlayerAnimatedInteractionPelvisTransition transition,
+            float initialVerticalTolerance)
+        {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                transition,
+                initialVerticalTolerance);
+        }
+
         private bool BeginPositionedInternal(
             PlayerAnimatedInteractionDefinition definition,
             PlayerAnimatedInteractionPose authoredEntryPose,
             Vector3 actionHipPosition,
             PlayerAnimatedInteractionPose authoredExitPose,
-            PlayerAnimatedInteractionPelvisTransition? transition)
+            PlayerAnimatedInteractionPelvisTransition? transition,
+            float initialVerticalTolerance =
+                PlayerMotor.InteractionVerticalTolerance)
         {
             authoredEntryPose.Validate(nameof(authoredEntryPose));
             authoredExitPose.Validate(nameof(authoredExitPose));
             transition?.Validate(nameof(transition));
+            if (float.IsNaN(initialVerticalTolerance) ||
+                float.IsInfinity(initialVerticalTolerance) ||
+                initialVerticalTolerance < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(initialVerticalTolerance));
+            }
+
             if (!TryPrepareInternal(
                     definition,
                     authoredEntryPose.HipPosition,
@@ -337,7 +365,7 @@ namespace BarPromenade
 
             if (Mathf.Abs(player.GameObject.transform.position.y -
                           authoredEntryPose.RootPosition.y) >
-                PlayerMotor.InteractionVerticalTolerance)
+                initialVerticalTolerance)
             {
                 return false;
             }
@@ -375,15 +403,111 @@ namespace BarPromenade
 
         public bool RequestExit(float durationMultiplier)
         {
+            Vector3 frozenActionHip = GetResolvedActionHipPosition();
             if (timeline == null ||
                 !timeline.RequestExit(durationMultiplier))
             {
                 return false;
             }
 
+            actionHip = frozenActionHip;
+            actionPelvisTarget = null;
             ApplyInputForPhase(timeline.Phase);
             ApplyCurrentPresentation();
             PhaseChanged?.Invoke(timeline.Phase);
+            return true;
+        }
+
+        /// <summary>
+        /// Starts the terminal phase from a supplied current pelvis position
+        /// and finishes at a new independent authored exit pose. This is the
+        /// moving-platform counterpart to the static RequestExit overloads.
+        /// </summary>
+        public bool RequestExit(
+            PlayerAnimatedInteractionPose authoredExitPose,
+            Vector3 currentActionHipPosition,
+            float durationMultiplier = 1f,
+            PlayerAnimatedInteractionPelvisTransition? transition = null)
+        {
+            authoredExitPose.Validate(nameof(authoredExitPose));
+            ValidateActionHipPosition(currentActionHipPosition);
+            transition?.Validate(nameof(transition));
+            if (!placeAtExitOnCompletion ||
+                timeline == null ||
+                !timeline.RequestExit(durationMultiplier))
+            {
+                return false;
+            }
+
+            exitPose = authoredExitPose;
+            actionHip = currentActionHipPosition;
+            exitHip = authoredExitPose.HipPosition;
+            actionPelvisTarget = null;
+            SetPelvisTransition(transition);
+            ApplyInputForPhase(timeline.Phase);
+            ApplyCurrentPresentation();
+            PhaseChanged?.Invoke(timeline.Phase);
+            return true;
+        }
+
+        /// <summary>
+        /// Uses a transform's current world position as the action pelvis
+        /// target while a positioned interaction enters or loops.
+        /// </summary>
+        public bool BindActionPelvisTarget(Transform target)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            ValidateActionHipPosition(target.position);
+            if (!IsPositionedEntryOrLoopActive())
+            {
+                return false;
+            }
+
+            actionPelvisTarget = target;
+            actionHip = target.position;
+            RefreshActiveClipAlignment();
+            return true;
+        }
+
+        /// <summary>
+        /// Clears a moving pelvis target while retaining its latest valid
+        /// world position as the fixed action pelvis target.
+        /// </summary>
+        public bool FreezeActionPelvisTarget()
+        {
+            if (!placeAtExitOnCompletion || !IsActive)
+            {
+                return false;
+            }
+
+            actionHip = GetResolvedActionHipPosition();
+            actionPelvisTarget = null;
+            RefreshActiveClipAlignment();
+            return true;
+        }
+
+        /// <summary>
+        /// Re-aligns the currently sampled clip to its live pelvis target.
+        /// A moving-platform adapter may call this from a later LateUpdate.
+        /// </summary>
+        public bool RefreshActiveClipAlignment()
+        {
+            if (isPositioning ||
+                timeline == null ||
+                !timeline.IsActive ||
+                !ownsClipPresentation ||
+                clipPresentation == null ||
+                !clipPresentation.IsClipActive)
+            {
+                return false;
+            }
+
+            clipPresentation.AlignActiveClipAnchor(
+                GetCurrentPelvisPosition());
             return true;
         }
 
@@ -508,16 +632,7 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (!isPositioning &&
-                timeline != null &&
-                timeline.IsActive &&
-                ownsClipPresentation &&
-                clipPresentation != null &&
-                clipPresentation.IsClipActive)
-            {
-                clipPresentation.AlignActiveClipAnchor(
-                    GetCurrentPelvisPosition());
-            }
+            RefreshActiveClipAlignment();
         }
 
         private void OnDisable()
@@ -706,6 +821,7 @@ namespace BarPromenade
 
             RestorePlayerState();
             placeAtExitOnCompletion = false;
+            actionPelvisTarget = null;
             hasPelvisTransition = false;
 
             if (shouldNotify && completedNormally)
@@ -754,20 +870,22 @@ namespace BarPromenade
             switch (timeline.Phase)
             {
                 case PlayerAnimatedInteractionPhase.Entering:
+                    Vector3 enteringActionHip =
+                        GetResolvedActionHipPosition();
                     if (hasPelvisTransition)
                     {
                         return pelvisTransition.EvaluateEntering(
                             standHip,
-                            actionHip,
+                            enteringActionHip,
                             timeline.PhaseProgress);
                     }
 
                     return Vector3.LerpUnclamped(
                         standHip,
-                        actionHip,
+                        enteringActionHip,
                         SmoothProgress(timeline.PhaseProgress));
                 case PlayerAnimatedInteractionPhase.Looping:
-                    return actionHip;
+                    return GetResolvedActionHipPosition();
                 case PlayerAnimatedInteractionPhase.Exiting:
                     if (hasPelvisTransition)
                     {
@@ -895,6 +1013,47 @@ namespace BarPromenade
                     "The exit hip position must be finite.",
                     nameof(exitHipPosition));
             }
+        }
+
+        private static void ValidateActionHipPosition(
+            Vector3 actionHipPosition)
+        {
+            if (!IsFinite(actionHipPosition))
+            {
+                throw new ArgumentException(
+                    "The action hip position must be finite.",
+                    nameof(actionHipPosition));
+            }
+        }
+
+        private bool IsPositionedEntryOrLoopActive()
+        {
+            if (!placeAtExitOnCompletion || !IsActive)
+            {
+                return false;
+            }
+
+            return isPositioning ||
+                   timeline.Phase ==
+                       PlayerAnimatedInteractionPhase.Entering ||
+                   timeline.Phase ==
+                       PlayerAnimatedInteractionPhase.Looping;
+        }
+
+        private Vector3 GetResolvedActionHipPosition()
+        {
+            if (actionPelvisTarget == null)
+            {
+                return actionHip;
+            }
+
+            Vector3 targetPosition = actionPelvisTarget.position;
+            if (IsFinite(targetPosition))
+            {
+                actionHip = targetPosition;
+            }
+
+            return actionHip;
         }
 
         private static bool IsFinite(Vector3 value)

@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.5.0"
+GENERATOR_VERSION = "2.6.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -190,6 +190,9 @@ REQUIRED_ACTIONS = (
     "CatFeedEnter",
     "CatFeedLoop",
     "CatFeedExit",
+    "BusBoardEnter",
+    "BusRideLoop",
+    "BusAlightExit",
 )
 
 
@@ -3724,6 +3727,263 @@ class CharacterBuilder:
             ((0.0, feed_pose), (1.0, relaxed)),
         )
 
+        bus_board_step = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(5.0, -1.5, -2.0),
+                    location_m=(0.0, -0.015, 0.025),
+                ),
+                "spine": BonePose(rotation_degrees=(13.0, 0.0, 2.0)),
+                "chest": BonePose(rotation_degrees=(-6.0, 0.0, -2.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.5)),
+                "head": BonePose(rotation_degrees=(-4.0, 0.0, -0.5)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.10, -0.23, -0.13)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.06, -0.15, -0.24)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-24.0, 2.0, 14.0)),
+                "forearm.R": BonePose(rotation_degrees=(-18.0, -2.0, -8.0)),
+                "hand.L": BonePose(rotation_degrees=(4.0, -8.0, 6.0)),
+                "hand.R": BonePose(rotation_degrees=(3.0, 6.0, -4.0)),
+                "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 4.0)),
+                "shin.L": BonePose(rotation_degrees=(62.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-16.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(9.0, 0.0, -2.0)),
+                "shin.R": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+            },
+        )
+        bus_board_through = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(3.0, 1.0, 2.0),
+                    location_m=(0.0, -0.025, 0.045),
+                ),
+                "spine": BonePose(rotation_degrees=(10.0, 0.0, -1.5)),
+                "chest": BonePose(rotation_degrees=(-4.0, 0.0, 1.5)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, -0.5)),
+                "head": BonePose(rotation_degrees=(-3.0, 0.0, 0.5)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.08, -0.21, -0.17)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.11, -0.24, -0.11)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-19.0, 2.0, 10.0)),
+                "forearm.R": BonePose(rotation_degrees=(-26.0, -2.0, -14.0)),
+                "hand.L": BonePose(rotation_degrees=(3.0, -7.0, 4.0)),
+                "hand.R": BonePose(rotation_degrees=(4.0, 8.0, -6.0)),
+                "thigh.L": BonePose(rotation_degrees=(5.0, 0.0, 2.0)),
+                "shin.L": BonePose(rotation_degrees=(19.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-38.0, 0.0, -4.0)),
+                "shin.R": BonePose(rotation_degrees=(58.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-15.0, 0.0, 0.0)),
+            },
+        )
+        bus_seat_prepare = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(7.0, 0.0, 0.0),
+                    location_m=(0.0, 0.035, -0.045),
+                ),
+                "spine": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.09, -0.13, -0.25)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.09, -0.13, -0.25)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-18.0, 0.0, 10.0)),
+                "forearm.R": BonePose(rotation_degrees=(-18.0, 0.0, -10.0)),
+                "thigh.L": BonePose(rotation_degrees=(-31.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-33.0, 0.0, -3.0)),
+                "shin.L": BonePose(rotation_degrees=(36.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(37.0, 0.0, 0.0)),
+            },
+        )
+        bus_seat_lower = self.merge_pose(
+            bus_seat_prepare,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-2.0, 0.0, 0.0),
+                    location_m=(0.0, 0.075, -0.19),
+                ),
+                "spine": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-56.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-58.0, 0.0, -3.0)),
+                "shin.L": BonePose(rotation_degrees=(61.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(62.0, 0.0, 0.0)),
+            },
+        )
+        bus_seated = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-6.0, 0.0, 0.0),
+                    location_m=(0.0, 0.095, -0.285),
+                ),
+                "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(1.5, 0.0, -0.4)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.075, -0.145, -0.245)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.075, -0.145, -0.245)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-31.0, 0.0, 11.0)),
+                "forearm.R": BonePose(rotation_degrees=(-31.0, 0.0, -11.0)),
+                "hand.L": BonePose(rotation_degrees=(5.0, -7.0, 3.0)),
+                "hand.R": BonePose(rotation_degrees=(5.0, 7.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-68.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-70.0, 0.0, -3.0)),
+                "shin.L": BonePose(rotation_degrees=(73.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(74.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+            },
+        )
+        bus_ride_left = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-5.5, 0.4, -1.4),
+                    location_m=(0.005, 0.095, -0.282),
+                ),
+                "spine": BonePose(rotation_degrees=(4.2, 0.0, 1.8)),
+                "chest": BonePose(rotation_degrees=(-1.0, 0.0, -2.0)),
+                "neck": BonePose(rotation_degrees=(-0.8, 0.0, 0.8)),
+                "head": BonePose(rotation_degrees=(1.2, 0.0, -1.0)),
+            },
+        )
+        bus_ride_breath = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-6.2, 0.0, 0.0),
+                    location_m=(0.0, 0.095, -0.287),
+                ),
+                "spine": BonePose(rotation_degrees=(4.4, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(0.2, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-1.4, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(1.8, 0.0, -0.4)),
+            },
+        )
+        bus_ride_right = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-5.5, -0.4, 1.4),
+                    location_m=(-0.005, 0.095, -0.282),
+                ),
+                "spine": BonePose(rotation_degrees=(4.2, 0.0, -1.8)),
+                "chest": BonePose(rotation_degrees=(-1.0, 0.0, 2.0)),
+                "neck": BonePose(rotation_degrees=(-0.8, 0.0, -0.8)),
+                "head": BonePose(rotation_degrees=(1.2, 0.0, 0.2)),
+            },
+        )
+        bus_alight_lean = self.merge_pose(
+            bus_seat_lower,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(5.0, 0.0, 0.0),
+                    location_m=(0.0, 0.065, -0.17),
+                ),
+                "spine": BonePose(rotation_degrees=(19.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+            },
+        )
+        bus_alight_rise = self.merge_pose(
+            bus_seat_prepare,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(6.0, 0.0, 0.0),
+                    location_m=(0.0, 0.025, -0.025),
+                ),
+                "spine": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+            },
+        )
+        bus_alight_step = self.merge_pose(
+            bus_board_through,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(4.0, -1.0, -1.0),
+                    location_m=(0.0, -0.02, 0.02),
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-34.0, 0.0, 3.0)),
+                "shin.L": BonePose(rotation_degrees=(49.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-13.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(10.0, 0.0, -2.0)),
+                "shin.R": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+            },
+        )
+        bus_alight_land = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(4.0, 0.0, 1.0),
+                    location_m=(0.0, -0.01, -0.025),
+                ),
+                "spine": BonePose(rotation_degrees=(12.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-5.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-16.0, 0.0, 2.0)),
+                "thigh.R": BonePose(rotation_degrees=(-13.0, 0.0, -2.0)),
+                "shin.L": BonePose(rotation_degrees=(23.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(21.0, 0.0, 0.0)),
+            },
+        )
+        self._create_action(
+            "BusBoardEnter", "bus_ride", 3.0, False, 36, 12,
+            (
+                (0.0, relaxed),
+                (0.18, bus_board_step),
+                (0.36, bus_board_through),
+                (0.56, bus_seat_prepare),
+                (0.76, bus_seat_lower),
+                (1.0, bus_seated),
+            ),
+        )
+        self._create_action(
+            "BusRideLoop", "bus_ride", 2.0, True, 16, 8,
+            (
+                (0.0, bus_seated),
+                (0.20, bus_ride_left),
+                (0.50, bus_ride_breath),
+                (0.80, bus_ride_right),
+                (1.0, bus_seated),
+            ),
+        )
+        self._create_action(
+            "BusAlightExit", "bus_ride", 3.0, False, 36, 12,
+            (
+                (0.0, bus_seated),
+                (0.20, bus_alight_lean),
+                (0.38, bus_alight_rise),
+                (0.60, bus_alight_step),
+                (0.80, bus_alight_land),
+                (1.0, relaxed),
+            ),
+        )
+
     def build_presentation(self) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -4080,6 +4340,126 @@ def validate_smoking_pose(
                     f"({bone_name} differs by {seam_error:.7f})"
                 )
                 break
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
+def validate_bus_ride_pose(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Verify fixed-root bus actions and their full-rig handoff seams."""
+
+    action_names = (
+        "Relaxed",
+        "BusBoardEnter",
+        "BusRideLoop",
+        "BusAlightExit",
+    )
+    if any(result.actions.get(name) is None for name in action_names):
+        return
+
+    rig = result.rig
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+    full_rig_bones = tuple(bone.name for bone in rig.pose.bones)
+    identity = Matrix.Identity(4)
+
+    def matrix_error(left: Matrix, right: Matrix) -> float:
+        return max(
+            abs(left[row][column] - right[row][column])
+            for row in range(4)
+            for column in range(4)
+        )
+
+    def sample(
+        action_record: ActionRecord,
+        normalized_time: float,
+    ) -> dict[str, Matrix]:
+        animation_data.action = action_record.action
+        scene.frame_set(round(action_record.action.frame_end * normalized_time))
+        bpy.context.view_layer.update()
+        return {
+            bone_name: rig.pose.bones[bone_name].matrix.copy()
+            for bone_name in full_rig_bones
+        }
+
+    try:
+        records = {
+            name: result.actions[name]
+            for name in action_names
+        }
+        seam_samples = (
+            (
+                "Relaxed->BusBoardEnter",
+                sample(records["Relaxed"], 0.0),
+                sample(records["BusBoardEnter"], 0.0),
+            ),
+            (
+                "BusBoardEnter->BusRideLoop",
+                sample(records["BusBoardEnter"], 1.0),
+                sample(records["BusRideLoop"], 0.0),
+            ),
+            (
+                "BusRideLoop seam",
+                sample(records["BusRideLoop"], 0.0),
+                sample(records["BusRideLoop"], 1.0),
+            ),
+            (
+                "BusRideLoop->BusAlightExit",
+                sample(records["BusRideLoop"], 1.0),
+                sample(records["BusAlightExit"], 0.0),
+            ),
+            (
+                "BusAlightExit->Relaxed",
+                sample(records["BusAlightExit"], 1.0),
+                sample(records["Relaxed"], 1.0),
+            ),
+        )
+        for seam_name, first_pose, second_pose in seam_samples:
+            for bone_name in full_rig_bones:
+                seam_error = matrix_error(
+                    first_pose[bone_name],
+                    second_pose[bone_name],
+                )
+                if seam_error > 1e-5:
+                    errors.append(
+                        f"{seam_name} must match across the full rig "
+                        f"({bone_name} differs by {seam_error:.7f})"
+                    )
+                    break
+
+        for action_name in action_names[1:]:
+            action_record = records[action_name]
+            keyed_frames = sorted({
+                round(keyframe.co.x)
+                for fcurve in iter_action_fcurves(action_record.action)
+                for keyframe in fcurve.keyframe_points
+            })
+            animation_data.action = action_record.action
+            for frame in keyed_frames:
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                root_error = matrix_error(
+                    rig.pose.bones["root"].matrix_basis,
+                    identity,
+                )
+                if root_error > 1e-5:
+                    errors.append(
+                        f"{action_name} must keep the root bone fixed at "
+                        "every authored phase"
+                    )
+                    break
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)
@@ -4562,6 +4942,7 @@ def validate_result(
 
     validate_bed_sleep_pose(result, errors)
     validate_smoking_pose(result, errors)
+    validate_bus_ride_pose(result, errors)
     validate_fall_recovery_pose(result, errors)
 
     triangle_count = 0

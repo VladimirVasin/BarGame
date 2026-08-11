@@ -844,6 +844,21 @@ MonoBehaviour:
     clip: {fileID: 6400762376244492153, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+  - clipName: BusAlightExit
+    category: bus_ride
+    clip: {fileID: 1408742402421887124, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
+  - clipName: BusBoardEnter
+    category: bus_ride
+    clip: {fileID: -4609525377536076492, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
+  - clipName: BusRideLoop
+    category: bus_ride
+    clip: {fileID: 7783172126181339155, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 2
+    looping: 1
   - clipName: CatFeedEnter
     category: cat_feeding
     clip: {fileID: -3362603890314664099, guid: d422d4befc223294aabace05eb97a274, type: 3}
@@ -960,10 +975,10 @@ MonoBehaviour:
       m_Center: {x: -0.00000011920929, y: 0.875, z: 0.04145053}
       m_Extent: {x: 0.77390814, y: 0.875, z: 0.18854946}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 2.5.0
+  sourceGeneratorVersion: 2.6.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 1ba2cf9cff18393b3a0ecdc308890eac
+  buildSignature: 688aca7417151b96eb7698f2ec92abb2
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

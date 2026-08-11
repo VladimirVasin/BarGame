@@ -152,7 +152,7 @@ The vertical slice contains:
   retains a bounded `100 m` fog-hidden approach context beyond the facade while
   rendering its existing `48 m` street slice, and runs the slots only while the
   Balcony shot is active;
-- one passive ambient midibus with a strict single-slot cap. The production
+- one route-driven ambient midibus with a strict single-slot cap. The production
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
   passenger seats, rails, dashboard, two animated double-leaf doors, rolling
@@ -198,16 +198,50 @@ The vertical slice contains:
   obstacle-safe fog-hidden route poses `76-86 m` from the player and falls back
   to `56-86 m` only when forward travel on the same loop can approach the
   player. The cap means at most one bus can be active or potentially visible
-  rather than guaranteeing that one is always on screen. It yields to the player and
-  pedestrians and recycles only when its full body is at least `92 m` away.
+  rather than guaranteeing that one is always on screen. While the hero is
+  outside, it yields to the player and pedestrians and recycles only when its
+  full body is at least `92 m` away. While the hero is attached as a passenger,
+  the director omits that hero from bus-obstacle prediction and prevents
+  recycling or slot release, while pedestrian yielding remains active.
   Suspension, wheel/steering articulation, button travel, driver hands/look, the
   door timeline, a synthesized engine loop and night-scaled head, tail and cabin
   emission reset with the pool. Two
   shadowless runtime headlight Spots illuminate the road ahead and two soft
   downward cabin Spots light the interior; the shared night factor scales all
-  four and pooling switches them fully off. Camera
-  direction and frustum membership never participate in the lifecycle. The
-  moving ambient-bus runtime is City-only. Home's bounded exterior regenerates
+  four and pooling switches them fully off. Camera direction and frustum
+  membership never participate in the lifecycle. At either fully open
+  passenger door, the standard localized E/Enter/gamepad/pointer prompt begins
+  the passenger MVP. The controller chooses the closest valid front- or
+  rear-door exterior dock and records that door-specific transfer; the bus
+  holds its dwell while the visible three-second `BusBoardEnter` action carries
+  the hero through the selected live doorway and aligns the ordinary rig's
+  pelvis to window seat `07`, the first fixed anchor on the side opposite the
+  driver. The controller then keeps
+  the gameplay root in its original hierarchy, disables ordinary locomotion,
+  collision and the contact patch. After each bus update it late-synchronizes
+  the root's world pose to that actor-local seat, keeps the two-second
+  `BusRideLoop` aligned to the live seat and owns a seat-relative seated camera.
+  Its position follows suspension, but its world-level horizon and independent
+  yaw/pitch axes do not inherit body roll. The default aisle-side pose looks
+  through the nearest window, while
+  the same RMB mouse input and gamepad right stick as ordinary orbit control
+  rotate a bounded yaw/pitch view in place inside the cabin. The exit prompt is
+  withheld until
+  `ServiceOrdinal` exceeds the boarding value, so it is available at the next
+  or any later stop. A second service hold keeps the doors open while the
+  three-second `BusAlightExit` uses the same selected live doorway waypoint and
+  an independent validated grounded roadside exit pose, then blends back to the
+  ordinary chase camera. Entry and exit root heights are resolved from the same
+  deterministic street-surface plan that builds the physical raised sidewalks
+  and flat bus aprons.
+  Normal completion and cancellation, scene teardown or forced actor cleanup
+  restore the player motor, `CharacterController`, contact shadow and camera
+  exactly once without mutating its hierarchy, with a safe exterior fallback
+  when needed. This passenger runtime remains City-only and uses the first
+  fixed opposite-driver seat; it has no fare, destination picker, NPC
+  passengers, passenger
+  persistence or live map marker.
+  Home's bounded exterior regenerates
   the same route plan and reconstructs the nearby Home stop as a static
   collider-free pole, but it has no bus actor or director: no real Street
   pass-through offers both complete-body seams at or beyond the fog-hidden
@@ -874,13 +908,15 @@ The vertical slice contains:
 - Weather, rain, puddles and volumetric light shafts beyond the implemented
   MVP day/night lighting cycle.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
-  the implemented City-only ambient bus remains route-driven and
-  non-interactive, with boarding and live map tracking deferred.
+  the implemented City-only Route 01 passenger MVP remains route-driven and
+  limited to one fixed seat. Fares/payment, destination selection, NPC
+  passengers, passenger persistence and live map tracking are deferred.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.
 - Additional bespoke 3D animation polish beyond the current in-place
-  locomotion, face, hybrid fall, bed, smoking and cat-feeding action set.
+  locomotion, face, hybrid fall, bed, smoking, cat-feeding and bus-passenger
+  action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
 - Sobering mechanics, long-term save data, income/jobs, a broader
   economy, dialogue, quests, combat, save slots, and online features.

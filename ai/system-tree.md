@@ -97,7 +97,7 @@ Assets/
       PlayerCharacter3D.fbx             production Generic model
       PlayerCharacter3D.json            deterministic parts/bones/actions manifest
     Animations/
-      PlayerCharacter3DAnimations.fbx   23 in-place Actions; full-body 50-frame Rise L/R
+      PlayerCharacter3DAnimations.fbx   26 in-place Actions; full-body 50-frame Rise L/R + bus trio
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
   Pedestrians/
@@ -201,13 +201,15 @@ Assets/
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
-      Vehicles/      one-slot real-scale ambient midibus route and presentation
+      Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          accepted Street graph + full-body clearance proof
         CityBusTargetRoutePlanner.cs POI/Home candidates + deterministic winding loop solver
         CityBusWideTurnPlanner.cs  selected-apron two-edge safe-right macro
-        CityBusActor.cs            fixed-loop motion, yielding, fixed 10 s per-lap dwell + engine loop
-        CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
+        CityBusActor.cs            fixed-loop motion, 10 s dwell, service/passenger ownership + engine
+        CityBusDirector.cs         fog spawn, passenger-safe recycle and forced-cleanup lifecycle
+        CityBusRidePlan.cs         opposite-driver seat, door transfer + level camera geometry
+        CityBusRideController.cs   prompts, board/ride/alight, ride look input + exact cleanup
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
         CityBusDriverDoorTimeline.cs deterministic approach/dwell hand, button + look samples
         CityBusDriverPresentation.cs seated IK, door/player focus, rubber-neck stretch + blink
@@ -222,6 +224,7 @@ Assets/
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
+        PlayerCameraFollow.cs      chase/fixed pose, shared orbit sampling + return-pose resolution
         PlayerContactShadow.cs     planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
@@ -245,7 +248,7 @@ Assets/
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
       Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
-        PlayerAnimatedInteraction*.cs  grounded positioning, held pelvis waypoint + normal-completion signal
+        PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
         HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
@@ -312,7 +315,8 @@ Assets/
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
-      CityBusRuntimeTests.cs            forward encounter, fixed loop, 10 s dwell, suspension + reset
+      CityBusRuntimeTests.cs            encounter/loop/dwell plus passenger holds, recycle guards + reset
+      CityBusRidePlayModeTests.cs       both-door prompt, ride/next-stop exit + state restoration
       CityBusAssetImportTests.cs        dimensions, interior, wheel/button controls + passive prefab
       CityBusDriverDoorTimelineTests.cs phase, contact + chunk-independent samples
       CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
@@ -526,12 +530,15 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> one reusable actor/model slot
                             -> preferred hidden `76-86 m` activation
                             -> `56-86 m` fallback only with forward encounter path
-                            -> player/pedestrian yielding
+                            -> outside-player/pedestrian yielding
+                            -> attached hero omitted; pedestrian yielding retained
                             -> fixed `10 s` total stop dwell once per lap
                                -> `0.70 s` open + `0.70 s` close transitions
                                -> two double-leaf doors
                                -> CityBusDriverDoorTimeline deterministic sample
                             -> full-body recycling from `92 m`
+                               -> forbidden while passenger owner remains attached
+                               -> forced shutdown invokes registered passenger cleanup
                             -> no camera/frustum lifecycle dependency
                             -> CityBusActor kinematic box + engine
                             -> CityBusPresentation
@@ -549,17 +556,33 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> night-factor emission
                                -> 2 headlight + 2 soft cabin runtime Spots
                                   -> sprung-body children; NightFactor/pool controlled
+                            -> CityBusRideController
+                               -> standard prompt at open front and rear passenger doors
+                               -> street-surface-height door dock retained for exit
+                               -> service hold through `BusBoardEnter`
+                               -> moving pelvis target -> opposite-driver window seat `07`
+                               -> original-hierarchy root late-syncs to actor-local seat
+                               -> `BusRideLoop` + seat-following, world-level camera
+                                  -> independent RMB mouse/right-stick yaw + pitch
+                               -> exit only after a later service ordinal
+                               -> service hold through `BusAlightExit`
+                               -> independent grounded roadside exit + chase-camera blend
+                               -> completion/cancel/shutdown restores player + ownership
                          -> CityMapBusOverlay
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
-                                      -> Generic Idle/Walk/face/status/fall Actions
+                                      -> 26 Generic in-place Actions
+                                         -> Idle/Walk/face/status/fall
                                          -> 50-frame full-body Rise via all fours
+                                         -> BusBoardEnter/BusRideLoop/BusAlightExit
                                       -> real URP mesh shadows
 player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
+                         -> Route 01 front/rear door / fixed passenger seat
+                            -> CityBusRideController board / later-stop exit
                          -> BarEntrance/BarExit -> SceneTransitionService
                          or SupermarketEntrance/Exit -> SupermarketInterior
                             -> matching City supermarket return
