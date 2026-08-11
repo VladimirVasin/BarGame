@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### 2026-08-11 — Route 01 now winds through the whole city
+
+- Route 01 is no longer a square loop around Central Park. Its deterministic
+  closed route now reaches a stop near every district point of interest and one
+  near the player's home: five stops in the default city.
+- Stops remain off the target lot itself. Nightlife's Last Route Island now has
+  a working blue `01` pole nearby and outside its public space, while the worn
+  island structures stay an abandoned place rather than becoming the pole.
+- The full-size bus uses only body-clear street geometry. Long, smooth
+  centerline shifts make selected Road v2.1 right turns safe; ordinary tight
+  right turns remain forbidden, and shared signal intersections are accepted
+  only when the complete bus clears both physical poles.
+- The City map now draws the winding blue loop and five default numbered stop
+  markers. Home reconstructs its nearby pole as a static, non-blocking exterior
+  detail, but still does not spawn or simulate a bus from the balcony camera.
+
 ### 2026-08-11 — Three-way bus junctions no longer break walkers
 
 - Fixed Home initialization failing when a pedestrian route reached a

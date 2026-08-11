@@ -73,8 +73,36 @@ namespace BarPromenade
                 root,
                 context,
                 context.NearbyDecorations);
+            BuildHomeBusStop(root, context);
             night = BuildNightFixtures(root, context);
             return root;
+        }
+
+        private static void BuildHomeBusStop(
+            Transform parent,
+            HomeExteriorContextPlan context)
+        {
+            CityBusStopDescriptor stop = context.HomeBusStop;
+            if (stop == null)
+            {
+                return;
+            }
+
+            Transform root = new GameObject("Home Bus Stops").transform;
+            root.SetParent(parent, false);
+            CityBusStopWorldBuilder.BuildLocalStop(
+                root,
+                stop,
+                PlayerHomeBalconyGeometry.ToHomeLocal(
+                    context.PlayerHome,
+                    stop.ShelterPosition),
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    context.PlayerHome,
+                    stop.Forward),
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    context.PlayerHome,
+                    stop.RoadsideForward),
+                false);
         }
 
         private static void BuildTerminalEnvironment(

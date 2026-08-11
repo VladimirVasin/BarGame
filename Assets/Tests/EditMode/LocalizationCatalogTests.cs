@@ -255,6 +255,7 @@ namespace BarPromenade.Tests.EditMode
             "bus.stop.default_coastal.nightlife",
             "bus.stop.default_coastal.residential",
             "bus.stop.default_coastal.old_town",
+            "bus.stop.default_coastal.home",
             "map.clear",
             "map.visited_count",
             "map.distance",

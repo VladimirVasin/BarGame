@@ -6,10 +6,10 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Selects Road v2.1 three- or four-way junctions whose corner sidewalks
-    /// can move onto non-water ground clear of buildings. The surface planner
-    /// then exposes the full core and each real flush approach for a long
-    /// vehicle while retaining the one-metre pedestrian route.
+    /// Selects Road v2.1 perpendicular two-way corners and three- or four-way
+    /// junctions whose corner sidewalks can move onto non-water ground clear
+    /// of buildings. Signal-bearing nodes remain eligible; the bus planner
+    /// separately proves its inflated envelope clear of both physical poles.
     /// </summary>
     public static class CityBusIntersectionSelector
     {
@@ -30,16 +30,13 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
-            var signalNodes = new HashSet<Vector2Int>(
-                CityStreetIntersectionSelector.Select(layout));
             var selected = new List<Vector2Int>();
             var nodes = new List<Vector2Int>(layout.Nodes);
             nodes.Sort(CompareNodes);
             for (int index = 0; index < nodes.Count; index++)
             {
                 Vector2Int node = nodes[index];
-                if (!signalNodes.Contains(node) &&
-                    HasTurnCapableStreetIntersection(layout, node) &&
+                if (HasTurnCapableStreetIntersection(layout, node) &&
                     HasSafeCornerSetbacks(layout, node))
                 {
                     selected.Add(node);
@@ -81,7 +78,7 @@ namespace BarPromenade
                 directions.Add(edge.Other(node) - node);
             }
 
-            if (directions.Count < 3 ||
+            if (directions.Count < 2 ||
                 directions.Count > CardinalDirections.Length)
             {
                 return false;
@@ -107,7 +104,13 @@ namespace BarPromenade
                 }
             }
 
-            return true;
+            if (directions.Count != 2)
+            {
+                return true;
+            }
+
+            var ordered = new List<Vector2Int>(directions);
+            return ordered[0] + ordered[1] != Vector2Int.zero;
         }
 
         private static bool HasSafeCornerSetbacks(

@@ -30,22 +30,54 @@ namespace BarPromenade
             root.SetParent(parent, false);
             for (int index = 0; index < plan.Stops.Count; index++)
             {
-                BuildStop(root, plan.Stops[index]);
+                CityBusStopDescriptor stop = plan.Stops[index];
+                BuildStop(
+                    root,
+                    stop);
             }
 
             return root.gameObject;
         }
 
-        private static void BuildStop(
+        private static GameObject BuildStop(
             Transform parent,
             CityBusStopDescriptor stop)
         {
-            Vector3 routeForward = stop.Forward;
+            Transform root = CreateStopRoot(parent, stop);
+            root.SetPositionAndRotation(
+                stop.ShelterPosition,
+                ResolveRotation(
+                    stop.Forward,
+                    stop.RoadsideForward));
+            BuildStopVisual(root, true);
+            return root.gameObject;
+        }
+
+        internal static GameObject BuildLocalStop(
+            Transform parent,
+            CityBusStopDescriptor stop,
+            Vector3 localShelterPosition,
+            Vector3 localRouteForward,
+            Vector3 localRoadsideForward,
+            bool collider)
+        {
+            Transform root = CreateStopRoot(parent, stop);
+            root.localPosition = localShelterPosition;
+            root.localRotation = ResolveRotation(
+                localRouteForward,
+                localRoadsideForward);
+            BuildStopVisual(root, collider);
+            return root.gameObject;
+        }
+
+        private static Quaternion ResolveRotation(
+            Vector3 routeForward,
+            Vector3 roadsideForward)
+        {
             routeForward.y = 0f;
             routeForward = routeForward.sqrMagnitude > 0.0001f
                 ? routeForward.normalized
                 : Vector3.forward;
-            Vector3 roadsideForward = stop.RoadsideForward;
             roadsideForward.y = 0f;
             roadsideForward = roadsideForward.sqrMagnitude > 0.0001f
                 ? roadsideForward.normalized
@@ -53,20 +85,42 @@ namespace BarPromenade
                     routeForward.z,
                     0f,
                     -routeForward.x);
+            return Quaternion.LookRotation(
+                roadsideForward,
+                Vector3.up);
+        }
+
+        private static Transform CreateStopRoot(
+            Transform parent,
+            CityBusStopDescriptor stop)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (stop == null)
+            {
+                throw new ArgumentNullException(nameof(stop));
+            }
+
             Transform root = new GameObject(
                 $"Bus Stop {stop.SequenceIndex + 1:00}").transform;
             root.SetParent(parent, false);
-            root.SetPositionAndRotation(
-                stop.ShelterPosition,
-                Quaternion.LookRotation(roadsideForward, Vector3.up));
+            return root;
+        }
 
+        private static void BuildStopVisual(
+            Transform root,
+            bool collider)
+        {
             RuntimePrimitiveFactory.CreateBox(
                 "Pole",
                 root,
                 new Vector3(0f, 1.20f, 0f),
                 new Vector3(0.12f, 2.40f, 0.12f),
                 PoleColor,
-                true);
+                collider);
             RuntimePrimitiveFactory.CreateBox(
                 "Route Plate",
                 root,

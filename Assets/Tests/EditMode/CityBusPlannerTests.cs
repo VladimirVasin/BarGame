@@ -20,34 +20,11 @@ namespace BarPromenade.Tests.EditMode
                 layout,
                 decorations);
             CityBusPlan second = CityBusPlanner.Create(layout);
-            CityBusClearanceFailure firstLeftFailure =
-                first.ClearanceFailures.FirstOrDefault(failure =>
-                    failure.Kind == CityBusRouteLinkKind.LeftTurn &&
-                    failure.Clearance.FailureKind ==
-                    CityBusClearanceFailureKind.SidewalkOverlap);
 
             Assert.That(
                 first.IsEmpty,
                 Is.False,
-                $"states={first.StreetStateCount}, " +
-                $"accepted={first.ClearanceAcceptedLinkCount}, " +
-                $"failures={first.ClearanceFailures.Count}, " +
-                "failureKinds=" + string.Join(
-                    ",",
-                    first.ClearanceFailures
-                        .GroupBy(failure =>
-                            failure.Kind + "/" +
-                            failure.Clearance.FailureKind)
-                        .Select(group => group.Key + "=" + group.Count())) +
-                ", " +
-                "firstLeft=" + (firstLeftFailure == null
-                    ? "none"
-                    : firstLeftFailure.Id + "@" +
-                      firstLeftFailure.Clearance.FailedSampleIndex + ":" +
-                      firstLeftFailure.Clearance.FailedPosition) + ", " +
-                "aprons=" + string.Join(
-                    ",",
-                    CityBusIntersectionSelector.Select(layout)));
+                "Route 01 should connect all semantic targets.");
             Assert.That(first.Nodes.Count, Is.GreaterThan(0));
             Assert.That(first.Links.Count, Is.GreaterThan(0));
             Assert.That(
@@ -79,44 +56,49 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCoastal_BuildsOneCounterClockwiseParkRing()
+        public void DefaultCoastal_BuildsClosedWindingTargetRoute()
         {
-            CreateProductionContext(
+            CreateContext(
                 out CityLayout layout,
                 out CityDecorationPlan decorations);
             CityBusPlan plan = CityBusPlanner.Create(
                 layout,
                 decorations);
-            Vector3 parkCenter = layout.Park.Center;
-            float minimumX = plan.Nodes.Min(node => node.Position.x);
-            float maximumX = plan.Nodes.Max(node => node.Position.x);
-            float minimumZ = plan.Nodes.Min(node => node.Position.z);
-            float maximumZ = plan.Nodes.Max(node => node.Position.z);
-            float signedArea = SignedArea(
-                plan.OrderedLinkIndices
-                    .Select(index => plan.Nodes[
-                        plan.Links[index].FromNodeIndex].Position)
-                    .ToArray());
-
             Assert.That(
                 plan.OrderedLinkIndices,
                 Is.EqualTo(Enumerable.Range(0, plan.Links.Count).ToArray()));
             Assert.That(plan.Nodes.Count, Is.EqualTo(plan.Links.Count));
             Assert.That(
                 plan.Links.Count(link =>
-                    link.Kind == CityBusRouteLinkKind.LeftTurn),
-                Is.EqualTo(4));
-            Assert.That(signedArea, Is.GreaterThan(0f));
-            Assert.That(parkCenter.x, Is.InRange(minimumX, maximumX));
-            Assert.That(parkCenter.z, Is.InRange(minimumZ, maximumZ));
+                    link.Kind != CityBusRouteLinkKind.Straight),
+                Is.GreaterThan(4));
+            Assert.That(
+                plan.Links.Any(link =>
+                    link.Kind == CityBusRouteLinkKind.RightTurn &&
+                    link.Clearance.IsClear &&
+                    link.MinimumTurnRadius >=
+                        plan.Vehicle.MinimumBodyCenterTurnRadius),
+                Is.True);
             Assert.That(
                 plan.LoopLength,
                 Is.EqualTo(plan.Links.Sum(link => link.Length))
                     .Within(GeometryTolerance));
+            for (int index = 0; index < plan.Links.Count; index++)
+            {
+                CityBusRouteLink current = plan.Links[index];
+                CityBusRouteLink next = plan.Links[
+                    (index + 1) % plan.Links.Count];
+                Assert.That(
+                    Vector3.Distance(
+                        current.Samples[current.Samples.Count - 1].Position,
+                        next.Samples[0].Position),
+                    Is.LessThanOrEqualTo(GeometryTolerance),
+                    current.Id);
+            }
         }
 
         [Test]
-        public void OrderedRing_IsStreetOnlyRightHandAndOneInOneOut()
+        public void OrderedRoute_IsStreetOnlyRightHandAndOneInOneOut()
         {
             CreateContext(
                 out CityLayout layout,
@@ -187,7 +169,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Turns_RetainOnlyClearSixMetreLeftArcs()
+        public void Turns_RetainClearWideArcsAndRejectTightRights()
         {
             CreateContext(
                 out CityLayout layout,
@@ -201,12 +183,13 @@ namespace BarPromenade.Tests.EditMode
                 .Where(link =>
                     link.Kind == CityBusRouteLinkKind.LeftTurn)
                 .ToArray();
+            CityBusRouteLink[] rightTurns = plan.Links
+                .Where(link =>
+                    link.Kind == CityBusRouteLinkKind.RightTurn)
+                .ToArray();
 
             Assert.That(leftTurns.Length, Is.GreaterThan(0));
-            Assert.That(
-                plan.Links.Any(link =>
-                    link.Kind == CityBusRouteLinkKind.RightTurn),
-                Is.False);
+            Assert.That(rightTurns.Length, Is.GreaterThan(0));
             for (int index = 0; index < leftTurns.Length; index++)
             {
                 CityBusRouteLink turn = leftTurns[index];
@@ -227,6 +210,66 @@ namespace BarPromenade.Tests.EditMode
                     turn.Id);
             }
 
+            for (int index = 0; index < rightTurns.Length; index++)
+            {
+                CityBusRouteLink turn = rightTurns[index];
+                Assert.That(turn.Clearance.IsClear, Is.True, turn.Id);
+                Assert.That(
+                    turn.MinimumTurnRadius,
+                    Is.GreaterThanOrEqualTo(
+                        plan.Vehicle.MinimumBodyCenterTurnRadius),
+                    turn.Id);
+                Assert.That(
+                    turn.MinimumTurnRadius,
+                    Is.EqualTo(CityBusPlanner.RightTurnRadius)
+                        .Within(GeometryTolerance),
+                    turn.Id);
+                Assert.That(
+                    selectedIntersections,
+                    Does.Contain(turn.JunctionNode),
+                    turn.Id);
+            }
+
+            CityNightFixturePlan night =
+                CityNightFixturePlanner.CreatePlan(layout);
+            var signalNodes = new HashSet<Vector2Int>(
+                night.TrafficSignals.Select(signal =>
+                    signal.IntersectionNode));
+            Assert.That(
+                plan.Links.Any(link =>
+                    signalNodes.Contains(link.JunctionNode)),
+                Is.True,
+                "The retained route must prove the signal intersections " +
+                "that connect its closed component.");
+            for (int linkIndex = 0;
+                 linkIndex < plan.Links.Count;
+                 linkIndex++)
+            {
+                CityBusRouteLink link = plan.Links[linkIndex];
+                for (int sampleIndex = 0;
+                     sampleIndex < link.Samples.Count;
+                     sampleIndex++)
+                {
+                    CityBusPathSample sample = link.Samples[sampleIndex];
+                    for (int signalIndex = 0;
+                         signalIndex < night.TrafficSignals.Count;
+                         signalIndex++)
+                    {
+                        TrafficSignalDescriptor signal =
+                            night.TrafficSignals[signalIndex];
+                        Assert.That(
+                            FixtureOverlapsInflatedBus(
+                                plan.Vehicle,
+                                sample,
+                                signal.Position),
+                            Is.False,
+                            $"{link.Id} sample {sampleIndex} overlaps " +
+                            $"signal {signal.IntersectionNode}/" +
+                            signal.PairIndex);
+                    }
+                }
+            }
+
             CityBusClearanceFailure[] rightFailures =
                 plan.ClearanceFailures
                     .Where(failure =>
@@ -235,17 +278,23 @@ namespace BarPromenade.Tests.EditMode
                     .ToArray();
             Assert.That(rightFailures.Length, Is.GreaterThan(0));
             Assert.That(
-                rightFailures.All(failure =>
+                rightFailures
+                    .Where(failure => failure.Clearance.FailureKind ==
+                        CityBusClearanceFailureKind.CurvatureTooTight)
+                    .All(failure =>
                     !failure.Clearance.IsClear &&
-                    failure.Clearance.FailureKind ==
-                    CityBusClearanceFailureKind.CurvatureTooTight &&
                     failure.MinimumTurnRadius <
-                    plan.Vehicle.MinimumBodyCenterTurnRadius),
+                        plan.Vehicle.MinimumBodyCenterTurnRadius),
+                Is.True);
+            Assert.That(
+                rightFailures.Any(failure =>
+                    failure.Clearance.FailureKind ==
+                        CityBusClearanceFailureKind.CurvatureTooTight),
                 Is.True);
         }
 
         [Test]
-        public void AnchorsAndCanonicalStops_HaveSafeDistinctRoadsidePoses()
+        public void SemanticStops_CoverEveryPointOfInterestAndPlayerHome()
         {
             CreateContext(
                 out CityLayout layout,
@@ -256,35 +305,6 @@ namespace BarPromenade.Tests.EditMode
             float halfBody = plan.Vehicle.InflatedLength * 0.5f;
             float safeEnd = halfBody +
                 CityBusPlanner.StopJunctionClearance;
-            CityDistrictKind[] expectedDistricts =
-            {
-                CityDistrictKind.Industrial,
-                CityDistrictKind.Nightlife,
-                CityDistrictKind.Residential,
-                CityDistrictKind.OldTown
-            };
-            string[] expectedIds =
-            {
-                "bus-stop:default-coastal:ring-01:industrial",
-                "bus-stop:default-coastal:ring-01:nightlife",
-                "bus-stop:default-coastal:ring-01:residential",
-                "bus-stop:default-coastal:ring-01:old-town"
-            };
-            string[] expectedKeys =
-            {
-                "bus.stop.default_coastal.industrial",
-                "bus.stop.default_coastal.nightlife",
-                "bus.stop.default_coastal.residential",
-                "bus.stop.default_coastal.old_town"
-            };
-            var islandFrontages = new HashSet<RoadEdge>(
-                layout.DistrictPointsOfInterest
-                    .Where(point => point.Kind ==
-                        CityDistrictPointOfInterestKind
-                            .NightlifeLastRouteIsland)
-                    .SelectMany(point => point.Accesses)
-                    .Select(access => access.FrontageEdge));
-
             Assert.That(plan.SpawnAnchors.Count, Is.GreaterThan(0));
             for (int index = 0;
                  index < plan.SpawnAnchors.Count;
@@ -310,16 +330,23 @@ namespace BarPromenade.Tests.EditMode
                     anchor.Id);
             }
 
-            Assert.That(plan.Stops.Count, Is.EqualTo(4));
-            CollectionAssert.AreEqual(
-                expectedDistricts,
-                plan.Stops.Select(stop => stop.District).ToArray());
-            CollectionAssert.AreEqual(
-                expectedIds,
-                plan.Stops.Select(stop => stop.Id).ToArray());
-            CollectionAssert.AreEqual(
-                expectedKeys,
-                plan.Stops.Select(stop => stop.NameLocalizationKey).ToArray());
+            Assert.That(
+                plan.Stops.Count,
+                Is.EqualTo(layout.DistrictPointsOfInterest.Count + 1));
+            Assert.That(
+                plan.Stops.Count(stop => stop.TargetKind ==
+                    CityBusStopTargetKind.DistrictPointOfInterest),
+                Is.EqualTo(layout.DistrictPointsOfInterest.Count));
+            Assert.That(
+                plan.Stops.Count(stop => stop.TargetKind ==
+                    CityBusStopTargetKind.PlayerHome),
+                Is.EqualTo(1));
+            Assert.That(
+                plan.Stops.Select(stop => stop.TargetId).Distinct().Count(),
+                Is.EqualTo(plan.Stops.Count));
+            Assert.That(
+                plan.Stops.Select(stop => stop.RoadEdge).Distinct().Count(),
+                Is.EqualTo(plan.Stops.Count));
             for (int stopIndex = 0;
                  stopIndex < plan.Stops.Count;
                  stopIndex++)
@@ -393,11 +420,6 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThanOrEqualTo(GeometryTolerance),
                     stop.Id);
                 Assert.That(
-                    islandFrontages.Contains(stop.RoadEdge),
-                    Is.False,
-                    stop.Id);
-
-                Assert.That(
                     plan.GetStopIndices(stop.LinkIndex),
                     Does.Contain(stopIndex),
                     stop.Id);
@@ -410,10 +432,85 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThan(GeometryTolerance),
                     stop.Id);
             }
+
+            for (int index = 0;
+                 index < layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    layout.DistrictPointsOfInterest[index];
+                CityBusStopDescriptor stop = plan.Stops.Single(candidate =>
+                    candidate.TargetKind ==
+                        CityBusStopTargetKind.DistrictPointOfInterest &&
+                    candidate.TargetId == point.Id);
+                Assert.That(stop.TargetCell, Is.EqualTo(point.Cell));
+                Assert.That(stop.District, Is.EqualTo(point.District));
+                Assert.That(
+                    RoadEdgeHop(
+                        stop.RoadEdge,
+                        point.Accesses.Select(access =>
+                            access.FrontageEdge)),
+                    Is.LessThanOrEqualTo(1),
+                    stop.Id);
+                Vector2Int roadsideCell = GetRoadsideCell(plan, stop);
+                Assert.That(roadsideCell, Is.Not.EqualTo(point.Cell), stop.Id);
+                Assert.That(
+                    layout.TryGetArea(
+                        roadsideCell,
+                        out CityAreaDefinition roadsideArea),
+                    Is.True,
+                    stop.Id);
+                Assert.That(
+                    roadsideArea.Archetype,
+                    Is.EqualTo(point.District),
+                    stop.Id);
+                Assert.That(
+                    Contains(point.PublicBounds, stop.ShelterPosition),
+                    Is.False,
+                    stop.Id);
+                Assert.That(
+                    point.Accesses.Any(access => Contains(
+                        access.ApproachBounds,
+                        stop.ShelterPosition)),
+                    Is.False,
+                    stop.Id);
+            }
+
+            BuildingLot home = layout.PlayerHome;
+            CityBusStopDescriptor homeStop = plan.Stops.Single(stop =>
+                stop.TargetKind == CityBusStopTargetKind.PlayerHome);
+            Assert.That(homeStop.TargetCell, Is.EqualTo(home.Cell));
+            Assert.That(
+                homeStop.NameLocalizationKey,
+                Is.EqualTo("bus.stop.default_coastal.home"));
+            Assert.That(
+                layout.TryGetFrontageEdge(home, out RoadEdge homeFrontage),
+                Is.True);
+            Assert.That(
+                RoadEdgeHop(homeStop.RoadEdge, new[] { homeFrontage }),
+                Is.LessThanOrEqualTo(1));
+            Assert.That(
+                GetRoadsideCell(plan, homeStop),
+                Is.Not.EqualTo(home.Cell));
+            Assert.That(
+                Contains(home.WorldBounds, homeStop.ShelterPosition),
+                Is.False);
+            float homeDistance = Mathf.Min(
+                XzDistance(
+                    homeStop.ShelterPosition,
+                    home.ReturnPosition),
+                XzDistance(
+                    homeStop.ShelterPosition,
+                    home.SidewalkArrivalPosition));
+            Assert.That(
+                homeDistance,
+                Is.LessThanOrEqualTo(
+                    Mathf.Max(layout.NodeSpacing.x, layout.NodeSpacing.y) +
+                    layout.RoadWidth));
         }
 
         [Test]
-        public void CanonicalRing_CrossesIslandFrontageButDoesNotStopThere()
+        public void StopBearingEdges_AreVisitedOnlyAtTheirStopOccurrence()
         {
             CreateContext(
                 out CityLayout layout,
@@ -421,27 +518,35 @@ namespace BarPromenade.Tests.EditMode
             CityBusPlan plan = CityBusPlanner.Create(
                 layout,
                 decorations);
-            CityDistrictPointOfInterestDescriptor island =
-                layout.DistrictPointsOfInterest.Single(point =>
-                    point.Kind == CityDistrictPointOfInterestKind
-                        .NightlifeLastRouteIsland);
-            var excludedEdges = new HashSet<RoadEdge>(
-                island.Accesses.Select(access => access.FrontageEdge));
             int streetEdgeCount = layout.RoadEdges.Count(edge =>
                 layout.GetPathKind(edge) == CityPathKind.Street);
 
-            Assert.That(excludedEdges, Is.Not.Empty);
             Assert.That(
                 plan.StreetStateCount,
                 Is.EqualTo(streetEdgeCount * 2));
-            Assert.That(
-                plan.SpawnAnchors.Any(anchor =>
-                    excludedEdges.Contains(anchor.RoadEdge)),
-                Is.True);
-            Assert.That(
-                plan.Stops.Any(stop =>
-                    excludedEdges.Contains(stop.RoadEdge)),
-                Is.False);
+            var stopEdges = new HashSet<RoadEdge>(
+                plan.Stops.Select(stop => stop.RoadEdge));
+            foreach (RoadEdge stopEdge in stopEdges)
+            {
+                int longStraightOccurrences = 0;
+                for (int index = 0; index < plan.Links.Count; index++)
+                {
+                    CityBusRouteLink link = plan.Links[index];
+                    CityBusRouteNode node =
+                        plan.Nodes[link.FromNodeIndex];
+                    if (node.RoadEdge == stopEdge &&
+                        link.Kind == CityBusRouteLinkKind.Straight &&
+                        link.Length > layout.RoadWidth)
+                    {
+                        longStraightOccurrences++;
+                    }
+                }
+
+                Assert.That(
+                    longStraightOccurrences,
+                    Is.EqualTo(1),
+                    stopEdge.ToString());
+            }
         }
 
         private static void CreateContext(
@@ -462,36 +567,112 @@ namespace BarPromenade.Tests.EditMode
                 night);
         }
 
-        private static void CreateProductionContext(
-            out CityLayout layout,
-            out CityDecorationPlan decorations)
+        private static Vector2Int GetRoadsideCell(
+            CityBusPlan plan,
+            CityBusStopDescriptor stop)
         {
-            layout = CityLayoutGenerator.Generate(
-                CityBlueprintCatalog.Resolve(
-                    GameSessionState.DefaultCityBlueprintId),
-                CityGenerationSettings.Default,
-                GameSessionState.DefaultCitySeed);
-            RoadFencePlan fences = RoadFencePlanner.CreatePlan(layout);
-            CityNightFixturePlan night =
-                CityNightFixturePlanner.CreatePlan(layout);
-            decorations = CityDecorationPlanner.CreatePlan(
-                layout,
-                fences,
-                night);
-        }
-
-        private static float SignedArea(IReadOnlyList<Vector3> points)
-        {
-            float twiceArea = 0f;
-            for (int index = 0; index < points.Count; index++)
+            CityBusRouteNode node = plan.Nodes[
+                plan.Links[stop.LinkIndex].FromNodeIndex];
+            Vector2Int direction = node.ToGridNode - node.FromGridNode;
+            if (direction == Vector2Int.right)
             {
-                Vector3 first = points[index];
-                Vector3 second = points[(index + 1) % points.Count];
-                twiceArea += (first.x * second.z) -
-                             (second.x * first.z);
+                return new Vector2Int(
+                    node.FromGridNode.x,
+                    node.FromGridNode.y - 1);
             }
 
-            return twiceArea * 0.5f;
+            if (direction == Vector2Int.left)
+            {
+                return new Vector2Int(
+                    node.ToGridNode.x,
+                    node.ToGridNode.y);
+            }
+
+            if (direction == Vector2Int.up)
+            {
+                return node.FromGridNode;
+            }
+
+            return new Vector2Int(
+                node.FromGridNode.x - 1,
+                node.ToGridNode.y);
+        }
+
+        private static int RoadEdgeHop(
+            RoadEdge edge,
+            IEnumerable<RoadEdge> frontages)
+        {
+            int result = int.MaxValue;
+            foreach (RoadEdge frontage in frontages)
+            {
+                if (edge == frontage)
+                {
+                    return 0;
+                }
+
+                if (edge.Contains(frontage.A) ||
+                    edge.Contains(frontage.B))
+                {
+                    result = 1;
+                }
+            }
+
+            return result;
+        }
+
+        private static bool Contains(Rect bounds, Vector3 point)
+        {
+            return point.x >= bounds.xMin - GeometryTolerance &&
+                   point.x <= bounds.xMax + GeometryTolerance &&
+                   point.z >= bounds.yMin - GeometryTolerance &&
+                   point.z <= bounds.yMax + GeometryTolerance;
+        }
+
+        private static bool Contains(Bounds bounds, Vector3 point)
+        {
+            return point.x >= bounds.min.x - GeometryTolerance &&
+                   point.x <= bounds.max.x + GeometryTolerance &&
+                   point.z >= bounds.min.z - GeometryTolerance &&
+                   point.z <= bounds.max.z + GeometryTolerance;
+        }
+
+        private static float XzDistance(Vector3 first, Vector3 second)
+        {
+            float x = first.x - second.x;
+            float z = first.z - second.z;
+            return Mathf.Sqrt((x * x) + (z * z));
+        }
+
+        private static bool FixtureOverlapsInflatedBus(
+            CityBusDesignVehicle vehicle,
+            CityBusPathSample sample,
+            Vector3 fixturePosition)
+        {
+            Vector3 forward = sample.Forward;
+            forward.y = 0f;
+            forward.Normalize();
+            Vector3 right = new Vector3(
+                forward.z,
+                0f,
+                -forward.x);
+            Vector3 delta = fixturePosition - sample.Position;
+            delta.y = 0f;
+            float outsideForward = Mathf.Max(
+                0f,
+                Mathf.Abs(Vector3.Dot(delta, forward)) -
+                (vehicle.InflatedLength * 0.5f));
+            float outsideRight = Mathf.Max(
+                0f,
+                Mathf.Abs(Vector3.Dot(delta, right)) -
+                (vehicle.InflatedWidth * 0.5f));
+            float distanceSquared =
+                outsideForward * outsideForward +
+                outsideRight * outsideRight;
+            float fixtureRadius =
+                CityBusPlanner.TrafficSignalFixtureRadius;
+            return distanceSquared <=
+                   fixtureRadius * fixtureRadius +
+                   (GeometryTolerance * GeometryTolerance);
         }
 
     }

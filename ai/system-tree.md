@@ -134,7 +134,7 @@ Assets/
         CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
         CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
-        CityBusIntersectionSelector.cs safe Road v2.1 three-/four-way apron selection
+        CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  street split, corners, dashes + zebra approaches
         CityWorldBuilder.cs      chunked physical asphalt/sidewalk + marking batches
@@ -164,9 +164,9 @@ Assets/
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
-        HomeExteriorContextPlan.cs  bounded street/decoration + pedestrian context
+        HomeExteriorContextPlan.cs  bounded street/decoration/pedestrian + Home-stop context
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
-        HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + full street plan
+        HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + static Home stop
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
@@ -197,11 +197,13 @@ Assets/
         CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Vehicles/      one-slot real-scale ambient midibus route and presentation
-        CityBusPlan.cs             immutable ordered Route 01 loop, anchors + semantic stops
-        CityBusPlanner.cs          CCW park ring + four stops + full-body clearance proof
+        CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
+        CityBusPlanner.cs          accepted Street graph + full-body clearance proof
+        CityBusTargetRoutePlanner.cs POI/Home candidates + deterministic winding loop solver
+        CityBusWideTurnPlanner.cs  selected-apron two-edge safe-right macro
         CityBusActor.cs            fixed-loop motion, yielding, per-lap dwell + engine loop
         CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
-        CityBusStopWorldBuilder.cs four physical blue Route 01 stop poles
+        CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
         CityBusPresentation.cs     doors, wheels, steering + night/brake emission
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
@@ -300,11 +302,11 @@ Assets/
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
-      CityBusPlannerTests.cs            canonical ring/order/stops + turn-envelope proof
+      CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
       CityBusRuntimeTests.cs            forward encounter, fixed loop, dwell + one-slot reset
       CityBusAssetImportTests.cs        dimensions, interior, bindings + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
-      HomeBalconyLayoutTests.cs         Home exterior layout/pedestrian transform
+      HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
@@ -462,9 +464,11 @@ player + seed -> CityFogField (unchanged by time of day)
 layout -> CityStreetSurfacePlanner -> Road v2: `8 m` street / `6 m` carriageway
                                  -> two raised `1 m` sidewalks
                                  -> ordinary clear `6 x 6 m` junction apron
-                                 -> Road v2.1 selected three-/four-way bus nodes
+                                 -> Road v2.1 selected bus nodes
+                                    -> perpendicular corners + three-/four-way junctions
                                     -> four `1 m` corner pads displaced outward
                                     -> complete clear `8 x 8 m` asphalt apron
+                                    -> may share flat zebra paint + paired signals
                                  -> white center dashes + selected zebra crossings
                                  -> shared City/Home presentation geometry
                                  -> sidewalk/crosswalk walkable rectangles
@@ -487,14 +491,22 @@ layout + seed -> CityPedestrianPlanner -> sidewalk/turn/zebra graph
                                          -> shared Player Idle/Walk clips
                                          -> stable yield; no NPC/NPC collision
 layout -> CityBusPlanner -> canonical right-hand Route 01
-                         -> fixed CCW Street ring around Central Park
-                            -> Industrial -> Nightlife -> Residential -> Old Town
-                            -> one ordered successor per link; no random routing/pursuit
+                         -> deterministic closed winding Street service loop
+                            -> every actual district POI -> PlayerHome
+                            -> default five target-owned stops
+                            -> one ordered successor per occurrence; no random routing/pursuit
+                            -> repeated physical links get unique occurrence IDs
                          -> sampled full-body clearance envelope
-                            -> straight + analytic left-turn links
-                            -> Road v2.1 safe three-/four-way aprons
-                         -> four semantic route-owned stops on safe straights
-                            -> no stop at Last Route Island frontage
+                            -> accepted straight + analytic `6 m` left-turn links
+                            -> paired signal fixtures proven at `0.30 m` radius
+                            -> selected Road v2.1 apron safe-right macro
+                               -> S over full incoming Street -> `4.5 m` quarter arc
+                               -> symmetric S over outgoing Street
+                               -> owns both road edges; cannot bypass a stop edge
+                            -> ordinary tight `3 m` rights remain rejected
+                         -> target frontage or one connected edge away
+                            -> pole on another roadside cell outside target bounds
+                            -> working pole near and outside Last Route Island
                             -> CityBusStopWorldBuilder -> physical blue `01` poles
                          -> fog-band spawn poses
                          -> CityBusDirector
@@ -510,7 +522,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> wheels/steering/night lights
                          -> CityMapBusOverlay
                             -> simplified blue ink-outlined closed route
-                            -> four numbered localized hover stops + compact legend
+                            -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
@@ -582,13 +594,15 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> window + open door + walkable safe balcony
        -> same blueprint ID + seed -> HomeExteriorContextPlanner
                     -> bounded roads/lots/windows/lamps/signals/decorations view
+                    -> same Route 01 plan -> nearby PlayerHome-target stop
+                       -> static collider-free blue `01` pole in Home space
                     -> same CityDecorationWorldBuilder recipes in Home space
                     -> shared City exterior appearance + passive bar facade
                     -> no second City root/player/camera
                     -> HomeExteriorPedestrianPlanner
                        -> same sidewalk/turn/zebra graph in Home coordinates
                        -> bounded `100 m` approach anchors beyond the facade
-                    -> no ambient bus
+                    -> no ambient bus actor/director
                        -> visible default road terminal
                        -> no real Street pass-through with two `56 m` body-safe seams
                        -> no fabricated road or camera-owned visible pop

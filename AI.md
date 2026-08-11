@@ -22,13 +22,15 @@ directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
 production model. Road v2 gives ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
-three- or four-way nodes, Road v2.1 moves the four `1 m` corner pads outward,
-cuts the raised curbs back by `4.5 m` on every real Street approach and
-exposes the shared
-asphalt apron required by the production bus; those streets also host
-deterministic pedestrian and vehicle graphs. At most two
-ambient walkers exist near the player: they
-  spawn one at a time after wide, independently randomized delays at randomly
+perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
+four `1 m` corner pads outward, cuts the raised curbs back by `4.5 m` on every
+real Street approach and exposes the shared asphalt apron required by the
+production bus; those streets also host deterministic pedestrian and vehicle
+graphs. A selected apron may share flat
+zebra paint and paired signals, but a bus maneuver is retained only when its
+sampled full body clears both physical poles at a conservative `0.30 m` radius.
+At most two ambient walkers exist near the player: they spawn one at a time
+after wide, independently randomized delays at randomly
   ranked obstacle-safe anchors in the preferred `76-86 m` band, where the
   fixed City fog has already hidden them. If those anchors belong only to graph
   components that cannot reach the player, the director falls back to a linked
@@ -55,27 +57,39 @@ fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
 twelve-seat interior, driver area, two animated doors, steering and rolling
 wheels, a synthesized engine loop and time-of-day head, tail and cabin lights.
-Route 01 is one deterministic right-hand, Street-only counter-clockwise ring
-around Central Park. It always repeats the ordered district sequence
-Industrial, Nightlife, Residential and Old Town; route selection has no random
-branching or player pursuit. Four semantic route-owned stops, each represented
-by a physical `01` pole, are served once per lap with a randomized `3-5 s`
-door-open dwell. Random roadside decoration no longer creates bus shelters.
-The ring deliberately uses the frontage street beside Nightlife's Last Route
-Island but does not stop at the island, which remains a non-working stop.
-Spawning prefers obstacle-safe, fog-hidden route poses `76-86 m` from the
-player and may fall back to `56-86 m` only when forward travel on the same loop
-can approach them; recycling uses the complete vehicle bounds only after they
-are at least `92 m` from the hero. The bus yields to the player and active
+Route 01 is one deterministic right-hand, Street-only closed winding service
+loop. The planner targets every district point of interest that actually exists
+in the layout and then the player home; the default city therefore has five
+semantic stops in Industrial, Nightlife, Residential, Old Town and Home order.
+Each stop sits on a safe straight whose physical street edge is either a target
+frontage or one connected edge away. Its blue `01` pole stays on a different
+roadside cell and outside the POI public/access bounds or Home footprint. The
+loop connects those target straights only through previously accepted,
+full-body-clear links: ordinary straights, proven `6 m`-radius left turns and,
+only at selected Road v2.1 nodes, a two-edge safe-right macro. That macro uses a
+long S-merge over the full incoming Street, a `4.5 m` quarter-turn through the
+clear core and a symmetric S-return over the outgoing Street; it owns both
+physical edges so routing cannot bypass a stop-bearing edge. Ordinary tight
+`3 m` right turns remain rejected. Route selection has no random branching or
+player pursuit, and a repeated physical link receives a unique ordered route
+occurrence. Every stop is served once per lap with a randomized `3-5 s`
+door-open dwell. Random roadside decoration does not create bus shelters.
+Nightlife's Last Route Island now has a working Route 01 pole nearby but outside
+the POI itself, so its abandoned island structures remain distinct from the
+live stop. Spawning prefers obstacle-safe, fog-hidden route poses `76-86 m` from
+the player and may fall back to `56-86 m` only when forward travel on the same
+loop can approach them; recycling uses the complete vehicle bounds only after
+they are at least `92 m` from the hero. The bus yields to the player and active
 pedestrians, while camera direction and frustum state never control its
 lifecycle. The City map draws Route 01 as a blue ink-outlined line beneath the
-orange player itinerary, plus four numbered localized stop markers and a
-compact legend; live bus tracking and boarding are not implemented. This bus
-runtime is deliberately City-only. Home's balcony keeps its pedestrians but no
-bus: the real exterior has no Street pass-through with both complete-body seams
-hidden at `56 m`, and the default home faces a visible road terminal. The
-project does not fabricate another road or make bus appearance depend on the
-Balcony camera, avoiding a visible activation/pooling pop.
+orange player itinerary, plus five numbered localized stop markers in the
+default layout and a compact legend; live bus tracking and boarding are not
+implemented. The moving bus runtime is deliberately City-only. Home's balcony
+reconstructs the nearby Home stop as a static collider-free `01` pole but has no
+bus actor or director: the real exterior has no Street pass-through with both
+complete-body seams hidden at `56 m`, and the default home faces a visible road
+terminal. The project does not fabricate another road or make bus appearance
+depend on the Balcony camera, avoiding a visible activation/pooling pop.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds

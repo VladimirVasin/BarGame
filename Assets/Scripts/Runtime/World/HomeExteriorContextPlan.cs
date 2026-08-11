@@ -15,6 +15,7 @@ namespace BarPromenade
             IList<BuildingLot> nearbyLots,
             IList<CityDistrictPointOfInterestDescriptor>
                 nearbyDistrictPointsOfInterest,
+            CityBusStopDescriptor homeBusStop,
             IList<StreetLampDescriptor> nearbyStreetLamps,
             IList<TrafficSignalDescriptor> nearbyTrafficSignals,
             IList<CityDecorationDescriptor> nearbyDecorations)
@@ -36,6 +37,7 @@ namespace BarPromenade
                     new List<
                         CityDistrictPointOfInterestDescriptor>(
                         nearbyDistrictPointsOfInterest));
+            HomeBusStop = homeBusStop;
             NearbyStreetLamps =
                 new ReadOnlyCollection<StreetLampDescriptor>(
                     new List<StreetLampDescriptor>(
@@ -60,6 +62,7 @@ namespace BarPromenade
         {
             get;
         }
+        public CityBusStopDescriptor HomeBusStop { get; }
         public IReadOnlyList<StreetLampDescriptor> NearbyStreetLamps
         {
             get;
@@ -234,6 +237,11 @@ namespace BarPromenade
                     layout,
                     fence,
                     night);
+            CityBusPlan busPlan = CityBusPlanner.Create(
+                layout,
+                cityDecorations);
+            CityBusStopDescriptor homeBusStop =
+                FindHomeBusStop(busPlan, home);
             var decorations =
                 new List<CityDecorationDescriptor>();
             for (int index = 0;
@@ -258,9 +266,43 @@ namespace BarPromenade
                 roads,
                 lots,
                 districtPointsOfInterest,
+                homeBusStop,
                 lamps,
                 signals,
                 decorations);
+        }
+
+        private static CityBusStopDescriptor FindHomeBusStop(
+            CityBusPlan plan,
+            BuildingLot home)
+        {
+            CityBusStopDescriptor nearest = null;
+            float nearestDistanceSquared = float.PositiveInfinity;
+            float maximumDistanceSquared = ViewRadius * ViewRadius;
+            for (int index = 0; index < plan.Stops.Count; index++)
+            {
+                CityBusStopDescriptor stop = plan.Stops[index];
+                if (stop.TargetKind !=
+                        CityBusStopTargetKind.PlayerHome ||
+                    stop.TargetCell != home.Cell)
+                {
+                    continue;
+                }
+
+                float distanceSquared = PlanarSquaredDistance(
+                    stop.ShelterPosition,
+                    home.DoorPosition);
+                if (distanceSquared > maximumDistanceSquared ||
+                    distanceSquared >= nearestDistanceSquared)
+                {
+                    continue;
+                }
+
+                nearest = stop;
+                nearestDistanceSquared = distanceSquared;
+            }
+
+            return nearest;
         }
 
         private static float SquaredDistance(

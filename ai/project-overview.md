@@ -106,15 +106,18 @@ The vertical slice contains:
   `CityStreetSurfacePlan` applies the Road v2 `8 m` ordinary-street footprint:
   a `6 m` carriageway plus two raised `1 m` sidewalks, with an `8 x 8 m`
   intersection core and a clear `6 x 6 m` ordinary carriageway apron. Road
-  v2.1 deterministically reserves eligible three- or four-way bus nodes by
-  moving their four `1 m` corner sidewalk pads outward onto clear adjacent ground, exposing
-  the complete `8 x 8 m` asphalt apron without narrowing the sidewalks along
-  street edges. At a selected three-way node, the missing side closes outside
+  v2.1 deterministically reserves eligible perpendicular two-way corners and
+  three- or four-way bus nodes by moving their four `1 m` corner sidewalk pads
+  outward onto clear adjacent ground, exposing the complete `8 x 8 m` asphalt
+  apron and cutting each real raised curb back by `4.5 m`. At a selected
+  three-way node, the missing side closes outside
   that apron with a continuous `1 x 8 m` raised sidewalk joining both corner
-  pads. It keeps park paths separate, textures the center dashes white
-  and adds zebra crossings on up to six other eligible ordinary intersections.
-  City colliders and the bounded Home reconstruction consume the same geometry
-  plan;
+  pads. It keeps park paths separate, textures the center dashes white and adds
+  zebra crossings on up to six selected ordinary intersections. A bus apron may
+  share flat zebra paint and paired signals; retained bus maneuvers sample the
+  inflated body against both actual pole positions at a conservative `0.30 m`
+  fixture radius. City colliders and the bounded Home reconstruction consume
+  the same geometry plan;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
@@ -153,30 +156,41 @@ The vertical slice contains:
   model uses its real `8.25 x 2.38 x 2.95 m` body and `4.5 m` wheelbase rather
   than a hidden gameplay scale, and exposes a modeled driver area, twelve
   passenger seats, rails, dashboard, two animated doors, rolling wheels and
-  front steering. Canonical Route 01 is an immutable right-hand,
-  counter-clockwise Street ring around Central Park. It repeats one ordered
-  sequence—Industrial, Nightlife, Residential, Old Town—with no random route
-  branches or player pursuit, admits straight links and proven `6 m`-radius
-  left turns through Road v2.1 aprons, and rejects `3 m`-radius right turns that
-  do not clear the body envelope. Four semantic route-owned stops are fixed to
-  safe straights in that district order, each has a physical blue `01` pole and
-  is served once per lap with a randomized `3-5 s` two-door dwell. Random
-  roadside decoration does not emit bus shelters. The ring deliberately
-  traverses the frontage street beside Nightlife's last-route island but does
-  not stop at the island, preserving it as a non-working stop. A pooled actor
-  prefers obstacle-safe fog-hidden route poses `76-86 m` from the player and
-  falls back to `56-86 m` only when forward travel on the same loop can approach
-  the player. The cap means at most one bus can be active or potentially
-  visible rather than guaranteeing that one is always on screen. It yields to
-  the player and pedestrians and recycles only when its full body is at least
-  `92 m` away. Wheel/steering articulation, a synthesized engine loop and
-  night-scaled head, tail and cabin emission reset with the pool. Camera
-  direction and frustum membership never participate in the lifecycle. The
-  ambient-bus runtime is City-only. Home's balcony keeps its pedestrian
-  population but deliberately has no bus: no real Street pass-through offers
-  both complete-body seams at or beyond the fog-hidden `56 m` boundary, and
-  the default facade faces a visible road terminal. A fabricated continuation
-  or Balcony-camera-owned activation would create a visible pop, so neither is
+  front steering. Canonical Route 01 is an immutable right-hand, Street-only
+  closed winding service loop. Its target planner orders every district point
+  of interest that actually exists, followed by `PlayerHome`; the default
+  sequence is Industrial, Nightlife, Residential, Old Town and Home. It assigns
+  one safe straight to every target on its frontage or one connected road edge
+  away, keeps the roadside pole on another cell and outside the POI
+  public/access bounds or Home footprint, then connects the selected straights
+  through the deterministic accepted-link graph. Full-body-clear ordinary
+  straights and proven `6 m`-radius left turns enter the loop. At selected Road
+  v2.1 nodes only, a clearance-proven two-edge right-turn macro uses a long
+  S-merge across the full incoming Street, a `4.5 m` quarter-turn in the clear
+  core and a symmetric S-return across the outgoing Street. The macro owns both
+  physical edges, so a connector cannot use it to bypass a selected stop edge;
+  ordinary tight `3 m` right turns remain rejected. A physical street link may
+  recur in a connector, but every ordered occurrence receives a unique route
+  link/node ID. Route selection has no random branch or player pursuit. The
+  default five semantic stops each have a physical blue `01` pole and are served
+  once per lap with a randomized `3-5 s` two-door dwell. Random roadside
+  decoration does not emit bus shelters. Nightlife's last-route island now has a working pole nearby
+  but outside its public ground and approaches, leaving the abandoned island
+  structures distinct from the live stop. A pooled actor prefers obstacle-safe
+  fog-hidden route poses `76-86 m` from the player and falls back to `56-86 m`
+  only when forward travel on the same loop can approach the player. The cap
+  means at most one bus can be active or potentially visible rather than
+  guaranteeing that one is always on screen. It yields to the player and
+  pedestrians and recycles only when its full body is at least `92 m` away.
+  Wheel/steering articulation, a synthesized engine loop and night-scaled head,
+  tail and cabin emission reset with the pool. Camera direction and frustum
+  membership never participate in the lifecycle. The moving ambient-bus runtime
+  is City-only. Home's bounded exterior regenerates the same route plan and
+  reconstructs the nearby Home stop as a static collider-free pole, but it has
+  no bus actor or director: no real Street pass-through offers both complete-body
+  seams at or beyond the fog-hidden `56 m` boundary, and the default facade
+  faces a visible road terminal. A fabricated continuation or
+  Balcony-camera-owned activation would create a visible pop, so neither is
   introduced;
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
@@ -256,7 +270,7 @@ The vertical slice contains:
   cargo, vending queues, a legacy shelter recipe, phone booths, roadworks, a
   fountain/statue, bandstand, chess tables and playground equipment. The
   ordinary random roadside pool deliberately omits bus shelters because
-  Route 01 owns its four physical stop poles;
+  Route 01 owns its target-derived physical stop poles;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
   Industrial's weighbridge and Nightlife's last-route island. Their canonical
@@ -412,11 +426,11 @@ The vertical slice contains:
   lots are drawn as open ground rather than buildings, and all landmark data
   comes directly from the canonical validated layout used by the world
   builder. It also draws the canonical Route 01 loop as a blue ink-outlined
-  line below the orange player itinerary, adds four numbered stop markers with
-  localized hover labels and keeps both symbols in a compact legend. The map
-  deliberately has no live bus marker. With the City-only F9 test-teleport
-  toggle enabled, every map lot
-  becomes selectable, the side panel asks for an explicit confirmation and a
+  line below the orange player itinerary, adds five numbered stop markers in
+  the default layout with localized hover labels and keeps both symbols in a
+  compact legend. The map deliberately has no live bus marker. With the
+  City-only F9 test-teleport toggle enabled, every map lot becomes selectable,
+  the side panel asks for an explicit confirmation and a
   confirmed target moves the hero to that lot's street-front return point or
   its nearest generated route when no frontage edge exists.
   Keep at least `22` logical pixels per map cell; clip overflowing content and
@@ -605,16 +619,18 @@ The vertical slice contains:
   street's asphalt, sidewalks, road markings, lots, windows, lamps and
   signals. City and Home share the exterior ground, street-surface, facade,
   window and passive bar-front appearance
-  recipe. The balcony
+  recipe. It also reconstructs the target-derived Home stop as the same static
+  blue `01` pole in Home-local space, deliberately without colliders. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching
   background, `48 m` visibility cap, current time-of-day lighting, grading,
   local fog field and bounded `12`-light street/bar pool, then restores the
   captured Home visibility and lighting for MainRoom, Bathroom, disable and
   destroy. During that shot only, the same two-slot pedestrian runtime supplies
   distance-managed passers-by in the fog-hidden band on the reconstructed
-  street below; leaving the shot immediately pools them. The balcony does not
-  compose an ambient bus because its real street context has no two-ended,
-  complete-body fog-hidden pass-through. Fog and the City grade remain
+  street below; leaving the shot immediately pools them. The static stop is not
+  a vehicle activation boundary: the balcony does not compose a bus actor or
+  director because its real street context has no two-ended, complete-body
+  fog-hidden pass-through. Fog and the City grade remain
   identical at every
   hour. It never creates a second City root, player or camera;
 - one modal balcony-smoking vignette at the Home-local dock around

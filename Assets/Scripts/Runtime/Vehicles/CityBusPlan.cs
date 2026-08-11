@@ -18,13 +18,21 @@ namespace BarPromenade
         OutsideStreetSurface,
         SidewalkOverlap,
         CurvatureTooTight,
-        IntersectionApronUnavailable
+        IntersectionApronUnavailable,
+        StaticFixtureOverlap
     }
 
     public enum CityBusStopOrigin
     {
         MappedShelter = 0,
         RouteNative
+    }
+
+    public enum CityBusStopTargetKind
+    {
+        None = 0,
+        DistrictPointOfInterest,
+        PlayerHome
     }
 
     public sealed class CityBusDesignVehicle
@@ -258,7 +266,10 @@ namespace BarPromenade
                 distanceAlongLink,
                 position,
                 forward,
-                roadEdge)
+                roadEdge,
+                CityBusStopTargetKind.None,
+                string.Empty,
+                default)
         {
         }
 
@@ -276,6 +287,43 @@ namespace BarPromenade
             Vector3 position,
             Vector3 forward,
             RoadEdge roadEdge)
+            : this(
+                id,
+                sourceDecorationId,
+                nameLocalizationKey,
+                sequenceIndex,
+                distanceAlongLoop,
+                district,
+                shelterPosition,
+                roadsideForward,
+                linkIndex,
+                distanceAlongLink,
+                position,
+                forward,
+                roadEdge,
+                CityBusStopTargetKind.None,
+                string.Empty,
+                default)
+        {
+        }
+
+        internal CityBusStopDescriptor(
+            string id,
+            string sourceDecorationId,
+            string nameLocalizationKey,
+            int sequenceIndex,
+            float distanceAlongLoop,
+            CityDistrictKind district,
+            Vector3 shelterPosition,
+            Vector3 roadsideForward,
+            int linkIndex,
+            float distanceAlongLink,
+            Vector3 position,
+            Vector3 forward,
+            RoadEdge roadEdge,
+            CityBusStopTargetKind targetKind,
+            string targetId,
+            Vector2Int targetCell)
         {
             Id = id ?? string.Empty;
             SourceDecorationId = sourceDecorationId ?? string.Empty;
@@ -290,6 +338,9 @@ namespace BarPromenade
             Position = position;
             Forward = forward;
             RoadEdge = roadEdge;
+            TargetKind = targetKind;
+            TargetId = targetId ?? string.Empty;
+            TargetCell = targetCell;
         }
 
         public string Id { get; }
@@ -311,6 +362,9 @@ namespace BarPromenade
         public Vector3 Position { get; }
         public Vector3 Forward { get; }
         public RoadEdge RoadEdge { get; }
+        public CityBusStopTargetKind TargetKind { get; }
+        public string TargetId { get; }
+        public Vector2Int TargetCell { get; }
     }
 
     public sealed class CityBusPlan

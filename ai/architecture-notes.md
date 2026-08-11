@@ -73,46 +73,58 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   from the `0.08 m` road top to `0.14 m`; ParkPath remains independent. The
   default grid step is therefore `26 m` for an `18 m` block. The pure plan also
   owns center dashes, an `8 x 8 m` intersection core with a clear `6 x 6 m`
-  carriageway apron, intersection corner pavement,
-  radius-query rectangles and four-stripe zebra approaches. One shared stable
-  selector chooses at most six degree-3+ Street-only intersections that are
-  clear of ParkPath and blocked public space, so signals and crossings cannot
-  drift. Dashes are excluded from intersection and zebra bounds. City builds
-  physical sidewalk surfaces in `48 m` chunks; Home consumes the same plan in
-  local space without collision. Generation settings reject widths that leave
-  no positive carriageway between the two sidewalks. Asphalt, sidewalk and
-  white paint use three packaged albedos through MPBs on the shared Lit
-  material. Road v2.1 adds a second stable selector for eligible Street-only
-  three- or four-way nodes outside the signal/zebra set. At those nodes the
-  four `1 m` corner pads move outward onto clear adjacent ground, exposing the
-  complete `8 x 8 m` asphalt core. Raised curbs also stop `4.5 m` short on every
-  real approach, where the pedestrian line continues across a flush shared
-  apron.
-  Pedestrian corner links follow the displaced pads and the Home
-  reconstruction includes every surface whose bounds touch its retained road
-  slice. This is the deliberate geometry exception that makes the accepted
-  production bus's sampled long-body left-turn envelope provable; ordinary
+  carriageway apron, intersection corner pavement, radius-query rectangles and
+  four-stripe zebra approaches. One shared stable selector chooses at most six
+  degree-3+ Street-only intersections that are clear of ParkPath and blocked
+  public space, so paired signals and crossings cannot drift. Dashes are
+  excluded from intersection and zebra bounds. City builds physical sidewalk
+  surfaces in `48 m` chunks; Home consumes the same plan in local space without
+  collision. Generation settings reject widths that leave no positive
+  carriageway between the two sidewalks. Asphalt, sidewalk and white paint use
+  three packaged albedos through MPBs on the shared Lit material. Road v2.1 adds
+  a second stable selector for eligible Street-only perpendicular two-way
+  corners and three- or four-way nodes whose four setbacks have supported,
+  building-free ground. At those nodes the four `1 m` corner pads move outward,
+  the complete `8 x 8 m` asphalt core is exposed and raised curbs stop `4.5 m`
+  short on every real approach, where the pedestrian line continues across a
+  flush shared apron. A Road v2.1 node may also own the flat zebra paint and
+  paired signal fixtures. Every retained bus maneuver samples its inflated body
+  against both actual signal positions with a conservative `0.30 m` fixture
+  radius; overlap becomes `StaticFixtureOverlap` and rejects that maneuver.
+  Pedestrian corner links follow the displaced pads and the Home reconstruction
+  includes every surface whose bounds touch its retained road slice. Ordinary
   intersections retain their `6 x 6 m` clear apron.
 - **Accepted — One passive real-scale ambient bus on canonical Route 01:** City
-  layout produces the immutable
-  `bus-route:default-coastal:ring-01:ccw`: one right-hand, Street-only,
-  counter-clockwise ring around Central Park. Every link has exactly one
-  ordered successor and the loop repeats Industrial, Nightlife, Residential,
-  Old Town. Runtime never chooses a random route branch and never steers the
-  route toward the player. The planner validates the complete inflated design
-  envelope for the actual `8.25 x 2.38 x 2.95 m` body, `4.5 m` wheelbase and
-  `0.1 m` clearance margin. Straight links and analytic `6 m`-radius left turns
-  through selected Road v2.1 aprons pass; attempted `3 m`-radius right turns
-  remain rejected when their swept body leaves the drivable surface.
-  Four semantic route-owned stops sit on safe straight links in that district
-  order. Each has a stable ID, localization key, lap distance, roadside pose
-  and physical blue `01` pole; random roadside decoration does not emit bus
-  shelters. The actor serves every stop once per lap, clears its service set at
-  the loop seam and holds a seeded `3-5 s` two-door dwell. The canonical ring
-  deliberately traverses the street fronting Nightlife's Last Route Island,
-  superseding the earlier edge exclusion, but stop placement still excludes
-  that frontage: the island remains a non-working stop rather than Route 01
-  infrastructure.
+  layout produces immutable `bus-route:default-coastal:route-01`, one
+  deterministic right-hand, Street-only closed winding service loop. The target
+  sequence contains every district point of interest that actually exists and
+  then `PlayerHome`; the default is Industrial, Nightlife, Residential, Old
+  Town and Home. Each semantic stop is assigned to a safe straight on the
+  target frontage or one connected road edge away. Its roadside cell differs
+  from the target cell, a POI stop remains in that district, and the physical
+  blue `01` pole stays outside POI public/access bounds or the Home footprint.
+  The selected target straights are connected through one deterministic
+  accepted-link graph. Ordinary straights and analytic `6 m`-radius left turns
+  are retained after full-body surface and signal-fixture clearance. At selected
+  Road v2.1 nodes only, a two-edge safe-right macro starts at the incoming
+  Street departure, uses a long symmetric S-merge toward the centerline,
+  follows a `4.5 m` quarter-turn through the clear core and uses a second long
+  symmetric S to the outgoing Street arrival. The macro marks both physical
+  road edges occupied so pathfinding cannot use it to bypass a selected stop
+  edge. Ordinary unselected `3 m` right turns remain rejected as
+  `CurvatureTooTight`. Every retained path is sampled at `0.1 m` against the
+  inflated envelope of the real `8.25 x 2.38 x 2.95 m` body, `4.5 m` wheelbase
+  and `0.1 m` clearance margin. A physical link may recur in a connector, but
+  every ordered route occurrence receives unique link/node IDs and exactly one
+  successor. Runtime never chooses a random branch or steers the route toward
+  the player.
+  The default layout owns five target-derived stops with stable IDs,
+  localization keys, lap distances and roadside poses; random roadside
+  decoration does not emit bus shelters. The actor serves every stop once per
+  lap, clears its service set at the loop seam and holds a seeded `3-5 s`
+  two-door dwell. Nightlife's Last Route Island has a working Route 01 pole
+  nearby but outside its public ground and approaches. The abandoned island
+  structures remain a distinct place rather than becoming the live pole.
   Runtime owns exactly one reusable actor/model slot. Obstacle-safe activation
   prefers the fixed-fog `76-86 m` band and falls back to `56-86 m` only when
   forward travel on the same loop can approach the player; no spawn is accepted
@@ -131,9 +143,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   engine loop, and scales head, tail/brake and cabin emission with motion and
   current night factor; all state resets before pooling. The City map consumes
   the same immutable plan, simplifies its closed geometry, draws a blue
-  ink-outlined loop below the orange player itinerary and adds four numbered,
-  localized hoverable stops plus a compact legend. It deliberately has no live
-  bus marker. The bus has no prompt, boarding, persistence or traffic-signal
+  ink-outlined loop below the orange player itinerary and adds five numbered
+  localized stops in the default layout plus a compact legend. It deliberately
+  has no live bus marker. The bus has no prompt, boarding, persistence or traffic-signal
   simulation. Its runtime scope is City-only. A valid Home/Balcony route would
   require a real Street pass-through whose two complete-body seams both lie at
   or beyond the fog-hidden `56 m` boundary; none exists, and the default home
@@ -141,7 +153,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   presentation would falsify the generated city, while enabling or pooling a
   bus with the Balcony camera would create a visible camera-dependent pop and
   violate the lifecycle contract. Home therefore keeps its pedestrian exterior
-  runtime but composes no bus.
+  runtime and reconstructs the nearby Home stop as a static collider-free pole,
+  but composes no bus actor or director.
 - **Accepted — Local player-relative street pedestrians:** City layout and session
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
@@ -689,12 +702,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   landmark and resolves pointer hover across bars, home, shop and POIs by
   nearest marker, with deterministic priority ties. It also consumes the
   immutable bus plan and draws Route 01 below the orange player itinerary as a
-  blue ink-outlined closed loop, with four numbered localized stop markers and
-  a compact route/stop legend; it does not track the live pooled bus. Localized
+  blue ink-outlined closed winding loop, with five numbered localized stop
+  markers in the default layout and a compact route/stop legend; it does not
+  track the live pooled bus. Localized
   hover names use one high-contrast tooltip that flips and clamps inside the
-  map. Shop and POIs
-  are map context only: they are not route stops, do not enter the visited set
-  or count, and do not change bar selection or pathfinding.
+  map. Shop and POI landmark markers remain context for the orange player
+  itinerary: POIs independently own nearby Route 01 stop targets, but the
+  landmark markers do not enter the visited set or count and do not change bar
+  selection or player pathfinding.
 - **Accepted — Shared-lock gameplay pause:** City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad

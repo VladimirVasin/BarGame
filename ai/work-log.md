@@ -2,6 +2,51 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Winding Route 01 reaches district places and Home
+
+- Replaced the Central Park ring selection with a deterministic target-derived
+  Route 01. The planner orders every actual district point of interest and then
+  `PlayerHome`; the default city now owns five semantic stops in Industrial,
+  Nightlife, Residential, Old Town and Home order. Each stop chooses a safe
+  straight on the target frontage or one connected edge away, keeps its pole on
+  another roadside cell and outside the target public/access bounds or Home
+  footprint, and carries explicit target kind, ID and cell metadata.
+- Connected those target straights through one accepted closed graph. Retained
+  links include ordinary straights, proven `6 m` left turns and a selected-apron
+  two-edge safe-right macro: a long S-merge over the full incoming Street, a
+  `4.5 m` quarter-turn through the clear core and a symmetric S-return over the
+  outgoing Street. The macro marks both physical edges occupied so it cannot
+  bypass a stop edge. Ordinary unselected `3 m` rights remain rejected.
+- Expanded Road v2.1 eligibility to safe perpendicular two-way corners as well
+  as three- and four-way nodes. Signal intersections remain eligible because
+  excluding them disconnects the production target graph; every retained
+  maneuver now proves its inflated body against both actual signal poles at a
+  conservative `0.30 m` radius, rejecting collisions as
+  `StaticFixtureOverlap`. The physical apron remains `4.5 m` long.
+- Gave every ordered route occurrence unique link/node IDs even when a physical
+  section repeats. Nightlife's Last Route Island now has a working Route 01 pole
+  nearby but outside the POI, while its abandoned island composition remains
+  distinct. The City map consumes the five default stop descriptors without a
+  live bus marker.
+- Reused the stop visual builder in Home: the bounded exterior selects the
+  `PlayerHome` target and reconstructs its blue `01` pole in local space without
+  colliders. Home still creates no bus actor or director. Added the Home stop
+  localization and focused planner/Home composition coverage.
+
+Verification:
+
+- The focused Unity EditMode `CityBusPlannerTests` fixture passed `6/6`, covering
+  deterministic non-empty generation, the closed winding loop, accepted
+  straight/left/wide-right clearance including real signal fixtures, semantic
+  POI/Home stops and stop-edge ownership.
+- The focused Home exterior integration regression passed `1/1`, proving the
+  nearby `PlayerHome` pole is reconstructed in local space without colliders,
+  a bus actor or a bus director.
+- Scoped documentation review and the full-worktree `git diff --check` passed
+  after serializer-only import churn was removed. Fast mode intentionally
+  omitted the full EditMode/PlayMode suites, a player build and a rendered
+  walkthrough.
+
 ## 2026-08-11 — Repository artifact cleanup
 
 - Removed the unused stock URP tutorial scaffold (`Assets/Readme.asset` and

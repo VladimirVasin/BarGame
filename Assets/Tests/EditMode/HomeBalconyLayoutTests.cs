@@ -183,6 +183,79 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         public void
+            ExteriorView_ComposesNearbyHomeStopAsColliderFreeLocalPole()
+        {
+            HomeExteriorContextPlan context =
+                HomeExteriorContextPlanner.Generate(
+                    GameSessionState.DefaultCitySeed);
+            CityBusStopDescriptor stop = context.HomeBusStop;
+
+            Assert.That(stop, Is.Not.Null);
+            Assert.That(
+                stop.TargetKind,
+                Is.EqualTo(CityBusStopTargetKind.PlayerHome));
+            Assert.That(
+                stop.TargetCell,
+                Is.EqualTo(context.PlayerHome.Cell));
+            Assert.That(
+                stop.NameLocalizationKey,
+                Is.EqualTo("bus.stop.default_coastal.home"));
+            float deltaX = stop.ShelterPosition.x -
+                context.PlayerHome.DoorPosition.x;
+            float deltaZ = stop.ShelterPosition.z -
+                context.PlayerHome.DoorPosition.z;
+            Assert.That(
+                (deltaX * deltaX) + (deltaZ * deltaZ),
+                Is.LessThanOrEqualTo(
+                    HomeExteriorContextPlanner.ViewRadius *
+                    HomeExteriorContextPlanner.ViewRadius));
+
+            HomeInteriorLayoutPlan interior =
+                HomeInteriorLayoutPlanner.Generate();
+            HomeBalconyLayoutPlan balcony =
+                HomeBalconyLayoutPlanner.Generate(interior);
+            var parent = new GameObject("Home Stop Composition Test");
+            try
+            {
+                Transform exterior =
+                    HomeExteriorViewBuilder.Build(
+                        parent.transform,
+                        balcony,
+                        context);
+                Transform stopCollection =
+                    exterior.Find("Home Bus Stops");
+
+                Assert.That(stopCollection, Is.Not.Null);
+                Assert.That(stopCollection.childCount, Is.EqualTo(1));
+                Transform localStop = stopCollection.GetChild(0);
+                Assert.That(
+                    Vector3.Distance(
+                        localStop.localPosition,
+                        PlayerHomeBalconyGeometry.ToHomeLocal(
+                            context.PlayerHome,
+                            stop.ShelterPosition)),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    stopCollection.GetComponentsInChildren<Renderer>(true),
+                    Is.Not.Empty);
+                Assert.That(
+                    stopCollection.GetComponentsInChildren<Collider>(true),
+                    Is.Empty);
+                Assert.That(
+                    parent.GetComponentsInChildren<CityBusActor>(true),
+                    Is.Empty);
+                Assert.That(
+                    parent.GetComponentsInChildren<CityBusDirector>(true),
+                    Is.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
+        public void
             ExteriorPedestrians_DefaultThreeWayBusApronsRemainAxisAligned()
         {
             int seed = GameSessionState.DefaultCitySeed;

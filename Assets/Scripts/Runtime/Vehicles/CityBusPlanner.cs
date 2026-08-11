@@ -5,17 +5,19 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds one immutable, counter-clockwise right-hand ring around the
-    /// central park. Road v2.1 proves every retained straight and each
-    /// analytic six-metre left arc; tight right turns remain diagnostics.
+    /// Builds one immutable right-hand Route 01 through every actual district
+    /// point of interest and the player home. It retains only full-body-clear
+    /// straights, six-metre left arcs and two-edge wide-right macros; at signal
+    /// nodes the inflated vehicle envelope must also clear both static poles.
     /// </summary>
-    public static class CityBusPlanner
+    public static partial class CityBusPlanner
     {
         public const string DefaultRouteId =
-            "bus-route:default-coastal:ring-01:ccw";
+            "bus-route:default-coastal:route-01";
         public const float PathSampleSpacing = 0.1f;
         public const float TurnTangentInset = -0.5f;
         public const float LeftTurnRadius = 6f;
+        public const float RightTurnRadius = 4.5f;
         public const float MaximumShelterLaneDistance = 6f;
         public const float StopJunctionClearance = 0.5f;
         public const float RoadsidePoleOutsideRoadEdge = 0.2f;
@@ -69,6 +71,8 @@ namespace BarPromenade
 
             var busIntersections = new HashSet<Vector2Int>(
                 CityBusIntersectionSelector.Select(layout));
+            var trafficSignalIntersections = new HashSet<Vector2Int>(
+                CityStreetIntersectionSelector.Select(layout));
             List<DirectedStreet> streets = CreateDirectedStreets(
                 layout,
                 laneCenterOffset);
@@ -114,29 +118,32 @@ namespace BarPromenade
                     streets[index],
                     streetByDirection,
                     busIntersections,
+                    trafficSignalIntersections,
                     laneCenterOffset,
                     acceptedLinks,
                     failures);
             }
 
-            List<TemporaryLink> ring = CreateParkRing(
+            List<RouteOccurrence> route = CreateTargetRoute(
                 layout,
-                streetByDirection,
+                vehicle,
+                nodes,
                 acceptedLinks);
             var finalLinks = new List<CityBusRouteLink>(
-                ring.Count);
-            var ringLinkMetadata = new List<RingLinkMetadata>(
-                ring.Count);
-            var finalNodes = new List<CityBusRouteNode>(ring.Count);
-            var orderedLinkIndices = new List<int>(ring.Count);
+                route.Count);
+            var routeLinkMetadata = new List<RouteLinkMetadata>(
+                route.Count);
+            var finalNodes = new List<CityBusRouteNode>(route.Count);
+            var orderedLinkIndices = new List<int>(route.Count);
             float loopLength = 0f;
-            for (int index = 0; index < ring.Count; index++)
+            for (int index = 0; index < route.Count; index++)
             {
-                TemporaryLink source = ring[index];
+                RouteOccurrence occurrence = route[index];
+                TemporaryLink source = occurrence.Source;
                 int finalIndex = index;
-                int toNode = (index + 1) % ring.Count;
+                int toNode = (index + 1) % route.Count;
                 finalLinks.Add(new CityBusRouteLink(
-                    source.Id,
+                    source.Id + ":route-01:" + index,
                     index,
                     toNode,
                     source.Kind,
@@ -146,31 +153,30 @@ namespace BarPromenade
                     source.Clearance));
                 TemporaryNode node = nodes[source.FromNodeIndex];
                 finalNodes.Add(new CityBusRouteNode(
-                    node.Id,
+                    node.Id + ":route-01:" + index,
                     node.Position,
                     node.Forward,
                     node.RoadEdge,
                     node.FromGridNode,
                     node.ToGridNode,
                     new[] { finalIndex }));
-                ringLinkMetadata.Add(new RingLinkMetadata(
+                routeLinkMetadata.Add(new RouteLinkMetadata(
                     source,
-                    finalIndex));
+                    finalIndex,
+                    occurrence.StopCandidate));
                 orderedLinkIndices.Add(finalIndex);
                 loopLength += finalLinks[finalIndex].Length;
             }
 
             string routeId = "bus-route:" + layout.BlueprintId +
-                             ":ring-01:ccw";
-            List<CityBusStopDescriptor> stops = CreateCanonicalStops(
+                             ":route-01";
+            List<CityBusStopDescriptor> stops = CreateTargetStops(
                 layout,
-                vehicle,
-                ringLinkMetadata,
-                finalLinks,
-                finalNodes);
+                routeLinkMetadata,
+                finalLinks);
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
                 vehicle,
-                ringLinkMetadata,
+                routeLinkMetadata,
                 finalLinks,
                 stops);
             return new CityBusPlan(
@@ -227,52 +233,14 @@ namespace BarPromenade
             return result;
         }
 
-        private static HashSet<RoadEdge> CreateStopExcludedEdges(
-            CityLayout layout)
-        {
-            var result = new HashSet<RoadEdge>();
-            for (int pointIndex = 0;
-                 pointIndex < layout.DistrictPointsOfInterest.Count;
-                 pointIndex++)
-            {
-                CityDistrictPointOfInterestDescriptor point =
-                    layout.DistrictPointsOfInterest[pointIndex];
-                if (point.Kind != CityDistrictPointOfInterestKind
-                        .NightlifeLastRouteIsland)
-                {
-                    continue;
-                }
-
-                for (int accessIndex = 0;
-                     accessIndex < point.Accesses.Count;
-                     accessIndex++)
-                {
-                    RoadEdge edge = point.Accesses[accessIndex]
-                        .FrontageEdge;
-                    if (layout.GetPathKind(edge) == CityPathKind.Street)
-                    {
-                        result.Add(edge);
-                    }
-                }
-            }
-
-            return result;
-        }
-
         private static TemporaryNode CreateNode(
             DirectedStreet street,
             bool departure,
             CityLayout layout)
         {
-            float halfRoad = layout.RoadWidth * 0.5f;
-            Vector3 junction = layout.GetNodeWorldPosition(
-                departure ? street.From : street.To);
             Vector3 position = departure
-                ? junction + (street.Forward * halfRoad) +
-                  (street.Right * street.LaneCenterOffset)
-                : junction - (street.Forward * halfRoad) +
-                  (street.Right * street.LaneCenterOffset);
-            position.y = CityStreetSurfacePlanner.RoadTop;
+                ? GetDeparturePosition(layout, street)
+                : GetArrivalPosition(layout, street);
             return new TemporaryNode(
                 $"bus:{NodeId(street.From)}:{NodeId(street.To)}:" +
                 (departure ? "departure" : "arrival"),
@@ -339,6 +307,7 @@ namespace BarPromenade
             IReadOnlyDictionary<DirectedKey, DirectedStreet>
                 streetByDirection,
             ISet<Vector2Int> busIntersections,
+            ISet<Vector2Int> trafficSignalIntersections,
             float laneCenterOffset,
             ICollection<TemporaryLink> accepted,
             ICollection<CityBusClearanceFailure> failures)
@@ -383,6 +352,7 @@ namespace BarPromenade
                         vehicle,
                         incoming,
                         outgoing,
+                        trafficSignalIntersections.Contains(incoming.To),
                         accepted,
                         failures);
                 }
@@ -394,18 +364,22 @@ namespace BarPromenade
                         incoming,
                         outgoing,
                         busIntersections.Contains(incoming.To),
+                        trafficSignalIntersections.Contains(incoming.To),
                         laneCenterOffset,
                         accepted,
                         failures);
                 }
                 else if (crossY > DirectionTolerance)
                 {
-                    AddRightTurnFailure(
+                    AddRightJunction(
                         layout,
                         vehicle,
                         incoming,
                         outgoing,
+                        busIntersections.Contains(incoming.To),
+                        trafficSignalIntersections.Contains(incoming.To),
                         laneCenterOffset,
+                        accepted,
                         failures);
                 }
             }
@@ -416,6 +390,7 @@ namespace BarPromenade
             CityBusDesignVehicle vehicle,
             DirectedStreet incoming,
             DirectedStreet outgoing,
+            bool hasTrafficSignals,
             ICollection<TemporaryLink> accepted,
             ICollection<CityBusClearanceFailure> failures)
         {
@@ -432,6 +407,13 @@ namespace BarPromenade
                 vehicle,
                 samples,
                 allowed);
+            clearance = ValidateStaticIntersectionFixtures(
+                layout,
+                vehicle,
+                incoming.To,
+                hasTrafficSignals,
+                samples,
+                clearance);
             string id = ManeuverId(incoming, outgoing, "straight");
             if (clearance.IsClear)
             {
@@ -465,6 +447,7 @@ namespace BarPromenade
             DirectedStreet incoming,
             DirectedStreet outgoing,
             bool hasFullApron,
+            bool hasTrafficSignals,
             float laneCenterOffset,
             ICollection<TemporaryLink> accepted,
             ICollection<CityBusClearanceFailure> failures)
@@ -503,6 +486,13 @@ namespace BarPromenade
                 vehicle,
                 samples,
                 allowed);
+            clearance = ValidateStaticIntersectionFixtures(
+                layout,
+                vehicle,
+                incoming.To,
+                hasTrafficSignals,
+                samples,
+                clearance);
             if (!hasFullApron)
             {
                 clearance = new CityBusClearanceResult(
@@ -539,44 +529,6 @@ namespace BarPromenade
                 incoming,
                 outgoing,
                 CityBusRouteLinkKind.LeftTurn,
-                samples,
-                radius,
-                clearance));
-        }
-
-        private static void AddRightTurnFailure(
-            CityLayout layout,
-            CityBusDesignVehicle vehicle,
-            DirectedStreet incoming,
-            DirectedStreet outgoing,
-            float laneCenterOffset,
-            ICollection<CityBusClearanceFailure> failures)
-        {
-            float cornerOffset =
-                (layout.RoadWidth * 0.5f) - TurnTangentInset;
-            float radius = Mathf.Max(
-                0f,
-                cornerOffset - laneCenterOffset);
-            List<CityBusPathSample> samples = CreateTurnSamples(
-                layout,
-                incoming,
-                outgoing,
-                laneCenterOffset,
-                false,
-                radius);
-            var clearance = new CityBusClearanceResult(
-                false,
-                CityBusClearanceFailureKind.CurvatureTooTight,
-                0,
-                samples.Count > 0
-                    ? samples[0].Position
-                    : layout.GetNodeWorldPosition(incoming.To),
-                0f);
-            failures.Add(CreateFailure(
-                ManeuverId(incoming, outgoing, "right"),
-                incoming,
-                outgoing,
-                CityBusRouteLinkKind.RightTurn,
                 samples,
                 radius,
                 clearance));
@@ -627,18 +579,14 @@ namespace BarPromenade
             junction.y = CityStreetSurfacePlanner.RoadTop;
             float halfRoad = layout.RoadWidth * 0.5f;
             float cornerOffset = halfRoad - TurnTangentInset;
-            Vector3 start = junction -
-                (incoming.Forward * halfRoad) +
-                (incoming.Right * laneCenterOffset);
+            Vector3 start = GetArrivalPosition(layout, incoming);
             Vector3 startTangent = junction -
                 (incoming.Forward * cornerOffset) +
                 (incoming.Right * laneCenterOffset);
             Vector3 endTangent = junction +
                 (outgoing.Forward * cornerOffset) +
                 (outgoing.Right * laneCenterOffset);
-            Vector3 end = junction +
-                (outgoing.Forward * halfRoad) +
-                (outgoing.Right * laneCenterOffset);
+            Vector3 end = GetDeparturePosition(layout, outgoing);
             AppendLinear(result, start, startTangent, incoming.Forward);
 
             Vector3 center = leftTurn
@@ -902,150 +850,9 @@ namespace BarPromenade
             return result;
         }
 
-        private static List<TemporaryLink> CreateParkRing(
-            CityLayout layout,
-            IReadOnlyDictionary<DirectedKey, DirectedStreet>
-                streetByDirection,
-            IList<TemporaryLink> acceptedLinks)
-        {
-            var result = new List<TemporaryLink>();
-            if (!layout.Park.IsEnabled)
-            {
-                return result;
-            }
-
-            Vector2Int minimum = layout.Park.Cells[0];
-            Vector2Int maximum = minimum + Vector2Int.one;
-            for (int index = 1; index < layout.Park.Cells.Count; index++)
-            {
-                Vector2Int cell = layout.Park.Cells[index];
-                minimum = Vector2Int.Min(minimum, cell);
-                maximum = Vector2Int.Max(
-                    maximum,
-                    cell + Vector2Int.one);
-            }
-
-            var routeStreets = new List<DirectedStreet>();
-            for (int x = minimum.x; x < maximum.x; x++)
-            {
-                if (!TryAddStreet(
-                        streetByDirection,
-                        new Vector2Int(x, minimum.y),
-                        new Vector2Int(x + 1, minimum.y),
-                        routeStreets))
-                {
-                    return result;
-                }
-            }
-
-            for (int z = minimum.y; z < maximum.y; z++)
-            {
-                if (!TryAddStreet(
-                        streetByDirection,
-                        new Vector2Int(maximum.x, z),
-                        new Vector2Int(maximum.x, z + 1),
-                        routeStreets))
-                {
-                    return result;
-                }
-            }
-
-            for (int x = maximum.x; x > minimum.x; x--)
-            {
-                if (!TryAddStreet(
-                        streetByDirection,
-                        new Vector2Int(x, maximum.y),
-                        new Vector2Int(x - 1, maximum.y),
-                        routeStreets))
-                {
-                    return result;
-                }
-            }
-
-            for (int z = maximum.y; z > minimum.y; z--)
-            {
-                if (!TryAddStreet(
-                        streetByDirection,
-                        new Vector2Int(minimum.x, z),
-                        new Vector2Int(minimum.x, z - 1),
-                        routeStreets))
-                {
-                    return result;
-                }
-            }
-
-            var linkByNodes = new Dictionary<NodePairKey, TemporaryLink>();
-            for (int index = 0; index < acceptedLinks.Count; index++)
-            {
-                TemporaryLink link = acceptedLinks[index];
-                linkByNodes.Add(
-                    new NodePairKey(
-                        link.FromNodeIndex,
-                        link.ToNodeIndex),
-                    link);
-            }
-
-            for (int index = 0; index < routeStreets.Count; index++)
-            {
-                DirectedStreet street = routeStreets[index];
-                DirectedStreet next = routeStreets[
-                    (index + 1) % routeStreets.Count];
-                if (!linkByNodes.TryGetValue(
-                        new NodePairKey(
-                            street.DepartureNodeIndex,
-                            street.ArrivalNodeIndex),
-                        out TemporaryLink road) ||
-                    !linkByNodes.TryGetValue(
-                        new NodePairKey(
-                            street.ArrivalNodeIndex,
-                            next.DepartureNodeIndex),
-                        out TemporaryLink maneuver))
-                {
-                    result.Clear();
-                    return result;
-                }
-
-                float crossY = Vector3.Cross(
-                    street.Forward,
-                    next.Forward).y;
-                CityBusRouteLinkKind expected =
-                    crossY < -DirectionTolerance
-                        ? CityBusRouteLinkKind.LeftTurn
-                        : CityBusRouteLinkKind.Straight;
-                if (maneuver.Kind != expected)
-                {
-                    result.Clear();
-                    return result;
-                }
-
-                result.Add(road);
-                result.Add(maneuver);
-            }
-
-            return result;
-        }
-
-        private static bool TryAddStreet(
-            IReadOnlyDictionary<DirectedKey, DirectedStreet>
-                streetByDirection,
-            Vector2Int from,
-            Vector2Int to,
-            ICollection<DirectedStreet> target)
-        {
-            if (!streetByDirection.TryGetValue(
-                    new DirectedKey(from, to),
-                    out DirectedStreet street))
-            {
-                return false;
-            }
-
-            target.Add(street);
-            return true;
-        }
-
         private static List<CityBusSpawnAnchor> CreateSpawnAnchors(
             CityBusDesignVehicle vehicle,
-            IList<RingLinkMetadata> metadata,
+            IList<RouteLinkMetadata> metadata,
             IReadOnlyList<CityBusRouteLink> links,
             IReadOnlyList<CityBusStopDescriptor> stops)
         {
@@ -1060,7 +867,7 @@ namespace BarPromenade
                                     StopJunctionClearance;
             for (int index = 0; index < metadata.Count; index++)
             {
-                RingLinkMetadata entry = metadata[index];
+                RouteLinkMetadata entry = metadata[index];
                 if (!entry.Source.IsRoadSegment)
                 {
                     continue;
@@ -1081,101 +888,13 @@ namespace BarPromenade
                     out Vector3 position,
                     out Vector3 forward);
                 result.Add(new CityBusSpawnAnchor(
-                    entry.Source.Id + ":spawn",
+                    entry.Source.Id + ":route-01:" +
+                    entry.FinalLinkIndex + ":spawn",
                     entry.FinalLinkIndex,
                     distance,
                     position,
                     forward,
                     entry.Source.RoadEdge));
-            }
-
-            return result;
-        }
-
-        private static List<CityBusStopDescriptor> CreateCanonicalStops(
-            CityLayout layout,
-            CityBusDesignVehicle vehicle,
-            IList<RingLinkMetadata> metadata,
-            IReadOnlyList<CityBusRouteLink> links,
-            IReadOnlyList<CityBusRouteNode> nodes)
-        {
-            var result = new List<CityBusStopDescriptor>();
-            float safeEndDistance = vehicle.InflatedLength * 0.5f +
-                                    StopJunctionClearance;
-            CityDistrictKind[] districts =
-            {
-                CityDistrictKind.Industrial,
-                CityDistrictKind.Nightlife,
-                CityDistrictKind.Residential,
-                CityDistrictKind.OldTown
-            };
-            HashSet<RoadEdge> stopExcludedEdges =
-                CreateStopExcludedEdges(layout);
-            float distanceBeforeLink = 0f;
-            for (int index = 0; index < metadata.Count; index++)
-            {
-                RingLinkMetadata entry = metadata[index];
-                CityBusRouteLink link = links[entry.FinalLinkIndex];
-                if (!entry.Source.IsRoadSegment ||
-                    result.Count >= districts.Length ||
-                    link.Length <= safeEndDistance * 2f ||
-                    stopExcludedEdges.Contains(entry.Source.RoadEdge))
-                {
-                    distanceBeforeLink += link.Length;
-                    continue;
-                }
-
-                CityBusRouteNode node = nodes[entry.FinalLinkIndex];
-                Vector2Int roadsideCell = GetRightSideCell(
-                    node.FromGridNode,
-                    node.ToGridNode);
-                if (!layout.TryGetArea(
-                        roadsideCell,
-                        out CityAreaDefinition area) ||
-                    area.Archetype != districts[result.Count])
-                {
-                    distanceBeforeLink += link.Length;
-                    continue;
-                }
-
-                float distanceAlongLink = link.Length * 0.5f;
-                EvaluateSamples(
-                    link.Samples,
-                    distanceAlongLink,
-                    out Vector3 position,
-                    out Vector3 forward);
-                Vector3 right = new Vector3(
-                    forward.z,
-                    0f,
-                    -forward.x).normalized;
-                Vector3 shelterPosition = position +
-                    (right * (
-                        (layout.RoadWidth * 0.5f) +
-                        RoadsidePoleOutsideRoadEdge -
-                        (layout.RoadWidth -
-                         (CityStreetSurfacePlanner.SidewalkWidth * 2f)) *
-                        0.25f));
-                shelterPosition.y = CityStreetSurfacePlanner.SidewalkTop;
-                int sequenceIndex = result.Count;
-                string suffix = GetStopSuffix(districts[sequenceIndex]);
-                result.Add(new CityBusStopDescriptor(
-                    "bus-stop:" + layout.BlueprintId +
-                    ":ring-01:" + suffix,
-                    string.Empty,
-                    "bus.stop." +
-                    layout.BlueprintId.Replace('-', '_') + "." +
-                    suffix.Replace('-', '_'),
-                    sequenceIndex,
-                    distanceBeforeLink + distanceAlongLink,
-                    districts[sequenceIndex],
-                    shelterPosition,
-                    -right,
-                    entry.FinalLinkIndex,
-                    distanceAlongLink,
-                    position,
-                    forward,
-                    entry.Source.RoadEdge));
-                distanceBeforeLink += link.Length;
             }
 
             return result;
@@ -1342,36 +1061,6 @@ namespace BarPromenade
             }
         }
 
-        private readonly struct NodePairKey : IEquatable<NodePairKey>
-        {
-            public NodePairKey(int from, int to)
-            {
-                From = from;
-                To = to;
-            }
-
-            private int From { get; }
-            private int To { get; }
-
-            public bool Equals(NodePairKey other)
-            {
-                return From == other.From && To == other.To;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is NodePairKey other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return (From * 397) ^ To;
-                }
-            }
-        }
-
         private sealed class TemporaryNode
         {
             public TemporaryNode(
@@ -1410,7 +1099,10 @@ namespace BarPromenade
                 float minimumTurnRadius,
                 CityBusClearanceResult clearance,
                 bool isRoadSegment,
-                RoadEdge roadEdge)
+                RoadEdge roadEdge,
+                bool occupiesPrimaryRoadEdge = false,
+                bool hasSecondaryRoadEdge = false,
+                RoadEdge secondaryRoadEdge = default)
             {
                 Id = id;
                 FromNodeIndex = fromNodeIndex;
@@ -1422,6 +1114,10 @@ namespace BarPromenade
                 Clearance = clearance;
                 IsRoadSegment = isRoadSegment;
                 RoadEdge = roadEdge;
+                OccupiesPrimaryRoadEdge =
+                    isRoadSegment || occupiesPrimaryRoadEdge;
+                HasSecondaryRoadEdge = hasSecondaryRoadEdge;
+                SecondaryRoadEdge = secondaryRoadEdge;
             }
 
             public string Id { get; }
@@ -1430,24 +1126,34 @@ namespace BarPromenade
             public CityBusRouteLinkKind Kind { get; }
             public Vector2Int JunctionNode { get; }
             public List<CityBusPathSample> Samples { get; }
+            public float Length => Samples.Count == 0
+                ? 0f
+                : Samples[Samples.Count - 1].Distance;
             public float MinimumTurnRadius { get; }
             public CityBusClearanceResult Clearance { get; }
             public bool IsRoadSegment { get; }
             public RoadEdge RoadEdge { get; }
+            public bool OccupiesPrimaryRoadEdge { get; }
+            public bool HasSecondaryRoadEdge { get; }
+            public RoadEdge SecondaryRoadEdge { get; }
+
         }
 
-        private readonly struct RingLinkMetadata
+        private readonly struct RouteLinkMetadata
         {
-            public RingLinkMetadata(
+            public RouteLinkMetadata(
                 TemporaryLink source,
-                int finalLinkIndex)
+                int finalLinkIndex,
+                StopCandidate stopCandidate = null)
             {
                 Source = source;
                 FinalLinkIndex = finalLinkIndex;
+                StopCandidate = stopCandidate;
             }
 
             public TemporaryLink Source { get; }
             public int FinalLinkIndex { get; }
+            public StopCandidate StopCandidate { get; }
         }
 
     }

@@ -809,6 +809,10 @@
       "value": "Old Town stop"
     },
     {
+      "key": "bus.stop.default_coastal.home",
+      "value": "Home stop"
+    },
+    {
       "key": "map.clear",
       "value": "Clear route"
     },
