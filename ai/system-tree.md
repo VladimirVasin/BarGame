@@ -204,7 +204,7 @@ Assets/
         CityBusActor.cs            fixed-loop motion, yielding, fixed 10 s per-lap dwell + engine loop
         CityBusDirector.cs         forward-approach fog spawn + one-slot recycle lifecycle
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
-        CityBusPresentation.cs     sprung-body heave/pitch/roll, grounded wheels, doors, steering + lights
+        CityBusPresentation.cs     sprung body, articulation, emission + four runtime night Spots
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
@@ -524,7 +524,9 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> grounded wheels + sprung `Suspension Visual` body
                                   -> heave `0.045 m` / pitch `0.8°` / roll `1°` caps
                                   -> actor/collider/route pose unchanged
-                               -> inward door leaves + steering/night lights
+                               -> inward door leaves + steering/night emission
+                               -> 2 headlight + 2 soft cabin runtime Spots
+                                  -> sprung-body children; NightFactor/pool controlled
                          -> CityMapBusOverlay
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend

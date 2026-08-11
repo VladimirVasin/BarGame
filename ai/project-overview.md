@@ -190,7 +190,10 @@ The vertical slice contains:
   rather than guaranteeing that one is always on screen. It yields to the player and
   pedestrians and recycles only when its full body is at least `92 m` away.
   Suspension, wheel/steering articulation, a synthesized engine loop and
-  night-scaled head, tail and cabin emission reset with the pool. Camera
+  night-scaled head, tail and cabin emission reset with the pool. Two
+  shadowless runtime headlight Spots illuminate the road ahead and two soft
+  downward cabin Spots light the interior; the shared night factor scales all
+  four and pooling switches them fully off. Camera
   direction and frustum membership never participate in the lifecycle. The
   moving ambient-bus runtime is City-only. Home's bounded exterior regenerates
   the same route plan and reconstructs the nearby Home stop as a static

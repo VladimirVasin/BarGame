@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-08-11 — The night bus now lights its way
+
+- At night, the moving bus now casts two warm headlight pools onto the road and
+  carries a soft amber wash through its passenger cabin. Both follow the body
+  as it rides on its suspension, fade through dawn and dusk, and switch fully
+  off during the day.
+
 ### 2026-08-11 — Bus suspension now moves vertically
 
 - Fixed the production bus interpreting its imported FBX-local axis as world

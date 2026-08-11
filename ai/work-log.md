@@ -2,6 +2,29 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-11 — Bus headlights and soft cabin light
+
+- Added two warm, shadowless runtime headlight Spots that follow the sprung bus
+  body and illuminate the road ahead, plus two short wide downward Spots for a
+  soft readable cabin wash. The production art prefab remains `Light`-free.
+- Scaled all four sources with the existing shared `NightFactor`, preserving
+  the current dawn/dusk blend, and disabled them completely during daytime,
+  presentation disable and pool reset. Existing head/tail/cabin emission and
+  brake-light behavior remain unchanged.
+- Kept the city-atmosphere pool capped at 12 shadowless lights; the sole active
+  bus may add only its four owned Spots, bounding the exterior total at 16.
+
+Verification:
+
+- Focused Unity EditMode
+  `PresentationNightLights_AreSprungScaledAndPoolSafe` passed `1/1`, covering
+  light count, sprung hierarchy, direction, `0 / 0.5 / 1` night scaling and
+  exact pooled shutdown. Full EditMode/PlayMode suites, player build and smoke
+  were intentionally omitted in fast mode.
+- Scoped `git diff --check` passed. The full dirty-worktree check still reports
+  the pre-existing Unity serializer whitespace churn in prefab, material and
+  FBX meta files, which this change preserves.
+
 ## 2026-08-11 — Bus suspension corrected to runtime axes
 
 - Fixed the production FBX basis turning the intended vertical suspension

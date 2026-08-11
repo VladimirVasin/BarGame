@@ -101,6 +101,123 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PresentationNightLights_AreSprungScaledAndPoolSafe()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Night Lights",
+                    CreateCyclicPlan(false));
+                CityBusPresentation presentation = fixture.Presentation;
+                Light[] lights = presentation.GetComponentsInChildren<Light>(
+                    true);
+
+                Assert.That(lights, Has.Length.EqualTo(4));
+                Assert.That(
+                    presentation.HeadlightLights.Count,
+                    Is.EqualTo(2));
+                Assert.That(
+                    presentation.CabinLights.Count,
+                    Is.EqualTo(2));
+                Assert.That(
+                    presentation.HeadlightLights[0].name,
+                    Is.EqualTo("Bus Headlight Left"));
+                Assert.That(
+                    presentation.HeadlightLights[1].name,
+                    Is.EqualTo("Bus Headlight Right"));
+                Assert.That(
+                    presentation.CabinLights[0].name,
+                    Is.EqualTo("Bus Cabin Light Front"));
+                Assert.That(
+                    presentation.CabinLights[1].name,
+                    Is.EqualTo("Bus Cabin Light Rear"));
+
+                for (int index = 0; index < lights.Length; index++)
+                {
+                    Light light = lights[index];
+                    Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                    Assert.That(
+                        light.transform.IsChildOf(
+                            presentation.SuspensionVisual),
+                        Is.True,
+                        $"{light.name} must follow the sprung bus body.");
+                }
+
+                for (int index = 0;
+                     index < presentation.HeadlightLights.Count;
+                     index++)
+                {
+                    Vector3 direction = presentation.transform
+                        .InverseTransformDirection(
+                            presentation.HeadlightLights[index]
+                                .transform.forward);
+                    Assert.That(
+                        Vector3.Dot(direction, Vector3.forward),
+                        Is.GreaterThan(0.98f));
+                    Assert.That(
+                        Vector3.Dot(direction, Vector3.down),
+                        Is.GreaterThan(0.08f));
+                }
+
+                for (int index = 0;
+                     index < presentation.CabinLights.Count;
+                     index++)
+                {
+                    Vector3 direction = presentation.transform
+                        .InverseTransformDirection(
+                            presentation.CabinLights[index]
+                                .transform.forward);
+                    Assert.That(
+                        Vector3.Dot(direction, Vector3.down),
+                        Is.GreaterThan(0.99f));
+                }
+
+                presentation.SetNightFactor(0f);
+                for (int index = 0; index < lights.Length; index++)
+                {
+                    Assert.That(lights[index].enabled, Is.False);
+                    Assert.That(lights[index].intensity, Is.Zero);
+                }
+
+                presentation.SetNightFactor(0.5f);
+                float[] halfIntensities = new float[lights.Length];
+                for (int index = 0; index < lights.Length; index++)
+                {
+                    Assert.That(lights[index].enabled, Is.True);
+                    Assert.That(lights[index].intensity, Is.GreaterThan(0f));
+                    halfIntensities[index] = lights[index].intensity;
+                }
+
+                presentation.SetNightFactor(1f);
+                for (int index = 0; index < lights.Length; index++)
+                {
+                    Assert.That(lights[index].enabled, Is.True);
+                    Assert.That(
+                        lights[index].intensity,
+                        Is.EqualTo(halfIntensities[index] * 2f)
+                            .Within(0.0001f));
+                }
+
+                presentation.ResetForPool();
+                Light[] pooledLights =
+                    presentation.GetComponentsInChildren<Light>(true);
+                Assert.That(presentation.NightFactor, Is.Zero);
+                Assert.That(pooledLights, Has.Length.EqualTo(4));
+                CollectionAssert.AreEquivalent(lights, pooledLights);
+                for (int index = 0; index < pooledLights.Length; index++)
+                {
+                    Assert.That(pooledLights[index].enabled, Is.False);
+                    Assert.That(pooledLights[index].intensity, Is.Zero);
+                }
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        [Test]
         public void PresentationSuspension_MovesBodyRelativeToGroundedWheels_AndPoolResetRestoresNeutralPose()
         {
             RuntimeFixture fixture = null;

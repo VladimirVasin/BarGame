@@ -17,6 +17,15 @@ namespace BarPromenade
         private const float SuspensionResponse = 7f;
         private const float AccelerationPitchScale = 0.12f;
         private const float SteeringRollScale = 0.78f;
+        private const float HeadlightBaseIntensity = 14f;
+        private const float HeadlightRange = 22f;
+        private const float HeadlightSpotAngle = 48f;
+        private const float HeadlightInnerSpotAngle = 28f;
+        private const float CabinLightBaseIntensity = 5.5f;
+        private const float CabinLightRange = 3.6f;
+        private const float CabinLightSpotAngle = 110f;
+        private const float CabinLightInnerSpotAngle = 68f;
+        private const float VisibleLightFactorThreshold = 0.0001f;
         private const string SuspensionVisualName = "Suspension Visual";
 
         private static readonly int EmissionColorId =
@@ -27,9 +36,15 @@ namespace BarPromenade
             new Color(3.5f, 0.10f, 0.035f);
         private static readonly Color CabinLightEmission =
             new Color(1.85f, 1.20f, 0.62f);
+        private static readonly Color HeadlightColor =
+            new Color(1f, 0.85f, 0.58f);
+        private static readonly Color CabinLightColor =
+            new Color(1f, 0.65f, 0.34f);
 
         private MaterialPropertyBlock lightProperties;
         private CityBusAssetRegistry registry;
+        private Light[] headlightLights = Array.Empty<Light>();
+        private Light[] cabinLights = Array.Empty<Light>();
         private Transform suspensionVisual;
         private TransformPose suspensionVisualBase;
         private Vector3 suspensionPositionInPresentation;
@@ -62,6 +77,8 @@ namespace BarPromenade
         public float SuspensionHeave => suspensionHeave;
         public float SuspensionPitch => suspensionPitch;
         public float SuspensionRoll => suspensionRoll;
+        public IReadOnlyList<Light> HeadlightLights => headlightLights;
+        public IReadOnlyList<Light> CabinLights => cabinLights;
 
         public void Initialize(CityBusAssetRegistry assetRegistry)
         {
@@ -76,6 +93,7 @@ namespace BarPromenade
                 : throw new ArgumentNullException(nameof(assetRegistry));
             lightProperties = new MaterialPropertyBlock();
             CreateSuspensionHierarchy();
+            CreateRuntimeLights();
             CaptureDoorHingeAxis();
             CaptureBasePoses();
             IsInitialized = true;
@@ -291,6 +309,92 @@ namespace BarPromenade
                 .normalized;
         }
 
+        private void CreateRuntimeLights()
+        {
+            Bounds bounds = registry.LocalBounds;
+            float headlightZ = bounds.max.z + 0.06f;
+            Vector3 headlightDirection =
+                new Vector3(0f, -0.12f, 1f).normalized;
+            headlightLights = new[]
+            {
+                CreateSpotLight(
+                    "Bus Headlight Left",
+                    new Vector3(-0.72f, 0.96f, headlightZ),
+                    headlightDirection,
+                    HeadlightColor,
+                    HeadlightRange,
+                    HeadlightSpotAngle,
+                    HeadlightInnerSpotAngle),
+                CreateSpotLight(
+                    "Bus Headlight Right",
+                    new Vector3(0.72f, 0.96f, headlightZ),
+                    headlightDirection,
+                    HeadlightColor,
+                    HeadlightRange,
+                    HeadlightSpotAngle,
+                    HeadlightInnerSpotAngle)
+            };
+
+            float cabinY = bounds.max.y - 0.12f;
+            cabinLights = new[]
+            {
+                CreateSpotLight(
+                    "Bus Cabin Light Front",
+                    new Vector3(0f, cabinY, 1.45f),
+                    Vector3.down,
+                    CabinLightColor,
+                    CabinLightRange,
+                    CabinLightSpotAngle,
+                    CabinLightInnerSpotAngle),
+                CreateSpotLight(
+                    "Bus Cabin Light Rear",
+                    new Vector3(0f, cabinY, -1.45f),
+                    Vector3.down,
+                    CabinLightColor,
+                    CabinLightRange,
+                    CabinLightSpotAngle,
+                    CabinLightInnerSpotAngle)
+            };
+        }
+
+        private Light CreateSpotLight(
+            string objectName,
+            Vector3 presentationLocalPosition,
+            Vector3 presentationLocalDirection,
+            Color color,
+            float range,
+            float spotAngle,
+            float innerSpotAngle)
+        {
+            GameObject lightObject = new GameObject(objectName);
+            lightObject.layer = gameObject.layer;
+            Transform lightTransform = lightObject.transform;
+            lightTransform.SetParent(suspensionVisual, false);
+            Vector3 localUp = Mathf.Abs(Vector3.Dot(
+                presentationLocalDirection,
+                Vector3.up)) > 0.98f
+                    ? Vector3.forward
+                    : Vector3.up;
+            lightTransform.SetPositionAndRotation(
+                transform.TransformPoint(presentationLocalPosition),
+                transform.rotation * Quaternion.LookRotation(
+                    presentationLocalDirection,
+                    localUp));
+
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = color;
+            light.intensity = 0f;
+            light.range = range;
+            light.spotAngle = spotAngle;
+            light.innerSpotAngle = innerSpotAngle;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0f;
+            light.enabled = false;
+            return light;
+        }
+
         private static void DetachWheelAssembly(
             Transform target,
             Transform body,
@@ -436,6 +540,30 @@ namespace BarPromenade
             SetEmission(
                 registry.CabinLights,
                 CabinLightEmission * NightFactor);
+            SetRuntimeLightFactor(
+                headlightLights,
+                HeadlightBaseIntensity);
+            SetRuntimeLightFactor(
+                cabinLights,
+                CabinLightBaseIntensity);
+        }
+
+        private void SetRuntimeLightFactor(
+            IReadOnlyList<Light> lights,
+            float baseIntensity)
+        {
+            bool visible = NightFactor > VisibleLightFactorThreshold;
+            for (int index = 0; index < lights.Count; index++)
+            {
+                Light target = lights[index];
+                if (target == null)
+                {
+                    continue;
+                }
+
+                target.intensity = baseIntensity * NightFactor;
+                target.enabled = visible;
+            }
         }
 
         private void SetEmission(

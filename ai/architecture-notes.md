@@ -138,9 +138,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   membership or far-clip state for spawning or recycling. The kinematic box
   body uses the dedicated `CityBus` layer: it collides with the player and
   pedestrians, ignores another bus and is excluded from camera and interaction
-  queries. The passive production prefab stays collider-free, owns a modeled
-  driver area, dashboard, twelve passenger seats, rails and two double-leaf
-  doors, and matches the same real dimensions without runtime scale correction.
+  queries. The passive production prefab stays collider- and `Light`-free, owns
+  a modeled driver area, dashboard, twelve passenger seats, rails and two
+  double-leaf doors, and matches the same real dimensions without runtime scale
+  correction.
   Each doorway keeps its outer posts fixed while independently hinged leaves
   rotate in opposite directions around the vehicle vertical and fold inward.
   Presentation inserts one runtime-only `Suspension Visual` pivot above the
@@ -151,8 +152,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   remain grounded, while the authoritative actor transform, kinematic collider
   and route pose stay unchanged. Presentation also articulates steering and
   wheel travel, synthesizes a `22050 Hz` engine loop, and scales head,
-  tail/brake and cabin emission with motion and current night factor; all
-  suspension and articulation state resets before pooling. The City map
+  tail/brake and cabin emission with motion and current night factor. At runtime
+  only, it creates two shadowless headlight `Spot` lights and two soft
+  shadowless cabin `Spot` lights under the sprung body. The shared `NightFactor`
+  scales them, disables them at zero and resets them off with the rest of the
+  pooled presentation. These four bus-owned lights sit outside the fixed
+  12-light city-atmosphere pool, so one active bus keeps the exterior bounded at
+  16 realtime lights. The City map
   consumes the same immutable plan, simplifies its closed geometry, draws a blue
   ink-outlined loop below the orange player itinerary and adds five numbered
   localized stops in the default layout plus a compact legend. It deliberately
@@ -865,8 +871,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the pooled-light contract.
 - **Accepted — Bounded practical lights:** All bulbs and signal lenses reuse
   one HDR URP Unlit material; a player-relative pool of directed street spot
-  lights plus bar entrance point lights keeps the complete exterior at no more
-  than 12 shadowless realtime lights.
+  lights plus bar entrance point lights keeps the city-atmosphere pool at no
+  more than 12 shadowless realtime lights. The sole active bus may add only its
+  four runtime-owned shadowless Spots, for a bounded exterior maximum of 16.
 - **Accepted — Safe signal rhythm:** Each selected intersection uses one
   seed-phased controller for two heads and flashes amber below 1 Hz; red and
   green lenses remain dimly visible without realtime lights.
