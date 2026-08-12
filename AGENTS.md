@@ -16,14 +16,25 @@ These instructions apply to the entire repository.
 
 ## Current baseline
 
-- Unity `6000.5.5f1`, Universal Render Pipeline `17.5.0`.
-- The playable MVP is implemented through runtime composition.
-- Build scenes are `Assets/Scenes/City.unity`,
+- Unity `6000.5.5f1`, Universal Render Pipeline `17.5.0`, Input System `1.19.0`.
+- The playable MVP is implemented through runtime composition: scenes are
+  near-empty containers and the world is built from validated pure plans.
+- Seven build scenes, in build order:
+  `Assets/Scenes/MainMenu.unity` (index `0`),
+  `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
-  `Assets/Scenes/BarInterior.unity`, and
+  `Assets/Scenes/BarInterior.unity`,
+  `Assets/Scenes/SupermarketInterior.unity`,
+  `Assets/Scenes/StairwellInterior.unity`, and
   `Assets/Scenes/HomeInterior.unity`.
-- `Assets/Scripts/Runtime/` owns gameplay and
-  `Assets/Tests/{EditMode,PlayMode}/` owns verification.
+  Five of them are gameplay roots: City, BarInterior, SupermarketInterior,
+  StairwellInterior and HomeInterior. Each instantiates the same
+  `Resources/Player/Player3D.prefab` through `PlayerFactory`.
+- `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns
+  authoring tools, and `Assets/Tests/{EditMode,PlayMode}/` owns verification
+  over the shared `Assets/Tests/Infrastructure/` support assembly.
+- Deterministic art and model generators live in `tools/` and are run through
+  Blender/Python, not Unity.
 
 ## Unity rules
 
@@ -50,6 +61,15 @@ These instructions apply to the entire repository.
 - Update `ai/project-overview.md`, `ai/system-tree.md`, or `ai/systems-map.md` when their facts change.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
+- Keep `README.md` in step with player-visible reality. It is the only
+  human-facing document and drifts fastest; a change that alters what the
+  player sees or controls also belongs there.
+- `ai/systems-map.md` is an index. Keep each cell to one or two rendered lines
+  and use only the four statuses defined in `ai/README.md`; a `Partial` row
+  must name its gap. Put the detail in `ai/architecture-notes.md`.
+- Follow the retention rule in `ai/README.md`: `ai/work-log.md` and
+  `ai/release-notes.md` keep the current and previous month, and older entries
+  move verbatim into `ai/archive/`.
 
 ## Interactive fast iteration
 
