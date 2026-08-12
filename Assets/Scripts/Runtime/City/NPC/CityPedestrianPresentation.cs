@@ -224,6 +224,14 @@ namespace BarPromenade
                 return;
             }
 
+            // An airborne design authors its own vertical arc, already proved
+            // grounded at its landing frames by the deterministic generator.
+            // Pinning the lowest sole here would erase the hop entirely.
+            if (registry.PreservesAirborneMotion)
+            {
+                return;
+            }
+
             if (!TryGetGroundingHeight(out float lowestFoot))
             {
                 return;

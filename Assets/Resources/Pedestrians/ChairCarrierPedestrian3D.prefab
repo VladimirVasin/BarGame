@@ -373,10 +373,12 @@ MonoBehaviour:
     m_Center: {x: -0.00000011920929, y: 0.875, z: -0.12350005}
     m_Extent: {x: 0.7612486, y: 0.875, z: 0.3485}
   sourceTriangleCount: 1032
-  sourceGeneratorVersion: 2.0.0
+  sourceGeneratorVersion: 3.0.0
   designId: chair_carrier_v1
-  buildSignature: db9c2ca22ec2bf07f90af2450ebd9c81817aecae562b13dda16db05b6cc33389
+  buildSignature: 9b7998ec917a420dadbd30bfe08882a827e64e118e09949ce31d0357a3c2936a
   paletteVariant: 0
+  headLamp: {fileID: 0}
+  preservesAirborneMotion: 0
 --- !u!1001 &8887267491574389579
 PrefabInstance:
   m_ObjectHideFlags: 0

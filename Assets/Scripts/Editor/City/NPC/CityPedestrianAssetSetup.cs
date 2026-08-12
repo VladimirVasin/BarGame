@@ -20,6 +20,18 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.fbx";
         public const string ChairCarrierManifestPath =
             "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.json";
+        public const string KettleHatModelPath =
+            "Assets/Pedestrians/Models/KettleHatPedestrian3D.fbx";
+        public const string KettleHatManifestPath =
+            "Assets/Pedestrians/Models/KettleHatPedestrian3D.json";
+        public const string LongArmModelPath =
+            "Assets/Pedestrians/Models/LongArmPedestrian3D.fbx";
+        public const string LongArmManifestPath =
+            "Assets/Pedestrians/Models/LongArmPedestrian3D.json";
+        public const string HelmetLampModelPath =
+            "Assets/Pedestrians/Models/HelmetLampPedestrian3D.fbx";
+        public const string HelmetLampManifestPath =
+            "Assets/Pedestrians/Models/HelmetLampPedestrian3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -34,6 +46,22 @@ namespace BarPromenade.Editor
             "Assets/Resources/Pedestrians/CityPedestrian3D.prefab";
         public const string ChairCarrierPrefabPath =
             "Assets/Resources/Pedestrians/ChairCarrierPedestrian3D.prefab";
+        public const string KettleHatPrefabPath =
+            "Assets/Resources/Pedestrians/KettleHatPedestrian3D.prefab";
+        public const string LongArmPrefabPath =
+            "Assets/Resources/Pedestrians/LongArmPedestrian3D.prefab";
+        public const string HelmetLampPrefabPath =
+            "Assets/Resources/Pedestrians/HelmetLampPedestrian3D.prefab";
+
+        // The one worn lamp the pedestrian contract allows. It stays
+        // shadowless and short-range so a single moving Spot cannot disturb
+        // the City's bounded night-fixture budget.
+        private const float HeadLampRange = 7.5f;
+        private const float HeadLampIntensity = 3.6f;
+        private const float HeadLampSpotAngle = 58f;
+        private const float HeadLampInnerSpotAngle = 26f;
+        private static readonly Vector3 HeadLampLocalPosition =
+            new Vector3(0f, 0.166f, -0.234f);
 
         private const string ExpectedPose = "apose";
         private const float ExpectedHeight = 1.75f;
@@ -69,7 +97,48 @@ namespace BarPromenade.Editor
                 1.5f,
                 1f,
                 800,
-                1600)
+                1600),
+            new PedestrianDescriptor(
+                "Kettle Hat Walker",
+                "KettleHatPedestrian3D",
+                "kettle_hat_walker_v1",
+                KettleHatModelPath,
+                KettleHatManifestPath,
+                KettleHatPrefabPath,
+                "KettleHatIdle",
+                "KettleHatWalk",
+                1.75f,
+                0.75f,
+                800,
+                1600),
+            new PedestrianDescriptor(
+                "Long-Arm Walker",
+                "LongArmPedestrian3D",
+                "long_arm_walker_v1",
+                LongArmModelPath,
+                LongArmManifestPath,
+                LongArmPrefabPath,
+                "LongArmIdle",
+                "LongArmWalk",
+                2.5f,
+                1.5f,
+                800,
+                1300),
+            new PedestrianDescriptor(
+                "Helmet Lamp Hopper",
+                "HelmetLampPedestrian3D",
+                "helmet_lamp_hopper_v1",
+                HelmetLampModelPath,
+                HelmetLampManifestPath,
+                HelmetLampPrefabPath,
+                "HelmetLampIdle",
+                "HelmetLampHop",
+                2f,
+                1f,
+                800,
+                1700,
+                carriesHeadLamp: true,
+                preservesAirborneMotion: true)
         };
 
         private static bool isBuilding;
@@ -100,6 +169,132 @@ namespace BarPromenade.Editor
             Debug.Log(
                 "City pedestrian models, custom clips and prefab contracts " +
                 "are valid.");
+        }
+
+        /// <summary>
+        /// True for clips whose archetype deliberately leaves the pavement.
+        /// Their vertical travel is authored on the pelvis, which this rig's
+        /// Avatar treats as the motion node, so locking root height would
+        /// silently strip the hop during import.
+        /// </summary>
+        public static bool IsAirborneClip(string normalizedClipName)
+        {
+            if (string.IsNullOrEmpty(normalizedClipName))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                PedestrianDescriptor descriptor = Descriptors[index];
+                if (!descriptor.PreservesAirborneMotion)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        normalizedClipName,
+                        descriptor.IdleClipName,
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        normalizedClipName,
+                        descriptor.WalkClipName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ValidateDeclaredHeadLamp(
+            GameObject prefab,
+            CityPedestrianAssetRegistry registry,
+            PedestrianDescriptor descriptor)
+        {
+            // Pedestrian presentations stay light-free unless the descriptor
+            // declares exactly one worn lamp. The count is checked rather than
+            // merely forbidden, so an accidental extra Light still fails.
+            Light[] lights = prefab.GetComponentsInChildren<Light>(true);
+            if (lights.Length != descriptor.ExpectedLightCount)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' declares " +
+                    $"{descriptor.ExpectedLightCount} worn light(s) but the " +
+                    $"prefab carries {lights.Length}.");
+            }
+
+            if (registry.PreservesAirborneMotion !=
+                descriptor.PreservesAirborneMotion)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' airborne-motion flag does not " +
+                    "match its descriptor.");
+            }
+
+            if (!descriptor.CarriesHeadLamp)
+            {
+                if (registry.HeadLamp != null)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DesignId}' must not register a head " +
+                        "lamp.");
+                }
+
+                return;
+            }
+
+            Light lamp = registry.HeadLamp;
+            if (lamp == null || lamp != lights[0])
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' does not register its worn " +
+                    "lamp on the asset registry.");
+            }
+
+            if (lamp.type != LightType.Spot ||
+                lamp.shadows != LightShadows.None ||
+                lamp.range > HeadLampRange + 0.001f ||
+                lamp.intensity > HeadLampIntensity + 0.001f)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' head lamp must stay a " +
+                    "shadowless Spot within its bounded range and intensity.");
+            }
+
+            if (lamp.transform.parent != registry.HeadAnchor)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' head lamp must hang off the " +
+                    "animated head bone.");
+            }
+        }
+
+        private static Light CreateHeadLamp(Transform head)
+        {
+            // Parented to the head bone so the beam follows the real animated
+            // skull rather than a static socket. It is deliberately always on:
+            // a miner's lamp is lit because its owner switched it on, not
+            // because the city clock reached dusk.
+            GameObject lampObject = new GameObject("Head Lamp");
+            lampObject.transform.SetParent(head, false);
+            lampObject.transform.localPosition = HeadLampLocalPosition;
+            lampObject.transform.localRotation =
+                Quaternion.LookRotation(Vector3.back, Vector3.up);
+            lampObject.transform.localScale = Vector3.one;
+
+            Light lamp = lampObject.AddComponent<Light>();
+            lamp.type = LightType.Spot;
+            lamp.shadows = LightShadows.None;
+            lamp.range = HeadLampRange;
+            lamp.intensity = HeadLampIntensity;
+            lamp.spotAngle = HeadLampSpotAngle;
+            lamp.innerSpotAngle = HeadLampInnerSpotAngle;
+            lamp.color = new Color(1f, 0.925f, 0.78f);
+            lamp.cullingMask = CityPedestrianCollision.NonPedestrianMask;
+            lamp.lightmapBakeType = LightmapBakeType.Realtime;
+            return lamp;
         }
 
         public static bool SourcesExist()
@@ -347,11 +542,12 @@ namespace BarPromenade.Editor
                     "grounding.");
             }
 
+            ValidateDeclaredHeadLamp(prefab, registry, descriptor);
+
             if (prefab.GetComponentsInChildren<Collider>(true).Length != 0 ||
                 prefab.GetComponentsInChildren<Collider2D>(true).Length != 0 ||
                 prefab.GetComponentsInChildren<Rigidbody>(true).Length != 0 ||
                 prefab.GetComponentsInChildren<Rigidbody2D>(true).Length != 0 ||
-                prefab.GetComponentsInChildren<Light>(true).Length != 0 ||
                 prefab.GetComponentsInChildren<Camera>(true).Length != 0 ||
                 prefab.GetComponentsInChildren<AudioSource>(true).Length != 0)
             {
@@ -1010,6 +1206,9 @@ namespace BarPromenade.Editor
                         "triangle count.");
                 }
 
+                Light headLamp = descriptor.CarriesHeadLamp
+                    ? CreateHeadLamp(head)
+                    : null;
                 CityPedestrianAssetRegistry registry =
                     prefabRoot.AddComponent<CityPedestrianAssetRegistry>();
                 registry.Configure(
@@ -1026,7 +1225,9 @@ namespace BarPromenade.Editor
                     manifest.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    headLamp,
+                    descriptor.PreservesAirborneMotion);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1434,8 +1635,12 @@ namespace BarPromenade.Editor
                 float idleDuration,
                 float walkDuration,
                 int minimumTriangleCount,
-                int maximumTriangleCount)
+                int maximumTriangleCount,
+                bool carriesHeadLamp = false,
+                bool preservesAirborneMotion = false)
             {
+                CarriesHeadLamp = carriesHeadLamp;
+                PreservesAirborneMotion = preservesAirborneMotion;
                 DisplayName = displayName;
                 PrefabRootName = prefabRootName;
                 DesignId = designId;
@@ -1462,6 +1667,22 @@ namespace BarPromenade.Editor
             public float WalkDuration { get; }
             public int MinimumTriangleCount { get; }
             public int MaximumTriangleCount { get; }
+
+            /// <summary>
+            /// Declares the one shadowless Spot this design wears. Pedestrian
+            /// presentations are otherwise light-free; a design that wants a
+            /// working lamp has to say so here rather than smuggling a Light
+            /// into the prefab.
+            /// </summary>
+            public bool CarriesHeadLamp { get; }
+
+            /// <summary>
+            /// Declares that this design's clips leave the pavement, so the
+            /// runtime must not pin its lowest sole every frame.
+            /// </summary>
+            public bool PreservesAirborneMotion { get; }
+
+            public int ExpectedLightCount => CarriesHeadLamp ? 1 : 0;
             public float Height => ExpectedHeight;
         }
 

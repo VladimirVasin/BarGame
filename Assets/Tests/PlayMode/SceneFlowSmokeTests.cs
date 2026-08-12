@@ -217,9 +217,11 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.Pedestrians.Count,
                 Is.LessThanOrEqualTo(
                     CityPedestrianDirector.MaximumActiveModels));
+            // One pooled presentation per registered design; the actor slot
+            // count stays at the smaller simultaneous-active limit.
             Assert.That(
                 cityRoot.Pedestrians.PoolCapacity,
-                Is.EqualTo(cityRoot.Pedestrians.Count));
+                Is.EqualTo(CityPedestrianResources.Archetypes.Count));
             Assert.That(
                 cityRoot.Pedestrians.ActiveCount,
                 Is.InRange(

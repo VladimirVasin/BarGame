@@ -2,27 +2,27 @@
   "generator": "tools/build-city-pedestrian-3d-model.py",
   "generator_version": "3.0.0",
   "blender_version": "5.0.1",
-  "design_id": "chair_carrier_v1",
-  "display_name": "Chair Carrier",
-  "seed": 241109,
+  "design_id": "helmet_lamp_hopper_v1",
+  "display_name": "Helmet Lamp Hopper",
+  "seed": 527194,
   "height_m": 1.75,
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 35,
-  "triangle_count": 1032,
+  "mesh_count": 37,
+  "triangle_count": 1084,
   "triangle_budget": [
     800,
-    1600
+    1700
   ],
   "bounds_min": [
-    -0.761249,
-    -0.225,
+    -0.7675,
+    -0.384,
     0.0
   ],
   "bounds_max": [
-    0.761249,
-    0.472,
+    0.7675,
+    0.1829,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -32,10 +32,10 @@
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
-    "ChairCarrierIdle",
-    "ChairCarrierWalk"
+    "HelmetLampIdle",
+    "HelmetLampHop"
   ],
-  "build_signature": "9b7998ec917a420dadbd30bfe08882a827e64e118e09949ce31d0357a3c2936a",
+  "build_signature": "ac099be34c4e5c7944a9dac5c1ff38e21f01c6af8d0b9286ba73a7271f078bc9",
   "bones": [
     {
       "name": "root",
@@ -505,119 +505,49 @@
   ],
   "parts": [
     {
-      "name": "ACC_CapPeak",
-      "role": "clothing_detail",
-      "bone": "head",
-      "palette_name": "work_jacket_dark",
+      "name": "ACC_BatteryBox",
+      "role": "load_harness",
+      "bone": "pelvis",
+      "palette_name": "miner_helmet_dark",
       "base_color": [
-        0.105,
-        0.07,
-        0.048,
+        0.115,
+        0.12,
+        0.115,
         1.0
       ],
       "vertices": 8,
       "triangles": 12
     },
     {
-      "name": "ACC_ChairCrossbar",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_edge",
+      "name": "ACC_BootCuff.L",
+      "role": "footwear_detail",
+      "bone": "foot.L",
+      "palette_name": "miner_ochre_dark",
       "base_color": [
-        0.095,
-        0.045,
-        0.028,
+        0.15,
+        0.1,
+        0.032,
         1.0
       ],
       "vertices": 16,
       "triangles": 28
     },
     {
-      "name": "ACC_ChairLeg.Back.L",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_wood",
+      "name": "ACC_BootCuff.R",
+      "role": "footwear_detail",
+      "bone": "foot.R",
+      "palette_name": "miner_ochre_dark",
       "base_color": [
-        0.285,
-        0.115,
-        0.055,
+        0.15,
+        0.1,
+        0.032,
         1.0
       ],
       "vertices": 16,
       "triangles": 28
     },
     {
-      "name": "ACC_ChairLeg.Back.R",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_wood",
-      "base_color": [
-        0.285,
-        0.115,
-        0.055,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_ChairLeg.Front.L",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_wood",
-      "base_color": [
-        0.285,
-        0.115,
-        0.055,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_ChairLeg.Front.R",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_wood",
-      "base_color": [
-        0.285,
-        0.115,
-        0.055,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_ChairSeat",
-      "role": "signature_silhouette",
-      "bone": "chest",
-      "palette_name": "chair_wood",
-      "base_color": [
-        0.285,
-        0.115,
-        0.055,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_ChairSeatWear",
-      "role": "surface_detail",
-      "bone": "chest",
-      "palette_name": "chair_wear",
-      "base_color": [
-        0.455,
-        0.265,
-        0.105,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_FaceShadow",
+      "name": "ACC_Eye.L",
       "role": "face_detail",
       "bone": "head",
       "palette_name": "void",
@@ -631,14 +561,168 @@
       "triangles": 12
     },
     {
-      "name": "ACC_LoadBelt",
-      "role": "load_harness",
-      "bone": "chest",
-      "palette_name": "strap_cloth",
+      "name": "ACC_Eye.R",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "void",
       "base_color": [
-        0.08,
-        0.095,
-        0.08,
+        0.008,
+        0.01,
+        0.009,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_HelmetBrim",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "miner_helmet_dark",
+      "base_color": [
+        0.115,
+        0.12,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_HelmetDome",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "miner_helmet",
+      "base_color": [
+        0.43,
+        0.435,
+        0.415,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "ACC_HelmetRidge",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "miner_helmet_dark",
+      "base_color": [
+        0.115,
+        0.12,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_LampBezel",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "miner_helmet",
+      "base_color": [
+        0.43,
+        0.435,
+        0.415,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "ACC_LampCable.01",
+      "role": "surface_detail",
+      "bone": "chest",
+      "palette_name": "miner_cable",
+      "base_color": [
+        0.062,
+        0.058,
+        0.056,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_LampCable.02",
+      "role": "surface_detail",
+      "bone": "chest",
+      "palette_name": "miner_cable",
+      "base_color": [
+        0.062,
+        0.058,
+        0.056,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_LampCable.03",
+      "role": "surface_detail",
+      "bone": "head",
+      "palette_name": "miner_cable",
+      "base_color": [
+        0.062,
+        0.058,
+        0.056,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_LampHousing",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "miner_helmet_dark",
+      "base_color": [
+        0.115,
+        0.12,
+        0.115,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "ACC_LampLens",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "lamp_lens",
+      "base_color": [
+        0.88,
+        0.82,
+        0.64,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "ACC_Mouth",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "void",
+      "base_color": [
+        0.008,
+        0.01,
+        0.009,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Nose",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "skin",
+      "base_color": [
+        0.355,
+        0.235,
+        0.165,
         1.0
       ],
       "vertices": 8,
@@ -673,84 +757,28 @@
       "triangles": 12
     },
     {
-      "name": "ACC_ShoulderLoop.L",
-      "role": "load_harness",
-      "bone": "chest",
-      "palette_name": "strap_cloth",
-      "base_color": [
-        0.08,
-        0.095,
-        0.08,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_ShoulderLoop.R",
-      "role": "load_harness",
-      "bone": "chest",
-      "palette_name": "strap_cloth",
-      "base_color": [
-        0.08,
-        0.095,
-        0.08,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_WorkCap",
+      "name": "CLO_Collar",
       "role": "clothing_detail",
-      "bone": "head",
-      "palette_name": "work_jacket_dark",
+      "bone": "chest",
+      "palette_name": "miner_ochre_dark",
       "base_color": [
-        0.105,
-        0.07,
-        0.048,
+        0.15,
+        0.1,
+        0.032,
         1.0
       ],
       "vertices": 8,
       "triangles": 12
     },
     {
-      "name": "CLO_JacketBack",
-      "role": "clothing",
+      "name": "CLO_HighVisBand",
+      "role": "clothing_detail",
       "bone": "chest",
-      "palette_name": "work_jacket_dark",
+      "palette_name": "miner_hivis",
       "base_color": [
-        0.105,
-        0.07,
-        0.048,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "CLO_JacketFront.L",
-      "role": "clothing",
-      "bone": "chest",
-      "palette_name": "work_jacket_light",
-      "base_color": [
-        0.335,
-        0.205,
-        0.105,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "CLO_JacketFront.R",
-      "role": "clothing",
-      "bone": "chest",
-      "palette_name": "work_jacket",
-      "base_color": [
-        0.245,
-        0.145,
-        0.075,
+        0.64,
+        0.52,
+        0.18,
         1.0
       ],
       "vertices": 8,
@@ -760,11 +788,11 @@
       "name": "CLO_JacketHem",
       "role": "clothing_detail",
       "bone": "chest",
-      "palette_name": "work_jacket_dark",
+      "palette_name": "miner_ochre_dark",
       "base_color": [
-        0.105,
-        0.07,
-        0.048,
+        0.15,
+        0.1,
+        0.032,
         1.0
       ],
       "vertices": 8,
@@ -772,13 +800,13 @@
     },
     {
       "name": "GEO_Foot.L",
-      "role": "body",
+      "role": "signature_silhouette",
       "bone": "foot.L",
-      "palette_name": "shoe",
+      "palette_name": "miner_rubber",
       "base_color": [
-        0.045,
-        0.038,
-        0.032,
+        0.048,
+        0.044,
+        0.04,
         1.0
       ],
       "vertices": 8,
@@ -786,13 +814,13 @@
     },
     {
       "name": "GEO_Foot.R",
-      "role": "body",
+      "role": "signature_silhouette",
       "bone": "foot.R",
-      "palette_name": "shoe",
+      "palette_name": "miner_rubber",
       "base_color": [
-        0.045,
-        0.038,
-        0.032,
+        0.048,
+        0.044,
+        0.04,
         1.0
       ],
       "vertices": 8,
@@ -802,57 +830,57 @@
       "name": "GEO_Forearm.L",
       "role": "body",
       "bone": "forearm.L",
-      "palette_name": "work_jacket_light",
+      "palette_name": "miner_ochre_light",
       "base_color": [
-        0.335,
-        0.205,
-        0.105,
+        0.42,
+        0.29,
+        0.1,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "GEO_Forearm.R",
       "role": "body",
       "bone": "forearm.R",
-      "palette_name": "work_jacket",
+      "palette_name": "miner_ochre",
       "base_color": [
-        0.245,
-        0.145,
-        0.075,
+        0.31,
+        0.205,
+        0.06,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "GEO_Hand.L",
       "role": "body",
       "bone": "hand.L",
-      "palette_name": "skin",
+      "palette_name": "miner_rubber",
       "base_color": [
-        0.355,
-        0.235,
-        0.165,
+        0.048,
+        0.044,
+        0.04,
         1.0
       ],
-      "vertices": 42,
-      "triangles": 80
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "GEO_Hand.R",
       "role": "body",
       "bone": "hand.R",
-      "palette_name": "skin",
+      "palette_name": "miner_rubber",
       "base_color": [
-        0.355,
-        0.235,
-        0.165,
+        0.048,
+        0.044,
+        0.04,
         1.0
       ],
-      "vertices": 42,
-      "triangles": 80
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "GEO_Head",
@@ -872,25 +900,25 @@
       "name": "GEO_Neck",
       "role": "body",
       "bone": "neck",
-      "palette_name": "skin",
+      "palette_name": "miner_ochre_dark",
       "base_color": [
-        0.355,
-        0.235,
-        0.165,
+        0.15,
+        0.1,
+        0.032,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 16,
+      "triangles": 28
     },
     {
       "name": "GEO_Pelvis",
       "role": "body",
       "bone": "pelvis",
-      "palette_name": "work_jacket",
+      "palette_name": "miner_trousers",
       "base_color": [
-        0.245,
-        0.145,
-        0.075,
+        0.105,
+        0.098,
+        0.078,
         1.0
       ],
       "vertices": 8,
@@ -900,39 +928,39 @@
       "name": "GEO_Shin.L",
       "role": "body",
       "bone": "shin.L",
-      "palette_name": "work_trousers",
+      "palette_name": "miner_trousers",
       "base_color": [
         0.105,
-        0.125,
-        0.118,
+        0.098,
+        0.078,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "GEO_Shin.R",
       "role": "body",
       "bone": "shin.R",
-      "palette_name": "work_trousers",
+      "palette_name": "miner_trousers",
       "base_color": [
         0.105,
-        0.125,
-        0.118,
+        0.098,
+        0.078,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "GEO_Thigh.L",
       "role": "body",
       "bone": "thigh.L",
-      "palette_name": "work_trousers",
+      "palette_name": "miner_trousers",
       "base_color": [
         0.105,
-        0.125,
-        0.118,
+        0.098,
+        0.078,
         1.0
       ],
       "vertices": 24,
@@ -942,11 +970,11 @@
       "name": "GEO_Thigh.R",
       "role": "body",
       "bone": "thigh.R",
-      "palette_name": "work_trousers",
+      "palette_name": "miner_trousers",
       "base_color": [
         0.105,
-        0.125,
-        0.118,
+        0.098,
+        0.078,
         1.0
       ],
       "vertices": 24,
@@ -956,11 +984,11 @@
       "name": "GEO_Torso",
       "role": "body",
       "bone": "chest",
-      "palette_name": "work_jacket_dark",
+      "palette_name": "miner_ochre",
       "base_color": [
-        0.105,
-        0.07,
-        0.048,
+        0.31,
+        0.205,
+        0.06,
         1.0
       ],
       "vertices": 8,
@@ -970,29 +998,29 @@
       "name": "GEO_UpperArm.L",
       "role": "body",
       "bone": "upper_arm.L",
-      "palette_name": "work_jacket",
+      "palette_name": "miner_ochre",
       "base_color": [
-        0.245,
-        0.145,
-        0.075,
+        0.31,
+        0.205,
+        0.06,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "GEO_UpperArm.R",
       "role": "body",
       "bone": "upper_arm.R",
-      "palette_name": "work_jacket",
+      "palette_name": "miner_ochre",
       "base_color": [
-        0.245,
-        0.145,
-        0.075,
+        0.31,
+        0.205,
+        0.06,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 20,
+      "triangles": 36
     }
   ]
 }

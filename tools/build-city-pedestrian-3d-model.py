@@ -34,7 +34,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "3.0.0"
 CANONICAL_HEIGHT = 1.75
 SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
@@ -53,6 +53,17 @@ class ArchetypeSpec:
     idle_clip: str
     walk_clip: str
     triangle_budget: tuple[int, int]
+    # Optional per-archetype animated hand-to-ground band, as
+    # (never_below_m, must_reach_within_m). Only designs whose hands are meant
+    # to travel near the pavement declare it; for everyone else the hands sit
+    # at chest height and the check is meaningless.
+    hand_clearance_m: tuple[float, float] | None = None
+    # Optional airborne allowance, as (min_apex_lift_m, max_apex_lift_m).
+    # Declaring it replaces the every-frame sole contact rule with "never
+    # penetrates, lands at least once, and reaches this apex band in at least
+    # one clip", and switches the pelvis bake to a single constant offset so
+    # the authored arc survives instead of being flattened onto the pavement.
+    airborne_lift_m: tuple[float, float] | None = None
 
 
 ARCHETYPES = {
@@ -66,6 +77,24 @@ ARCHETYPES = {
         "ChairCarrierPedestrian3D.blend", "ChairCarrierPedestrian3D",
         "ChairCarrierPedestrian3D.png", "ChairCarrierIdle", "ChairCarrierWalk",
         (800, 1600),
+    ),
+    "kettle_hat": ArchetypeSpec(
+        "kettle_hat", "kettle_hat_walker_v1", "Kettle Hat Walker", 305521,
+        "KettleHatPedestrian3D.blend", "KettleHatPedestrian3D",
+        "KettleHatPedestrian3D.png", "KettleHatIdle", "KettleHatWalk",
+        (800, 1600),
+    ),
+    "long_arm": ArchetypeSpec(
+        "long_arm", "long_arm_walker_v1", "Long-Arm Walker", 418833,
+        "LongArmPedestrian3D.blend", "LongArmPedestrian3D",
+        "LongArmPedestrian3D.png", "LongArmIdle", "LongArmWalk",
+        (800, 1300), (0.020, 0.140),
+    ),
+    "helmet_lamp": ArchetypeSpec(
+        "helmet_lamp", "helmet_lamp_hopper_v1", "Helmet Lamp Hopper", 527194,
+        "HelmetLampPedestrian3D.blend", "HelmetLampPedestrian3D",
+        "HelmetLampPedestrian3D.png", "HelmetLampIdle", "HelmetLampHop",
+        (800, 1700), None, (0.080, 0.400),
     ),
 }
 
@@ -151,6 +180,39 @@ PALETTE = {
     "chair_wear": (0.455, 0.265, 0.105, 1.0),
     "strap_cloth": (0.080, 0.095, 0.080, 1.0),
     "shoe": (0.045, 0.038, 0.032, 1.0),
+    # Kettle Hat Walker. A muted plum coat keeps the stout mass distinct from
+    # the Lampshade's green and the Chair Carrier's orange under City fog,
+    # while the chipped enamel is the brightest value any walker owns.
+    "stout_coat": (0.150, 0.085, 0.105, 1.0),
+    "stout_coat_light": (0.215, 0.130, 0.150, 1.0),
+    "stout_coat_dark": (0.080, 0.045, 0.058, 1.0),
+    "stout_trousers": (0.090, 0.085, 0.105, 1.0),
+    "kettle_enamel": (0.520, 0.545, 0.520, 1.0),
+    "kettle_enamel_dark": (0.290, 0.315, 0.300, 1.0),
+    "kettle_chip": (0.155, 0.105, 0.070, 1.0),
+    "kettle_metal": (0.115, 0.120, 0.118, 1.0),
+    # Long-Arm Walker. Cold steel blue is the last unused walker hue, and the
+    # bare forearms are deliberately the brightest value on the model so the
+    # eye lands on the arms first at any distance.
+    "steel_coat": (0.075, 0.100, 0.135, 1.0),
+    "steel_coat_light": (0.120, 0.155, 0.200, 1.0),
+    "steel_coat_dark": (0.040, 0.055, 0.078, 1.0),
+    "steel_trousers": (0.058, 0.070, 0.088, 1.0),
+    "pale_skin": (0.520, 0.470, 0.430, 1.0),
+    "pale_skin_dark": (0.330, 0.290, 0.265, 1.0),
+    # Helmet Lamp Hopper. Ochre work wear is the last unused walker hue. The
+    # lens is ordinary bright paint, not an emissive material: the shared
+    # source material stays non-emissive and the real Spot does the lighting.
+    "miner_ochre": (0.310, 0.205, 0.060, 1.0),
+    "miner_ochre_light": (0.420, 0.290, 0.100, 1.0),
+    "miner_ochre_dark": (0.150, 0.100, 0.032, 1.0),
+    "miner_trousers": (0.105, 0.098, 0.078, 1.0),
+    "miner_hivis": (0.640, 0.520, 0.180, 1.0),
+    "miner_helmet": (0.430, 0.435, 0.415, 1.0),
+    "miner_helmet_dark": (0.115, 0.120, 0.115, 1.0),
+    "miner_rubber": (0.048, 0.044, 0.040, 1.0),
+    "miner_cable": (0.062, 0.058, 0.056, 1.0),
+    "lamp_lens": (0.880, 0.820, 0.640, 1.0),
 }
 
 
@@ -409,12 +471,33 @@ class PedestrianBuilder:
 
         rig = self.create_armature(export_collection, root)
         self.result = BuildResult(root, rig, export_collection, material)
-        if self.spec.key == "lampshade":
-            self.build_body()
-            self.build_clothing_and_details()
-        else:
-            self.build_chair_carrier_body()
-            self.build_chair_carrier_details()
+        # An explicit per-archetype builder pair; a missing key is a build
+        # error rather than a silent fallback to another design.
+        builders = {
+            "lampshade": (self.build_body, self.build_clothing_and_details),
+            "chair_carrier": (
+                self.build_chair_carrier_body,
+                self.build_chair_carrier_details,
+            ),
+            "kettle_hat": (
+                self.build_kettle_hat_body,
+                self.build_kettle_hat_details,
+            ),
+            "long_arm": (
+                self.build_long_arm_body,
+                self.build_long_arm_details,
+            ),
+            "helmet_lamp": (
+                self.build_helmet_lamp_body,
+                self.build_helmet_lamp_details,
+            ),
+        }
+        if self.spec.key not in builders:
+            raise RuntimeError(
+                f"No geometry builder is registered for '{self.spec.key}'"
+            )
+        for builder in builders[self.spec.key]:
+            builder()
         self.configure_scene_metadata()
         return self.result
 
@@ -953,6 +1036,593 @@ class PedestrianBuilder:
             "chest", "load_harness", "strap_cloth",
         )
 
+    def build_kettle_hat_body(self) -> None:
+        """Build a stout short-legged body under the canonical A-pose rig.
+
+        The rig, its bone positions and the `1.75 m` envelope are shared with
+        every other walker, so "short" is authored as proportion rather than
+        scale: the human mass stops near `1.40 m`, an overhanging belly hides
+        the upper legs, and the oversized kettle owns the rest of the height.
+        Every part still sits close to its own bone head so the shared
+        locomotion clips rotate it correctly.
+        """
+
+        # Small head sunk into the shoulders. It rides 0.13 m below the head
+        # bone so the kettle can cap the silhouette while the face stays
+        # visible beneath the tilted rim.
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.030, 1.330), (0.142, 0.134, 0.124), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.012, 1.185), (0, -0.022, 1.275), 0.105, 0.098, 10),
+            "neck", "body", "stout_coat_dark",
+        )
+        self.add_part(
+            "GEO_Torso",
+            make_tapered_box((0, -0.010, 1.000), (0, -0.016, 1.285), (0.400, 0.310, 0), (0.355, 0.275, 0)),
+            "chest", "body", "stout_coat_dark",
+        )
+        # The signature mass. It is parented to the pelvis so it leads the
+        # waddle while the kettle counter-swings on the head. Nothing else in
+        # the silhouette is allowed to be wider.
+        self.add_part(
+            "GEO_Belly",
+            make_ellipsoid((0, -0.070, 0.815), (0.350, 0.315, 0.265), 14, 7),
+            "pelvis", "signature_silhouette", "stout_coat",
+        )
+        # Structural hips only: deliberately narrower and shorter than the
+        # belly so no box edge can break its round overhang.
+        self.add_part(
+            "GEO_Pelvis",
+            make_tapered_box((0, 0.008, 0.620), (0, 0.004, 0.800), (0.300, 0.240, 0), (0.330, 0.260, 0)),
+            "pelvis", "body", "stout_coat_dark",
+        )
+
+        limb_points = {
+            "L": ((0.208, -0.004, 1.292), (0.470, -0.010, 1.175)),
+            "R": ((-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175)),
+        }
+        leg_points = {
+            "L": ((0.083, 0.012, 0.750), (0.103, -0.012, 0.354), (0.112, -0.026, 0.095)),
+            "R": ((-0.083, -0.004, 0.750), (-0.103, 0.012, 0.354), (-0.112, 0.018, 0.095)),
+        }
+        for side in ("L", "R"):
+            shoulder, elbow = limb_points[side]
+            hip, knee, ankle = leg_points[side]
+            sign = 1.0 if side == "L" else -1.0
+            # Stubby arms: each visible segment covers only part of its bone,
+            # so the arms read as tiny without leaving their own pivots.
+            forearm_start = (sign * 0.352, -0.007, 1.223)
+            forearm_end = (sign * 0.512, -0.014, 1.166)
+            self.add_part(
+                f"GEO_UpperArm.{side}",
+                make_frustum_between(shoulder, forearm_start, 0.084, 0.074, 10),
+                f"upper_arm.{side}", "body", "stout_coat",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(forearm_start, forearm_end, 0.072, 0.062, 10),
+                f"forearm.{side}", "body",
+                "stout_coat_light" if side == "L" else "stout_coat",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid((sign * 0.572, -0.017, 1.138), (0.054, 0.044, 0.056), 8, 4),
+                f"hand.{side}", "body", "glove",
+            )
+            # Thick, closely spaced legs. Only the band between the coat hem
+            # and the boot top stays visible.
+            self.add_part(
+                f"GEO_Thigh.{side}",
+                make_frustum_between(hip, knee, 0.118, 0.102, 12),
+                f"thigh.{side}", "body", "stout_trousers",
+            )
+            self.add_part(
+                f"GEO_Shin.{side}",
+                make_frustum_between(knee, ankle, 0.100, 0.086, 12),
+                f"shin.{side}", "body", "stout_trousers",
+            )
+            x = sign * 0.112
+            self.add_part(
+                f"GEO_Foot.{side}",
+                make_tapered_box((x, -0.088, 0.0), (x, -0.062, 0.190), (0.215, 0.290, 0), (0.185, 0.230, 0)),
+                f"foot.{side}", "body", "leather",
+            )
+
+    def build_kettle_hat_details(self) -> None:
+        # Grounded soles under the supported ShoeSole.L/R naming; these two
+        # boxes own the exact z=0 contact for the whole silhouette.
+        for side in ("L", "R"):
+            x = 0.112 if side == "L" else -0.112
+            self.add_part(
+                f"ACC_ShoeSole.{side}",
+                make_box((x, -0.088, 0.013), (0.222, 0.296, 0.026)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+
+        # A short coat that ends in a flared ring under the belly, so the
+        # tiny legs read against a round overhang rather than a flat slab.
+        # The hem tapers downward with the belly instead of flaring past it,
+        # which would read as a plate rather than cloth.
+        self.add_part(
+            "CLO_CoatHem",
+            make_frustum_between((0, -0.070, 0.650), (0, -0.070, 0.572), 0.288, 0.212, 14, 0.90),
+            "pelvis", "clothing", "stout_coat_dark",
+        )
+        self.add_part(
+            "CLO_CoatSeam",
+            make_tapered_box((0.012, -0.352, 0.660), (0.008, -0.318, 1.020), (0.062, 0.055, 0), (0.070, 0.055, 0)),
+            "pelvis", "clothing", "stout_coat_light",
+        )
+        self.add_part(
+            "CLO_CoatBack",
+            make_tapered_box((0, 0.222, 0.700), (0, 0.196, 1.030), (0.330, 0.055, 0), (0.290, 0.052, 0)),
+            "pelvis", "clothing", "stout_coat_dark",
+        )
+        self.add_part(
+            "CLO_CoatCollar",
+            make_box((0, -0.018, 1.232), (0.340, 0.295, 0.058)),
+            "chest", "clothing_detail", "stout_coat_light",
+        )
+        for index, (z, y) in enumerate(
+            ((0.735, -0.336), (0.855, -0.352), (0.975, -0.330)), start=1
+        ):
+            self.add_part(
+                f"ACC_CoatButton.{index:02d}",
+                make_box((0.012, y, z), (0.038, 0.026, 0.038)),
+                "pelvis", "clothing_detail", "button",
+            )
+
+        # Face. It reads only because the kettle rim clears the eyes; the
+        # Lampshade deliberately hides its face, so this one must not.
+        for side, x in (("L", 0.058), ("R", -0.058)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.148, 1.350), (0.042, 0.020, 0.032)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.164, 1.300), (0, -0.148, 1.352), (0.060, 0.072, 0), (0.046, 0.054, 0)),
+            "head", "face_detail", "skin",
+        )
+        self.add_part(
+            "ACC_Moustache",
+            make_box((0, -0.150, 1.288), (0.124, 0.032, 0.026)),
+            "head", "face_detail", "void",
+        )
+
+        # The oversized enamel kettle. Its axis is tilted so the rim sits low
+        # on the left and clears the face on the right, and every piece is
+        # bound to the head bone as one rigid hat.
+        # Wide and squat rather than tall: the body is 2.3x the head radius,
+        # and the tall handle arc carries the rest of the envelope. The tilt
+        # drops the rim past the character's left temple while the front rim
+        # still clears both eyes.
+        self.add_part(
+            "ACC_KettleBody",
+            make_frustum_between((0.050, 0.024, 1.430), (0.005, -0.002, 1.585), 0.335, 0.270, 14, 0.94),
+            "head", "signature_silhouette", "kettle_enamel",
+        )
+        self.add_part(
+            "ACC_KettleRimBand",
+            make_frustum_between((0.053, 0.026, 1.421), (0.046, 0.022, 1.453), 0.343, 0.339, 14, 0.94),
+            "head", "signature_silhouette", "kettle_enamel_dark",
+        )
+        self.add_part(
+            "ACC_KettleShoulder",
+            make_frustum_between((0.005, -0.002, 1.583), (-0.004, -0.007, 1.618), 0.268, 0.175, 14, 0.94),
+            "head", "signature_silhouette", "kettle_enamel",
+        )
+        self.add_part(
+            "ACC_KettleLid",
+            make_frustum_between((-0.004, -0.007, 1.615), (-0.010, -0.010, 1.646), 0.180, 0.138, 12, 0.94),
+            "head", "signature_silhouette", "kettle_enamel_dark",
+        )
+        self.add_part(
+            "ACC_KettleKnob",
+            make_ellipsoid((-0.012, -0.011, 1.656), (0.046, 0.044, 0.030), 8, 4),
+            "head", "surface_detail", "kettle_metal",
+        )
+        # Spout. It reaches mostly sideways rather than forward so it stays a
+        # readable profile from the orbiting chase camera instead of pointing
+        # at it; this is the detail that separates a kettle from a lampshade.
+        self.add_part(
+            "ACC_KettleSpout",
+            make_frustum_between((0.255, -0.105, 1.448), (0.442, -0.190, 1.548), 0.082, 0.052, 10, 0.92),
+            "head", "signature_silhouette", "kettle_enamel",
+        )
+        self.add_part(
+            "ACC_KettleSpoutTip",
+            make_frustum_between((0.442, -0.190, 1.548), (0.486, -0.212, 1.606), 0.052, 0.040, 8, 0.92),
+            "head", "surface_detail", "kettle_enamel_dark",
+        )
+        # Handle arc. The flat top bar owns the exact 1.75 m envelope.
+        for side, x in (("L", 0.232), ("R", -0.220)):
+            self.add_part(
+                f"ACC_KettleHandlePost.{side}",
+                make_tapered_box((x, 0.010, 1.482), (x * 0.68, 0.000, 1.714), (0.056, 0.058, 0), (0.046, 0.052, 0)),
+                "head", "signature_silhouette", "kettle_metal",
+            )
+        self.add_part(
+            "ACC_KettleHandleTop",
+            make_box((-0.008, 0.000, 1.7275), (0.330, 0.054, 0.045)),
+            "head", "signature_silhouette", "kettle_metal",
+        )
+        for index, (x, y, z) in enumerate(
+            ((0.216, -0.216, 1.516), (-0.196, -0.238, 1.470)), start=1
+        ):
+            self.add_part(
+                f"ACC_KettleChip.{index:02d}",
+                make_box((x, y, z), (0.070, 0.048, 0.056)),
+                "head", "surface_detail", "kettle_chip",
+            )
+
+    def build_long_arm_body(self) -> None:
+        """Build a narrow tall body whose forearms reach the pavement.
+
+        This is the first walker whose strangeness is the body itself rather
+        than a worn or carried object, so nothing here is a prop. The visible
+        forearm hangs almost straight down from the elbow instead of following
+        the outward A-pose bone axis: doubling the bone direction would push
+        the rest silhouette past the `1.65 m` width guard, and hanging the
+        segment below its own pivot is exactly what makes it swing as a
+        pendulum once the shoulder rotates.
+        """
+
+        # Small skull sunk between raised shoulders. The hair cap is a box so
+        # it can own the exact 1.75 m envelope.
+        self.add_part(
+            "GEO_Skull",
+            make_ellipsoid((0, -0.022, 1.570), (0.108, 0.100, 0.115), 12, 6),
+            "head", "body", "pale_skin",
+        )
+        # Matted hair lying flat on the skull and pushed back so the face
+        # stays bare. It owns the exact 1.75 m envelope. It must never widen
+        # past the skull: an overhanging brim would echo the Lampshade Walker,
+        # which is the one silhouette this design has to stay clear of.
+        self.add_part(
+            "ACC_Hair",
+            make_ellipsoid((0, 0.010, 1.612), (0.112, 0.100, 0.138), 10, 5),
+            "head", "clothing_detail", "steel_coat_dark",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.006, 1.428), (0, -0.014, 1.492), 0.054, 0.050, 8),
+            "neck", "body", "pale_skin_dark",
+        )
+        # Narrow slab of a torso: half the Kettle Hat Walker's width.
+        self.add_part(
+            "GEO_Torso",
+            make_tapered_box((0, -0.005, 0.870), (0, -0.012, 1.410), (0.250, 0.185, 0), (0.330, 0.205, 0)),
+            "chest", "body", "steel_coat",
+        )
+        self.add_part(
+            "GEO_Pelvis",
+            make_tapered_box((0, 0.004, 0.640), (0, 0.000, 0.880), (0.215, 0.165, 0), (0.245, 0.180, 0)),
+            "pelvis", "body", "steel_coat_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            # Shoulders pulled up around the head, so there is barely a neck.
+            self.add_part(
+                f"GEO_ShoulderCap.{side}",
+                make_ellipsoid((sign * 0.150, -0.008, 1.428), (0.100, 0.092, 0.084), 8, 4),
+                "chest", "body", "steel_coat",
+            )
+            self.add_part(
+                f"GEO_UpperArm.{side}",
+                make_frustum_between(
+                    (sign * 0.208, -0.004, 1.292),
+                    (sign * 0.470, -0.010, 1.175),
+                    0.062, 0.052, 8,
+                ),
+                f"upper_arm.{side}", "body", "steel_coat",
+            )
+            # The signature: a bare forearm roughly 3.3x its bone length,
+            # hanging from the elbow to just above the ankle.
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(
+                    (sign * 0.470, -0.010, 1.175),
+                    (sign * 0.556, -0.020, 0.292),
+                    0.048, 0.041, 10,
+                ),
+                f"forearm.{side}", "signature_silhouette", "pale_skin",
+            )
+            # Heavy oversized hands finish the pendulum. Their resting height
+            # is what the animated clearance band is measured against.
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid((sign * 0.570, -0.024, 0.210), (0.080, 0.064, 0.094), 10, 5),
+                f"hand.{side}", "signature_silhouette", "pale_skin",
+            )
+            self.add_part(
+                f"GEO_Thigh.{side}",
+                make_frustum_between(
+                    (sign * 0.083, 0.012 * sign, 0.750),
+                    (sign * 0.103, -0.012 * sign, 0.354),
+                    0.072, 0.058, 10,
+                ),
+                f"thigh.{side}", "body", "steel_trousers",
+            )
+            # Bare thin ankles below a short trouser cuff.
+            self.add_part(
+                f"GEO_Shin.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.012 * sign, 0.354),
+                    (sign * 0.112, -0.026 * sign, 0.095),
+                    0.050, 0.038, 8,
+                ),
+                f"shin.{side}", "body", "pale_skin_dark",
+            )
+            self.add_part(
+                f"GEO_Foot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.070, 0.0),
+                    (sign * 0.112, -0.055, 0.072),
+                    (0.115, 0.215, 0), (0.100, 0.180, 0),
+                ),
+                f"foot.{side}", "body", "shoe",
+            )
+
+    def build_long_arm_details(self) -> None:
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_ShoeSole.{side}",
+                make_box((sign * 0.112, -0.070, 0.010), (0.122, 0.222, 0.020)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+            # The jacket sleeve stops at the elbow, so the length reads as an
+            # arm rather than as cloth.
+            self.add_part(
+                f"CLO_SleeveCap.{side}",
+                make_frustum_between(
+                    (sign * 0.200, -0.004, 1.294),
+                    (sign * 0.452, -0.010, 1.184),
+                    0.076, 0.062, 8,
+                ),
+                f"upper_arm.{side}", "clothing",
+                "steel_coat_light" if side == "L" else "steel_coat",
+            )
+            self.add_part(
+                f"CLO_TrouserCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.012 * sign, 0.356),
+                    (sign * 0.108, -0.020 * sign, 0.215),
+                    0.070, 0.060, 8,
+                ),
+                f"shin.{side}", "clothing", "steel_trousers",
+            )
+            self.add_part(
+                f"CLO_JacketFront.{side}",
+                make_tapered_box(
+                    (sign * 0.072, -0.108, 0.885),
+                    (sign * 0.086, -0.116, 1.352),
+                    (0.128, 0.032, 0), (0.150, 0.036, 0),
+                ),
+                "chest", "clothing",
+                "steel_coat_light" if side == "L" else "steel_coat",
+            )
+        self.add_part(
+            "CLO_JacketBack",
+            make_tapered_box((0, 0.100, 0.880), (0, 0.108, 1.360), (0.262, 0.036, 0), (0.336, 0.038, 0)),
+            "chest", "clothing", "steel_coat_dark",
+        )
+        self.add_part(
+            "CLO_JacketHem",
+            make_box((0, -0.006, 0.882), (0.290, 0.208, 0.046)),
+            "chest", "clothing_detail", "steel_coat_dark",
+        )
+        self.add_part(
+            "CLO_Collar",
+            make_box((0, -0.010, 1.418), (0.286, 0.212, 0.050)),
+            "chest", "clothing_detail", "steel_coat_light",
+        )
+        for index, z in enumerate((0.980, 1.130), start=1):
+            self.add_part(
+                f"ACC_JacketButton.{index:02d}",
+                make_box((0.010, -0.126, z), (0.030, 0.022, 0.030)),
+                "chest", "clothing_detail", "button",
+            )
+        # Eyes sit almost at the hairline and there is no mouth at all. The
+        # low nose is what makes the eye placement read as wrong rather than
+        # merely stylised.
+        for side, x in (("L", 0.046), ("R", -0.046)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.098, 1.608), (0.038, 0.020, 0.026)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.118, 1.478), (0, -0.102, 1.530), (0.044, 0.056, 0), (0.034, 0.042, 0)),
+            "head", "face_detail", "pale_skin",
+        )
+
+    def build_helmet_lamp_body(self) -> None:
+        """Build a squat hopper in miner's work wear with oversized feet.
+
+        Anthropomorphic throughout: an ordinary human rig, ordinary arms, an
+        ordinary head. Only two things are wrong, and both are functional —
+        the hind feet are long enough to launch a hop, and the helmet carries
+        a lamp that is genuinely switched on. The Unity prefab hangs a real
+        shadowless Spot off the head bone at the lens position.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.030, 1.478), (0.114, 0.106, 0.118), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.008, 1.318), (0, -0.018, 1.392), 0.070, 0.064, 8),
+            "neck", "body", "miner_ochre_dark",
+        )
+        # Barrel chest and a low slung pelvis: the body is coiled even before
+        # the crouch that the clips add on top.
+        self.add_part(
+            "GEO_Torso",
+            make_tapered_box((0, -0.004, 0.860), (0, -0.014, 1.318), (0.335, 0.245, 0), (0.360, 0.250, 0)),
+            "chest", "body", "miner_ochre",
+        )
+        self.add_part(
+            "GEO_Pelvis",
+            make_tapered_box((0, 0.006, 0.615), (0, 0.002, 0.870), (0.305, 0.225, 0), (0.330, 0.240, 0)),
+            "pelvis", "body", "miner_trousers",
+        )
+        limb_points = {
+            "L": ((0.208, -0.004, 1.292), (0.470, -0.010, 1.175), (0.680, -0.018, 1.075), (0.755, -0.022, 1.035)),
+            "R": ((-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175), (-0.680, -0.018, 1.075), (-0.755, -0.022, 1.035)),
+        }
+        leg_points = {
+            "L": ((0.083, 0.012, 0.750), (0.103, -0.012, 0.354), (0.112, -0.026, 0.095)),
+            "R": ((-0.083, -0.004, 0.750), (-0.103, 0.012, 0.354), (-0.112, 0.018, 0.095)),
+        }
+        for side in ("L", "R"):
+            shoulder, elbow, wrist, hand = limb_points[side]
+            hip, knee, ankle = leg_points[side]
+            sign = 1.0 if side == "L" else -1.0
+            self.add_part(
+                f"GEO_UpperArm.{side}",
+                make_frustum_between(shoulder, elbow, 0.074, 0.062, 10),
+                f"upper_arm.{side}", "body", "miner_ochre",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(elbow, wrist, 0.064, 0.050, 10),
+                f"forearm.{side}", "body",
+                "miner_ochre_light" if side == "L" else "miner_ochre",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid(tuple((v(wrist) + v(hand)) * 0.5), (0.050, 0.040, 0.062), 8, 4),
+                f"hand.{side}", "body", "miner_rubber",
+            )
+            # Powerful, heavily tapered legs to sell the launch.
+            self.add_part(
+                f"GEO_Thigh.{side}",
+                make_frustum_between(hip, knee, 0.108, 0.078, 12),
+                f"thigh.{side}", "body", "miner_trousers",
+            )
+            self.add_part(
+                f"GEO_Shin.{side}",
+                make_frustum_between(knee, ankle, 0.086, 0.062, 10),
+                f"shin.{side}", "body", "miner_trousers",
+            )
+            # The signature: a `0.46 m` hind foot, more than twice the length
+            # every other walker uses. It reads as a hopper standing still.
+            x = sign * 0.112
+            self.add_part(
+                f"GEO_Foot.{side}",
+                make_tapered_box(
+                    (x, -0.150, 0.0), (x, -0.118, 0.158),
+                    (0.152, 0.460, 0), (0.132, 0.372, 0),
+                ),
+                f"foot.{side}", "signature_silhouette", "miner_rubber",
+            )
+
+    def build_helmet_lamp_details(self) -> None:
+        for side in ("L", "R"):
+            x = 0.112 if side == "L" else -0.112
+            self.add_part(
+                f"ACC_ShoeSole.{side}",
+                make_box((x, -0.150, 0.012), (0.158, 0.468, 0.024)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+            self.add_part(
+                f"ACC_BootCuff.{side}",
+                make_frustum_between(
+                    (x, -0.024, 0.150), (x, -0.026, 0.235), 0.098, 0.088, 8,
+                ),
+                f"foot.{side}", "footwear_detail", "miner_ochre_dark",
+            )
+        self.add_part(
+            "CLO_JacketHem",
+            make_box((0, -0.004, 0.876), (0.352, 0.256, 0.052)),
+            "chest", "clothing_detail", "miner_ochre_dark",
+        )
+        self.add_part(
+            "CLO_HighVisBand",
+            make_box((0, -0.006, 1.120), (0.368, 0.258, 0.058)),
+            "chest", "clothing_detail", "miner_hivis",
+        )
+        self.add_part(
+            "CLO_Collar",
+            make_box((0, -0.010, 1.316), (0.290, 0.226, 0.046)),
+            "chest", "clothing_detail", "miner_ochre_dark",
+        )
+        # Battery box on the belt, wired to the helmet. It is what makes the
+        # lamp read as equipment rather than decoration.
+        self.add_part(
+            "ACC_BatteryBox",
+            make_box((0.158, 0.126, 0.930), (0.108, 0.078, 0.146)),
+            "pelvis", "load_harness", "miner_helmet_dark",
+        )
+        cable_points = (
+            ((0.158, 0.150, 1.002), (0.132, 0.168, 1.176)),
+            ((0.132, 0.168, 1.176), (0.086, 0.150, 1.336)),
+            ((0.086, 0.150, 1.336), (0.040, 0.116, 1.470)),
+        )
+        for index, (start, end) in enumerate(cable_points, start=1):
+            self.add_part(
+                f"ACC_LampCable.{index:02d}",
+                make_frustum_between(start, end, 0.016, 0.014, 6, 0.90),
+                "chest" if index < 3 else "head", "surface_detail", "miner_cable",
+            )
+
+        # Battered helmet. The dome owns the exact 1.75 m envelope.
+        self.add_part(
+            "ACC_HelmetDome",
+            make_ellipsoid((0, -0.020, 1.605), (0.136, 0.142, 0.145), 12, 6),
+            "head", "signature_silhouette", "miner_helmet",
+        )
+        self.add_part(
+            "ACC_HelmetBrim",
+            make_tapered_box((0, -0.028, 1.556), (0, -0.026, 1.584), (0.298, 0.316, 0), (0.268, 0.286, 0)),
+            "head", "signature_silhouette", "miner_helmet_dark",
+        )
+        self.add_part(
+            "ACC_HelmetRidge",
+            make_tapered_box((0, -0.020, 1.598), (0, -0.020, 1.746), (0.048, 0.268, 0), (0.036, 0.190, 0)),
+            "head", "surface_detail", "miner_helmet_dark",
+        )
+        # Lamp housing and lens. The Unity Spot is anchored at the lens.
+        self.add_part(
+            "ACC_LampHousing",
+            make_frustum_between((0, -0.118, 1.600), (0, -0.212, 1.596), 0.064, 0.060, 10, 0.96),
+            "head", "signature_silhouette", "miner_helmet_dark",
+        )
+        self.add_part(
+            "ACC_LampBezel",
+            make_frustum_between((0, -0.212, 1.596), (0, -0.224, 1.596), 0.062, 0.058, 10, 0.96),
+            "head", "surface_detail", "miner_helmet",
+        )
+        self.add_part(
+            "ACC_LampLens",
+            make_frustum_between((0, -0.224, 1.596), (0, -0.234, 1.596), 0.054, 0.048, 10, 0.96),
+            "head", "signature_silhouette", "lamp_lens",
+        )
+        for side, x in (("L", 0.052), ("R", -0.052)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.128, 1.492), (0.038, 0.020, 0.026)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.140, 1.424), (0, -0.126, 1.470), (0.046, 0.058, 0), (0.036, 0.044, 0)),
+            "head", "face_detail", "skin",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.128, 1.402), (0.078, 0.026, 0.020)),
+            "head", "face_detail", "void",
+        )
+
     def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
         scene["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
@@ -1149,7 +1819,12 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     camera_data = bpy.data.cameras.new("CAM_PedestrianPreview")
     camera = bpy.data.objects.new("CAM_PedestrianPreview", camera_data)
     presentation.objects.link(camera)
-    camera.location = (2.85, -4.60, 2.10) if spec.key == "chair_carrier" else (2.65, -4.40, 2.10)
+    camera.location = {
+        "chair_carrier": (2.85, -4.60, 2.10),
+        "kettle_hat": (2.55, -4.25, 1.90),
+        "long_arm": (2.60, -4.35, 2.05),
+        "helmet_lamp": (2.70, -4.30, 1.95),
+    }.get(spec.key, (2.65, -4.40, 2.10))
     target = Vector((0, 0, 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.lens = 56
@@ -1273,6 +1948,36 @@ ACTION_SPECS = (
         "ChairCarrierWalk", "chair_carrier_v1", 1.0, 24,
         "upright load-balanced spine, hands fixed on shoulder loops",
         "high-knee precise heel-led steps with minimal arm swing",
+    ),
+    ActionSpec(
+        "KettleHatIdle", "kettle_hat_walker_v1", 1.75, 42,
+        "low stout stance, belly forward, head sunk under the kettle",
+        "slow settling weight roll with counter-phased belly and kettle",
+    ),
+    ActionSpec(
+        "KettleHatWalk", "kettle_hat_walker_v1", 0.75, 18,
+        "low stout stance, belly forward, head sunk under the kettle",
+        "fast short steps with a constant waddle and counter-phased kettle",
+    ),
+    ActionSpec(
+        "LongArmIdle", "long_arm_walker_v1", 2.5, 60,
+        "narrow still body, raised shoulders, arms hanging to the ankles",
+        "dead-still torso under a slow residual arm sway that never settles",
+    ),
+    ActionSpec(
+        "LongArmWalk", "long_arm_walker_v1", 1.5, 36,
+        "narrow still body, raised shoulders, arms hanging to the ankles",
+        "slow shuffle with barely lifted feet and a lagging pendulum swing",
+    ),
+    ActionSpec(
+        "HelmetLampIdle", "helmet_lamp_hopper_v1", 2.0, 48,
+        "coiled crouch on both hind feet, forearms tucked like forepaws",
+        "settled twitching crouch while the helmet beam sweeps side to side",
+    ),
+    ActionSpec(
+        "HelmetLampHop", "helmet_lamp_hopper_v1", 1.0, 24,
+        "coiled crouch on both hind feet, forearms tucked like forepaws",
+        "two-footed rabbit hop: crouch, launch, tucked airborne apex, landing",
     ),
 )
 
@@ -1414,9 +2119,101 @@ def chair_base_pose() -> dict[str, BonePose]:
     }
 
 
+def kettle_base_pose() -> dict[str, BonePose]:
+    """Low stout stance: pelvis tipped back under the belly, head sunk.
+
+    The arms are pushed outward by the body mass rather than swung, and both
+    knees stay softly loaded so the walk can stay short and fast.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(-7.0, 0.0, 0.0), location_m=(0, 0.010, -0.030)),
+        "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-11.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(-4.0, -3.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(-4.0, 3.0, -6.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(9.0, 7.0, 34.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(9.0, -7.0, -34.0)),
+        "forearm.L": BonePose(rotation_degrees=(-26.0, 5.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-26.0, -5.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 2.0)),
+        "hand.R": BonePose(rotation_degrees=(6.0, 4.0, -2.0)),
+        "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+    }
+
+
+def long_arm_base_pose() -> dict[str, BonePose]:
+    """Narrow hanging stance with the shoulders pulled up around the head.
+
+    The arms are brought down out of the A-pose on the upper arm, then the
+    forearm counter-rotates so the long hanging segment ends near vertical
+    beside the thigh rather than swinging across the body.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0.004, -0.008)),
+        "spine": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -2.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 2.0, -6.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(0.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(0.0, -4.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(0.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(0.0, 0.0, 18.0)),
+        "thigh.L": BonePose(rotation_degrees=(-2.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-2.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+    }
+
+
+def helmet_lamp_base_pose() -> dict[str, BonePose]:
+    """Coiled two-footed crouch with the forearms tucked like forepaws.
+
+    Both legs stay symmetrical: this walker never takes an alternating step,
+    so there is no left/right phase anywhere in its clips.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(10.0, 0.0, 0.0), location_m=(0, 0.020, -0.205)),
+        "spine": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -3.0, 7.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 3.0, -7.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(18.0, 8.0, 42.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(18.0, -8.0, -42.0)),
+        "forearm.L": BonePose(rotation_degrees=(-76.0, 6.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-76.0, -6.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+        "hand.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-58.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(88.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-32.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-58.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(88.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-32.0, 0.0, 0.0)),
+    }
+
+
 def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
     lampshade = lampshade_base_pose()
     chair = chair_base_pose()
+    kettle = kettle_base_pose()
+    long_arm = long_arm_base_pose()
+    helmet = helmet_lamp_base_pose()
     lamp_idle_left = merge_pose(lampshade, {
         "pelvis": BonePose(rotation_degrees=(11.0, 1.0, -4.0), location_m=(0, 0.025, -0.058)),
         "spine": BonePose(rotation_degrees=(19.5, 0.0, 4.5)),
@@ -1514,11 +2311,195 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "shin.R": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
     })
+    # The kettle walker keeps the belly on the pelvis and the kettle on the
+    # head, then rolls them against each other: the head's local Y first
+    # cancels the inherited pelvis roll and then overshoots the other way.
+    kettle_idle_left = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, 3.0, -1.0), location_m=(0, 0.010, -0.034)),
+        "chest": BonePose(rotation_degrees=(5.0, -1.0, 0.0)),
+        "head": BonePose(rotation_degrees=(6.0, -5.0, 0.0)),
+    })
+    kettle_idle_right = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-8.0, -3.0, 1.0), location_m=(0, 0.010, -0.026)),
+        "chest": BonePose(rotation_degrees=(3.0, 1.0, 0.0)),
+        "head": BonePose(rotation_degrees=(6.0, 5.0, 0.0)),
+    })
+    kettle_left_contact = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, 6.0, -2.0), location_m=(0, 0.010, -0.040)),
+        "chest": BonePose(rotation_degrees=(5.0, -2.0, 0.0)),
+        "head": BonePose(rotation_degrees=(7.0, -9.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-16.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(11.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(13.0, 7.0, 33.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(5.0, -7.0, -35.0)),
+    })
+    kettle_right_pass = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-7.0, 0.0, 1.0), location_m=(0, 0.010, -0.022)),
+        "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(4.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-9.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+    })
+    kettle_right_contact = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, -6.0, 2.0), location_m=(0, 0.010, -0.040)),
+        "chest": BonePose(rotation_degrees=(5.0, 2.0, 0.0)),
+        "head": BonePose(rotation_degrees=(7.0, 9.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(11.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(5.0, 7.0, 35.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(13.0, -7.0, -33.0)),
+    })
+    kettle_left_pass = merge_pose(kettle, {
+        "pelvis": BonePose(rotation_degrees=(-7.0, 0.0, -1.0), location_m=(0, 0.010, -0.022)),
+        "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-9.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(4.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    })
+    # The Long-Arm Walker's swing sits a quarter cycle behind the legs, so the
+    # arms reach their extremes on the passing poses rather than on contact.
+    # That lag is what makes the limbs read as pendulums the body is dragging
+    # rather than as an ordinary counter-swing.
+    long_idle_back = merge_pose(long_arm, {
+        "upper_arm.L": BonePose(rotation_degrees=(5.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(3.0, -4.0, -30.0)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, -3.0)),
+    })
+    long_idle_forward = merge_pose(long_arm, {
+        "upper_arm.L": BonePose(rotation_degrees=(-4.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-2.0, -4.0, -30.0)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, 2.0)),
+    })
+    long_left_contact = merge_pose(long_arm, {
+        "pelvis": BonePose(rotation_degrees=(2.0, 2.0, -1.0), location_m=(0, 0.004, -0.014)),
+        "thigh.L": BonePose(rotation_degrees=(-11.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(0.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(0.0, -4.0, -30.0)),
+    })
+    long_right_pass = merge_pose(long_arm, {
+        "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0.004, -0.004)),
+        "thigh.L": BonePose(rotation_degrees=(2.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-7.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(13.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-11.0, -4.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(4.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-4.0, 0.0, 18.0)),
+    })
+    long_right_contact = merge_pose(long_arm, {
+        "pelvis": BonePose(rotation_degrees=(2.0, -2.0, 1.0), location_m=(0, 0.004, -0.014)),
+        "thigh.L": BonePose(rotation_degrees=(8.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-11.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(0.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(0.0, -4.0, -30.0)),
+    })
+    long_left_pass = merge_pose(long_arm, {
+        "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0.004, -0.004)),
+        "thigh.L": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(2.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-11.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(13.0, -4.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-4.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(4.0, 0.0, 18.0)),
+    })
+    # The hopper is the only archetype that leaves the ground. Its cycle is
+    # crouch -> launch -> tucked apex -> reach -> crouch, and both legs stay
+    # symmetrical throughout; there is no left/right step anywhere in it.
+    helmet_idle_settle = merge_pose(helmet, {
+        "pelvis": BonePose(rotation_degrees=(11.0, 0.0, 0.0), location_m=(0, 0.020, -0.222)),
+        "head": BonePose(rotation_degrees=(-4.0, 0.0, -9.0)),
+        "thigh.L": BonePose(rotation_degrees=(-62.0, 0.0, 3.0)),
+        "thigh.R": BonePose(rotation_degrees=(-62.0, 0.0, -3.0)),
+        "shin.L": BonePose(rotation_degrees=(93.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(93.0, 0.0, 0.0)),
+    })
+    helmet_idle_scan = merge_pose(helmet, {
+        "pelvis": BonePose(rotation_degrees=(9.0, 0.0, 0.0), location_m=(0, 0.020, -0.190)),
+        "head": BonePose(rotation_degrees=(-3.0, 0.0, 10.0)),
+    })
+    helmet_launch = merge_pose(helmet, {
+        "pelvis": BonePose(rotation_degrees=(4.0, 0.0, 0.0), location_m=(0, 0.014, -0.030)),
+        "spine": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-16.0, 0.0, 3.0)),
+        "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -3.0)),
+        "shin.L": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-38.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-38.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(30.0, 8.0, 42.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(30.0, -8.0, -42.0)),
+    })
+    helmet_apex = merge_pose(helmet, {
+        "pelvis": BonePose(rotation_degrees=(14.0, 0.0, 0.0), location_m=(0, 0.020, 0.070)),
+        "spine": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        # Heels tucked up under the body, the classic airborne hop shape.
+        "thigh.L": BonePose(rotation_degrees=(-72.0, 0.0, 3.0)),
+        "thigh.R": BonePose(rotation_degrees=(-72.0, 0.0, -3.0)),
+        "shin.L": BonePose(rotation_degrees=(112.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(112.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(8.0, 8.0, 42.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(8.0, -8.0, -42.0)),
+        "forearm.L": BonePose(rotation_degrees=(-92.0, 6.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-92.0, -6.0, 14.0)),
+    })
+    helmet_reach = merge_pose(helmet, {
+        "pelvis": BonePose(rotation_degrees=(8.0, 0.0, 0.0), location_m=(0, 0.018, -0.062)),
+        "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 3.0)),
+        "thigh.R": BonePose(rotation_degrees=(-42.0, 0.0, -3.0)),
+        "shin.L": BonePose(rotation_degrees=(56.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(56.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-22.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-22.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(26.0, 8.0, 42.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(26.0, -8.0, -42.0)),
+    })
     return {
+        "HelmetLampIdle": ((0.0, helmet), (0.25, helmet_idle_settle), (0.5, helmet), (0.75, helmet_idle_scan), (1.0, helmet)),
+        "HelmetLampHop": ((0.0, helmet), (0.25, helmet_launch), (0.5, helmet_apex), (0.75, helmet_reach), (1.0, helmet)),
+        "LongArmIdle": ((0.0, long_arm), (0.25, long_idle_back), (0.5, long_arm), (0.75, long_idle_forward), (1.0, long_arm)),
+        "LongArmWalk": ((0.0, long_left_contact), (0.25, long_right_pass), (0.5, long_right_contact), (0.75, long_left_pass), (1.0, long_left_contact)),
         "LampshadeIdle": ((0.0, lampshade), (0.25, lamp_idle_left), (0.5, lampshade), (0.75, lamp_idle_right), (1.0, lampshade)),
         "LampshadeWalk": ((0.0, lamp_left_contact), (0.25, lamp_right_pass), (0.5, lamp_right_contact), (0.75, lamp_left_drag), (1.0, lamp_left_contact)),
         "ChairCarrierIdle": ((0.0, chair), (0.25, chair_idle_left), (0.5, chair), (0.75, chair_idle_right), (1.0, chair)),
         "ChairCarrierWalk": ((0.0, chair_left_contact), (0.25, chair_right_pass), (0.5, chair_right_contact), (0.75, chair_left_pass), (1.0, chair_left_contact)),
+        "KettleHatIdle": ((0.0, kettle), (0.25, kettle_idle_left), (0.5, kettle), (0.75, kettle_idle_right), (1.0, kettle)),
+        "KettleHatWalk": ((0.0, kettle_left_contact), (0.25, kettle_right_pass), (0.5, kettle_right_contact), (0.75, kettle_left_pass), (1.0, kettle_left_contact)),
     }
 
 
@@ -1608,8 +2589,15 @@ def evaluated_part_min_z(part: PartRecord, depsgraph) -> float:
 def validate_animated_grounding(
     result: BuildResult,
     actions: dict[str, bpy.types.Action],
+    archetype: ArchetypeSpec | None = None,
 ) -> dict[str, dict[str, object]]:
-    """Sample every frame against each model's real deformed footwear."""
+    """Sample every frame against each model's real deformed footwear.
+
+    Archetypes that declare `hand_clearance_m` are additionally checked for
+    hand-to-pavement travel. Footwear grounding alone cannot catch that: a
+    design whose hands hang near the ankles will happily push them through
+    the road while every sole still reports a perfect contact.
+    """
 
     scene = bpy.context.scene
     rig = result.rig
@@ -1620,11 +2608,21 @@ def validate_animated_grounding(
     }
     if any(not parts for parts in footwear.values()):
         raise RuntimeError("Grounding validation needs geometry on both foot bones")
+    hand_band = archetype.hand_clearance_m if archetype is not None else None
+    hands = [
+        part for part in result.parts
+        if part.bone in {"hand.L", "hand.R", "forearm.L", "forearm.R"}
+    ]
+    if hand_band is not None and not hands:
+        raise RuntimeError(
+            "Hand clearance validation needs geometry on the hand/forearm bones"
+        )
     reports: dict[str, dict[str, object]] = {}
     for action_name, action in actions.items():
         animation_data.action = action
         contact_gaps: list[float] = []
         lowest_samples: list[float] = []
+        hand_samples: list[float] = []
         for frame in range(round(action.frame_start), round(action.frame_end) + 1):
             scene.frame_set(frame)
             bpy.context.view_layer.update()
@@ -1635,26 +2633,115 @@ def validate_animated_grounding(
             ]
             lowest_samples.append(min(foot_minima))
             contact_gaps.append(min(abs(value) for value in foot_minima))
+            if hand_band is not None:
+                hand_samples.append(
+                    min(evaluated_part_min_z(part, depsgraph) for part in hands)
+                )
         lowest = min(lowest_samples)
         highest_contact_gap = max(contact_gaps)
+        airborne = archetype.airborne_lift_m if archetype is not None else None
         # A baked pelvis correction keeps at least one rigid sole on the
         # pavement at every exported sample without moving the gameplay root.
         if lowest < -0.002:
             raise RuntimeError(
                 f"{action_name} footwear penetrates ground at {lowest:.4f} m"
             )
-        if highest_contact_gap > 0.002:
-            raise RuntimeError(
-                f"{action_name} loses grounded contact by {highest_contact_gap:.4f} m"
-            )
-        reports[action_name] = {
+        if airborne is None:
+            if highest_contact_gap > 0.002:
+                raise RuntimeError(
+                    f"{action_name} loses grounded contact by "
+                    f"{highest_contact_gap:.4f} m"
+                )
+        else:
+            # An airborne archetype may leave the pavement, but every clip
+            # still has to touch down: a clip that never lands is drifting,
+            # not hopping.
+            lowest_contact_gap = min(contact_gaps)
+            if lowest_contact_gap > 0.002:
+                raise RuntimeError(
+                    f"{action_name} never lands; its closest sole contact is "
+                    f"{lowest_contact_gap:.4f} m"
+                )
+        report: dict[str, object] = {
             "ground_min_m": stable_float(lowest),
             "ground_max_contact_gap_m": stable_float(highest_contact_gap),
         }
+        if airborne is not None:
+            report["apex_lift_m"] = stable_float(max(lowest_samples))
+        if hand_band is not None:
+            floor, ceiling = hand_band
+            closest_hand = min(hand_samples)
+            if closest_hand < floor:
+                raise RuntimeError(
+                    f"{action_name} hands reach {closest_hand:.4f} m, below the "
+                    f"{floor:.3f} m pavement clearance floor"
+                )
+            if closest_hand > ceiling:
+                raise RuntimeError(
+                    f"{action_name} hands stay {closest_hand:.4f} m up; the design "
+                    f"requires them within {ceiling:.3f} m of the pavement"
+                )
+            report["hand_min_clearance_m"] = stable_float(closest_hand)
+        reports[action_name] = report
     animation_data.action = None
     scene.frame_set(0)
     reset_pose(rig)
     return reports
+
+
+def bake_constant_pelvis_offset(
+    result: BuildResult,
+    actions: dict[str, bpy.types.Action],
+) -> None:
+    """Lift each airborne clip by one constant offset, not per frame.
+
+    An airborne clip must keep its arc. Correcting the pelvis frame by frame
+    would pin the lowest sole to the pavement on every sample and silently
+    flatten the hop into a shuffle, so the whole clip is raised by the single
+    offset that grounds its lowest frame.
+    """
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    footwear = [part for part in result.parts if part.bone in {"foot.L", "foot.R"}]
+    if not footwear:
+        raise RuntimeError("Grounding bake needs footwear geometry")
+    for action in actions.values():
+        animation_data.action = action
+        frames = list(range(round(action.frame_start), round(action.frame_end) + 1))
+        authored: dict[int, float] = {}
+        for frame in frames:
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            authored[frame] = min(
+                evaluated_part_min_z(part, depsgraph) for part in footwear
+            )
+        correction = -min(authored.values())
+        # Inserting a key at frame N changes how neighbouring frames evaluate,
+        # so each frame is driven to its own absolute target instead of having
+        # a fixed delta added. Two passes settle the residual.
+        for _ in range(2):
+            for frame in frames:
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                current = min(
+                    evaluated_part_min_z(part, depsgraph) for part in footwear
+                )
+                pelvis = rig.pose.bones["pelvis"]
+                pose_matrix = pelvis.matrix.copy()
+                pose_matrix.translation.z += authored[frame] + correction - current
+                pelvis.matrix = pose_matrix
+                pelvis.keyframe_insert("location", frame=frame, group="pelvis")
+            for curve in iter_action_fcurves(action):
+                if curve.data_path == 'pose.bones["pelvis"].location':
+                    for keyframe in curve.keyframe_points:
+                        keyframe.interpolation = "LINEAR"
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
 
 
 def bake_grounded_pelvis(
@@ -1704,6 +2791,120 @@ def bake_grounded_pelvis(
     animation_data.action = None
     scene.frame_set(0)
     reset_pose(rig)
+
+
+def actions_for_archetype(spec: ArchetypeSpec) -> tuple[ActionSpec, ...]:
+    return tuple(item for item in ACTION_SPECS if item.archetype == spec.design_id)
+
+
+def capture_pelvis_track(action: bpy.types.Action) -> list[tuple[int, tuple[float, float, float]]]:
+    """Read the baked pelvis location channel as plain per-frame data.
+
+    Every archetype is built in its own factory-reset scene, so a baked
+    Action cannot survive until the shared library is assembled. Capturing
+    the local pelvis basis is enough to reproduce the bake exactly, because
+    the rest of the pose comes from the same deterministic `animation_keys`.
+    """
+
+    curves = {
+        curve.array_index: curve
+        for curve in iter_action_fcurves(action)
+        if curve.data_path == 'pose.bones["pelvis"].location'
+    }
+    if not curves:
+        raise RuntimeError(f"{action.name} has no baked pelvis location channel")
+    frames = sorted(
+        {
+            round(keyframe.co.x)
+            for curve in curves.values()
+            for keyframe in curve.keyframe_points
+        }
+    )
+    return [
+        (
+            frame,
+            tuple(
+                stable_float(curves[axis].evaluate(frame)) if axis in curves else 0.0
+                for axis in range(3)
+            ),
+        )
+        for frame in frames
+    ]
+
+
+def apply_pelvis_track(
+    rig: bpy.types.Object,
+    action: bpy.types.Action,
+    track: Sequence[tuple[int, tuple[float, float, float]]],
+) -> None:
+    """Re-key a captured pelvis bake onto a freshly authored Action."""
+
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    animation_data.action = action
+    pelvis = rig.pose.bones["pelvis"]
+    for frame, location in track:
+        scene.frame_set(frame)
+        pelvis.location = location
+        pelvis.keyframe_insert("location", frame=frame, group="pelvis")
+    for curve in iter_action_fcurves(action):
+        if curve.data_path == 'pose.bones["pelvis"].location':
+            for keyframe in curve.keyframe_points:
+                keyframe.interpolation = "LINEAR"
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
+
+
+def ground_actions_per_archetype(
+    keys: dict[str, tuple[tuple[float, dict[str, BonePose]], ...]],
+) -> tuple[dict[str, list[tuple[int, tuple[float, float, float]]]], dict[str, dict[str, object]]]:
+    """Bake and verify every clip against its own archetype's footwear.
+
+    A clip grounded against another design's boots is not grounded at all:
+    each archetype owns a different sole height, length and deformation, so
+    the pelvis correction and the contact proof must both come from the model
+    that actually plays the clip.
+    """
+
+    pelvis_tracks: dict[str, list[tuple[int, tuple[float, float, float]]]] = {}
+    grounding: dict[str, dict[str, object]] = {}
+    for spec in ARCHETYPES.values():
+        owned = actions_for_archetype(spec)
+        if not owned:
+            raise RuntimeError(f"{spec.design_id} owns no locomotion Actions")
+        result = PedestrianBuilder(spec).build()
+        actions = {
+            action_spec.name: create_action(result.rig, action_spec, keys[action_spec.name])
+            for action_spec in owned
+        }
+        if spec.airborne_lift_m is None:
+            bake_grounded_pelvis(result, actions)
+        else:
+            bake_constant_pelvis_offset(result, actions)
+        reports = validate_animated_grounding(result, actions, spec)
+        grounding.update(reports)
+        if spec.airborne_lift_m is not None:
+            floor, ceiling = spec.airborne_lift_m
+            apex = max(
+                float(report.get("apex_lift_m", 0.0)) for report in reports.values()
+            )
+            if not floor <= apex <= ceiling:
+                raise RuntimeError(
+                    f"{spec.design_id} reaches a {apex:.4f} m apex; the design "
+                    f"requires {floor:.3f}-{ceiling:.3f} m in at least one clip"
+                )
+            print(f"  airborne {spec.design_id}: {apex:.3f} m apex lift")
+        for name, action in actions.items():
+            pelvis_tracks[name] = capture_pelvis_track(action)
+        print(
+            f"  grounded {spec.design_id}: "
+            f"{', '.join(sorted(actions))} against its own footwear"
+        )
+    missing = [spec.name for spec in ACTION_SPECS if spec.name not in pelvis_tracks]
+    if missing:
+        raise RuntimeError(f"Clips never grounded against an archetype: {missing}")
+    return pelvis_tracks, grounding
 
 
 def export_animation_fbx(path: Path, result: BuildResult) -> None:
@@ -1781,31 +2982,50 @@ def setup_review_stage(result: BuildResult) -> tuple[bpy.types.Object, bpy.types
     return camera, ground
 
 
+TILE_WIDTH = 320
+TILE_HEIGHT = 400
+SHEET_COLUMNS = 3
+
+
+def contact_sheet_samples() -> tuple[tuple[str, str, int], ...]:
+    """One row per archetype: idle plus two opposite walk phases."""
+
+    samples: list[tuple[str, str, int]] = []
+    for key, spec in ARCHETYPES.items():
+        walk = next(
+            item for item in ACTION_SPECS if item.name == spec.walk_clip
+        )
+        samples.append((key, spec.idle_clip, 0))
+        samples.append((key, spec.walk_clip, 0))
+        samples.append((key, spec.walk_clip, round(walk.frame_end * 0.5)))
+    return tuple(samples)
+
+
 def render_animation_contact_sheet(
     path: Path,
     source_dir: Path,
 ) -> None:
-    """Render idle plus two opposite walk phases for both archetypes."""
+    """Render one review row per archetype into a single contact sheet."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
     tiles: list[Path] = []
-    samples = (
-        ("lampshade", "LampshadeIdle", 0),
-        ("lampshade", "LampshadeWalk", 0),
-        ("lampshade", "LampshadeWalk", 15),
-        ("chair_carrier", "ChairCarrierIdle", 0),
-        ("chair_carrier", "ChairCarrierWalk", 0),
-        ("chair_carrier", "ChairCarrierWalk", 12),
-    )
+    samples = contact_sheet_samples()
+    keys = animation_keys()
     for index, (archetype_key, action_name, frame) in enumerate(samples):
         # Rebuilding swaps the actual production meshes while the action poses
         # are re-authored deterministically from the same source definitions.
-        result = PedestrianBuilder(ARCHETYPES[archetype_key]).build()
+        # Only the archetype's own clips are baked, so the review frame shows
+        # the same grounding the exported library carries.
+        spec = ARCHETYPES[archetype_key]
+        result = PedestrianBuilder(spec).build()
         local_actions = {
-            spec.name: create_action(result.rig, spec, animation_keys()[spec.name])
-            for spec in ACTION_SPECS
+            action_spec.name: create_action(result.rig, action_spec, keys[action_spec.name])
+            for action_spec in actions_for_archetype(spec)
         }
-        bake_grounded_pelvis(result, local_actions)
+        if spec.airborne_lift_m is None:
+            bake_grounded_pelvis(result, local_actions)
+        else:
+            bake_constant_pelvis_offset(result, local_actions)
         setup_review_stage(result)
         result.rig.animation_data_create().action = local_actions[action_name]
         bpy.context.scene.frame_set(frame)
@@ -1815,18 +3035,29 @@ def render_animation_contact_sheet(
         bpy.ops.render.render(write_still=True)
         tiles.append(tile)
 
-    sheet = bpy.data.images.new("CityPedestrianLocomotionContactSheet", 960, 800)
-    pixels = [0.008, 0.012, 0.010, 1.0] * (960 * 800)
+    rows = math.ceil(len(tiles) / SHEET_COLUMNS)
+    width = SHEET_COLUMNS * TILE_WIDTH
+    height = rows * TILE_HEIGHT
+    sheet = bpy.data.images.new(
+        "CityPedestrianLocomotionContactSheet", width, height
+    )
+    pixels = [0.008, 0.012, 0.010, 1.0] * (width * height)
     for index, tile in enumerate(tiles):
         tile_image = bpy.data.images.load(str(tile), check_existing=False)
         tile_pixels = list(tile_image.pixels)
-        column = index % 3
-        row = index // 3
-        destination_y = (1 - row) * 400
-        for y in range(400):
-            source_start = y * 320 * 4
-            destination_start = ((destination_y + y) * 960 + column * 320) * 4
-            pixels[destination_start : destination_start + 320 * 4] = tile_pixels[source_start : source_start + 320 * 4]
+        column = index % SHEET_COLUMNS
+        row = index // SHEET_COLUMNS
+        # Blender image rows run bottom-up, so the first archetype row has to
+        # land at the top of the sheet.
+        destination_y = (rows - 1 - row) * TILE_HEIGHT
+        for y in range(TILE_HEIGHT):
+            source_start = y * TILE_WIDTH * 4
+            destination_start = (
+                (destination_y + y) * width + column * TILE_WIDTH
+            ) * 4
+            pixels[destination_start : destination_start + TILE_WIDTH * 4] = (
+                tile_pixels[source_start : source_start + TILE_WIDTH * 4]
+            )
         bpy.data.images.remove(tile_image)
     sheet.pixels = pixels
     sheet.filepath_raw = str(path)
@@ -1840,17 +3071,19 @@ def render_animation_contact_sheet(
 
 
 def build_animation_library(config: argparse.Namespace) -> None:
-    # Reuse a freshly validated canonical rig, remove every model mesh, then
-    # author and export only ROOT_Player + RIG_Player + bone Actions.
+    # Ground every clip against the model that actually plays it, then reuse a
+    # freshly validated canonical rig, remove every model mesh, and author and
+    # export only ROOT_Player + RIG_Player + bone Actions.
+    keys = animation_keys()
+    pelvis_tracks, grounding = ground_actions_per_archetype(keys)
     result = PedestrianBuilder(ARCHETYPES["lampshade"]).build()
     model_parts = list(result.parts)
-    keys = animation_keys()
     actions = {
         spec.name: create_action(result.rig, spec, keys[spec.name])
         for spec in ACTION_SPECS
     }
-    bake_grounded_pelvis(result, actions)
-    grounding = validate_animated_grounding(result, actions)
+    for name, action in actions.items():
+        apply_pelvis_track(result.rig, action, pelvis_tracks[name])
     for part in model_parts:
         bpy.data.objects.remove(part.obj, do_unlink=True)
     result.parts.clear()

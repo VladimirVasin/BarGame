@@ -1,13 +1,13 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "2.0.0",
+  "generator_version": "3.0.0",
   "blender_version": "5.0.1",
   "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
   "bone_count": 31,
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 4,
+  "clip_count": 10,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -88,7 +88,131 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "KettleHatIdle",
+      "archetype": "kettle_hat_walker_v1",
+      "duration_seconds": 1.75,
+      "frame_start": 0,
+      "frame_end": 42,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "low stout stance, belly forward, head sunk under the kettle",
+      "gait": "slow settling weight roll with counter-phased belly and kettle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "KettleHatWalk",
+      "archetype": "kettle_hat_walker_v1",
+      "duration_seconds": 0.75,
+      "frame_start": 0,
+      "frame_end": 18,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "low stout stance, belly forward, head sunk under the kettle",
+      "gait": "fast short steps with a constant waddle and counter-phased kettle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "LongArmIdle",
+      "archetype": "long_arm_walker_v1",
+      "duration_seconds": 2.5,
+      "frame_start": 0,
+      "frame_end": 60,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "narrow still body, raised shoulders, arms hanging to the ankles",
+      "gait": "dead-still torso under a slow residual arm sway that never settles",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "hand_min_clearance_m": 0.106983
+    },
+    {
+      "name": "LongArmWalk",
+      "archetype": "long_arm_walker_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "narrow still body, raised shoulders, arms hanging to the ankles",
+      "gait": "slow shuffle with barely lifted feet and a lagging pendulum swing",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "hand_min_clearance_m": 0.106255
+    },
+    {
+      "name": "HelmetLampIdle",
+      "archetype": "helmet_lamp_hopper_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "coiled crouch on both hind feet, forearms tucked like forepaws",
+      "gait": "settled twitching crouch while the helmet beam sweeps side to side",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.009745,
+      "apex_lift_m": 0.009745
+    },
+    {
+      "name": "HelmetLampHop",
+      "archetype": "helmet_lamp_hopper_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "coiled crouch on both hind feet, forearms tucked like forepaws",
+      "gait": "two-footed rabbit hop: crouch, launch, tucked airborne apex, landing",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.240901,
+      "apex_lift_m": 0.240901
     }
   ],
-  "build_signature": "104e720e15699da492ef04436c182d99b500f9d564698bf722385ff280c040a7"
+  "build_signature": "64c2c77a6160a943db57ff178ffa9b51f4fcfbbb15bc0b927eb350b0ee976d64"
 }

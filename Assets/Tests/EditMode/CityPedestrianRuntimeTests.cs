@@ -13,6 +13,15 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Models/CityPedestrian3D.fbx";
         private const string ChairCarrierModelPath =
             "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.fbx";
+        private const string KettleHatModelPath =
+            "Assets/Pedestrians/Models/KettleHatPedestrian3D.fbx";
+        private const string LongArmModelPath =
+            "Assets/Pedestrians/Models/LongArmPedestrian3D.fbx";
+        private const string HelmetLampModelPath =
+            "Assets/Pedestrians/Models/HelmetLampPedestrian3D.fbx";
+        private const string LocomotionManifestPath =
+            "Assets/Pedestrians/Animations/" +
+            "CityPedestrianLocomotion.json";
         private const string LocomotionAnimationPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.fbx";
@@ -37,6 +46,30 @@ namespace BarPromenade.Tests.EditMode
             35,
             "ChairCarrierIdle",
             "ChairCarrierWalk")]
+        [TestCase(
+            KettleHatModelPath,
+            CityPedestrianResources.KettleHatPrefabResourcePath,
+            CityPedestrianResources.KettleHatDesignId,
+            1356,
+            42,
+            "KettleHatIdle",
+            "KettleHatWalk")]
+        [TestCase(
+            LongArmModelPath,
+            CityPedestrianResources.LongArmPrefabResourcePath,
+            CityPedestrianResources.LongArmDesignId,
+            1044,
+            35,
+            "LongArmIdle",
+            "LongArmWalk")]
+        [TestCase(
+            HelmetLampModelPath,
+            CityPedestrianResources.HelmetLampPrefabResourcePath,
+            CityPedestrianResources.HelmetLampDesignId,
+            1084,
+            37,
+            "HelmetLampIdle",
+            "HelmetLampHop")]
         public void ProductionPrefabs_UseCustomLocomotionAndGroundedWalk(
             string modelPath,
             string prefabResourcePath,
@@ -95,21 +128,32 @@ namespace BarPromenade.Tests.EditMode
                         StringComparison.Ordinal))
                     .OrderBy(clip => clip.name, StringComparer.Ordinal)
                     .ToArray();
+            // One shared animation-only FBX carries an idle and a walk for
+            // every registered design.
             CollectionAssert.AreEquivalent(
                 new[]
                 {
                     "ChairCarrierIdle",
                     "ChairCarrierWalk",
+                    "KettleHatIdle",
+                    "KettleHatWalk",
                     "LampshadeIdle",
-                    "LampshadeWalk"
+                    "LampshadeWalk",
+                    "LongArmIdle",
+                    "LongArmWalk",
+                    "HelmetLampIdle",
+                    "HelmetLampHop"
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
-            Assert.That(locomotionClips, Has.Length.EqualTo(4));
+            Assert.That(
+                locomotionClips,
+                Has.Length.EqualTo(
+                    CityPedestrianResources.Archetypes.Count * 2));
             Assert.That(
                 locomotionClips.All(clip => clip.isLooping),
                 Is.True,
-                "All four custom pedestrian locomotion clips must loop.");
+                "Every custom pedestrian locomotion clip must loop.");
 
             GameObject pedestrianPrefab =
                 Resources.Load<GameObject>(prefabResourcePath);
@@ -166,7 +210,73 @@ namespace BarPromenade.Tests.EditMode
                 pedestrianPrefab,
                 registry,
                 sharedMaterial);
-            AssertWalkSolesStayGrounded(pedestrianPrefab);
+            AssertSolePresentationWiring(pedestrianPrefab);
+            AssertLocomotionManifestContract(
+                designId,
+                idleClipName,
+                walkClipName);
+        }
+
+        [Test]
+        public void Catalog_OffersEveryRegisteredDesignToSpawnSelection()
+        {
+            // The director pools exactly what LoadPrefabs returns, so proving
+            // the catalog and that array agree one-to-one is what makes each
+            // archetype reachable by the spawn seed.
+            IReadOnlyList<CityPedestrianArchetype> archetypes =
+                CityPedestrianResources.Archetypes;
+            Assert.That(
+                archetypes.Select(archetype => archetype.DesignId).ToArray(),
+                Is.EqualTo(
+                    new[]
+                    {
+                        CityPedestrianResources.LampshadeDesignId,
+                        CityPedestrianResources.ChairCarrierDesignId,
+                        CityPedestrianResources.KettleHatDesignId,
+                        CityPedestrianResources.LongArmDesignId,
+                        CityPedestrianResources.HelmetLampDesignId
+                    }),
+                "The stable catalog order is part of the deterministic " +
+                "spawn contract.");
+
+            GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
+            Assert.That(prefabs.Length, Is.EqualTo(archetypes.Count));
+            for (int index = 0; index < prefabs.Length; index++)
+            {
+                Assert.That(prefabs[index], Is.Not.Null);
+                CityPedestrianAssetRegistry registry =
+                    prefabs[index]
+                        .GetComponent<CityPedestrianAssetRegistry>();
+                Assert.That(
+                    registry,
+                    Is.Not.Null,
+                    $"'{archetypes[index].DesignId}' has no asset registry.");
+                Assert.That(
+                    registry.DesignId,
+                    Is.EqualTo(archetypes[index].DesignId),
+                    "Catalog order must match the loaded prefab order.");
+                Assert.That(registry.IdleClip, Is.Not.Null);
+                Assert.That(registry.WalkClip, Is.Not.Null);
+                Assert.That(
+                    NormalizeAnimationClipName(registry.IdleClip.name),
+                    Is.Not.EqualTo(
+                        NormalizeAnimationClipName(registry.WalkClip.name)));
+            }
+
+            Assert.That(
+                prefabs
+                    .Select(prefab => prefab
+                        .GetComponent<CityPedestrianAssetRegistry>()
+                        .IdleClip.name)
+                    .Distinct(StringComparer.Ordinal)
+                    .Count(),
+                Is.EqualTo(prefabs.Length),
+                "Every archetype must bind its own idle clip.");
+            Assert.That(
+                CityPedestrianDirector.MaximumActiveModels,
+                Is.LessThan(archetypes.Count),
+                "The pool is intentionally larger than the active limit so " +
+                "repeat encounters can vary the visible pair.");
         }
 
         [Test]
@@ -319,9 +429,11 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     director.Count,
                     Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
+                // One pooled presentation per registered design, which is now
+                // larger than the number of simultaneously active slots.
                 Assert.That(
                     director.PoolCapacity,
-                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
+                    Is.EqualTo(CityPedestrianResources.Archetypes.Count));
                 Assert.That(director.ActiveCount, Is.Zero);
 
                 float initialDelay = director.TimeUntilNextSpawn;
@@ -361,14 +473,23 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianActor[] active = director.Actors
                     .Where(candidate => candidate.IsSpawned)
                     .ToArray();
-                CollectionAssert.AreEquivalent(
+                // With three registered designs and two slots the active pair
+                // is a subset of the catalog rather than all of it, but the
+                // two must still never repeat one design.
+                Assert.That(
+                    active.Select(candidate => candidate.DesignId)
+                        .Distinct(StringComparer.Ordinal)
+                        .Count(),
+                    Is.EqualTo(active.Length),
+                    "The active production slots must use distinct " +
+                    "registered pedestrian designs.");
+                CollectionAssert.IsSubsetOf(
+                    active.Select(candidate => candidate.DesignId)
+                        .ToArray(),
                     CityPedestrianResources.Archetypes
                         .Select(archetype => archetype.DesignId)
                         .ToArray(),
-                    active.Select(candidate => candidate.DesignId)
-                        .ToArray(),
-                    "The two active production slots must use distinct " +
-                    "registered pedestrian designs.");
+                    "Every active design must come from the shared catalog.");
                 for (int index = 0; index < active.Length; index++)
                 {
                     Assert.That(
@@ -1000,9 +1121,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 prefab.GetComponentsInChildren<Rigidbody>(true),
                 Is.Empty);
-            Assert.That(
-                prefab.GetComponentsInChildren<Light>(true),
-                Is.Empty);
+            // A walker is light-free unless it registers exactly one worn
+            // lamp, which must stay a bounded shadowless Spot on the head.
+            Light[] lights = prefab.GetComponentsInChildren<Light>(true);
+            if (registry.HeadLamp == null)
+            {
+                Assert.That(lights, Is.Empty);
+            }
+            else
+            {
+                Assert.That(lights, Has.Length.EqualTo(1));
+                Assert.That(lights[0], Is.SameAs(registry.HeadLamp));
+                Assert.That(
+                    registry.HeadLamp.type,
+                    Is.EqualTo(LightType.Spot));
+                Assert.That(
+                    registry.HeadLamp.shadows,
+                    Is.EqualTo(LightShadows.None));
+                Assert.That(
+                    registry.HeadLamp.range,
+                    Is.LessThanOrEqualTo(8f));
+                Assert.That(
+                    registry.HeadLamp.transform.parent,
+                    Is.SameAs(registry.HeadAnchor),
+                    "The worn lamp must follow the animated head bone.");
+            }
+
             Assert.That(
                 prefab.GetComponentsInChildren<MonoBehaviour>(true)
                     .Any(behaviour => behaviour is IInteractable),
@@ -1062,8 +1206,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(0f).Within(0.0001f));
         }
 
-        private static void AssertWalkSolesStayGrounded(GameObject prefab)
+        private static void AssertSolePresentationWiring(GameObject prefab)
         {
+            // Deliberately narrow. A PlayableGraph writes no transforms in a
+            // batch-mode EditMode run and AnimationClip.SampleAnimation drives
+            // the rig on a different path than the runtime Avatar does, so a
+            // motion claim made here would be either inert or misleading.
+            // Grounding and hop height are proved instead by the deterministic
+            // Blender validator and asserted from its shipped manifest in
+            // AssertLocomotionManifestContract.
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             CityPedestrianPresentation presentation = null;
             try
@@ -1073,34 +1224,103 @@ namespace BarPromenade.Tests.EditMode
                 presentation =
                     instance.AddComponent<CityPedestrianPresentation>();
                 presentation.Initialize(registry);
-                float animationSpeed = 0.91f;
-                if (CityPedestrianResources.TryGetArchetype(
-                        registry.DesignId,
-                        out CityPedestrianArchetype archetype))
-                {
-                    animationSpeed =
-                        (archetype.MinimumAnimationSpeed +
-                         archetype.MaximumAnimationSpeed) * 0.5f;
-                }
-
-                float neutralHeight = GetLowestSoleHeight(registry);
                 presentation.SetMoving(true);
-                for (int phase = 0; phase < 12; phase++)
-                {
-                    presentation.ConfigureCycle(
-                        animationSpeed,
-                        phase / 12f);
-                    Assert.That(
-                        GetLowestSoleHeight(registry),
-                        Is.EqualTo(neutralHeight).Within(0.025f),
-                        $"Walk phase {phase}/12 lost the grounded sole.");
-                }
+                Assert.That(presentation.WalkWeight, Is.EqualTo(1f));
+                Assert.That(
+                    float.IsFinite(GetLowestSoleHeight(registry)),
+                    Is.True,
+                    "The design exposes no sole renderer for grounding.");
+                presentation.SetMoving(false);
+                Assert.That(presentation.WalkWeight, Is.EqualTo(0f));
             }
             finally
             {
                 presentation?.Shutdown();
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        private static void AssertLocomotionManifestContract(
+            string designId,
+            string idleClipName,
+            string walkClipName)
+        {
+            // The generator writes proven per-frame numbers into this manifest
+            // and it ships beside the FBX, so asserting it here is a real
+            // check on the data Unity actually imports.
+            var manifest = JsonUtility.FromJson<LocomotionManifest>(
+                System.IO.File.ReadAllText(LocomotionManifestPath));
+            Assert.That(manifest, Is.Not.Null);
+            Assert.That(manifest.clips, Is.Not.Null);
+
+            LocomotionClip[] owned = manifest.clips
+                .Where(clip => string.Equals(
+                    clip.archetype,
+                    designId,
+                    StringComparison.Ordinal))
+                .ToArray();
+            CollectionAssert.AreEquivalent(
+                new[] { idleClipName, walkClipName },
+                owned.Select(clip => clip.name).ToArray(),
+                "Each design owns exactly its two registered clips.");
+
+            bool airborne = CityPedestrianResources.TryGetArchetype(
+                    designId,
+                    out _) &&
+                Resources.Load<GameObject>(
+                        ArchetypeResourcePath(designId))
+                    .GetComponent<CityPedestrianAssetRegistry>()
+                    .PreservesAirborneMotion;
+            for (int index = 0; index < owned.Length; index++)
+            {
+                LocomotionClip clip = owned[index];
+                Assert.That(
+                    clip.ground_min_m,
+                    Is.GreaterThanOrEqualTo(-0.002f),
+                    $"{clip.name} penetrates the pavement.");
+                if (!airborne)
+                {
+                    Assert.That(
+                        clip.ground_max_contact_gap_m,
+                        Is.LessThanOrEqualTo(0.002f),
+                        $"{clip.name} loses its grounded sole.");
+                }
+            }
+
+            if (!airborne)
+            {
+                return;
+            }
+
+            float apex = owned.Max(clip => clip.apex_lift_m);
+            Assert.That(
+                apex,
+                Is.InRange(0.08f, 0.40f),
+                "An airborne design must ship a real hop, not a shuffle.");
+        }
+
+        private static string ArchetypeResourcePath(string designId)
+        {
+            CityPedestrianResources.TryGetArchetype(
+                designId,
+                out CityPedestrianArchetype archetype);
+            return archetype.PrefabResourcePath;
+        }
+
+        [Serializable]
+        private sealed class LocomotionManifest
+        {
+            public LocomotionClip[] clips;
+        }
+
+        [Serializable]
+        private sealed class LocomotionClip
+        {
+            public string name;
+            public string archetype;
+            public float ground_min_m;
+            public float ground_max_contact_gap_m;
+            public float apex_lift_m;
         }
 
         private static float GetLowestSoleHeight(

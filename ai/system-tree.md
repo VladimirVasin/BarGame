@@ -71,6 +71,9 @@ Assets/
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
       ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
+      KettleHatPedestrian3D.prefab      pooled stout Kettle Hat Walker presentation
+      LongArmPedestrian3D.prefab        pooled narrow Long-Arm Walker presentation
+      HelmetLampPedestrian3D.prefab     pooled hopping miner with one worn Spot
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
@@ -107,9 +110,15 @@ Assets/
       CityPedestrian3D.json             deterministic geometry/rig manifest
       ChairCarrierPedestrian3D.fbx      compatible Generic chair-bearer model
       ChairCarrierPedestrian3D.json     deterministic geometry/rig manifest
+      KettleHatPedestrian3D.fbx         compatible Generic stout kettle-hat model
+      KettleHatPedestrian3D.json        deterministic geometry/rig manifest
+      LongArmPedestrian3D.fbx           compatible Generic narrow long-arm model
+      LongArmPedestrian3D.json          deterministic geometry/rig manifest
+      HelmetLampPedestrian3D.fbx        compatible Generic hopping miner model
+      HelmetLampPedestrian3D.json       deterministic geometry/rig manifest
     Animations/
-      CityPedestrianLocomotion.fbx      four dedicated in-place archetype loops
-      CityPedestrianLocomotion.json     deterministic gait/contact manifest
+      CityPedestrianLocomotion.fbx      ten dedicated in-place archetype loops
+      CityPedestrianLocomotion.json     per-archetype gait/contact/clearance/apex manifest
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -375,7 +384,7 @@ ArtSource/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
-    Blender/                    two model .blends/previews + locomotion contact sheet
+    Blender/                    five model .blends/previews + per-archetype-row locomotion contact sheet
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     Blender/                    production .blend, transparent preview and authoring notes

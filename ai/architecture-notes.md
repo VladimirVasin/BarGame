@@ -284,12 +284,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   never reverse at artificial route endpoints: they continue through graph turns,
   avoid immediate backtracking and make one seeded 50% cross/don't-cross
   choice when passing each zebra entry. An explicit stable catalog owns one
-  pooled `1.75 m` Lampshade Walker and one Chair Carrier presentation. Each
-  copies the production Generic Avatar contract while directly referencing its
-  own looping in-place `Idle` and `Walk` clips from the animation-only
-  pedestrian locomotion FBX. Lampshade clips preserve a hunched C-curve and
-  short asymmetric step in both states; Chair Carrier clips balance the
-  inverted cafe chair with an upright, precise high-knee gait. The director
+  pooled `1.75 m` presentation per design: Lampshade Walker, Chair Carrier,
+  Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper. Each copies the production Generic
+  Avatar contract while
+  directly referencing its own looping in-place `Idle` and `Walk` clips from the
+  animation-only pedestrian locomotion FBX. Lampshade clips preserve a hunched
+  C-curve and short asymmetric step in both states; Chair Carrier clips balance
+  the inverted cafe chair with an upright, precise high-knee gait; Kettle Hat
+  clips keep a low stout stance with fast short steps and a constant waddle
+  whose belly and kettle roll against each other; Long-Arm clips hold a narrow
+  still torso over a slow shuffle while the ground-reaching forearms swing a
+  quarter cycle behind the legs and keep a residual sway through idle; Helmet
+  Lamp clips take no step at all and hop on both hind feet through crouch,
+  launch, a tucked airborne apex and landing. Every
+  clip is baked and verified against its own archetype's footwear rather than
+  a shared model, and a design may declare an animated hand-to-pavement
+  clearance band that footwear grounding alone cannot express.
+  **Accepted — Declared pedestrian exceptions over blanket bans:** a walker
+  may leave the pavement or wear one working light, but only by declaring it.
+  An airborne archetype declares an apex band; its clips receive a single
+  constant pelvis lift instead of a per-frame correction, must never penetrate
+  and must land at least once, the clip importer stops locking their root
+  height, and `CityPedestrianPresentation` stops grounding their soles every
+  frame. A lamp-bearing archetype declares exactly one shadowless Spot bounded
+  to `7.5 m` and `3.6` intensity, parented to the animated head bone; the
+  prefab validator now checks the declared count rather than forbidding lights
+  outright, so an accidental extra light still fails. The pool holds one
+  instance per design, which is what caps the worn lights in the world at one.
+  The director
   selects among free catalog presentations from the spawn seed and applies the
   selected archetype's movement/cadence range; when both day slots are active,
   their silhouettes are therefore distinct. A `0.15 s` locomotion blend avoids

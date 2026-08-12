@@ -493,6 +493,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.PedestrianPlan.Count, Is.GreaterThan(0));
             Assert.That(home.Pedestrians, Is.Not.Null);
             Assert.That(home.Pedestrians.IsInitialized, Is.True);
+            // Home shares the whole catalog through the same factory, so the
+            // balcony can show any registered design, not just the two the
+            // City happened to spawn.
+            Assert.That(
+                home.Pedestrians.PoolCapacity,
+                Is.EqualTo(CityPedestrianResources.Archetypes.Count));
             Assert.That(home.Pedestrians.isActiveAndEnabled, Is.False);
             AssertPedestriansDormant(home.Pedestrians);
 

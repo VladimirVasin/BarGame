@@ -46,12 +46,33 @@ after wide, independently randomized delays at randomly
   not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is
   limited to one slot, uses much longer random delays and retains authored
   simulation pace; a second walker already active at dusk is not culled early.
-  The presentation pool contains one Lampshade Walker and one Chair Carrier,
-  selected from a stable ordered catalog. Both copy the hero's compatible
+  The presentation pool holds one instance of every design in a stable ordered
+  catalog: a Lampshade Walker, a Chair Carrier, a Kettle Hat Walker, a
+  Long-Arm Walker and a Helmet Lamp Hopper. The pool is more than twice the
+  two active slots, so a repeat encounter can show a different pair. All five
+  copy the hero's compatible
   Generic Avatar but use their own looping in-place locomotion: the Lampshade
-  stays hunched through idle and walks in short uneven steps, while the upright
-  Chair Carrier uses a precise high-knee gait beneath an inverted cafe chair.
-  Home maps the same graph into the
+  stays hunched through idle and walks in short uneven steps, the upright Chair
+  Carrier uses a precise high-knee gait beneath an inverted cafe chair, the
+  stout short-legged Kettle Hat Walker waddles in fast small steps while its
+  belly and its oversized skewed enamel kettle swing against each other, and
+  the narrow Long-Arm Walker — the only design whose strangeness is the body
+  itself rather than a worn object — shuffles slowly on barely lifted feet
+  while bare forearms reaching the pavement swing a quarter cycle behind the
+  legs, and the Helmet Lamp Hopper crosses ground in two-footed rabbit bounds
+  on `0.46 m` hind feet with a `0.24 m` apex, wearing the one working light
+  the pedestrian contract allows: a single always-on shadowless `7.5 m` Spot
+  on its miner's helmet. Exactly one hopper exists in the pool, so at most one
+  such light exists in the world. Every walker keeps the shared `1.75 m`
+  envelope and fixed collider:
+  the kettle design is short by proportion, with the human mass ending near
+  `1.40 m` and the kettle owning the rest. Each clip is grounded against its
+  own archetype's footwear, and designs whose hands travel near the road also
+  declare a validated hand-to-pavement clearance band. An airborne design
+  instead declares an apex band: its clips are lifted by one constant offset
+  rather than pinned per frame, must never penetrate, must land at least once,
+  and the runtime stops correcting its soles so the arc survives. Home maps the same
+  graph into the
   bounded street view below the balcony. Its two slots are enabled only while
   the Balcony camera shot is active; returning indoors releases them as a scene
   boundary.

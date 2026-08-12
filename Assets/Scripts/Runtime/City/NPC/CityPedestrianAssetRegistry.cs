@@ -95,6 +95,8 @@ namespace BarPromenade
         [SerializeField] private string designId;
         [SerializeField] private string buildSignature;
         [SerializeField] private int paletteVariant;
+        [SerializeField] private Light headLamp;
+        [SerializeField] private bool preservesAirborneMotion;
 
         public Animator Animator => animator;
         public Transform ModelRoot => modelRoot;
@@ -116,6 +118,19 @@ namespace BarPromenade
         public string BuildSignature => buildSignature;
         public int PaletteVariant => paletteVariant;
 
+        /// <summary>
+        /// The single shadowless Spot a design may carry as worn equipment,
+        /// or <c>null</c> for every ordinary walker.
+        /// </summary>
+        public Light HeadLamp => headLamp;
+
+        /// <summary>
+        /// True when the design's clips deliberately leave the pavement. The
+        /// presentation must then stop pinning the lowest sole every frame,
+        /// which would otherwise flatten the authored arc.
+        /// </summary>
+        public bool PreservesAirborneMotion => preservesAirborneMotion;
+
         public static GameObject LoadPrefab()
         {
             return Resources.Load<GameObject>(PrefabResourcePath);
@@ -135,8 +150,12 @@ namespace BarPromenade
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Light configuredHeadLamp = null,
+            bool configuredPreservesAirborneMotion = false)
         {
+            headLamp = configuredHeadLamp;
+            preservesAirborneMotion = configuredPreservesAirborneMotion;
             animator = configuredAnimator;
             modelRoot = configuredModelRoot;
             renderers = configuredRenderers ?? Array.Empty<Renderer>();

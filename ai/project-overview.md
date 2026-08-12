@@ -146,14 +146,29 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
-  The pool holds one Lampshade Walker and one Chair Carrier presentation, each
-  with four material-property-block palettes. Both use the compatible Generic
-  Avatar and dedicated in-place `Idle`/`Walk` loops: the Lampshade keeps a
-  persistent hunch and uneven short step, while the chair-burdened walker stays
-  upright with a quicker high-knee gait. A seeded catalog choice fills one slot
-  per event, so two concurrent walkers have distinct silhouettes without
-  raising the two-actor cap. Home transforms that same graph into its local
-  exterior,
+  The pool holds one presentation per registered design — Lampshade Walker,
+  Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
+  each with four material-property-block palettes. All five use the compatible Generic Avatar
+  and dedicated in-place `Idle`/`Walk` loops: the Lampshade keeps a persistent
+  hunch and uneven short step, the chair-burdened walker stays upright with a
+  quicker high-knee gait, the stout Kettle Hat Walker moves at `0.90-1.02 m/s`
+  on `1.08-1.18x` clips with a constant waddle and counter-phased belly and
+  kettle, and the narrow Long-Arm Walker is the slowest at `0.72-0.84 m/s` on
+  `0.86-0.94x` clips, shuffling on barely lifted feet while its ground-reaching
+  bare forearms swing a quarter cycle behind the legs and never fully settle in
+  idle, and the Helmet Lamp Hopper is the fastest at `1.32-1.48 m/s` on
+  `0.94-1.06x` clips, never taking a step at all: it coils on `0.46 m` hind
+  feet and covers ground in two-footed bounds with a proven `0.24 m` apex. It
+  is also the only walker allowed a working light — one always-on shadowless
+  `7.5 m` Spot bolted to its miner's helmet and parented to the animated head
+  bone, capped at one instance because the pool holds a single hopper. Every
+  design keeps the shared `1.75 m` envelope and the fixed `1.7 m`
+  collider: the kettle walker's overhanging belly, tiny legs and oversized
+  skewed kettle carry its short read, because a genuinely shorter walker would
+  need its own collider parameterisation. A seeded choice among free
+  presentations fills one slot per event, so the pool is twice the two-actor
+  cap and concurrent walkers keep distinct silhouettes while repeat encounters
+  vary the pair. Home transforms that same graph into its local exterior,
   retains a bounded `100 m` fog-hidden approach context beyond the facade while
   rendering its existing `48 m` street slice, and runs the slots only while the
   Balcony shot is active;

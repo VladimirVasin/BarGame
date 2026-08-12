@@ -89,14 +89,20 @@ namespace BarPromenade.Editor
             {
                 ModelImporterClipAnimation clip = clips[index];
                 clip.name = NormalizeClipName(clip.name);
+                bool airborne =
+                    CityPedestrianAssetSetup.IsAirborneClip(clip.name);
                 clip.loopTime = true;
-                clip.loopPose = true;
                 clip.keepOriginalOrientation = true;
                 clip.keepOriginalPositionY = true;
                 clip.keepOriginalPositionXZ = true;
                 clip.lockRootRotation = true;
-                clip.lockRootHeightY = true;
                 clip.lockRootPositionXZ = true;
+                // Every ordinary walker stays pinned to the pavement, so its
+                // root height is locked. An airborne design authors its arc on
+                // the pelvis and must keep it; loop-pose normalisation is also
+                // dropped there because it would re-level the same motion.
+                clip.lockRootHeightY = !airborne;
+                clip.loopPose = !airborne;
                 if (!names.Add(clip.name))
                 {
                     throw new InvalidOperationException(
@@ -148,6 +154,18 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
+                        CityPedestrianAssetSetup.KettleHatModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.LongArmModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.HelmetLampModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
                         CityPedestrianAssetSetup.PlayerModelPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
@@ -157,6 +175,18 @@ namespace BarPromenade.Editor
                     string.Equals(
                         importedPath,
                         CityPedestrianAssetSetup.ChairCarrierManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.KettleHatManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.LongArmManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.HelmetLampManifestPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
@@ -186,6 +216,18 @@ namespace BarPromenade.Editor
                    string.Equals(
                        path,
                        CityPedestrianAssetSetup.ChairCarrierModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.KettleHatModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.LongArmModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.HelmetLampModelPath,
                        StringComparison.OrdinalIgnoreCase);
         }
 

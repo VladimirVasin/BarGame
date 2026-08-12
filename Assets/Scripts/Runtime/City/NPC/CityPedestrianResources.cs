@@ -80,10 +80,22 @@ namespace BarPromenade
             "lampshade_walker_v1";
         public const string ChairCarrierDesignId =
             "chair_carrier_v1";
+        public const string KettleHatDesignId =
+            "kettle_hat_walker_v1";
+        public const string LongArmDesignId =
+            "long_arm_walker_v1";
         public const string LampshadePrefabResourcePath =
             "Pedestrians/CityPedestrian3D";
         public const string ChairCarrierPrefabResourcePath =
             "Pedestrians/ChairCarrierPedestrian3D";
+        public const string KettleHatPrefabResourcePath =
+            "Pedestrians/KettleHatPedestrian3D";
+        public const string LongArmPrefabResourcePath =
+            "Pedestrians/LongArmPedestrian3D";
+        public const string HelmetLampDesignId =
+            "helmet_lamp_hopper_v1";
+        public const string HelmetLampPrefabResourcePath =
+            "Pedestrians/HelmetLampPedestrian3D";
 
         // Kept as the legacy single-prefab entry point.
         public const string PrefabResourcePath =
@@ -104,6 +116,34 @@ namespace BarPromenade
                 1.18f,
                 1.30f,
                 0.98f,
+                1.06f),
+            // Short fast steps: the stout walker covers less ground per stride
+            // than either taller design, so it moves slower while its shorter
+            // clips play back faster.
+            new CityPedestrianArchetype(
+                KettleHatDesignId,
+                KettleHatPrefabResourcePath,
+                0.90f,
+                1.02f,
+                1.08f,
+                1.18f),
+            // The slowest walker in the catalog: a dragging shuffle whose
+            // long clips play back slightly under authored pace.
+            new CityPedestrianArchetype(
+                LongArmDesignId,
+                LongArmPrefabResourcePath,
+                0.72f,
+                0.84f,
+                0.86f,
+                0.94f),
+            // The fastest walker: one bound covers well over a metre, so the
+            // hopper crosses ground quickly despite never taking a step.
+            new CityPedestrianArchetype(
+                HelmetLampDesignId,
+                HelmetLampPrefabResourcePath,
+                1.32f,
+                1.48f,
+                0.94f,
                 1.06f)
         };
 
