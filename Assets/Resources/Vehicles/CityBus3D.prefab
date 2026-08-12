@@ -87,6 +87,8 @@ MonoBehaviour:
   renderers:
   - {fileID: 6376342082774209517}
   - {fileID: 8380477016283072793}
+  - {fileID: 9148726304635289803}
+  - {fileID: 3098935769873734559}
   - {fileID: 8060518902111690008}
   - {fileID: 4868067729743331951}
   - {fileID: 3305516467378684132}
@@ -124,6 +126,7 @@ MonoBehaviour:
   - {fileID: 7221068596960256051}
   - {fileID: 2752549483012584387}
   - {fileID: 4088396211754975934}
+  - {fileID: 2055552632008875945}
   - {fileID: 4287072451332669071}
   - {fileID: 2113464367317865306}
   - {fileID: 7816692297313956056}
@@ -137,6 +140,14 @@ MonoBehaviour:
     role: body_shell
     materialSlot: 0
     renderer: {fileID: 8380477016283072793}
+  - sourceName: GEO_CabinLampCollars
+    role: cabin_lamp_mount
+    materialSlot: 2
+    renderer: {fileID: 9148726304635289803}
+  - sourceName: GEO_CabinLampStems
+    role: cabin_lamp_mount
+    materialSlot: 4
+    renderer: {fileID: 3098935769873734559}
   - sourceName: GEO_ExteriorTrim
     role: exterior_trim
     materialSlot: 2
@@ -285,6 +296,10 @@ MonoBehaviour:
     role: steering_wheel
     materialSlot: 2
     renderer: {fileID: 4088396211754975934}
+  - sourceName: LGT_CabinLampBulbs
+    role: cabin_lamp_bulb
+    materialSlot: 12
+    renderer: {fileID: 2055552632008875945}
   - sourceName: LGT_CabinStrips
     role: cabin_light
     materialSlot: 12
@@ -306,6 +321,7 @@ MonoBehaviour:
   tailLights:
   - {fileID: 5696573660863764090}
   cabinLights:
+  - {fileID: 2055552632008875945}
   - {fileID: 4287072451332669071}
   - {fileID: 2113464367317865306}
   localBounds:
@@ -317,10 +333,10 @@ MonoBehaviour:
     height: 2.95
     wheelbase: 4.5
     wheelRadius: 0.43
-  sourceTriangleCount: 3864
-  sourceGeneratorVersion: 1.2.1
+  sourceTriangleCount: 4136
+  sourceGeneratorVersion: 1.3.0
   designId: road_v2_midibus_v1
-  buildSignature: f9c720c9f72d6c7f630b7ce1bf76443afd1d0c9db5f151aff49eeb3e408af38c
+  buildSignature: fd1019b73e922adb565b48a3deef5a56ffe94257f2c630b856c95a8a3a3c0032
 --- !u!1001 &1144640046979756358
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -473,6 +489,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ebe3ef12adec8b8488b30045e90a794c, type: 2}
+    - target: {fileID: 1397345364036038383, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c3887b3ece1375b4684112c55acf2b72, type: 2}
     - target: {fileID: 1426904109859323597, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -497,6 +517,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bbde24669b8b6f643a0c2898724df717, type: 2}
+    - target: {fileID: 2658027196772870873, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 5781ce71b8e8d914ca6da8bf4741fe9c, type: 2}
     - target: {fileID: 3145688978073962797, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -561,6 +585,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5781ce71b8e8d914ca6da8bf4741fe9c, type: 2}
+    - target: {fileID: 8148236672008794509, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 580472b9b0237c94886d4e1affc48f2b, type: 2}
     - target: {fileID: 8912618711274944607, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -640,6 +668,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1426904109859323597, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &2055552632008875945 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1397345364036038383, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &2113464367317865306 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1348296655325585948, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
@@ -693,6 +726,11 @@ Transform:
 --- !u!4 &3001587345019368961 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6465669574149421241, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3098935769873734559 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2658027196772870873, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3305516467378684132 stripped
@@ -943,6 +981,11 @@ Transform:
 --- !u!23 &9121243400410429884 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1047158909015635718, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
+  m_PrefabInstance: {fileID: 1144640046979756358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &9148726304635289803 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8148236672008794509, guid: 1db94b3376bfbbe489c84dfca7f4f521, type: 3}
   m_PrefabInstance: {fileID: 1144640046979756358}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &9164729636792406577 stripped

@@ -20,6 +20,8 @@ namespace BarPromenade.Editor
             "Assets/Resources/Vehicles/CityBus3D.prefab";
         public const string MaterialFolder =
             "Assets/Vehicles/Materials";
+        public const string TextureFolder =
+            "Assets/Vehicles/Textures";
 
         private const string ExpectedDesignId = "road_v2_midibus_v1";
         private const string ExpectedForwardAxis = "-Y";
@@ -462,6 +464,18 @@ namespace BarPromenade.Editor
                     "URP/Lit shader is unavailable for City bus materials.");
             }
 
+            foreach (string texturePath in Enum
+                .GetValues(typeof(CityBusMaterialSlot))
+                .Cast<CityBusMaterialSlot>()
+                .Select(TexturePath)
+                .Where(path => path != null)
+                .Distinct(StringComparer.Ordinal))
+            {
+                AssetDatabase.ImportAsset(
+                    texturePath,
+                    ImportAssetOptions.ForceSynchronousImport);
+            }
+
             Dictionary<CityBusMaterialSlot, Material> result =
                 new Dictionary<CityBusMaterialSlot, Material>();
             foreach (CityBusMaterialSlot slot in
@@ -500,6 +514,19 @@ namespace BarPromenade.Editor
             SetColorIfPresent(material, "_Color", color);
             SetFloatIfPresent(material, "_Metallic", GetMetallic(slot));
             SetFloatIfPresent(material, "_Smoothness", GetSmoothness(slot));
+            Texture2D albedo = LoadAlbedoTexture(slot);
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", albedo);
+                material.SetTextureScale("_BaseMap", Vector2.one);
+                material.SetTextureOffset("_BaseMap", Vector2.zero);
+            }
+
+            if (material.HasProperty("_MainTex"))
+            {
+                material.SetTexture("_MainTex", albedo);
+            }
+
             material.enableInstancing = true;
 
             bool transparent = slot == CityBusMaterialSlot.Glass;
@@ -1021,6 +1048,16 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         "City bus renderer/material registry binding is invalid.");
                 }
+
+                string texturePath = TexturePath(binding.MaterialSlot);
+                if (texturePath != null &&
+                    binding.Renderer.sharedMaterial.GetTexture("_BaseMap") !=
+                        AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath))
+                {
+                    throw new InvalidOperationException(
+                        $"City bus material '{binding.MaterialSlot}' lost " +
+                        $"its albedo '{texturePath}'.");
+                }
             }
         }
 
@@ -1148,6 +1185,46 @@ namespace BarPromenade.Editor
         private static string MaterialPath(CityBusMaterialSlot slot)
         {
             return $"{MaterialFolder}/CityBus{slot}.mat";
+        }
+
+        private static string TexturePath(CityBusMaterialSlot slot)
+        {
+            switch (slot)
+            {
+                case CityBusMaterialSlot.Body:
+                case CityBusMaterialSlot.Accent:
+                    return $"{TextureFolder}/CityBusPaintAlbedo.png";
+                case CityBusMaterialSlot.Metal:
+                case CityBusMaterialSlot.Rail:
+                    return $"{TextureFolder}/CityBusMetalAlbedo.png";
+                case CityBusMaterialSlot.Interior:
+                case CityBusMaterialSlot.Dashboard:
+                    return $"{TextureFolder}/CityBusInteriorAlbedo.png";
+                case CityBusMaterialSlot.Seat:
+                    return $"{TextureFolder}/CityBusSeatAlbedo.png";
+                default:
+                    return null;
+            }
+        }
+
+        private static Texture2D LoadAlbedoTexture(CityBusMaterialSlot slot)
+        {
+            string path = TexturePath(slot);
+            if (path == null)
+            {
+                return null;
+            }
+
+            Texture2D texture =
+                AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (texture == null)
+            {
+                throw new InvalidOperationException(
+                    $"City bus albedo '{path}' is missing; run " +
+                    "tools/build-city-bus-textures.py.");
+            }
+
+            return texture;
         }
 
         private static Color GetMaterialColor(CityBusMaterialSlot slot)

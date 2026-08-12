@@ -6,6 +6,45 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-13 — Bus albedos and visible pendant cabin lamps
+
+- The bus was the last flat-colour hero object on a textured street, and its
+  "cabin light" had no visible source: the `LGT_CabinStrips` boxes were
+  centred at `2.765 m`, entirely inside the `2.72-2.78 m` interior ceiling
+  panel, so the emissive meshes could never be seen and the two runtime cabin
+  Spots floated at `2.83 m` inside the roof.
+- Bumped the deterministic bus generator to `1.3.0`. Every mesh now carries
+  world-scale box-projected UVs (per-slot metre tiling, so Unity materials
+  stay at `(1, 1)`), the ceiling strips protrude below the panel, and two
+  pendant lamps hang on the aisle centreline at source `y = ∓1.45` — metal
+  stem, trim collar and a `CabinLight` bulb spanning `2.56-2.66 m`. The new
+  `cabin_lamp_bulb` role joined the generator's required-role validation.
+- Added `tools/build-city-bus-textures.py`: four deterministic tileable
+  512 px albedos (paint with panel seams/rivets/grime streaks, brushed metal,
+  speckled ribbed linoleum, seat weave), light bases near `0.75-0.8` mean
+  luminance so the existing flat `_BaseColor` values keep the hue.
+  `CityBusAssetSetup` assigns them per slot (`Body/Accent`, `Metal/Rail`,
+  `Interior/Dashboard`, `Seat`) and its prefab validation now fails if a
+  mapped material loses its `_BaseMap`.
+- `CityBusPresentation` moves the two cabin Spots from the roof interior down
+  to the authored bulb centres (`2.61 m`), raises their base intensity
+  `5.5 -> 7.5` and warms the night cabin emission so the bulbs read as the
+  actual source. Light count, names and directions are unchanged, keeping the
+  12+4 city light budget.
+
+Verification:
+
+- Blender 5.0.1 regenerated and self-validated the model: 46 meshes, 4136
+  triangles, new signature; `CITY BUS 3D BUILD OK`.
+- `python tools/build-city-bus-textures.py` reported mean luminances
+  `0.75-0.81` for all four sheets.
+- Batch `CityBusAssetSetup.RunBatch` rebuilt and validated the prefab
+  (`CITY BUS UNITY ASSET BUILD OK`), including the new albedo binding check.
+- Focused EditMode `CityBusAssetImportTests` passed `4/4` and
+  `CityBusRuntimeTests` passed `28/28`, including
+  `PresentationNightLights_AreSprungScaledAndPoolSafe`. Full suites,
+  player build and smoke were intentionally omitted in fast mode.
+
 ## 2026-08-13 — District walls for the city buildings
 
 - The street had textured ground under untextured boxes. Every road, sidewalk

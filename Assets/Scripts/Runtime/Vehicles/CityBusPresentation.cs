@@ -23,8 +23,12 @@ namespace BarPromenade
         private const float HeadlightRange = 22f;
         private const float HeadlightSpotAngle = 48f;
         private const float HeadlightInnerSpotAngle = 28f;
-        private const float CabinLightBaseIntensity = 5.5f;
+        private const float CabinLightBaseIntensity = 7.5f;
         private const float CabinLightRange = 3.6f;
+        // World height of the pendant bulb centres authored by
+        // tools/build-city-bus-3d-model.py (bulbs span 2.56-2.66 m), so the
+        // runtime light visibly originates inside the visible lamps.
+        private const float CabinLampHeight = 2.61f;
         private const float CabinLightSpotAngle = 110f;
         private const float CabinLightInnerSpotAngle = 68f;
         private const float VisibleLightFactorThreshold = 0.0001f;
@@ -37,7 +41,7 @@ namespace BarPromenade
         private static readonly Color TailLightEmission =
             new Color(3.5f, 0.10f, 0.035f);
         private static readonly Color CabinLightEmission =
-            new Color(1.85f, 1.20f, 0.62f);
+            new Color(3.1f, 2.0f, 1.05f);
         private static readonly Color HeadlightColor =
             new Color(1f, 0.85f, 0.58f);
         private static readonly Color CabinLightColor =
@@ -441,7 +445,7 @@ namespace BarPromenade
                     HeadlightInnerSpotAngle)
             };
 
-            float cabinY = bounds.max.y - 0.12f;
+            float cabinY = CabinLampHeight;
             cabinLights = new[]
             {
                 CreateSpotLight(

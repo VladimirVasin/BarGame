@@ -35,7 +35,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.2.1"
+GENERATOR_VERSION = "1.3.0"
 DESIGN_ID = "road_v2_midibus_v1"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
@@ -88,6 +88,31 @@ DOOR_BUTTON_CENTER = (0.30, -3.335, 1.50)
 DOOR_BUTTON_DEPTH = 0.045
 DOOR_BUTTON_TRAVEL = 0.012
 DRIVER_DOOR_LOOK_POSITION = (-0.90, -3.05, 2.12)
+
+# The two pendant cabin lamps hang on the aisle centreline at the exact
+# source-Y positions mirrored by the runtime cabin Spots in
+# CityBusPresentation (presentation +Z = source -Y, so -1.45 is "Front").
+CABIN_LAMP_POSITIONS_Y = (-1.45, 1.45)
+CABIN_LAMP_CEILING_Z = 2.72
+CABIN_LAMP_STEM_RADIUS = 0.016
+CABIN_LAMP_BULB_TOP_Z = 2.66
+CABIN_LAMP_BULB_BOTTOM_Z = 2.56
+CABIN_LAMP_BULB_RADIUS = 0.07
+
+# Box-projected UV density per material slot, in metres per texture tile.
+# Meshes carry world-scale UVs so Unity materials tile at (1, 1).
+UV_TILE_METERS_DEFAULT = 1.25
+UV_TILE_METERS = {
+    "Body": 1.6,
+    "Accent": 1.6,
+    "Trim": 1.6,
+    "Interior": 1.2,
+    "Dashboard": 0.9,
+    "Seat": 0.7,
+    "Metal": 0.9,
+    "Rail": 0.9,
+    "Rubber": 0.55,
+}
 
 
 MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, float]] = {
@@ -431,6 +456,30 @@ def create_empty(
     return obj
 
 
+def apply_box_uvs(mesh: bpy.types.Mesh, tile_meters: float) -> None:
+    """Project deterministic per-face box UVs at world scale.
+
+    Every loop takes its UV from the two vertex coordinates orthogonal to the
+    face normal's dominant axis, divided by the slot's tile size, so tileable
+    albedos land on the geometry without a hand unwrap and Unity materials can
+    keep (1, 1) tiling.
+    """
+    uv_layer = mesh.uv_layers.new(name="UVMap")
+    scale = 1.0 / tile_meters
+    for polygon in mesh.polygons:
+        normal = polygon.normal
+        ax, ay, az = abs(normal.x), abs(normal.y), abs(normal.z)
+        for loop_index in polygon.loop_indices:
+            vertex = mesh.vertices[mesh.loops[loop_index].vertex_index].co
+            if az >= ax and az >= ay:
+                uv = (vertex.x, vertex.y)
+            elif ax >= ay:
+                uv = (vertex.y, vertex.z)
+            else:
+                uv = (vertex.x, vertex.z)
+            uv_layer.data[loop_index].uv = (uv[0] * scale, uv[1] * scale)
+
+
 def create_part(
     name: str,
     accumulator: MeshAccumulator,
@@ -444,6 +493,10 @@ def create_part(
     mesh.from_pydata(accumulator.vertices, [], accumulator.faces)
     mesh.validate(clean_customdata=False)
     mesh.update(calc_edges=True)
+    apply_box_uvs(
+        mesh,
+        UV_TILE_METERS.get(material_slot, UV_TILE_METERS_DEFAULT),
+    )
     obj = bpy.data.objects.new(name, mesh)
     collection.objects.link(obj)
     obj.parent = parent
@@ -905,14 +958,57 @@ class CityBusBuilder:
             "tail_light",
             "TailLight",
         )
+        # The strips must protrude below the 2.72 m interior ceiling panel;
+        # centred any higher they disappear inside its thickness.
         self.add_boxes(
             "LGT_CabinStrips",
             [
-                ((-0.43, -0.80, 2.765), (0.12, 4.65, 0.025)),
-                ((0.43, -0.80, 2.765), (0.12, 4.65, 0.025)),
-                ((0.0, 2.80, 2.765), (0.86, 0.12, 0.025)),
+                ((-0.43, -0.80, 2.705), (0.12, 4.65, 0.035)),
+                ((0.43, -0.80, 2.705), (0.12, 4.65, 0.035)),
+                ((0.0, 2.80, 2.705), (0.86, 0.12, 0.035)),
             ],
             "cabin_light",
+            "CabinLight",
+        )
+        lamp_stems = MeshAccumulator()
+        lamp_collars = MeshAccumulator()
+        lamp_bulbs = MeshAccumulator()
+        for lamp_y in CABIN_LAMP_POSITIONS_Y:
+            lamp_stems.add_cylinder_between(
+                (0.0, lamp_y, CABIN_LAMP_BULB_TOP_Z),
+                (0.0, lamp_y, CABIN_LAMP_CEILING_Z),
+                CABIN_LAMP_STEM_RADIUS,
+                6,
+            )
+            lamp_collars.add_torus_z(
+                (0.0, lamp_y, CABIN_LAMP_BULB_TOP_Z),
+                CABIN_LAMP_BULB_RADIUS * 0.72,
+                0.018,
+                10,
+                4,
+            )
+            lamp_bulbs.add_cylinder_between(
+                (0.0, lamp_y, CABIN_LAMP_BULB_BOTTOM_Z),
+                (0.0, lamp_y, CABIN_LAMP_BULB_TOP_Z),
+                CABIN_LAMP_BULB_RADIUS,
+                10,
+            )
+        self.add_accumulator(
+            "GEO_CabinLampStems",
+            lamp_stems,
+            "cabin_lamp_mount",
+            "Metal",
+        )
+        self.add_accumulator(
+            "GEO_CabinLampCollars",
+            lamp_collars,
+            "cabin_lamp_mount",
+            "Trim",
+        )
+        self.add_accumulator(
+            "LGT_CabinLampBulbs",
+            lamp_bulbs,
+            "cabin_lamp_bulb",
             "CabinLight",
         )
         self.add_boxes(
@@ -1075,7 +1171,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
         "body_shell", "glass", "passenger_seats", "handrails", "dashboard",
         "steering_column", "steering_wheel", "door_button", "door_panel",
         "door_frame", "door_glass", "door_post", "headlight", "tail_light",
-        "cabin_light",
+        "cabin_light", "cabin_lamp_bulb",
     ):
         if required_role not in roles:
             errors.append(f"Missing required mesh role {required_role}")

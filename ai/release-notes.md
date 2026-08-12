@@ -6,6 +6,17 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-13 — The bus gets a skin and real cabin lamps
+
+- The bus is no longer flat colour. Its paint now carries panel seams, rivet
+  rows and streaked grime; the handrails and seat frames read as brushed
+  metal, the floor as speckled linoleum and the seats as worn fabric weave.
+- The cabin light finally comes from somewhere. Two pendant lamps hang over
+  the aisle — stem, collar and a fat glowing bulb — and after `19:00` the
+  light pools out of those bulbs instead of appearing from nowhere. The
+  ceiling strips, which had been buried inside the ceiling panel where no one
+  could see them, now actually show below it and glow with the lamps.
+
 ### 2026-08-13 — The districts have their own walls
 
 - Buildings are no longer flat colour. Each district now has its own wall

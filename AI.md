@@ -114,7 +114,15 @@ fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
 twelve-seat interior, driver area, two animated double-leaf doors that fold
 inward around fixed outer posts, steering and rolling wheels, a synthesized
-engine loop and time-of-day head, tail and cabin lights. Its separate passive
+engine loop and time-of-day head, tail and cabin lights. The model carries
+world-scale box-projected UVs and four deterministic tileable albedos from
+`tools/build-city-bus-textures.py` (exterior paint with panel seams and
+rivets, brushed metal, interior linoleum, seat weave), multiplied under the
+existing flat material colors. The cabin light is anchored by two visible
+pendant lamps on the aisle centreline — stem, collar and a glowing bulb at
+`2.56-2.66 m` — whose bulbs the two runtime cabin Spots originate from at
+night; the ceiling strips also protrude below the interior ceiling panel
+instead of being buried inside its thickness. Its separate passive
 `CityBusDriver3D` uses the shared `Player3DLit` material and exact 31-bone rig,
 with a normal low-poly head and long horizontal eyes. Procedural seated IK keeps
 both hands on the rotating wheel grips; the deterministic door timeline moves
