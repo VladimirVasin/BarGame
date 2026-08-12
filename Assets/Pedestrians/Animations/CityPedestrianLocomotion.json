@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 10,
+  "clip_count": 14,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -172,6 +172,94 @@
       "hand_min_clearance_m": 0.106255
     },
     {
+      "name": "LampshadeSit",
+      "archetype": "lampshade_walker_v1",
+      "duration_seconds": 3.0,
+      "frame_start": 0,
+      "frame_end": 72,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "seated C-curve, shade tipped forward over folded knees",
+      "gait": "settled seated breath that never straightens the spine",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.029737,
+      "seated_drop_m": 0.355893,
+      "seated_contact_m": 0.06126
+    },
+    {
+      "name": "ChairCarrierSit",
+      "archetype": "chair_carrier_v1",
+      "duration_seconds": 2.5,
+      "frame_start": 0,
+      "frame_end": 60,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "upright seated spine, the inverted chair still shouldered",
+      "gait": "small seated correction that keeps the chair balanced",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.055113,
+      "seated_drop_m": 0.365917,
+      "seated_contact_m": 0.067418
+    },
+    {
+      "name": "KettleHatSit",
+      "archetype": "kettle_hat_walker_v1",
+      "duration_seconds": 2.75,
+      "frame_start": 0,
+      "frame_end": 66,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "stout seated stance, short legs hanging clear of the floor",
+      "gait": "counter-phased belly and kettle sway with the legs at rest",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.050193,
+      "seated_drop_m": 0.373993,
+      "seated_contact_m": 0.141043
+    },
+    {
+      "name": "LongArmSit",
+      "archetype": "long_arm_walker_v1",
+      "duration_seconds": 3.25,
+      "frame_start": 0,
+      "frame_end": 78,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "narrow seated torso, long forearms folded onto the knees",
+      "gait": "residual arm sway that never settles, now over the knees",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.050078,
+      "seated_drop_m": 0.354512,
+      "seated_contact_m": 0.06912
+    },
+    {
       "name": "HelmetLampIdle",
       "archetype": "helmet_lamp_hopper_v1",
       "duration_seconds": 2.0,
@@ -214,5 +302,5 @@
       "apex_lift_m": 0.240901
     }
   ],
-  "build_signature": "64c2c77a6160a943db57ff178ffa9b51f4fcfbbb15bc0b927eb350b0ee976d64"
+  "build_signature": "f4503783a2c9e7b02a68337a14cc4e97b98fe5fbb0e6c760b5200779c4effb03"
 }

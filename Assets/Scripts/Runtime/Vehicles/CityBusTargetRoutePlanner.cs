@@ -222,7 +222,288 @@ namespace BarPromenade
                     }));
             }
 
+            return OrderAsServiceLoop(result);
+        }
+
+        /// <summary>
+        /// Orders the targets as a closed service loop instead of by the
+        /// district enum.
+        /// <para>
+        /// The enum order was nominal — Industrial, Nightlife, Residential,
+        /// Old Town, then home — and carried no geography at all. On the
+        /// default layout that walked the west edge, the south centre, the
+        /// far north-east, back to the west edge and out to the east again:
+        /// two full crossings of the city for a `1166 m` straight-line tour
+        /// where `754 m` was available. A bus route that doubles back twice
+        /// reads as a mistake however carefully the streets between the stops
+        /// are proven.
+        /// </para>
+        /// <para>
+        /// Numbering starts at the player's home, which is the one stop the
+        /// hero can name, and a closed loop has no last stop to lose by it.
+        /// </para>
+        /// </summary>
+        private static List<StopTarget> OrderAsServiceLoop(
+            List<StopTarget> targets)
+        {
+            if (targets.Count <= 2)
+            {
+                return RotateToHome(targets);
+            }
+
+            List<StopTarget> best = targets.Count <= ExactTourLimit
+                ? SolveExactTour(targets)
+                : SolveHeuristicTour(targets);
+            return RotateToHome(best);
+        }
+
+        /// <summary>
+        /// Above this the exact search stops being cheap: it fixes the first
+        /// target and permutes the rest, so the work is `(n-1)!`. The default
+        /// layout has five targets; eight keeps the worst case at `5040`
+        /// permutations, which is nothing beside the clearance sampling this
+        /// planner already does.
+        /// </summary>
+        private const int ExactTourLimit = 8;
+
+        private static List<StopTarget> SolveExactTour(
+            List<StopTarget> targets)
+        {
+            var order = new int[targets.Count];
+            for (int index = 0; index < order.Length; index++)
+            {
+                order[index] = index;
+            }
+
+            var bestOrder = (int[])order.Clone();
+            float bestLength = MeasureTour(targets, order);
+            PermuteTail(targets, order, 1, ref bestOrder, ref bestLength);
+            var result = new List<StopTarget>(targets.Count);
+            for (int index = 0; index < bestOrder.Length; index++)
+            {
+                result.Add(targets[bestOrder[index]]);
+            }
+
             return result;
+        }
+
+        private static void PermuteTail(
+            List<StopTarget> targets,
+            int[] order,
+            int start,
+            ref int[] bestOrder,
+            ref float bestLength)
+        {
+            if (start >= order.Length)
+            {
+                float length = MeasureTour(targets, order);
+                // Ties are broken by the ordered target IDs so the same layout
+                // always yields the same loop, whatever order the permutation
+                // walk happens to reach them in.
+                if (length < bestLength - TourLengthEpsilon ||
+                    (Mathf.Abs(length - bestLength) <= TourLengthEpsilon &&
+                     CompareTourIds(targets, order, bestOrder) < 0))
+                {
+                    bestLength = length;
+                    bestOrder = (int[])order.Clone();
+                }
+
+                return;
+            }
+
+            for (int index = start; index < order.Length; index++)
+            {
+                (order[start], order[index]) = (order[index], order[start]);
+                PermuteTail(targets, order, start + 1, ref bestOrder,
+                    ref bestLength);
+                (order[start], order[index]) = (order[index], order[start]);
+            }
+        }
+
+        /// <summary>
+        /// Nearest neighbour followed by 2-opt, for a layout with more targets
+        /// than the exact search is willing to enumerate.
+        /// </summary>
+        private static List<StopTarget> SolveHeuristicTour(
+            List<StopTarget> targets)
+        {
+            var remaining = new List<int>();
+            for (int index = 1; index < targets.Count; index++)
+            {
+                remaining.Add(index);
+            }
+
+            var order = new List<int> { 0 };
+            while (remaining.Count > 0)
+            {
+                int current = order[order.Count - 1];
+                int bestIndex = 0;
+                float bestDistance = float.PositiveInfinity;
+                for (int index = 0; index < remaining.Count; index++)
+                {
+                    float distance = XzDistance(
+                        GetTourPosition(targets[current]),
+                        GetTourPosition(targets[remaining[index]]));
+                    if (distance < bestDistance - TourLengthEpsilon ||
+                        (Mathf.Abs(distance - bestDistance) <=
+                             TourLengthEpsilon &&
+                         string.CompareOrdinal(
+                             targets[remaining[index]].Id,
+                             targets[remaining[bestIndex]].Id) < 0))
+                    {
+                        bestDistance = distance;
+                        bestIndex = index;
+                    }
+                }
+
+                order.Add(remaining[bestIndex]);
+                remaining.RemoveAt(bestIndex);
+            }
+
+            var current2Opt = order.ToArray();
+            bool improved = true;
+            while (improved)
+            {
+                improved = false;
+                float length = MeasureTour(targets, current2Opt);
+                for (int first = 1; first < current2Opt.Length - 1; first++)
+                {
+                    for (int second = first + 1;
+                         second < current2Opt.Length;
+                         second++)
+                    {
+                        var candidate = (int[])current2Opt.Clone();
+                        System.Array.Reverse(
+                            candidate,
+                            first,
+                            second - first + 1);
+                        if (MeasureTour(targets, candidate) <
+                            length - TourLengthEpsilon)
+                        {
+                            current2Opt = candidate;
+                            improved = true;
+                            length = MeasureTour(targets, candidate);
+                        }
+                    }
+                }
+            }
+
+            var result = new List<StopTarget>(targets.Count);
+            for (int index = 0; index < current2Opt.Length; index++)
+            {
+                result.Add(targets[current2Opt[index]]);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Rotates the closed loop so the player home is served first, and
+        /// fixes the travel direction deterministically. A cycle and its
+        /// reverse are the same length, so the ordered IDs decide.
+        /// </summary>
+        private static List<StopTarget> RotateToHome(List<StopTarget> targets)
+        {
+            if (targets.Count == 0)
+            {
+                return targets;
+            }
+
+            int homeIndex = -1;
+            for (int index = 0; index < targets.Count; index++)
+            {
+                if (targets[index].Kind == CityBusStopTargetKind.PlayerHome)
+                {
+                    homeIndex = index;
+                    break;
+                }
+            }
+
+            if (homeIndex < 0)
+            {
+                homeIndex = 0;
+            }
+
+            var forward = new List<StopTarget>(targets.Count);
+            for (int index = 0; index < targets.Count; index++)
+            {
+                forward.Add(targets[(homeIndex + index) % targets.Count]);
+            }
+
+            if (forward.Count <= 2)
+            {
+                return forward;
+            }
+
+            var reverse = new List<StopTarget>(forward.Count) { forward[0] };
+            for (int index = forward.Count - 1; index >= 1; index--)
+            {
+                reverse.Add(forward[index]);
+            }
+
+            return CompareTourIds(forward, reverse) <= 0 ? forward : reverse;
+        }
+
+        private const float TourLengthEpsilon = 0.0001f;
+
+        private static float MeasureTour(
+            List<StopTarget> targets,
+            IReadOnlyList<int> order)
+        {
+            float total = 0f;
+            for (int index = 0; index < order.Count; index++)
+            {
+                total += XzDistance(
+                    GetTourPosition(targets[order[index]]),
+                    GetTourPosition(
+                        targets[order[(index + 1) % order.Count]]));
+            }
+
+            return total;
+        }
+
+        private static Vector3 GetTourPosition(StopTarget target)
+        {
+            return target.ReferencePositions.Count > 0
+                ? target.ReferencePositions[0]
+                : Vector3.zero;
+        }
+
+        private static int CompareTourIds(
+            List<StopTarget> targets,
+            IReadOnlyList<int> left,
+            IReadOnlyList<int> right)
+        {
+            for (int index = 0; index < left.Count; index++)
+            {
+                int comparison = string.CompareOrdinal(
+                    targets[left[index]].Id,
+                    targets[right[index]].Id);
+                if (comparison != 0)
+                {
+                    return comparison;
+                }
+            }
+
+            return 0;
+        }
+
+        private static int CompareTourIds(
+            List<StopTarget> left,
+            List<StopTarget> right)
+        {
+            for (int index = 0; index < left.Count; index++)
+            {
+                int comparison = string.CompareOrdinal(
+                    left[index].Id,
+                    right[index].Id);
+                if (comparison != 0)
+                {
+                    return comparison;
+                }
+            }
+
+            return 0;
         }
 
         private static List<StopCandidate> CreateStopCandidates(

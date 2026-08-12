@@ -5,6 +5,61 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// A design's declared permission to ride Route 01, with the numbers that
+    /// place it on a seat. Every walker shares the hero's 31-bone rig and its
+    /// `0.70 m` rest pelvis, so seating is one pelvis alignment for all of
+    /// them; what a design owns here is how its own authored seated posture
+    /// meets the cushion.
+    /// </summary>
+    public sealed class CityPedestrianSeatedRide
+    {
+        public CityPedestrianSeatedRide(
+            float seatLift,
+            float seatBackOffset,
+            float seatedHeadroom)
+        {
+            if (!IsFinite(seatLift) ||
+                !IsFinite(seatBackOffset) ||
+                !IsFinite(seatedHeadroom) ||
+                seatedHeadroom <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(seatLift),
+                    "A seated ride declaration must be finite and own a " +
+                    "positive headroom.");
+            }
+
+            SeatLift = seatLift;
+            SeatBackOffset = seatBackOffset;
+            SeatedHeadroom = seatedHeadroom;
+        }
+
+        /// <summary>
+        /// Metres the pelvis sits above the cushion anchor.
+        /// </summary>
+        public float SeatLift { get; }
+
+        /// <summary>
+        /// Metres the pelvis sits behind the cushion anchor, toward the
+        /// backrest.
+        /// </summary>
+        public float SeatBackOffset { get; }
+
+        /// <summary>
+        /// Metres this design occupies above its seated pelvis, worn objects
+        /// included. The cabin gives `2.05 m` from floor to ceiling and the
+        /// cushion sits `0.41 m` up, so a declaration above `1.64 m` would
+        /// push the design through the roof.
+        /// </summary>
+        public float SeatedHeadroom { get; }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+    }
+
     public sealed class CityPedestrianArchetype
     {
         public const int UnlimitedPoolInstances = int.MaxValue;
@@ -56,6 +111,29 @@ namespace BarPromenade
             float maximumAnimationSpeed,
             int maximumPoolInstances,
             float groundTrim)
+            : this(
+                designId,
+                prefabResourcePath,
+                minimumMovementSpeed,
+                maximumMovementSpeed,
+                minimumAnimationSpeed,
+                maximumAnimationSpeed,
+                maximumPoolInstances,
+                groundTrim,
+                null)
+        {
+        }
+
+        public CityPedestrianArchetype(
+            string designId,
+            string prefabResourcePath,
+            float minimumMovementSpeed,
+            float maximumMovementSpeed,
+            float minimumAnimationSpeed,
+            float maximumAnimationSpeed,
+            int maximumPoolInstances,
+            float groundTrim,
+            CityPedestrianSeatedRide seatedRide)
         {
             if (string.IsNullOrWhiteSpace(designId))
             {
@@ -102,6 +180,7 @@ namespace BarPromenade
 
             MaximumPoolInstances = maximumPoolInstances;
             GroundTrim = groundTrim;
+            SeatedRide = seatedRide;
         }
 
         public string DesignId { get; }
@@ -128,6 +207,18 @@ namespace BarPromenade
         /// here and tuned by eye against the rendered walker.
         /// </summary>
         public float GroundTrim { get; }
+
+        /// <summary>
+        /// Declared permission to ride Route 01, or `null` for a design that
+        /// stays on the pavement. A blanket ban would be dishonest and a
+        /// blanket allowance would seat a design that cannot sit: the hopper
+        /// crosses ground in two-footed bounds and wears the one working light
+        /// the pedestrian contract allows, neither of which belongs in a
+        /// twelve-seat cabin.
+        /// </summary>
+        public CityPedestrianSeatedRide SeatedRide { get; }
+
+        public bool CanRideBus => SeatedRide != null;
 
         private static void ValidateRange(
             float minimum,
@@ -177,6 +268,55 @@ namespace BarPromenade
         public const string PrefabResourcePath =
             LampshadePrefabResourcePath;
 
+        // Headroom values below are the measured maxima the deterministic
+        // generator reports for each design's own authored seated clip, and
+        // the generator asserts the same numbers through
+        // `ArchetypeSpec.seated_clearance_m`. The cushion sits `0.41 m` above
+        // the cabin floor under a `2.05 m` ceiling, so `1.64 m` is the point
+        // at which a design would pass through the roof; the whole catalog
+        // clears it comfortably.
+        //
+        // The seat lift is measured too, and it is not a nominal value. The
+        // runtime aligns the shared rest pelvis to the cushion anchor, so a
+        // design rests on the seat only if it is lifted by the distance from
+        // that bone down to the underside of its own seated hips and thighs -
+        // `seated_contact_m` in the clip manifest. Nominal `0.015` lifts sank
+        // every design into the cushion by `4.6-11.1 cm`, worst on the stout
+        // Kettle Hat whose belly and wide hips reach furthest below the bone.
+        // Each value below is that measurement less `0.01 m`, so the cushion
+        // reads as compressed rather than the passenger as floating.
+
+        /// <summary>
+        /// The hunched design keeps its C-curve seated, which is what makes it
+        /// the lowest seated silhouette of the four riders.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide LampshadeSeatedRide =
+            new CityPedestrianSeatedRide(0.051f, 0.20f, 1.03f);
+
+        /// <summary>
+        /// An upright spine under the inverted cafe chair it never puts down.
+        /// Seated it reads tallest, though the chair rides the shoulders
+        /// rather than towering over the head.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide
+            ChairCarrierSeatedRide =
+                new CityPedestrianSeatedRide(0.057f, 0.22f, 1.06f);
+
+        /// <summary>
+        /// Short legs that do not reach the cabin floor, and an oversized
+        /// kettle that owns everything above `1.40 m` standing. It sits a
+        /// little further forward on the cushion than the others.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide KettleHatSeatedRide =
+            new CityPedestrianSeatedRide(0.131f, 0.18f, 1.05f);
+
+        /// <summary>
+        /// A narrow still torso; the forearms that reach the pavement standing
+        /// are folded onto the knees seated rather than through the floor.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide LongArmSeatedRide =
+            new CityPedestrianSeatedRide(0.059f, 0.24f, 1.05f);
+
         private static readonly CityPedestrianArchetype[] OrderedArchetypes =
         {
             new CityPedestrianArchetype(
@@ -185,14 +325,20 @@ namespace BarPromenade
                 1f,
                 1.10f,
                 0.84f,
-                0.90f),
+                0.90f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                LampshadeSeatedRide),
             new CityPedestrianArchetype(
                 ChairCarrierDesignId,
                 ChairCarrierPrefabResourcePath,
                 1.18f,
                 1.30f,
                 0.98f,
-                1.06f),
+                1.06f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                ChairCarrierSeatedRide),
             // Short fast steps: the stout walker covers less ground per stride
             // than either taller design, so it moves slower while its shorter
             // clips play back faster.
@@ -202,7 +348,10 @@ namespace BarPromenade
                 0.90f,
                 1.02f,
                 1.08f,
-                1.18f),
+                1.18f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                KettleHatSeatedRide),
             // The slowest walker in the catalog: a dragging shuffle whose
             // long clips play back slightly under authored pace.
             new CityPedestrianArchetype(
@@ -211,11 +360,17 @@ namespace BarPromenade
                 0.72f,
                 0.84f,
                 0.86f,
-                0.94f),
+                0.94f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                LongArmSeatedRide),
             // The fastest walker: one bound covers well over a metre, so the
             // hopper crosses ground quickly despite never taking a step. It is
             // also the only design wearing a working light, so it stays a
-            // single pooled instance however large the pool grows.
+            // single pooled instance however large the pool grows. It declares
+            // no seated ride: a design that hops on 0.46 m hind feet has no
+            // seated posture to author, and its worn Spot has no business
+            // inside the cabin.
             new CityPedestrianArchetype(
                 HelmetLampDesignId,
                 HelmetLampPrefabResourcePath,

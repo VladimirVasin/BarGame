@@ -21,6 +21,12 @@ namespace BarPromenade
         public GameObject BusStops { get; private set; }
         public CityBusDirector Bus { get; private set; }
         public CityBusRideController BusRide { get; private set; }
+        public CityBusStopWaitPlan BusStopWaits { get; private set; }
+        public CityBusNpcPassengerController BusPassengers
+        {
+            get;
+            private set;
+        }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -269,6 +275,25 @@ namespace BarPromenade
                 camera,
                 follow,
                 pedestrianStreetSurfacePlan);
+            BusStopWaits = CityBusStopWaitPlanner.Create(
+                BusPlan,
+                PedestrianPlan,
+                pedestrianWalkableArea);
+            BusPassengers = CityBusNpcPassengerController.Create(
+                Bus,
+                Pedestrians,
+                BusStopWaits,
+                // The same road-inclusive area the hero boards through: the
+                // outward door dock lands just past the curb line and never
+                // validates against the sidewalk-only pedestrian graph.
+                World.WalkableArea,
+                pedestrianStreetSurfacePlan,
+                Player.GameObject.transform,
+                GameSessionState.CitySeed);
+            GameLog.Info(
+                "city",
+                "bus_stop_waits_planned",
+                GameLog.Field("wait_points", BusStopWaits.Count));
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(

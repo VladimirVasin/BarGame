@@ -67,6 +67,27 @@ namespace BarPromenade.Editor
         private const float ExpectedHeight = 1.75f;
         private const int ExpectedBoneCount = 31;
         private const int ExpectedAnimationFps = 24;
+
+        /// <summary>
+        /// An idle and a walk for every design, plus one authored seated loop
+        /// for each design that declares a Route 01 ride.
+        /// </summary>
+        private static int ExpectedLocomotionClipCount
+        {
+            get
+            {
+                int count = Descriptors.Length * 2;
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    if (Descriptors[index].RidesBus)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
         private const float TransformPositionTolerance = 0.0001f;
         private const float TransformAngleTolerance = 0.02f;
 
@@ -84,7 +105,9 @@ namespace BarPromenade.Editor
                 2f,
                 1.25f,
                 800,
-                1400),
+                1400,
+                sitClipName: "LampshadeSit",
+                sitDuration: 3f),
             new PedestrianDescriptor(
                 "Chair Carrier",
                 "ChairCarrierPedestrian3D",
@@ -97,7 +120,9 @@ namespace BarPromenade.Editor
                 1.5f,
                 1f,
                 800,
-                1600),
+                1600,
+                sitClipName: "ChairCarrierSit",
+                sitDuration: 2.5f),
             new PedestrianDescriptor(
                 "Kettle Hat Walker",
                 "KettleHatPedestrian3D",
@@ -110,7 +135,9 @@ namespace BarPromenade.Editor
                 1.75f,
                 0.75f,
                 800,
-                1600),
+                1600,
+                sitClipName: "KettleHatSit",
+                sitDuration: 2.75f),
             new PedestrianDescriptor(
                 "Long-Arm Walker",
                 "LongArmPedestrian3D",
@@ -123,7 +150,9 @@ namespace BarPromenade.Editor
                 2.5f,
                 1.5f,
                 800,
-                1300),
+                1300,
+                sitClipName: "LongArmSit",
+                sitDuration: 3.25f),
             new PedestrianDescriptor(
                 "Helmet Lamp Hopper",
                 "HelmetLampPedestrian3D",
@@ -417,12 +446,19 @@ namespace BarPromenade.Editor
                         descriptor.WalkClipName,
                         descriptor.WalkDuration,
                         animationManifest);
+                    AnimationClip sit = descriptor.RidesBus
+                        ? LoadLocomotionClip(
+                            descriptor.SitClipName,
+                            descriptor.SitDuration,
+                            animationManifest)
+                        : null;
                     BuildPrefab(
                         descriptor,
                         modelAsset,
                         sharedMaterial,
                         idle,
                         walk,
+                        sit,
                         manifest);
                 }
 
@@ -507,6 +543,27 @@ namespace BarPromenade.Editor
                 descriptor.WalkClipName,
                 descriptor.WalkDuration,
                 animationManifest);
+            if (descriptor.RidesBus)
+            {
+                ValidateLocomotionClip(
+                    registry.SitClip,
+                    descriptor.SitClipName,
+                    descriptor.SitDuration,
+                    animationManifest);
+                if (registry.PelvisAnchor == null)
+                {
+                    throw new InvalidOperationException(
+                        "A design that declares a Route 01 ride must bind " +
+                        "its pelvis anchor: seating aligns that bone to the " +
+                        "cushion instead of pinning the lowest sole.");
+                }
+            }
+            else if (registry.SitClip != null)
+            {
+                throw new InvalidOperationException(
+                    "A design without a declared Route 01 ride must not " +
+                    "carry a seated clip.");
+            }
             if (registry.Renderers.Count != manifest.mesh_count ||
                 registry.RendererBindings.Count != manifest.mesh_count)
             {
@@ -618,7 +675,14 @@ namespace BarPromenade.Editor
                         !string.Equals(
                             NormalizeClipName(registry.WalkClip.name),
                             descriptor.WalkClipName,
-                            StringComparison.Ordinal))
+                            StringComparison.Ordinal) ||
+                        (descriptor.RidesBus &&
+                         (registry.SitClip == null ||
+                          registry.PelvisAnchor == null ||
+                          !string.Equals(
+                              NormalizeClipName(registry.SitClip.name),
+                              descriptor.SitClipName,
+                              StringComparison.Ordinal))))
                     {
                         QueueBuildWhenSourcesExist();
                         return;
@@ -731,11 +795,18 @@ namespace BarPromenade.Editor
                     AnimationPath,
                     StringComparison.Ordinal) ||
                 !manifest.shared_clips.SequenceEqual(
-                    new[]
-                    {
-                        descriptor.IdleClipName,
-                        descriptor.WalkClipName
-                    }))
+                    descriptor.RidesBus
+                        ? new[]
+                        {
+                            descriptor.IdleClipName,
+                            descriptor.WalkClipName,
+                            descriptor.SitClipName
+                        }
+                        : new[]
+                        {
+                            descriptor.IdleClipName,
+                            descriptor.WalkClipName
+                        }))
             {
                 throw new InvalidOperationException(
                     "City pedestrian must be non-emissive, collider-free, " +
@@ -809,7 +880,7 @@ namespace BarPromenade.Editor
                 manifest.fps != ExpectedAnimationFps ||
                 manifest.bone_count != ExpectedBoneCount ||
                 manifest.mesh_count != 0 ||
-                manifest.clip_count != Descriptors.Length * 2 ||
+                manifest.clip_count != ExpectedLocomotionClipCount ||
                 manifest.root_motion ||
                 string.IsNullOrWhiteSpace(manifest.skeleton_source) ||
                 string.IsNullOrWhiteSpace(manifest.generator_version) ||
@@ -829,6 +900,10 @@ namespace BarPromenade.Editor
                 PedestrianDescriptor descriptor = Descriptors[index];
                 clipOwners.Add(descriptor.IdleClipName, descriptor);
                 clipOwners.Add(descriptor.WalkClipName, descriptor);
+                if (descriptor.RidesBus)
+                {
+                    clipOwners.Add(descriptor.SitClipName, descriptor);
+                }
             }
 
             HashSet<string> names =
@@ -866,12 +941,26 @@ namespace BarPromenade.Editor
                         "approved looping, in-place Generic contract.");
                 }
 
-                float expectedDuration = string.Equals(
-                    clip.name,
-                    owner.IdleClipName,
-                    StringComparison.Ordinal)
-                    ? owner.IdleDuration
-                    : owner.WalkDuration;
+                float expectedDuration;
+                if (string.Equals(
+                        clip.name,
+                        owner.IdleClipName,
+                        StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.IdleDuration;
+                }
+                else if (owner.RidesBus &&
+                         string.Equals(
+                             clip.name,
+                             owner.SitClipName,
+                             StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.SitDuration;
+                }
+                else
+                {
+                    expectedDuration = owner.WalkDuration;
+                }
                 if (Mathf.Abs(
                         clip.duration_seconds - expectedDuration) > 0.0001f)
                 {
@@ -1076,6 +1165,7 @@ namespace BarPromenade.Editor
             Material sharedMaterial,
             AnimationClip idle,
             AnimationClip walk,
+            AnimationClip sit,
             CityPedestrianManifest manifest)
         {
             GameObject prefabRoot = new GameObject(descriptor.PrefabRootName);
@@ -1184,6 +1274,13 @@ namespace BarPromenade.Editor
                     transformsByName,
                     "head",
                     "pedestrian prefab");
+                // Seating aligns this one bone to the cushion. Every design
+                // shares the hero's 0.70 m rest pelvis, which is why one seat
+                // rule serves four different proportions.
+                Transform pelvis = RequireTransform(
+                    transformsByName,
+                    "pelvis",
+                    "pedestrian prefab");
                 Transform leftFoot = RequireTransform(
                     transformsByName,
                     "foot.L",
@@ -1227,7 +1324,9 @@ namespace BarPromenade.Editor
                     manifest.design_id,
                     manifest.build_signature,
                     headLamp,
-                    descriptor.PreservesAirborneMotion);
+                    descriptor.PreservesAirborneMotion,
+                    pelvis,
+                    sit);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1637,8 +1736,12 @@ namespace BarPromenade.Editor
                 int minimumTriangleCount,
                 int maximumTriangleCount,
                 bool carriesHeadLamp = false,
-                bool preservesAirborneMotion = false)
+                bool preservesAirborneMotion = false,
+                string sitClipName = null,
+                float sitDuration = 0f)
             {
+                SitClipName = sitClipName;
+                SitDuration = sitDuration;
                 CarriesHeadLamp = carriesHeadLamp;
                 PreservesAirborneMotion = preservesAirborneMotion;
                 DisplayName = displayName;
@@ -1665,6 +1768,15 @@ namespace BarPromenade.Editor
             public string WalkClipName { get; }
             public float IdleDuration { get; }
             public float WalkDuration { get; }
+
+            /// <summary>
+            /// The design's authored seated loop, or <c>null</c> for a design
+            /// that declares no Route 01 ride. It is not a locomotion clip:
+            /// its feet leave the pavement plane on purpose.
+            /// </summary>
+            public string SitClipName { get; }
+            public float SitDuration { get; }
+            public bool RidesBus => !string.IsNullOrEmpty(SitClipName);
             public int MinimumTriangleCount { get; }
             public int MaximumTriangleCount { get; }
 

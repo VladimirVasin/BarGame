@@ -383,10 +383,12 @@ MonoBehaviour:
     variantTwoColor: {r: 0.32549998, g: 0.1804, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.29140002, g: 0.205, b: 0.051599998, a: 1}
   headAnchor: {fileID: 3761208081952360342}
+  pelvisAnchor: {fileID: 4262684800507566150}
   leftFootAnchor: {fileID: 5936326566770101154}
   rightFootAnchor: {fileID: 761634700519692534}
   idleClip: {fileID: -8630869527077045045, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   walkClip: {fileID: 8558097099031572810, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
+  sitClip: {fileID: 0}
   localBounds:
     m_Center: {x: -0.000000059604645, y: 0.875, z: 0.100550056}
     m_Extent: {x: 0.76750004, y: 0.875, z: 0.28344992}
@@ -830,6 +832,11 @@ SkinnedMeshRenderer:
 --- !u!137 &4033010876895944386 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4656943872380489352, guid: c7745dd471f580348bf08af9926f281d, type: 3}
+  m_PrefabInstance: {fileID: 623489333952737210}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4262684800507566150 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: c7745dd471f580348bf08af9926f281d, type: 3}
   m_PrefabInstance: {fileID: 623489333952737210}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &4791653338225692884 stripped

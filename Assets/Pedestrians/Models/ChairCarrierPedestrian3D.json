@@ -33,7 +33,13 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
     "ChairCarrierIdle",
-    "ChairCarrierWalk"
+    "ChairCarrierWalk",
+    "ChairCarrierSit"
+  ],
+  "rides_bus": true,
+  "seated_clearance_m": [
+    1.02,
+    1.1
   ],
   "build_signature": "9b7998ec917a420dadbd30bfe08882a827e64e118e09949ce31d0357a3c2936a",
   "bones": [

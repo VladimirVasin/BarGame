@@ -142,14 +142,23 @@ namespace BarPromenade.Tests.EditMode
                     "LongArmIdle",
                     "LongArmWalk",
                     "HelmetLampIdle",
-                    "HelmetLampHop"
+                    "HelmetLampHop",
+                    "LampshadeSit",
+                    "ChairCarrierSit",
+                    "KettleHatSit",
+                    "LongArmSit"
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
+            // An idle and a walk for every design, plus one authored seated
+            // loop for each design that declares a Route 01 ride.
+            int seatedCount = CityPedestrianResources.Archetypes
+                .Count(archetype => archetype.CanRideBus);
             Assert.That(
                 locomotionClips,
                 Has.Length.EqualTo(
-                    CityPedestrianResources.Archetypes.Count * 2));
+                    (CityPedestrianResources.Archetypes.Count * 2) +
+                    seatedCount));
             Assert.That(
                 locomotionClips.All(clip => clip.isLooping),
                 Is.True,
@@ -205,6 +214,36 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(walkClipName));
             Assert.That(registry.IdleClip.isLooping, Is.True);
             Assert.That(registry.WalkClip.isLooping, Is.True);
+
+            // Seating aligns the shared rest pelvis to the cushion instead of
+            // pinning the lowest sole, so a riding design has to bind that
+            // bone and carry its own authored seated loop; a design that
+            // declares no ride must carry neither.
+            Assert.That(
+                CityPedestrianResources.TryGetArchetype(
+                    designId,
+                    out CityPedestrianArchetype archetype),
+                Is.True);
+            if (archetype.CanRideBus)
+            {
+                Assert.That(registry.PelvisAnchor, Is.Not.Null);
+                Assert.That(registry.PelvisAnchor.name, Does.Contain("pelvis"));
+                Assert.That(registry.SitClip, Is.Not.Null);
+                Assert.That(
+                    AssetDatabase.GetAssetPath(registry.SitClip),
+                    Is.EqualTo(LocomotionAnimationPath));
+                string expectedSitClipName = idleClipName.Substring(
+                    0,
+                    idleClipName.Length - "Idle".Length) + "Sit";
+                Assert.That(
+                    NormalizeAnimationClipName(registry.SitClip.name),
+                    Is.EqualTo(expectedSitClipName));
+                Assert.That(registry.SitClip.isLooping, Is.True);
+            }
+            else
+            {
+                Assert.That(registry.SitClip, Is.Null);
+            }
 
             AssertPassiveSharedPresentation(
                 pedestrianPrefab,
@@ -1571,21 +1610,66 @@ namespace BarPromenade.Tests.EditMode
                     designId,
                     StringComparison.Ordinal))
                 .ToArray();
-            CollectionAssert.AreEquivalent(
-                new[] { idleClipName, walkClipName },
-                owned.Select(clip => clip.name).ToArray(),
-                "Each design owns exactly its two registered clips.");
-
-            bool airborne = CityPedestrianResources.TryGetArchetype(
+            Assert.That(
+                CityPedestrianResources.TryGetArchetype(
                     designId,
-                    out _) &&
-                Resources.Load<GameObject>(
-                        ArchetypeResourcePath(designId))
-                    .GetComponent<CityPedestrianAssetRegistry>()
-                    .PreservesAirborneMotion;
+                    out CityPedestrianArchetype archetype),
+                Is.True);
+            string sitClipName = idleClipName.Substring(
+                0,
+                idleClipName.Length - "Idle".Length) + "Sit";
+            CollectionAssert.AreEquivalent(
+                archetype.CanRideBus
+                    ? new[] { idleClipName, walkClipName, sitClipName }
+                    : new[] { idleClipName, walkClipName },
+                owned.Select(clip => clip.name).ToArray(),
+                "A design owns its two locomotion clips, plus one seated loop " +
+                "when it declares a Route 01 ride.");
+
+            bool airborne = Resources.Load<GameObject>(
+                    ArchetypeResourcePath(designId))
+                .GetComponent<CityPedestrianAssetRegistry>()
+                .PreservesAirborneMotion;
             for (int index = 0; index < owned.Length; index++)
             {
                 LocomotionClip clip = owned[index];
+                if (clip.seated)
+                {
+                    // A seated clip leaves the pavement plane on purpose, so
+                    // it proves cabin fit instead of sole contact: measured
+                    // headroom above the seated pelvis, and nothing hanging
+                    // past the 0.41 m cushion height below it.
+                    Assert.That(
+                        clip.seated_headroom_m,
+                        Is.EqualTo(archetype.SeatedRide.SeatedHeadroom)
+                            .Within(0.04f),
+                        $"{clip.name} does not match its declared seated " +
+                        "headroom.");
+                    Assert.That(
+                        clip.seated_drop_m,
+                        Is.LessThanOrEqualTo(0.41f),
+                        $"{clip.name} would pass through the cabin floor.");
+
+                    // The runtime aligns the shared rest pelvis to the cushion
+                    // anchor, so the declared lift has to match how far this
+                    // design's own seated hips reach below that bone. A lift
+                    // under the measurement buries the design in the seat -
+                    // the nominal 0.015 sank the catalog by 4.6-11.1 cm - and
+                    // a lift above it leaves the design hovering.
+                    Assert.That(
+                        archetype.SeatedRide.SeatLift,
+                        Is.LessThanOrEqualTo(clip.seated_contact_m + 0.001f),
+                        $"{clip.name} would hover above the cushion.");
+                    Assert.That(
+                        archetype.SeatedRide.SeatLift,
+                        Is.GreaterThanOrEqualTo(
+                            clip.seated_contact_m - 0.03f),
+                        $"{clip.name} sinks more than 3 cm into the cushion; " +
+                        $"its hips reach {clip.seated_contact_m:F4} m below " +
+                        "the pelvis the runtime aligns.");
+                    continue;
+                }
+
                 Assert.That(
                     clip.ground_min_m,
                     Is.GreaterThanOrEqualTo(-0.002f),
@@ -1628,6 +1712,10 @@ namespace BarPromenade.Tests.EditMode
         [Serializable]
         private sealed class LocomotionClip
         {
+            public bool seated;
+            public float seated_headroom_m;
+            public float seated_drop_m;
+            public float seated_contact_m;
             public string name;
             public string archetype;
             public float ground_min_m;

@@ -498,13 +498,25 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Actor.TryAcquireServiceHold(owner),
                     Is.True);
+                // The hold is shared, not exclusive: an ambient passenger
+                // stepping through the doorway must not silently disable the
+                // hero's own board prompt. The doors resume only once every
+                // owner has let go.
                 Assert.That(
                     fixture.Actor.TryAcquireServiceHold(otherOwner),
-                    Is.False);
+                    Is.True);
+                Assert.That(
+                    fixture.Actor.ReleaseServiceHold(otherOwner),
+                    Is.True);
+                Assert.That(fixture.Actor.HasServiceHold, Is.True);
 
+                // Long enough that the dwell would have finished without the
+                // hold, but inside the bound that breaks a leaked one; the
+                // expiry itself is covered by
+                // LeakedServiceHold_ExpiresInsteadOfSealingTheDoors.
                 float heldElapsed = fixture.Actor.DwellElapsed;
                 fixture.Actor.Advance(
-                    CityBusActor.DwellDuration * 2f,
+                    CityBusActor.DwellDuration + 2f,
                     CityBusObstacleState.Clear,
                     0f);
 
@@ -518,6 +530,52 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(fixture.Actor.HasServiceHold, Is.True);
                 Assert.That(fixture.Actor.TryAttachPassenger(owner), Is.True);
                 Assert.That(fixture.Actor.HasPassenger, Is.True);
+                Assert.That(fixture.Actor.HasPlayerPassenger, Is.True);
+                Assert.That(
+                    fixture.Actor.TryGetOccupantSeatIndex(
+                        owner,
+                        out int heroSeat),
+                    Is.True);
+                Assert.That(heroSeat, Is.EqualTo(CityBusActor.PlayerSeatIndex));
+
+                // Ambient passengers always leave one place for the hero, so
+                // the cabin never carries more than three.
+                var ambient = new List<object>();
+                for (int index = 0;
+                     index < CityBusActor.CabinCapacity + 1;
+                     index++)
+                {
+                    var candidate = new object();
+                    if (!fixture.Actor.TryAttachNpcPassenger(
+                            candidate,
+                            out int seatIndex))
+                    {
+                        break;
+                    }
+
+                    Assert.That(
+                        seatIndex,
+                        Is.Not.EqualTo(CityBusActor.PlayerSeatIndex),
+                        "Seat 07 stays reserved for the hero.");
+                    Assert.That(
+                        ambient.Count,
+                        Is.LessThan(CityBusActor.MaximumNpcOccupants));
+                    ambient.Add(candidate);
+                }
+
+                Assert.That(
+                    fixture.Actor.NpcOccupantCount,
+                    Is.EqualTo(CityBusActor.MaximumNpcOccupants));
+                Assert.That(
+                    fixture.Actor.OccupantCount,
+                    Is.EqualTo(CityBusActor.CabinCapacity));
+                for (int index = 0; index < ambient.Count; index++)
+                {
+                    Assert.That(
+                        fixture.Actor.ReleasePassenger(ambient[index]),
+                        Is.True);
+                }
+
                 Assert.That(
                     fixture.Actor.ReleasePassenger(otherOwner),
                     Is.False);
@@ -532,15 +590,347 @@ namespace BarPromenade.Tests.EditMode
                     fixture.Actor.ReleasePassenger(owner);
                     fixture.Actor.ReleaseServiceHold(owner);
                 });
+                // The hero and the ambient passenger controller each own their
+                // own cleanup, so registration is multicast rather than a
+                // single exclusive callback.
+                bool secondCleanupCalled = false;
+                fixture.Director.RegisterPassengerCleanup(
+                    () => secondCleanupCalled = true);
                 fixture.Director.Shutdown();
 
                 Assert.That(cleanupCalled, Is.True);
+                Assert.That(secondCleanupCalled, Is.True);
                 Assert.That(fixture.Actor.HasPassenger, Is.False);
                 Assert.That(fixture.Actor.HasServiceHold, Is.False);
                 Assert.That(fixture.Director.ActiveCount, Is.Zero);
                 Assert.That(
                     fixture.Actor.MotionState,
                     Is.EqualTo(CityBusMotionState.Dormant));
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        /// <summary>
+        /// The hero must never find his seat taken. A bus can activate with
+        /// ambient passengers already aboard, so the order that matters is the
+        /// reverse of an ordinary board: cabin filled first, hero second.
+        /// </summary>
+        [Test]
+        public void FilledCabin_StillAdmitsTheHeroToSeat07()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Reserved Hero Seat",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+
+                // Fill every place ambient passengers are allowed to hold,
+                // and keep asking past the limit.
+                var ambient = new List<object>();
+                for (int index = 0;
+                     index < CityBusActor.CabinCapacity + 2;
+                     index++)
+                {
+                    var candidate = new object();
+                    if (!fixture.Actor.TryAttachNpcPassenger(
+                            candidate,
+                            out int seatIndex))
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        seatIndex,
+                        Is.Not.EqualTo(CityBusActor.PlayerSeatIndex),
+                        "No ambient passenger may ever hold seat 07.");
+                    ambient.Add(candidate);
+                }
+
+                Assert.That(
+                    ambient.Count,
+                    Is.EqualTo(CityBusActor.MaximumNpcOccupants),
+                    "Ambient passengers stop one short of the cabin so the " +
+                    "hero always has a place.");
+                Assert.That(
+                    fixture.Actor.IsSeatOccupied(
+                        CityBusActor.PlayerSeatIndex),
+                    Is.False);
+
+                var hero = new object();
+                Assert.That(
+                    fixture.Actor.TryAttachPassenger(hero),
+                    Is.True,
+                    "A full ambient cabin must not lock the hero out.");
+                Assert.That(
+                    fixture.Actor.TryGetOccupantSeatIndex(
+                        hero,
+                        out int heroSeat),
+                    Is.True);
+                Assert.That(
+                    heroSeat,
+                    Is.EqualTo(CityBusActor.PlayerSeatIndex));
+                Assert.That(
+                    fixture.Actor.OccupantCount,
+                    Is.EqualTo(CityBusActor.CabinCapacity));
+                Assert.That(fixture.Actor.HasPlayerPassenger, Is.True);
+
+                // Seats stay distinct, so nobody is ever seated on anybody.
+                var seats = new HashSet<int> { heroSeat };
+                for (int index = 0; index < ambient.Count; index++)
+                {
+                    Assert.That(
+                        fixture.Actor.TryGetOccupantSeatIndex(
+                            ambient[index],
+                            out int seat),
+                        Is.True);
+                    Assert.That(seats.Add(seat), Is.True);
+                }
+
+                for (int index = 0; index < ambient.Count; index++)
+                {
+                    fixture.Actor.ReleasePassenger(ambient[index]);
+                }
+
+                fixture.Actor.ReleasePassenger(hero);
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        /// <summary>
+        /// Regression: a service hold freezes the dwell timer, and the door
+        /// timeline is sampled from that timer, so an owner that never lets
+        /// go leaves the bus parked at every later stop with its doors shut —
+        /// no prompt for the hero, no boarding for anyone. The hold is broken
+        /// and reported rather than stranding the route for the session.
+        /// </summary>
+        [Test]
+        public void LeakedServiceHold_ExpiresInsteadOfSealingTheDoors()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Leaked Service Hold",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+                DriveToOpenDoors(fixture);
+
+                var abandoned = new object();
+                Assert.That(
+                    fixture.Actor.TryAcquireServiceHold(abandoned),
+                    Is.True);
+
+                // The owner is never heard from again.
+                float held = 0f;
+                while (held < CityBusActor.MaximumServiceHoldDuration + 1f &&
+                       fixture.Actor.HasServiceHold)
+                {
+                    fixture.Actor.Advance(
+                        0.1f,
+                        CityBusObstacleState.Clear,
+                        0f);
+                    held += 0.1f;
+                }
+
+                Assert.That(
+                    fixture.Actor.HasServiceHold,
+                    Is.False,
+                    "A hold that outlives its owner must expire.");
+                Assert.That(
+                    held,
+                    Is.GreaterThanOrEqualTo(
+                        CityBusActor.MaximumServiceHoldDuration - 0.2f),
+                    "It must not expire early enough to cut a real transfer.");
+
+                // The dwell resumes, so the doors close and the loop goes on
+                // instead of the bus sitting at this stop forever.
+                for (int guard = 0;
+                     guard < 400 &&
+                     fixture.Actor.MotionState ==
+                         CityBusMotionState.Dwelling;
+                     guard++)
+                {
+                    fixture.Actor.Advance(
+                        0.1f,
+                        CityBusObstacleState.Clear,
+                        0f);
+                }
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.Not.EqualTo(CityBusMotionState.Dwelling),
+                    "The dwell must finish once the leaked hold is gone.");
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        private static void DriveToOpenDoors(RuntimeFixture fixture)
+        {
+            for (int guard = 0;
+                 guard < 1200 &&
+                 fixture.Actor.MotionState != CityBusMotionState.Dwelling;
+                 guard++)
+            {
+                fixture.Actor.Advance(
+                    0.05f,
+                    CityBusObstacleState.Clear,
+                    0f);
+            }
+
+            fixture.Actor.Advance(
+                CityBusActor.DoorTransitionDuration + 0.01f,
+                CityBusObstacleState.Clear,
+                0f);
+            Assert.That(fixture.Actor.DoorsFullyOpen, Is.True);
+        }
+
+        /// <summary>
+        /// Regression: the bus could not cover the last third of a metre into a
+        /// stop.
+        /// <para>
+        /// Approach speed rides the service-braking curve exactly, so
+        /// `v = sqrt(2 * ServiceDeceleration * distanceToStop)` and one frame
+        /// moves `v * deltaTime`. `MoveAlongRoute` used to discard any frame
+        /// whose travel was under `DistanceTolerance`, and at `60 fps` that
+        /// threshold is crossed as soon as the stop is `0.31 m` away. The
+        /// discarded travel left the distance unchanged, so the speed cap was
+        /// unchanged, so the next frame was under the threshold too: a latch,
+        /// not a rounding loss. `BeginDwell` never ran and the doors, which are
+        /// driven only by the dwell timer, never opened.
+        /// </para>
+        /// <para>
+        /// Every other bus test steps at `0.05 s`, where the freeze band is
+        /// only `0.034 m` and hides inside the arrival tolerance. This one runs
+        /// at a real frame rate on purpose.
+        /// </para>
+        /// </summary>
+        [TestCase(1f / 30f)]
+        [TestCase(1f / 40f)]
+        [TestCase(1f / 45f)]
+        [TestCase(1f / 60f)]
+        [TestCase(1f / 120f)]
+        [TestCase(1f / 144f)]
+        public void ServiceApproach_ReachesTheStopAtRealFrameRates(
+            float deltaTime)
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Approach Dead Zone",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+
+                // Sixty simulated seconds is several times what one approach
+                // needs; the old code stood still here for all of them.
+                int steps = Mathf.CeilToInt(60f / deltaTime);
+                float closest = float.PositiveInfinity;
+                for (int index = 0;
+                     index < steps &&
+                     fixture.Actor.MotionState !=
+                         CityBusMotionState.Dwelling;
+                     index++)
+                {
+                    fixture.Actor.Advance(
+                        deltaTime,
+                        CityBusObstacleState.Clear,
+                        0f);
+                    closest = Mathf.Min(closest, fixture.Actor.Speed);
+                }
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dwelling),
+                    $"At {1f / deltaTime:F0} fps the bus never reached its " +
+                    "stop, so its doors could never open.");
+                Assert.That(fixture.Actor.CurrentStop, Is.Not.Null);
+
+                fixture.Actor.Advance(
+                    CityBusActor.DoorTransitionDuration + 0.01f,
+                    CityBusObstacleState.Clear,
+                    0f);
+                Assert.That(
+                    fixture.Actor.DoorsFullyOpen,
+                    Is.True,
+                    "Arriving must lead to open doors.");
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        /// <summary>
+        /// The regime that actually stranded the bus in play. Coming down from
+        /// cruise, `MoveTowards` saturates at `ServiceDeceleration * deltaTime`
+        /// and keeps the bus overspeed relative to the braking curve, so it
+        /// punches through the sub-tolerance band. Setting off again from a
+        /// standstill it never gets above that band at all: at `40 fps` a frame
+        /// commits motion only while `v > 0.80 m/s`, and the curve drops under
+        /// that `0.14 m` from the stop. A yield lasting a fraction of a second
+        /// is therefore enough to arm a stall of arbitrary length — which is
+        /// why nobody had to be standing in front of the bus for fifteen
+        /// seconds for it to stand there for fifteen seconds.
+        /// </summary>
+        [TestCase(1f / 30f)]
+        [TestCase(1f / 40f)]
+        [TestCase(1f / 60f)]
+        public void ApproachResumingFromAYield_StillReachesTheStop(
+            float deltaTime)
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Yield Then Resume",
+                    CreateCyclicPlan());
+                fixture.SpawnDirectly();
+
+                // Hold it at a full stop for a moment on the approach, exactly
+                // as an obstacle would.
+                var blocked = new CityBusObstacleState(true, 0f);
+                for (int index = 0; index < 40; index++)
+                {
+                    fixture.Actor.Advance(deltaTime, blocked, 0f);
+                }
+
+                Assert.That(
+                    fixture.Actor.Speed,
+                    Is.EqualTo(0f).Within(0.0001f),
+                    "The obstacle contract is that the bus stops dead.");
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.Not.EqualTo(CityBusMotionState.Dwelling));
+
+                int steps = Mathf.CeilToInt(60f / deltaTime);
+                for (int index = 0;
+                     index < steps &&
+                     fixture.Actor.MotionState !=
+                         CityBusMotionState.Dwelling;
+                     index++)
+                {
+                    fixture.Actor.Advance(
+                        deltaTime,
+                        CityBusObstacleState.Clear,
+                        0f);
+                }
+
+                Assert.That(
+                    fixture.Actor.MotionState,
+                    Is.EqualTo(CityBusMotionState.Dwelling),
+                    $"At {1f / deltaTime:F0} fps the bus never set off again " +
+                    "after giving way, so its doors could never open.");
             }
             finally
             {

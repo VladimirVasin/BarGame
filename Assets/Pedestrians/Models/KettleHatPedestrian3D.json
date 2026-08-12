@@ -33,7 +33,13 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
     "KettleHatIdle",
-    "KettleHatWalk"
+    "KettleHatWalk",
+    "KettleHatSit"
+  ],
+  "rides_bus": true,
+  "seated_clearance_m": [
+    1.01,
+    1.09
   ],
   "build_signature": "f9939e810294049bd590d73784a88311aa1a081c822462a8528a39e46f3b7d46",
   "bones": [

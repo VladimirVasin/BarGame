@@ -33,7 +33,13 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
     "LampshadeIdle",
-    "LampshadeWalk"
+    "LampshadeWalk",
+    "LampshadeSit"
+  ],
+  "rides_bus": true,
+  "seated_clearance_m": [
+    0.99,
+    1.07
   ],
   "build_signature": "0b81c4ae86e6138b7af2f5de64dca65e8a085e0c67ecd20e6c2749a1f148851f",
   "bones": [

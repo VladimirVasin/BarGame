@@ -8,7 +8,22 @@ namespace BarPromenade
     {
         Dormant = 0,
         Walking,
-        RouteEnded
+        RouteEnded,
+
+        /// <summary>Walking the graph toward a Route 01 wait slot.</summary>
+        ApproachingStop,
+
+        /// <summary>Standing on the pavement facing the carriageway.</summary>
+        WaitingAtStop,
+
+        /// <summary>Crossing the doorway into a reserved seat.</summary>
+        Boarding,
+
+        /// <summary>Seated; the passenger controller owns the pose.</summary>
+        Riding,
+
+        /// <summary>Crossing the doorway back onto a roadside dock.</summary>
+        Alighting
     }
 
     [RequireComponent(typeof(CharacterController))]
@@ -30,6 +45,22 @@ namespace BarPromenade
         public const float ArrivalRadius = 0.18f;
         public const float BlockedEscapeSeconds = 1.5f;
         public const float BlockedDisplacementFraction = 0.25f;
+
+        /// <summary>
+        /// Inside this range a walker heading for a stop leaves the graph and
+        /// steps straight onto its wait slot. The slot sits on the same
+        /// sidewalk lane as the node it came from, so the last few metres are
+        /// ordinary pavement rather than a route.
+        /// </summary>
+        public const float DirectWaitSlotDistance = 7f;
+
+        /// <summary>
+        /// A doorway transfer is a short scripted walk, not a teleport. It
+        /// runs at the design's own pace and gives up if the doorway cannot be
+        /// reached in time, which returns the walker to the pavement.
+        /// </summary>
+        public const float TransferArrivalRadius = 0.12f;
+        public const float TransferTurnSpeedDegrees = 540f;
 
         private readonly List<int> normalCandidates = new List<int>(4);
         private readonly List<int> crosswalkCandidates = new List<int>(2);
@@ -54,6 +85,13 @@ namespace BarPromenade
         private float? forcedCrosswalkRoll;
         private Vector3? approachTarget;
         private IReadOnlyList<float> approachNodeDistances;
+        private Vector3? waitSlot;
+        private Vector3 waitFacing = Vector3.forward;
+        private IReadOnlyList<float> stopApproachNodeDistances;
+        private Vector3 transferWaypoint;
+        private Vector3 transferDestination;
+        private Quaternion transferRotation = Quaternion.identity;
+        private bool transferPassedWaypoint;
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
@@ -79,6 +117,29 @@ namespace BarPromenade
         public float AnimationSpeed => animationSpeed;
         public bool RouteEnded =>
             MotionState == CityPedestrianMotionState.RouteEnded;
+
+        /// <summary>
+        /// True while this walker belongs to Route 01 rather than to ordinary
+        /// roaming. The population director must not recycle it on distance
+        /// and must not accelerate its simulation.
+        /// </summary>
+        public bool IsRouteBound =>
+            MotionState == CityPedestrianMotionState.ApproachingStop ||
+            MotionState == CityPedestrianMotionState.WaitingAtStop ||
+            IsAttachedToVehicle;
+
+        /// <summary>
+        /// True from the first step through the doorway until the last step
+        /// back out. The bus must treat such a walker as cargo, never as an
+        /// obstacle to yield to.
+        /// </summary>
+        public bool IsAttachedToVehicle =>
+            MotionState == CityPedestrianMotionState.Boarding ||
+            MotionState == CityPedestrianMotionState.Riding ||
+            MotionState == CityPedestrianMotionState.Alighting;
+
+        public bool TransferCompleted { get; private set; }
+        public int StopWaitNodeIndex { get; private set; } = -1;
         public int CrosswalkDecisionCount { get; private set; }
         public int CrosswalksTaken { get; private set; }
         public Vector3 TravelDirection => GetTravelDirection();
@@ -250,6 +311,7 @@ namespace BarPromenade
             presentation = null;
             if (released != null)
             {
+                released.ClearSeat();
                 released.SetMoving(false);
                 released.gameObject.SetActive(false);
                 released.transform.SetParent(poolRoot, false);
@@ -277,11 +339,20 @@ namespace BarPromenade
             approachTarget = initialApproachTarget;
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
-            IsYielding = shouldYield &&
-                MotionState == CityPedestrianMotionState.Walking;
+            bool roaming = MotionState == CityPedestrianMotionState.Walking ||
+                MotionState == CityPedestrianMotionState.ApproachingStop;
+            bool transferring =
+                MotionState == CityPedestrianMotionState.Boarding ||
+                MotionState == CityPedestrianMotionState.Alighting;
+            IsYielding = shouldYield && roaming;
             bool moving = false;
-            if (!IsYielding &&
-                MotionState == CityPedestrianMotionState.Walking)
+            if (transferring)
+            {
+                // The passenger controller owns the doorway. Ordinary
+                // avoidance and the walkable area do not apply inside a bus.
+                moving = AdvanceTransfer(safeDeltaTime);
+            }
+            else if (!IsYielding && roaming)
             {
                 moving = AdvanceWalking(safeDeltaTime);
             }
@@ -291,8 +362,7 @@ namespace BarPromenade
                 blockedTime += safeDeltaTime;
             }
 
-            if (blockedTime >= BlockedEscapeSeconds &&
-                MotionState == CityPedestrianMotionState.Walking)
+            if (blockedTime >= BlockedEscapeSeconds && roaming)
             {
                 TakeDetour();
             }
@@ -301,9 +371,267 @@ namespace BarPromenade
             approachNodeDistances = null;
             presentation.Advance(
                 safeDeltaTime,
-                MotionState == CityPedestrianMotionState.Walking &&
+                (roaming || transferring) &&
                 !IsYielding &&
                 (moving || safeDeltaTime <= 0f));
+        }
+
+        /// <summary>
+        /// Sends this walker to a Route 01 wait slot. Routing reuses the same
+        /// graph guidance the population director already runs toward the
+        /// hero, seeded at the stop instead.
+        /// </summary>
+        public bool BeginStopApproach(
+            int waitNodeIndex,
+            Vector3 slotPosition,
+            Vector3 facing,
+            IReadOnlyList<float> waitNodeDistances)
+        {
+            if (!IsSpawned ||
+                MotionState != CityPedestrianMotionState.Walking ||
+                waitNodeIndex < 0 ||
+                targetNodeIndex < 0 ||
+                plan == null ||
+                waitNodeDistances == null ||
+                waitNodeDistances.Count != plan.Nodes.Count ||
+                float.IsPositiveInfinity(waitNodeDistances[targetNodeIndex]))
+            {
+                return false;
+            }
+
+            StopWaitNodeIndex = waitNodeIndex;
+            stopApproachNodeDistances = waitNodeDistances;
+            waitSlot = slotPosition;
+            Vector3 planarFacing = facing;
+            planarFacing.y = 0f;
+            waitFacing = planarFacing.sqrMagnitude > 0.0001f
+                ? planarFacing.normalized
+                : transform.forward;
+            MotionState = CityPedestrianMotionState.ApproachingStop;
+            blockedTime = 0f;
+            return true;
+        }
+
+        /// <summary>
+        /// Returns a stop-bound walker to ordinary roaming without moving it.
+        /// </summary>
+        public void CancelStopApproach()
+        {
+            if (MotionState != CityPedestrianMotionState.ApproachingStop &&
+                MotionState != CityPedestrianMotionState.WaitingAtStop)
+            {
+                return;
+            }
+
+            StopWaitNodeIndex = -1;
+            stopApproachNodeDistances = null;
+            waitSlot = null;
+            blockedTime = 0f;
+            MotionState = targetNodeIndex >= 0
+                ? CityPedestrianMotionState.Walking
+                : CityPedestrianMotionState.RouteEnded;
+        }
+
+        /// <summary>
+        /// Starts a scripted doorway transfer through
+        /// <paramref name="waypoint"/> to <paramref name="destination"/>. The
+        /// capsule is released for the crossing: a bus floor is not walkable
+        /// area, and the doorway is narrower than the lateral room the
+        /// pavement avoidance assumes.
+        /// </summary>
+        public bool BeginTransfer(
+            bool boarding,
+            Vector3 waypoint,
+            Vector3 destination,
+            Quaternion destinationRotation)
+        {
+            if (!IsSpawned)
+            {
+                return false;
+            }
+
+            if (boarding)
+            {
+                if (MotionState != CityPedestrianMotionState.WaitingAtStop &&
+                    MotionState != CityPedestrianMotionState.ApproachingStop)
+                {
+                    return false;
+                }
+            }
+            else if (MotionState != CityPedestrianMotionState.Riding)
+            {
+                return false;
+            }
+
+            transferWaypoint = waypoint;
+            transferDestination = destination;
+            transferRotation = destinationRotation;
+            transferPassedWaypoint = false;
+            TransferCompleted = false;
+            blockedTime = 0f;
+            waitSlot = null;
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            presentation.ClearSeat();
+            MotionState = boarding
+                ? CityPedestrianMotionState.Boarding
+                : CityPedestrianMotionState.Alighting;
+            return true;
+        }
+
+        /// <summary>
+        /// Hands the seated pose to the passenger controller. The walker stops
+        /// simulating: its root is late-synchronised to the actor-local seat
+        /// pose every frame, exactly as the hero's is.
+        /// </summary>
+        public bool BeginRide(
+            Transform seatAnchor,
+            CityPedestrianSeatedRide seatedRide)
+        {
+            if (!IsSpawned ||
+                MotionState != CityPedestrianMotionState.Boarding ||
+                !presentation.TrySeat(seatAnchor, seatedRide))
+            {
+                return false;
+            }
+
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            TransferCompleted = false;
+            MotionState = CityPedestrianMotionState.Riding;
+            return true;
+        }
+
+        /// <summary>
+        /// Seats a freshly activated walker that is already aboard. A bus
+        /// spawns with passengers in it the same way it spawns with a driver:
+        /// they were never on this pavement, so there is no doorway crossing
+        /// to play and no transfer to complete.
+        /// </summary>
+        public bool BeginSeatedRide(
+            Transform seatAnchor,
+            CityPedestrianSeatedRide seatedRide)
+        {
+            if (!IsSpawned ||
+                MotionState != CityPedestrianMotionState.Walking ||
+                !presentation.TrySeat(seatAnchor, seatedRide))
+            {
+                return false;
+            }
+
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            waitSlot = null;
+            stopApproachNodeDistances = null;
+            blockedTime = 0f;
+            TransferCompleted = false;
+            MotionState = CityPedestrianMotionState.Riding;
+            return true;
+        }
+
+        /// <summary>
+        /// Places this walker back on the pavement and resumes ordinary
+        /// roaming from the stop's own graph node.
+        /// </summary>
+        public void ResumeRoaming(int fromNodeIndex)
+        {
+            if (presentation != null)
+            {
+                presentation.ClearSeat();
+            }
+
+            StopWaitNodeIndex = -1;
+            stopApproachNodeDistances = null;
+            waitSlot = null;
+            transferPassedWaypoint = false;
+            TransferCompleted = false;
+            blockedTime = 0f;
+            lateralOffset = 0f;
+            if (fromNodeIndex >= 0 && plan != null &&
+                fromNodeIndex < plan.Nodes.Count)
+            {
+                previousNodeIndex = -1;
+                targetNodeIndex = fromNodeIndex;
+                incomingLinkKind = CityPedestrianLinkKind.Sidewalk;
+            }
+
+            if (characterController != null && IsSpawned)
+            {
+                characterController.enabled = true;
+            }
+
+            MotionState = targetNodeIndex >= 0
+                ? CityPedestrianMotionState.Walking
+                : CityPedestrianMotionState.RouteEnded;
+            FaceTargetImmediately();
+        }
+
+        /// <summary>
+        /// Moves the world root while riding. The gameplay hierarchy is never
+        /// reparented, so a pooled or deactivated bus slot cannot disable a
+        /// passenger.
+        /// </summary>
+        public void SetRidePose(Vector3 position, Quaternion rotation)
+        {
+            if (MotionState != CityPedestrianMotionState.Riding)
+            {
+                return;
+            }
+
+            transform.SetPositionAndRotation(position, rotation);
+        }
+
+        private bool AdvanceTransfer(float deltaTime)
+        {
+            if (deltaTime <= 0f || TransferCompleted)
+            {
+                return false;
+            }
+
+            Vector3 current = transform.position;
+            Vector3 target = transferPassedWaypoint
+                ? transferDestination
+                : transferWaypoint;
+            Vector3 offset = target - current;
+            float distance = offset.magnitude;
+            if (distance <= TransferArrivalRadius)
+            {
+                if (!transferPassedWaypoint)
+                {
+                    transferPassedWaypoint = true;
+                    return true;
+                }
+
+                transform.position = transferDestination;
+                transform.rotation = transferRotation;
+                TransferCompleted = true;
+                return false;
+            }
+
+            Vector3 direction = offset / distance;
+            float step = Mathf.Min(speed * deltaTime, distance);
+            transform.position = current + (direction * step);
+            Vector3 planar = direction;
+            planar.y = 0f;
+            if (planar.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    Quaternion.LookRotation(planar.normalized, Vector3.up),
+                    TransferTurnSpeedDegrees * deltaTime);
+            }
+
+            LastDisplacement = transform.position - current;
+            return true;
         }
 
         internal void ForceNextCrosswalkRoll(float roll)
@@ -319,12 +647,21 @@ namespace BarPromenade
             }
 
             Vector3 current = transform.position;
-            Vector3 target = plan.Nodes[targetNodeIndex].Position;
+            bool directToWaitSlot = TryGetDirectWaitSlot(current, out Vector3 slot);
+            Vector3 target = directToWaitSlot
+                ? slot
+                : plan.Nodes[targetNodeIndex].Position;
             Vector3 planarOffset = target - current;
             planarOffset.y = 0f;
             float distance = planarOffset.magnitude;
             if (distance <= ArrivalRadius)
             {
+                if (directToWaitSlot)
+                {
+                    ArriveAtWaitSlot();
+                    return false;
+                }
+
                 ReachTargetNode();
                 return false;
             }
@@ -387,7 +724,14 @@ namespace BarPromenade
             remaining.y = 0f;
             if (remaining.magnitude <= ArrivalRadius)
             {
-                ReachTargetNode();
+                if (directToWaitSlot)
+                {
+                    ArriveAtWaitSlot();
+                }
+                else
+                {
+                    ReachTargetNode();
+                }
             }
 
             return LastDisplacement.sqrMagnitude > 0.000001f;
@@ -460,6 +804,40 @@ namespace BarPromenade
             incomingLinkKind = selected.Kind;
         }
 
+        private bool TryGetDirectWaitSlot(Vector3 current, out Vector3 slot)
+        {
+            slot = default;
+            if (MotionState != CityPedestrianMotionState.ApproachingStop ||
+                !waitSlot.HasValue)
+            {
+                return false;
+            }
+
+            Vector3 offset = waitSlot.Value - current;
+            offset.y = 0f;
+            if (offset.sqrMagnitude >
+                DirectWaitSlotDistance * DirectWaitSlotDistance)
+            {
+                return false;
+            }
+
+            slot = waitSlot.Value;
+            return true;
+        }
+
+        private void ArriveAtWaitSlot()
+        {
+            MotionState = CityPedestrianMotionState.WaitingAtStop;
+            blockedTime = 0f;
+            lateralOffset = 0f;
+            if (waitFacing.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.LookRotation(
+                    waitFacing,
+                    Vector3.up);
+            }
+        }
+
         /// <summary>
         /// Turns back along the current link. On a pavement this narrow there
         /// is no way past a blocked lane, so the only honest resolution is to
@@ -495,12 +873,24 @@ namespace BarPromenade
                 }
             }
 
+            if (MotionState == CityPedestrianMotionState.ApproachingStop &&
+                stopApproachNodeDistances != null &&
+                waitSlot.HasValue)
+            {
+                return SelectClosestCandidate(
+                    candidates,
+                    preferredCount > 0,
+                    waitSlot.Value,
+                    stopApproachNodeDistances);
+            }
+
             if (approachTarget.HasValue)
             {
                 return SelectClosestCandidate(
                     candidates,
                     preferredCount > 0,
-                    approachTarget.Value);
+                    approachTarget.Value,
+                    approachNodeDistances);
             }
 
             int selectableCount = preferredCount > 0
@@ -530,14 +920,15 @@ namespace BarPromenade
         private int SelectClosestCandidate(
             IReadOnlyList<int> candidates,
             bool preferConnectedNodes,
-            Vector3 target)
+            Vector3 target,
+            IReadOnlyList<float> nodeDistances)
         {
             int selectedLink = -1;
             float selectedGraphDistance = float.PositiveInfinity;
             float selectedDistance = float.PositiveInfinity;
             bool hasGraphDistances =
-                approachNodeDistances != null &&
-                approachNodeDistances.Count == plan.Nodes.Count;
+                nodeDistances != null &&
+                nodeDistances.Count == plan.Nodes.Count;
             for (int index = 0; index < candidates.Count; index++)
             {
                 CityPedestrianLink link = plan.Links[candidates[index]];
@@ -554,7 +945,7 @@ namespace BarPromenade
                 float distance = (deltaX * deltaX) +
                                  (deltaZ * deltaZ);
                 float graphDistance = hasGraphDistances
-                    ? approachNodeDistances[other]
+                    ? nodeDistances[other]
                     : float.PositiveInfinity;
                 if (selectedLink < 0 ||
                     graphDistance < selectedGraphDistance - 0.0001f ||
@@ -636,6 +1027,13 @@ namespace BarPromenade
             forcedCrosswalkRoll = null;
             approachTarget = null;
             approachNodeDistances = null;
+            stopApproachNodeDistances = null;
+            waitSlot = null;
+            waitFacing = Vector3.forward;
+            transferPassedWaypoint = false;
+            transferRotation = Quaternion.identity;
+            TransferCompleted = false;
+            StopWaitNodeIndex = -1;
             SpawnAnchorId = string.Empty;
             MotionState = CityPedestrianMotionState.Dormant;
             IsYielding = false;

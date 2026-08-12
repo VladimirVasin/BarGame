@@ -67,7 +67,9 @@ returns. They spawn at randomly
   early.
   The presentation pool repeats the stable ordered
   catalog: a Lampshade Walker, a Chair Carrier, a Kettle Hat Walker, a
-  Long-Arm Walker and a Helmet Lamp Hopper. Each ordinary design owns three
+  Long-Arm Walker and a Helmet Lamp Hopper. The first four also declare a
+  seated Route 01 ride and own an authored `Sit` loop; the hopper declares
+  none and stays on the pavement. Each ordinary design owns three
   City instances and the lamp-bearing hopper exactly one, which is what still
   caps the worn lights in the world at one. The pool exceeds the active
   population, so a repeat encounter shows a different mix. All five
@@ -124,8 +126,13 @@ pitch up to `0.8` degrees and roll up to `1` degree while the four wheel
 assemblies remain grounded; the route actor and collider do not move with it.
 Route 01 is one deterministic right-hand, Street-only closed winding service
 loop. The planner targets every district point of interest that actually exists
-in the layout and then the player home; the default city therefore has five
-semantic stops in Industrial, Nightlife, Residential, Old Town and Home order.
+in the layout plus the player home, then orders them as a shortest closed tour
+rather than by district name: the default city therefore serves Home,
+Residential, Old Town, Industrial and Nightlife and comes back, numbering from
+the one stop the hero can name. Ordering by the district enum instead had no
+geography in it and crossed the whole city twice, walking `1166 m` between
+stops where `754 m` was available and forcing a `2592 m` road loop; the tour
+order brings the same loop to `1798 m`.
 Each stop sits on a safe straight whose physical street edge is either a target
 frontage or one connected edge away. Its blue `01` pole stays on a different
 roadside cell and outside the POI public/access bounds or Home footprint. The
@@ -179,7 +186,44 @@ does not target the raised curb. Boarding/alighting holds the doors, and
 cancellation, scene teardown or bus lifecycle cleanup restores the motor,
 collider, contact shadow and camera at a safe exterior pose while leaving the
 player hierarchy unchanged.
-Fare/payment, destination selection, NPC passengers, passenger persistence and
+Up to two ambient walkers ride alongside him, so the cabin never carries more
+than three counting the hero: seat `07` stays reserved, and ambient passengers
+take a stable order of the other eleven seats biased to the driver-side row and
+rear bench. The bus does not arrive empty by default: the moment it activates
+it seats a seeded `0-2` ambient passengers, who were riding before the hero
+could see the vehicle and leave through the ordinary alighting path at a seeded
+later stop. Waiters appear two ways. A roaming walker already within `55 m` of a
+stop along the pavement graph is recruited and walks there, so the hero can
+watch the whole approach; where the stop is already beyond the `76 m` fog band a
+waiter is activated straight onto its slot. Either way it stands on the sidewalk
+centreline `0.70 m` road-ward of the blue `01` pole, facing the carriageway,
+because the pole itself sits `0.2 m` outside the walkable strip and carries a
+collider. Two slots per stop queue along the lane at `+0.30 m` and `+1.40 m`
+from the halt pose, clear of both door entries, since a `1 m` pavement cannot
+fit two walkers abreast. Boarding takes the same shared service hold as the
+hero -- the hold is per owner, so a boarding walker never disables his own
+prompt -- reuses the same validated door dock and grounded-root resolution with
+its own seat index and capsule radius, and runs a short scripted doorway walk
+whose time budget is derived from the measured `pavement -> door -> seat` path
+and that walker's own `0.72-1.30 m/s` pace, clamped to `3 s` up to one whole
+dwell; the door is chosen by that whole journey rather than by which one the
+walker stands nearer, because the two doors sit `4.39 m` apart on the same
+kerb. An overrun aborts back to the pavement rather than stalling the fixed
+`10 s` dwell. Passengers alight at a seeded strictly later stop through the same
+door onto a validated roadside dock and rejoin ordinary roaming at the stop's
+own graph node. A rider is exempt from the `88 m` pedestrian recycle rule, from
+distant simulation acceleration and from the bus's own pedestrian yielding;
+recycling keys on the hero alone, so a bus `92 m` away behind fog pools with its
+ambient passengers instead of stranding the single actor slot for a lap.
+Seating is one rule for every design: all five copy the hero's exact 31-bone rig
+at a `0.70 m` rest pelvis, so the runtime aligns that bone to the cushion rather
+than pinning the lowest sole, which on a seat would drag the model down until
+its boots touched the cabin floor. What varies is declared per archetype -- an
+authored seated posture, a pelvis lift and back offset, and a headroom band the
+deterministic generator proves against the real deformed meshes. The `2.05 m`
+cabin and `0.41 m` cushion leave `1.64 m`; the four riders measure `1.03-1.06 m`
+above the seated pelvis and hang `0.35-0.38 m` below it.
+Fare/payment, destination selection, passenger persistence and
 live bus tracking are deferred. The City map still draws Route 01 as a blue
 ink-outlined line beneath the orange player itinerary, plus five numbered
 localized stop markers in the default layout and a compact legend; it has no

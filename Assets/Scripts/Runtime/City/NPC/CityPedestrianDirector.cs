@@ -404,7 +404,10 @@ namespace BarPromenade
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
-                if (!actor.IsSpawned)
+                // A walker that belongs to Route 01 leaves through the
+                // passenger controller, not through the distance rule: pooling
+                // a seated passenger would empty a moving bus mid-lap.
+                if (!actor.IsSpawned || actor.IsRouteBound)
                 {
                     continue;
                 }
@@ -454,6 +457,50 @@ namespace BarPromenade
                 return false;
             }
 
+            if (!TryBindSpawn(
+                    actorIndex,
+                    candidate.Anchor,
+                    candidate.TargetNodeIndex,
+                    spawnSeed,
+                    available))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Applies the seeded motion, palette and behaviour values to one
+        /// prepared spawn and binds its pooled presentation. Shared by
+        /// ordinary population events and by Route 01 stop waiters, so both
+        /// derive their look and pace from the same stream.
+        /// </summary>
+        private bool TryBindSpawn(
+            int actorIndex,
+            CityPedestrianSpawnAnchor anchor,
+            int targetNodeIndex,
+            uint spawnSeed,
+            CityPedestrianPresentation available)
+        {
+            return TryBindSpawn(
+                actorIndex,
+                anchor,
+                targetNodeIndex,
+                spawnSeed,
+                available,
+                true);
+        }
+
+        private bool TryBindSpawn(
+            int actorIndex,
+            CityPedestrianSpawnAnchor anchor,
+            int targetNodeIndex,
+            uint spawnSeed,
+            CityPedestrianPresentation available,
+            bool requireClearActivation)
+        {
+            CityPedestrianActor actor = actors[actorIndex];
             CityPedestrianArchetype archetype =
                 GetArchetype(available);
             float speed = LerpFromHash(
@@ -486,8 +533,8 @@ namespace BarPromenade
                 BehaviorSalt);
             actor.PrepareSpawn(
                 plan,
-                candidate.Anchor,
-                candidate.TargetNodeIndex,
+                anchor,
+                targetNodeIndex,
                 speed,
                 animationSpeed,
                 animationPhase,
@@ -495,7 +542,8 @@ namespace BarPromenade
                 behaviorSeed);
             try
             {
-                if (!IsCollisionActivationSafe(
+                if (requireClearActivation &&
+                    !IsCollisionActivationSafe(
                         actor.Position,
                         actor.AgentRadius,
                         actor))
@@ -515,6 +563,221 @@ namespace BarPromenade
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Activates one walker directly onto a Route 01 wait slot. The
+        /// passenger controller calls this only where the stop is already
+        /// hidden, so nobody watches a waiter appear; a walker that happens to
+        /// be near a stop is recruited on the pavement instead.
+        /// </summary>
+        public CityPedestrianActor TrySpawnStopWaiter(
+            Vector3 slotPosition,
+            Vector3 facing,
+            int waitNodeIndex,
+            IReadOnlyList<float> waitNodeDistances,
+            uint spawnSeed)
+        {
+            if (!IsInitialized ||
+                plan == null ||
+                waitNodeIndex < 0 ||
+                waitNodeIndex >= plan.Nodes.Count)
+            {
+                return null;
+            }
+
+            int actorIndex = FindAvailableActorIndex();
+            if (actorIndex < 0)
+            {
+                return null;
+            }
+
+            CityPedestrianPresentation available =
+                FindAvailableRidingPresentation(spawnSeed);
+            if (available == null)
+            {
+                return null;
+            }
+
+            var anchor = new CityPedestrianSpawnAnchor(
+                "bus-stop-wait:" + waitNodeIndex.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture),
+                slotPosition,
+                waitNodeIndex,
+                waitNodeIndex);
+            // A stop waiter never takes part in player-approach guidance: it
+            // already has somewhere to be.
+            initialApproachCompleted[actorIndex] = true;
+            if (!TryBindSpawn(
+                    actorIndex,
+                    anchor,
+                    waitNodeIndex,
+                    spawnSeed,
+                    available))
+            {
+                return null;
+            }
+
+            CityPedestrianActor actor = actors[actorIndex];
+            if (!actor.BeginStopApproach(
+                    waitNodeIndex,
+                    slotPosition,
+                    facing,
+                    waitNodeDistances))
+            {
+                ReleaseActor(actorIndex);
+                return null;
+            }
+
+            return actor;
+        }
+
+        /// <summary>
+        /// Activates one walker already seated inside a vehicle. The static
+        /// clearance probe is deliberately skipped: the capsule overlaps the
+        /// bus body on purpose, which is exactly what the probe exists to
+        /// reject everywhere else.
+        /// </summary>
+        public CityPedestrianActor TrySpawnSeatedPassenger(
+            Vector3 position,
+            Quaternion rotation,
+            int rejoinNodeIndex,
+            uint spawnSeed)
+        {
+            if (!IsInitialized ||
+                plan == null ||
+                rejoinNodeIndex < 0 ||
+                rejoinNodeIndex >= plan.Nodes.Count)
+            {
+                return null;
+            }
+
+            int actorIndex = FindAvailableActorIndex();
+            if (actorIndex < 0)
+            {
+                return null;
+            }
+
+            CityPedestrianPresentation available =
+                FindAvailableRidingPresentation(spawnSeed);
+            if (available == null)
+            {
+                return null;
+            }
+
+            var anchor = new CityPedestrianSpawnAnchor(
+                "bus-seat:" + rejoinNodeIndex.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture),
+                position,
+                rejoinNodeIndex,
+                rejoinNodeIndex);
+            initialApproachCompleted[actorIndex] = true;
+            if (!TryBindSpawn(
+                    actorIndex,
+                    anchor,
+                    rejoinNodeIndex,
+                    spawnSeed,
+                    available,
+                    false))
+            {
+                return null;
+            }
+
+            CityPedestrianActor actor = actors[actorIndex];
+            actor.transform.rotation = rotation;
+            return actor;
+        }
+
+        /// <summary>
+        /// The same seeded pick as <see cref="FindAvailablePresentation"/>,
+        /// restricted to designs that declare a seated ride.
+        /// </summary>
+        private CityPedestrianPresentation FindAvailableRidingPresentation(
+            uint spawnSeed)
+        {
+            int availableCount = 0;
+            for (int index = 0; index < presentationPool.Count; index++)
+            {
+                CityPedestrianPresentation candidate = presentationPool[index];
+                if (candidate == null ||
+                    IsPresentationInUse(candidate) ||
+                    !CanRideBus(candidate))
+                {
+                    continue;
+                }
+
+                availableCount++;
+            }
+
+            if (availableCount == 0)
+            {
+                return null;
+            }
+
+            int selection = (int)(
+                CityPedestrianStableHash.Combine(spawnSeed, ArchetypeSalt) %
+                (uint)availableCount);
+            for (int index = 0; index < presentationPool.Count; index++)
+            {
+                CityPedestrianPresentation candidate = presentationPool[index];
+                if (candidate == null ||
+                    IsPresentationInUse(candidate) ||
+                    !CanRideBus(candidate))
+                {
+                    continue;
+                }
+
+                if (selection-- == 0)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a Route 01 walker to the pool. Ordinary distance recycling
+        /// skips route-bound actors, so the passenger controller owns this
+        /// release: it is what lets a bus recycle behind fog with ambient
+        /// passengers still aboard.
+        /// </summary>
+        public bool ReleaseRouteBoundActor(CityPedestrianActor actor)
+        {
+            if (actor == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < actors.Count; index++)
+            {
+                if (actors[index] != actor)
+                {
+                    continue;
+                }
+
+                ReleaseActor(index);
+                return true;
+            }
+
+            return false;
+        }
+
+        public static CityPedestrianArchetype GetActorArchetype(
+            CityPedestrianActor actor)
+        {
+            return actor != null
+                ? GetArchetype(actor.Presentation)
+                : null;
+        }
+
+        private bool CanRideBus(CityPedestrianPresentation presentation)
+        {
+            CityPedestrianArchetype archetype = GetArchetype(presentation);
+            return archetype != null &&
+                   archetype.CanRideBus &&
+                   presentation.Registry != null &&
+                   presentation.Registry.SitClip != null;
         }
 
         private bool TryFindSpawnAnchor(
@@ -872,7 +1135,9 @@ namespace BarPromenade
         {
             actor.SetAvoidance(1f, 0f);
             if (!actor.IsSpawned ||
-                actor.MotionState != CityPedestrianMotionState.Walking)
+                (actor.MotionState != CityPedestrianMotionState.Walking &&
+                 actor.MotionState !=
+                     CityPedestrianMotionState.ApproachingStop))
             {
                 return false;
             }
@@ -907,7 +1172,9 @@ namespace BarPromenade
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor other = actors[index];
-                if (other == actor || !other.IsSpawned)
+                if (other == actor ||
+                    !other.IsSpawned ||
+                    other.IsAttachedToVehicle)
                 {
                     continue;
                 }
@@ -1467,7 +1734,12 @@ namespace BarPromenade
             CityPedestrianActor actor,
             float deltaTime)
         {
-            if (isNightSpawnMode || deltaTime <= 0f)
+            // A doorway transfer and a seated ride are timed against the
+            // bus dwell, so they always run at authored pace however far the
+            // hero is.
+            if (isNightSpawnMode ||
+                deltaTime <= 0f ||
+                actor.IsAttachedToVehicle)
             {
                 return deltaTime;
             }

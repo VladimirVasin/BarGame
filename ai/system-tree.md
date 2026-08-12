@@ -212,9 +212,9 @@ Assets/
       City/NPC/      local player-relative graph walkers with two reusable slots
         CityPedestrianPlan.cs          immutable nodes, links and spawn anchors
         CityPedestrianPlanner.cs       sidewalk turns + zebra connector graph
-        CityPedestrianActor.cs         forward graph walk + seeded zebra choice
+        CityPedestrianActor.cs         forward graph walk, seeded zebra choice + Route 01 states
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
-        CityPedestrianPresentation.cs  archetype Idle/Walk blend + grounding
+        CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
@@ -223,8 +223,11 @@ Assets/
         CityBusWideTurnPlanner.cs  selected-apron two-edge safe-right macro
         CityBusActor.cs            fixed-loop motion, 10 s dwell, service/passenger ownership + engine
         CityBusDirector.cs         fog spawn, passenger-safe recycle and forced-cleanup lifecycle
-        CityBusRidePlan.cs         opposite-driver seat, door transfer + level camera geometry
+        CityBusRidePlan.cs         any-seat door transfer + level camera geometry
         CityBusRideController.cs   prompts, board/ride/alight, ride look input + exact cleanup
+        CityBusStopWaitPlan.cs     per-stop pavement wait slots + stop-seeded graph distances
+        CityBusStopWaitPlanner.cs  slot geometry, walkability proof + single-source Dijkstra
+        CityBusNpcPassengerController.cs ambient waiters, seated boarding, random alighting
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
         CityBusDriverDoorTimeline.cs deterministic approach/dwell hand, button + look samples
         CityBusDriverPresentation.cs seated IK, door/player focus, rubber-neck stretch + blink

@@ -84,7 +84,7 @@ namespace BarPromenade
         public CityBusRideState State { get; private set; } =
             CityBusRideState.Outside;
         public bool IsPassengerAboard => actor != null &&
-                                         actor.HasPassenger;
+                                         actor.IsOccupant(this);
         public int BoardedServiceOrdinal => boardedServiceOrdinal;
         public CityBusRidePlan ActivePlan => activePlan;
         public PlayerAnimatedInteractionDefinition Definition => definition;
@@ -267,7 +267,7 @@ namespace BarPromenade
                 return interaction != null &&
                        interaction.Phase ==
                            PlayerAnimatedInteractionPhase.Looping &&
-                       actor.HasPassenger &&
+                       actor.IsOccupant(this) &&
                        actor.DoorsFullyOpen &&
                        actor.CurrentStop != null &&
                        actor.ServiceOrdinal > boardedServiceOrdinal &&
@@ -373,7 +373,7 @@ namespace BarPromenade
                 interaction.Phase !=
                     PlayerAnimatedInteractionPhase.Looping ||
                 actor == null ||
-                !actor.HasPassenger ||
+                !actor.IsOccupant(this) ||
                 !actor.DoorsFullyOpen ||
                 actor.ServiceOrdinal <= boardedServiceOrdinal ||
                 !TryBuildAlightingPlan(out CityBusRidePlan exitPlan) ||
@@ -417,7 +417,7 @@ namespace BarPromenade
 
             bool ownsRideState = State != CityBusRideState.Outside;
             bool actorHasRideOwnership = actor != null &&
-                (actor.HasPassenger || actor.HasServiceHold);
+                (actor.IsOccupant(this) || actor.HoldsService(this));
             if (!ownsRideState && !actorHasRideOwnership)
             {
                 return;
@@ -435,7 +435,7 @@ namespace BarPromenade
 
             if (State != CityBusRideState.Outside ||
                 (actor != null &&
-                 (actor.HasPassenger || actor.HasServiceHold)))
+                 (actor.IsOccupant(this) || actor.HoldsService(this))))
             {
                 CleanupRide(forceSafePlacement: true);
             }

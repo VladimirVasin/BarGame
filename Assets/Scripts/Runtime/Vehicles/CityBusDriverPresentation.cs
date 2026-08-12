@@ -20,7 +20,16 @@ namespace BarPromenade
         public const float BlinkHoldDuration = 0.07f;
         public const float BlinkOpenDuration = 0.09f;
 
-        private const float DriverSeatLift = 0.015f;
+        /// <summary>
+        /// Metres the driver's pelvis bone sits above the cushion anchor.
+        /// Measured, not nominal: his hip geometry reaches `0.0387 m` below
+        /// that bone, so the old `0.015` buried him `2.4 cm` in the seat. The
+        /// value is that depth less `0.01 m`, which reads as a cushion taking
+        /// his weight. The thighs are deliberately not part of the
+        /// measurement - they slope down to the pedals, so their lowest point
+        /// is a knee rather than anything resting on the seat.
+        /// </summary>
+        private const float DriverSeatLift = 0.029f;
         private const float DriverSeatBackOffset = 0.20f;
         private const float FootForwardOffset = 0.35f;
         private const float FootSideOffset = 0.14f;
@@ -539,6 +548,7 @@ namespace BarPromenade
                             PlayerFocusZeroDistance,
                             distance));
                 }
+
             }
             else
             {
@@ -546,7 +556,17 @@ namespace BarPromenade
                     busRegistry.DriverDoorLookAnchor.position;
             }
 
+            // Proximity is a fact about the hero; permission to stare is a
+            // fact about the door. `DoorLookWeight` already carries that
+            // envelope - it rises through Opening, holds while the doors are
+            // open, falls through Closing and is zero under way - so gating
+            // the focus by it stops the driver tracking a hero he can no
+            // longer serve. Left ungated, the focus stayed live through
+            // closing and departure, and since hero and driver were then
+            // moving relative to each other, the head jerked away from every
+            // stop.
             IsPlayerNearFrontDoor = targetWeight > 0.0001f;
+            targetWeight *= DoorLookWeight;
             float response = targetWeight > PlayerFocusWeight
                 ? PlayerFocusEnterSpeed
                 : PlayerFocusExitSpeed;

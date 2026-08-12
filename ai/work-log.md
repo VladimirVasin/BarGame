@@ -6,6 +6,372 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-12 — Four presentation defects on the bus, all measured
+
+- **Passengers sat inside the cushion.** The runtime aligns the shared rest
+  pelvis to the seat anchor, so the lift has to equal how far a design's own
+  seated hips reach below that bone. Nominal `0.015` was guesswork. The
+  generator now measures it — `seated_contact_m`, the lowest point of the
+  parts bound to `pelvis` and `thigh.L/R` relative to the pelvis — and the
+  catalog was sunk by `4.6 cm` (Lampshade), `5.2` (Chair Carrier), `5.4`
+  (Long-Arm) and `11.1` (Kettle Hat, whose belly and wide hips reach furthest
+  below the bone). Lifts are now the measurement less `0.01 m`, so the cushion
+  reads as compressed rather than the passenger as floating, and
+  `CityPedestrianRuntimeTests` asserts the declared lift stays inside
+  `[contact - 0.03, contact]` so the two cannot drift apart again.
+- **The driver sat in his seat the same way**, `2.4 cm` down. Measured at
+  runtime instead, because his seated pose is procedural rather than an
+  authored clip: his hip geometry reaches `0.0387 m` below the pelvis, so
+  `DriverSeatLift` is now `0.029`. The thighs are deliberately excluded from
+  that measurement — they slope to the pedals, so their lowest point is a knee
+  at `0.355 m`, nothing that rests on a seat.
+- **The driver kept staring at the hero through door closing and departure**,
+  and since both were then moving relative to each other his head jerked away
+  from every stop. `UpdatePlayerFocus` never consulted the doors at all. The
+  focus is now gated by `DoorLookWeight`, which already carries exactly the
+  right envelope: up through Opening, held while open, down through Closing,
+  zero under way. Proximity and permission stay separate — `IsPlayerNearFrontDoor`
+  is still the ungated fact about where the hero is, because that is what it
+  means.
+- **The front wheels steered about the wrong axis.** A probe of the imported
+  hierarchy showed the bus up direction reads as `(0, 0, -1)` in a wheel
+  pivot's local space, while `ApplySteeringPose` rotated about `Vector3.up` —
+  the longitudinal axis, so the wheels leaned instead of turning. Rolling uses
+  the local lateral axis, which survives the same mapping, which is why only
+  the steering looked wrong. The steering axis is now derived from the model
+  once at capture (`ResolveVerticalAxisLocal`) rather than assumed, so a
+  re-export cannot silently reintroduce it. The steering wheel already needed
+  its own declared `+Z` axis for the same reason — that was the clue.
+- Verification: the deterministic art build for the new `seated_contact_m`
+  measurement, then one focused EditMode selection over the pedestrian, bus
+  runtime, bus asset-import and stop-wait fixtures — 58/58.
+
+## 2026-08-12 — The bus could not cover the last 30 cm into a stop
+
+- Reported as: the bus drove up to stop `02`, stood there with its doors shut
+  for about fifteen seconds, and only then opened up and let the waiter on.
+  The NDJSON ruled out my first two guesses outright — no `service_hold_expired`,
+  so the dwell timer was never frozen, and `board_started` -> `board_completed`
+  in `4.5 s` against an `8.36 s` budget, so the transfer itself was healthy.
+  Whatever happened, it happened *before* the dwell began.
+- A four-lens audit with an adversarial refutation pass found it, and two
+  independent lenses reached it separately. `MoveAlongRoute` discarded any
+  frame whose travel was under `DistanceTolerance = 0.02 m` rather than
+  carrying it forward. It is a latch, not a rounding loss: the discarded
+  travel leaves the distance unchanged, so the braking-curve speed cap is
+  unchanged, so the next frame is under the threshold too. `BeginDwell` never
+  runs, and since the doors are driven only from the dwell timer they never
+  open.
+- **The regime matters, and my first explanation of it was wrong.** I wrote
+  that a `60 fps` cruise approach latches once the stop is within `0.31 m`.
+  A faithful float32 replay of `AdvanceMotion` + `MoveAlongRoute` says that
+  regime did not occur here: the session ran at a `25 ms` median frame
+  (~40 fps), and at `40 fps` a clean cruise approach **arrives every time** —
+  the cruise path only starts latching from `44 fps` up. Coming down from
+  cruise, `MoveTowards` saturates at `ServiceDeceleration * deltaTime` and
+  keeps the bus overspeed against the curve, so it punches through the band.
+- What actually bit is the **from-rest regime**. Setting off again from a
+  standstill or any low speed, the bus never rises above the band at all: at
+  `40 fps` a frame commits motion only while `v > 0.80 m/s`, and the curve
+  drops under that `0.14 m` from the stop. The replay latches on 100% of
+  from-rest approaches within `12 m`, resting `2-12 cm` short — i.e. visually
+  docked at the stop, which is exactly what was reported. Escape needs one
+  frame long enough to clear `2 cm` at the pinned speed, `28-61 ms` against a
+  `25 ms` median: ordinary jitter, hence an arbitrary duration, an
+  instantaneous release, and a textbook dwell afterwards.
+- **So the trigger was probably a yield after all**, and my "ruled out"
+  verdict on that was too strong. A yield only has to last a fraction of a
+  second to zero the speed (`travel = safeTravel; speed = 0f`); the latch then
+  supplies all fifteen seconds. That dissolves the objection that nobody saw
+  anyone standing in front of the bus. `JunctionSpeed = 3.2` can arm it the
+  same way with no obstacle at all.
+- The fix carries the residual instead of dropping it: one `pendingTravel`
+  field accumulated per frame and drained by the loop. `DistanceTolerance` is
+  untouched, which matters because it appears in fourteen places including the
+  arrival test itself (`distanceToStop <= tol && speed <= tol`, `:869`) —
+  lowering it would have made arrival *stricter*. The same discard also hit
+  every other slow-motion case: recovering from a yield, crossing to the next
+  link, crawling a junction.
+- **This was never an NPC bug.** `MoveAlongRoute` is original route code. The
+  ambient passengers only made it visible: nobody used to watch the bus stand
+  at a stop, and now somebody is standing there failing to get on.
+- Why no test caught it: every bus test stepped at `0.05 s`, where the freeze
+  band is `0.034 m` and hides inside the arrival tolerance.
+  `ServiceApproach_ReachesTheStopAtRealFrameRates` now runs at `1/30`, `1/40`,
+  `1/45`, `1/60`, `1/120` and `1/144`, and
+  `ApproachResumingFromAYield_StillReachesTheStop` covers the regime that
+  actually bit: hold the bus at a dead stop with an obstacle, release it, and
+  require it to reach `Dwelling`. Mutation-checked: restoring the discard
+  fails every frame-rate case with the bus stuck in `ApproachingStop` after
+  sixty simulated seconds.
+- Two follow-ups from the audit are now in. A full yield explicitly clears
+  `pendingTravel`, so "a bus stopped for a person does not creep" is a stated
+  contract rather than an accident of the loop threshold. And a stall
+  watchdog reports `approach_stalled` once after `2 s` motionless short of a
+  stop, carrying state, distance, speed, requested travel, `deltaTime`,
+  `must_stop` and forward clearance — the one record that separates every
+  hypothesis this investigation had to eliminate by simulation, plus a
+  matching `approach_released`. It also corrects a comment of mine on
+  `MaximumServiceHoldDuration` that claimed a leaked hold strands the bus with
+  its doors *shut*; a hold can only be taken while they are fully open, so it
+  strands them open. That false comment is what kept regenerating the leaked-
+  hold hypothesis.
+- **Correction to the previous entry.** The "waiter blocking its own bus"
+  diagnosis was wrong, and so were its numbers. I computed the corridor from
+  `ObstacleStopPadding = 0.38`, which belongs to `OverlapsDynamicObstacle`
+  (`CityBusDirector.cs:554`), a spawn-overlap check. Yielding uses
+  `lateralLimit = halfWidth + targetRadius + ObstacleLateralPadding`
+  (`CityBusActor.cs:665`) — `1.71 m` for the hero, `1.74 m` for a walker, so
+  someone on the sidewalk centreline clears it by `0.26-0.29 m`, not by
+  `0.08 m`. The route-bound exemption is harmless and still defensible, but it
+  was not what fixed anything and its comment needs rewording.
+- Still open, found by the same audit and not yet acted on: the obstacle test
+  also samples `player.position + playerVelocity * 0.75 s` with unsmoothed
+  velocity, which widens the blocking corridor by up to `3.9 m` at run speed —
+  wide enough that walking toward the bus in order to board it stalls it.
+
+## 2026-08-12 — An end-to-end proof for ambient passengers
+
+- Four separate defects broke ambient boarding in turn, each reported from a
+  playtest, and every one of them left the planners, the occupancy rules and
+  the asset contracts green. Nothing walked a passenger from the pavement into
+  a seat and back out, so `Assets/Tests/PlayMode/CityBusNpcPassengerPlayModeTests.cs`
+  now does exactly that against the production bus prefab and the real
+  pedestrian pool: waiter appears, boards, is seated with `07` still free, and
+  alights at a later stop with its dwell hold handed back.
+- Three things about the harness were worth learning the hard way:
+  - `passengers.enabled = false` silently kills the controller, because
+    `OnDisable` calls `Shutdown`. The directors have to stay enabled and drive
+    themselves from `LateUpdate`.
+  - A nested `yield return SomeEnumerator()` is not driven by the test runner,
+    so the phase loops run inline. The first version looked like a stuck bus
+    when in fact nothing was advancing it.
+  - `Time.deltaTime` in a batch run was observed at `0.006 s` on one attempt
+    and pinned to the `6.7 s` ceiling on another, so frame budgets are
+    meaningless and, worse, the bus, the walkers and the transfer budget can
+    end up on different clocks — a service hold then expires under a passenger
+    who is still walking. `Time.captureDeltaTime` pins one fixed step for
+    everything, and the whole test runs in about three seconds.
+- The coverage was mutation-checked rather than trusted: reintroducing the
+  hero-only opposite-driver invariant makes it fail with the passenger riding
+  past ten stops without ever getting off, which is precisely the reported
+  symptom.
+
+## 2026-08-12 — The waiter was blocking its own bus
+
+- Reported as: the bus pulled up to stop `02`, the driver halted, the doors
+  never opened, and a waiting walker stood there. The NDJSON was silent — no
+  `board_started`, no `board_blocked` — which located it precisely, because
+  the only silent guard in `TryBeginBoarding` is `DoorsFullyOpen`. The doors
+  were the problem, not the boarding.
+- The cause is geometric and self-inflicted. A `1 m` sidewalk minus a `0.35 m`
+  capsule and two `0.15 m` navigation margins admits **exactly one** lateral
+  position, `3.50 m` from the road centre; there is no freedom to place a wait
+  slot anywhere else. The halted bus flank is at `2.69 m`, so the waiter
+  stands `0.81 m` clear while the obstacle corridor reaches
+  `AgentRadius + ObstacleStopPadding = 0.73 m`. That `0.08 m` of daylight is
+  narrower than the walker's own `0.15 m` shoulder-shift, so a waiter that
+  leans road-ward puts the bus into `Yielding` short of the stop. It then
+  waits forever for a bus that can never serve it, and the bus never dwells,
+  so nobody else boards either. A deadlock built out of two individually
+  reasonable numbers.
+- The slot cannot move, so the exemption moves instead: the bus obstacle test
+  now skips `IsRouteBound` walkers, not merely `IsAttachedToVehicle` ones. A
+  walker heading for a stop or standing at it is this bus's passenger, which
+  is the same reasoning already accepted for the hero's door dock — his dock
+  is deliberately kept outside the corridor so a waiting passenger cannot stop
+  the bus reaching its service pose. Ordinary roaming walkers keep their
+  yielding untouched.
+- Found while investigating: `AdvanceWaiter` dropped a tracked record on two
+  paths — walker gone, walker no longer route-bound — **without releasing its
+  service hold or its cabin seat**. A leaked hold freezes `dwellElapsed`, the
+  door timeline is sampled from that timer, and the next `BeginDwell` resets
+  the timer to zero it can never leave: the bus would be stranded at every
+  later stop with sealed doors for the rest of the session. Both paths now go
+  through one `ReleaseWaiterOwnership` that always hands ownership back and
+  warns when it actually reclaimed something. `CityBusActor` also bounds the
+  freeze at `DwellDuration + 5 s` and reports `service_hold_expired`, so a
+  future leak degrades to a hiccup with a named cause instead of a dead route.
+- The existing `PassengerServiceHold_...` case advanced `DwellDuration * 2` in
+  one step to prove the freeze, which now trips that bound; it advances
+  `DwellDuration + 2` instead, still past the dwell it would otherwise have
+  completed.
+
+## 2026-08-12 — Route 01 stops zigzagging
+
+- Reported as "the route and the stop order are extremely illogical", and the
+  measurement agreed. `CreateStopTargets` ordered its targets by
+  `GetDistrictOrder` — a hardcoded enum, Industrial `0` through Old Town `3`,
+  home appended last — which is nominal and contains no geography at all.
+- On the default layout that produced: Industrial `(-131, -13)` far west,
+  Nightlife `(13, -79)` south centre, Residential `(128, 117)` far north-east,
+  Old Town `(-131, 65)` **back to the west edge**, Home `(121, -1)` **out east
+  again**. Two full crossings of the city per lap. Straight-line tour between
+  stops `1166 m` against a best possible `754 m`; the road loop it forced was
+  `2592 m`, `3.4x` the straight tour.
+- The order is now a shortest closed tour over the target centres. Five
+  targets are solved exactly — fix the first, permute the rest, `(n-1)!` — and
+  a layout above `8` falls back to nearest neighbour plus 2-opt. Ties break on
+  the ordered target IDs, and the cycle is rotated so `PlayerHome` is served
+  first with its direction fixed the same way, so the same layout and seed
+  always yield the same loop.
+- Result on the default layout: Home, Residential, Old Town, Industrial,
+  Nightlife and back — a clean ring with no doubling back. Straight tour
+  `754.3 m`, exactly the optimum. **Road loop `2592 m` -> `1798 m`, a `31%`
+  cut**, and the loop-to-straight ratio fell from `3.4x` to `2.4x`.
+- Only the ordering changed. The accepted-link graph, the right-hand rule, the
+  `6 m` left turns, the safe-right macro and every full-body clearance proof
+  are untouched, which is why the whole existing planner suite still passes
+  unmodified. The remaining `2.4x` is the street grid plus the turn
+  restrictions; shortening that means touching the connector search, which was
+  deliberately left alone.
+- Verification: one focused EditMode selection over `CityBusPlannerTests`,
+  `CityBusStopWaitPlannerTests`, `CityBusRuntimeTests` and
+  `CityMapBusOverlayTests` — 36/36, including the new
+  `ServedOrder_IsAShortestClosedTourStartingAtHome`, which asserts home is
+  stop `01`, that the served order is within `5%` of the exact optimum over
+  the real stop positions, and that a repeated build gives identical stop IDs.
+  Not run: PlayMode, the full EditMode suite, any player build.
+
+## 2026-08-12 — Ambient passengers ride Route 01
+
+- The measurement that decided the design: every walker design is the *same*
+  31-bone rig at the same rest pose. `Assets/Pedestrians/Models/*.json` agree
+  bone for bone — pelvis head at `0.70 m`, envelope `1.75 m`, identical
+  `localBounds.y`. "Different models" is mesh proportion and worn objects, not
+  skeleton, so seating is **one** rule for all of them: align the shared rest
+  pelvis to the cushion anchor, exactly as `CityBusDriverPresentation` already
+  seats the driver. Per-design work then reduces to an authored seated posture
+  and a declared clearance, not per-design maths.
+- Sole pinning had to be switched off while seated. `GroundFeetToPresentationRoot`
+  pins the lowest boot to the actor-root plane every frame; on a seat that
+  drags the whole model down until the feet touch the cabin floor.
+  `CityPedestrianPresentation` now runs a three-input mixer (Idle/Walk/Sit) and
+  swaps the pin for pelvis alignment while seated.
+- Four authored `Sit` clips joined the deterministic Blender library
+  (`LampshadeSit`, `ChairCarrierSit`, `KettleHatSit`, `LongArmSit`), taking it
+  from 10 clips to 14. They are excluded from the footwear bake — a seated clip
+  leaves the pavement plane on purpose — and prove a different contract
+  instead: measured headroom above the seated pelvis inside a declared band,
+  and nothing hanging more than the `0.41 m` cushion height below it. Measured
+  `1.030 / 1.055 / 1.050 / 1.050 m` headroom and `0.354-0.374 m` drop; the
+  cabin gives `2.05 m` floor-to-ceiling, so the whole catalog clears the roof
+  with room to spare.
+- The Helmet Lamp Hopper declares no seated ride. It has no seated posture to
+  author on `0.46 m` hind feet, and its worn Spot is the one working light the
+  pedestrian contract allows — it does not belong in a cabin.
+- `CityBusActor` grew from one passenger and one exclusive service hold to a
+  three-place cabin with a shared, per-owner hold. The exclusivity had to go:
+  with one hold, an ambient passenger stepping through the doorway would have
+  silently made the hero's own `E` prompt fail. `CityBusDirector`'s passenger
+  cleanup became multicast for the same reason. The release post-condition is
+  unchanged — no occupant may remain when the presentation is pooled.
+- Recycling now keys on `HasPlayerPassenger`, not `HasPassenger`. Blocking the
+  single actor slot because an ambient rider is aboard would strand the bus for
+  a whole lap; a rider `92 m` away behind fog is released with it instead.
+- `CityBusRidePlan.TryCreate` turned out to be agent-agnostic apart from two
+  hard-coded facts. Parameterising seat index, agent radius and grounded-root
+  offset was enough to reuse the whole validated dock ladder for a walker, so
+  ambient boarding inherits the curb/apron height resolution the hero already
+  had rather than re-deriving it.
+- Routing to a stop reuses the population director's existing guidance shape
+  (`approachTarget` + a node-distance field feeding `SelectClosestCandidate`),
+  but seeded at the stop instead of the player. Stops never move, so the
+  Dijkstra runs once in `CityBusStopWaitPlanner` rather than being re-searched
+  every few metres the way player guidance must be.
+- Wait slots sit `0.70 m` road-ward of the blue pole. The pole is deliberately
+  `0.2 m` outside the walkable strip and carries a collider, so waiting at
+  `ShelterPosition` was never an option. The two slots queue along the lane at
+  `+0.30 m` and `+1.40 m`, which also keeps them clear of both door entries
+  (`+3.05 m` front, `-1.34 m` rear) — the same `1 m`-pavement geometry that
+  already rules out walking abreast.
+- NPC boarding does **not** go through `PlayerAnimatedInteractionController`.
+  That controller is bound to `PlayerRuntime` and `IPlayerClipPresentation`,
+  and `ai/contextual-animation-standard.md` explicitly does not govern NPC
+  animation. A short scripted doorway walk with a `2.5 s` abort covers it.
+- **Playtest fix — nobody boarded.** A waiter stood at the stop and the bus
+  pulled up, but `board_started` never appeared in the NDJSON while
+  `waiter_recruited`/`waiter_spawned` did, so boarding was refused before it
+  began. The passenger door dock is pushed outward to `3.38 m` from the road
+  centreline, the pedestrian lane band is `3.15-3.85 m`, and a `0.35 m` capsule
+  there needs `3.03-3.73 m` — the dock overhangs the curb by `0.12 m`. Since
+  the dock ladder offsets run *along* the bus and not across it, every
+  candidate failed. The hero never hit this because his controller is given
+  `World.WalkableArea`, which includes the carriageway. The controller now
+  takes that same road-inclusive area, alighting targets the stop's proven
+  pavement wait slot instead of the road-side dock, and a `board_blocked`
+  warning names the refusing guard once per changed reason so the next failure
+  is readable rather than silent.
+- **Spawned cabins are not empty.** A bus that has notionally been circling
+  its loop should not always pull up with nobody in it, so activation now
+  seats a seeded `0-2` ambient passengers. Two things made that awkward and
+  both are worth remembering. First, a full ride plan needs a served stop and
+  two validated roadside docks, and a spawning bus is cruising — so
+  `CityBusRidePlan.TryCreateSeatedPose` resolves the actor-local seat floor
+  from the seat anchor plus the cabin-floor door anchor alone. Second, the
+  spawn collision probe rejects a capsule overlapping the bus body, which is
+  precisely the situation here, so seated spawns opt out of that one probe
+  while every other spawn keeps it. The draw is `hash % (max + 1)`, so an
+  empty bus stays a real outcome, and it draws against `MaximumNpcOccupants`
+  rather than `CabinCapacity` so the hero's place survives.
+- **Second playtest fix — the seat side, not the dock.** Ambient passengers
+  still neither boarded nor alighted, and `board_blocked` named
+  `no_door_dock`. The road-inclusive area had been necessary but not
+  sufficient: `CityBusRidePlan.TryCreate` also enforces `driverSide *
+  passengerSide < 0`, and the ambient seat order starts at index `2` on the
+  driver's side. Seven of its eleven seats are, so nearly every plan was
+  rejected — the exit plan included, which is why nobody got off either. The
+  preload had worked only because `TryCreateSeatedPose` never ran that check.
+  The rule is hero-only: seat `07` must be opposite the driver because his
+  authored `BusRideLoop` and the window camera are built around that lateral
+  side, and an ambient passenger has neither. It is now an explicit
+  `requireOppositeDriverSide` parameter, true for the hero and false for
+  everyone else. Lesson: `board_blocked` earned its keep, but one reason
+  string covered two independent guards.
+- **Teardown throw.** `CityBusDirector.Shutdown` hit "Passenger cleanup must
+  release the city bus passenger before its presentation is pooled". Cleanup
+  decided who was aboard by reading the *walker's* motion state, and on
+  teardown `CityPedestrianDirector.OnDisable` may pool its actors first and
+  reset them to `Dormant`, so the loop skipped a real occupant. The bus is the
+  authority on its own cabin: cleanup now calls `ReleasePassenger` for every
+  tracked record and uses its return value, which is order-independent.
+- **Third playtest fix — the transfer could never finish.** The log told the
+  whole story: `board_started` followed by `transfer_aborted` exactly `2.525 s`
+  later, three times, and never a `board_completed`. `TransferTimeout` was a
+  flat `2.5 s` guess. Measuring the real walk against the bus manifest: the
+  aisle leg runs `1.16-2.56 m` when the door is chosen sensibly, the pavement
+  leg is about `3 m`, and the four riding designs walk at `0.72-1.30 m/s` — so
+  a real transfer needs `4.7-7.7 s`. No single constant fits a spread that
+  wide, which is why every ambient passenger aborted at the doorway and the
+  one preloaded rider bailed out at the same instant.
+  The budget is now derived per transfer from the measured path and that
+  walker's own pace, clamped to `[3 s, one dwell]`. The door is also chosen by
+  the whole journey rather than by which one the walker stands nearer: the two
+  doors are `4.39 m` apart on the same kerb, so the old rule could send a
+  passenger `6.60 m` down the aisle where `2.56 m` was available. Authored
+  pace is kept rather than hurried, because each design has its own cadence
+  and speeding the root would read as foot-sliding.
+- Verification: `blender --background --python
+  tools/build-city-pedestrian-3d-model.py` — the deterministic validator that
+  owns the seated clearance bands, the 31-keyed-bone contract, in-place/no
+  root motion and the repeat-signature determinism check. Then one focused
+  EditMode selection over `CityBusStopWaitPlannerTests`, `CityBusRuntimeTests`
+  and `CityPedestrianRuntimeTests`, re-run after the fix with the regression
+  cases `PassengerDoorDock_NeedsTheRoadInclusiveArea`,
+  `CabinPreload_NeverFillsThePlaceReservedForTheHero` and
+  `FilledCabin_StillAdmitsTheHeroToSeat07` — which drives the order a
+  preloaded cabin actually produces, ambient passengers first and the hero
+  second — and `AmbientSeatOrder_SpansBothSidesOfTheCabin`, which reads the
+  real bus model manifest and pins the fact that seven ambient seats sit on
+  the driver's side while seat `07` does not. A further
+  `TransferBudget_CoversTheRealWalkForEveryRidingDesign` reads the same
+  manifest and asserts the budget exceeds the walk each riding design actually
+  has to make, so an unreachable timeout cannot return. Final selection:
+  47/47. Not run: PlayMode,
+  the full EditMode suite and any player build. The board/ride/alight sequence
+  itself still has no automated coverage — it needs a scene fixture — so the
+  playtest remains its proof.
+
 ## 2026-08-12 — Walkers give way along the lane
 
 - Measured the geometry before designing, and it decided the design: sidewalks

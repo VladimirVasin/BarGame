@@ -61,6 +61,8 @@ namespace BarPromenade
         private TransformPose rearRightWheelBase;
         private TransformPose frontLeftSteeringBase;
         private TransformPose frontRightSteeringBase;
+        private Vector3 frontLeftSteeringAxisLocal = Vector3.up;
+        private Vector3 frontRightSteeringAxisLocal = Vector3.up;
         private TransformPose steeringWheelBase;
         private TransformPose doorButtonBase;
         private CityBusDriverPresentation driverPresentation;
@@ -192,8 +194,14 @@ namespace BarPromenade
             ApplyWheelPose(frontRightWheelBase, wheelRotationDegrees);
             ApplyWheelPose(rearLeftWheelBase, wheelRotationDegrees);
             ApplyWheelPose(rearRightWheelBase, wheelRotationDegrees);
-            ApplySteeringPose(frontLeftSteeringBase, SteeringAngle);
-            ApplySteeringPose(frontRightSteeringBase, SteeringAngle);
+            ApplyAxisPose(
+                frontLeftSteeringBase,
+                SteeringAngle,
+                frontLeftSteeringAxisLocal);
+            ApplyAxisPose(
+                frontRightSteeringBase,
+                SteeringAngle,
+                frontRightSteeringAxisLocal);
             SteeringWheelAngle = Mathf.Clamp(
                 SteeringAngle * SteeringWheelRatio,
                 -MaximumSteeringWheelAngle,
@@ -340,6 +348,12 @@ namespace BarPromenade
                 registry.FrontLeftSteeringPivot);
             frontRightSteeringBase = new TransformPose(
                 registry.FrontRightSteeringPivot);
+            frontLeftSteeringAxisLocal = ResolveVerticalAxisLocal(
+                registry.FrontLeftSteeringPivot,
+                registry.Body);
+            frontRightSteeringAxisLocal = ResolveVerticalAxisLocal(
+                registry.FrontRightSteeringPivot,
+                registry.Body);
             steeringWheelBase = new TransformPose(
                 registry.SteeringWheelPivot);
             doorButtonBase = new TransformPose(
@@ -749,18 +763,33 @@ namespace BarPromenade
                 Quaternion.AngleAxis(rotationDegrees, Vector3.right);
         }
 
-        private static void ApplySteeringPose(
-            TransformPose pose,
-            float steeringAngle)
+        /// <summary>
+        /// Resolves which of a pivot's own axes points along the vehicle
+        /// vertical, measured once from its base pose.
+        /// <para>
+        /// The imported wheel pivots do not carry the vehicle's own basis: the
+        /// bus up direction reads as `(0, 0, -1)` in their local space, so
+        /// steering around `Vector3.up` turned the front wheels about the
+        /// longitudinal axis and they leaned instead of turning. Rolling has
+        /// always used the lateral axis, which happens to survive the same
+        /// mapping, which is why only the steering looked wrong. Deriving the
+        /// axis from the model keeps this correct through any re-export
+        /// instead of trusting a hard-coded one.
+        /// </para>
+        /// </summary>
+        private static Vector3 ResolveVerticalAxisLocal(
+            Transform pivot,
+            Transform reference)
         {
-            if (pose.Target == null)
+            if (pivot == null || reference == null)
             {
-                return;
+                return Vector3.up;
             }
 
-            pose.Target.localPosition = pose.LocalPosition;
-            pose.Target.localRotation = pose.LocalRotation *
-                Quaternion.AngleAxis(steeringAngle, Vector3.up);
+            Vector3 axis = pivot.InverseTransformDirection(reference.up);
+            return axis.sqrMagnitude > 0.0001f
+                ? axis.normalized
+                : Vector3.up;
         }
 
         private static void ApplyAxisPose(

@@ -7,7 +7,7 @@ using UnityEngine.Playables;
 namespace BarPromenade
 {
     /// <summary>
-    /// Lightweight, manually advanced Idle/Walk presentation for a pooled
+    /// Lightweight, manually advanced Idle/Walk/Sit presentation for a pooled
     /// city pedestrian. Route motion remains entirely code-owned.
     /// </summary>
     [DisallowMultipleComponent]
@@ -19,6 +19,10 @@ namespace BarPromenade
         private AnimationMixerPlayable locomotionMixer;
         private AnimationClipPlayable idlePlayable;
         private AnimationClipPlayable walkPlayable;
+        private AnimationClipPlayable sitPlayable;
+        private bool hasSitPlayable;
+        private Transform seatAnchor;
+        private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
         private Vector3 modelBaseLocalPosition;
         private float animationSpeed = 0.91f;
@@ -31,6 +35,7 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
+        public bool IsSeated => seatAnchor != null;
         public float WalkWeight { get; private set; }
         public float AnimationSpeed => animationSpeed;
         public CityPedestrianAssetRegistry Registry => registry;
@@ -120,10 +125,67 @@ namespace BarPromenade
             ApplyMixerWeights();
         }
 
+        /// <summary>
+        /// Binds this walker to a live passenger seat. The seat anchor belongs
+        /// to the sprung bus body, so it keeps moving under the design while
+        /// the design keeps its own authored seated posture.
+        /// </summary>
+        public bool TrySeat(Transform anchor, CityPedestrianSeatedRide ride)
+        {
+            if (!IsInitialized ||
+                anchor == null ||
+                ride == null ||
+                !hasSitPlayable ||
+                registry == null ||
+                registry.PelvisAnchor == null)
+            {
+                return false;
+            }
+
+            seatAnchor = anchor;
+            seatedRide = ride;
+            IsMoving = false;
+            targetWalkWeight = 0f;
+            WalkWeight = 0f;
+            ApplyMixerWeights();
+            return true;
+        }
+
+        public void ClearSeat()
+        {
+            if (seatAnchor == null && seatedRide == null)
+            {
+                return;
+            }
+
+            seatAnchor = null;
+            seatedRide = null;
+            if (IsInitialized && locomotionMixer.IsValid())
+            {
+                ApplyMixerWeights();
+            }
+        }
+
         private void ApplyMixerWeights()
         {
+            if (IsSeated)
+            {
+                locomotionMixer.SetInputWeight(0, 0f);
+                locomotionMixer.SetInputWeight(1, 0f);
+                if (hasSitPlayable)
+                {
+                    locomotionMixer.SetInputWeight(2, 1f);
+                }
+
+                return;
+            }
+
             locomotionMixer.SetInputWeight(0, 1f - WalkWeight);
             locomotionMixer.SetInputWeight(1, WalkWeight);
+            if (hasSitPlayable)
+            {
+                locomotionMixer.SetInputWeight(2, 0f);
+            }
         }
 
         public void Advance(float deltaTime, bool moving)
@@ -142,7 +204,7 @@ namespace BarPromenade
             }
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
-            SetMoving(moving, immediately);
+            SetMoving(IsSeated ? false : moving, immediately);
             if (!immediately &&
                 Mathf.Abs(WalkWeight - targetWalkWeight) > 0.0001f)
             {
@@ -171,6 +233,9 @@ namespace BarPromenade
 
             IsInitialized = false;
             IsMoving = false;
+            seatAnchor = null;
+            seatedRide = null;
+            hasSitPlayable = false;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
             archetypeGroundTrim = 0f;
@@ -184,7 +249,10 @@ namespace BarPromenade
             graph = PlayableGraph.Create(
                 $"City Pedestrian {GetEntityId()}");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            locomotionMixer = AnimationMixerPlayable.Create(graph, 2);
+            hasSitPlayable = registry.SitClip != null;
+            locomotionMixer = AnimationMixerPlayable.Create(
+                graph,
+                hasSitPlayable ? 3 : 2);
             idlePlayable = AnimationClipPlayable.Create(
                 graph,
                 registry.IdleClip);
@@ -199,6 +267,16 @@ namespace BarPromenade
             graph.Connect(walkPlayable, 0, locomotionMixer, 1);
             locomotionMixer.SetInputWeight(0, 1f);
             locomotionMixer.SetInputWeight(1, 0f);
+            if (hasSitPlayable)
+            {
+                sitPlayable = AnimationClipPlayable.Create(
+                    graph,
+                    registry.SitClip);
+                sitPlayable.SetApplyFootIK(false);
+                sitPlayable.SetApplyPlayableIK(false);
+                graph.Connect(sitPlayable, 0, locomotionMixer, 2);
+                locomotionMixer.SetInputWeight(2, 0f);
+            }
 
             AnimationPlayableOutput output =
                 AnimationPlayableOutput.Create(
@@ -218,7 +296,38 @@ namespace BarPromenade
 
             RestoreModelBasePosition();
             graph.Evaluate(deltaTime);
+            if (IsSeated)
+            {
+                AlignPelvisToSeat();
+                return;
+            }
+
             GroundFeetToPresentationRoot();
+        }
+
+        /// <summary>
+        /// A seated design must not be sole-pinned: its boots leave the ground
+        /// plane the pin measures against, so the pin would drag the whole
+        /// model down until the feet touched the cabin floor. Every walker
+        /// shares the hero's rest pelvis, so aligning that one bone to the
+        /// cushion seats all four riding proportions with the same rule.
+        /// </summary>
+        private void AlignPelvisToSeat()
+        {
+            if (registry == null ||
+                registry.ModelRoot == null ||
+                registry.PelvisAnchor == null ||
+                seatAnchor == null ||
+                seatedRide == null)
+            {
+                return;
+            }
+
+            Vector3 target = seatAnchor.position +
+                (transform.up * seatedRide.SeatLift) -
+                (transform.forward * seatedRide.SeatBackOffset);
+            registry.ModelRoot.position +=
+                target - registry.PelvisAnchor.position;
         }
 
         private void GroundFeetToPresentationRoot()

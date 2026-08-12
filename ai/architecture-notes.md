@@ -97,9 +97,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — One route-driven real-scale bus on canonical Route 01:** City
   layout produces immutable `bus-route:default-coastal:route-01`, one
   deterministic right-hand, Street-only closed winding service loop. The target
-  sequence contains every district point of interest that actually exists and
-  then `PlayerHome`; the default is Industrial, Nightlife, Residential, Old
-  Town and Home. Each semantic stop is assigned to a safe straight on the
+  set contains every district point of interest that actually exists plus
+  `PlayerHome`, and its **order is a shortest closed tour over the target
+  centres**, not the district enum. The enum order was nominal — Industrial,
+  Nightlife, Residential, Old Town, home — and on the default layout it ran
+  west, south centre, far north-east, back west and out east again: two full
+  crossings, `1166 m` of straight-line tour where `754 m` was available, and a
+  `2592 m` road loop. Reordering alone brought that loop to `1798 m`, a `31%`
+  cut, without touching a single clearance or right-hand proof. Five targets
+  are solved exactly by fixing the first and permuting the rest; a layout with
+  more than `8` falls back to nearest neighbour plus 2-opt. Equal-length tours
+  are broken by the ordered target IDs, and the cycle is rotated so
+  `PlayerHome` is served first with its direction fixed the same way, because
+  a closed loop has no last stop to lose and home is the one stop the hero can
+  name. The default is therefore Home, Residential, Old Town, Industrial and
+  Nightlife. Each semantic stop is assigned to a safe straight on the
   target frontage or one connected road edge away. Its roadside cell differs
   from the target cell, a POI stop remains in that district, and the physical
   blue `01` pole stays outside POI public/access bounds or the Home footprint.
@@ -134,7 +146,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   until the closest point of the complete oriented body is at least `92 m` from
   the player. The slot cap means at most one active or potentially visible
   vehicle, not a guarantee that a bus is always visible. While the hero is
-  outside it yields to predicted player and pedestrian motion. While the hero
+  outside it yields to predicted player and pedestrian motion. That prediction
+  extrapolates `0.75 s` ahead, so its input is smoothed over `0.2 s` and
+  clamped to the `5.2 m/s` the motor can actually produce: an unsmoothed
+  single-frame delta turned a `0.05 m` wobble on a `5 ms` frame into `10 m/s`
+  and braked the bus for a phantom six metres away, and a frame that moves the
+  hero past `4 m` is read as a teleport and yields no velocity at all.
+  Route travel likewise carries any sub-`DistanceTolerance` remainder into the
+  next frame instead of discarding it. Dropping it was a latch rather than a
+  rounding loss: approach speed rides the service-braking curve exactly, so at
+  `60 fps` a frame moves under `0.02 m` once the stop is within `0.31 m`, and
+  because the discarded travel left the distance unchanged the speed cap never
+  recovered. The bus parked a third of a metre short of the stop node,
+  `BeginDwell` never ran, and the dwell-driven doors stayed shut until a long
+  enough frame happened along. While the hero
   is attached as the sole passenger, that same hero is omitted from obstacle
   prediction but pedestrian yielding remains active. Camera direction, frustum
   membership and far-clip state never control spawning or recycling. The kinematic box
@@ -235,9 +260,99 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cancellation/lifecycle path restore motor, collider, contact shadow and
   camera exactly once without Transform hierarchy mutation, release
   service/passenger ownership and use the last safe exterior dock when an
-  authored exit cannot finish. Fare/payment, destination selection, NPC
-  passengers, passenger persistence, traffic-signal simulation and live bus
-  tracking remain deferred.
+  authored exit cannot finish. Fare/payment, destination selection, passenger
+  persistence, traffic-signal simulation and live bus tracking remain deferred.
+- **Accepted — A three-place cabin counting the hero, with declared seated
+  riders:** `CityBusActor` owns `CabinCapacity = 3` occupants and a shared
+  per-owner service hold. Both replace single-owner fields, and both had to:
+  with one exclusive hold, an ambient passenger stepping through the doorway
+  would silently have made the hero's own `E` prompt fail, and
+  `CityBusDirector`'s passenger cleanup would have thrown on its second
+  registrant. Cleanup is therefore multicast, while the release
+  post-condition is unchanged — no occupant may remain when the presentation
+  is pooled. Ambient passengers may take at most `CabinCapacity - 1` places, so
+  seat `07` stays reserved and the hero is never locked out of his own bus;
+  they fill a stable order of the other eleven anchors biased to the
+  driver-side row and rear bench, which are the seats a hero in `07` actually
+  sees. The cabin reserves a place logically and lets
+  `CityBusRidePlan` refuse a seat index the registry cannot resolve, rather
+  than duplicating that check. Recycling keys on `HasPlayerPassenger`, not
+  `HasPassenger`: only the hero pins the single actor slot to the world, and
+  blocking it for a rider `92 m` away behind fog would strand the bus for a
+  whole lap, so ambient passengers are released with it through the same
+  cleanup. `CityBusRidePlan.TryCreate` proved agent-agnostic apart from two
+  hard-coded facts; parameterising seat index, agent radius and grounded-root
+  offset reuses the whole validated dock ladder — including the
+  `CityStreetSurfacePlan` curb/apron height resolution — for a walker whose
+  root already sits on the pavement surface.
+  `CityBusStopWaitPlanner` derives one wait point per stop that has usable
+  pavement: the sidewalk centreline `RoadsidePoleOutsideRoadEdge +
+  SidewalkWidth * 0.5 = 0.70 m` road-ward of the blue `01` pole, because the
+  pole itself stands outside the walkable strip and carries a collider. Two
+  slots per stop queue along the lane at `+0.30 m` and `+1.40 m` from the halt
+  pose — never abreast, since a `1 m` pavement minus a `0.35 m` agent is the
+  same geometry that already rules out passing, and both offsets lie in the
+  clear span between the `+3.05 m` front and `-1.34 m` rear door entries. Each
+  wait point also owns a single-source Dijkstra field over the pedestrian
+  graph. Stops never move, so that search is solved once in the plan instead
+  of being re-run every `4 m` the way player guidance must be, and routing then
+  reuses the director's existing `approachTarget` and node-distance guidance
+  seeded at the stop.
+  A newly activated bus seats a seeded `0-2` ambient passengers before it is
+  ever seen. It spawns in the same fixed-fog `76-86 m` band the population
+  director already proved hides an appearing walker, so there is no visible
+  pop, and a bus that has notionally been running its loop for a while does not
+  always arrive empty. That preload needs no stop and no dock:
+  `CityBusRidePlan.TryCreateSeatedPose` resolves the actor-local seat floor
+  from the seat anchor and the cabin-floor door anchor alone, because a full
+  ride plan requires a served stop and two validated roadside docks that do not
+  exist while the bus is cruising. The static clearance probe is skipped for
+  exactly these spawns — the capsule overlaps the bus body on purpose, which is
+  what the probe exists to reject everywhere else. The draw spans `0` to
+  `MaximumNpcOccupants` inclusive, so an empty bus stays a real outcome and the
+  hero's place is never taken.
+  `CityBusNpcPassengerController` recruits an ordinary roaming walker within
+  `55 m` of a stop along the graph so the hero can watch the whole approach,
+  and activates a waiter straight onto its slot only where the stop is already
+  beyond the proven `76 m` fog band. Boarding takes the shared hold, runs a
+  short scripted doorway walk whose budget is measured rather than assumed: a
+  flat constant cannot serve an aisle leg of `1.16-2.56 m` walked at
+  `0.72-1.30 m/s`, so it is derived per transfer from the real
+  `pavement -> door -> seat` path and that walker's own pace and clamped to
+  `3 s` up to one whole dwell. The door is chosen by the whole journey, not by
+  which one the walker stands nearer: the doors are `4.39 m` apart on the same
+  kerb, and choosing by the outside leg alone sends a passenger `6.60 m` down
+  the aisle where `2.56 m` is available. Authored pace is kept rather than
+  hurried, because each design owns its cadence and speeding the root reads as
+  foot-sliding. An overrun aborts back to the pavement rather than stalling
+  the fixed `10 s` dwell; alighting draws a seeded
+  strictly later service ordinal, the same rule the hero's exit prompt already
+  enforces. NPC transfers deliberately do not use
+  `PlayerAnimatedInteractionController`: it is bound to `PlayerRuntime` and
+  `IPlayerClipPresentation`, and `ai/contextual-animation-standard.md`
+  explicitly does not govern NPC animation. A route-bound walker is exempt from
+  the `88 m` pedestrian recycle rule, from distant simulation acceleration and
+  from the bus's own pedestrian yielding, which would otherwise make the bus
+  stop for its own passenger.
+  Seating is one rule for the whole catalog because every design copies the
+  hero's exact 31-bone rig at a `0.70 m` rest pelvis: `CityPedestrianPresentation`
+  aligns that bone to the cushion anchor, the same technique
+  `CityBusDriverPresentation` already uses for the driver. Sole pinning is
+  switched off while seated — on a seat it would drag the model down until the
+  boots touched the cabin floor — and the mixer gains a third Sit input.
+  **Accepted — Declared seated rides over a blanket allowance:** a design may
+  ride only by declaring `CityPedestrianArchetype.SeatedRide`, which owns its
+  pelvis lift, back offset and headroom, and by owning an authored `Sit` loop
+  in the shared locomotion library. The Helmet Lamp Hopper declares none: it
+  has no seated posture to author on `0.46 m` hind feet, and its worn Spot is
+  the one working light the pedestrian contract allows. A seated clip is
+  excluded from the footwear bake, since it leaves the pavement plane on
+  purpose, and proves a different contract instead — measured headroom above
+  the seated pelvis inside a declared `seated_clearance_m` band, and nothing
+  hanging more than the `0.41 m` cushion height below it. The four riders
+  measure `1.030 / 1.055 / 1.050 / 1.050 m` of headroom and `0.354-0.374 m` of
+  drop against a `2.05 m` cabin, so the catalog clears the roof with room to
+  spare.
   The moving runtime remains City-only. A valid Home/Balcony route would
   require a real Street pass-through whose two complete-body seams both lie at
   or beyond the fog-hidden `56 m` boundary; none exists, and the default home

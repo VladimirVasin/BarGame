@@ -35,6 +35,8 @@
     "HelmetLampIdle",
     "HelmetLampHop"
   ],
+  "rides_bus": false,
+  "seated_clearance_m": null,
   "build_signature": "ac099be34c4e5c7944a9dac5c1ff38e21f01c6af8d0b9286ba73a7271f078bc9",
   "bones": [
     {

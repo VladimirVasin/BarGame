@@ -64,10 +64,21 @@ Generic names, hierarchy and rest pose of `PlayerCharacter3D`. It writes the
 production FBXs and manifests under `Assets/Pedestrians/Models/`.
 
 The same run writes `Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx`
-with ten looping, in-place, bone-only clips — an `Idle` and a `Walk` per
-registered design. Its validator checks all 31 keyed bones, closed loop
-endpoints, zero gameplay-root translation and footwear grounding at every
-exported frame.
+with fourteen looping, in-place, bone-only clips — an `Idle` and a `Walk` per
+registered design, plus one `Sit` for each design that declares a Route 01
+ride. Its validator checks all 31 keyed bones, closed loop endpoints, zero
+gameplay-root translation and footwear grounding at every exported frame.
+
+A seated clip is the one exception to footwear grounding, and it is declared
+rather than assumed. Its feet leave the pavement plane on purpose, so it is
+excluded from the pelvis bake and proves a different contract: its measured
+headroom above the seated pelvis must fall inside the archetype's
+`seated_clearance_m` band, and nothing may hang more than the `0.41 m` cushion
+height below that pelvis. The runtime seats every design by aligning the shared
+`0.70 m` rest pelvis to the cushion anchor, which is why one seat rule serves
+four different proportions and why the per-design work is the authored posture,
+not the maths. A design that declares no band — the Helmet Lamp Hopper — owns
+no seated clip and stays on the pavement.
 
 Grounding is proved per archetype: each design is rebuilt in its own scene, and
 only its own clips are baked and verified against its own footwear. A clip

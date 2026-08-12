@@ -85,10 +85,12 @@ namespace BarPromenade
         [SerializeField] private CityPedestrianRendererBinding[] rendererBindings =
             Array.Empty<CityPedestrianRendererBinding>();
         [SerializeField] private Transform headAnchor;
+        [SerializeField] private Transform pelvisAnchor;
         [SerializeField] private Transform leftFootAnchor;
         [SerializeField] private Transform rightFootAnchor;
         [SerializeField] private AnimationClip idleClip;
         [SerializeField] private AnimationClip walkClip;
+        [SerializeField] private AnimationClip sitClip;
         [SerializeField] private Bounds localBounds;
         [SerializeField] private int sourceTriangleCount;
         [SerializeField] private string sourceGeneratorVersion;
@@ -105,12 +107,26 @@ namespace BarPromenade
             rendererBindings;
         public Transform HeadAnchor => headAnchor;
         public Transform Head => headAnchor;
+
+        /// <summary>
+        /// The rest pelvis every design shares at `0.70 m`. Seating aligns
+        /// this bone to the cushion anchor instead of pinning the lowest
+        /// sole, which is what lets one seat rule serve five proportions.
+        /// </summary>
+        public Transform PelvisAnchor => pelvisAnchor;
+        public Transform Pelvis => pelvisAnchor;
         public Transform LeftFootAnchor => leftFootAnchor;
         public Transform LeftFoot => leftFootAnchor;
         public Transform RightFootAnchor => rightFootAnchor;
         public Transform RightFoot => rightFootAnchor;
         public AnimationClip IdleClip => idleClip;
         public AnimationClip WalkClip => walkClip;
+
+        /// <summary>
+        /// The design's authored seated loop, or <c>null</c> for a design that
+        /// declares no seated ride.
+        /// </summary>
+        public AnimationClip SitClip => sitClip;
         public Bounds LocalBounds => localBounds;
         public int SourceTriangleCount => sourceTriangleCount;
         public string SourceGeneratorVersion => sourceGeneratorVersion;
@@ -152,7 +168,9 @@ namespace BarPromenade
             string configuredDesignId,
             string configuredBuildSignature,
             Light configuredHeadLamp = null,
-            bool configuredPreservesAirborneMotion = false)
+            bool configuredPreservesAirborneMotion = false,
+            Transform configuredPelvisAnchor = null,
+            AnimationClip configuredSitClip = null)
         {
             headLamp = configuredHeadLamp;
             preservesAirborneMotion = configuredPreservesAirborneMotion;
@@ -162,10 +180,12 @@ namespace BarPromenade
             rendererBindings = configuredRendererBindings ??
                 Array.Empty<CityPedestrianRendererBinding>();
             headAnchor = configuredHeadAnchor;
+            pelvisAnchor = configuredPelvisAnchor;
             leftFootAnchor = configuredLeftFootAnchor;
             rightFootAnchor = configuredRightFootAnchor;
             idleClip = configuredIdleClip;
             walkClip = configuredWalkClip;
+            sitClip = configuredSitClip;
             localBounds = configuredLocalBounds;
             sourceTriangleCount = configuredSourceTriangleCount;
             sourceGeneratorVersion = configuredSourceGeneratorVersion ??

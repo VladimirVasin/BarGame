@@ -19,7 +19,7 @@ namespace BarPromenade
     {
         // Seat 07 is the first window seat on the lateral side opposite the
         // production driver's seat and remains practical from either door.
-        public const int PassengerSeatIndex = 6;
+        public const int PassengerSeatIndex = CityBusActor.PlayerSeatIndex;
         // Keep the waiting capsule outside the bus obstacle corridor so the
         // route actor can finish pulling into its stop instead of yielding to
         // the passenger it is about to collect.
@@ -49,6 +49,7 @@ namespace BarPromenade
         private CityBusRidePlan(
             CityBusStopDescriptor stop,
             CityBusPassengerDoor passengerDoor,
+            int seatIndex,
             Transform actorRoot,
             Transform body,
             Transform doorAnchor,
@@ -62,6 +63,7 @@ namespace BarPromenade
         {
             Stop = stop;
             PassengerDoor = passengerDoor;
+            SeatIndex = seatIndex;
             ActorRoot = actorRoot;
             Body = body;
             DoorAnchor = doorAnchor;
@@ -76,6 +78,7 @@ namespace BarPromenade
 
         public CityBusStopDescriptor Stop { get; }
         public CityBusPassengerDoor PassengerDoor { get; }
+        public int SeatIndex { get; }
         public Transform ActorRoot { get; }
         public Transform Body { get; }
         public Transform DoorAnchor { get; }
@@ -136,6 +139,45 @@ namespace BarPromenade
             CityStreetSurfacePlan streetSurfacePlan,
             out CityBusRidePlan plan)
         {
+            return TryCreate(
+                actor,
+                walkableArea,
+                neutralPelvisLocalPosition,
+                playerRadius,
+                passengerDoor,
+                streetSurfacePlan,
+                PassengerSeatIndex,
+                PlayerFactory.GroundedRootOffset,
+                true,
+                out plan);
+        }
+
+        /// <summary>
+        /// The complete transfer plan. An ambient passenger passes its own
+        /// seat index, capsule radius and grounded-root offset and receives
+        /// the same validated docks.
+        /// <para>
+        /// <paramref name="requireOppositeDriverSide"/> guards the hero alone.
+        /// Seat `07` must sit opposite the driver because his authored
+        /// `BusRideLoop` and the seated camera that looks through the nearest
+        /// side window are built around that lateral side. An ambient
+        /// passenger has neither, and half the cabin — the whole driver-side
+        /// row — is on the other side, so enforcing it there rejects every
+        /// plan and nobody ever boards or gets off.
+        /// </para>
+        /// </summary>
+        public static bool TryCreate(
+            CityBusActor actor,
+            IWalkableArea walkableArea,
+            Vector3 neutralPelvisLocalPosition,
+            float agentRadius,
+            CityBusPassengerDoor passengerDoor,
+            CityStreetSurfacePlan streetSurfacePlan,
+            int seatIndex,
+            float groundedRootOffset,
+            bool requireOppositeDriverSide,
+            out CityBusRidePlan plan)
+        {
             plan = null;
             if (actor == null ||
                 !actor.IsSpawned ||
@@ -144,12 +186,15 @@ namespace BarPromenade
                 actor.Presentation.Registry == null ||
                 walkableArea == null ||
                 !IsFinite(neutralPelvisLocalPosition) ||
-                !IsFinite(playerRadius) ||
-                playerRadius <= 0f)
+                !IsFinite(agentRadius) ||
+                agentRadius <= 0f ||
+                !IsFinite(groundedRootOffset) ||
+                seatIndex < 0)
             {
                 return false;
             }
 
+            float playerRadius = agentRadius;
             CityBusAssetRegistry registry =
                 actor.Presentation.Registry;
             if (registry.Body == null ||
@@ -157,14 +202,12 @@ namespace BarPromenade
                 registry.FrontDoorEntryAnchor == null ||
                 registry.RearDoorEntryAnchor == null ||
                 registry.PassengerSeatAnchors == null ||
-                registry.PassengerSeatAnchors.Count <=
-                    PassengerSeatIndex)
+                registry.PassengerSeatAnchors.Count <= seatIndex)
             {
                 return false;
             }
 
-            Transform seat = registry.PassengerSeatAnchors[
-                PassengerSeatIndex];
+            Transform seat = registry.PassengerSeatAnchors[seatIndex];
             if (seat == null)
             {
                 return false;
@@ -190,7 +233,12 @@ namespace BarPromenade
                 seat.position - actorRoot.position,
                 actorRight);
             if (Mathf.Abs(driverSide) <= 0.01f ||
-                Mathf.Abs(passengerSide) <= 0.01f ||
+                Mathf.Abs(passengerSide) <= 0.01f)
+            {
+                return false;
+            }
+
+            if (requireOppositeDriverSide &&
                 driverSide * passengerSide >= 0f)
             {
                 return false;
@@ -238,7 +286,8 @@ namespace BarPromenade
             outsideDoor.y =
                 ResolveGroundedRootY(
                     outsideDoor,
-                    streetSurfacePlan);
+                    streetSurfacePlan,
+                    groundedRootOffset);
 
             if (!TrySelectDock(
                     outsideDoor,
@@ -247,6 +296,7 @@ namespace BarPromenade
                     walkableArea,
                     playerRadius,
                     streetSurfacePlan,
+                    groundedRootOffset,
                     out Vector3 entryRoot) ||
                 !TrySelectDock(
                     outsideDoor,
@@ -255,6 +305,7 @@ namespace BarPromenade
                     walkableArea,
                     playerRadius,
                     streetSurfacePlan,
+                    groundedRootOffset,
                     out Vector3 exitRoot))
             {
                 return false;
@@ -295,6 +346,7 @@ namespace BarPromenade
             plan = new CityBusRidePlan(
                 actor.CurrentStop,
                 passengerDoor,
+                seatIndex,
                 actorRoot,
                 registry.Body,
                 door,
@@ -305,6 +357,59 @@ namespace BarPromenade
                 rideRootLocalRotation,
                 exitPose,
                 transition);
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the actor-local floor pose of one passenger seat without
+        /// a transfer. A full ride plan needs a served stop and two validated
+        /// roadside docks, none of which exist while the bus is cruising, but
+        /// a passenger who is simply already aboard needs neither.
+        /// </summary>
+        public static bool TryCreateSeatedPose(
+            CityBusActor actor,
+            int seatIndex,
+            out Vector3 rideRootLocalPosition,
+            out Quaternion rideRootLocalRotation,
+            out Transform seatAnchor)
+        {
+            rideRootLocalPosition = Vector3.zero;
+            rideRootLocalRotation = Quaternion.identity;
+            seatAnchor = null;
+            if (actor == null ||
+                !actor.IsSpawned ||
+                actor.Presentation == null ||
+                actor.Presentation.Registry == null ||
+                seatIndex < 0)
+            {
+                return false;
+            }
+
+            CityBusAssetRegistry registry = actor.Presentation.Registry;
+            if (registry.PassengerSeatAnchors == null ||
+                registry.PassengerSeatAnchors.Count <= seatIndex ||
+                registry.FrontDoorEntryAnchor == null)
+            {
+                return false;
+            }
+
+            Transform seat = registry.PassengerSeatAnchors[seatIndex];
+            if (seat == null)
+            {
+                return false;
+            }
+
+            Transform actorRoot = actor.transform;
+            Vector3 up = actorRoot.up;
+            // The door entry anchor sits on the cabin floor, which is the same
+            // plane a seated passenger's root stands on.
+            Vector3 floorReference = registry.FrontDoorEntryAnchor.position;
+            Vector3 seatFloor = seat.position +
+                up * Vector3.Dot(floorReference - seat.position, up);
+            rideRootLocalPosition =
+                actorRoot.InverseTransformPoint(seatFloor);
+            rideRootLocalRotation = Quaternion.identity;
+            seatAnchor = seat;
             return true;
         }
 
@@ -369,6 +474,7 @@ namespace BarPromenade
             IWalkableArea walkableArea,
             float playerRadius,
             CityStreetSurfacePlan streetSurfacePlan,
+            float groundedRootOffset,
             out Vector3 selected)
         {
             for (int index = 0; index < offsets.Length; index++)
@@ -376,7 +482,8 @@ namespace BarPromenade
                 Vector3 candidate = origin + forward * offsets[index];
                 candidate.y = ResolveGroundedRootY(
                     candidate,
-                    streetSurfacePlan);
+                    streetSurfacePlan,
+                    groundedRootOffset);
                 if (walkableArea.Contains(candidate, playerRadius))
                 {
                     selected = candidate;
@@ -388,14 +495,20 @@ namespace BarPromenade
             return false;
         }
 
-        private static float ResolveGroundedRootY(
+        /// <summary>
+        /// The same deterministic street surface plan that builds the physical
+        /// City geometry, so a door on a flat bus apron never targets the
+        /// raised curb.
+        /// </summary>
+        public static float ResolveGroundedRootY(
             Vector3 position,
-            CityStreetSurfacePlan streetSurfacePlan)
+            CityStreetSurfacePlan streetSurfacePlan,
+            float groundedRootOffset)
         {
             if (streetSurfacePlan == null)
             {
                 return CityStreetSurfacePlanner.SidewalkTop +
-                       PlayerFactory.GroundedRootOffset;
+                       groundedRootOffset;
             }
 
             float surfaceTop = CityStreetSurfacePlanner.RoadTop;
@@ -419,7 +532,7 @@ namespace BarPromenade
                 surfaceTop = Mathf.Max(surfaceTop, sidewalk.max.y);
             }
 
-            return surfaceTop + PlayerFactory.GroundedRootOffset;
+            return surfaceTop + groundedRootOffset;
         }
 
         private static bool IsFinite(Vector3 value)

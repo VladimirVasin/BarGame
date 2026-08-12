@@ -33,7 +33,13 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
     "LongArmIdle",
-    "LongArmWalk"
+    "LongArmWalk",
+    "LongArmSit"
+  ],
+  "rides_bus": true,
+  "seated_clearance_m": [
+    1.01,
+    1.09
   ],
   "build_signature": "0ee5561d6f9fc501abcfdd8ed660f6738c2daff3cc9e2237714851de22c7a05f",
   "bones": [

@@ -549,6 +549,114 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Regression: the stop order was the district enum — Industrial,
+        /// Nightlife, Residential, Old Town, then home — which carried no
+        /// geography. On the default layout it crossed the whole city twice
+        /// for a `1166 m` straight-line tour where `754 m` was available, and
+        /// the road loop it forced ran `2592 m`. The order is now a shortest
+        /// closed tour, which brought the same loop to `1798 m`.
+        /// </summary>
+        [Test]
+        public void ServedOrder_IsAShortestClosedTourStartingAtHome()
+        {
+            CreateContext(
+                out CityLayout layout,
+                out CityDecorationPlan decorations);
+            CityBusPlan plan = CityBusPlanner.Create(layout, decorations);
+            Assert.That(plan.Stops.Count, Is.GreaterThan(2));
+
+            Assert.That(
+                plan.Stops[0].TargetKind,
+                Is.EqualTo(CityBusStopTargetKind.PlayerHome),
+                "A closed loop has no last stop, so numbering starts at the " +
+                "one place the hero can name.");
+
+            var positions = new List<Vector3>(plan.Stops.Count);
+            for (int index = 0; index < plan.Stops.Count; index++)
+            {
+                Vector3 position = plan.Stops[index].Position;
+                position.y = 0f;
+                positions.Add(position);
+            }
+
+            float served = MeasureCycle(positions, Identity(positions.Count));
+            float best = MeasureBestCycle(positions);
+            Assert.That(
+                served,
+                Is.LessThanOrEqualTo(best * 1.05f),
+                $"The served order walks {served:F1} m between stops where " +
+                $"{best:F1} m is available; a route that doubles back reads " +
+                "as a mistake however well the streets between stops are " +
+                "proven.");
+
+            // Same layout and seed must always produce the same loop, so the
+            // tie-break cannot depend on the order the search reaches
+            // equal-length tours in.
+            CityBusPlan repeat = CityBusPlanner.Create(layout, decorations);
+            Assert.That(repeat.Stops.Count, Is.EqualTo(plan.Stops.Count));
+            for (int index = 0; index < plan.Stops.Count; index++)
+            {
+                Assert.That(
+                    repeat.Stops[index].Id,
+                    Is.EqualTo(plan.Stops[index].Id));
+            }
+        }
+
+        private static int[] Identity(int count)
+        {
+            var order = new int[count];
+            for (int index = 0; index < count; index++)
+            {
+                order[index] = index;
+            }
+
+            return order;
+        }
+
+        private static float MeasureCycle(
+            IReadOnlyList<Vector3> points,
+            IReadOnlyList<int> order)
+        {
+            float total = 0f;
+            for (int index = 0; index < order.Count; index++)
+            {
+                total += Vector3.Distance(
+                    points[order[index]],
+                    points[order[(index + 1) % order.Count]]);
+            }
+
+            return total;
+        }
+
+        private static float MeasureBestCycle(IReadOnlyList<Vector3> points)
+        {
+            var order = Identity(points.Count);
+            float best = MeasureCycle(points, order);
+            PermuteTail(points, order, 1, ref best);
+            return best;
+        }
+
+        private static void PermuteTail(
+            IReadOnlyList<Vector3> points,
+            int[] order,
+            int start,
+            ref float best)
+        {
+            if (start >= order.Length)
+            {
+                best = Mathf.Min(best, MeasureCycle(points, order));
+                return;
+            }
+
+            for (int index = start; index < order.Length; index++)
+            {
+                (order[start], order[index]) = (order[index], order[start]);
+                PermuteTail(points, order, start + 1, ref best);
+                (order[start], order[index]) = (order[index], order[start]);
+            }
+        }
+
         private static void CreateContext(
             out CityLayout layout,
             out CityDecorationPlan decorations)

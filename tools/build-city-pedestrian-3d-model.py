@@ -64,6 +64,15 @@ class ArchetypeSpec:
     # one clip", and switches the pelvis bake to a single constant offset so
     # the authored arc survives instead of being flattened onto the pavement.
     airborne_lift_m: tuple[float, float] | None = None
+    # Optional authored seated loop for Route 01. A design without one stays
+    # on the pavement: the runtime catalog declares the same absence, so a
+    # walker is never seated in a posture nobody authored.
+    sit_clip: str | None = None
+    # Required alongside `sit_clip`, as (min_headroom_m, max_headroom_m)
+    # measured from the seated pelvis to the top of the design, worn objects
+    # included. The cabin gives 2.05 m from floor to ceiling and the cushion
+    # sits 0.41 m up, so anything past 1.64 m would pass through the roof.
+    seated_clearance_m: tuple[float, float] | None = None
 
 
 ARCHETYPES = {
@@ -71,24 +80,28 @@ ARCHETYPES = {
         "lampshade", "lampshade_walker_v1", "Lampshade Walker", 190417,
         "CityPedestrian3D.blend", "CityPedestrian3D", "CityPedestrian3D.png",
         "LampshadeIdle", "LampshadeWalk", (800, 1400),
+        sit_clip="LampshadeSit", seated_clearance_m=(0.99, 1.07),
     ),
     "chair_carrier": ArchetypeSpec(
         "chair_carrier", "chair_carrier_v1", "Chair Carrier", 241109,
         "ChairCarrierPedestrian3D.blend", "ChairCarrierPedestrian3D",
         "ChairCarrierPedestrian3D.png", "ChairCarrierIdle", "ChairCarrierWalk",
         (800, 1600),
+        sit_clip="ChairCarrierSit", seated_clearance_m=(1.02, 1.10),
     ),
     "kettle_hat": ArchetypeSpec(
         "kettle_hat", "kettle_hat_walker_v1", "Kettle Hat Walker", 305521,
         "KettleHatPedestrian3D.blend", "KettleHatPedestrian3D",
         "KettleHatPedestrian3D.png", "KettleHatIdle", "KettleHatWalk",
         (800, 1600),
+        sit_clip="KettleHatSit", seated_clearance_m=(1.01, 1.09),
     ),
     "long_arm": ArchetypeSpec(
         "long_arm", "long_arm_walker_v1", "Long-Arm Walker", 418833,
         "LongArmPedestrian3D.blend", "LongArmPedestrian3D",
         "LongArmPedestrian3D.png", "LongArmIdle", "LongArmWalk",
         (800, 1300), (0.020, 0.140),
+        sit_clip="LongArmSit", seated_clearance_m=(1.01, 1.09),
     ),
     "helmet_lamp": ArchetypeSpec(
         "helmet_lamp", "helmet_lamp_hopper_v1", "Helmet Lamp Hopper", 527194,
@@ -142,6 +155,11 @@ class ActionSpec:
     frame_end: int
     authored_posture: str
     gait: str
+    # A seated clip is not sole-grounded. Its feet leave the pavement plane by
+    # design, so pinning the lowest sole would drag the whole model down until
+    # the boots touched the floor; the runtime aligns the shared rest pelvis to
+    # the cushion instead, and the declared headroom band is what gets proved.
+    seated: bool = False
 
 
 @dataclass(frozen=True)
@@ -1895,7 +1913,17 @@ def write_manifest(
         "animation_count": 0,
         "animations": [],
         "shared_animation_source": ANIMATION_SOURCE,
-        "shared_clips": [spec.idle_clip, spec.walk_clip],
+        "shared_clips": (
+            [spec.idle_clip, spec.walk_clip, spec.sit_clip]
+            if spec.sit_clip is not None
+            else [spec.idle_clip, spec.walk_clip]
+        ),
+        "rides_bus": spec.sit_clip is not None,
+        "seated_clearance_m": (
+            list(spec.seated_clearance_m)
+            if spec.seated_clearance_m is not None
+            else None
+        ),
         "build_signature": report.build_signature,
         "bones": [
             {
@@ -1970,6 +1998,30 @@ ACTION_SPECS = (
         "slow shuffle with barely lifted feet and a lagging pendulum swing",
     ),
     ActionSpec(
+        "LampshadeSit", "lampshade_walker_v1", 3.0, 72,
+        "seated C-curve, shade tipped forward over folded knees",
+        "settled seated breath that never straightens the spine",
+        seated=True,
+    ),
+    ActionSpec(
+        "ChairCarrierSit", "chair_carrier_v1", 2.5, 60,
+        "upright seated spine, the inverted chair still shouldered",
+        "small seated correction that keeps the chair balanced",
+        seated=True,
+    ),
+    ActionSpec(
+        "KettleHatSit", "kettle_hat_walker_v1", 2.75, 66,
+        "stout seated stance, short legs hanging clear of the floor",
+        "counter-phased belly and kettle sway with the legs at rest",
+        seated=True,
+    ),
+    ActionSpec(
+        "LongArmSit", "long_arm_walker_v1", 3.25, 78,
+        "narrow seated torso, long forearms folded onto the knees",
+        "residual arm sway that never settles, now over the knees",
+        seated=True,
+    ),
+    ActionSpec(
         "HelmetLampIdle", "helmet_lamp_hopper_v1", 2.0, 48,
         "coiled crouch on both hind feet, forearms tucked like forepaws",
         "settled twitching crouch while the helmet beam sweeps side to side",
@@ -1980,6 +2032,28 @@ ACTION_SPECS = (
         "two-footed rabbit hop: crouch, launch, tucked airborne apex, landing",
     ),
 )
+
+
+SEATED_LEGS = {
+    "pelvis": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+    "thigh.L": BonePose(rotation_degrees=(-79.0, 0.0, 3.0)),
+    "shin.L": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
+    "foot.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    "thigh.R": BonePose(rotation_degrees=(-79.0, 0.0, -3.0)),
+    "shin.R": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
+    "foot.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+}
+
+
+def seated_pose(base: dict[str, BonePose], *overrides: dict[str, BonePose]):
+    """One seated leg shape over each design's own authored upper body.
+
+    Every walker shares the hero's rig, so the knees and hips are identical
+    across designs; what stays per-design is the posture the walker is known
+    for, which is exactly what the base pose already carries.
+    """
+
+    return merge_pose(base, SEATED_LEGS, *overrides)
 
 
 def merge_pose(
@@ -2489,7 +2563,52 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "upper_arm.L": BonePose(rotation_degrees=(26.0, 8.0, 42.0)),
         "upper_arm.R": BonePose(rotation_degrees=(26.0, -8.0, -42.0)),
     })
+    # Seated loops. Each keeps the design's own upper body over one shared
+    # seated leg shape, then breathes between two settled poses so the clip
+    # loops on itself without ever standing up.
+    lamp_seated = seated_pose(lampshade, {
+        "spine": BonePose(rotation_degrees=(21.0, 0.0, 2.0)),
+        "chest": BonePose(rotation_degrees=(15.0, 0.0, -2.0)),
+        "head": BonePose(rotation_degrees=(10.0, 0.0, -1.0)),
+    })
+    lamp_seated_breath = merge_pose(lamp_seated, {
+        "spine": BonePose(rotation_degrees=(19.0, 0.0, 2.5)),
+        "chest": BonePose(rotation_degrees=(17.0, 0.0, -2.5)),
+        "head": BonePose(rotation_degrees=(8.5, 0.0, -1.5)),
+    })
+    chair_seated = seated_pose(chair, {
+        "chest": BonePose(rotation_degrees=(1.0, 0.0, 0.0)),
+    })
+    chair_seated_breath = merge_pose(chair_seated, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, 1.0, -1.0)),
+        "chest": BonePose(rotation_degrees=(3.0, -0.5, 1.0)),
+        "head": BonePose(rotation_degrees=(1.0, 0.0, -0.6)),
+    })
+    kettle_seated = seated_pose(kettle)
+    kettle_seated_breath = merge_pose(kettle_seated, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, -1.5, 1.5)),
+        "chest": BonePose(rotation_degrees=(3.0, 1.0, -1.5)),
+        "head": BonePose(rotation_degrees=(1.5, 0.0, 1.0)),
+    })
+    # The one design whose arms would otherwise pass through the cabin floor:
+    # seated, the ground-reaching forearms fold onto the knees instead.
+    long_seated = seated_pose(long_arm, {
+        "upper_arm.L": BonePose(rotation_degrees=(24.0, 4.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(24.0, -4.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-68.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-68.0, 0.0, 18.0)),
+    })
+    long_seated_sway = merge_pose(long_seated, {
+        "upper_arm.L": BonePose(rotation_degrees=(21.0, 4.0, 31.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(27.0, -4.0, -29.0)),
+        "forearm.L": BonePose(rotation_degrees=(-64.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, 18.0)),
+    })
     return {
+        "LampshadeSit": ((0.0, lamp_seated), (0.5, lamp_seated_breath), (1.0, lamp_seated)),
+        "ChairCarrierSit": ((0.0, chair_seated), (0.5, chair_seated_breath), (1.0, chair_seated)),
+        "KettleHatSit": ((0.0, kettle_seated), (0.5, kettle_seated_breath), (1.0, kettle_seated)),
+        "LongArmSit": ((0.0, long_seated), (0.5, long_seated_sway), (1.0, long_seated)),
         "HelmetLampIdle": ((0.0, helmet), (0.25, helmet_idle_settle), (0.5, helmet), (0.75, helmet_idle_scan), (1.0, helmet)),
         "HelmetLampHop": ((0.0, helmet), (0.25, helmet_launch), (0.5, helmet_apex), (0.75, helmet_reach), (1.0, helmet)),
         "LongArmIdle": ((0.0, long_arm), (0.25, long_idle_back), (0.5, long_arm), (0.75, long_idle_forward), (1.0, long_arm)),
@@ -2617,9 +2736,19 @@ def validate_animated_grounding(
         raise RuntimeError(
             "Hand clearance validation needs geometry on the hand/forearm bones"
         )
+    seated_band = archetype.seated_clearance_m if archetype is not None else None
     reports: dict[str, dict[str, object]] = {}
     for action_name, action in actions.items():
         animation_data.action = action
+        if is_seated_action(action_name):
+            reports[action_name] = validate_seated_clip(
+                result,
+                action,
+                action_name,
+                seated_band,
+            )
+            continue
+
         contact_gaps: list[float] = []
         lowest_samples: list[float] = []
         hand_samples: list[float] = []
@@ -2687,6 +2816,96 @@ def validate_animated_grounding(
     scene.frame_set(0)
     reset_pose(rig)
     return reports
+
+
+def evaluated_part_max_z(part: PartRecord, depsgraph) -> float:
+    evaluated = part.obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        return max(
+            (evaluated.matrix_world @ vertex.co).z
+            for vertex in mesh.vertices
+        )
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def validate_seated_clip(
+    result: BuildResult,
+    action: bpy.types.Action,
+    action_name: str,
+    seated_band: tuple[float, float] | None,
+) -> dict[str, object]:
+    """Prove a seated clip against the cabin instead of against the pavement.
+
+    Sole contact is meaningless here: a seated design deliberately lifts its
+    boots off the ground plane, and the runtime aligns the shared rest pelvis
+    to the cushion rather than pinning the lowest sole. What can go wrong is
+    vertical: a design whose worn objects rise too far above the seated pelvis
+    passes through the cabin ceiling, and one that folds below it passes
+    through the floor. Both are measured here, on the real deformed meshes.
+    """
+
+    if seated_band is None:
+        raise RuntimeError(
+            f"{action_name} is seated but its archetype declares no "
+            "seated_clearance_m band"
+        )
+
+    scene = bpy.context.scene
+    rig = result.rig
+    floor, ceiling = seated_band
+    headrooms: list[float] = []
+    drops: list[float] = []
+    seat_contacts: list[float] = []
+    for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        pelvis_z = (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+        top = max(evaluated_part_max_z(part, depsgraph) for part in result.parts)
+        bottom = min(
+            evaluated_part_min_z(part, depsgraph) for part in result.parts
+        )
+        seat_parts = [
+            part for part in result.parts
+            if part.bone in {"pelvis", "thigh.L", "thigh.R"}
+        ]
+        if seat_parts:
+            seat_contacts.append(
+                pelvis_z
+                - min(evaluated_part_min_z(part, depsgraph) for part in seat_parts)
+            )
+        headrooms.append(top - pelvis_z)
+        drops.append(pelvis_z - bottom)
+
+    headroom = max(headrooms)
+    if headroom < floor or headroom > ceiling:
+        raise RuntimeError(
+            f"{action_name} rises {headroom:.4f} m above its seated pelvis; "
+            f"the design declares {floor:.3f}-{ceiling:.3f} m"
+        )
+
+    drop = max(drops)
+    # The cushion sits 0.41 m above the cabin floor, so nothing may hang more
+    # than that below the seated pelvis.
+    if drop > 0.41:
+        raise RuntimeError(
+            f"{action_name} hangs {drop:.4f} m below its seated pelvis and "
+            "would pass through the cabin floor"
+        )
+
+    # How far the underside of the seated hips and thighs sits below the
+    # pelvis bone. The runtime aligns that bone to the cushion anchor, so this
+    # is exactly the lift a design needs in order to rest ON the seat instead
+    # of sinking into it.
+    seat_contact = max(seat_contacts) if seat_contacts else 0.0
+    return {
+        "seated": True,
+        "seated_headroom_m": stable_float(headroom),
+        "seated_drop_m": stable_float(drop),
+        "seated_contact_m": stable_float(seat_contact),
+    }
 
 
 def bake_constant_pelvis_offset(
@@ -2797,6 +3016,14 @@ def actions_for_archetype(spec: ArchetypeSpec) -> tuple[ActionSpec, ...]:
     return tuple(item for item in ACTION_SPECS if item.archetype == spec.design_id)
 
 
+ACTION_BY_NAME = {spec.name: spec for spec in ACTION_SPECS}
+
+
+def is_seated_action(name: str) -> bool:
+    spec = ACTION_BY_NAME.get(name)
+    return spec is not None and spec.seated
+
+
 def capture_pelvis_track(action: bpy.types.Action) -> list[tuple[int, tuple[float, float, float]]]:
     """Read the baked pelvis location channel as plain per-frame data.
 
@@ -2878,10 +3105,16 @@ def ground_actions_per_archetype(
             action_spec.name: create_action(result.rig, action_spec, keys[action_spec.name])
             for action_spec in owned
         }
+        # A seated clip is never sole-pinned: the runtime aligns its pelvis to
+        # the cushion, so baking it against the pavement would fold the pose.
+        grounded_actions = {
+            name: action for name, action in actions.items()
+            if not is_seated_action(name)
+        }
         if spec.airborne_lift_m is None:
-            bake_grounded_pelvis(result, actions)
+            bake_grounded_pelvis(result, grounded_actions)
         else:
-            bake_constant_pelvis_offset(result, actions)
+            bake_constant_pelvis_offset(result, grounded_actions)
         reports = validate_animated_grounding(result, actions, spec)
         grounding.update(reports)
         if spec.airborne_lift_m is not None:
@@ -3022,10 +3255,14 @@ def render_animation_contact_sheet(
             action_spec.name: create_action(result.rig, action_spec, keys[action_spec.name])
             for action_spec in actions_for_archetype(spec)
         }
+        grounded_actions = {
+            name: action for name, action in local_actions.items()
+            if not is_seated_action(name)
+        }
         if spec.airborne_lift_m is None:
-            bake_grounded_pelvis(result, local_actions)
+            bake_grounded_pelvis(result, grounded_actions)
         else:
-            bake_constant_pelvis_offset(result, local_actions)
+            bake_constant_pelvis_offset(result, grounded_actions)
         setup_review_stage(result)
         result.rig.animation_data_create().action = local_actions[action_name]
         bpy.context.scene.frame_set(frame)

@@ -6,6 +6,48 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-12 — People sit on the seats, not in them
+
+- Passengers and the driver used to sink into the upholstery — worst of all
+  the stout one, who was buried past the hips. Everyone now rests on the
+  cushion.
+- The driver stops following you with his eyes once he has shut the doors, so
+  his head no longer snaps round as he pulls away.
+- The front wheels turn when the bus turns. They used to lean over instead.
+
+### 2026-08-12 — The bus actually pulls in now
+
+- The bus used to stop a step short of the kerb and stand there with its doors
+  shut, sometimes for quite a while, before finally opening. It now completes
+  the last few centimetres and opens on arrival.
+- It is also less twitchy around you: it no longer slams on the brakes for a
+  momentary wobble in your footing, though it still gives way to somebody
+  genuinely stepping into the road.
+
+### 2026-08-12 — The bus route stops wandering
+
+- Route 01 used to cross the whole city twice in one lap: out to the western
+  edge, back east, out west again. It now runs a proper ring — home, the
+  drying yard, the old town, the weighbridge and the nightlife island, then
+  home again.
+- The lap is about a third shorter, so there is less waiting between stops,
+  and the numbering starts at your own street.
+
+### 2026-08-12 — Other people take the bus too
+
+- Somebody is usually waiting at the stop now. They stand beside the blue `01`
+  pole facing the road, get on when the doors open, sit down, and get off again
+  a few stops later — sometimes you watch one walk up the pavement to the stop
+  first.
+- Two of them at most, and never more than three people in the bus counting
+  you: window seat `07` stays yours, so you can always get on.
+- The bus rarely turns up empty. Somebody is often already riding when it
+  pulls in, and they get off at their own stop like anyone else.
+- They sit properly. The stooped one stays stooped, the chair stays on its
+  owner's shoulders, the short one's legs hang clear of the floor and the
+  long-armed one folds his arms onto his knees instead of through it.
+- The hopping miner never gets on. He hops, and his lamp stays outside.
+
 ### 2026-08-12 — Passers-by get out of each other's way
 
 - Walkers no longer freeze when they meet. They lean a shoulder aside, and if

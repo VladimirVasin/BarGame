@@ -26,6 +26,31 @@ namespace BarPromenade
         public const float MinimumSpawnRetryDelay = 1.5f;
         public const float MaximumSpawnRetryDelay = 4f;
         public const float PlayerPredictionSeconds = 0.75f;
+
+        /// <summary>
+        /// Fastest the hero can actually travel on foot: `PlayerMotor`'s
+        /// `2.6 m/s` times its speed multiplier, which is clamped to `2`.
+        /// The old `8 m/s` ceiling was half again more than the game can
+        /// produce, so it only ever widened a guess.
+        /// </summary>
+        public const float MaximumPlayerSpeed = 5.2f;
+
+        /// <summary>
+        /// The prediction sample extrapolates the hero `0.75 s` forward, and
+        /// an unsmoothed single-frame delta turns a wobble into a phantom
+        /// several metres away: `0.05 m` on a `5 ms` frame reads as `10 m/s`.
+        /// The bus then brakes for somebody who never moved. Smoothing over
+        /// this window costs the prediction almost nothing against real
+        /// walking, which lasts far longer than a frame.
+        /// </summary>
+        public const float PlayerVelocitySmoothing = 0.2f;
+
+        /// <summary>
+        /// A frame that moves the hero further than this is a teleport - a map
+        /// test-warp or a scene placement - not motion to anticipate. The
+        /// pedestrian director reads its own player heading the same way.
+        /// </summary>
+        public const float PlayerTeleportDistance = 4f;
         public const float PedestrianPredictionSeconds = 1.15f;
         public const float MinimumObstacleLookAhead = 12f;
 
@@ -66,6 +91,11 @@ namespace BarPromenade
         public bool IsInInitialApproach =>
             ActiveCount > 0 && !initialApproachCompleted;
 
+        /// <summary>
+        /// The cabin carries the hero and ambient passengers at the same time,
+        /// so cleanup is multicast: every owner detaches its own passenger and
+        /// the release post-condition still refuses to pool an occupied bus.
+        /// </summary>
         public void RegisterPassengerCleanup(Action cleanup)
         {
             if (cleanup == null)
@@ -73,21 +103,20 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(cleanup));
             }
 
-            if (passengerCleanup != null && passengerCleanup != cleanup)
+            if (passengerCleanup == null ||
+                Array.IndexOf(
+                    passengerCleanup.GetInvocationList(),
+                    (Delegate)cleanup) < 0)
             {
-                throw new InvalidOperationException(
-                    "The city bus director already has a passenger " +
-                    "cleanup callback.");
+                passengerCleanup += cleanup;
             }
-
-            passengerCleanup = cleanup;
         }
 
         public void UnregisterPassengerCleanup(Action cleanup)
         {
-            if (cleanup != null && passengerCleanup == cleanup)
+            if (cleanup != null)
             {
-                passengerCleanup = null;
+                passengerCleanup -= cleanup;
             }
         }
 
@@ -195,12 +224,15 @@ namespace BarPromenade
                 bool mayRecycle = initialApproachCompleted ||
                                   initialApproachElapsed >=
                                   MaximumInitialApproachDuration;
+                // Only the hero pins the bus in the world. Ambient passengers
+                // ride 92 m away behind fog; blocking recycling for them would
+                // strand the single actor slot for a whole lap.
                 if (mayRecycle &&
-                    !actor.HasPassenger &&
+                    !actor.HasPlayerPassenger &&
                     actor.GetClosestPlanarBodyDistance(player.position) >=
                         RecycleDistance)
                 {
-                    ReleaseActor(false);
+                    ReleaseActor(true);
                     spawnCooldown = GetRandomRange(
                         MinimumSpawnCooldown,
                         MaximumSpawnCooldown);
@@ -565,7 +597,7 @@ namespace BarPromenade
                 MinimumObstacleLookAhead,
                 actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
             float clearance = float.PositiveInfinity;
-            if (!actor.HasPassenger)
+            if (!actor.HasPlayerPassenger)
             {
                 CheckObstacle(
                     player.position,
@@ -590,7 +622,20 @@ namespace BarPromenade
                 for (int index = 0; index < actors.Count; index++)
                 {
                     CityPedestrianActor pedestrian = actors[index];
-                    if (!pedestrian.IsSpawned)
+                    // A walker bound to Route 01 is a passenger, not an
+                    // obstacle, which mirrors the accepted rule that a hero
+                    // standing on his door dock does not make the bus yield
+                    // before it reaches its service pose.
+                    // The margin is thinner than it looks. Yielding uses
+                    // `lateralLimit = halfWidth + targetRadius +
+                    // ObstacleLateralPadding` = `1.74 m` for a walker, and a
+                    // wait slot has exactly one lateral position available to
+                    // it: a `1 m` sidewalk minus a `0.35 m` capsule and two
+                    // `0.15 m` navigation margins pins it at `3.50 m` from
+                    // the road centre against a corridor edge at `3.24 m`.
+                    // That is `0.26 m`, and a walker's own `0.15 m`
+                    // shoulder-shift spends most of it.
+                    if (!pedestrian.IsSpawned || pedestrian.IsRouteBound)
                     {
                         continue;
                     }
@@ -850,12 +895,29 @@ namespace BarPromenade
             }
             else
             {
-                playerVelocity = (current - previousPlayerPosition) /
-                                 deltaTime;
-                playerVelocity.y = 0f;
-                if (playerVelocity.sqrMagnitude > 64f)
+                Vector3 displacement = current - previousPlayerPosition;
+                displacement.y = 0f;
+                if (displacement.magnitude > PlayerTeleportDistance)
                 {
-                    playerVelocity = playerVelocity.normalized * 8f;
+                    // Anticipating a teleport would brake the bus for a
+                    // position the hero never travelled through.
+                    playerVelocity = Vector3.zero;
+                }
+                else
+                {
+                    Vector3 sample = displacement / deltaTime;
+                    if (sample.sqrMagnitude >
+                        MaximumPlayerSpeed * MaximumPlayerSpeed)
+                    {
+                        sample = sample.normalized * MaximumPlayerSpeed;
+                    }
+
+                    float blend = 1f - Mathf.Exp(
+                        -deltaTime / PlayerVelocitySmoothing);
+                    playerVelocity = Vector3.Lerp(
+                        playerVelocity,
+                        sample,
+                        Mathf.Clamp01(blend));
                 }
             }
 
