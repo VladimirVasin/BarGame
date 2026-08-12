@@ -114,7 +114,11 @@ fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible
 twelve-seat interior, driver area, two animated double-leaf doors that fold
 inward around fixed outer posts, steering and rolling wheels, a synthesized
-engine loop and time-of-day head, tail and cabin lights. The model carries
+engine loop and time-of-day head, tail and cabin lights. Two windshield
+wipers, each an arm-and-blade mesh on its own authored base pivot, sweep
+`±40°` around the windshield normal whenever the deterministic weather
+schedule reports rain — slow in drizzle, fast in a downpour — and park back
+at the resting diagonal when the rain ends or the vehicle pools. The model carries
 world-scale box-projected UVs and four deterministic tileable albedos from
 `tools/build-city-bus-textures.py` (exterior paint with panel seams and
 rivets, brushed metal, interior linoleum, seat weave), multiplied under the
@@ -267,6 +271,32 @@ in-game day is exactly
 `18:00-19:00`, and night resumes at `19:00`. City fog, its matching
 background, `48 m` far clip, `CityFogField` and `CityNoirVolumeProfile` do not
 change with time; Bar, Supermarket and Stairwell visuals remain unchanged.
+
+Exterior weather is a deterministic pure function of the city seed and the
+absolute session time (`GameWeatherRules`): `90`-game-minute slots draw clear
+(`55%`), light rain (`27%`), heavy rain (`12%`) or a thunderstorm (`6%`) from
+a seeded hash, and the continuous rain intensity smoothsteps between the slot
+targets (`0`, `0.45`, `1.0`, `1.0`) over the first `5` game minutes of a
+slot, so City and the Home balcony always agree and scene loads cannot
+desynchronize the sky. Rain renders as a player-following field of stretched
+streak particles on the shared atmosphere shader (`CityRainField`, up to
+`420` particles over a `26 m` box): light rain is sparser, thinner and
+slower-reading, heavy rain denser with longer brighter streaks. A
+deterministic synthesized rain bed tracks the same intensity in loudness and
+low-pass brightness. A thunderstorm is heavy rain plus lightning from the
+same pure schedule: each `12`-game-minute window of a developed storm slot
+hashes into at most one strike (`70%`) with its own start, azimuth and
+distance, rendered as a transient shadowless directional flash
+(`CityLightningFlashLight`, disabled outside the `0.5`-minute flicker so the
+pooled light budget is untouched) and answered by a synthesized thunder
+one-shot whose delay (`0.6-3 s`), loudness and low-pass follow the strike
+distance. The balcony view shows the same rain and the same flashes and
+plays the same rain bed and thunder, all gated to the active Balcony shot; a
+frozen clock (pre-wake, pause) suppresses the flash instead of holding it.
+While the hero rides Route 01 the emitter switches to a ring around the bus
+so streaks never spawn inside the cabin. Weather deliberately leaves the
+fixed fog, grade and the exactly-asserted day/night lighting contract
+untouched: it does not dim daylight, wet surfaces or reach interior windows.
 
 Startup truth begins at `Assets/Scripts/Runtime/Scenes/MainMenuRoot.cs` and
 `Assets/Scripts/Runtime/Scenes/HomeOpeningController.cs`; generated-city truth

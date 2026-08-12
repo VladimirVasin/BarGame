@@ -6,6 +6,25 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-13 — Rain and thunderstorms come to the city
+
+- The city now has weather. Some hours stay dry, some bring a thin drizzle,
+  and some open into a real downpour with denser, longer streaks and a louder
+  hiss; changes roll in smoothly over a few game minutes instead of snapping.
+- The rarest hours turn into a thunderstorm: the downpour keeps hammering
+  while the sky flashes from a different direction each strike, and after a
+  pause that matches the distance the thunder arrives — close strikes crack
+  fast and loud, far ones roll in late and muffled.
+- The same weather lives on the street and outside the apartment balcony, and
+  it keeps going exactly where it left off when you step out of a bar. On the
+  balcony you hear it too: the rain hiss and the thunder play while the
+  balcony view is open and fall silent back inside.
+- Riding the bus keeps you dry: the rain streams past the windows but never
+  falls through the cabin roof.
+- The bus wipers actually work now. In drizzle they sweep lazily, in a
+  downpour they hammer across the windshield, and when the rain stops they
+  glide back to their parked diagonal instead of freezing mid-stroke.
+
 ### 2026-08-13 — The bus gets a skin and real cabin lamps
 
 - The bus is no longer flat colour. Its paint now carries panel seams, rivet

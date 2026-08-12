@@ -6,6 +6,119 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-13 — Working bus windshield wipers
+
+- The bus carried two static wiper cylinders welded into one `GEO_Wipers`
+  mesh, so nothing could move when the new weather rained on the windshield.
+  Bumped the deterministic generator to `1.4.0`: each wiper is now its own
+  arm-and-blade mesh under an authored base pivot (`PIVOT_WiperL/R`, roles
+  `left_wiper`/`right_wiper`) on the body at the exact old base points, with
+  rest geometry matching the old diagonal pose. Generator validation gained
+  wiper control-pivot and single-owned-mesh checks; 47 meshes, 4176
+  triangles, new signature.
+- `CityBusAssetRegistry` binds both wiper pivots (validated by
+  `CityBusAssetSetup` alongside the other articulation bindings and reset by
+  `ResetArticulation`). `CityBusPresentation.AdvanceWipers(rain, dt)` sweeps
+  them `±40°` in mirrored directions around a model-derived windshield-normal
+  axis (`ResolveForwardAxisLocal`, same lesson as the wheel vertical axis):
+  sweep rate lerps `0.35-1.15 Hz` with rain intensity, a dry frame parks the
+  blades at `110°/s` instead of freezing them, and a rain restart re-enters
+  the sine sweep at the parked angle's own phase so blades never teleport.
+- `CityBusActor.Advance` gained an optional `rainIntensity` argument fed by
+  `CityBusDirector` from a new provider that defaults to the pure
+  `GameWeatherRules` schedule, mirroring the night-factor provider; existing
+  three-argument call sites keep compiling with parked wipers.
+
+Verification:
+
+- Blender 5.0.1 regenerated and self-validated the model
+  (`CITY BUS 3D BUILD OK`); batch `CityBusAssetSetup.RunBatch` rebuilt and
+  validated the prefab (`CITY BUS UNITY ASSET BUILD OK`).
+- Focused EditMode `CityBusAssetImportTests` + `CityBusRuntimeTests` passed
+  `29/29` with zero C# warnings, including the new
+  `PresentationWipers_SweepWithRainAndParkWhenDry` (sweep bounds, mirrored
+  blades, smooth parking, pool reset) and the extended import checks for the
+  wiper pivots, bindings and `ResetArticulation`. The first run exposed that
+  the synthetic `RuntimeFixture` registry predated the new optional wiper
+  bindings; the fixture now authors both pivots. PlayMode, full suites and a
+  player build were intentionally omitted in fast mode.
+
+## 2026-08-13 — Thunderstorms and balcony weather audio
+
+- Extended the same-session weather schedule with a fourth slot kind:
+  `Thunderstorm` (`6%`, carved from heavy rain, which drops to `12%` and
+  light rain to `27%`). A storm carries full heavy-rain intensity plus
+  lightning from the same pure schedule: each `12`-game-minute window of a
+  fully developed storm slot hashes into at most one strike (`70%`) with a
+  deterministic start offset, azimuth and distance band
+  (`GameWeatherRules.EvaluateLightning`), so City and the Home balcony flash
+  the identical storm without any new session state.
+- The flash is one transient shadowless directional light
+  (`CityLightningFlashLight`) with a flickering `0.5`-game-minute decay
+  envelope, peak intensity `1.9` scaled down to `45%` at the far distance
+  band. It stays disabled outside a flash and lives outside `Night.Root`, so
+  the pooled 12+4 light budget and the existing light-count assertions are
+  untouched. A frozen clock (pre-wake `05:59`, pause `timeScale = 0`)
+  suppresses the flash instead of holding it lit.
+- Thunder is a deterministic synthesized one-shot (`CityThunderSynthesis`:
+  crack over brown rumble with a delayed secondary roll) played `0.6-3 s`
+  after its flash with distance-scaled volume and low-pass cutoff on the
+  `Ambience/Details` group. Two rotating voices sit on child objects because
+  an `AudioLowPassFilter` processes every source of its own GameObject.
+- Per user request the balcony now hears the weather too:
+  `HomeBalconyExteriorAtmosphere` owns its own rain bed, thunder player and
+  flash light beside the rain field, gated to the active Balcony shot —
+  stepping inside silences the bed and drops the flash while the rain field
+  keeps simulating like the fog.
+
+Verification:
+
+- Focused EditMode `GameWeatherRulesTests` passed `9/9` (four-kind coverage,
+  storm-only lightning gating, in-storm flash bounds/determinism, ramp
+  boundaries now searched by target intensity so a heavy->storm border cannot
+  produce a degenerate assertion); zero C# warnings or errors. PlayMode
+  suites, player build and smoke intentionally omitted in fast mode.
+
+## 2026-08-13 — Deterministic rain in two intensities
+
+- Added the first exterior weather system as a pure schedule plus
+  presentation, with no new session state. `GameWeatherRules` (Core) maps the
+  city seed and absolute game minutes into `90`-game-minute slots — Clear
+  `55%`, LightRain `30%`, HeavyRain `15%` — and smoothsteps the continuous
+  rain intensity between slot targets (`0` / `0.45` / `1.0`) over the first
+  `5` game minutes, so City and the Home balcony always sample identical
+  weather and scene loads cannot desynchronize it.
+- `CityRainField` mirrors the `CityFogField` pattern: a seeded,
+  player-following runtime particle system of stretched streak billboards on
+  the shared `CityAtmosphereParticle` material (at most `420` particles over
+  a `26 x 26 m` box from `12 m` up, world-space, no collision). Intensity
+  continuously scales emission, streak width, alpha and velocity stretch, so
+  light rain reads sparse and thin while heavy rain reads dense and long.
+  While the hero rides the bus the emitter switches to a donut with a `10 m`
+  rain-free core, because streak billboards would otherwise spawn inside the
+  cabin.
+- `CityWeatherController` on `CityGameRoot` samples the rules every frame,
+  drives the field, logs `weather_changed` NDJSON events on kind changes and
+  feeds `CityRainSoundPlayer` — a deterministic crossfaded xorshift-noise
+  loop (`CityRainAmbienceSynthesis`, mono `22050 Hz`, 4 s) whose volume and
+  low-pass cutoff track intensity on the `Ambience/Beds` group.
+  `HomeBalconyExteriorAtmosphere` builds the same rain field at its fog
+  anchor, toggles its renderer with the Balcony shot exactly like the fog
+  renderer, and updates intensity per frame; the balcony adds no rain sound.
+- Deliberate boundary: rain does not modify `GameTimeDayNightRules`,
+  `RuntimeSceneSetup` lighting, fog, grade or far clip — those contracts are
+  asserted exactly by existing City/Home PlayMode suites. Daylight dimming,
+  wet surfaces and balcony rain audio are recorded as open gaps in
+  `ai/systems-map.md` and `ai/architecture-notes.md`.
+
+Verification:
+
+- New focused EditMode `GameWeatherRulesTests` passed `7/7` in Unity
+  `6000.5.5f1` (determinism, plateau targets, boundary ramp, all-kinds
+  coverage, seed sensitivity, clamping, non-finite rejection); the run
+  compiled Runtime and both test assemblies with zero C# warnings or errors.
+- Fast mode intentionally omitted PlayMode suites, a player build and smoke.
+
 ## 2026-08-13 — Bus albedos and visible pendant cabin lamps
 
 - The bus was the last flat-colour hero object on a textured street, and its

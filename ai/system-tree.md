@@ -145,10 +145,13 @@ Assets/
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
         GameTimeRuntime.cs        persistent scaled-delta driver
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
+        GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
         RuntimePrimitiveFactory.cs shared material primitives + opt-in XZ planar UVs
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        CityRainSound.cs                   deterministic rain noise loop + intensity player
+        CityThunderSound.cs                deterministic thunder one-shot + distance player
         SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
         SupermarketMusicPlayer.cs          optional SupermarketInterior theme
         HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
@@ -191,6 +194,9 @@ Assets/
         RoadFencePlanner.cs      unsupported footprint edges + true Street terminals
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         CityDayNightController.cs   session lighting + exterior night factor
+        CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
+        CityRainField.cs            seeded player-following stretched rain streaks
+        CityLightningFlashLight.cs  transient shadowless directional storm flash
         RoadWalkableArea.cs      Buildable/Open/road union + radius-safe connectors
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
@@ -364,6 +370,7 @@ Assets/
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       GameTimeStateTests.cs                 freeze/start/elapsed delta/day/midnight/reset
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
+      GameWeatherRulesTests.cs              slot determinism, targets and boundary ramps
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, 3D clips, timing, drift + safe exit
@@ -511,6 +518,12 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
 player + seed -> CityFogField (unchanged by time of day)
+seed + session time -> GameWeatherRules -> CityWeatherController
+                                        -> CityRainField streaks (bus-ride safe core)
+                                        -> CityRainSoundPlayer volume/cutoff
+                                        -> storm windows -> CityLightningFlashLight
+                                                         -> CityThunderSoundPlayer delay
+                                        -> CityBusDirector rain provider -> wiper sweep
 layout -> CityStreetSurfacePlanner -> Road v2: `8 m` street / `6 m` carriageway
                                  -> two raised `1 m` sidewalks
                                  -> ordinary clear `6 x 6 m` junction apron

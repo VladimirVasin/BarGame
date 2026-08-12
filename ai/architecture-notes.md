@@ -1161,6 +1161,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles
   and a bounded `0.120` peak alpha. It reuses the shared atmosphere material
   and has no collision, trails or particle lights.
+- **Accepted — Deterministic slot weather, presentation-only:**
+  `GameWeatherRules` is a pure function of the city seed and the absolute
+  session minutes: `90`-game-minute slots hash into Clear (`55%`), LightRain
+  (`27%`), HeavyRain (`12%`) or Thunderstorm (`6%`), and the continuous
+  intensity smoothsteps between the slot targets (`0` / `0.45` / `1.0` /
+  `1.0`) over the first `5` game minutes of a slot. Because the sample is
+  derived, no new session state is persisted and City and the Home balcony
+  can never disagree. Presentation is a seeded player-following
+  `CityRainField` (at most `420` stretched streak particles over a `26 m`
+  box on the shared atmosphere material, no collision) plus a deterministic
+  crossfaded noise loop (`CityRainSound`, `Ambience/Beds`), driven per frame
+  by `CityWeatherController` in City and by `HomeBalconyExteriorAtmosphere`
+  on the balcony; balcony audio and flashes are gated to the active Balcony
+  shot. While `CityBusRideController.IsPassengerAboard`, the emitter switches
+  to a donut with a `10 m` rain-free core so streaks never spawn inside the
+  cabin. The rain deliberately does not touch `GameTimeDayNightRules`,
+  `RuntimeSceneSetup.ApplyCityExteriorLighting`, fog, grade or far clip: those
+  contracts are asserted exactly by the existing City/Home PlayMode suites,
+  and coupling weather into them is a separate future decision (daylight
+  dimming and wet surfaces remain open gaps).
+- **Accepted — Deterministic lightning outside the pooled light budget:**
+  Lightning shares the pure schedule: each `12`-game-minute window hashes
+  into at most one strike (`70%`) whose start offset, azimuth and distance
+  are gated to fully developed Thunderstorm slots, so every scene evaluates
+  the identical storm without extra state. The flash is one transient
+  shadowless directional `Light` (`CityLightningFlashLight`, peak `1.9`
+  scaled down to `45%` at the far distance band) that stays disabled outside
+  its `0.5`-game-minute flicker envelope and lives outside `Night.Root`, so
+  the pooled 12+4 city-atmosphere budget and its light-count assertions are
+  untouched. Thunder is a deterministic synthesized one-shot
+  (`CityThunderSound`, `Ambience/Details`, two rotating voices on child
+  objects because a low-pass filter processes its whole GameObject) played
+  `0.6-3 s` after the flash with distance-scaled volume and cutoff. A frozen
+  clock — pre-wake or `timeScale = 0` — suppresses the flash instead of
+  holding it lit, and strike IDs deduplicate thunder across frames.
 - **Accepted — Depth-tested light bloom:** Each active street/bar light and
   amber signal lens can own a two-particle `CityLightHalo`. The shared
   `Resources` shader softens depth intersections, so glow diffuses in fog

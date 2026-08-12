@@ -942,8 +942,11 @@ The vertical slice contains:
 ## Deferred
 
 - Infinite streaming world and floating origin.
-- Weather, rain, puddles and volumetric light shafts beyond the implemented
-  MVP day/night lighting cycle.
+- Weather beyond the implemented deterministic
+  clear/light-rain/heavy-rain/thunderstorm schedule with its rain field, rain
+  bed, lightning flashes and thunder: puddles, wet surfaces, weather-driven
+  ambient lighting or grading changes, wind-driven debris and volumetric
+  light shafts.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
   the implemented City-only Route 01 passenger MVP remains route-driven and
   limited to one fixed seat. Fares/payment, destination selection, NPC
