@@ -35,7 +35,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.3.0"
+GENERATOR_VERSION = "1.4.0"
 DESIGN_ID = "road_v2_midibus_v1"
 DISPLAY_NAME = "Road v2 City Midibus"
 SEED = 260811
@@ -88,6 +88,19 @@ DOOR_BUTTON_CENTER = (0.30, -3.335, 1.50)
 DOOR_BUTTON_DEPTH = 0.045
 DOOR_BUTTON_TRAVEL = 0.012
 DRIVER_DOOR_LOOK_POSITION = (-0.90, -3.05, 2.12)
+
+# Each wiper mesh is authored relative to its own base pivot so the runtime
+# can sweep it across the windshield around the pivot's forward axis
+# (source +Y). Rest geometry matches the pre-1.4.0 static wipers exactly.
+WIPER_BASE_Y = -4.154
+WIPER_BASE_Z = 1.65
+WIPER_BASE_X = 0.62
+WIPER_TIP_REACH = 0.52
+WIPER_TIP_RISE = 0.60
+WIPER_SPECS = (
+    ("L", "left_wiper", -WIPER_BASE_X, WIPER_TIP_REACH),
+    ("R", "right_wiper", WIPER_BASE_X, -WIPER_TIP_REACH),
+)
 
 # The two pendant cabin lamps hang on the aisle centreline at the exact
 # source-Y positions mirrored by the runtime cabin Spots in
@@ -1034,10 +1047,34 @@ class CityBusBuilder:
         mirror_arms.add_cylinder_between((-1.10, -3.67, 2.17), (-1.27, -3.58, 2.20), 0.025, 8)
         mirror_arms.add_cylinder_between((1.10, -3.67, 2.17), (1.27, -3.58, 2.20), 0.025, 8)
         self.add_accumulator("GEO_MirrorArms", mirror_arms, "mirror_arms", "Metal")
-        wipers = MeshAccumulator()
-        wipers.add_cylinder_between((-0.62, -4.154, 1.65), (-0.10, -4.154, 2.25), 0.012, 6)
-        wipers.add_cylinder_between((0.62, -4.154, 1.65), (0.10, -4.154, 2.25), 0.012, 6)
-        self.add_accumulator("GEO_Wipers", wipers, "wipers", "Trim")
+        for wiper_code, wiper_role, base_x, tip_reach in WIPER_SPECS:
+            wiper_pivot = self.add_pivot(
+                f"PIVOT_Wiper{wiper_code}",
+                wiper_role,
+                self.body,
+                (base_x, WIPER_BASE_Y, WIPER_BASE_Z),
+                runtime_axis_local="+Y",
+            )
+            wiper = MeshAccumulator()
+            wiper.add_cylinder_between(
+                (0.0, 0.0, 0.0),
+                (tip_reach, 0.0, WIPER_TIP_RISE),
+                0.012,
+                6,
+            )
+            wiper.add_cylinder_between(
+                (tip_reach * 0.30, 0.009, WIPER_TIP_RISE * 0.30),
+                (tip_reach, 0.009, WIPER_TIP_RISE),
+                0.008,
+                6,
+            )
+            self.add_accumulator(
+                f"GEO_Wiper{wiper_code}",
+                wiper,
+                "wiper",
+                "Trim",
+                wiper_pivot,
+            )
 
     def _build_anchors(self) -> None:
         self.add_pivot(
@@ -1171,7 +1208,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
         "body_shell", "glass", "passenger_seats", "handrails", "dashboard",
         "steering_column", "steering_wheel", "door_button", "door_panel",
         "door_frame", "door_glass", "door_post", "headlight", "tail_light",
-        "cabin_light", "cabin_lamp_bulb",
+        "cabin_light", "cabin_lamp_bulb", "wiper",
     ):
         if required_role not in roles:
             errors.append(f"Missing required mesh role {required_role}")
@@ -1185,6 +1222,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
         "steering_wheel", "left_steering_grip", "right_steering_grip",
         "door_button", "door_button_press", "driver_door_look",
         "driver_seat_anchor", "front_door_entry", "rear_door_entry",
+        "left_wiper", "right_wiper",
     ):
         if required_role not in pivot_roles:
             errors.append(f"Missing required pivot role {required_role}")
@@ -1283,6 +1321,29 @@ def validate_result(result: BuildResult) -> ValidationReport:
         result.body,
         DRIVER_DOOR_LOOK_POSITION,
     )
+
+    for wiper_code, wiper_role, base_x, _tip_reach in WIPER_SPECS:
+        wiper_pivot = validate_control_pivot(
+            f"PIVOT_Wiper{wiper_code}",
+            wiper_role,
+            result.body,
+            (base_x, WIPER_BASE_Y, WIPER_BASE_Z),
+            runtime_axis_local="+Y",
+        )
+        if wiper_pivot is None:
+            continue
+        wiper_parts = [
+            part for part in result.parts
+            if part.obj.parent is wiper_pivot.obj
+        ]
+        if (
+            len(wiper_parts) != 1
+            or wiper_parts[0].role != "wiper"
+            or wiper_parts[0].obj.name != f"GEO_Wiper{wiper_code}"
+        ):
+            errors.append(
+                f"PIVOT_Wiper{wiper_code} must directly own its single wiper mesh"
+            )
 
     expected_leaf_roles: dict[str, tuple[str, tuple[float, float, float]]] = {}
     for doorway_name, doorway_y, leaf_specs in DOORWAY_SPECS:

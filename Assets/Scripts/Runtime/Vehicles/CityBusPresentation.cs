@@ -13,6 +13,12 @@ namespace BarPromenade
         public const float MaximumSuspensionHeave = 0.045f;
         public const float MaximumSuspensionPitch = 0.8f;
         public const float MaximumSuspensionRoll = 1f;
+        public const float MaximumWiperSweepDegrees = 40f;
+
+        private const float MinimumWiperIntensity = 0.02f;
+        private const float MinimumWiperHertz = 0.35f;
+        private const float MaximumWiperHertz = 1.15f;
+        private const float WiperParkDegreesPerSecond = 110f;
 
         private const float SuspensionWaveLength = 2.8f;
         private const float SuspensionResponse = 7f;
@@ -72,6 +78,12 @@ namespace BarPromenade
         private CityBusDriverPresentation driverPresentation;
         private Transform driverFocusTarget;
         private CityBusDriverDoorSample driverDoorSample;
+        private TransformPose leftWiperBase;
+        private TransformPose rightWiperBase;
+        private Vector3 leftWiperAxisLocal = Vector3.forward;
+        private Vector3 rightWiperAxisLocal = Vector3.forward;
+        private float wiperPhase;
+        private bool wipersRunning;
         private float wheelRotationDegrees;
         private float brakeFactor;
         private float suspensionPhase;
@@ -91,6 +103,8 @@ namespace BarPromenade
         public CityBusDriverPresentation DriverPresentation =>
             driverPresentation;
         public float NightFactor { get; private set; }
+        public float RainIntensity { get; private set; }
+        public float WiperAngleDegrees { get; private set; }
         public float BrakeFactor => brakeFactor;
         public Transform SuspensionVisual => suspensionVisual;
         public float SuspensionHeave => suspensionHeave;
@@ -273,6 +287,72 @@ namespace BarPromenade
             RefreshLights();
         }
 
+        /// <summary>
+        /// Advances the windshield wipers for one frame: rain intensity sets
+        /// the sweep rate, and a dry frame parks the blades back at rest
+        /// instead of freezing them mid-sweep.
+        /// </summary>
+        public void AdvanceWipers(float rainIntensity, float deltaTime)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            RainIntensity = IsFinite(rainIntensity)
+                ? Mathf.Clamp01(rainIntensity)
+                : 0f;
+            float safeDelta = IsFinite(deltaTime)
+                ? Mathf.Max(0f, deltaTime)
+                : 0f;
+            if (RainIntensity >= MinimumWiperIntensity)
+            {
+                if (!wipersRunning)
+                {
+                    // Re-enter the sweep at the parked arm's own phase so a
+                    // rain restart cannot teleport the blades.
+                    wipersRunning = true;
+                    wiperPhase = Mathf.Repeat(
+                        Mathf.Asin(
+                            Mathf.Clamp(
+                                WiperAngleDegrees /
+                                MaximumWiperSweepDegrees,
+                                -1f,
+                                1f)) /
+                        (Mathf.PI * 2f),
+                        1f);
+                }
+
+                float sweepHertz = Mathf.Lerp(
+                    MinimumWiperHertz,
+                    MaximumWiperHertz,
+                    RainIntensity);
+                wiperPhase = Mathf.Repeat(
+                    wiperPhase + safeDelta * sweepHertz,
+                    1f);
+                WiperAngleDegrees =
+                    Mathf.Sin(wiperPhase * Mathf.PI * 2f) *
+                    MaximumWiperSweepDegrees;
+            }
+            else
+            {
+                wipersRunning = false;
+                WiperAngleDegrees = Mathf.MoveTowards(
+                    WiperAngleDegrees,
+                    0f,
+                    WiperParkDegreesPerSecond * safeDelta);
+            }
+
+            ApplyAxisPose(
+                leftWiperBase,
+                WiperAngleDegrees,
+                leftWiperAxisLocal);
+            ApplyAxisPose(
+                rightWiperBase,
+                -WiperAngleDegrees,
+                rightWiperAxisLocal);
+        }
+
         public void ResetForPool()
         {
             if (!IsInitialized)
@@ -287,6 +367,10 @@ namespace BarPromenade
             DoorButtonPressFactor = 0f;
             driverDoorSample = default;
             NightFactor = 0f;
+            RainIntensity = 0f;
+            WiperAngleDegrees = 0f;
+            wiperPhase = 0f;
+            wipersRunning = false;
             brakeFactor = 0f;
             suspensionPhase = 0f;
             suspensionHeave = 0f;
@@ -305,6 +389,8 @@ namespace BarPromenade
             RestorePose(frontRightSteeringBase);
             RestorePose(steeringWheelBase);
             RestorePose(doorButtonBase);
+            RestorePose(leftWiperBase);
+            RestorePose(rightWiperBase);
             if (driverPresentation != null)
             {
                 driverPresentation.ResetForPool();
@@ -362,6 +448,16 @@ namespace BarPromenade
                 registry.SteeringWheelPivot);
             doorButtonBase = new TransformPose(
                 registry.DoorButtonPivot);
+            leftWiperBase = new TransformPose(
+                registry.LeftWiperPivot);
+            rightWiperBase = new TransformPose(
+                registry.RightWiperPivot);
+            leftWiperAxisLocal = ResolveForwardAxisLocal(
+                registry.LeftWiperPivot,
+                registry.Body);
+            rightWiperAxisLocal = ResolveForwardAxisLocal(
+                registry.RightWiperPivot,
+                registry.Body);
         }
 
         private void CreateSuspensionHierarchy()
@@ -794,6 +890,28 @@ namespace BarPromenade
             return axis.sqrMagnitude > 0.0001f
                 ? axis.normalized
                 : Vector3.up;
+        }
+
+        /// <summary>
+        /// Resolves which of a pivot's own axes points along the vehicle
+        /// longitudinal direction — the windshield normal the wipers sweep
+        /// around. Derived from the model for the same reason as the wheel
+        /// vertical axis: imported pivots do not carry the vehicle basis.
+        /// </summary>
+        private static Vector3 ResolveForwardAxisLocal(
+            Transform pivot,
+            Transform reference)
+        {
+            if (pivot == null || reference == null)
+            {
+                return Vector3.forward;
+            }
+
+            Vector3 axis = pivot.InverseTransformDirection(
+                reference.forward);
+            return axis.sqrMagnitude > 0.0001f
+                ? axis.normalized
+                : Vector3.forward;
         }
 
         private static void ApplyAxisPose(

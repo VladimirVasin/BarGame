@@ -218,6 +218,99 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PresentationWipers_SweepWithRainAndParkWhenDry()
+        {
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create(
+                    "Wipers",
+                    CreateCyclicPlan(false));
+                CityBusPresentation presentation = fixture.Presentation;
+                CityBusAssetRegistry registry = presentation.Registry;
+                Assert.That(registry.LeftWiperPivot, Is.Not.Null);
+                Assert.That(registry.RightWiperPivot, Is.Not.Null);
+                Quaternion leftRest =
+                    registry.LeftWiperPivot.localRotation;
+                Quaternion rightRest =
+                    registry.RightWiperPivot.localRotation;
+
+                presentation.AdvanceWipers(0f, 0.25f);
+                Assert.That(presentation.WiperAngleDegrees, Is.Zero);
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWiperPivot.localRotation,
+                        leftRest),
+                    Is.LessThan(0.001f));
+
+                presentation.AdvanceWipers(1f, 0.2f);
+                float sweptAngle = presentation.WiperAngleDegrees;
+                Assert.That(presentation.RainIntensity, Is.EqualTo(1f));
+                Assert.That(Mathf.Abs(sweptAngle), Is.GreaterThan(1f));
+                Assert.That(
+                    Mathf.Abs(sweptAngle),
+                    Is.LessThanOrEqualTo(
+                        CityBusPresentation.MaximumWiperSweepDegrees));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWiperPivot.localRotation,
+                        leftRest),
+                    Is.EqualTo(Mathf.Abs(sweptAngle)).Within(0.01f));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.RightWiperPivot.localRotation,
+                        rightRest),
+                    Is.EqualTo(Mathf.Abs(sweptAngle)).Within(0.01f));
+                // Mirrored blades: the two relative rotations must cancel.
+                Quaternion leftRelative =
+                    Quaternion.Inverse(leftRest) *
+                    registry.LeftWiperPivot.localRotation;
+                Quaternion rightRelative =
+                    Quaternion.Inverse(rightRest) *
+                    registry.RightWiperPivot.localRotation;
+                Assert.That(
+                    Quaternion.Angle(
+                        leftRelative,
+                        Quaternion.Inverse(rightRelative)),
+                    Is.LessThan(0.01f));
+
+                for (int step = 0; step < 60; step++)
+                {
+                    presentation.AdvanceWipers(0f, 0.05f);
+                }
+
+                Assert.That(presentation.WiperAngleDegrees, Is.Zero);
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWiperPivot.localRotation,
+                        leftRest),
+                    Is.LessThan(0.001f));
+
+                presentation.AdvanceWipers(1f, 0.2f);
+                Assert.That(
+                    Mathf.Abs(presentation.WiperAngleDegrees),
+                    Is.GreaterThan(1f));
+                presentation.ResetForPool();
+                Assert.That(presentation.WiperAngleDegrees, Is.Zero);
+                Assert.That(presentation.RainIntensity, Is.Zero);
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWiperPivot.localRotation,
+                        leftRest),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.RightWiperPivot.localRotation,
+                        rightRest),
+                    Is.LessThan(0.001f));
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
+        [Test]
         public void PresentationSuspension_MovesBodyRelativeToGroundedWheels_AndPoolResetRestoresNeutralPose()
         {
             RuntimeFixture fixture = null;
@@ -1813,7 +1906,11 @@ namespace BarPromenade.Tests.EditMode
                     1,
                     "test",
                     "test",
-                    "test");
+                    "test",
+                    configuredLeftWiperPivot:
+                        CreateChild("Left Wiper", body),
+                    configuredRightWiperPivot:
+                        CreateChild("Right Wiper", body));
                 return registry;
             }
 

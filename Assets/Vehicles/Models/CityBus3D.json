@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-bus-3d-model.py",
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.0",
   "blender_version": "5.0.1",
   "design_id": "road_v2_midibus_v1",
   "display_name": "Road v2 City Midibus",
@@ -14,8 +14,8 @@
     "wheelbase": 4.5,
     "wheel_radius": 0.43
   },
-  "mesh_count": 46,
-  "triangle_count": 4136,
+  "mesh_count": 47,
+  "triangle_count": 4176,
   "bounds_min": [
     -1.36,
     -4.183,
@@ -31,7 +31,7 @@
   "animations": [],
   "visible_interior": true,
   "passenger_seat_count": 12,
-  "build_signature": "fd1019b73e922adb565b48a3deef5a56ffe94257f2c630b856c95a8a3a3c0032",
+  "build_signature": "16152b5ed9eb2e51fc2d4f9d8ef7d09fec3ec69b285ce29141aa5f5c4c90d907",
   "parts": [
     {
       "name": "GEO_BodyAccent",
@@ -242,10 +242,18 @@
       "triangles": 240
     },
     {
-      "name": "GEO_Wipers",
-      "role": "wipers",
+      "name": "GEO_WiperL",
+      "role": "wiper",
       "material_slot": "Trim",
-      "parent": "ROOT_Body",
+      "parent": "PIVOT_WiperL",
+      "vertices": 24,
+      "triangles": 40
+    },
+    {
+      "name": "GEO_WiperR",
+      "role": "wiper",
+      "material_slot": "Trim",
+      "parent": "PIVOT_WiperR",
       "vertices": 24,
       "triangles": 40
     },
@@ -928,6 +936,40 @@
         0.0
       ],
       "runtime_axis_local": "",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_WiperL",
+      "role": "left_wiper",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.62,
+        -4.154,
+        1.65
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+Y",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_WiperR",
+      "role": "right_wiper",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.62,
+        -4.154,
+        1.65
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+Y",
       "travel_m": 0.0
     }
   ]

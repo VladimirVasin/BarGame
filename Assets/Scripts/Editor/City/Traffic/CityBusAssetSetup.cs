@@ -718,7 +718,13 @@ namespace BarPromenade.Editor
                         "ANCHOR_DoorButtonPress"),
                     RequireTransform(
                         transformsByName,
-                        "ANCHOR_DriverDoorLook"));
+                        "ANCHOR_DriverDoorLook"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_WiperL"),
+                    RequireTransform(
+                        transformsByName,
+                        "PIVOT_WiperR"));
                 registry.ResetArticulation();
 
                 PrefabUtility.SaveAsPrefabAsset(prefabRoot, PrefabPath);
@@ -836,7 +842,9 @@ namespace BarPromenade.Editor
                 registry.DriverDoorLookAnchor,
                 registry.DriverSeatAnchor,
                 registry.FrontDoorEntryAnchor,
-                registry.RearDoorEntryAnchor
+                registry.RearDoorEntryAnchor,
+                registry.LeftWiperPivot,
+                registry.RightWiperPivot
             };
             if (required.Any(item => item == null) ||
                 registry.PassengerSeatAnchors.Count !=
@@ -879,7 +887,9 @@ namespace BarPromenade.Editor
                 registry.DoorButtonPivot.parent != registry.Body ||
                 registry.DoorButtonPressAnchor.parent !=
                     registry.DoorButtonPivot ||
-                registry.DriverDoorLookAnchor.parent != registry.Body)
+                registry.DriverDoorLookAnchor.parent != registry.Body ||
+                registry.LeftWiperPivot.parent != registry.Body ||
+                registry.RightWiperPivot.parent != registry.Body)
             {
                 throw new InvalidOperationException(
                     "Driver control pivots and anchors lost their authored " +
@@ -1440,7 +1450,9 @@ namespace BarPromenade.Editor
             "driver_seat_anchor",
             "front_door_entry",
             "rear_door_entry",
-            "passenger_seat_anchor"
+            "passenger_seat_anchor",
+            "left_wiper",
+            "right_wiper"
         };
 
         [Serializable]

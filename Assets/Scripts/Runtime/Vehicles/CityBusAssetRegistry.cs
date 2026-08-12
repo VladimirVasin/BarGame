@@ -102,6 +102,8 @@ namespace BarPromenade
         [SerializeField] private Transform doorButtonPivot;
         [SerializeField] private Transform doorButtonPressAnchor;
         [SerializeField] private Transform driverDoorLookAnchor;
+        [SerializeField] private Transform leftWiperPivot;
+        [SerializeField] private Transform rightWiperPivot;
         [SerializeField] private Vector3 steeringWheelAxisLocal =
             Vector3.forward;
         [SerializeField] private Vector3 doorButtonTravelLocal;
@@ -150,6 +152,8 @@ namespace BarPromenade
         public Transform DoorButtonPivot => doorButtonPivot;
         public Transform DoorButtonPressAnchor => doorButtonPressAnchor;
         public Transform DriverDoorLookAnchor => driverDoorLookAnchor;
+        public Transform LeftWiperPivot => leftWiperPivot;
+        public Transform RightWiperPivot => rightWiperPivot;
         public Vector3 SteeringWheelAxisLocal => steeringWheelAxisLocal;
         public Vector3 DoorButtonTravelLocal => doorButtonTravelLocal;
         public Transform DriverSeatAnchor => driverSeatAnchor;
@@ -208,7 +212,9 @@ namespace BarPromenade
             Transform configuredRightSteeringGrip = null,
             Transform configuredDoorButtonPivot = null,
             Transform configuredDoorButtonPressAnchor = null,
-            Transform configuredDriverDoorLookAnchor = null)
+            Transform configuredDriverDoorLookAnchor = null,
+            Transform configuredLeftWiperPivot = null,
+            Transform configuredRightWiperPivot = null)
         {
             modelRoot = configuredModelRoot;
             body = configuredBody;
@@ -228,6 +234,8 @@ namespace BarPromenade
             doorButtonPivot = configuredDoorButtonPivot;
             doorButtonPressAnchor = configuredDoorButtonPressAnchor;
             driverDoorLookAnchor = configuredDriverDoorLookAnchor;
+            leftWiperPivot = configuredLeftWiperPivot;
+            rightWiperPivot = configuredRightWiperPivot;
             steeringWheelAxisLocal = Vector3.forward;
             doorButtonTravelLocal = ResolveParentLocalTravel(
                 doorButtonPivot,
@@ -275,6 +283,8 @@ namespace BarPromenade
                 steeringWheelRestLocalRotation);
             ResetRotation(doorButtonPivot, doorButtonRestLocalRotation);
             ResetPosition(doorButtonPivot, doorButtonRestLocalPosition);
+            ResetRotation(leftWiperPivot);
+            ResetRotation(rightWiperPivot);
             ResetRotation(frontLeftWheel);
             ResetRotation(frontRightWheel);
             ResetRotation(rearLeftWheel);

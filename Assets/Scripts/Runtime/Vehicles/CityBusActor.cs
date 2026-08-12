@@ -605,7 +605,8 @@ namespace BarPromenade
         public void Advance(
             float deltaTime,
             CityBusObstacleState obstacles,
-            float nightFactor)
+            float nightFactor,
+            float rainIntensity = 0f)
         {
             if (!IsSpawned)
             {
@@ -614,6 +615,7 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             presentation.SetNightFactor(nightFactor);
+            presentation.AdvanceWipers(rainIntensity, safeDeltaTime);
             if (MotionState == CityBusMotionState.Dwelling)
             {
                 AdvanceDwell(safeDeltaTime);

@@ -154,6 +154,18 @@ namespace BarPromenade.Tests
                 Assert.That(
                     registry.DriverDoorLookAnchor.parent,
                     Is.SameAs(registry.Body));
+                Assert.That(registry.LeftWiperPivot, Is.Not.Null);
+                Assert.That(registry.RightWiperPivot, Is.Not.Null);
+                Assert.That(
+                    registry.LeftWiperPivot.parent,
+                    Is.SameAs(registry.Body));
+                Assert.That(
+                    registry.RightWiperPivot.parent,
+                    Is.SameAs(registry.Body));
+                Assert.That(
+                    registry.RendererBindings.Count(
+                        binding => binding.Role == "wiper"),
+                    Is.EqualTo(2));
                 Assert.That(
                     registry.SteeringWheelAxisLocal,
                     Is.EqualTo(Vector3.forward));
@@ -229,6 +241,12 @@ namespace BarPromenade.Tests
 
                 Quaternion steeringRest =
                     registry.SteeringWheelPivot.localRotation;
+                Quaternion leftWiperRest =
+                    registry.LeftWiperPivot.localRotation;
+                registry.LeftWiperPivot.localRotation =
+                    leftWiperRest * Quaternion.AngleAxis(
+                        23f,
+                        Vector3.forward);
                 Vector3 buttonRest = registry.DoorButtonPivot.localPosition;
                 Vector3 buttonWorldRest = registry.DoorButtonPivot.position;
                 Quaternion buttonRotationRest =
@@ -259,6 +277,11 @@ namespace BarPromenade.Tests
                     Quaternion.Angle(
                         registry.DoorButtonPivot.localRotation,
                         buttonRotationRest),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWiperPivot.localRotation,
+                        leftWiperRest),
                     Is.LessThan(0.001f));
                 Assert.That(registry.LocalBounds.min.y, Is.EqualTo(0f).Within(0.03f));
                 Assert.That(

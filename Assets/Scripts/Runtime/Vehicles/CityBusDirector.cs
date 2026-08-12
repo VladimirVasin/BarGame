@@ -65,6 +65,7 @@ namespace BarPromenade
         private CityPedestrianDirector pedestrians;
         private Transform poolRoot;
         private Func<float> nightFactorProvider;
+        private Func<float> rainIntensityProvider;
         private float spawnCooldown;
         private uint randomState;
         private uint successfulSpawnOrdinal;
@@ -127,7 +128,8 @@ namespace BarPromenade
             Transform playerTransform,
             CityPedestrianDirector pedestrianDirector,
             Transform presentationPoolRoot,
-            Func<float> runtimeNightFactorProvider = null)
+            Func<float> runtimeNightFactorProvider = null,
+            Func<float> runtimeRainIntensityProvider = null)
         {
             if (IsInitialized)
             {
@@ -146,6 +148,8 @@ namespace BarPromenade
             pedestrians = pedestrianDirector;
             nightFactorProvider = runtimeNightFactorProvider ??
                 GetSessionNightFactor;
+            rainIntensityProvider = runtimeRainIntensityProvider ??
+                GetSessionRainIntensity;
 
             bool hasRuntimeSlot = routeActor != null ||
                                   pooledPresentation != null;
@@ -219,7 +223,8 @@ namespace BarPromenade
                 actor.Advance(
                     safeDeltaTime,
                     ResolveObstacleState(),
-                    GetNightFactor());
+                    GetNightFactor(),
+                    GetRainIntensity());
                 RefreshInitialApproach();
                 bool mayRecycle = initialApproachCompleted ||
                                   initialApproachElapsed >=
@@ -937,6 +942,19 @@ namespace BarPromenade
                 GameSessionState.GameTimeOfDayMinutes)
                 ? 1f
                 : 0f;
+        }
+
+        private float GetRainIntensity()
+        {
+            float intensity = rainIntensityProvider();
+            return IsFinite(intensity)
+                ? Mathf.Clamp01(intensity)
+                : 0f;
+        }
+
+        private static float GetSessionRainIntensity()
+        {
+            return GameWeatherRules.EvaluateCurrent().RainIntensity;
         }
 
         private float GetRandomRange(float minimum, float maximum)
