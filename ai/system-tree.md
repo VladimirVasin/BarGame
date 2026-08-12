@@ -172,7 +172,7 @@ Assets/
         CityDecorationWorldBuilder.cs  six-style visuals + chunked collision proxies
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes
-        CityBarFacadeWorldBuilder.cs shared passive bar-front identity
+        CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
         RoadFencePlan.cs         MapBoundary/DeadEnd rails + clearance-opening metadata

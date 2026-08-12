@@ -542,7 +542,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityScene_BarsHaveUniqueColliderFreeBillboardMarkers()
+        public IEnumerator CityScene_BarsHaveUniqueColliderFreeSignGeometry()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -558,7 +558,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(markers, Has.Length.EqualTo(cityRoot.World.Bars.Count));
 
             var markerIds = new HashSet<string>(StringComparer.Ordinal);
-            Sprite sharedMarkerSprite = null;
+            Material sharedMarkerMaterial = null;
             for (int index = 0; index < markers.Length; index++)
             {
                 BarBuildingMarker marker = markers[index];
@@ -567,24 +567,38 @@ namespace BarPromenade.Tests.PlayMode
                     markerIds.Add(marker.BarId),
                     Is.True,
                     $"Bar '{marker.BarId}' must have exactly one visual marker.");
-                Assert.That(marker.Renderer, Is.Not.Null);
-                Assert.That(marker.Renderer.sprite, Is.Not.Null);
-                if (sharedMarkerSprite == null)
+
+                // The sign is real geometry rather than a camera-facing
+                // sprite, so the shared-asset rule it has to satisfy is the
+                // material one: no bar may instance its own.
+                Assert.That(marker.PanelRenderer, Is.Not.Null);
+                Assert.That(
+                    marker.SignRenderers,
+                    Is.Not.Empty,
+                    $"Bar '{marker.BarId}' must carry a built sign.");
+                if (sharedMarkerMaterial == null)
                 {
-                    sharedMarkerSprite = marker.Renderer.sprite;
+                    sharedMarkerMaterial = marker.PanelRenderer.sharedMaterial;
+                    Assert.That(sharedMarkerMaterial, Is.Not.Null);
                 }
                 else
                 {
                     Assert.That(
-                        marker.Renderer.sprite,
-                        Is.SameAs(sharedMarkerSprite),
-                        "All active bar markers must reuse one generated sprite.");
+                        marker.PanelRenderer.sharedMaterial,
+                        Is.SameAs(sharedMarkerMaterial),
+                        "All bar signs must reuse one shared material.");
                 }
 
-                Assert.That(
-                    marker.Renderer.transform == marker.transform ||
-                    marker.Renderer.transform.IsChildOf(marker.transform),
-                    Is.True);
+                for (int part = 0; part < marker.SignRenderers.Count; part++)
+                {
+                    Renderer signPart = marker.SignRenderers[part];
+                    Assert.That(signPart, Is.Not.Null);
+                    Assert.That(
+                        signPart.transform.IsChildOf(marker.transform),
+                        Is.True,
+                        "Every sign plate hangs under its own marker.");
+                }
+
                 Assert.That(
                     marker.GetComponentsInChildren<Collider>(true),
                     Is.Empty,
@@ -752,6 +766,27 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 initialCameraForward = Vector3.ProjectOnPlane(
                 camera.transform.forward,
                 Vector3.up).normalized;
+
+            // A sign made of geometry belongs to the building, not to the
+            // viewer. The sprite it replaced turned to face the camera, which
+            // is exactly what must no longer happen: capture every plate's
+            // world pose, swing the camera a quarter turn, and require the
+            // signs not to have moved at all.
+            var signPoses = new List<(Transform Plate, Vector3 Position,
+                Quaternion Rotation)>();
+            for (int index = 0; index < markers.Length; index++)
+            {
+                IReadOnlyList<Renderer> plates = markers[index].SignRenderers;
+                for (int part = 0; part < plates.Count; part++)
+                {
+                    Transform plate = plates[part].transform;
+                    signPoses.Add(
+                        (plate, plate.position, plate.rotation));
+                }
+            }
+
+            Assert.That(signPoses, Is.Not.Empty);
+
             follow.RotateYaw(90f);
             follow.Snap();
             yield return null;
@@ -763,24 +798,27 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.Angle(initialCameraForward, rotatedCameraForward),
                 Is.GreaterThan(80f));
 
-            for (int index = 0; index < markers.Length; index++)
+            for (int index = 0; index < signPoses.Count; index++)
             {
-                BillboardSprite billboard =
-                    markers[index].GetComponentInChildren<BillboardSprite>(true);
-                Assert.That(billboard, Is.Not.Null);
-
-                Vector3 expectedMarkerForward = Vector3.ProjectOnPlane(
-                    camera.transform.position - billboard.transform.position,
-                    Vector3.up).normalized;
-                Assert.That(expectedMarkerForward.sqrMagnitude, Is.GreaterThan(0.9f));
+                (Transform plate, Vector3 position, Quaternion rotation) =
+                    signPoses[index];
                 Assert.That(
-                    Vector3.Angle(billboard.transform.forward, expectedMarkerForward),
-                    Is.LessThan(0.1f),
-                    $"Bar marker '{markers[index].BarId}' must keep facing Camera.main.");
+                    Vector3.Distance(plate.position, position),
+                    Is.LessThan(0.0001f),
+                    $"Sign plate '{plate.name}' moved with the camera.");
                 Assert.That(
-                    Vector3.Angle(billboard.transform.up, Vector3.up),
-                    Is.LessThan(0.1f));
+                    Quaternion.Angle(plate.rotation, rotation),
+                    Is.LessThan(0.01f),
+                    $"Sign plate '{plate.name}' turned with the camera; a " +
+                    "hanging sign keeps the orientation of the wall it hangs " +
+                    "on.");
             }
+
+            Assert.That(
+                cityRoot.World.Root.GetComponentsInChildren<BillboardSprite>(
+                    true),
+                Is.Empty,
+                "No part of a bar facade billboards any more.");
         }
 
         [UnityTest]

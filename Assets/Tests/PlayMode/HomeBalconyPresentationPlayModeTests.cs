@@ -888,8 +888,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(marker, Is.Not.Null);
             Assert.That(marker.BarId, Is.EqualTo(barLot.BarId));
             Assert.That(
-                marker.Renderer.sprite,
-                Is.Not.Null);
+                marker.PanelRenderer,
+                Is.Not.Null,
+                "The reconstructed bar keeps its hanging sign geometry.");
+            Assert.That(marker.SignRenderers, Is.Not.Empty);
             Assert.That(
                 bar.GetComponentsInChildren<BarEntrance>(true),
                 Is.Empty);

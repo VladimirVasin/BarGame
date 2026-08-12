@@ -17,6 +17,17 @@ namespace BarPromenade
         private static readonly Color DoorColor =
             new Color(0.055f, 0.025f, 0.022f);
 
+        // The sign keeps the palette of the pixel panel it replaces, so the
+        // bars stay recognisable from the same distance they always were.
+        private static readonly Color SignOutline =
+            new Color(0.137f, 0.071f, 0.114f);
+        private static readonly Color SignField =
+            new Color(0.357f, 0.086f, 0.169f);
+        private static readonly Color SignPale =
+            new Color(0.976f, 0.914f, 0.722f);
+        private static readonly Color SignDrink =
+            new Color(0.871f, 0.545f, 0.165f);
+
         public static void BuildCity(
             Transform parent,
             BuildingLot lot)
@@ -182,7 +193,192 @@ namespace BarPromenade
             markerObject.transform.localPosition = markerPosition;
             BarBuildingMarker marker =
                 markerObject.AddComponent<BarBuildingMarker>();
-            marker.Initialize(barId, Camera.main);
+            marker.Initialize(barId);
+            BuildHangingSign(
+                marker,
+                markerObject.transform,
+                frontageIsX,
+                material,
+                colorScale,
+                clipToHomeExterior,
+                markerPosition);
+        }
+
+        /// <summary>
+        /// A projecting blade sign hung under the bracket arm: layered plates
+        /// whose faces look along the street, plus the tankard that used to be
+        /// drawn in pixels.
+        /// <para>
+        /// Each layer is smaller across the panel than the one behind it but
+        /// slightly thicker across the blade, so the layer behind survives as
+        /// a border without needing four boxes per frame edge. Eight boxes
+        /// carry the whole sign.
+        /// </para>
+        /// </summary>
+        private static void BuildHangingSign(
+            BarBuildingMarker marker,
+            Transform parent,
+            bool frontageIsX,
+            Material material,
+            float colorScale,
+            bool clipToHomeExterior,
+            Vector3 markerPosition)
+        {
+            // `direction` runs out from the wall along the bracket arm, so the
+            // panel spans it and the blade thickness runs across the frontage.
+            Vector3 outward = frontageIsX
+                ? new Vector3(1f, 0f, 0f)
+                : new Vector3(0f, 0f, 1f);
+            Vector3 across = frontageIsX
+                ? new Vector3(0f, 0f, 1f)
+                : new Vector3(1f, 0f, 0f);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Hanger Inner",
+                markerPosition,
+                (outward * -0.30f) + (Vector3.up * 0.46f),
+                Size(outward, across, 0.06f, 0.30f, 0.05f),
+                SignOutline,
+                material,
+                colorScale,
+                clipToHomeExterior);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Hanger Outer",
+                markerPosition,
+                (outward * 0.30f) + (Vector3.up * 0.46f),
+                Size(outward, across, 0.06f, 0.30f, 0.05f),
+                SignOutline,
+                material,
+                colorScale,
+                clipToHomeExterior);
+
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Panel",
+                markerPosition,
+                Vector3.zero,
+                Size(outward, across, 0.90f, 0.70f, 0.10f),
+                SignOutline,
+                material,
+                colorScale,
+                clipToHomeExterior);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Panel Frame",
+                markerPosition,
+                Vector3.zero,
+                Size(outward, across, 0.84f, 0.64f, 0.12f),
+                BarTrim,
+                material,
+                colorScale,
+                clipToHomeExterior);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Panel Field",
+                markerPosition,
+                Vector3.zero,
+                Size(outward, across, 0.72f, 0.52f, 0.13f),
+                SignField,
+                material,
+                colorScale,
+                clipToHomeExterior);
+
+            // The tankard, kept chunky enough to read at the distance the
+            // pixel panel used to.
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Tankard",
+                markerPosition,
+                outward * -0.05f,
+                Size(outward, across, 0.26f, 0.34f, 0.15f),
+                SignPale,
+                material,
+                colorScale,
+                clipToHomeExterior);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Tankard Fill",
+                markerPosition,
+                (outward * -0.05f) + (Vector3.up * -0.04f),
+                Size(outward, across, 0.18f, 0.20f, 0.16f),
+                SignDrink,
+                material,
+                colorScale,
+                clipToHomeExterior);
+            AddSignBox(
+                marker,
+                parent,
+                "Bar Sign Tankard Handle",
+                markerPosition,
+                (outward * 0.13f) + (Vector3.up * -0.02f),
+                Size(outward, across, 0.09f, 0.18f, 0.14f),
+                SignPale,
+                material,
+                colorScale,
+                clipToHomeExterior);
+        }
+
+        private static Vector3 Size(
+            Vector3 outward,
+            Vector3 across,
+            float along,
+            float height,
+            float thickness)
+        {
+            Vector3 size = (outward * along) + (across * thickness);
+            size.x = Mathf.Abs(size.x);
+            size.z = Mathf.Abs(size.z);
+            size.y = height;
+            return size;
+        }
+
+        private static void AddSignBox(
+            BarBuildingMarker marker,
+            Transform parent,
+            string name,
+            Vector3 markerPosition,
+            Vector3 offset,
+            Vector3 size,
+            Color color,
+            Material material,
+            float colorScale,
+            bool clipToHomeExterior)
+        {
+            Bounds bounds = new Bounds(markerPosition + offset, size);
+            if (clipToHomeExterior &&
+                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
+                    bounds,
+                    out bounds))
+            {
+                return;
+            }
+
+            Color scaled = ScaleColor(color, colorScale);
+            GameObject part = material == null
+                ? RuntimePrimitiveFactory.CreateBox(
+                    name,
+                    parent,
+                    bounds.center - markerPosition,
+                    bounds.size,
+                    scaled,
+                    false)
+                : RuntimePrimitiveFactory.CreateBox(
+                    name,
+                    parent,
+                    bounds.center - markerPosition,
+                    bounds.size,
+                    scaled,
+                    material,
+                    false);
+            marker.RegisterSignPart(part);
         }
 
         private static void CreateBox(

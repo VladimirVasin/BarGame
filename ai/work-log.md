@@ -6,6 +6,40 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-12 — Bar signs became geometry
+
+- The bar sign was the one part of a facade that did not live in the world: a
+  `40 x 48` procedurally drawn pixel sprite on a `BillboardSprite`, turning to
+  face the camera while the bracket arm it hung from stayed put. The two came
+  apart at any oblique angle, and from the balcony it kept its size and facing
+  while every other surface foreshortened.
+- It is now a projecting blade sign built from the same collider-free boxes
+  and shared material as the rest of the facade, hanging under the existing
+  bracket and reading along the street the way a real projecting sign does.
+  Eight boxes carry it: two hangers, three panel layers and a three-box
+  tankard. Each layer is smaller across the panel than the one behind it but
+  slightly thicker across the blade, so the layer behind survives as a border
+  without four boxes per frame edge. The palette is the pixel panel's, so the
+  bars stay recognisable at the distance they always were.
+- `BarBuildingMarker` kept its name, its `BarId` and its place in the
+  hierarchy - `Bar Landmark Marker` is still what the balcony reconstruction
+  looks for - but it is now a passive identity that records the plates hung
+  under it instead of leasing a shared sprite and texture.
+- The smoke test's contract moved with it. It used to rotate the camera and
+  require every marker to keep facing it; it now captures each plate's world
+  pose, swings the camera a quarter turn and requires the signs **not** to have
+  moved, and asserts no part of a bar facade billboards at all. The
+  shared-asset rule it enforces changed from one shared sprite to one shared
+  material, which is the rule this project actually has.
+- Verification: `CityScene_BarsHaveUniqueColliderFreeSignGeometry` passes.
+  `HomeScene_BuildsWalkableBalconyOnSeededStreet` fails, but **not from this
+  work**: it dies earlier at `HomeBalconyPresentationPlayModeTests.cs:215`
+  demanding a collider-free exterior reconstruction and finding `Street Lamp
+  Chunk` box colliders. Stashing this change and re-running at `16bac4e`
+  reproduces it identically, and that commit touches no night, lamp, exterior
+  or decoration builder. The failure predates all of it, and it means the
+  balcony marker assertion here is compiled but never reached.
+
 ## 2026-08-12 — Four presentation defects on the bus, all measured
 
 - **Passengers sat inside the cushion.** The runtime aligns the shared rest

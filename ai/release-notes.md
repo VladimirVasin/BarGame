@@ -6,6 +6,12 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-12 — Bar signs hang in the street
+
+- The sign over a bar door used to be a flat picture that spun to face you.
+  It is now a real projecting sign hanging off its bracket, which stays put as
+  you walk past and catches the light like the rest of the building.
+
 ### 2026-08-12 — People sit on the seats, not in them
 
 - Passengers and the driver used to sink into the upholstery — worst of all
