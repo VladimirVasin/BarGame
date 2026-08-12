@@ -6,6 +6,61 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-13 — District walls for the city buildings
+
+- The street had textured ground under untextured boxes. Every road, sidewalk
+  and patch of soil carried a real albedo; the buildings standing on them were
+  flat colour, and the four districts differed only by the seeded RGB range in
+  `CityLayoutGenerator.CreateBuildingColor` — which `ai/city-zones-art-bible.md`
+  §18.4 rules out as sufficient on its own.
+- Added `tools/build-city-facade-textures.py`, the first scripted world albedo
+  in the project: eight district walls plus a shared roof cap, two per district
+  so each carries both of its material axes. Pillow only, deterministic, with
+  its own validator covering opacity, wrap, macro contrast, mean luminance,
+  channel neutrality and the accent-area ceiling the bible imposes on saturated
+  colour.
+- Added `CityFacadeGrid` as the one source of the bay and floor pitch. The pane
+  arithmetic had been duplicated three times (`BuildWindowBands`,
+  `BuildWindowRow`, and `HomeExteriorViewBuilder`'s copy of both); a fourth
+  consumer that derives a texture's UV from one copy while geometry comes from
+  another would drift silently.
+- Added `CityFacadeAppearance`, which tiles the albedo by the building's own
+  window grid instead of by metres, so one authored cell covers exactly one
+  pane bay and one `2.35 m` storey. Horizontal phase follows the pane-count
+  parity, vertical phase is independent of building height, and a stable
+  per-lot whole-cell rotation varies presentation without disturbing either.
+- **Measured, not assumed.** Facade widths are `11.78–15.5 m` and heights
+  `5–13 m`, so `paneCount` is only ever 4 or 5, bay pitch `1.96–2.45 m` and the
+  glass fraction of a bay `0.857–0.886` — a ±1.7% spread. That tightness is
+  what makes one authored bay land on every real bay within ~3 cm.
+- **Two corrections worth recording.** First, the brightest channel any lot can
+  reach is `0.616` (a bar), not the `0.36` an earlier sweep suggested; that
+  sweep minimised the other channels instead of maximising them. Second, and
+  more consequential, reusing `StairwellSurfaceAppearance`'s
+  `compensation = 1 / meanLinearLuminance` would have been wrong here: that
+  rule assumes the tint and texture multiply in gamma space, while URP converts
+  both to linear first. It called for a mean of `0.64`; solving the linear form
+  gives `0.35`, and shipping `0.64` would have made every facade in the city
+  87% brighter than it is today. The pale chalky result was visible in a shaded
+  preview before any of it reached the engine.
+- Known limitation, recorded rather than worked around: a repeating sheet
+  cannot carry a plinth, because no cell is reliably the ground floor. The
+  bible's heavier darker base is not expressible here; the grime runs darken
+  the lower part of every floor cell instead.
+- Verification: `python tools/build-city-facade-textures.py` — all nine sheets
+  pass edge `1.25–3.48` (cap 16), seam `0.25–0.90x` (limit 2.5), contrast
+  `99–206` (floor 40), chroma `1.006–1.128` (limit 1.22), mean `0.3496–0.3503`.
+  One focused EditMode selection, `CityFacadeAppearanceTests`, 20/20 green.
+  Mutation check: dropping the `0.08 m` mass-base term from the vertical phase
+  turned the alignment case red with a drift of `0.034` of a cell, which is
+  exactly `0.08 / 2.35`; restoring it returned the selection to green.
+- The generator's own checks earned their keep twice: the seam ratio caught a
+  brick module pitch of `40 px` that does not divide `1024` and so restarted
+  mid-brick at the wrap, and then caught Pillow's convolution clamping at the
+  border rather than wrapping, which was manufacturing a one-pixel seam on the
+  roof gravel. Both are fixed at the source; `wrap_filter` now pads before
+  every convolution.
+
 ## 2026-08-12 — Bar signs became geometry
 
 - The bar sign was the one part of a facade that did not live in the world: a

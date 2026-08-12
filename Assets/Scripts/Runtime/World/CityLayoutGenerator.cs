@@ -1355,6 +1355,32 @@ namespace BarPromenade
                 sidewalkArrivalPosition);
         }
 
+        /// <summary>
+        /// Draws one building colour for a given seed.
+        /// <para>
+        /// Exists so the facade tests can sweep the live colour ranges rather
+        /// than restate them. The facade albedos are brightened by a fixed
+        /// factor chosen from the brightest channel these ranges can produce,
+        /// so a widened palette has to fail a test instead of quietly clamping
+        /// every bar in the city.
+        /// </para>
+        /// </summary>
+        internal static Color CreateBuildingColorForSeed(
+            uint seed,
+            bool isBar,
+            bool isPlayerHome,
+            bool isSupermarket,
+            CityDistrictKind district)
+        {
+            var random = new DeterministicRandom(seed);
+            return CreateBuildingColor(
+                ref random,
+                isBar,
+                isPlayerHome,
+                isSupermarket,
+                district);
+        }
+
         private static Color CreateBuildingColor(
             ref DeterministicRandom random,
             bool isBar,

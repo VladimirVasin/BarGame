@@ -6,6 +6,17 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-13 — The districts have their own walls
+
+- Buildings are no longer flat colour. Each district now has its own wall
+  material with the windows, sills and years of grime built into it: dark brick
+  and soot in the Old Town, cold concrete panels streaked under every window in
+  the residential blocks, corrugated sheet and boarded openings in the
+  industrial zone, and old shopfronts with dead sign mounts and layered bills
+  in the nightlife quarter. Roofs are no longer flat either.
+- The four districts still read as one city — same fog, same grim register, and
+  they stay distinguishable in grayscale and at a distance.
+
 ### 2026-08-12 — Bar signs hang in the street
 
 - The sign over a bar door used to be a flat picture that spun to face you.

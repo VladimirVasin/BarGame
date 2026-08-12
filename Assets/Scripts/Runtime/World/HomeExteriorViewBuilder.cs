@@ -323,7 +323,8 @@ namespace BarPromenade
                 Vector3 cityCenter =
                     lot.Center +
                     Vector3.up *
-                    (lot.Height * 0.5f + 0.08f);
+                    (lot.Height * 0.5f +
+                     CityFacadeGrid.MassBaseElevation);
                 Vector3 localCenter =
                     PlayerHomeBalconyGeometry.ToHomeLocal(
                         context.PlayerHome,
@@ -356,14 +357,25 @@ namespace BarPromenade
                                 : $"Exterior Building {lot.Cell.x}-{lot.Cell.y}")
                         .transform;
                 building.SetParent(buildings, false);
-                RuntimePrimitiveFactory.CreateBox(
-                    "Exterior Building Mass",
-                    building,
-                    exteriorMass.center,
-                    exteriorMass.size,
+                GameObject mass =
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Exterior Building Mass",
+                        building,
+                        exteriorMass.center,
+                        exteriorMass.size,
+                        facade,
+                        RuntimePrimitiveFactory.DefaultMaterial,
+                        false);
+                CityFacadeAppearance.Apply(
+                    mass.GetComponent<Renderer>(),
+                    lot,
+                    context.Layout.Seed,
                     facade,
-                    RuntimePrimitiveFactory.DefaultMaterial,
-                    false);
+                    CreateExteriorPlacement(
+                        context,
+                        lot,
+                        localCenter,
+                        exteriorMass));
 
                 Vector3 roofCenter =
                     PlayerHomeBalconyGeometry.ToHomeLocal(
@@ -384,16 +396,22 @@ namespace BarPromenade
                             roofSize),
                         out Bounds exteriorRoof))
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Exterior Roof",
-                        building,
-                        exteriorRoof.center,
-                        exteriorRoof.size,
+                    Color roofColor =
                         CityExteriorAppearance.Darken(
                             facade,
-                            0.055f),
-                        RuntimePrimitiveFactory.DefaultMaterial,
-                        false);
+                            0.055f);
+                    GameObject roof =
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Exterior Roof",
+                            building,
+                            exteriorRoof.center,
+                            exteriorRoof.size,
+                            roofColor,
+                            RuntimePrimitiveFactory.DefaultMaterial,
+                            false);
+                    CityFacadeAppearance.ApplyRoof(
+                        roof.GetComponent<Renderer>(),
+                        roofColor);
                 }
                 BuildWindowBands(
                     building,
@@ -418,21 +436,60 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Restates a City lot's facade placement in Home-local terms.
+        /// <para>
+        /// Two things move between the frames and both have to be undone here.
+        /// <see cref="PlayerHomeBalconyGeometry.ToHomeLocal"/> rebuilds the
+        /// world on the home's own frontage axis, so a lot whose windows face
+        /// along X may end up with its bay run along local Z or local X
+        /// depending on which way the home itself faces. And
+        /// <see cref="TryClipToExteriorHalfSpace"/> trims the mass on one
+        /// side, which shifts where the bay grid starts without changing its
+        /// pitch. Height is untouched by both, so the floor phase carries over
+        /// unchanged.
+        /// </para>
+        /// </summary>
+        internal static CityFacadePlacement CreateExteriorPlacement(
+            HomeExteriorContextPlan context,
+            BuildingLot lot,
+            Vector3 unclippedLocalCenter,
+            Bounds clippedLocalBounds)
+        {
+            bool homeFrontageAlongX = Mathf.Abs(
+                PlayerHomeBalconyGeometry
+                    .GetFrontageDirection(context.PlayerHome)
+                    .x) > 0.5f;
+            bool localUsesZ =
+                CityFacadeGrid.FrontageRunsAlongX(lot) ==
+                homeFrontageAlongX;
+            float uCenterOffset = localUsesZ
+                ? clippedLocalBounds.center.z - unclippedLocalCenter.z
+                : clippedLocalBounds.center.x - unclippedLocalCenter.x;
+            return new CityFacadePlacement(
+                localUsesZ
+                    ? CityFacadeProjection.BoxZY
+                    : CityFacadeProjection.BoxXY,
+                uCenterOffset,
+                CityFacadeGrid.MassBaseElevation);
+        }
+
         private static void BuildWindowBands(
             Transform parent,
             HomeExteriorContextPlan context,
             BuildingLot lot)
         {
-            int floorCount = Mathf.Clamp(
-                Mathf.FloorToInt(lot.Height / 2.6f),
-                1,
-                4);
+            int floorCount =
+                CityFacadeGrid.ResolveFloorCount(lot.Height);
             for (int floor = 0;
                  floor < floorCount;
                  floor++)
             {
-                float y = 1.5f + floor * 2.35f;
-                if (y >= lot.Height - 0.35f)
+                float y =
+                    CityFacadeGrid.ResolveFloorCenterY(floor);
+                if (!CityFacadeGrid.IsFloorWithinHeight(
+                        floor,
+                        lot.Height))
                 {
                     break;
                 }
@@ -450,8 +507,10 @@ namespace BarPromenade
                         Mathf.Abs(frontage.x) > 0.5f;
                     float facadeDistance =
                         frontageIsX
-                            ? lot.Size.x * 0.5f + 0.012f
-                            : lot.Size.y * 0.5f + 0.012f;
+                            ? lot.Size.x * 0.5f +
+                              CityFacadeGrid.FacadeProudOffset
+                            : lot.Size.y * 0.5f +
+                              CityFacadeGrid.FacadeProudOffset;
                     Vector3 offset =
                         frontage * facadeDistance;
                     frontPosition =
@@ -465,13 +524,15 @@ namespace BarPromenade
                     rowSize =
                         frontageIsX
                             ? new Vector3(
-                                0.035f,
+                                CityFacadeGrid.PaneThickness,
                                 0.7f,
-                                lot.Size.y * 0.68f)
+                                CityFacadeGrid.ResolveRowLength(
+                                    lot.Size.y))
                             : new Vector3(
-                                lot.Size.x * 0.68f,
+                                CityFacadeGrid.ResolveRowLength(
+                                    lot.Size.x),
                                 0.7f,
-                                0.035f);
+                                CityFacadeGrid.PaneThickness);
                 }
                 else
                 {
@@ -481,18 +542,18 @@ namespace BarPromenade
                             0f,
                             y,
                             -(lot.Size.y * 0.5f +
-                              0.012f));
+                              CityFacadeGrid.FacadeProudOffset));
                     backPosition =
                         lot.Center +
                         new Vector3(
                             0f,
                             y,
                             lot.Size.y * 0.5f +
-                            0.012f);
+                            CityFacadeGrid.FacadeProudOffset);
                     rowSize = new Vector3(
-                        lot.Size.x * 0.68f,
+                        CityFacadeGrid.ResolveRowLength(lot.Size.x),
                         0.7f,
-                        0.035f);
+                        CityFacadeGrid.PaneThickness);
                 }
 
                 if (!lot.IsSupermarket || floor > 0)
@@ -532,31 +593,24 @@ namespace BarPromenade
                 runsAlongX
                     ? cityRowSize.x
                     : cityRowSize.z;
-            int paneCount = Mathf.Clamp(
-                Mathf.FloorToInt(rowLength / 1.90f),
-                4,
-                8);
-            const float gap = 0.28f;
+            int paneCount =
+                CityFacadeGrid.ResolvePaneCount(rowLength);
             float paneLength =
-                (rowLength -
-                 (paneCount - 1) * gap) /
-                paneCount;
+                CityFacadeGrid.ResolvePaneLength(
+                    rowLength,
+                    paneCount);
             float paneHeight =
-                lot.IsBar ||
-                lot.IsPlayerHome ||
-                lot.IsSupermarket
-                    ? 0.60f
-                    : 0.48f;
+                CityFacadeGrid.ResolvePaneHeight(lot);
 
             for (int pane = 0;
                  pane < paneCount;
                  pane++)
             {
                 float offset =
-                    -rowLength * 0.5f +
-                    paneLength * 0.5f +
-                    pane *
-                    (paneLength + gap);
+                    CityFacadeGrid.ResolvePaneOffset(
+                        rowLength,
+                        paneCount,
+                        pane);
                 Vector3 panePosition =
                     cityPosition +
                     (runsAlongX

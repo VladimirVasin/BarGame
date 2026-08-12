@@ -555,21 +555,38 @@ namespace BarPromenade
 
             Color facadeColor =
                 CityExteriorAppearance.CreateNightFacadeColor(lot);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject mass = RuntimePrimitiveFactory.CreateBox(
                 "Building Mass",
                 building,
-                lot.Center + (Vector3.up * (lot.Height * 0.5f + 0.08f)),
+                lot.Center +
+                (Vector3.up *
+                 (lot.Height * 0.5f + CityFacadeGrid.MassBaseElevation)),
                 new Vector3(lot.Size.x, lot.Height, lot.Size.y),
                 facadeColor);
-            RuntimePrimitiveFactory.CreateBox(
+            CityFacadeAppearance.Apply(
+                mass.GetComponent<Renderer>(),
+                lot,
+                citySeed,
+                facadeColor,
+                new CityFacadePlacement(
+                    CityFacadeGrid.FrontageRunsAlongX(lot)
+                        ? CityFacadeProjection.BoxZY
+                        : CityFacadeProjection.BoxXY,
+                    0f,
+                    CityFacadeGrid.MassBaseElevation));
+            Color roofColor = CityExteriorAppearance.Darken(
+                facadeColor,
+                0.055f);
+            GameObject roof = RuntimePrimitiveFactory.CreateBox(
                 "Roof",
                 building,
                 lot.Center + (Vector3.up * (lot.Height + 0.22f)),
                 new Vector3(lot.Size.x + 0.35f, 0.28f, lot.Size.y + 0.35f),
-                CityExteriorAppearance.Darken(
-                    facadeColor,
-                    0.055f),
+                roofColor,
                 false);
+            CityFacadeAppearance.ApplyRoof(
+                roof.GetComponent<Renderer>(),
+                roofColor);
             BuildWindowBands(building, lot, citySeed, emissiveMaterial);
 
             if (lot.IsPlayerHome)
@@ -607,11 +624,11 @@ namespace BarPromenade
             int citySeed,
             Material emissiveMaterial)
         {
-            int floorCount = Mathf.Clamp(Mathf.FloorToInt(lot.Height / 2.6f), 1, 4);
+            int floorCount = CityFacadeGrid.ResolveFloorCount(lot.Height);
             for (int floor = 0; floor < floorCount; floor++)
             {
-                float y = 1.5f + (floor * 2.35f);
-                if (y >= lot.Height - 0.35f)
+                float y = CityFacadeGrid.ResolveFloorCenterY(floor);
+                if (!CityFacadeGrid.IsFloorWithinHeight(floor, lot.Height))
                 {
                     break;
                 }
@@ -624,8 +641,8 @@ namespace BarPromenade
                     Vector3 frontage = ResolveFacadeDirection(lot);
                     bool frontageIsX = Mathf.Abs(frontage.x) > 0.5f;
                     float facadeDistance = frontageIsX
-                        ? lot.Size.x * 0.5f + 0.012f
-                        : lot.Size.y * 0.5f + 0.012f;
+                        ? lot.Size.x * 0.5f + CityFacadeGrid.FacadeProudOffset
+                        : lot.Size.y * 0.5f + CityFacadeGrid.FacadeProudOffset;
                     Vector3 facadeOffset = frontage * facadeDistance;
                     frontPosition =
                         lot.Center + facadeOffset + (Vector3.up * y);
@@ -633,28 +650,29 @@ namespace BarPromenade
                         lot.Center - facadeOffset + (Vector3.up * y);
                     windowSize = frontageIsX
                         ? new Vector3(
-                            0.035f,
+                            CityFacadeGrid.PaneThickness,
                             0.7f,
-                            lot.Size.y * 0.68f)
+                            CityFacadeGrid.ResolveRowLength(lot.Size.y))
                         : new Vector3(
-                            lot.Size.x * 0.68f,
+                            CityFacadeGrid.ResolveRowLength(lot.Size.x),
                             0.7f,
-                            0.035f);
+                            CityFacadeGrid.PaneThickness);
                 }
                 else
                 {
                     frontPosition = lot.Center + new Vector3(
                         0f,
                         y,
-                        -(lot.Size.y * 0.5f + 0.012f));
+                        -(lot.Size.y * 0.5f +
+                          CityFacadeGrid.FacadeProudOffset));
                     backPosition = lot.Center + new Vector3(
                         0f,
                         y,
-                        lot.Size.y * 0.5f + 0.012f);
+                        lot.Size.y * 0.5f + CityFacadeGrid.FacadeProudOffset);
                     windowSize = new Vector3(
-                        lot.Size.x * 0.68f,
+                        CityFacadeGrid.ResolveRowLength(lot.Size.x),
                         0.7f,
-                        0.035f);
+                        CityFacadeGrid.PaneThickness);
                 }
 
                 if (ShouldBuildGenericFrontWindowRow(lot, y))
@@ -737,23 +755,17 @@ namespace BarPromenade
 
             bool runsAlongX = rowSize.x > rowSize.z;
             float rowLength = runsAlongX ? rowSize.x : rowSize.z;
-            int paneCount = Mathf.Clamp(Mathf.FloorToInt(rowLength / 1.90f), 4, 8);
-            const float gap = 0.28f;
+            int paneCount = CityFacadeGrid.ResolvePaneCount(rowLength);
             float paneLength =
-                (rowLength - ((paneCount - 1) * gap)) / paneCount;
-            float paneHeight =
-                lot.IsBar ||
-                lot.IsPlayerHome ||
-                lot.IsSupermarket
-                    ? 0.60f
-                    : 0.48f;
+                CityFacadeGrid.ResolvePaneLength(rowLength, paneCount);
+            float paneHeight = CityFacadeGrid.ResolvePaneHeight(lot);
 
             for (int pane = 0; pane < paneCount; pane++)
             {
-                float offset =
-                    -rowLength * 0.5f +
-                    paneLength * 0.5f +
-                    pane * (paneLength + gap);
+                float offset = CityFacadeGrid.ResolvePaneOffset(
+                    rowLength,
+                    paneCount,
+                    pane);
                 Vector3 panePosition = runsAlongX
                     ? new Vector3(offset, 0f, 0f)
                     : new Vector3(0f, 0f, offset);

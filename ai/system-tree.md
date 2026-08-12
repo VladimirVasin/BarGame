@@ -26,6 +26,16 @@ Assets/
       CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
       CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
       CityRoadMarkingAlbedo.png    generated worn white traffic-paint material tile
+      CityFacadeOldTownBrickAlbedo.png      dark brick bond, soot, drip runs, one bricked-up opening
+      CityFacadeOldTownStoneAlbedo.png      render blown off the brick shell, ghost of a removed sign
+      CityFacadeResidentialCoolAlbedo.png   cold painted panel, seams, streaks under every window
+      CityFacadeResidentialWarmAlbedo.png   same block repainted, one repaired panel, rust at fixings
+      CityFacadeIndustrialSteelAlbedo.png   corrugated sheet, soot on horizontals, rust only at joints
+      CityFacadeIndustrialRustAlbedo.png    utilitarian brick, boarded openings, painted-over marking
+      CityFacadeNightlifeMagentaAlbedo.png  old shell under a commercial layer, dead mounts, bills
+      CityFacadeNightlifeCyanAlbedo.png     the service side of that shell, dirtier, no shopfront
+      CityRoofAlbedo.png                    felt strips, ponding and gravel for roof caps
+                                            all nine 1024 source, 4x4 bay/floor cells; 512 runtime, Repeat/mips
     Rendering/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
@@ -172,6 +182,8 @@ Assets/
         CityDecorationWorldBuilder.cs  six-style visuals + chunked collision proxies
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes
+        CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
+        CityFacadeAppearance.cs      district wall albedos tiled by that grid, not by metres
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
@@ -396,6 +408,8 @@ ArtSource/
     CatFeeding/                  retired player-sprite source history
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
+  City/
+    Facades/                     facade albedo contract, contact sheet and the cell-grid README
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -410,6 +424,7 @@ tools/
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
+  build-city-facade-textures.py     deterministic district wall albedos + validator
 Packages/
 ProjectSettings/
 ```

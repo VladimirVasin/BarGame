@@ -20,7 +20,10 @@ independent body meshes on one Generic rig, uses continuous in-place 3D clips
 for locomotion and contextual actions, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
-production model. Road v2 gives ordinary City streets an `8 m` footprint
+production model. Building masses wear one of eight district wall albedos built
+by `tools/build-city-facade-textures.py`, tiled by the building's own bay and
+floor grid through `CityFacadeGrid` so the baked window band lands on the real
+panes rather than by metres. Road v2 gives ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
 four `1 m` corner pads outward, cuts the raised curbs back by `4.5 m` on every

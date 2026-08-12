@@ -336,7 +336,7 @@ namespace BarPromenade
             return Mix(hash, unchecked((uint)side));
         }
 
-        private static uint Mix(
+        internal static uint Mix(
             uint first,
             uint second)
         {

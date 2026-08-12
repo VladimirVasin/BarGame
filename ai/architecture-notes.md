@@ -1088,6 +1088,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   do not depend on Editor-only primitive defaults. Emissive and atmosphere
   effects reuse their cached specialized resources, with no per-instance
   materials or runtime `Shader.Find`.
+- **Accepted — Geometry-locked district facade albedos:** City building masses
+  wear one of eight district wall albedos, two per buildable district, through
+  `MaterialPropertyBlock`s on the same shared `RuntimePrimitiveLit`. They are
+  not tiled by metres. `CityFacadeAppearance` derives `_BaseMap_ST` from
+  `CityFacadeGrid`, the single source of the bay and floor pitch that the
+  window builders also read, so one authored cell covers exactly one pane bay
+  and one `2.35 m` storey. Horizontal phase follows the pane-count parity; the
+  vertical phase is independent of building height and takes one of four
+  values, and it must include the `0.08 m` mass base or every window band
+  slides up the wall. A stable per-lot whole-cell bay and floor rotation adds
+  sixteen presentations per sheet without disturbing that alignment. Sheets are
+  authored at `1024` rather than the project's `1254` so Unity's import to
+  `512` is an exact 2:1 downsample; band and mullion edges are the whole point
+  of the texture and a 2.449:1 resample softens them. Baked floors continuing
+  above the topmost geometric window row is intended, not a bug: it fills the
+  blank cap tall lots used to show.
+- **Accepted — Linear-space facade compensation:** Facade albedos hold a mean
+  linear luminance of `0.35` and the night facade tint is brightened by
+  `1 / 0.62` before it reaches `_BaseColor`, which preserves the brightness the
+  flat colour had and never clamps the brightest lot the generator can make, a
+  bar at `0.616`. This deliberately does **not** reuse
+  `StairwellSurfaceAppearance`'s `compensation = 1 / meanLinearLuminance`: that
+  rule assumes the tint and texture multiply in gamma space, while URP converts
+  both to linear first. Applied here it would have called for a mean of `0.64`
+  and made every facade in the city almost twice as bright as before — a pale,
+  chalky wall rather than a grimy one. The bound and the preserved brightness
+  are both swept from the live colour ranges by
+  `CityFacadeAppearanceTests`, so widening a district palette fails there.
 - **Accepted — PC PS1 world composite:** The active PC renderer runs one native
   Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
   Game camera. It footprint-averages the world to `640x360` by default, blends
