@@ -1,17 +1,175 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
+    public sealed class CityPedestrianArchetype
+    {
+        public CityPedestrianArchetype(
+            string designId,
+            string prefabResourcePath,
+            float minimumMovementSpeed,
+            float maximumMovementSpeed,
+            float minimumAnimationSpeed,
+            float maximumAnimationSpeed)
+        {
+            if (string.IsNullOrWhiteSpace(designId))
+            {
+                throw new ArgumentException(
+                    "A pedestrian archetype requires a design ID.",
+                    nameof(designId));
+            }
+
+            if (string.IsNullOrWhiteSpace(prefabResourcePath))
+            {
+                throw new ArgumentException(
+                    "A pedestrian archetype requires a prefab resource path.",
+                    nameof(prefabResourcePath));
+            }
+
+            ValidateRange(
+                minimumMovementSpeed,
+                maximumMovementSpeed,
+                nameof(minimumMovementSpeed));
+            ValidateRange(
+                minimumAnimationSpeed,
+                maximumAnimationSpeed,
+                nameof(minimumAnimationSpeed));
+
+            DesignId = designId;
+            PrefabResourcePath = prefabResourcePath;
+            MinimumMovementSpeed = minimumMovementSpeed;
+            MaximumMovementSpeed = maximumMovementSpeed;
+            MinimumAnimationSpeed = minimumAnimationSpeed;
+            MaximumAnimationSpeed = maximumAnimationSpeed;
+        }
+
+        public string DesignId { get; }
+        public string PrefabResourcePath { get; }
+        public float MinimumMovementSpeed { get; }
+        public float MaximumMovementSpeed { get; }
+        public float MinimumAnimationSpeed { get; }
+        public float MaximumAnimationSpeed { get; }
+
+        private static void ValidateRange(
+            float minimum,
+            float maximum,
+            string parameterName)
+        {
+            if (!IsFinite(minimum) || !IsFinite(maximum) ||
+                minimum <= 0f || maximum < minimum)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    "Pedestrian speed ranges must be finite, positive and " +
+                    "ordered.");
+            }
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+    }
+
     public static class CityPedestrianResources
     {
-        public const string PrefabResourcePath =
+        public const string LampshadeDesignId =
+            "lampshade_walker_v1";
+        public const string ChairCarrierDesignId =
+            "chair_carrier_v1";
+        public const string LampshadePrefabResourcePath =
             "Pedestrians/CityPedestrian3D";
+        public const string ChairCarrierPrefabResourcePath =
+            "Pedestrians/ChairCarrierPedestrian3D";
+
+        // Kept as the legacy single-prefab entry point.
+        public const string PrefabResourcePath =
+            LampshadePrefabResourcePath;
+
+        private static readonly CityPedestrianArchetype[] OrderedArchetypes =
+        {
+            new CityPedestrianArchetype(
+                LampshadeDesignId,
+                LampshadePrefabResourcePath,
+                1f,
+                1.10f,
+                0.84f,
+                0.90f),
+            new CityPedestrianArchetype(
+                ChairCarrierDesignId,
+                ChairCarrierPrefabResourcePath,
+                1.18f,
+                1.30f,
+                0.98f,
+                1.06f)
+        };
+
+        private static readonly IReadOnlyList<CityPedestrianArchetype>
+            ReadOnlyArchetypes = Array.AsReadOnly(OrderedArchetypes);
+
+        public static IReadOnlyList<CityPedestrianArchetype> Archetypes =>
+            ReadOnlyArchetypes;
 
         public static GameObject LoadPrefab()
         {
             return Resources.Load<GameObject>(PrefabResourcePath);
+        }
+
+        public static GameObject LoadPrefab(
+            CityPedestrianArchetype archetype)
+        {
+            if (archetype == null)
+            {
+                throw new ArgumentNullException(nameof(archetype));
+            }
+
+            return Resources.Load<GameObject>(
+                archetype.PrefabResourcePath);
+        }
+
+        public static GameObject[] LoadPrefabs()
+        {
+            var prefabs = new GameObject[OrderedArchetypes.Length];
+            for (int index = 0; index < OrderedArchetypes.Length; index++)
+            {
+                CityPedestrianArchetype archetype =
+                    OrderedArchetypes[index];
+                prefabs[index] = LoadPrefab(archetype);
+                if (prefabs[index] == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The '{archetype.DesignId}' city pedestrian prefab " +
+                        $"is missing at Resources/" +
+                        $"{archetype.PrefabResourcePath}.");
+                }
+            }
+
+            return prefabs;
+        }
+
+        public static bool TryGetArchetype(
+            string designId,
+            out CityPedestrianArchetype archetype)
+        {
+            for (int index = 0; index < OrderedArchetypes.Length; index++)
+            {
+                CityPedestrianArchetype candidate =
+                    OrderedArchetypes[index];
+                if (string.Equals(
+                        candidate.DesignId,
+                        designId,
+                        StringComparison.Ordinal))
+                {
+                    archetype = candidate;
+                    return true;
+                }
+            }
+
+            archetype = null;
+            return false;
         }
 
         public static bool TryInstantiate(

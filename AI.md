@@ -46,8 +46,12 @@ after wide, independently randomized delays at randomly
   not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is
   limited to one slot, uses much longer random delays and retains authored
   simulation pace; a second walker already active at dusk is not culled early.
-  Their compatible Generic rig
-  uses the hero's shared Idle and Walk clips. Home maps the same graph into the
+  The presentation pool contains one Lampshade Walker and one Chair Carrier,
+  selected from a stable ordered catalog. Both copy the hero's compatible
+  Generic Avatar but use their own looping in-place locomotion: the Lampshade
+  stays hunched through idle and walks in short uneven steps, while the upright
+  Chair Carrier uses a precise high-knee gait beneath an inverted cafe chair.
+  Home maps the same graph into the
   bounded street view below the balcony. Its two slots are enabled only while
   the Balcony camera shot is active; returning indoors releases them as a scene
   boundary.

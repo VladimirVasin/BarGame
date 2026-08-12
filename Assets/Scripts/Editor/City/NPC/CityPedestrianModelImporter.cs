@@ -8,11 +8,17 @@ namespace BarPromenade.Editor
     {
         private void OnPreprocessModel()
         {
-            if (!string.Equals(
-                    assetPath,
-                    CityPedestrianAssetSetup.ModelPath,
-                    StringComparison.OrdinalIgnoreCase) ||
-                !(assetImporter is ModelImporter importer))
+            if (!(assetImporter is ModelImporter importer))
+            {
+                return;
+            }
+
+            bool isModel = IsPedestrianModel(assetPath);
+            bool isAnimation = string.Equals(
+                assetPath,
+                CityPedestrianAssetSetup.AnimationPath,
+                StringComparison.OrdinalIgnoreCase);
+            if (!isModel && !isAnimation)
             {
                 return;
             }
@@ -35,7 +41,7 @@ namespace BarPromenade.Editor
             }
 
             importer.animationType = ModelImporterAnimationType.Generic;
-            importer.importAnimation = false;
+            importer.importAnimation = isAnimation;
             importer.globalScale = 1f;
             importer.bakeAxisConversion = true;
             importer.preserveHierarchy = true;
@@ -53,6 +59,53 @@ namespace BarPromenade.Editor
             importer.generateSecondaryUV = false;
             importer.materialImportMode =
                 ModelImporterMaterialImportMode.None;
+            if (isAnimation)
+            {
+                ConfigureAnimationClips(importer);
+            }
+        }
+
+        private void OnPreprocessAnimation()
+        {
+            if (!string.Equals(
+                    assetPath,
+                    CityPedestrianAssetSetup.AnimationPath,
+                    StringComparison.OrdinalIgnoreCase) ||
+                !(assetImporter is ModelImporter importer))
+            {
+                return;
+            }
+
+            ConfigureAnimationClips(importer);
+        }
+
+        private static void ConfigureAnimationClips(ModelImporter importer)
+        {
+            ModelImporterClipAnimation[] clips =
+                importer.defaultClipAnimations;
+            var names = new System.Collections.Generic.HashSet<string>(
+                StringComparer.Ordinal);
+            for (int index = 0; index < clips.Length; index++)
+            {
+                ModelImporterClipAnimation clip = clips[index];
+                clip.name = NormalizeClipName(clip.name);
+                clip.loopTime = true;
+                clip.loopPose = true;
+                clip.keepOriginalOrientation = true;
+                clip.keepOriginalPositionY = true;
+                clip.keepOriginalPositionXZ = true;
+                clip.lockRootRotation = true;
+                clip.lockRootHeightY = true;
+                clip.lockRootPositionXZ = true;
+                if (!names.Add(clip.name))
+                {
+                    throw new InvalidOperationException(
+                        "Pedestrian locomotion FBX contains duplicate clip " +
+                        $"'{clip.name}' after name normalization.");
+                }
+            }
+
+            importer.clipAnimations = clips;
         }
 
         private static Avatar FindPlayerAvatar()
@@ -91,6 +144,10 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
+                        CityPedestrianAssetSetup.ChairCarrierModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
                         CityPedestrianAssetSetup.PlayerModelPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
@@ -99,7 +156,15 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
-                        CityPedestrianAssetSetup.PlayerAnimationPath,
+                        CityPedestrianAssetSetup.ChairCarrierManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.AnimationPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.AnimationManifestPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
@@ -110,6 +175,31 @@ namespace BarPromenade.Editor
                     return;
                 }
             }
+        }
+
+        private static bool IsPedestrianModel(string path)
+        {
+            return string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.ModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.ChairCarrierModelPath,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeClipName(string sourceName)
+        {
+            if (string.IsNullOrEmpty(sourceName))
+            {
+                return sourceName;
+            }
+
+            int separator = sourceName.LastIndexOf('|');
+            return separator >= 0 && separator + 1 < sourceName.Length
+                ? sourceName.Substring(separator + 1)
+                : sourceName;
         }
     }
 }

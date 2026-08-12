@@ -16,22 +16,61 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Models/CityPedestrian3D.fbx";
         public const string ManifestPath =
             "Assets/Pedestrians/Models/CityPedestrian3D.json";
+        public const string ChairCarrierModelPath =
+            "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.fbx";
+        public const string ChairCarrierManifestPath =
+            "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+        public const string AnimationPath =
+            "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx";
+        public const string AnimationManifestPath =
+            "Assets/Pedestrians/Animations/CityPedestrianLocomotion.json";
         public const string PlayerAnimationPath =
             "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
             "Assets/Resources/Pedestrians/CityPedestrian3D.prefab";
+        public const string ChairCarrierPrefabPath =
+            "Assets/Resources/Pedestrians/ChairCarrierPedestrian3D.prefab";
 
-        private const string ExpectedDesignId = "lampshade_walker_v1";
         private const string ExpectedPose = "apose";
         private const float ExpectedHeight = 1.75f;
-        private const int MinimumTriangleCount = 800;
-        private const int MaximumTriangleCount = 1200;
+        private const int ExpectedBoneCount = 31;
+        private const int ExpectedAnimationFps = 24;
         private const float TransformPositionTolerance = 0.0001f;
         private const float TransformAngleTolerance = 0.02f;
+
+        private static readonly PedestrianDescriptor[] Descriptors =
+        {
+            new PedestrianDescriptor(
+                "Lampshade Walker",
+                "CityPedestrian3D",
+                "lampshade_walker_v1",
+                ModelPath,
+                ManifestPath,
+                PrefabPath,
+                "LampshadeIdle",
+                "LampshadeWalk",
+                2f,
+                1.25f,
+                800,
+                1400),
+            new PedestrianDescriptor(
+                "Chair Carrier",
+                "ChairCarrierPedestrian3D",
+                "chair_carrier_v1",
+                ChairCarrierModelPath,
+                ChairCarrierManifestPath,
+                ChairCarrierPrefabPath,
+                "ChairCarrierIdle",
+                "ChairCarrierWalk",
+                1.5f,
+                1f,
+                800,
+                1600)
+        };
 
         private static bool isBuilding;
         private static bool buildQueued;
@@ -51,7 +90,7 @@ namespace BarPromenade.Editor
         {
             BuildOrThrow();
             Debug.Log(
-                $"City pedestrian prefab rebuilt at '{PrefabPath}'.");
+                "City pedestrian archetype prefabs rebuilt.");
         }
 
         [MenuItem("Bar Promenade/City Pedestrian 3D/Validate Imported Contract")]
@@ -59,17 +98,30 @@ namespace BarPromenade.Editor
         {
             ValidateOrThrow();
             Debug.Log(
-                "City pedestrian imported model, shared clips and prefab " +
-                "contract are valid.");
+                "City pedestrian models, custom clips and prefab contracts " +
+                "are valid.");
         }
 
         public static bool SourcesExist()
         {
-            return File.Exists(ModelPath) &&
-                File.Exists(ManifestPath) &&
-                File.Exists(PlayerModelPath) &&
-                File.Exists(PlayerAnimationPath) &&
-                File.Exists(SharedMaterialPath);
+            if (!File.Exists(PlayerModelPath) ||
+                !File.Exists(AnimationPath) ||
+                !File.Exists(AnimationManifestPath) ||
+                !File.Exists(SharedMaterialPath))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                if (!File.Exists(Descriptors[index].ModelPath) ||
+                    !File.Exists(Descriptors[index].ManifestPath))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -93,43 +145,49 @@ namespace BarPromenade.Editor
             if (!SourcesExist())
             {
                 throw new InvalidOperationException(
-                    "City pedestrian build requires its FBX/manifest plus " +
-                    "the production player model, animation FBX and shared " +
-                    "Player3DLit material.");
+                    "City pedestrian build requires both model FBX/manifest " +
+                    "pairs, the custom locomotion FBX/manifest, production " +
+                    "Player model and shared Player3DLit material.");
             }
 
             isBuilding = true;
             try
             {
-                EnsureFolderForAsset(PrefabPath);
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    EnsureFolderForAsset(Descriptors[index].PrefabPath);
+                }
+
                 // Import the Avatar dependency first so a clean Library and
-                // later Player-rig changes both rebuild this model against
+                // later Player-rig changes rebuild every source against
                 // the canonical external Generic Avatar.
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    AssetDatabase.ImportAsset(
+                        Descriptors[index].ModelPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+                    AssetDatabase.ImportAsset(
+                        Descriptors[index].ManifestPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+                }
+
                 AssetDatabase.ImportAsset(
-                    ModelPath,
+                    AnimationManifestPath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
                 AssetDatabase.ImportAsset(
-                    ManifestPath,
+                    AnimationPath,
                     ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    PlayerAnimationPath,
                     ImportAssetOptions.ForceSynchronousImport);
 
-                CityPedestrianManifest manifest =
-                    LoadAndValidateManifest();
-                GameObject modelAsset =
-                    AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-                if (modelAsset == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Unity did not import a model from '{ModelPath}'.");
-                }
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
 
                 Material sharedMaterial =
                     AssetDatabase.LoadAssetAtPath<Material>(
@@ -141,14 +199,38 @@ namespace BarPromenade.Editor
                         $"'{SharedMaterialPath}'.");
                 }
 
-                AnimationClip idle = LoadSharedClip("Idle");
-                AnimationClip walk = LoadSharedClip("Walk");
-                BuildPrefab(
-                    modelAsset,
-                    sharedMaterial,
-                    idle,
-                    walk,
-                    manifest);
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    PedestrianDescriptor descriptor = Descriptors[index];
+                    CityPedestrianManifest manifest =
+                        LoadAndValidateManifest(descriptor);
+                    GameObject modelAsset =
+                        AssetDatabase.LoadAssetAtPath<GameObject>(
+                            descriptor.ModelPath);
+                    if (modelAsset == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unity did not import a model from " +
+                            $"'{descriptor.ModelPath}'.");
+                    }
+
+                    AnimationClip idle = LoadLocomotionClip(
+                        descriptor.IdleClipName,
+                        descriptor.IdleDuration,
+                        animationManifest);
+                    AnimationClip walk = LoadLocomotionClip(
+                        descriptor.WalkClipName,
+                        descriptor.WalkDuration,
+                        animationManifest);
+                    BuildPrefab(
+                        descriptor,
+                        modelAsset,
+                        sharedMaterial,
+                        idle,
+                        walk,
+                        manifest);
+                }
+
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -160,15 +242,30 @@ namespace BarPromenade.Editor
 
         public static void ValidateOrThrow()
         {
-            CityPedestrianManifest manifest = LoadAndValidateManifest();
-            ValidateImportedModel(manifest);
+            CityPedestrianAnimationManifest animationManifest =
+                LoadAndValidateAnimationManifest();
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                ValidateDescriptor(Descriptors[index], animationManifest);
+            }
+        }
+
+        private static void ValidateDescriptor(
+            PedestrianDescriptor descriptor,
+            CityPedestrianAnimationManifest animationManifest)
+        {
+            CityPedestrianManifest manifest =
+                LoadAndValidateManifest(descriptor);
+            ValidateImportedModel(descriptor, manifest);
 
             GameObject prefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
             if (prefab == null)
             {
                 throw new InvalidOperationException(
-                    $"City pedestrian prefab is missing at '{PrefabPath}'.");
+                    $"City pedestrian prefab is missing at " +
+                    $"'{descriptor.PrefabPath}'.");
             }
 
             CityPedestrianAssetRegistry registry =
@@ -205,8 +302,16 @@ namespace BarPromenade.Editor
                     "anchor binding.");
             }
 
-            ValidateSharedClip(registry.IdleClip, "Idle", 4f);
-            ValidateSharedClip(registry.WalkClip, "Walk", 1f);
+            ValidateLocomotionClip(
+                registry.IdleClip,
+                descriptor.IdleClipName,
+                descriptor.IdleDuration,
+                animationManifest);
+            ValidateLocomotionClip(
+                registry.WalkClip,
+                descriptor.WalkClipName,
+                descriptor.WalkDuration,
+                animationManifest);
             if (registry.Renderers.Count != manifest.mesh_count ||
                 registry.RendererBindings.Count != manifest.mesh_count)
             {
@@ -233,7 +338,7 @@ namespace BarPromenade.Editor
                     "City pedestrian registry source metadata is stale.");
             }
 
-            if (Mathf.Abs(registry.LocalBounds.size.y - ExpectedHeight) >
+            if (Mathf.Abs(registry.LocalBounds.size.y - descriptor.Height) >
                     0.035f ||
                 Mathf.Abs(registry.LocalBounds.min.y) > 0.025f)
             {
@@ -243,11 +348,27 @@ namespace BarPromenade.Editor
             }
 
             if (prefab.GetComponentsInChildren<Collider>(true).Length != 0 ||
-                prefab.GetComponentsInChildren<Light>(true).Length != 0)
+                prefab.GetComponentsInChildren<Collider2D>(true).Length != 0 ||
+                prefab.GetComponentsInChildren<Rigidbody>(true).Length != 0 ||
+                prefab.GetComponentsInChildren<Rigidbody2D>(true).Length != 0 ||
+                prefab.GetComponentsInChildren<Light>(true).Length != 0 ||
+                prefab.GetComponentsInChildren<Camera>(true).Length != 0 ||
+                prefab.GetComponentsInChildren<AudioSource>(true).Length != 0)
             {
                 throw new InvalidOperationException(
-                    "Atmospheric pedestrians must contain no colliders or " +
-                    "lights.");
+                    "Atmospheric pedestrian prefabs must stay passive: no " +
+                    "physics bodies, colliders, lights, cameras or audio.");
+            }
+
+            MonoBehaviour[] behaviours =
+                prefab.GetComponentsInChildren<MonoBehaviour>(true);
+            if (behaviours.Any(behaviour =>
+                    behaviour != null &&
+                    !(behaviour is CityPedestrianAssetRegistry) &&
+                    behaviour is IInteractable))
+            {
+                throw new InvalidOperationException(
+                    "Atmospheric pedestrian prefabs must not be interactive.");
             }
 
             Material expectedMaterial =
@@ -273,10 +394,40 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            CityPedestrianManifest manifest;
             try
             {
-                manifest = LoadAndValidateManifest();
+                LoadAndValidateAnimationManifest();
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    PedestrianDescriptor descriptor = Descriptors[index];
+                    CityPedestrianManifest manifest =
+                        LoadAndValidateManifest(descriptor);
+                    GameObject prefab =
+                        AssetDatabase.LoadAssetAtPath<GameObject>(
+                            descriptor.PrefabPath);
+                    CityPedestrianAssetRegistry registry = prefab != null
+                        ? prefab.GetComponent<CityPedestrianAssetRegistry>()
+                        : null;
+                    if (registry == null ||
+                        !string.Equals(
+                            registry.BuildSignature,
+                            manifest.build_signature,
+                            StringComparison.Ordinal) ||
+                        registry.IdleClip == null ||
+                        registry.WalkClip == null ||
+                        !string.Equals(
+                            NormalizeClipName(registry.IdleClip.name),
+                            descriptor.IdleClipName,
+                            StringComparison.Ordinal) ||
+                        !string.Equals(
+                            NormalizeClipName(registry.WalkClip.name),
+                            descriptor.WalkClipName,
+                            StringComparison.Ordinal))
+                    {
+                        QueueBuildWhenSourcesExist();
+                        return;
+                    }
+                }
             }
             catch (Exception exception)
             {
@@ -286,19 +437,6 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            GameObject prefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            CityPedestrianAssetRegistry registry = prefab != null
-                ? prefab.GetComponent<CityPedestrianAssetRegistry>()
-                : null;
-            if (registry == null ||
-                !string.Equals(
-                    registry.BuildSignature,
-                    manifest.build_signature,
-                    StringComparison.Ordinal))
-            {
-                QueueBuildWhenSourcesExist();
-            }
         }
 
         private static void RunQueuedBuild()
@@ -320,14 +458,17 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static CityPedestrianManifest LoadAndValidateManifest()
+        private static CityPedestrianManifest LoadAndValidateManifest(
+            PedestrianDescriptor descriptor)
         {
             TextAsset source =
-                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+                AssetDatabase.LoadAssetAtPath<TextAsset>(
+                    descriptor.ManifestPath);
             if (source == null)
             {
                 throw new InvalidOperationException(
-                    $"Could not import manifest '{ManifestPath}'.");
+                    $"Could not import manifest " +
+                    $"'{descriptor.ManifestPath}'.");
             }
 
             CityPedestrianManifest manifest =
@@ -335,7 +476,9 @@ namespace BarPromenade.Editor
             if (manifest == null ||
                 manifest.parts == null ||
                 manifest.bones == null ||
-                manifest.shared_clips == null)
+                manifest.shared_clips == null ||
+                manifest.triangle_budget == null ||
+                manifest.triangle_budget.Length != 2)
             {
                 throw new InvalidOperationException(
                     "City pedestrian manifest is malformed.");
@@ -343,7 +486,7 @@ namespace BarPromenade.Editor
 
             if (!string.Equals(
                     manifest.design_id,
-                    ExpectedDesignId,
+                    descriptor.DesignId,
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.pose,
@@ -360,14 +503,18 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "City pedestrian design/pose/axis contract differs from " +
-                    "the approved Lampshade Walker.");
+                    $"the approved {descriptor.DisplayName}.");
             }
 
-            if (Mathf.Abs(manifest.height_m - ExpectedHeight) > 0.0001f ||
+            if (Mathf.Abs(manifest.height_m - descriptor.Height) > 0.0001f ||
                 manifest.mesh_count != manifest.parts.Length ||
-                manifest.bones.Length != 31 ||
-                manifest.triangle_count < MinimumTriangleCount ||
-                manifest.triangle_count > MaximumTriangleCount)
+                manifest.bones.Length != ExpectedBoneCount ||
+                manifest.triangle_count < descriptor.MinimumTriangleCount ||
+                manifest.triangle_count > descriptor.MaximumTriangleCount ||
+                manifest.triangle_budget[0] !=
+                    descriptor.MinimumTriangleCount ||
+                manifest.triangle_budget[1] !=
+                    descriptor.MaximumTriangleCount)
             {
                 throw new InvalidOperationException(
                     "City pedestrian manifest height, skeleton, mesh or " +
@@ -385,14 +532,19 @@ namespace BarPromenade.Editor
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.shared_animation_source,
-                    PlayerAnimationPath,
+                    AnimationPath,
                     StringComparison.Ordinal) ||
                 !manifest.shared_clips.SequenceEqual(
-                    new[] { "Idle", "Walk" }))
+                    new[]
+                    {
+                        descriptor.IdleClipName,
+                        descriptor.WalkClipName
+                    }))
             {
                 throw new InvalidOperationException(
                     "City pedestrian must be non-emissive, collider-free, " +
-                    "animation-free and reuse Player3DLit plus Idle/Walk.");
+                    "animation-free and reuse Player3DLit plus its custom " +
+                    "idle/walk clips.");
             }
 
             if (string.IsNullOrWhiteSpace(manifest.generator_version) ||
@@ -442,11 +594,171 @@ namespace BarPromenade.Editor
             return manifest;
         }
 
+        private static CityPedestrianAnimationManifest
+            LoadAndValidateAnimationManifest()
+        {
+            TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(
+                AnimationManifestPath);
+            if (source == null)
+            {
+                throw new InvalidOperationException(
+                    $"Could not import locomotion manifest " +
+                    $"'{AnimationManifestPath}'.");
+            }
+
+            CityPedestrianAnimationManifest manifest = JsonUtility.FromJson<
+                CityPedestrianAnimationManifest>(source.text);
+            if (manifest == null ||
+                manifest.clips == null ||
+                manifest.fps != ExpectedAnimationFps ||
+                manifest.bone_count != ExpectedBoneCount ||
+                manifest.mesh_count != 0 ||
+                manifest.clip_count != Descriptors.Length * 2 ||
+                manifest.root_motion ||
+                string.IsNullOrWhiteSpace(manifest.skeleton_source) ||
+                string.IsNullOrWhiteSpace(manifest.generator_version) ||
+                string.IsNullOrWhiteSpace(manifest.build_signature) ||
+                manifest.build_signature.Length != 64)
+            {
+                throw new InvalidOperationException(
+                    "City pedestrian locomotion manifest has an invalid " +
+                    "skeleton, root-motion or source metadata contract.");
+            }
+
+            Dictionary<string, PedestrianDescriptor> clipOwners =
+                new Dictionary<string, PedestrianDescriptor>(
+                    StringComparer.Ordinal);
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                PedestrianDescriptor descriptor = Descriptors[index];
+                clipOwners.Add(descriptor.IdleClipName, descriptor);
+                clipOwners.Add(descriptor.WalkClipName, descriptor);
+            }
+
+            HashSet<string> names =
+                new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < manifest.clips.Length; index++)
+            {
+                CityPedestrianAnimationManifestClip clip =
+                    manifest.clips[index];
+                if (clip == null ||
+                    string.IsNullOrWhiteSpace(clip.name) ||
+                    !names.Add(clip.name) ||
+                    !clipOwners.TryGetValue(
+                        clip.name,
+                        out PedestrianDescriptor owner) ||
+                    !string.Equals(
+                        clip.archetype,
+                        owner.DesignId,
+                        StringComparison.Ordinal) ||
+                    !clip.loop ||
+                    !clip.in_place ||
+                    clip.keyed_bone_count != ExpectedBoneCount ||
+                    string.IsNullOrWhiteSpace(clip.authored_posture) ||
+                    string.IsNullOrWhiteSpace(clip.gait) ||
+                    Mathf.Abs(clip.loop_max_error) > 0.0001f ||
+                    clip.frame_start != 0 ||
+                    clip.frame_end != Mathf.RoundToInt(
+                        clip.duration_seconds * ExpectedAnimationFps) ||
+                    clip.root_translation_range_m == null ||
+                    clip.root_translation_range_m.Length != 3 ||
+                    clip.root_translation_range_m.Any(component =>
+                        Mathf.Abs(component) > 0.0001f))
+                {
+                    throw new InvalidOperationException(
+                        $"Locomotion manifest clip {index} violates the " +
+                        "approved looping, in-place Generic contract.");
+                }
+
+                float expectedDuration = string.Equals(
+                    clip.name,
+                    owner.IdleClipName,
+                    StringComparison.Ordinal)
+                    ? owner.IdleDuration
+                    : owner.WalkDuration;
+                if (Mathf.Abs(
+                        clip.duration_seconds - expectedDuration) > 0.0001f)
+                {
+                    throw new InvalidOperationException(
+                        $"Locomotion manifest clip '{clip.name}' has an " +
+                        "unexpected duration.");
+                }
+            }
+
+            if (names.Count != clipOwners.Count ||
+                clipOwners.Keys.Any(name => !names.Contains(name)))
+            {
+                throw new InvalidOperationException(
+                    "Locomotion manifest must contain exactly the four " +
+                    "approved archetype clips.");
+            }
+
+            ModelImporter importer =
+                AssetImporter.GetAtPath(AnimationPath) as ModelImporter;
+            Avatar playerAvatar = FindModelAvatar();
+            if (importer == null ||
+                !importer.importAnimation ||
+                importer.animationType != ModelImporterAnimationType.Generic ||
+                importer.avatarSetup !=
+                    ModelImporterAvatarSetup.CopyFromOther ||
+                playerAvatar == null ||
+                importer.sourceAvatar != playerAvatar)
+            {
+                throw new InvalidOperationException(
+                    "Locomotion FBX must import animation as Generic and " +
+                    "copy the production Player Avatar.");
+            }
+
+            AnimationClip[] importedClips = AssetDatabase
+                .LoadAllAssetsAtPath(AnimationPath)
+                .OfType<AnimationClip>()
+                .Where(clip => !clip.name.StartsWith(
+                    "__preview__",
+                    StringComparison.Ordinal))
+                .ToArray();
+            if (importedClips.Length != clipOwners.Count)
+            {
+                throw new InvalidOperationException(
+                    $"Unity imported {importedClips.Length} pedestrian " +
+                    $"locomotion clips; expected {clipOwners.Count}.");
+            }
+
+            GameObject animationAsset =
+                AssetDatabase.LoadAssetAtPath<GameObject>(AnimationPath);
+            if (animationAsset == null ||
+                animationAsset.GetComponentsInChildren<Renderer>(true).Length !=
+                    0)
+            {
+                throw new InvalidOperationException(
+                    "Pedestrian locomotion FBX must remain animation-only " +
+                    "and contain no renderable meshes.");
+            }
+
+            Dictionary<string, Transform> animationTransforms =
+                IndexUniqueTransforms(animationAsset, "locomotion");
+            Transform animationBoneRoot = RequireTransform(
+                animationTransforms,
+                "root",
+                "locomotion");
+            if (animationBoneRoot
+                    .GetComponentsInChildren<Transform>(true).Length !=
+                ExpectedBoneCount)
+            {
+                throw new InvalidOperationException(
+                    "Pedestrian locomotion FBX has added or missing Generic " +
+                    "bones.");
+            }
+
+            return manifest;
+        }
+
         private static void ValidateImportedModel(
+            PedestrianDescriptor descriptor,
             CityPedestrianManifest manifest)
         {
             GameObject model =
-                AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.ModelPath);
             GameObject playerModel =
                 AssetDatabase.LoadAssetAtPath<GameObject>(PlayerModelPath);
             if (model == null || playerModel == null)
@@ -535,7 +847,7 @@ namespace BarPromenade.Editor
             }
 
             UnityEngine.Object[] sourceAssets =
-                AssetDatabase.LoadAllAssetsAtPath(ModelPath);
+                AssetDatabase.LoadAllAssetsAtPath(descriptor.ModelPath);
             if (sourceAssets.Any(asset =>
                     asset is AnimationClip clip &&
                     !clip.name.StartsWith(
@@ -548,7 +860,7 @@ namespace BarPromenade.Editor
 
             Avatar playerAvatar = FindModelAvatar();
             ModelImporter modelImporter =
-                AssetImporter.GetAtPath(ModelPath) as ModelImporter;
+                AssetImporter.GetAtPath(descriptor.ModelPath) as ModelImporter;
             if (playerAvatar == null ||
                 !playerAvatar.isValid ||
                 modelImporter == null ||
@@ -563,13 +875,14 @@ namespace BarPromenade.Editor
         }
 
         private static void BuildPrefab(
+            PedestrianDescriptor descriptor,
             GameObject modelAsset,
             Material sharedMaterial,
             AnimationClip idle,
             AnimationClip walk,
             CityPedestrianManifest manifest)
         {
-            GameObject prefabRoot = new GameObject("CityPedestrian3D");
+            GameObject prefabRoot = new GameObject(descriptor.PrefabRootName);
             try
             {
                 GameObject model =
@@ -717,13 +1030,13 @@ namespace BarPromenade.Editor
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
-                    PrefabPath,
+                    descriptor.PrefabPath,
                     out bool success);
                 if (!success || saved == null)
                 {
                     throw new InvalidOperationException(
                         $"Could not save City pedestrian prefab at " +
-                        $"'{PrefabPath}'.");
+                        $"'{descriptor.PrefabPath}'.");
                 }
             }
             finally
@@ -732,10 +1045,13 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static AnimationClip LoadSharedClip(string clipName)
+        private static AnimationClip LoadLocomotionClip(
+            string clipName,
+            float expectedDuration,
+            CityPedestrianAnimationManifest animationManifest)
         {
             AnimationClip clip = AssetDatabase
-                .LoadAllAssetsAtPath(PlayerAnimationPath)
+                .LoadAllAssetsAtPath(AnimationPath)
                 .OfType<AnimationClip>()
                 .FirstOrDefault(candidate =>
                     !candidate.name.StartsWith(
@@ -745,19 +1061,19 @@ namespace BarPromenade.Editor
                         NormalizeClipName(candidate.name),
                         clipName,
                         StringComparison.Ordinal));
-            ValidateSharedClip(
+            ValidateLocomotionClip(
                 clip,
                 clipName,
-                string.Equals(clipName, "Idle", StringComparison.Ordinal)
-                    ? 4f
-                    : 1f);
+                expectedDuration,
+                animationManifest);
             return clip;
         }
 
-        private static void ValidateSharedClip(
+        private static void ValidateLocomotionClip(
             AnimationClip clip,
             string expectedName,
-            float expectedDuration)
+            float expectedDuration,
+            CityPedestrianAnimationManifest animationManifest)
         {
             if (clip == null ||
                 !string.Equals(
@@ -768,13 +1084,29 @@ namespace BarPromenade.Editor
                 Mathf.Abs(clip.length - expectedDuration) > 1f / 24f ||
                 !string.Equals(
                     AssetDatabase.GetAssetPath(clip),
-                    PlayerAnimationPath,
+                    AnimationPath,
                     StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     $"Pedestrian '{expectedName}' must directly reference " +
-                    $"the looping Player animation clip at " +
-                    $"'{PlayerAnimationPath}'.");
+                    $"the looping custom locomotion clip at " +
+                    $"'{AnimationPath}'.");
+            }
+
+            CityPedestrianAnimationManifestClip source =
+                animationManifest.clips.FirstOrDefault(candidate =>
+                    candidate != null &&
+                    string.Equals(
+                        candidate.name,
+                        expectedName,
+                        StringComparison.Ordinal));
+            if (source == null ||
+                Mathf.Abs(source.duration_seconds - expectedDuration) >
+                    0.0001f)
+            {
+                throw new InvalidOperationException(
+                    $"Locomotion manifest does not describe '{expectedName}' " +
+                    "with the approved duration.");
             }
         }
 
@@ -783,15 +1115,25 @@ namespace BarPromenade.Editor
             Color baseColor,
             int variant)
         {
-            if (string.Equals(paletteName, "void", StringComparison.Ordinal) ||
-                string.Equals(paletteName, "amber", StringComparison.Ordinal) ||
-                string.Equals(paletteName, "sole", StringComparison.Ordinal))
+            if (!IsVariantPalette(paletteName))
             {
                 return baseColor;
             }
 
             Vector3 multiplier;
-            if (variant == 1)
+            if (paletteName.StartsWith(
+                    "work_",
+                    StringComparison.Ordinal))
+            {
+                // Chair Carrier variants: tobacco/base, bottle green,
+                // faded burgundy and cold grey-blue.
+                multiplier = variant == 1
+                    ? new Vector3(0.42f, 0.72f, 0.50f)
+                    : variant == 2
+                        ? new Vector3(0.92f, 0.47f, 0.52f)
+                        : new Vector3(0.62f, 0.72f, 0.92f);
+            }
+            else if (variant == 1)
             {
                 multiplier = paletteName.StartsWith(
                     "coat",
@@ -821,6 +1163,25 @@ namespace BarPromenade.Editor
                 Mathf.Clamp01(baseColor.g * multiplier.y),
                 Mathf.Clamp01(baseColor.b * multiplier.z),
                 baseColor.a);
+        }
+
+        private static bool IsVariantPalette(string paletteName)
+        {
+            return !string.Equals(
+                       paletteName,
+                       "void",
+                       StringComparison.Ordinal) &&
+                   !string.Equals(
+                       paletteName,
+                       "sole",
+                       StringComparison.Ordinal) &&
+                   !string.Equals(
+                       paletteName,
+                       "amber",
+                       StringComparison.Ordinal) &&
+                   !paletteName.StartsWith(
+                       "chair_",
+                       StringComparison.Ordinal);
         }
 
         private static Color ParseColor(float[] components)
@@ -1029,6 +1390,7 @@ namespace BarPromenade.Editor
             public string anatomical_left_axis;
             public int mesh_count;
             public int triangle_count;
+            public int[] triangle_budget;
             public string material_asset;
             public bool emissive;
             public bool colliders;
@@ -1056,6 +1418,82 @@ namespace BarPromenade.Editor
             public string bone;
             public string palette_name;
             public float[] base_color;
+        }
+
+        private sealed class PedestrianDescriptor
+        {
+            public PedestrianDescriptor(
+                string displayName,
+                string prefabRootName,
+                string designId,
+                string modelPath,
+                string manifestPath,
+                string prefabPath,
+                string idleClipName,
+                string walkClipName,
+                float idleDuration,
+                float walkDuration,
+                int minimumTriangleCount,
+                int maximumTriangleCount)
+            {
+                DisplayName = displayName;
+                PrefabRootName = prefabRootName;
+                DesignId = designId;
+                ModelPath = modelPath;
+                ManifestPath = manifestPath;
+                PrefabPath = prefabPath;
+                IdleClipName = idleClipName;
+                WalkClipName = walkClipName;
+                IdleDuration = idleDuration;
+                WalkDuration = walkDuration;
+                MinimumTriangleCount = minimumTriangleCount;
+                MaximumTriangleCount = maximumTriangleCount;
+            }
+
+            public string DisplayName { get; }
+            public string PrefabRootName { get; }
+            public string DesignId { get; }
+            public string ModelPath { get; }
+            public string ManifestPath { get; }
+            public string PrefabPath { get; }
+            public string IdleClipName { get; }
+            public string WalkClipName { get; }
+            public float IdleDuration { get; }
+            public float WalkDuration { get; }
+            public int MinimumTriangleCount { get; }
+            public int MaximumTriangleCount { get; }
+            public float Height => ExpectedHeight;
+        }
+
+        [Serializable]
+        private sealed class CityPedestrianAnimationManifest
+        {
+            public string generator_version;
+            public string skeleton_source;
+            public int bone_count;
+            public int fps;
+            public bool root_motion;
+            public int mesh_count;
+            public int clip_count;
+            public string build_signature;
+            public CityPedestrianAnimationManifestClip[] clips;
+        }
+
+        [Serializable]
+        private sealed class CityPedestrianAnimationManifestClip
+        {
+            public string name;
+            public string archetype;
+            public float duration_seconds;
+            public int frame_start;
+            public int frame_end;
+            public bool loop;
+            public bool in_place;
+            public string authored_posture;
+            public string gait;
+            public int keyed_bone_count;
+            public float loop_max_error;
+            public float[] root_translation_range_m;
         }
     }
 }

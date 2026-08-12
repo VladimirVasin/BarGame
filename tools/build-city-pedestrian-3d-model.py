@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Build the deterministic low-poly City pedestrian "Lampshade Walker".
+"""Build the deterministic low-poly City pedestrian art library.
 
 Run this with Blender, not CPython:
 
     blender --background --python tools/build-city-pedestrian-3d-model.py
 
-The generator owns the editable .blend, the animation-free production FBX,
-the Unity manifest and a review render.  The pedestrian deliberately carries
-the exact Generic skeleton names, parent hierarchy and A-pose rest transforms
-of PlayerCharacter3D so Unity can apply the player's shared Idle and Walk
-clips without retargeting or duplicated animation data.
+The generator owns two editable model .blends, two animation-free production
+FBXs, one animation-only locomotion FBX, manifests and review renders.  Both
+pedestrians and every clip deliberately carry the exact Generic skeleton names,
+parent hierarchy and A-pose rest transforms of PlayerCharacter3D.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 """
@@ -28,20 +27,47 @@ from typing import Iterable, Sequence
 
 try:
     import bpy
-    from mathutils import Vector
+    from mathutils import Euler, Quaternion, Vector
 except ImportError as error:  # pragma: no cover - Blender-only entry point.
     raise SystemExit(
         "This generator must run through Blender's bundled Python."
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
-DESIGN_ID = "lampshade_walker_v1"
-SEED = 190417
+GENERATOR_VERSION = "2.0.0"
 CANONICAL_HEIGHT = 1.75
-MIN_TRIANGLES = 800
-MAX_TRIANGLES = 1200
 SHARED_MATERIAL_NAME = "MAT_Player3DLit"
+ANIMATION_FPS = 24
+ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
+
+
+@dataclass(frozen=True)
+class ArchetypeSpec:
+    key: str
+    design_id: str
+    display_name: str
+    seed: int
+    blend_name: str
+    model_name: str
+    preview_name: str
+    idle_clip: str
+    walk_clip: str
+    triangle_budget: tuple[int, int]
+
+
+ARCHETYPES = {
+    "lampshade": ArchetypeSpec(
+        "lampshade", "lampshade_walker_v1", "Lampshade Walker", 190417,
+        "CityPedestrian3D.blend", "CityPedestrian3D", "CityPedestrian3D.png",
+        "LampshadeIdle", "LampshadeWalk", (800, 1400),
+    ),
+    "chair_carrier": ArchetypeSpec(
+        "chair_carrier", "chair_carrier_v1", "Chair Carrier", 241109,
+        "ChairCarrierPedestrian3D.blend", "ChairCarrierPedestrian3D",
+        "ChairCarrierPedestrian3D.png", "ChairCarrierIdle", "ChairCarrierWalk",
+        (800, 1600),
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -73,6 +99,23 @@ class BuildResult:
 
 
 @dataclass(frozen=True)
+class BonePose:
+    rotation_degrees: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    location_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
+
+
+@dataclass(frozen=True)
+class ActionSpec:
+    name: str
+    archetype: str
+    duration_seconds: float
+    frame_end: int
+    authored_posture: str
+    gait: str
+
+
+@dataclass(frozen=True)
 class ValidationReport:
     mesh_count: int
     triangle_count: int
@@ -98,6 +141,16 @@ PALETTE = {
     "leather": (0.055, 0.042, 0.035, 1.0),
     "sole": (0.018, 0.019, 0.017, 1.0),
     "button": (0.155, 0.145, 0.115, 1.0),
+    "work_jacket": (0.245, 0.145, 0.075, 1.0),
+    "work_jacket_light": (0.335, 0.205, 0.105, 1.0),
+    "work_jacket_dark": (0.105, 0.070, 0.048, 1.0),
+    "work_trousers": (0.105, 0.125, 0.118, 1.0),
+    "skin": (0.355, 0.235, 0.165, 1.0),
+    "chair_wood": (0.285, 0.115, 0.055, 1.0),
+    "chair_edge": (0.095, 0.045, 0.028, 1.0),
+    "chair_wear": (0.455, 0.265, 0.105, 1.0),
+    "strap_cloth": (0.080, 0.095, 0.080, 1.0),
+    "shoe": (0.045, 0.038, 0.032, 1.0),
 }
 
 
@@ -169,24 +222,24 @@ BONE_BY_NAME = {bone.name: bone for bone in SKELETON}
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output",
+        "--source-dir",
         type=Path,
-        default=Path("ArtSource/Pedestrians/Blender/CityPedestrian3D.blend"),
+        default=Path("ArtSource/Pedestrians/Blender"),
     )
     parser.add_argument(
-        "--fbx",
+        "--model-dir",
         type=Path,
-        default=Path("Assets/Pedestrians/Models/CityPedestrian3D.fbx"),
+        default=Path("Assets/Pedestrians/Models"),
     )
     parser.add_argument(
-        "--manifest",
+        "--animation-dir",
         type=Path,
-        default=Path("Assets/Pedestrians/Models/CityPedestrian3D.json"),
+        default=Path("Assets/Pedestrians/Animations"),
     )
     parser.add_argument(
-        "--preview",
-        type=Path,
-        default=Path("ArtSource/Pedestrians/Blender/CityPedestrian3D.png"),
+        "--archetype",
+        choices=("all", *ARCHETYPES),
+        default="all",
     )
     parser.add_argument("--no-preview", action="store_true")
     arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -194,7 +247,7 @@ def parse_args() -> argparse.Namespace:
     # Blender resolves a relative render path against the unsaved startup
     # blend's `//` root (often the drive root), unlike Python file writes.
     # Resolve every output from the invocation cwd before touching Blender IO.
-    for field_name in ("output", "fbx", "manifest", "preview"):
+    for field_name in ("source_dir", "model_dir", "animation_dir"):
         setattr(config, field_name, getattr(config, field_name).resolve())
     return config
 
@@ -327,13 +380,14 @@ def make_ellipsoid(
 
 
 class PedestrianBuilder:
-    def __init__(self):
+    def __init__(self, spec: ArchetypeSpec):
+        self.spec = spec
         self.result: BuildResult | None = None
 
     def build(self) -> BuildResult:
         self.reset_scene()
         scene_root = bpy.context.scene.collection
-        pedestrian = bpy.data.collections.new("BP_CityPedestrian3D")
+        pedestrian = bpy.data.collections.new(f"BP_{self.spec.model_name}")
         scene_root.children.link(pedestrian)
         export_collection = bpy.data.collections.new("EXPORT_CityPedestrian")
         pedestrian.children.link(export_collection)
@@ -347,18 +401,20 @@ class PedestrianBuilder:
         root["bp_export"] = True
         root["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
         root["bp_generator_version"] = GENERATOR_VERSION
-        root["bp_design_id"] = DESIGN_ID
-        root["bp_seed"] = SEED
+        root["bp_design_id"] = self.spec.design_id
+        root["bp_seed"] = self.spec.seed
         root["bp_forward_axis"] = "-Y"
         root["bp_anatomical_left_axis"] = "+X"
-        root["bp_shared_animation_source"] = (
-            "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx"
-        )
+        root["bp_shared_animation_source"] = ANIMATION_SOURCE
 
         rig = self.create_armature(export_collection, root)
         self.result = BuildResult(root, rig, export_collection, material)
-        self.build_body()
-        self.build_clothing_and_details()
+        if self.spec.key == "lampshade":
+            self.build_body()
+            self.build_clothing_and_details()
+        else:
+            self.build_chair_carrier_body()
+            self.build_chair_carrier_details()
         self.configure_scene_metadata()
         return self.result
 
@@ -752,13 +808,157 @@ class PedestrianBuilder:
             "sole",
         )
 
-    @staticmethod
-    def configure_scene_metadata() -> None:
+    def build_chair_carrier_body(self) -> None:
+        """Build compact workwear around the unchanged canonical A-pose rig."""
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.038, 1.555), (0.105, 0.090, 0.140), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.325), (0, -0.025, 1.445), 0.072, 0.064),
+            "neck", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Torso",
+            make_tapered_box((0, 0.010, 0.785), (0, -0.004, 1.335), (0.300, 0.190, 0), (0.360, 0.205, 0)),
+            "chest", "body", "work_jacket_dark",
+        )
+        self.add_part(
+            "GEO_Pelvis",
+            make_tapered_box((0, 0.012, 0.665), (0, 0.010, 0.850), (0.295, 0.185, 0), (0.315, 0.190, 0)),
+            "pelvis", "body", "work_jacket",
+        )
+        limb_points = {
+            "L": ((0.208, -0.004, 1.292), (0.470, -0.010, 1.175), (0.680, -0.018, 1.075), (0.755, -0.022, 1.035)),
+            "R": ((-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175), (-0.680, -0.018, 1.075), (-0.755, -0.022, 1.035)),
+        }
+        leg_points = {
+            "L": ((0.083, 0.012, 0.750), (0.103, -0.012, 0.354), (0.112, -0.026, 0.095)),
+            "R": ((-0.083, -0.004, 0.750), (-0.103, 0.012, 0.354), (-0.112, 0.018, 0.095)),
+        }
+        for side in ("L", "R"):
+            shoulder, elbow, wrist, hand = limb_points[side]
+            hip, knee, ankle = leg_points[side]
+            self.add_part(
+                f"GEO_UpperArm.{side}",
+                make_frustum_between(shoulder, elbow, 0.071, 0.057, 12),
+                f"upper_arm.{side}", "body", "work_jacket",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(elbow, wrist, 0.059, 0.045, 12),
+                f"forearm.{side}", "body", "work_jacket_light" if side == "L" else "work_jacket",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid(tuple((v(wrist) + v(hand)) * 0.5), (0.046, 0.035, 0.060), 10, 5),
+                f"hand.{side}", "body", "skin",
+            )
+            self.add_part(
+                f"GEO_Thigh.{side}", make_frustum_between(hip, knee, 0.092, 0.074, 12),
+                f"thigh.{side}", "body", "work_trousers",
+            )
+            self.add_part(
+                f"GEO_Shin.{side}", make_frustum_between(knee, ankle, 0.076, 0.060, 12),
+                f"shin.{side}", "body", "work_trousers",
+            )
+            x = 0.112 if side == "L" else -0.112
+            self.add_part(
+                f"GEO_Foot.{side}",
+                make_tapered_box((x, -0.095, 0.0), (x, -0.065, 0.145), (0.170, 0.250, 0), (0.140, 0.185, 0)),
+                f"foot.{side}", "body", "shoe",
+            )
+
+    def build_chair_carrier_details(self) -> None:
+        # A faded waist-length jacket keeps the carrier more compact and
+        # upright than the long-coated Lampshade Walker.
+        for side, x in (("L", 0.084), ("R", -0.084)):
+            self.add_part(
+                f"CLO_JacketFront.{side}",
+                make_tapered_box((x, -0.112, 0.815), (x * 0.88, -0.113, 1.300), (0.158, 0.036, 0), (0.178, 0.042, 0)),
+                "chest", "clothing", "work_jacket_light" if side == "L" else "work_jacket",
+            )
+            self.add_part(
+                f"ACC_ShoulderLoop.{side}",
+                make_tapered_box((x * 1.22, -0.125, 0.975), (x * 1.42, -0.112, 1.315), (0.028, 0.018, 0), (0.035, 0.018, 0)),
+                "chest", "load_harness", "strap_cloth",
+            )
+            self.add_part(
+                f"ACC_ShoeSole.{side}",
+                make_box((0.112 if side == "L" else -0.112, -0.095, 0.011), (0.180, 0.260, 0.022)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+
+        self.add_part(
+            "CLO_JacketBack",
+            make_tapered_box((0, 0.110, 0.805), (0, 0.112, 1.305), (0.310, 0.040, 0), (0.350, 0.044, 0)),
+            "chest", "clothing", "work_jacket_dark",
+        )
+        self.add_part(
+            "CLO_JacketHem",
+            make_box((0, -0.010, 0.790), (0.335, 0.215, 0.055)),
+            "chest", "clothing_detail", "work_jacket_dark",
+        )
+        self.add_part(
+            "ACC_WorkCap",
+            make_tapered_box((0, -0.015, 1.655), (0, -0.010, 1.750), (0.225, 0.205, 0), (0.190, 0.180, 0)),
+            "head", "clothing_detail", "work_jacket_dark",
+        )
+        self.add_part(
+            "ACC_CapPeak",
+            make_box((0, -0.145, 1.668), (0.175, 0.115, 0.025)),
+            "head", "clothing_detail", "work_jacket_dark",
+        )
+        self.add_part(
+            "ACC_FaceShadow",
+            make_box((0, -0.130, 1.560), (0.160, 0.020, 0.055)),
+            "head", "face_detail", "void",
+        )
+
+        # The upside-down cafe chair is tied to the chest: the broad seat is
+        # behind the shoulder blades and four narrow legs rise around the head
+        # as a clear cage silhouette. Nothing is a separate simulated prop.
+        self.add_part(
+            "ACC_ChairSeat",
+            make_tapered_box((0, 0.245, 1.245), (0, 0.265, 1.335), (0.545, 0.400, 0), (0.500, 0.360, 0)),
+            "chest", "signature_silhouette", "chair_wood",
+        )
+        self.add_part(
+            "ACC_ChairSeatWear",
+            make_box((0.080, 0.062, 1.305), (0.175, 0.020, 0.050)),
+            "chest", "surface_detail", "chair_wear",
+        )
+        leg_specs = (
+            ("Front.L", (0.225, 0.075, 1.315), (0.245, 0.055, 1.735)),
+            ("Front.R", (-0.225, 0.075, 1.315), (-0.245, 0.055, 1.735)),
+            ("Back.L", (0.225, 0.420, 1.315), (0.285, 0.445, 1.725)),
+            ("Back.R", (-0.225, 0.420, 1.315), (-0.285, 0.445, 1.725)),
+        )
+        for suffix, start, end in leg_specs:
+            self.add_part(
+                f"ACC_ChairLeg.{suffix}", make_frustum_between(start, end, 0.034, 0.027, 8, 0.88),
+                "chest", "signature_silhouette", "chair_wood",
+            )
+        self.add_part(
+            "ACC_ChairCrossbar",
+            make_frustum_between((-0.285, 0.445, 1.650), (0.285, 0.445, 1.650), 0.027, 0.027, 8, 0.88),
+            "chest", "signature_silhouette", "chair_edge",
+        )
+        self.add_part(
+            "ACC_LoadBelt",
+            make_box((0, -0.126, 1.035), (0.350, 0.024, 0.055)),
+            "chest", "load_harness", "strap_cloth",
+        )
+
+    def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
         scene["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
         scene["bp_generator_version"] = GENERATOR_VERSION
-        scene["bp_design_id"] = DESIGN_ID
-        scene["bp_seed"] = SEED
+        scene["bp_design_id"] = self.spec.design_id
+        scene["bp_seed"] = self.spec.seed
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = "Assets/Player3D/Materials/Player3DLit.mat"
 
@@ -772,7 +972,7 @@ def stable_float(value: float) -> float:
     return 0.0 if rounded == -0.0 else rounded
 
 
-def validate_result(result: BuildResult) -> ValidationReport:
+def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> ValidationReport:
     # Parenting and armature setup are data-API operations; force the depsgraph
     # once before reading object matrices for deterministic source bounds.
     bpy.context.view_layer.update()
@@ -780,26 +980,26 @@ def validate_result(result: BuildResult) -> ValidationReport:
     bones = list(result.rig.data.bones)
     if [bone.name for bone in bones] != [spec.name for spec in SKELETON]:
         errors.append("Generic bone order/names diverge from PlayerCharacter3D")
-    for spec in SKELETON:
-        bone = result.rig.data.bones.get(spec.name)
+    for bone_spec in SKELETON:
+        bone = result.rig.data.bones.get(bone_spec.name)
         if bone is None:
             continue
         actual_parent = bone.parent.name if bone.parent is not None else None
-        if actual_parent != spec.parent:
-            errors.append(f"{spec.name} parent is {actual_parent!r}, expected {spec.parent!r}")
-        if (bone.head_local - v(spec.head)).length > 0.000001:
-            errors.append(f"{spec.name} head diverges from canonical Player A-pose")
-        if (bone.tail_local - v(spec.tail)).length > 0.000001:
-            errors.append(f"{spec.name} tail diverges from canonical Player A-pose")
-        if bone.use_deform != spec.deform:
-            errors.append(f"{spec.name} deform flag diverges from canonical Player rig")
+        if actual_parent != bone_spec.parent:
+            errors.append(f"{bone_spec.name} parent is {actual_parent!r}, expected {bone_spec.parent!r}")
+        if (bone.head_local - v(bone_spec.head)).length > 0.000001:
+            errors.append(f"{bone_spec.name} head diverges from canonical Player A-pose")
+        if (bone.tail_local - v(bone_spec.tail)).length > 0.000001:
+            errors.append(f"{bone_spec.name} tail diverges from canonical Player A-pose")
+        if bone.use_deform != bone_spec.deform:
+            errors.append(f"{bone_spec.name} deform flag diverges from canonical Player rig")
 
     if bpy.data.actions:
         errors.append("Pedestrian model must contain no authored Actions")
     if result.rig.animation_data is not None and result.rig.animation_data.action is not None:
         errors.append("Pedestrian rig has an active animation")
 
-    forbidden_fragments = ("bandage", "shoulderpatch", "satchel", "strap")
+    forbidden_fragments = ("bandage", "shoulderpatch", "satchel")
     mesh_count = len(result.parts)
     triangle_count = 0
     world_vertices: list[Vector] = []
@@ -840,12 +1040,13 @@ def validate_result(result: BuildResult) -> ValidationReport:
             }
         )
 
-    if not MIN_TRIANGLES <= triangle_count <= MAX_TRIANGLES:
+    min_triangles, max_triangles = archetype.triangle_budget
+    if not min_triangles <= triangle_count <= max_triangles:
         errors.append(
-            f"Triangle budget is {triangle_count}; expected {MIN_TRIANGLES}-{MAX_TRIANGLES}"
+            f"Triangle budget is {triangle_count}; expected {min_triangles}-{max_triangles}"
         )
-    if mesh_count < 24 or mesh_count > 48:
-        errors.append(f"Mesh count is {mesh_count}; expected 24-48 lightweight parts")
+    if mesh_count < 24 or mesh_count > 52:
+        errors.append(f"Mesh count is {mesh_count}; expected 24-52 lightweight parts")
     if not world_vertices:
         errors.append("Pedestrian contains no mesh vertices")
         bounds_min = Vector((0, 0, 0))
@@ -861,7 +1062,7 @@ def validate_result(result: BuildResult) -> ValidationReport:
             errors.append(f"Footwear must ground at z=0, got {bounds_min.z:.6f}")
         if abs(bounds_max.z - CANONICAL_HEIGHT) > 0.00001:
             errors.append(
-                f"Hood must preserve canonical 1.75 m height, got {bounds_max.z:.6f}"
+                f"Silhouette must preserve canonical 1.75 m height, got {bounds_max.z:.6f}"
             )
         if bounds_max.x - bounds_min.x > 1.65:
             errors.append("A-pose width unexpectedly exceeds the player's envelope")
@@ -877,8 +1078,8 @@ def validate_result(result: BuildResult) -> ValidationReport:
 
     signature_payload = {
         "generator_version": GENERATOR_VERSION,
-        "design_id": DESIGN_ID,
-        "seed": SEED,
+        "design_id": archetype.design_id,
+        "seed": archetype.seed,
         "skeleton": [
             {
                 "name": spec.name,
@@ -938,7 +1139,7 @@ def export_fbx(path: Path, result: BuildResult) -> None:
     )
 
 
-def render_preview(path: Path, result: BuildResult) -> None:
+def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
     presentation = bpy.data.collections.get("PRESENTATION_CityPedestrian")
@@ -948,7 +1149,7 @@ def render_preview(path: Path, result: BuildResult) -> None:
     camera_data = bpy.data.cameras.new("CAM_PedestrianPreview")
     camera = bpy.data.objects.new("CAM_PedestrianPreview", camera_data)
     presentation.objects.link(camera)
-    camera.location = (2.65, -4.40, 2.10)
+    camera.location = (2.85, -4.60, 2.10) if spec.key == "chair_carrier" else (2.65, -4.40, 2.10)
     target = Vector((0, 0, 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.lens = 56
@@ -994,21 +1195,23 @@ def write_manifest(
     path: Path,
     result: BuildResult,
     report: ValidationReport,
+    spec: ArchetypeSpec,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "generator": "tools/build-city-pedestrian-3d-model.py",
         "generator_version": GENERATOR_VERSION,
         "blender_version": bpy.app.version_string,
-        "design_id": DESIGN_ID,
-        "display_name": "Lampshade Walker",
-        "seed": SEED,
+        "design_id": spec.design_id,
+        "display_name": spec.display_name,
+        "seed": spec.seed,
         "height_m": CANONICAL_HEIGHT,
         "pose": "apose",
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
         "mesh_count": report.mesh_count,
         "triangle_count": report.triangle_count,
+        "triangle_budget": list(spec.triangle_budget),
         "bounds_min": list(report.bounds_min),
         "bounds_max": list(report.bounds_max),
         "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -1016,8 +1219,8 @@ def write_manifest(
         "colliders": False,
         "animation_count": 0,
         "animations": [],
-        "shared_animation_source": "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx",
-        "shared_clips": ["Idle", "Walk"],
+        "shared_animation_source": ANIMATION_SOURCE,
+        "shared_clips": [spec.idle_clip, spec.walk_clip],
         "build_signature": report.build_signature,
         "bones": [
             {
@@ -1050,28 +1253,671 @@ def write_manifest(
     os.replace(temporary, path)
 
 
+ACTION_SPECS = (
+    ActionSpec(
+        "LampshadeIdle", "lampshade_walker_v1", 2.0, 48,
+        "persistent C-curve, withdrawn neck, bent knees",
+        "weary asymmetric weight shift",
+    ),
+    ActionSpec(
+        "LampshadeWalk", "lampshade_walker_v1", 1.25, 30,
+        "persistent C-curve, withdrawn neck, bent knees",
+        "short uneven steps, heavy left boot and quick right recovery",
+    ),
+    ActionSpec(
+        "ChairCarrierIdle", "chair_carrier_v1", 1.5, 36,
+        "upright load-balanced spine, hands fixed on shoulder loops",
+        "small precise weight correction under chair load",
+    ),
+    ActionSpec(
+        "ChairCarrierWalk", "chair_carrier_v1", 1.0, 24,
+        "upright load-balanced spine, hands fixed on shoulder loops",
+        "high-knee precise heel-led steps with minimal arm swing",
+    ),
+)
+
+
+def merge_pose(
+    base: dict[str, BonePose],
+    *overrides: dict[str, BonePose],
+) -> dict[str, BonePose]:
+    merged = dict(base)
+    for override in overrides:
+        merged.update(override)
+    return merged
+
+
+def reset_pose(rig: bpy.types.Object) -> None:
+    for pose_bone in rig.pose.bones:
+        pose_bone.rotation_mode = "QUATERNION"
+        pose_bone.location = (0.0, 0.0, 0.0)
+        pose_bone.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+        pose_bone.scale = (1.0, 1.0, 1.0)
+    bpy.context.view_layer.update()
+
+
+def apply_pose(rig: bpy.types.Object, pose: dict[str, BonePose]) -> None:
+    for bone_name, transform in pose.items():
+        pose_bone = rig.pose.bones.get(bone_name)
+        if pose_bone is None:
+            raise ValueError(f"Unknown animation bone {bone_name}")
+        pose_bone.rotation_mode = "QUATERNION"
+        pose_bone.location = transform.location_m
+        pose_bone.rotation_quaternion = Euler(
+            tuple(math.radians(value) for value in transform.rotation_degrees), "XYZ"
+        ).to_quaternion()
+        pose_bone.scale = transform.scale
+    bpy.context.view_layer.update()
+
+
+def iter_action_fcurves(action: bpy.types.Action):
+    legacy_curves = getattr(action, "fcurves", None)
+    if legacy_curves is not None:
+        yield from legacy_curves
+        return
+    for layer in action.layers:
+        for strip in layer.strips:
+            for channelbag in getattr(strip, "channelbags", ()):
+                yield from channelbag.fcurves
+
+
+def create_action(
+    rig: bpy.types.Object,
+    spec: ActionSpec,
+    keys: Sequence[tuple[float, dict[str, BonePose]]],
+) -> bpy.types.Action:
+    if not keys or keys[0][0] != 0.0 or keys[-1][0] != 1.0:
+        raise ValueError(f"Action {spec.name} must own normalized 0 and 1 endpoints")
+    action = bpy.data.actions.new(spec.name)
+    action.use_fake_user = True
+    action.use_frame_range = True
+    action.frame_start = 0.0
+    action.frame_end = float(spec.frame_end)
+    action.use_cyclic = True
+    action["bp_archetype"] = spec.archetype
+    action["bp_duration_seconds"] = spec.duration_seconds
+    action["bp_loop"] = True
+    action["bp_in_place"] = True
+    action["bp_root_motion"] = False
+    action["bp_authored_posture"] = spec.authored_posture
+    action["bp_gait"] = spec.gait
+    action["bp_generator_version"] = GENERATOR_VERSION
+    animation_data = rig.animation_data_create()
+    animation_data.action = action
+    previous_quaternions: dict[str, Quaternion] = {}
+    for normalized_time, pose in keys:
+        reset_pose(rig)
+        apply_pose(rig, pose)
+        frame = round(spec.frame_end * normalized_time)
+        for bone in rig.pose.bones:
+            quaternion = bone.rotation_quaternion.copy()
+            previous = previous_quaternions.get(bone.name)
+            if previous is not None:
+                quaternion.make_compatible(previous)
+                bone.rotation_quaternion = quaternion
+            previous_quaternions[bone.name] = quaternion.copy()
+            group = bone.name.split(".")[0]
+            bone.keyframe_insert("location", frame=frame, group=group)
+            bone.keyframe_insert("rotation_quaternion", frame=frame, group=group)
+            bone.keyframe_insert("scale", frame=frame, group=group)
+    for curve in iter_action_fcurves(action):
+        for keyframe in curve.keyframe_points:
+            keyframe.interpolation = "BEZIER"
+            keyframe.handle_left_type = "AUTO_CLAMPED"
+            keyframe.handle_right_type = "AUTO_CLAMPED"
+    animation_data.action = None
+    reset_pose(rig)
+    return action
+
+
+def lampshade_base_pose() -> dict[str, BonePose]:
+    return {
+        "pelvis": BonePose(rotation_degrees=(10.0, 0.0, -2.0), location_m=(0, 0.025, -0.055)),
+        "spine": BonePose(rotation_degrees=(18.0, 0.0, 3.0)),
+        "chest": BonePose(rotation_degrees=(13.0, 0.0, -4.0)),
+        "neck": BonePose(rotation_degrees=(-15.0, 0.0, 2.0)),
+        "head": BonePose(rotation_degrees=(8.0, 0.0, -2.0)),
+        "clavicle.L": BonePose(rotation_degrees=(3.0, -4.0, 8.0)),
+        "clavicle.R": BonePose(rotation_degrees=(3.0, 4.0, -8.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(13.0, 10.0, 26.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(11.0, -8.0, -25.0)),
+        "forearm.L": BonePose(rotation_degrees=(-18.0, 4.0, -8.0)),
+        "forearm.R": BonePose(rotation_degrees=(-15.0, -3.0, 7.0)),
+        "thigh.L": BonePose(rotation_degrees=(-9.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(19.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    }
+
+
+def chair_base_pose() -> dict[str, BonePose]:
+    return {
+        "pelvis": BonePose(rotation_degrees=(-1.5, 0.0, 0.0), location_m=(0, 0, -0.015)),
+        "spine": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-1.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(1.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(0.0, -4.0, 4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(0.0, 4.0, -4.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(16.0, 8.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(16.0, -8.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-58.0, 4.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-58.0, -4.0, 18.0)),
+        "hand.L": BonePose(rotation_degrees=(8.0, -5.0, 3.0)),
+        "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -3.0)),
+        "thigh.L": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    }
+
+
+def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
+    lampshade = lampshade_base_pose()
+    chair = chair_base_pose()
+    lamp_idle_left = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(11.0, 1.0, -4.0), location_m=(0, 0.025, -0.058)),
+        "spine": BonePose(rotation_degrees=(19.5, 0.0, 4.5)),
+        "chest": BonePose(rotation_degrees=(14.0, 0.0, -5.5)),
+        "head": BonePose(rotation_degrees=(9.0, 0.0, -3.0)),
+    })
+    lamp_idle_right = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(9.0, -1.0, 1.0), location_m=(0, 0.025, -0.052)),
+        "spine": BonePose(rotation_degrees=(17.0, 0.0, 1.5)),
+        "chest": BonePose(rotation_degrees=(12.0, 0.0, -1.5)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, 0.5)),
+    })
+    lamp_left_contact = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(12.0, 4.0, -4.5), location_m=(0, 0.025, -0.075)),
+        "thigh.L": BonePose(rotation_degrees=(-22.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(13.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(32.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(15.0, -2.0, -5.0)),
+    })
+    lamp_right_pass = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(9.0, -1.0, -0.5), location_m=(0, 0.025, -0.045)),
+        "thigh.L": BonePose(rotation_degrees=(3.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-11.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(48.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
+    })
+    lamp_right_contact = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(9.0, -2.0, 2.5), location_m=(0, 0.025, -0.050)),
+        "thigh.L": BonePose(rotation_degrees=(13.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(40.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+    })
+    lamp_left_drag = merge_pose(lampshade, {
+        "pelvis": BonePose(rotation_degrees=(13.0, 2.0, -1.5), location_m=(0, 0.025, -0.082)),
+        "thigh.L": BonePose(rotation_degrees=(-8.0, 0.0, 1.0)),
+        "shin.L": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(5.0, 0.0, -1.0)),
+        "shin.R": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    })
+    chair_idle_left = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-1.0, 1.0, -1.5), location_m=(0, 0, -0.018)),
+        "chest": BonePose(rotation_degrees=(2.0, -0.5, 1.2)),
+        "head": BonePose(rotation_degrees=(0.5, 0.0, -0.7)),
+    })
+    chair_idle_right = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-2.0, -1.0, 1.5), location_m=(0, 0, -0.012)),
+        "chest": BonePose(rotation_degrees=(4.0, 0.5, -1.2)),
+        "head": BonePose(rotation_degrees=(1.5, 0.0, 0.7)),
+    })
+    chair_left_contact = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-1.0, 2.0, -1.0), location_m=(0, 0, -0.028)),
+        "thigh.L": BonePose(rotation_degrees=(-32.0, 0.0, 0.0)),
+        "shin.L": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(4.0, -1.0, 1.0)),
+    })
+    chair_right_pass = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-2.0, -1.0, 0.5), location_m=(0, 0, 0.004)),
+        "thigh.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "shin.L": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-25.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(60.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+    })
+    chair_right_contact = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-1.0, -2.0, 1.0), location_m=(0, 0, -0.028)),
+        "thigh.L": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-32.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(4.0, 1.0, -1.0)),
+    })
+    chair_left_pass = merge_pose(chair, {
+        "pelvis": BonePose(rotation_degrees=(-2.0, 1.0, -0.5), location_m=(0, 0, 0.004)),
+        "thigh.L": BonePose(rotation_degrees=(-25.0, 0.0, 0.0)),
+        "shin.L": BonePose(rotation_degrees=(60.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "shin.R": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+    })
+    return {
+        "LampshadeIdle": ((0.0, lampshade), (0.25, lamp_idle_left), (0.5, lampshade), (0.75, lamp_idle_right), (1.0, lampshade)),
+        "LampshadeWalk": ((0.0, lamp_left_contact), (0.25, lamp_right_pass), (0.5, lamp_right_contact), (0.75, lamp_left_drag), (1.0, lamp_left_contact)),
+        "ChairCarrierIdle": ((0.0, chair), (0.25, chair_idle_left), (0.5, chair), (0.75, chair_idle_right), (1.0, chair)),
+        "ChairCarrierWalk": ((0.0, chair_left_contact), (0.25, chair_right_pass), (0.5, chair_right_contact), (0.75, chair_left_pass), (1.0, chair_left_contact)),
+    }
+
+
+def validate_animation_library(
+    rig: bpy.types.Object,
+    actions: dict[str, bpy.types.Action],
+    grounding: dict[str, dict[str, object]],
+) -> tuple[str, list[dict]]:
+    errors: list[str] = []
+    manifest_clips: list[dict] = []
+    if [bone.name for bone in rig.data.bones] != [spec.name for spec in SKELETON]:
+        errors.append("Animation rig bone order/names diverge from canonical rig")
+    for spec in ACTION_SPECS:
+        action = actions.get(spec.name)
+        if action is None:
+            errors.append(f"Missing Action {spec.name}")
+            continue
+        curves = list(iter_action_fcurves(action))
+        keyed_names = {
+            curve.data_path.split('pose.bones["', 1)[1].split('"]', 1)[0]
+            for curve in curves
+            if curve.data_path.startswith('pose.bones["')
+        }
+        loop_error = max(
+            (abs(curve.evaluate(0.0) - curve.evaluate(spec.frame_end)) for curve in curves),
+            default=0.0,
+        )
+        root_curves = [
+            curve for curve in curves
+            if curve.data_path == 'pose.bones["root"].location'
+        ]
+        root_ranges = []
+        for axis in range(3):
+            curve = next((item for item in root_curves if item.array_index == axis), None)
+            values = [curve.evaluate(frame) for frame in range(spec.frame_end + 1)] if curve else [0.0]
+            root_ranges.append(stable_float(max(values) - min(values)))
+        if len(keyed_names) != len(SKELETON):
+            errors.append(f"{spec.name} keys {len(keyed_names)} bones, expected {len(SKELETON)}")
+        if loop_error > 0.0001:
+            errors.append(f"{spec.name} loop error is {loop_error:.7f}")
+        if any(value > 0.000001 for value in root_ranges):
+            errors.append(f"{spec.name} root translation is not in-place: {root_ranges}")
+        if bool(action.get("bp_root_motion", True)):
+            errors.append(f"{spec.name} does not disable root motion")
+        clip_payload = {
+            "name": spec.name,
+            "archetype": spec.archetype,
+            "duration_seconds": spec.duration_seconds,
+            "frame_start": 0,
+            "frame_end": spec.frame_end,
+            "loop": True,
+            "in_place": True,
+            "authored_posture": spec.authored_posture,
+            "gait": spec.gait,
+            "keyed_bone_count": len(keyed_names),
+            "loop_max_error": stable_float(loop_error),
+            "root_translation_range_m": root_ranges,
+        }
+        clip_payload.update(grounding.get(spec.name, {}))
+        manifest_clips.append(clip_payload)
+    if errors:
+        raise RuntimeError("Pedestrian animation validation failed:\n" + "\n".join(f"  - {item}" for item in errors))
+    signature_payload = {
+        "generator_version": GENERATOR_VERSION,
+        "fps": ANIMATION_FPS,
+        "bones": [bone.name for bone in SKELETON],
+        "clips": manifest_clips,
+    }
+    signature = hashlib.sha256(
+        json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return signature, manifest_clips
+
+
+def evaluated_part_min_z(part: PartRecord, depsgraph) -> float:
+    evaluated = part.obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        return min(
+            (evaluated.matrix_world @ vertex.co).z
+            for vertex in mesh.vertices
+        )
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def validate_animated_grounding(
+    result: BuildResult,
+    actions: dict[str, bpy.types.Action],
+) -> dict[str, dict[str, object]]:
+    """Sample every frame against each model's real deformed footwear."""
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    footwear = {
+        side: [part for part in result.parts if part.bone == f"foot.{side}"]
+        for side in ("L", "R")
+    }
+    if any(not parts for parts in footwear.values()):
+        raise RuntimeError("Grounding validation needs geometry on both foot bones")
+    reports: dict[str, dict[str, object]] = {}
+    for action_name, action in actions.items():
+        animation_data.action = action
+        contact_gaps: list[float] = []
+        lowest_samples: list[float] = []
+        for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            foot_minima = [
+                min(evaluated_part_min_z(part, depsgraph) for part in footwear[side])
+                for side in ("L", "R")
+            ]
+            lowest_samples.append(min(foot_minima))
+            contact_gaps.append(min(abs(value) for value in foot_minima))
+        lowest = min(lowest_samples)
+        highest_contact_gap = max(contact_gaps)
+        # A baked pelvis correction keeps at least one rigid sole on the
+        # pavement at every exported sample without moving the gameplay root.
+        if lowest < -0.002:
+            raise RuntimeError(
+                f"{action_name} footwear penetrates ground at {lowest:.4f} m"
+            )
+        if highest_contact_gap > 0.002:
+            raise RuntimeError(
+                f"{action_name} loses grounded contact by {highest_contact_gap:.4f} m"
+            )
+        reports[action_name] = {
+            "ground_min_m": stable_float(lowest),
+            "ground_max_contact_gap_m": stable_float(highest_contact_gap),
+        }
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
+    return reports
+
+
+def bake_grounded_pelvis(
+    result: BuildResult,
+    actions: dict[str, bpy.types.Action],
+) -> None:
+    """Bake per-frame pelvis lift so the lower sole touches z=0 exactly."""
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    footwear = [part for part in result.parts if part.bone in {"foot.L", "foot.R"}]
+    if not footwear:
+        raise RuntimeError("Grounding bake needs footwear geometry")
+    for action in actions.values():
+        animation_data.action = action
+        corrections: list[tuple[int, float]] = []
+        for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            lowest = min(evaluated_part_min_z(part, depsgraph) for part in footwear)
+            corrections.append((frame, -lowest))
+        for frame, correction in corrections:
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            pelvis = rig.pose.bones["pelvis"]
+            pose_matrix = pelvis.matrix.copy()
+            pose_matrix.translation.z += correction
+            pelvis.matrix = pose_matrix
+            pelvis.keyframe_insert("location", frame=frame, group="pelvis")
+        for curve in iter_action_fcurves(action):
+            if curve.data_path == 'pose.bones["pelvis"].location':
+                for keyframe in curve.keyframe_points:
+                    keyframe.interpolation = "LINEAR"
+        # Changing a key at frame N can alter the evaluated basis originally
+        # sampled at later frames, so perform one deterministic residual pass.
+        for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            lowest = min(evaluated_part_min_z(part, depsgraph) for part in footwear)
+            pose_matrix = rig.pose.bones["pelvis"].matrix.copy()
+            pose_matrix.translation.z -= lowest
+            rig.pose.bones["pelvis"].matrix = pose_matrix
+            rig.pose.bones["pelvis"].keyframe_insert("location", frame=frame, group="pelvis")
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
+
+
+def export_animation_fbx(path: Path, result: BuildResult) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    result.root.select_set(True)
+    result.rig.select_set(True)
+    bpy.context.view_layer.objects.active = result.rig
+    bpy.ops.export_scene.fbx(
+        filepath=str(path), use_selection=True, object_types={"EMPTY", "ARMATURE"},
+        axis_forward="-Z", axis_up="Y", add_leaf_bones=False, bake_anim=True,
+        bake_anim_use_all_bones=True, bake_anim_use_nla_strips=False,
+        bake_anim_use_all_actions=True, bake_anim_force_startend_keying=True,
+        bake_anim_step=1.0, bake_anim_simplify_factor=0.0,
+        use_armature_deform_only=False, use_custom_props=True,
+    )
+
+
+def write_animation_manifest(path: Path, signature: str, clips: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generator": "tools/build-city-pedestrian-3d-model.py",
+        "generator_version": GENERATOR_VERSION,
+        "blender_version": bpy.app.version_string,
+        "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+        "bone_count": len(SKELETON),
+        "fps": ANIMATION_FPS,
+        "root_motion": False,
+        "mesh_count": 0,
+        "clip_count": len(clips),
+        "clips": clips,
+        "build_signature": signature,
+    }
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def setup_review_stage(result: BuildResult) -> tuple[bpy.types.Object, bpy.types.Object]:
+    scene = bpy.context.scene
+    presentation = bpy.data.collections.get("PRESENTATION_CityPedestrian")
+    if presentation is None:
+        raise RuntimeError("Animation review presentation collection is missing")
+    camera_data = bpy.data.cameras.new("CAM_LocomotionReview")
+    camera = bpy.data.objects.new("CAM_LocomotionReview", camera_data)
+    presentation.objects.link(camera)
+    camera.location = (2.45, -4.55, 1.85)
+    camera.rotation_euler = (Vector((0, 0, 0.90)) - camera.location).to_track_quat("-Z", "Y").to_euler()
+    camera_data.lens = 62
+    scene.camera = camera
+    for name, location, energy, color, radius in (
+        ("ReviewKey", (-2.2, -3.2, 4.0), 850.0, (0.72, 0.82, 0.72), 3.0),
+        ("ReviewRim", (2.5, 1.0, 3.0), 500.0, (0.35, 0.48, 0.42), 2.0),
+    ):
+        data = bpy.data.lights.new(name, "AREA")
+        data.energy = energy
+        data.color = color
+        data.shape = "DISK"
+        data.size = radius
+        light = bpy.data.objects.new(name, data)
+        presentation.objects.link(light)
+        light.location = location
+        light.rotation_euler = (Vector((0, 0, 0.90)) - light.location).to_track_quat("-Z", "Y").to_euler()
+    vertices, faces = make_box((0, 0.25, -0.035), (4.0, 4.0, 0.07))
+    ground_mesh = bpy.data.meshes.new("ReviewGround_Mesh")
+    ground_mesh.from_pydata(vertices, [], faces)
+    ground = bpy.data.objects.new("ReviewGround", ground_mesh)
+    presentation.objects.link(ground)
+    material = bpy.data.materials.new("MAT_ReviewGround")
+    material.diffuse_color = (0.025, 0.040, 0.034, 1)
+    ground.data.materials.append(material)
+    scene.render.resolution_x = 320
+    scene.render.resolution_y = 400
+    scene.render.resolution_percentage = 100
+    return camera, ground
+
+
+def render_animation_contact_sheet(
+    path: Path,
+    source_dir: Path,
+) -> None:
+    """Render idle plus two opposite walk phases for both archetypes."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tiles: list[Path] = []
+    samples = (
+        ("lampshade", "LampshadeIdle", 0),
+        ("lampshade", "LampshadeWalk", 0),
+        ("lampshade", "LampshadeWalk", 15),
+        ("chair_carrier", "ChairCarrierIdle", 0),
+        ("chair_carrier", "ChairCarrierWalk", 0),
+        ("chair_carrier", "ChairCarrierWalk", 12),
+    )
+    for index, (archetype_key, action_name, frame) in enumerate(samples):
+        # Rebuilding swaps the actual production meshes while the action poses
+        # are re-authored deterministically from the same source definitions.
+        result = PedestrianBuilder(ARCHETYPES[archetype_key]).build()
+        local_actions = {
+            spec.name: create_action(result.rig, spec, animation_keys()[spec.name])
+            for spec in ACTION_SPECS
+        }
+        bake_grounded_pelvis(result, local_actions)
+        setup_review_stage(result)
+        result.rig.animation_data_create().action = local_actions[action_name]
+        bpy.context.scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        tile = source_dir / f".locomotion-review-{index}.png"
+        bpy.context.scene.render.filepath = str(tile)
+        bpy.ops.render.render(write_still=True)
+        tiles.append(tile)
+
+    sheet = bpy.data.images.new("CityPedestrianLocomotionContactSheet", 960, 800)
+    pixels = [0.008, 0.012, 0.010, 1.0] * (960 * 800)
+    for index, tile in enumerate(tiles):
+        tile_image = bpy.data.images.load(str(tile), check_existing=False)
+        tile_pixels = list(tile_image.pixels)
+        column = index % 3
+        row = index // 3
+        destination_y = (1 - row) * 400
+        for y in range(400):
+            source_start = y * 320 * 4
+            destination_start = ((destination_y + y) * 960 + column * 320) * 4
+            pixels[destination_start : destination_start + 320 * 4] = tile_pixels[source_start : source_start + 320 * 4]
+        bpy.data.images.remove(tile_image)
+    sheet.pixels = pixels
+    sheet.filepath_raw = str(path)
+    sheet.file_format = "PNG"
+    sheet.save()
+    for tile in tiles:
+        try:
+            tile.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def build_animation_library(config: argparse.Namespace) -> None:
+    # Reuse a freshly validated canonical rig, remove every model mesh, then
+    # author and export only ROOT_Player + RIG_Player + bone Actions.
+    result = PedestrianBuilder(ARCHETYPES["lampshade"]).build()
+    model_parts = list(result.parts)
+    keys = animation_keys()
+    actions = {
+        spec.name: create_action(result.rig, spec, keys[spec.name])
+        for spec in ACTION_SPECS
+    }
+    bake_grounded_pelvis(result, actions)
+    grounding = validate_animated_grounding(result, actions)
+    for part in model_parts:
+        bpy.data.objects.remove(part.obj, do_unlink=True)
+    result.parts.clear()
+    result.root["bp_design_id"] = "city_pedestrian_locomotion_v1"
+    result.root["bp_animation_only"] = True
+    result.root["bp_root_motion"] = False
+    signature, clips = validate_animation_library(result.rig, actions, grounding)
+    fbx_path = config.animation_dir / "CityPedestrianLocomotion.fbx"
+    manifest_path = config.animation_dir / "CityPedestrianLocomotion.json"
+    blend_path = config.source_dir / "CityPedestrianLocomotion.blend"
+    export_animation_fbx(fbx_path, result)
+    write_animation_manifest(manifest_path, signature, clips)
+    save_blend(blend_path)
+    if not config.no_preview:
+        render_animation_contact_sheet(
+            config.source_dir / "CityPedestrianLocomotionContactSheet.png",
+            config.source_dir,
+        )
+    print(f"  locomotion: {len(actions)} Actions, 31 keyed bones, no meshes/root motion")
+    print(f"    Signature: {signature}")
+    print(f"    FBX: {fbx_path}")
+
+
 def main() -> None:
     config = parse_args()
-    result = PedestrianBuilder().build()
-    report = validate_result(result)
-    if not config.no_preview:
-        render_preview(config.preview, result)
-    export_fbx(config.fbx, result)
-    write_manifest(config.manifest, result, report)
-    save_blend(config.output)
-    print("CITY PEDESTRIAN 3D BUILD OK")
+    selected = (
+        tuple(ARCHETYPES.values())
+        if config.archetype == "all"
+        else (ARCHETYPES[config.archetype],)
+    )
+    print("CITY PEDESTRIAN ART BUILD")
     print(f"  Blender: {bpy.app.version_string}")
-    print(f"  Design: {DESIGN_ID}")
-    print(f"  Skeleton bones: {len(SKELETON)} (exact Player Generic hierarchy)")
-    print(f"  Meshes: {report.mesh_count}")
-    print(f"  Triangles: {report.triangle_count}/{MAX_TRIANGLES}")
-    print("  Own animations: 0")
-    print(f"  Signature: {report.build_signature}")
-    print(f"  Blend: {config.output}")
-    print(f"  FBX: {config.fbx}")
-    print(f"  Manifest: {config.manifest}")
-    if not config.no_preview:
-        print(f"  Preview: {config.preview}")
+    reports: list[tuple[ArchetypeSpec, ValidationReport]] = []
+    for spec in selected:
+        result = PedestrianBuilder(spec).build()
+        report = validate_result(result, spec)
+        blend_path = config.source_dir / spec.blend_name
+        fbx_path = config.model_dir / f"{spec.model_name}.fbx"
+        manifest_path = config.model_dir / f"{spec.model_name}.json"
+        preview_path = config.source_dir / spec.preview_name
+        if not config.no_preview:
+            render_preview(preview_path, result, spec)
+        export_fbx(fbx_path, result)
+        write_manifest(manifest_path, result, report, spec)
+        save_blend(blend_path)
+        reports.append((spec, report))
+        print(f"  {spec.design_id}: {report.mesh_count} meshes, {report.triangle_count} triangles")
+        print(f"    Signature: {report.build_signature}")
+        print(f"    Blend: {blend_path}")
+        print(f"    FBX: {fbx_path}")
+    if config.archetype == "all":
+        build_animation_library(config)
+        first_signatures = {
+            spec.design_id: report.build_signature for spec, report in reports
+        }
+        # A second model-only build proves that source geometry and manifests
+        # remain deterministic within the same Blender process.
+        for spec, first_report in reports:
+            rerun = PedestrianBuilder(spec).build()
+            rerun_report = validate_result(rerun, spec)
+            if rerun_report.build_signature != first_report.build_signature:
+                raise RuntimeError(
+                    f"Non-deterministic build signature for {spec.design_id}: "
+                    f"{first_signatures[spec.design_id]} != {rerun_report.build_signature}"
+                )
+        print("  Determinism: repeated model signatures match")
+    print("CITY PEDESTRIAN ART BUILD OK")
 
 
 if __name__ == "__main__":

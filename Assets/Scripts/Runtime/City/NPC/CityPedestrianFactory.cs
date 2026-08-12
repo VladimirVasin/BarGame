@@ -48,7 +48,9 @@ namespace BarPromenade
                 plan,
                 player,
                 walkableArea,
-                CityPedestrianResources.LoadPrefab());
+                CityPedestrianResources.LoadPrefabs(),
+                null,
+                true);
         }
 
         public static CityPedestrianDirector Create(
@@ -58,6 +60,55 @@ namespace BarPromenade
             IWalkableArea walkableArea,
             GameObject presentationPrefab,
             Func<bool> nightModeProvider = null)
+        {
+            int slotCount = plan != null
+                ? Mathf.Min(
+                    plan.Count,
+                    CityPedestrianDirector.MaximumActiveModels)
+                : 0;
+            var presentationPrefabs =
+                new GameObject[Mathf.Max(0, slotCount)];
+            for (int index = 0; index < presentationPrefabs.Length; index++)
+            {
+                presentationPrefabs[index] = presentationPrefab;
+            }
+
+            return Create(
+                parent,
+                plan,
+                player,
+                walkableArea,
+                presentationPrefabs,
+                nightModeProvider,
+                false);
+        }
+
+        public static CityPedestrianDirector Create(
+            Transform parent,
+            CityPedestrianPlan plan,
+            Transform player,
+            IWalkableArea walkableArea,
+            IReadOnlyList<GameObject> presentationPrefabs,
+            Func<bool> nightModeProvider = null)
+        {
+            return Create(
+                parent,
+                plan,
+                player,
+                walkableArea,
+                presentationPrefabs,
+                nightModeProvider,
+                false);
+        }
+
+        private static CityPedestrianDirector Create(
+            Transform parent,
+            CityPedestrianPlan plan,
+            Transform player,
+            IWalkableArea walkableArea,
+            IReadOnlyList<GameObject> presentationPrefabs,
+            Func<bool> nightModeProvider,
+            bool requireUniqueRegisteredDesigns)
         {
             if (parent == null)
             {
@@ -82,11 +133,14 @@ namespace BarPromenade
             int slotCount = Mathf.Min(
                 plan.Count,
                 CityPedestrianDirector.MaximumActiveModels);
-            if (slotCount > 0 && presentationPrefab == null)
+            int presentationCount = presentationPrefabs != null
+                ? presentationPrefabs.Count
+                : 0;
+            if (slotCount > 0 && presentationCount == 0)
             {
                 throw new InvalidOperationException(
-                    "The city pedestrian presentation prefab is missing at " +
-                    $"Resources/{CityPedestrianResources.PrefabResourcePath}.");
+                    "At least one city pedestrian presentation prefab is " +
+                    "required when the plan has an actor slot.");
             }
 
             CityPedestrianCollision.EnsureRuntimePolicy();
@@ -123,9 +177,24 @@ namespace BarPromenade
                 }
 
                 var presentations =
-                    new List<CityPedestrianPresentation>(slotCount);
-                for (int index = 0; index < slotCount; index++)
+                    new List<CityPedestrianPresentation>(
+                        presentationPrefabs != null
+                            ? presentationPrefabs.Count
+                            : 0);
+                for (int index = 0;
+                     presentationPrefabs != null &&
+                     index < presentationPrefabs.Count;
+                     index++)
                 {
+                    GameObject presentationPrefab =
+                        presentationPrefabs[index];
+                    if (presentationPrefab == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"City pedestrian presentation prefab " +
+                            $"{index + 1} is missing.");
+                    }
+
                     if (!CityPedestrianResources.TryInstantiate(
                             presentationPrefab,
                             modelPoolRoot.transform,
@@ -137,8 +206,44 @@ namespace BarPromenade
                     }
 
                     ValidatePassivePresentation(registry);
+                    if (string.IsNullOrWhiteSpace(registry.DesignId))
+                    {
+                        throw new InvalidOperationException(
+                            "Every city pedestrian presentation requires a " +
+                            "stable design ID.");
+                    }
+
+                    if (requireUniqueRegisteredDesigns)
+                    {
+                        if (!CityPedestrianResources.TryGetArchetype(
+                                registry.DesignId,
+                                out _))
+                        {
+                            throw new InvalidOperationException(
+                                $"Pedestrian design '{registry.DesignId}' " +
+                                "is not registered in the ordered catalog.");
+                        }
+
+                        for (int previous = 0;
+                             previous < presentations.Count;
+                             previous++)
+                        {
+                            if (string.Equals(
+                                    presentations[previous]
+                                        .Registry.DesignId,
+                                    registry.DesignId,
+                                    StringComparison.Ordinal))
+                            {
+                                throw new InvalidOperationException(
+                                    "The default pedestrian pool must " +
+                                    "contain one model per design ID.");
+                            }
+                        }
+                    }
+
                     registry.gameObject.name =
-                        $"Pedestrian Model {index + 1:00}";
+                        $"Pedestrian Model {index + 1:00} " +
+                        $"({registry.DesignId})";
                     CityPedestrianPresentation presentation =
                         registry.GetComponent<
                             CityPedestrianPresentation>();

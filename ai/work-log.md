@@ -2,6 +2,37 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
+## 2026-08-12 — Two pedestrian archetypes and bespoke locomotion
+
+- Added the city-wide Chair Carrier (`chair_carrier_v1`): an upright low-poly
+  passer-by carrying an inverted cafe chair whose legs cage the head. The
+  existing Lampshade Walker now keeps a pronounced C-curve, bent knees and
+  withdrawn neck in both idle and its short asymmetric walk, so stopping no
+  longer snaps it back to the hero's upright pose.
+- Added one animation-only Generic locomotion library with dedicated
+  `LampshadeIdle`, `LampshadeWalk`, `ChairCarrierIdle` and `ChairCarrierWalk`
+  loops. Both model FBXs remain animation-free, copy the production Player
+  Avatar and use the shared `Player3DLit` material; their four palette variants
+  remain property-block driven.
+- Replaced the single hard-coded runtime presentation with an explicit ordered
+  archetype catalog and one pooled instance per design. The spawn seed chooses
+  among free presentations, applies archetype-specific movement and cadence,
+  and preserves the existing two-walker daytime / one-walker night caps and the
+  shared City/Home Balcony lifecycle. Added a `0.15 s` idle/walk blend and
+  geometry-based grounding for both boot naming conventions.
+
+Verification:
+
+- The deterministic Blender 5 generator completed with `CITY PEDESTRIAN ART
+  BUILD OK`: Lampshade `38` meshes / `1160` triangles, Chair Carrier `35` /
+  `1032`, four 31-bone loops, zero root translation, zero loop error and zero
+  per-frame sole gap or penetration.
+- Unity rebuilt and validated both production prefabs successfully. Focused
+  EditMode coverage passed `3/3` in `0.41 s`: two parameterized asset/rig/clip/
+  grounding cases plus the catalog spawn, distinct-design pool and speed-range
+  case. Complete suites, player build and packaged smoke were intentionally
+  omitted in fast mode.
+
 ## 2026-08-12 — Route 01 passenger MVP
 
 - Added standard localized E/Enter/gamepad/pointer boarding through both fully

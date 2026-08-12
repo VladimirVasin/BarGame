@@ -146,9 +146,14 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
-  Both slots reuse one lampshade-hood model, four material-property-block
-  palettes and the hero's shared in-place `Idle`/`Walk` clips on a compatible
-  Generic rig. Home transforms that same graph into its local exterior,
+  The pool holds one Lampshade Walker and one Chair Carrier presentation, each
+  with four material-property-block palettes. Both use the compatible Generic
+  Avatar and dedicated in-place `Idle`/`Walk` loops: the Lampshade keeps a
+  persistent hunch and uneven short step, while the chair-burdened walker stays
+  upright with a quicker high-knee gait. A seeded catalog choice fills one slot
+  per event, so two concurrent walkers have distinct silhouettes without
+  raising the two-actor cap. Home transforms that same graph into its local
+  exterior,
   retains a bounded `100 m` fog-hidden approach context beyond the facade while
   rendering its existing `48 m` street slice, and runs the slots only while the
   Balcony shot is active;

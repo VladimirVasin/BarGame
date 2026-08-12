@@ -283,9 +283,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   culled by the clock and leaves only through the same distance rule. Actors
   never reverse at artificial route endpoints: they continue through graph turns,
   avoid immediate backtracking and make one seeded 50% cross/don't-cross
-  choice when passing each zebra entry. The one `1.75 m` lampshade-hood model
-  copies the production Generic Avatar contract and directly references the
-  hero's looping in-place `Idle` and `Walk` clips. Its `CharacterController`
+  choice when passing each zebra entry. An explicit stable catalog owns one
+  pooled `1.75 m` Lampshade Walker and one Chair Carrier presentation. Each
+  copies the production Generic Avatar contract while directly referencing its
+  own looping in-place `Idle` and `Walk` clips from the animation-only
+  pedestrian locomotion FBX. Lampshade clips preserve a hunched C-curve and
+  short asymmetric step in both states; Chair Carrier clips balance the
+  inverted cafe chair with an upright, precise high-knee gait. The director
+  selects among free catalog presentations from the spawn seed and applies the
+  selected archetype's movement/cadence range; when both day slots are active,
+  their silhouettes are therefore distinct. A `0.15 s` locomotion blend avoids
+  idle/walk pose pops while the first spawned frame starts directly in Walk.
+  Its `CharacterController`
   becomes physical only after a successful spawn and presentation bind, and
   is disabled before pooling. The dedicated `CityPedestrian` layer collides
   with the player but not other pedestrians; camera collision and interaction

@@ -1,0 +1,94 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "2.0.0",
+  "blender_version": "5.0.1",
+  "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "mesh_count": 0,
+  "clip_count": 4,
+  "clips": [
+    {
+      "name": "LampshadeIdle",
+      "archetype": "lampshade_walker_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "persistent C-curve, withdrawn neck, bent knees",
+      "gait": "weary asymmetric weight shift",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "LampshadeWalk",
+      "archetype": "lampshade_walker_v1",
+      "duration_seconds": 1.25,
+      "frame_start": 0,
+      "frame_end": 30,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "persistent C-curve, withdrawn neck, bent knees",
+      "gait": "short uneven steps, heavy left boot and quick right recovery",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "ChairCarrierIdle",
+      "archetype": "chair_carrier_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "upright load-balanced spine, hands fixed on shoulder loops",
+      "gait": "small precise weight correction under chair load",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "ChairCarrierWalk",
+      "archetype": "chair_carrier_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "upright load-balanced spine, hands fixed on shoulder loops",
+      "gait": "high-knee precise heel-led steps with minimal arm swing",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    }
+  ],
+  "build_signature": "104e720e15699da492ef04436c182d99b500f9d564698bf722385ff280c040a7"
+}

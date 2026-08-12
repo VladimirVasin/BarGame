@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### 2026-08-12 — Two different walkers now haunt the streets
+
+- The hunched Lampshade Walker now keeps its crooked posture while idle and
+  moves with short, uneven, heavy steps instead of borrowing the hero's walk.
+- A second city-wide passer-by can now appear: the Chair Carrier walks upright
+  with high, precise steps while an upside-down cafe chair is strapped behind
+  the shoulders and frames the head with its legs.
+- City streets and the view below the Home balcony draw from both silhouettes.
+  Up to two daytime walkers can still exist at once, now one of each design;
+  the quieter one-walker night limit is unchanged.
+
 ### 2026-08-12 — Route 01 now carries the hero
 
 - When Route 01 stops and opens its doors, the standard localized interaction

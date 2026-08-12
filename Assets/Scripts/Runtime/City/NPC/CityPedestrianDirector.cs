@@ -39,6 +39,7 @@ namespace BarPromenade
         public const float StaticClearanceLift = 0.03f;
 
         private const uint SpeedSalt = 0x53504545u;
+        private const uint ArchetypeSalt = 0x41524348u;
         private const uint AnimationSpeedSalt = 0x414E5350u;
         private const uint AnimationPhaseSalt = 0x50484153u;
         private const uint PaletteSalt = 0x50414C45u;
@@ -129,11 +130,11 @@ namespace BarPromenade
             }
 
             if (routeActors.Count > MaximumActiveModels ||
-                pooledPresentations.Count != routeActors.Count)
+                (routeActors.Count > 0 && pooledPresentations.Count == 0))
             {
                 throw new ArgumentException(
-                    "Pedestrian actor and presentation pools must match " +
-                    "and stay within the active cap.");
+                    "The pedestrian actor pool must stay within the active " +
+                    "cap and have at least one presentation when non-empty.");
             }
 
             for (int index = 0; index < routeActors.Count; index++)
@@ -227,8 +228,10 @@ namespace BarPromenade
                 spawnCooldown - safeDeltaTime);
             ReleaseDistantActors();
             if (ActiveCount < Mathf.Min(
-                    presentationPool.Count,
-                    CurrentActiveLimit) &&
+                    actors.Count,
+                    Mathf.Min(
+                        presentationPool.Count,
+                        CurrentActiveLimit)) &&
                 spawnCooldown <= 0f)
             {
                 RefreshInitialApproachRoutes();
@@ -345,9 +348,7 @@ namespace BarPromenade
         private bool TrySpawnOne()
         {
             int actorIndex = FindAvailableActorIndex();
-            CityPedestrianPresentation available =
-                FindAvailablePresentation();
-            if (actorIndex < 0 || available == null ||
+            if (actorIndex < 0 ||
                 !TryFindSpawnCandidate(out SpawnCandidate candidate))
             {
                 return false;
@@ -358,13 +359,30 @@ namespace BarPromenade
             uint spawnSeed = CityPedestrianStableHash.Combine(
                 NextRandomUInt(),
                 CityPedestrianStableHash.String(candidate.Anchor.Id));
+            CityPedestrianPresentation available =
+                FindAvailablePresentation(spawnSeed);
+            if (available == null)
+            {
+                return false;
+            }
+
+            CityPedestrianArchetype archetype =
+                GetArchetype(available);
             float speed = LerpFromHash(
-                CityPedestrianPlanner.MinimumSpeed,
-                CityPedestrianPlanner.MaximumSpeed,
+                archetype != null
+                    ? archetype.MinimumMovementSpeed
+                    : CityPedestrianPlanner.MinimumSpeed,
+                archetype != null
+                    ? archetype.MaximumMovementSpeed
+                    : CityPedestrianPlanner.MaximumSpeed,
                 CityPedestrianStableHash.Combine(spawnSeed, SpeedSalt));
             float animationSpeed = LerpFromHash(
-                CityPedestrianPlanner.MinimumAnimationSpeed,
-                CityPedestrianPlanner.MaximumAnimationSpeed,
+                archetype != null
+                    ? archetype.MinimumAnimationSpeed
+                    : CityPedestrianPlanner.MinimumAnimationSpeed,
+                archetype != null
+                    ? archetype.MaximumAnimationSpeed
+                    : CityPedestrianPlanner.MaximumAnimationSpeed,
                 CityPedestrianStableHash.Combine(
                     spawnSeed,
                     AnimationSpeedSalt));
@@ -889,33 +907,78 @@ namespace BarPromenade
             return -1;
         }
 
-        private CityPedestrianPresentation FindAvailablePresentation()
+        private CityPedestrianPresentation FindAvailablePresentation(
+            uint spawnSeed)
         {
+            int availableCount = 0;
             for (int index = 0;
                  index < presentationPool.Count;
                  index++)
             {
                 CityPedestrianPresentation candidate =
                     presentationPool[index];
-                bool inUse = false;
-                for (int actorIndex = 0;
-                     actorIndex < actors.Count;
-                     actorIndex++)
+                if (IsPresentationInUse(candidate))
                 {
-                    if (actors[actorIndex].Presentation == candidate)
-                    {
-                        inUse = true;
-                        break;
-                    }
+                    continue;
                 }
 
-                if (!inUse)
+                availableCount++;
+            }
+
+            if (availableCount == 0)
+            {
+                return null;
+            }
+
+            int selection = (int)(
+                CityPedestrianStableHash.Combine(
+                    spawnSeed,
+                    ArchetypeSalt) %
+                (uint)availableCount);
+            for (int index = 0;
+                 index < presentationPool.Count;
+                 index++)
+            {
+                CityPedestrianPresentation candidate =
+                    presentationPool[index];
+                if (IsPresentationInUse(candidate))
+                {
+                    continue;
+                }
+
+                if (selection-- == 0)
                 {
                     return candidate;
                 }
             }
 
             return null;
+        }
+
+        private bool IsPresentationInUse(
+            CityPedestrianPresentation presentation)
+        {
+            for (int index = 0; index < actors.Count; index++)
+            {
+                if (actors[index].Presentation == presentation)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static CityPedestrianArchetype GetArchetype(
+            CityPedestrianPresentation presentation)
+        {
+            return presentation != null &&
+                   presentation.Registry != null &&
+                   CityPedestrianResources.TryGetArchetype(
+                       presentation.Registry.DesignId,
+                       out CityPedestrianArchetype archetype)
+                ? archetype
+                : null;
         }
 
         private bool IsAnchorReserved(string anchorId)

@@ -55,6 +55,12 @@ namespace BarPromenade
         public int TargetNodeIndex => targetNodeIndex;
         public float AgentRadius => agentRadius;
         public string SpawnAnchorId { get; private set; } = string.Empty;
+        public string DesignId => presentation != null &&
+                                  presentation.Registry != null
+            ? presentation.Registry.DesignId
+            : string.Empty;
+        public float MovementSpeed => speed;
+        public float AnimationSpeed => animationSpeed;
         public bool RouteEnded =>
             MotionState == CityPedestrianMotionState.RouteEnded;
         public int CrosswalkDecisionCount { get; private set; }
@@ -194,7 +200,7 @@ namespace BarPromenade
             presentation.Registry.ApplyPaletteVariant(paletteVariant);
             presentation.gameObject.SetActive(true);
             presentation.ConfigureCycle(animationSpeed, animationPhase01);
-            presentation.Advance(0f, true);
+            presentation.Advance(0f, true, true);
             characterController.enabled = true;
         }
 

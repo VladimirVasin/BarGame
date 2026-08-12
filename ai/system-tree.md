@@ -70,6 +70,7 @@ Assets/
       Player3DPortrait.png              transparent inventory portrait from 3D model
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
+      ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
@@ -104,6 +105,11 @@ Assets/
     Models/
       CityPedestrian3D.fbx              compatible Generic street-walker model
       CityPedestrian3D.json             deterministic geometry/rig manifest
+      ChairCarrierPedestrian3D.fbx      compatible Generic chair-bearer model
+      ChairCarrierPedestrian3D.json     deterministic geometry/rig manifest
+    Animations/
+      CityPedestrianLocomotion.fbx      four dedicated in-place archetype loops
+      CityPedestrianLocomotion.json     deterministic gait/contact manifest
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -199,7 +205,7 @@ Assets/
         CityPedestrianPlanner.cs       sidewalk turns + zebra connector graph
         CityPedestrianActor.cs         forward graph walk + seeded zebra choice
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
-        CityPedestrianPresentation.cs  shared Idle/Walk PlayableGraph
+        CityPedestrianPresentation.cs  archetype Idle/Walk blend + grounding
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
@@ -369,7 +375,7 @@ ArtSource/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
-    Blender/                    Lampshade Walker .blend and deterministic preview
+    Blender/                    two model .blends/previews + locomotion contact sheet
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     Blender/                    production .blend, transparent preview and authoring notes

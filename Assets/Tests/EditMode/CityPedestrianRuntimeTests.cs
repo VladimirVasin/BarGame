@@ -9,20 +9,45 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityPedestrianRuntimeTests
     {
-        private const string ModelPath =
+        private const string LampshadeModelPath =
             "Assets/Pedestrians/Models/CityPedestrian3D.fbx";
+        private const string ChairCarrierModelPath =
+            "Assets/Pedestrians/Models/ChairCarrierPedestrian3D.fbx";
+        private const string LocomotionAnimationPath =
+            "Assets/Pedestrians/Animations/" +
+            "CityPedestrianLocomotion.fbx";
         private const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
-        private const string PlayerAnimationPath =
-            "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx";
         private const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
 
-        [Test]
-        public void ProductionPrefab_ReusesPlayerRigClipsAndGroundsWalk()
+        [TestCase(
+            LampshadeModelPath,
+            CityPedestrianResources.LampshadePrefabResourcePath,
+            CityPedestrianResources.LampshadeDesignId,
+            1160,
+            38,
+            "LampshadeIdle",
+            "LampshadeWalk")]
+        [TestCase(
+            ChairCarrierModelPath,
+            CityPedestrianResources.ChairCarrierPrefabResourcePath,
+            CityPedestrianResources.ChairCarrierDesignId,
+            1032,
+            35,
+            "ChairCarrierIdle",
+            "ChairCarrierWalk")]
+        public void ProductionPrefabs_UseCustomLocomotionAndGroundedWalk(
+            string modelPath,
+            string prefabResourcePath,
+            string designId,
+            int triangleCount,
+            int rendererCount,
+            string idleClipName,
+            string walkClipName)
         {
             ModelImporter importer =
-                AssetImporter.GetAtPath(ModelPath) as ModelImporter;
+                AssetImporter.GetAtPath(modelPath) as ModelImporter;
             Assert.That(importer, Is.Not.Null);
             Assert.That(
                 importer.animationType,
@@ -39,16 +64,55 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(importer.optimizeGameObjects, Is.False);
             Assert.That(importer.addCollider, Is.False);
             Assert.That(
-                AssetDatabase.LoadAllAssetsAtPath(ModelPath)
+                AssetDatabase.LoadAllAssetsAtPath(modelPath)
                     .OfType<AnimationClip>()
                     .Where(clip => !clip.name.StartsWith(
                         "__preview__",
                         StringComparison.Ordinal)),
                 Is.Empty,
-                "The pedestrian FBX must not duplicate Player animations.");
+                "A pedestrian model FBX must remain animation-free.");
+
+            ModelImporter locomotionImporter =
+                AssetImporter.GetAtPath(LocomotionAnimationPath) as
+                    ModelImporter;
+            Assert.That(locomotionImporter, Is.Not.Null);
+            Assert.That(
+                locomotionImporter.animationType,
+                Is.EqualTo(ModelImporterAnimationType.Generic));
+            Assert.That(
+                locomotionImporter.avatarSetup,
+                Is.EqualTo(ModelImporterAvatarSetup.CopyFromOther));
+            Assert.That(locomotionImporter.sourceAvatar, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(locomotionImporter.sourceAvatar),
+                Is.EqualTo(PlayerModelPath));
+            Assert.That(locomotionImporter.importAnimation, Is.True);
+            AnimationClip[] locomotionClips =
+                AssetDatabase.LoadAllAssetsAtPath(LocomotionAnimationPath)
+                    .OfType<AnimationClip>()
+                    .Where(clip => !clip.name.StartsWith(
+                        "__preview__",
+                        StringComparison.Ordinal))
+                    .OrderBy(clip => clip.name, StringComparer.Ordinal)
+                    .ToArray();
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    "ChairCarrierIdle",
+                    "ChairCarrierWalk",
+                    "LampshadeIdle",
+                    "LampshadeWalk"
+                },
+                locomotionClips.Select(
+                    clip => NormalizeAnimationClipName(clip.name)));
+            Assert.That(locomotionClips, Has.Length.EqualTo(4));
+            Assert.That(
+                locomotionClips.All(clip => clip.isLooping),
+                Is.True,
+                "All four custom pedestrian locomotion clips must loop.");
 
             GameObject pedestrianPrefab =
-                CityPedestrianResources.LoadPrefab();
+                Resources.Load<GameObject>(prefabResourcePath);
             GameObject playerPrefab = Player3DResources.LoadPrefab();
             Material sharedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
@@ -72,9 +136,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 registry.Animator.cullingMode,
                 Is.EqualTo(AnimatorCullingMode.CullUpdateTransforms));
-            Assert.That(registry.DesignId, Is.EqualTo("lampshade_walker_v1"));
-            Assert.That(registry.SourceTriangleCount, Is.EqualTo(1160));
-            Assert.That(registry.Renderers.Count, Is.EqualTo(38));
+            Assert.That(registry.DesignId, Is.EqualTo(designId));
+            Assert.That(
+                registry.SourceTriangleCount,
+                Is.EqualTo(triangleCount));
+            Assert.That(registry.Renderers.Count, Is.EqualTo(rendererCount));
             Assert.That(
                 registry.LocalBounds.min.y,
                 Is.EqualTo(0f).Within(0.025f));
@@ -83,22 +149,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(1.75f).Within(0.035f));
             Assert.That(
                 AssetDatabase.GetAssetPath(registry.IdleClip),
-                Is.EqualTo(PlayerAnimationPath));
+                Is.EqualTo(LocomotionAnimationPath));
             Assert.That(
                 AssetDatabase.GetAssetPath(registry.WalkClip),
-                Is.EqualTo(PlayerAnimationPath));
+                Is.EqualTo(LocomotionAnimationPath));
             Assert.That(
-                playerRegistry.TryGetAnimation(
-                    "Idle",
-                    out Player3DAnimationBinding idle),
-                Is.True);
+                NormalizeAnimationClipName(registry.IdleClip.name),
+                Is.EqualTo(idleClipName));
             Assert.That(
-                playerRegistry.TryGetAnimation(
-                    "Walk",
-                    out Player3DAnimationBinding walk),
-                Is.True);
-            Assert.That(registry.IdleClip, Is.SameAs(idle.Clip));
-            Assert.That(registry.WalkClip, Is.SameAs(walk.Clip));
+                NormalizeAnimationClipName(registry.WalkClip.name),
+                Is.EqualTo(walkClipName));
             Assert.That(registry.IdleClip.isLooping, Is.True);
             Assert.That(registry.WalkClip.isLooping, Is.True);
 
@@ -253,7 +313,7 @@ namespace BarPromenade.Tests.EditMode
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    CityPedestrianResources.LoadPrefab(),
+                    CityPedestrianResources.LoadPrefabs(),
                     () => false);
 
                 Assert.That(
@@ -301,6 +361,33 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianActor[] active = director.Actors
                     .Where(candidate => candidate.IsSpawned)
                     .ToArray();
+                CollectionAssert.AreEquivalent(
+                    CityPedestrianResources.Archetypes
+                        .Select(archetype => archetype.DesignId)
+                        .ToArray(),
+                    active.Select(candidate => candidate.DesignId)
+                        .ToArray(),
+                    "The two active production slots must use distinct " +
+                    "registered pedestrian designs.");
+                for (int index = 0; index < active.Length; index++)
+                {
+                    Assert.That(
+                        CityPedestrianResources.TryGetArchetype(
+                            active[index].DesignId,
+                            out CityPedestrianArchetype archetype),
+                        Is.True);
+                    Assert.That(
+                        active[index].MovementSpeed,
+                        Is.InRange(
+                            archetype.MinimumMovementSpeed,
+                            archetype.MaximumMovementSpeed));
+                    Assert.That(
+                        active[index].AnimationSpeed,
+                        Is.InRange(
+                            archetype.MinimumAnimationSpeed,
+                            archetype.MaximumAnimationSpeed));
+                }
+
                 Assert.That(
                     active.Select(candidate => candidate.SpawnAnchorId)
                         .Distinct(StringComparer.Ordinal).Count(),
@@ -986,15 +1073,25 @@ namespace BarPromenade.Tests.EditMode
                 presentation =
                     instance.AddComponent<CityPedestrianPresentation>();
                 presentation.Initialize(registry);
-                float neutralHeight = GetLowestBootSoleHeight(registry);
+                float animationSpeed = 0.91f;
+                if (CityPedestrianResources.TryGetArchetype(
+                        registry.DesignId,
+                        out CityPedestrianArchetype archetype))
+                {
+                    animationSpeed =
+                        (archetype.MinimumAnimationSpeed +
+                         archetype.MaximumAnimationSpeed) * 0.5f;
+                }
+
+                float neutralHeight = GetLowestSoleHeight(registry);
                 presentation.SetMoving(true);
                 for (int phase = 0; phase < 12; phase++)
                 {
                     presentation.ConfigureCycle(
-                        0.91f,
+                        animationSpeed,
                         phase / 12f);
                     Assert.That(
-                        GetLowestBootSoleHeight(registry),
+                        GetLowestSoleHeight(registry),
                         Is.EqualTo(neutralHeight).Within(0.025f),
                         $"Walk phase {phase}/12 lost the grounded sole.");
                 }
@@ -1006,10 +1103,11 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        private static float GetLowestBootSoleHeight(
+        private static float GetLowestSoleHeight(
             CityPedestrianAssetRegistry registry)
         {
             float lowest = float.PositiveInfinity;
+            int soleRendererCount = 0;
             for (int index = 0;
                  index < registry.RendererBindings.Count;
                  index++)
@@ -1017,14 +1115,13 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianRendererBinding binding =
                     registry.RendererBindings[index];
                 if (binding == null ||
-                    binding.RendererName.IndexOf(
-                        "BootSole",
-                        StringComparison.Ordinal) < 0 ||
+                    !IsSoleRenderer(binding.RendererName) ||
                     !(binding.Renderer is SkinnedMeshRenderer renderer))
                 {
                     continue;
                 }
 
+                soleRendererCount++;
                 Mesh baked = new Mesh();
                 try
                 {
@@ -1047,10 +1144,39 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(
-                float.IsPositiveInfinity(lowest),
-                Is.False,
-                "The production pedestrian must expose both boot soles.");
+                soleRendererCount,
+                Is.EqualTo(2),
+                "The production pedestrian must expose both sole meshes.");
+            Assert.That(float.IsPositiveInfinity(lowest), Is.False);
             return lowest;
+        }
+
+        private static bool IsSoleRenderer(string rendererName)
+        {
+            if (string.IsNullOrEmpty(rendererName))
+            {
+                return false;
+            }
+
+            return rendererName.IndexOf(
+                       "BootSole",
+                       StringComparison.Ordinal) >= 0 ||
+                   rendererName.IndexOf(
+                       "ShoeSole",
+                       StringComparison.Ordinal) >= 0;
+        }
+
+        private static string NormalizeAnimationClipName(string clipName)
+        {
+            if (string.IsNullOrEmpty(clipName))
+            {
+                return clipName;
+            }
+
+            int separator = clipName.LastIndexOf('|');
+            return separator >= 0 && separator + 1 < clipName.Length
+                ? clipName.Substring(separator + 1)
+                : clipName;
         }
 
         private static CityPedestrianActor CreateBoundActor(

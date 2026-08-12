@@ -13,6 +13,8 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityPedestrianPresentation : MonoBehaviour
     {
+        public const float LocomotionBlendDuration = 0.15f;
+
         private PlayableGraph graph;
         private AnimationMixerPlayable locomotionMixer;
         private AnimationClipPlayable idlePlayable;
@@ -20,6 +22,7 @@ namespace BarPromenade
         private CityPedestrianAssetRegistry registry;
         private Vector3 modelBaseLocalPosition;
         private float animationSpeed = 0.91f;
+        private float targetWalkWeight;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
         private FootGroundingProbe footGroundingProbe;
@@ -48,7 +51,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The city pedestrian registry requires an Animator and " +
-                    "shared Idle/Walk clips.");
+                    "archetype Idle/Walk clips.");
             }
 
             Animator animator = registry.Animator;
@@ -80,9 +83,9 @@ namespace BarPromenade
             animationSpeed = Mathf.Clamp(
                 IsFinite(walkAnimationSpeed)
                     ? walkAnimationSpeed
-                    : CityPedestrianPlanner.MinimumAnimationSpeed,
-                CityPedestrianPlanner.MinimumAnimationSpeed,
-                CityPedestrianPlanner.MaximumAnimationSpeed);
+                    : GetMinimumAnimationSpeed(),
+                GetMinimumAnimationSpeed(),
+                GetMaximumAnimationSpeed());
             float phase = IsFinite(phase01)
                 ? Mathf.Repeat(phase01, 1f)
                 : 0f;
@@ -95,26 +98,60 @@ namespace BarPromenade
 
         public void SetMoving(bool moving)
         {
+            SetMoving(moving, true);
+        }
+
+        public void SetMoving(bool moving, bool immediately)
+        {
             if (!IsInitialized || !locomotionMixer.IsValid())
             {
                 return;
             }
 
             IsMoving = moving;
-            WalkWeight = moving ? 1f : 0f;
+            targetWalkWeight = moving ? 1f : 0f;
+            if (immediately)
+            {
+                WalkWeight = targetWalkWeight;
+            }
+
+            ApplyMixerWeights();
+        }
+
+        private void ApplyMixerWeights()
+        {
             locomotionMixer.SetInputWeight(0, 1f - WalkWeight);
             locomotionMixer.SetInputWeight(1, WalkWeight);
         }
 
         public void Advance(float deltaTime, bool moving)
         {
+            Advance(deltaTime, moving, false);
+        }
+
+        public void Advance(
+            float deltaTime,
+            bool moving,
+            bool immediately)
+        {
             if (!IsInitialized)
             {
                 return;
             }
 
-            SetMoving(moving);
-            EvaluateGraph(SanitizeDeltaTime(deltaTime));
+            float safeDeltaTime = SanitizeDeltaTime(deltaTime);
+            SetMoving(moving, immediately);
+            if (!immediately &&
+                Mathf.Abs(WalkWeight - targetWalkWeight) > 0.0001f)
+            {
+                WalkWeight = Mathf.MoveTowards(
+                    WalkWeight,
+                    targetWalkWeight,
+                    safeDeltaTime / LocomotionBlendDuration);
+                ApplyMixerWeights();
+            }
+
+            EvaluateGraph(safeDeltaTime);
         }
 
         public void Shutdown()
@@ -133,6 +170,7 @@ namespace BarPromenade
             IsInitialized = false;
             IsMoving = false;
             WalkWeight = 0f;
+            targetWalkWeight = 0f;
             footGroundingProbe = null;
             registry = null;
         }
@@ -216,6 +254,7 @@ namespace BarPromenade
         {
             IsMoving = false;
             WalkWeight = 0f;
+            targetWalkWeight = 0f;
             if (locomotionMixer.IsValid())
             {
                 locomotionMixer.SetInputWeight(0, 1f);
@@ -285,15 +324,23 @@ namespace BarPromenade
                     }
 
                     Transform foot = null;
-                    if (binding.RendererName.IndexOf(
-                            "LeftBootSole",
-                            StringComparison.Ordinal) >= 0)
+                    string rendererName = binding.RendererName ??
+                                          string.Empty;
+                    if (ContainsOrdinal(
+                            rendererName,
+                            "LeftBootSole") ||
+                        ContainsOrdinal(
+                            rendererName,
+                            "ShoeSole.L"))
                     {
                         foot = assetRegistry.LeftFootAnchor;
                     }
-                    else if (binding.RendererName.IndexOf(
-                                 "RightBootSole",
-                                 StringComparison.Ordinal) >= 0)
+                    else if (ContainsOrdinal(
+                                 rendererName,
+                                 "RightBootSole") ||
+                             ContainsOrdinal(
+                                 rendererName,
+                                 "ShoeSole.R"))
                     {
                         foot = assetRegistry.RightFootAnchor;
                     }
@@ -310,6 +357,15 @@ namespace BarPromenade
                 return points.Count > 0
                     ? new FootGroundingProbe(points.ToArray())
                     : null;
+            }
+
+            private static bool ContainsOrdinal(
+                string value,
+                string pattern)
+            {
+                return value.IndexOf(
+                    pattern,
+                    StringComparison.Ordinal) >= 0;
             }
 
             public bool TryGetLowestHeight(out float height)
@@ -397,6 +453,26 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private float GetMinimumAnimationSpeed()
+        {
+            return registry != null &&
+                   CityPedestrianResources.TryGetArchetype(
+                       registry.DesignId,
+                       out CityPedestrianArchetype archetype)
+                ? archetype.MinimumAnimationSpeed
+                : CityPedestrianPlanner.MinimumAnimationSpeed;
+        }
+
+        private float GetMaximumAnimationSpeed()
+        {
+            return registry != null &&
+                   CityPedestrianResources.TryGetArchetype(
+                       registry.DesignId,
+                       out CityPedestrianArchetype archetype)
+                ? archetype.MaximumAnimationSpeed
+                : CityPedestrianPlanner.MaximumAnimationSpeed;
         }
     }
 }
