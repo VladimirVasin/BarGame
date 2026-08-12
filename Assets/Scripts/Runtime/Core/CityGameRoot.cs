@@ -11,6 +11,11 @@ namespace BarPromenade
         public CityWorldResult World { get; private set; }
         public CityNightWorldResult Night { get; private set; }
         public CityDayNightController DayNight { get; private set; }
+        public CityRainField Rain { get; private set; }
+        public CityRainSoundPlayer RainSound { get; private set; }
+        public CityLightningFlashLight Lightning { get; private set; }
+        public CityThunderSoundPlayer Thunder { get; private set; }
+        public CityWeatherController Weather { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
         public CityAmbiencePlayer Ambience { get; private set; }
@@ -294,6 +299,36 @@ namespace BarPromenade
                 "city",
                 "bus_stop_waits_planned",
                 GameLog.Field("wait_points", BusStopWaits.Count));
+            GameObject rainObject = new GameObject("City Rain Field");
+            rainObject.transform.SetParent(transform, false);
+            Rain = rainObject.AddComponent<CityRainField>();
+            Rain.Initialize(
+                Player.GameObject.transform,
+                CityNightResources.AtmosphereMaterial,
+                Layout.Seed,
+                GameWeatherRules.EvaluateCurrent().RainIntensity);
+            GameObject rainSoundObject =
+                new GameObject("City Rain Sound");
+            rainSoundObject.transform.SetParent(transform, false);
+            RainSound =
+                rainSoundObject.AddComponent<CityRainSoundPlayer>();
+            GameObject lightningObject =
+                new GameObject("City Lightning Flash");
+            lightningObject.transform.SetParent(transform, false);
+            Lightning =
+                lightningObject.AddComponent<CityLightningFlashLight>();
+            GameObject thunderObject =
+                new GameObject("City Thunder Sound");
+            thunderObject.transform.SetParent(transform, false);
+            Thunder =
+                thunderObject.AddComponent<CityThunderSoundPlayer>();
+            Weather = gameObject.AddComponent<CityWeatherController>();
+            Weather.Initialize(
+                Rain,
+                RainSound,
+                Lightning,
+                Thunder,
+                () => BusRide != null && BusRide.IsPassengerAboard);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(

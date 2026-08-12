@@ -23,12 +23,25 @@ namespace BarPromenade
         private VolumeProfile runtimeCityProfile;
         private DayNightVisualSample exteriorLightingSample;
         private bool hasExteriorLightingSample;
+        private long lastThunderStrikeId = long.MinValue;
 
         public bool IsInitialized { get; private set; }
         public bool IsBalconyVisibilityActive { get; private set; }
         public Transform ExteriorRoot { get; private set; }
         public Transform FogAnchor { get; private set; }
         public CityFogField FogField { get; private set; }
+        public CityRainField RainField { get; private set; }
+        public CityRainSoundPlayer RainSound { get; private set; }
+        public CityLightningFlashLight LightningFlash
+        {
+            get;
+            private set;
+        }
+        public CityThunderSoundPlayer ThunderSound
+        {
+            get;
+            private set;
+        }
         public CityNightAtmosphere ExteriorLighting { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
         public Volume CityPostProcessVolume { get; private set; }
@@ -144,10 +157,40 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (IsInitialized)
+            if (!IsInitialized)
             {
-                RefreshVisibility(false);
+                return;
             }
+
+            RefreshVisibility(false);
+            WeatherVisualSample weather =
+                GameWeatherRules.EvaluateCurrent();
+            RainField.SetIntensity(weather.RainIntensity);
+            RainSound.SetIntensity(
+                IsBalconyVisibilityActive
+                    ? weather.RainIntensity
+                    : 0f);
+            ApplyLightning();
+        }
+
+        private void ApplyLightning()
+        {
+            bool timeFlowing =
+                GameSessionState.IsGameTimeRunning &&
+                Time.timeScale > 0f;
+            LightningSample sample =
+                IsBalconyVisibilityActive && timeFlowing
+                    ? GameWeatherRules.EvaluateCurrentLightning()
+                    : LightningSample.None;
+            LightningFlash.Apply(sample);
+            if (!sample.IsFlashing ||
+                sample.StrikeId == lastThunderStrikeId)
+            {
+                return;
+            }
+
+            lastThunderStrikeId = sample.StrikeId;
+            ThunderSound.PlayStrike(sample.DistanceFactor);
         }
 
         private void OnDisable()
@@ -186,6 +229,32 @@ namespace BarPromenade
                 FogAnchor,
                 CityNightResources.AtmosphereMaterial,
                 citySeed);
+
+            GameObject rainObject = new GameObject(
+                "Home Exterior Rain Field");
+            rainObject.transform.SetParent(ExteriorRoot, false);
+            RainField = rainObject.AddComponent<CityRainField>();
+            RainField.Initialize(
+                FogAnchor,
+                CityNightResources.AtmosphereMaterial,
+                citySeed,
+                GameWeatherRules.EvaluateCurrent().RainIntensity);
+
+            GameObject rainSoundObject = new GameObject(
+                "Home Exterior Rain Sound");
+            rainSoundObject.transform.SetParent(ExteriorRoot, false);
+            RainSound =
+                rainSoundObject.AddComponent<CityRainSoundPlayer>();
+            GameObject lightningObject = new GameObject(
+                "Home Exterior Lightning Flash");
+            lightningObject.transform.SetParent(ExteriorRoot, false);
+            LightningFlash = lightningObject
+                .AddComponent<CityLightningFlashLight>();
+            GameObject thunderObject = new GameObject(
+                "Home Exterior Thunder Sound");
+            thunderObject.transform.SetParent(ExteriorRoot, false);
+            ThunderSound = thunderObject
+                .AddComponent<CityThunderSoundPlayer>();
         }
 
         private void BuildExteriorLighting(
@@ -264,6 +333,7 @@ namespace BarPromenade
                     RuntimeSceneSetup.ApplyCityExteriorLighting();
                 }
                 FogField.FogRenderer.enabled = true;
+                RainField.RainRenderer.enabled = true;
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;
                 SetPedestriansActive(true);
@@ -272,6 +342,7 @@ namespace BarPromenade
 
             SetPedestriansActive(false);
             FogField.FogRenderer.enabled = false;
+            RainField.RainRenderer.enabled = false;
             SetExteriorLightingEnabled(false);
             CityPostProcessVolume.weight = 0f;
             homeVisibility.Restore(targetCamera);
@@ -307,6 +378,19 @@ namespace BarPromenade
                 FogField.FogRenderer != null)
             {
                 FogField.FogRenderer.enabled = false;
+            }
+            if (RainField != null &&
+                RainField.RainRenderer != null)
+            {
+                RainField.RainRenderer.enabled = false;
+            }
+            if (RainSound != null)
+            {
+                RainSound.SetIntensity(0f);
+            }
+            if (LightningFlash != null)
+            {
+                LightningFlash.Apply(LightningSample.None);
             }
             IsBalconyVisibilityActive = false;
         }
