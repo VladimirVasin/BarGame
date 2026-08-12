@@ -19,6 +19,18 @@ namespace BarPromenade
         public const float CollisionCenterHeight = 0.85f;
         public const float TurnSpeedDegrees = 360f;
 
+        /// <summary>
+        /// A `1 m` sidewalk minus a `0.35 m` agent leaves this much room to
+        /// either side of the lane centre. It is a shoulder-shift, not a way
+        /// past: two walkers would need `0.70 m` of separation to pass, and
+        /// the pavement does not have it.
+        /// </summary>
+        public const float MaximumLateralOffset = 0.15f;
+        public const float LateralOffsetSpeed = 0.5f;
+        public const float ArrivalRadius = 0.18f;
+        public const float BlockedEscapeSeconds = 1.5f;
+        public const float BlockedDisplacementFraction = 0.25f;
+
         private readonly List<int> normalCandidates = new List<int>(4);
         private readonly List<int> crosswalkCandidates = new List<int>(2);
         private IWalkableArea walkableArea;
@@ -35,6 +47,10 @@ namespace BarPromenade
         private int paletteVariant;
         private uint randomState;
         private bool isPrepared;
+        private float lateralOffset;
+        private float requestedLateralBias;
+        private float requestedSpeedScale = 1f;
+        private float blockedTime;
         private float? forcedCrosswalkRoll;
         private Vector3? approachTarget;
         private IReadOnlyList<float> approachNodeDistances;
@@ -66,6 +82,24 @@ namespace BarPromenade
         public int CrosswalkDecisionCount { get; private set; }
         public int CrosswalksTaken { get; private set; }
         public Vector3 TravelDirection => GetTravelDirection();
+        public float LateralOffset => lateralOffset;
+        public float BlockedTime => blockedTime;
+        public int DetourCount { get; private set; }
+
+        /// <summary>
+        /// Asks this walker to make room without stopping: a speed scale for
+        /// queueing behind someone slower, and a shoulder-shift bias where
+        /// `+1` leans to its own right.
+        /// </summary>
+        public void SetAvoidance(float speedScale, float lateralBias)
+        {
+            requestedSpeedScale = IsFinite(speedScale)
+                ? Mathf.Clamp01(speedScale)
+                : 1f;
+            requestedLateralBias = IsFinite(lateralBias)
+                ? Mathf.Clamp(lateralBias, -1f, 1f)
+                : 0f;
+        }
 
         public void Initialize(
             IWalkableArea allowedWalkableArea,
@@ -251,6 +285,17 @@ namespace BarPromenade
             {
                 moving = AdvanceWalking(safeDeltaTime);
             }
+            else if (IsYielding)
+            {
+                // A yield that never clears is a deadlock, not courtesy.
+                blockedTime += safeDeltaTime;
+            }
+
+            if (blockedTime >= BlockedEscapeSeconds &&
+                MotionState == CityPedestrianMotionState.Walking)
+            {
+                TakeDetour();
+            }
 
             approachTarget = null;
             approachNodeDistances = null;
@@ -278,23 +323,37 @@ namespace BarPromenade
             Vector3 planarOffset = target - current;
             planarOffset.y = 0f;
             float distance = planarOffset.magnitude;
-            if (distance <= 0.0001f)
+            if (distance <= ArrivalRadius)
             {
                 ReachTargetNode();
                 return false;
             }
 
             Vector3 direction = planarOffset / distance;
+            // Steer at a point offset across the lane rather than at the node
+            // itself, so making room is ordinary steering and the walker
+            // re-centres on its own once the way is clear.
+            Vector3 right = new Vector3(direction.z, 0f, -direction.x);
+            lateralOffset = Mathf.MoveTowards(
+                lateralOffset,
+                requestedLateralBias * MaximumLateralOffset,
+                LateralOffsetSpeed * deltaTime);
+            Vector3 steerOffset =
+                (target + (right * lateralOffset)) - current;
+            steerOffset.y = 0f;
+            float steerDistance = steerOffset.magnitude;
+            Vector3 steerDirection = steerDistance > 0.0001f
+                ? steerOffset / steerDistance
+                : direction;
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
-                Quaternion.LookRotation(direction, Vector3.up),
+                Quaternion.LookRotation(steerDirection, Vector3.up),
                 TurnSpeedDegrees * deltaTime);
-            float step = speed * deltaTime;
-            float amount = Mathf.Min(1f, step / distance);
-            Vector3 desired = new Vector3(
-                Mathf.Lerp(current.x, target.x, amount),
-                Mathf.Lerp(current.y, target.y, amount),
-                Mathf.Lerp(current.z, target.z, amount));
+            float step = speed * requestedSpeedScale * deltaTime;
+            float intended = Mathf.Min(step, steerDistance);
+            float heightAmount = Mathf.Min(1f, intended / distance);
+            Vector3 desired = current + (steerDirection * intended);
+            desired.y = Mathf.Lerp(current.y, target.y, heightAmount);
             Vector3 constrained = walkableArea.Constrain(
                 current,
                 desired,
@@ -309,9 +368,24 @@ namespace BarPromenade
             }
 
             LastDisplacement = transform.position - current;
+            Vector3 travelled = LastDisplacement;
+            travelled.y = 0f;
+            // Wanting to move and not moving is the signal that matters: a
+            // walker pressed against a prop and one nose to nose with another
+            // walker look identical from here, and both need the same way out.
+            if (intended > 0.0001f &&
+                travelled.magnitude < intended * BlockedDisplacementFraction)
+            {
+                blockedTime += deltaTime;
+            }
+            else
+            {
+                blockedTime = 0f;
+            }
+
             Vector3 remaining = transform.position - target;
             remaining.y = 0f;
-            if (amount >= 1f && remaining.sqrMagnitude <= 0.0001f)
+            if (remaining.magnitude <= ArrivalRadius)
             {
                 ReachTargetNode();
             }
@@ -384,6 +458,28 @@ namespace BarPromenade
             previousNodeIndex = reachedNode;
             targetNodeIndex = selected.Other(reachedNode);
             incomingLinkKind = selected.Kind;
+        }
+
+        /// <summary>
+        /// Turns back along the current link. On a pavement this narrow there
+        /// is no way past a blocked lane, so the only honest resolution is to
+        /// go the other way; the node behind then offers its other branches,
+        /// because <see cref="ReachTargetNode"/> refuses to backtrack.
+        /// </summary>
+        private void TakeDetour()
+        {
+            blockedTime = 0f;
+            lateralOffset = 0f;
+            if (previousNodeIndex < 0 || targetNodeIndex < 0)
+            {
+                return;
+            }
+
+            int reached = targetNodeIndex;
+            targetNodeIndex = previousNodeIndex;
+            previousNodeIndex = reached;
+            DetourCount++;
+            FaceTargetImmediately();
         }
 
         private int SelectCandidate(IReadOnlyList<int> candidates)
@@ -533,6 +629,10 @@ namespace BarPromenade
             paletteVariant = 0;
             randomState = 0u;
             isPrepared = false;
+            lateralOffset = 0f;
+            requestedLateralBias = 0f;
+            requestedSpeedScale = 1f;
+            blockedTime = 0f;
             forcedCrosswalkRoll = null;
             approachTarget = null;
             approachNodeDistances = null;
@@ -542,6 +642,7 @@ namespace BarPromenade
             LastDisplacement = Vector3.zero;
             CrosswalkDecisionCount = 0;
             CrosswalksTaken = 0;
+            DetourCount = 0;
         }
 
         private static float SanitizeDeltaTime(float deltaTime)

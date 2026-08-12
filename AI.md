@@ -29,27 +29,48 @@ production bus; those streets also host deterministic pedestrian and vehicle
 graphs. A selected apron may share flat
 zebra paint and paired signals, but a bus maneuver is retained only when its
 sampled full body clears both physical poles at a conservative `0.30 m` radius.
-At most two ambient walkers exist near the player: they spawn one at a time
-after wide, independently randomized delays at randomly
+A `CityPedestrianPopulationProfile` sets the ambient population per runtime:
+City runs `8` daytime walkers and `3` at night over a `13`-presentation pool,
+the Home balcony `5` and `2` over `8`. One event activates up to two walkers,
+and while the street is below its target the next event follows in `0.4-2 s`;
+at the target only replacements remain and the long `3.5-12.5 s` cadence
+returns. They spawn at randomly
   ranked obstacle-safe anchors in the preferred `76-86 m` band, where the
-  fixed City fog has already hidden them. If those anchors belong only to graph
+  fixed City fog has already hidden them. A nearer ring was evaluated and
+  rejected because the accepted fog proof measures depth at the frustum corner,
+  where it does not hold until roughly `72 m`. If those anchors belong only to graph
   components that cannot reach the player, the director falls back to a linked
-  fog-hidden anchor `32-86 m` away. Until a fresh walker first reaches the `24 m` encounter
+  fog-hidden anchor `32-86 m` away. A candidate must also disperse: `12 m` from
+  every active walker, at most two per sidewalk lane, and the fallback ladder
+  gives up connectivity before it gives up dispersion. When the hero travels
+  faster than `3 m/s` — riding the bus, above all — selection prefers anchors
+  ahead of the smoothed heading, because anything behind a `6 m/s` vehicle is
+  outrun before it can be seen. At most two walkers at a time are steered at
+  the hero: until such a walker first reaches the `24 m` encounter
   radius, eligible graph turns favor the continuation closest to the current
   player position; that one-shot guidance then ends and ordinary random roaming
-  resumes. During daytime their still-distant simulation smoothly accelerates
+  resumes. Every other walker takes a seeded `50/50` initial direction with no
+  player-proximity preference, so the street shows opposing streams instead of
+  a crowd converging on the hero. During daytime their still-distant simulation
+  smoothly accelerates
   up to `2.75x` and returns to authored pace by `32 m`, so hidden actors approach
-  or recycle without occupying both slots for long. They keep moving forward
+  or recycle without occupying slots for long. They keep moving forward
   through graph turns,
-  independently choose whether to use each zebra crossing, and return to their
+  independently choose whether to use each zebra crossing, give way along the
+  lane rather than across it — a `0.15 m` shoulder-shift, queueing at the pace
+  of whoever is ahead, and turning back after `1.5 s` of being unable to move,
+  since a `1 m` pavement cannot fit two walkers abreast — and return to their
   pool only beyond `88 m` from the hero. Camera direction and frustum state do
-  not take part in this lifecycle. Strict night (`19:00-06:00`) spawning is
-  limited to one slot, uses much longer random delays and retains authored
-  simulation pace; a second walker already active at dusk is not culled early.
-  The presentation pool holds one instance of every design in a stable ordered
+  not take part in this lifecycle. Strict night (`19:00-06:00`) activates one
+  walker per event, uses much longer random delays throughout and retains
+  authored simulation pace; walkers already active at dusk are not culled
+  early.
+  The presentation pool repeats the stable ordered
   catalog: a Lampshade Walker, a Chair Carrier, a Kettle Hat Walker, a
-  Long-Arm Walker and a Helmet Lamp Hopper. The pool is more than twice the
-  two active slots, so a repeat encounter can show a different pair. All five
+  Long-Arm Walker and a Helmet Lamp Hopper. Each ordinary design owns three
+  City instances and the lamp-bearing hopper exactly one, which is what still
+  caps the worn lights in the world at one. The pool exceeds the active
+  population, so a repeat encounter shows a different mix. All five
   copy the hero's compatible
   Generic Avatar but use their own looping in-place locomotion: the Lampshade
   stays hunched through idle and walks in short uneven steps, the upright Chair
@@ -62,8 +83,10 @@ after wide, independently randomized delays at randomly
   legs, and the Helmet Lamp Hopper crosses ground in two-footed rabbit bounds
   on `0.46 m` hind feet with a `0.24 m` apex, wearing the one working light
   the pedestrian contract allows: a single always-on shadowless `7.5 m` Spot
-  on its miner's helmet. Exactly one hopper exists in the pool, so at most one
-  such light exists in the world. Every walker keeps the shared `1.75 m`
+  on its miner's helmet. Its archetype declares a maximum of one pooled
+  instance, so at most one
+  such light exists in the world however large the pool grows. Every walker
+  keeps the shared `1.75 m`
   envelope and fixed collider:
   the kettle design is short by proportion, with the human mass ending near
   `1.40 m` and the kettle owning the rest. Each clip is grounded against its
@@ -71,11 +94,15 @@ after wide, independently randomized delays at randomly
   declare a validated hand-to-pavement clearance band. An airborne design
   instead declares an apex band: its clips are lifted by one constant offset
   rather than pinned per frame, must never penetrate, must land at least once,
-  and the runtime stops correcting its soles so the arc survives. Home maps the same
+  and the runtime replaces its per-frame sole pin with one declared per-design
+  `GroundTrim`, so the arc survives while the lift that retargeting adds is
+  cancelled. Home maps the same
   graph into the
-  bounded street view below the balcony. Its two slots are enabled only while
+  bounded street view below the balcony. Its slots are enabled only while
   the Balcony camera shot is active; returning indoors releases them as a scene
-  boundary.
+  boundary. Because that enabling is itself the composition boundary, the
+  balcony profile skips the first-event delay and starts filling immediately
+  instead of showing an empty street.
 
 One full-size ambient midibus may also be active near the player, although its
 fog-hidden spawn cadence deliberately allows periods with no visible bus. The

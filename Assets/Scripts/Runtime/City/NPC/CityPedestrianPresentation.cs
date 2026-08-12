@@ -25,6 +25,8 @@ namespace BarPromenade
         private float targetWalkWeight;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
+        private float archetypeGroundTrim;
+        private bool archetypeGroundTrimResolved;
         private FootGroundingProbe footGroundingProbe;
 
         public bool IsInitialized { get; private set; }
@@ -171,6 +173,8 @@ namespace BarPromenade
             IsMoving = false;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
+            archetypeGroundTrim = 0f;
+            archetypeGroundTrimResolved = false;
             footGroundingProbe = null;
             registry = null;
         }
@@ -224,16 +228,26 @@ namespace BarPromenade
                 return;
             }
 
-            // An airborne design authors its own vertical arc, already proved
-            // grounded at its landing frames by the deterministic generator.
-            // Pinning the lowest sole here would erase the hop entirely.
-            if (registry.PreservesAirborneMotion)
+            if (!TryGetGroundingHeight(out float lowestFoot))
             {
                 return;
             }
 
-            if (!TryGetGroundingHeight(out float lowestFoot))
+            // An airborne design authors its own vertical arc, proved grounded
+            // at its landing frames by the deterministic generator, so pinning
+            // its lowest sole every frame would erase the hop. It is lowered
+            // by one declared constant instead. The lift being cancelled comes
+            // from retargeting a squat skeleton through the hero's shared
+            // Generic Avatar rather than from the clip, so no measurement of
+            // the clip can predict it and the archetype declares it directly.
+            if (registry.PreservesAirborneMotion)
             {
+                float trim = GetArchetypeGroundTrim();
+                if (trim != 0f)
+                {
+                    registry.ModelRoot.position -= Vector3.up * trim;
+                }
+
                 return;
             }
 
@@ -248,6 +262,23 @@ namespace BarPromenade
                                      groundedFootHeightOffset;
             registry.ModelRoot.position += Vector3.up *
                 (targetFootHeight - lowestFoot);
+        }
+
+        private float GetArchetypeGroundTrim()
+        {
+            if (!archetypeGroundTrimResolved)
+            {
+                archetypeGroundTrim =
+                    registry != null &&
+                    CityPedestrianResources.TryGetArchetype(
+                        registry.DesignId,
+                        out CityPedestrianArchetype archetype)
+                        ? archetype.GroundTrim
+                        : 0f;
+                archetypeGroundTrimResolved = true;
+            }
+
+            return archetypeGroundTrim;
         }
 
         private void RestoreModelBasePosition()

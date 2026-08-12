@@ -97,11 +97,17 @@ namespace BarPromenade.Editor
                 clip.keepOriginalPositionXZ = true;
                 clip.lockRootRotation = true;
                 clip.lockRootPositionXZ = true;
-                // Every ordinary walker stays pinned to the pavement, so its
-                // root height is locked. An airborne design authors its arc on
-                // the pelvis and must keep it; loop-pose normalisation is also
-                // dropped there because it would re-level the same motion.
-                clip.lockRootHeightY = !airborne;
+                // Bake root height into the pose for every design. This rig's
+                // Avatar treats the pelvis as the motion node, and an airborne
+                // design authors its arc on exactly that bone, so leaving the
+                // height unbaked extracts the whole hop into root motion —
+                // which `CityPedestrianPresentation` then discards, because it
+                // runs its Animator with `applyRootMotion = false`. Baking
+                // keeps the arc inside the pose where it survives.
+                // Loop-pose normalisation stays off for an airborne design
+                // because it would re-level that same arc, and its clips
+                // already loop exactly.
+                clip.lockRootHeightY = true;
                 clip.loopPose = !airborne;
                 if (!names.Add(clip.name))
                 {

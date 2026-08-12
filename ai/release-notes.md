@@ -6,6 +6,41 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-12 — Passers-by get out of each other's way
+
+- Walkers no longer freeze when they meet. They lean a shoulder aside, and if
+  one catches up with someone slower it falls in behind at their pace instead
+  of stopping and starting.
+- The pavement is only a metre wide, so two of them genuinely cannot squeeze
+  past each other. When that happens one thinks better of it, turns around and
+  goes another way — the same thing he does when he walks into something.
+
+### 2026-08-12 — The miner comes back down
+
+- The hopping miner no longer floats above the pavement, and his bound is a
+  real one again: a full crouch, launch and landing rather than a flat glide.
+
+### 2026-08-12 — The city has people in it now
+
+- Daytime streets carry up to eight walkers around you instead of two, and they
+  arrive in pairs every second or so rather than one every ten seconds. Step
+  outside and the pavement fills.
+- They spread out. A new walker keeps its distance from the others and no more
+  than two share a stretch of pavement, so you meet people on different streets
+  instead of finding them clustered in one place.
+- They no longer all walk at you. At most two are heading your way at any time;
+  the rest are going about their own business, which means you now pass people
+  walking the other way.
+- Ride the bus and the street stays alive outside the window — walkers appear
+  ahead of the route instead of behind it, where the bus would leave them
+  before you ever saw them.
+- Step onto the balcony and the street below starts filling immediately.
+- With three copies of each ordinary design in the pool you will see the same
+  silhouette twice on a busy street, wearing a different palette and walking at
+  its own pace. The miner with the lamp is still one of a kind.
+- Night is still night: up to three walkers, arriving one at a time, minutes
+  apart.
+
 ### 2026-08-12 — A miner hops through the fog with his lamp on
 
 - A fifth walker now shares the pavement, and he is the only one who brings his

@@ -48,8 +48,30 @@ namespace BarPromenade
                 plan,
                 player,
                 walkableArea,
-                CityPedestrianResources.LoadPrefabs(),
-                null,
+                CityPedestrianPopulationProfile.City);
+        }
+
+        public static CityPedestrianDirector Create(
+            Transform parent,
+            CityPedestrianPlan plan,
+            Transform player,
+            IWalkableArea walkableArea,
+            CityPedestrianPopulationProfile profile,
+            Func<bool> nightModeProvider = null)
+        {
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            return Create(
+                parent,
+                plan,
+                player,
+                walkableArea,
+                CityPedestrianResources.LoadPooledPrefabs(profile.PoolSize),
+                nightModeProvider,
+                profile,
                 true);
         }
 
@@ -59,12 +81,13 @@ namespace BarPromenade
             Transform player,
             IWalkableArea walkableArea,
             GameObject presentationPrefab,
-            Func<bool> nightModeProvider = null)
+            Func<bool> nightModeProvider = null,
+            CityPedestrianPopulationProfile profile = null)
         {
+            CityPedestrianPopulationProfile resolved =
+                profile ?? CityPedestrianPopulationProfile.City;
             int slotCount = plan != null
-                ? Mathf.Min(
-                    plan.Count,
-                    CityPedestrianDirector.MaximumActiveModels)
+                ? Mathf.Min(plan.Count, resolved.DaytimePopulation)
                 : 0;
             var presentationPrefabs =
                 new GameObject[Mathf.Max(0, slotCount)];
@@ -80,6 +103,7 @@ namespace BarPromenade
                 walkableArea,
                 presentationPrefabs,
                 nightModeProvider,
+                resolved,
                 false);
         }
 
@@ -89,7 +113,8 @@ namespace BarPromenade
             Transform player,
             IWalkableArea walkableArea,
             IReadOnlyList<GameObject> presentationPrefabs,
-            Func<bool> nightModeProvider = null)
+            Func<bool> nightModeProvider = null,
+            CityPedestrianPopulationProfile profile = null)
         {
             return Create(
                 parent,
@@ -98,6 +123,7 @@ namespace BarPromenade
                 walkableArea,
                 presentationPrefabs,
                 nightModeProvider,
+                profile ?? CityPedestrianPopulationProfile.City,
                 false);
         }
 
@@ -108,7 +134,8 @@ namespace BarPromenade
             IWalkableArea walkableArea,
             IReadOnlyList<GameObject> presentationPrefabs,
             Func<bool> nightModeProvider,
-            bool requireUniqueRegisteredDesigns)
+            CityPedestrianPopulationProfile profile,
+            bool requireCatalogComposition)
         {
             if (parent == null)
             {
@@ -130,9 +157,14 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(walkableArea));
             }
 
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
             int slotCount = Mathf.Min(
                 plan.Count,
-                CityPedestrianDirector.MaximumActiveModels);
+                profile.DaytimePopulation);
             int presentationCount = presentationPrefabs != null
                 ? presentationPrefabs.Count
                 : 0;
@@ -213,17 +245,18 @@ namespace BarPromenade
                             "stable design ID.");
                     }
 
-                    if (requireUniqueRegisteredDesigns)
+                    if (requireCatalogComposition)
                     {
                         if (!CityPedestrianResources.TryGetArchetype(
                                 registry.DesignId,
-                                out _))
+                                out CityPedestrianArchetype archetype))
                         {
                             throw new InvalidOperationException(
                                 $"Pedestrian design '{registry.DesignId}' " +
                                 "is not registered in the ordered catalog.");
                         }
 
+                        int existing = 0;
                         for (int previous = 0;
                              previous < presentations.Count;
                              previous++)
@@ -234,10 +267,21 @@ namespace BarPromenade
                                     registry.DesignId,
                                     StringComparison.Ordinal))
                             {
-                                throw new InvalidOperationException(
-                                    "The default pedestrian pool must " +
-                                    "contain one model per design ID.");
+                                existing++;
                             }
+                        }
+
+                        // A design that carries a working light declares one
+                        // pooled instance, which is what keeps the worn lights
+                        // in the world bounded now that the pool repeats
+                        // ordinary designs.
+                        if (existing >= archetype.MaximumPoolInstances)
+                        {
+                            throw new InvalidOperationException(
+                                $"Pedestrian design '{registry.DesignId}' " +
+                                "allows at most " +
+                                $"{archetype.MaximumPoolInstances} pooled " +
+                                "instance(s).");
                         }
                     }
 
@@ -258,6 +302,11 @@ namespace BarPromenade
                     presentations.Add(presentation);
                 }
 
+                if (requireCatalogComposition)
+                {
+                    ValidateCatalogCoverage(presentations);
+                }
+
                 CityPedestrianDirector director =
                     runtimeRoot.AddComponent<CityPedestrianDirector>();
                 director.Initialize(
@@ -266,13 +315,45 @@ namespace BarPromenade
                     presentations,
                     player,
                     modelPoolRoot.transform,
-                    nightModeProvider);
+                    nightModeProvider,
+                    profile);
                 return director;
             }
             catch
             {
                 CityPedestrianResources.DestroyObject(runtimeRoot);
                 throw;
+            }
+        }
+
+        private static void ValidateCatalogCoverage(
+            IReadOnlyList<CityPedestrianPresentation> presentations)
+        {
+            IReadOnlyList<CityPedestrianArchetype> archetypes =
+                CityPedestrianResources.Archetypes;
+            for (int index = 0; index < archetypes.Count; index++)
+            {
+                string designId = archetypes[index].DesignId;
+                bool found = false;
+                for (int pooled = 0;
+                     pooled < presentations.Count;
+                     pooled++)
+                {
+                    if (string.Equals(
+                            presentations[pooled].Registry.DesignId,
+                            designId,
+                            StringComparison.Ordinal))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    throw new InvalidOperationException(
+                        $"The pedestrian pool is missing design '{designId}'.");
+                }
             }
         }
 

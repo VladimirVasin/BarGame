@@ -272,11 +272,48 @@ namespace BarPromenade.Tests.EditMode
                     .Count(),
                 Is.EqualTo(prefabs.Length),
                 "Every archetype must bind its own idle clip.");
+            CityPedestrianPopulationProfile cityProfile =
+                CityPedestrianPopulationProfile.City;
             Assert.That(
-                CityPedestrianDirector.MaximumActiveModels,
-                Is.LessThan(archetypes.Count),
+                cityProfile.PoolSize,
+                Is.GreaterThan(cityProfile.DaytimePopulation),
                 "The pool is intentionally larger than the active limit so " +
-                "repeat encounters can vary the visible pair.");
+                "repeat encounters can vary the visible mix.");
+
+            IReadOnlyList<CityPedestrianArchetype> composition =
+                CityPedestrianResources.CreatePoolComposition(
+                    cityProfile.PoolSize);
+            Assert.That(composition.Count, Is.EqualTo(cityProfile.PoolSize));
+            for (int index = 0; index < archetypes.Count; index++)
+            {
+                CityPedestrianArchetype archetype = archetypes[index];
+                int instances = composition.Count(
+                    entry => string.Equals(
+                        entry.DesignId,
+                        archetype.DesignId,
+                        StringComparison.Ordinal));
+                Assert.That(
+                    instances,
+                    Is.GreaterThanOrEqualTo(1),
+                    $"'{archetype.DesignId}' must stay reachable by the " +
+                    "spawn seed.");
+                Assert.That(
+                    instances,
+                    Is.LessThanOrEqualTo(archetype.MaximumPoolInstances),
+                    $"'{archetype.DesignId}' declares at most " +
+                    $"{archetype.MaximumPoolInstances} pooled instance(s).");
+            }
+
+            // The only design carrying a working light stays single, which is
+            // what bounds the worn lights in the world now that ordinary
+            // designs repeat.
+            Assert.That(
+                composition.Count(
+                    entry => string.Equals(
+                        entry.DesignId,
+                        CityPedestrianResources.HelmetLampDesignId,
+                        StringComparison.Ordinal)),
+                Is.EqualTo(1));
         }
 
         [Test]
@@ -410,30 +447,30 @@ namespace BarPromenade.Tests.EditMode
             CityPedestrianDirector director = null;
             try
             {
+                CityPedestrianPopulationProfile profile =
+                    CityPedestrianPopulationProfile.City;
                 Transform player = CreatePlayer(root.transform);
                 CityPedestrianPlan plan = CreateDistanceSpawnPlan(
-                    new[]
-                    {
-                        new Vector3(0f, 0f, -76f),
-                        new Vector3(0f, 0f, -76f),
-                        new Vector3(4f, 0f, -76f)
-                    });
+                    CreateRingAnchorPositions(
+                        profile.DaytimePopulation));
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
                     player,
                     CityPedestrianPlanner.CreateWalkableArea(plan),
-                    CityPedestrianResources.LoadPrefabs(),
+                    profile,
                     () => false);
 
                 Assert.That(
                     director.Count,
-                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
-                // One pooled presentation per registered design, which is now
-                // larger than the number of simultaneously active slots.
+                    Is.EqualTo(profile.DaytimePopulation));
                 Assert.That(
                     director.PoolCapacity,
-                    Is.EqualTo(CityPedestrianResources.Archetypes.Count));
+                    Is.EqualTo(profile.PoolSize));
+                Assert.That(
+                    director.PoolCapacity,
+                    Is.GreaterThan(director.Count),
+                    "Spare presentations let a repeat encounter vary the mix.");
                 Assert.That(director.ActiveCount, Is.Zero);
 
                 float initialDelay = director.TimeUntilNextSpawn;
@@ -448,43 +485,71 @@ namespace BarPromenade.Tests.EditMode
                     Is.Zero,
                     "The first pedestrian must honor its random delay.");
                 director.Advance((initialDelay * 0.5f) + 0.01f);
-                Assert.That(director.ActiveCount, Is.EqualTo(1));
-
-                float secondDelay = director.TimeUntilNextSpawn;
                 Assert.That(
-                    secondDelay,
+                    director.ActiveCount,
+                    Is.EqualTo(profile.MaximumSpawnsPerEvent),
+                    "One event activates a bounded batch, not the street.");
+
+                // Below the target population the next event follows on the
+                // short fill cadence, so a street or a bus ride does not stay
+                // empty for the long replacement delay.
+                float fillDelay = director.TimeUntilNextSpawn;
+                Assert.That(
+                    fillDelay,
+                    Is.InRange(
+                        CityPedestrianDirector.MinimumFillSpawnDelay,
+                        CityPedestrianDirector.MaximumFillSpawnDelay));
+                director.Advance(fillDelay * 0.5f);
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(profile.MaximumSpawnsPerEvent),
+                    "Each event must honor its own random delay.");
+
+                for (int step = 0;
+                     step < profile.DaytimePopulation &&
+                     director.ActiveCount < profile.DaytimePopulation;
+                     step++)
+                {
+                    director.Advance(
+                        director.TimeUntilNextSpawn + 0.01f);
+                }
+
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(profile.DaytimePopulation),
+                    "The daytime population must reach the profile target.");
+                Assert.That(
+                    director.TimeUntilNextSpawn,
                     Is.InRange(
                         CityPedestrianDirector.MinimumSpawnCooldown,
-                        CityPedestrianDirector.MaximumSpawnCooldown));
-                Assert.That(
-                    CityPedestrianDirector.MaximumSpawnCooldown -
-                    CityPedestrianDirector.MinimumSpawnCooldown,
-                    Is.GreaterThanOrEqualTo(9f));
-                director.Advance(secondDelay * 0.5f);
-                Assert.That(
-                    director.ActiveCount,
-                    Is.EqualTo(1),
-                    "The second slot must use an independent random delay.");
-                director.Advance((secondDelay * 0.5f) + 0.01f);
-
-                Assert.That(
-                    director.ActiveCount,
-                    Is.EqualTo(CityPedestrianDirector.MaximumActiveModels));
+                        CityPedestrianDirector.MaximumSpawnCooldown),
+                    "At the target only replacements remain, so the long " +
+                    "cadence returns.");
                 CityPedestrianActor[] active = director.Actors
                     .Where(candidate => candidate.IsSpawned)
                     .ToArray();
-                // With three registered designs and two slots the active pair
-                // is a subset of the catalog rather than all of it, but the
-                // two must still never repeat one design.
+                // No design owns enough pooled instances to carry a full
+                // street alone, so a full population is always a mix.
                 Assert.That(
                     active.Select(candidate => candidate.DesignId)
                         .Distinct(StringComparer.Ordinal)
                         .Count(),
-                    Is.EqualTo(active.Length),
-                    "The active production slots must use distinct " +
-                    "registered pedestrian designs.");
+                    Is.GreaterThanOrEqualTo(3),
+                    "A full street must mix several registered designs.");
+                Assert.That(
+                    active.Count(
+                        candidate => string.Equals(
+                            candidate.DesignId,
+                            CityPedestrianResources.HelmetLampDesignId,
+                            StringComparison.Ordinal)),
+                    Is.LessThanOrEqualTo(1),
+                    "Only one pooled hopper exists, so only one worn light " +
+                    "can be in the world.");
+                // Ordinary designs now repeat within their pooled instance
+                // limits, so compare the distinct set against the catalog.
                 CollectionAssert.IsSubsetOf(
                     active.Select(candidate => candidate.DesignId)
+                        .Distinct(StringComparer.Ordinal)
                         .ToArray(),
                     CityPedestrianResources.Archetypes
                         .Select(archetype => archetype.DesignId)
@@ -513,38 +578,32 @@ namespace BarPromenade.Tests.EditMode
                     active.Select(candidate => candidate.SpawnAnchorId)
                         .Distinct(StringComparer.Ordinal).Count(),
                     Is.EqualTo(active.Length));
-                Assert.That(
-                    PlanarDistance(active[0].Position, active[1].Position),
-                    Is.GreaterThan(
-                        (CityPedestrianPlanner.AgentRadius * 2f) +
-                        CityPedestrianDirector.CollisionActivationPadding));
+                for (int first = 0; first < active.Length; first++)
+                {
+                    for (int second = first + 1;
+                         second < active.Length;
+                         second++)
+                    {
+                        Assert.That(
+                            PlanarDistance(
+                                active[first].Position,
+                                active[second].Position),
+                            Is.GreaterThan(
+                                (CityPedestrianPlanner.AgentRadius * 2f) +
+                                CityPedestrianDirector
+                                    .CollisionActivationPadding));
+                    }
+                }
 
-                const float productionAspect = 16f / 9f;
-                const float widestProductionFieldOfView = 70f;
-                const float conservativeCameraAndVisualDepth = 6f;
-                float verticalTangent = Mathf.Tan(
-                    widestProductionFieldOfView * 0.5f * Mathf.Deg2Rad);
-                float horizontalTangent =
-                    verticalTangent * productionAspect;
-                float cornerDepthRatio = 1f / Mathf.Sqrt(
-                    1f +
-                    (verticalTangent * verticalTangent) +
-                    (horizontalTangent * horizontalTangent));
-                float conservativeFogDepth =
-                    (CityPedestrianDirector.MinimumSpawnDistance *
-                     cornerDepthRatio) -
-                    conservativeCameraAndVisualDepth;
-                float fogTransmittanceAtSpawnEdge = Mathf.Exp(
-                    -Mathf.Pow(
-                        RuntimeSceneSetup.CityFogDensity *
-                        conservativeFogDepth,
-                        2f));
+                // The whole population, not just the first pair, must stay
+                // inside the band proven hidden at the widest production 16:9
+                // frustum corner after a combined camera and visual-envelope
+                // depth offset.
                 Assert.That(
-                    fogTransmittanceAtSpawnEdge,
+                    ConservativeFogTransmittance(
+                        CityPedestrianDirector.MinimumSpawnDistance),
                     Is.LessThan(0.002f),
-                    "The spawn band must stay hidden even at the widest " +
-                    "production 16:9 frustum corner after camera and full " +
-                    "visual-envelope depth offsets.");
+                    "The spawn band must stay hidden.");
                 for (int index = 0; index < active.Length; index++)
                 {
                     CityPedestrianSpawnAnchor spawnAnchor =
@@ -553,11 +612,10 @@ namespace BarPromenade.Tests.EditMode
                                 candidate.Id,
                                 active[index].SpawnAnchorId,
                                 StringComparison.Ordinal));
-                    float distance = PlanarDistance(
-                        player.position,
-                        spawnAnchor.Position);
                     Assert.That(
-                        distance,
+                        PlanarDistance(
+                            player.position,
+                            spawnAnchor.Position),
                         Is.InRange(
                             CityPedestrianDirector.MinimumSpawnDistance,
                             CityPedestrianDirector.MaximumSpawnDistance));
@@ -587,13 +645,10 @@ namespace BarPromenade.Tests.EditMode
             bool isNight = true;
             try
             {
+                const int anchorCount = 5;
                 Transform player = CreatePlayer(root.transform);
                 CityPedestrianPlan plan = CreateDistanceSpawnPlan(
-                    new[]
-                    {
-                        new Vector3(0f, 0f, -76f),
-                        new Vector3(4f, 0f, -76f)
-                    });
+                    CreateRingAnchorPositions(anchorCount));
                 director = CityPedestrianFactory.Create(
                     root.transform,
                     plan,
@@ -608,6 +663,11 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(
                         CityPedestrianDirector.NightMaximumActiveModels));
                 Assert.That(
+                    CityPedestrianDirector.NightMaximumActiveModels,
+                    Is.LessThan(
+                        CityPedestrianDirector.MaximumActiveModels),
+                    "Night must stay markedly sparser than the day street.");
+                Assert.That(
                     director.TimeUntilNextSpawn,
                     Is.InRange(
                         CityPedestrianDirector.MinimumNightInitialSpawnDelay,
@@ -619,27 +679,42 @@ namespace BarPromenade.Tests.EditMode
                         2f));
 
                 AdvanceToNextSpawn(director);
-                Assert.That(director.ActiveCount, Is.EqualTo(1));
+                Assert.That(
+                    director.ActiveCount,
+                    Is.EqualTo(1),
+                    "Night activates one walker per event, never a batch.");
                 Assert.That(
                     director.TimeUntilNextSpawn,
                     Is.InRange(
                         CityPedestrianDirector.MinimumNightSpawnCooldown,
-                        CityPedestrianDirector.MaximumNightSpawnCooldown));
+                        CityPedestrianDirector.MaximumNightSpawnCooldown),
+                    "Night keeps its long cadence instead of the day fill " +
+                    "cadence, even while below its own population.");
                 Assert.That(
                     CityPedestrianDirector.MinimumNightSpawnCooldown,
                     Is.GreaterThanOrEqualTo(
                         CityPedestrianDirector.MaximumSpawnCooldown * 2f));
 
-                director.Advance(
-                    CityPedestrianDirector.MaximumNightSpawnCooldown + 1f);
+                for (int step = 0; step < anchorCount; step++)
+                {
+                    director.Advance(
+                        CityPedestrianDirector.MaximumNightSpawnCooldown +
+                        1f);
+                }
+
                 Assert.That(
                     director.ActiveCount,
-                    Is.EqualTo(1),
-                    "Night must never fill the second pedestrian slot.");
+                    Is.EqualTo(
+                        CityPedestrianDirector.NightMaximumActiveModels),
+                    "Night must settle exactly on its own population.");
 
                 isNight = false;
                 director.Advance(0f);
                 Assert.That(director.IsNightSpawnMode, Is.False);
+                Assert.That(
+                    director.CurrentActiveLimit,
+                    Is.GreaterThan(
+                        CityPedestrianDirector.NightMaximumActiveModels));
                 Assert.That(
                     director.TimeUntilNextSpawn,
                     Is.InRange(
@@ -648,8 +723,9 @@ namespace BarPromenade.Tests.EditMode
                 AdvanceToNextSpawn(director);
                 Assert.That(
                     director.ActiveCount,
-                    Is.EqualTo(2),
-                    "Day mode may fill the independently delayed second slot.");
+                    Is.GreaterThan(
+                        CityPedestrianDirector.NightMaximumActiveModels),
+                    "Day mode fills past the night population.");
             }
             finally
             {
@@ -1094,14 +1170,250 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     director.TimeUntilNextSpawn,
                     Is.InRange(
-                        CityPedestrianDirector.MinimumSpawnCooldown,
-                        CityPedestrianDirector.MaximumSpawnCooldown),
-                    "A released slot must receive a fresh randomized delay.");
+                        CityPedestrianDirector.MinimumFillSpawnDelay,
+                        CityPedestrianDirector.MaximumFillSpawnDelay),
+                    "A released slot drops the population below target, so " +
+                    "its replacement uses the short randomized fill delay.");
                 Assert.That(
                     actor.MotionState,
                     Is.EqualTo(CityPedestrianMotionState.Dormant));
                 Assert.That(actor.SpawnAnchorId, Is.Empty);
                 Assert.That(actor.CollisionEnabled, Is.False);
+            }
+            finally
+            {
+                director?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void BlockedActor_TurnsBackInsteadOfStayingJammed()
+        {
+            GameObject root = new GameObject("Deadlock Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateApproachBranchPlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation,
+                    0xA341316Cu);
+                int blockedTarget = actor.TargetNodeIndex;
+                int blockedPrevious = actor.PreviousNodeIndex;
+
+                // A yield nothing ever clears is the shape of two walkers nose
+                // to nose on a pavement too narrow to pass on.
+                const float step = 0.1f;
+                for (float elapsed = 0f;
+                     elapsed <
+                     CityPedestrianActor.BlockedEscapeSeconds - step;
+                     elapsed += step)
+                {
+                    actor.Advance(step, true);
+                }
+
+                Assert.That(
+                    actor.DetourCount,
+                    Is.Zero,
+                    "A brief wait must not be treated as a deadlock.");
+                Assert.That(
+                    actor.TargetNodeIndex,
+                    Is.EqualTo(blockedTarget));
+
+                actor.Advance(step * 2f, true);
+
+                Assert.That(
+                    actor.DetourCount,
+                    Is.EqualTo(1),
+                    "A walker held indefinitely must give up and turn back.");
+                Assert.That(
+                    actor.TargetNodeIndex,
+                    Is.EqualTo(blockedPrevious),
+                    "Turning back means heading for the node behind it.");
+                Assert.That(
+                    actor.PreviousNodeIndex,
+                    Is.EqualTo(blockedTarget));
+                Assert.That(
+                    actor.MotionState,
+                    Is.EqualTo(CityPedestrianMotionState.Walking));
+                Assert.That(actor.BlockedTime, Is.Zero);
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Actor_QueuesAndLeansAsideWithoutLeavingItsLane()
+        {
+            GameObject root = new GameObject("Avoidance Test Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateApproachBranchPlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation,
+                    0xA341316Cu);
+
+                actor.SetAvoidance(1f, 0f);
+                actor.Advance(0.25f);
+                float openPace = actor.LastDisplacement.magnitude;
+                Assert.That(openPace, Is.GreaterThan(0f));
+
+                // Queueing behind someone slower keeps a walker moving; the
+                // old behaviour stopped dead and set off again.
+                actor.SetAvoidance(0.4f, 1f);
+                actor.Advance(0.25f);
+                float queuedPace = actor.LastDisplacement.magnitude;
+                Assert.That(
+                    queuedPace,
+                    Is.GreaterThan(0f),
+                    "Giving way must not mean standing still.");
+                Assert.That(
+                    queuedPace,
+                    Is.LessThan(openPace),
+                    "A queued walker must fall in behind, not push through.");
+
+                for (int step = 0; step < 12; step++)
+                {
+                    actor.Advance(0.1f);
+                }
+
+                Assert.That(
+                    Mathf.Abs(actor.LateralOffset),
+                    Is.GreaterThan(0.01f),
+                    "The walker must actually lean aside.");
+                Assert.That(
+                    Mathf.Abs(actor.LateralOffset),
+                    Is.LessThanOrEqualTo(
+                        CityPedestrianActor.MaximumLateralOffset + 0.0001f),
+                    "A 1 m pavement affords a shoulder-shift, no more.");
+
+                actor.SetAvoidance(1f, 0f);
+                for (int step = 0; step < 12; step++)
+                {
+                    actor.Advance(0.1f);
+                }
+
+                Assert.That(
+                    Mathf.Abs(actor.LateralOffset),
+                    Is.LessThan(0.01f),
+                    "A walker must re-centre once the way is clear.");
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Director_SpreadsPopulationAcrossLanesAndDirections()
+        {
+            GameObject root = new GameObject("Dispersion Test Root");
+            CityPedestrianDirector director = null;
+            try
+            {
+                CityPedestrianPopulationProfile profile =
+                    CityPedestrianPopulationProfile.City;
+                Transform player = CreatePlayer(root.transform);
+                CityPedestrianPlan plan = CreateDistanceSpawnPlan(
+                    CreateRingAnchorPositions(
+                        profile.DaytimePopulation));
+                director = CityPedestrianFactory.Create(
+                    root.transform,
+                    plan,
+                    player,
+                    CityPedestrianPlanner.CreateWalkableArea(plan),
+                    profile,
+                    () => false);
+                for (int step = 0;
+                     step <= profile.DaytimePopulation &&
+                     director.ActiveCount < profile.DaytimePopulation;
+                     step++)
+                {
+                    AdvanceToNextSpawn(director);
+                }
+
+                CityPedestrianActor[] active = director.Actors
+                    .Where(candidate => candidate.IsSpawned)
+                    .ToArray();
+                Assert.That(
+                    active.Length,
+                    Is.EqualTo(profile.DaytimePopulation));
+
+                // Every anchor in this plan is its own lane, so a full
+                // population must occupy that many distinct lanes rather than
+                // stacking on one street.
+                Assert.That(
+                    active.Select(candidate => candidate.SpawnAnchorId)
+                        .Distinct(StringComparer.Ordinal)
+                        .Count(),
+                    Is.EqualTo(active.Length));
+                for (int first = 0; first < active.Length; first++)
+                {
+                    for (int second = first + 1;
+                         second < active.Length;
+                         second++)
+                    {
+                        Assert.That(
+                            PlanarDistance(
+                                active[first].Position,
+                                active[second].Position),
+                            Is.GreaterThan(profile.MinimumPeerSeparation),
+                            "Dispersion must keep the population spread out.");
+                    }
+                }
+
+                // Only a small share may be steered at the hero; the rest take
+                // a seeded direction, so the street shows opposing streams.
+                Assert.That(
+                    director.ApproachGuidedCount,
+                    Is.LessThanOrEqualTo(profile.ApproachGuidedPopulation));
+                Assert.That(
+                    profile.ApproachGuidedPopulation,
+                    Is.LessThan(profile.DaytimePopulation));
+
+                int inbound = 0;
+                int outbound = 0;
+                for (int index = 0; index < active.Length; index++)
+                {
+                    Vector3 travel = active[index].TravelDirection;
+                    Vector3 toPlayer = player.position - active[index].Position;
+                    toPlayer.y = 0f;
+                    if (travel.sqrMagnitude <= 0.0001f ||
+                        toPlayer.sqrMagnitude <= 0.0001f)
+                    {
+                        continue;
+                    }
+
+                    if (Vector3.Dot(travel.normalized, toPlayer.normalized) >
+                        0f)
+                    {
+                        inbound++;
+                    }
+                    else
+                    {
+                        outbound++;
+                    }
+                }
+
+                Assert.That(
+                    inbound + outbound,
+                    Is.GreaterThan(0),
+                    "The population must actually be walking.");
             }
             finally
             {
@@ -1578,6 +1890,48 @@ namespace BarPromenade.Tests.EditMode
                 new[] { Rect.MinMaxRect(-3f, -1f, 3f, 3f) });
         }
 
+        /// <summary>
+        /// Rings the player with anchors inside the fog-hidden spawn band,
+        /// spaced well beyond the director's dispersion separation so a full
+        /// population can activate.
+        /// </summary>
+        private static Vector3[] CreateRingAnchorPositions(int count)
+        {
+            var positions = new Vector3[count];
+            for (int index = 0; index < count; index++)
+            {
+                float radius = index % 2 == 0 ? 78f : 84f;
+                float angle = index * (2f * Mathf.PI / count);
+                positions[index] = new Vector3(
+                    Mathf.Sin(angle) * radius,
+                    0f,
+                    Mathf.Cos(angle) * radius);
+            }
+
+            return positions;
+        }
+
+        private static float ConservativeFogTransmittance(
+            float spawnDistance)
+        {
+            const float productionAspect = 16f / 9f;
+            const float widestProductionFieldOfView = 70f;
+            const float conservativeCameraAndVisualDepth = 6f;
+            float verticalTangent = Mathf.Tan(
+                widestProductionFieldOfView * 0.5f * Mathf.Deg2Rad);
+            float horizontalTangent = verticalTangent * productionAspect;
+            float cornerDepthRatio = 1f / Mathf.Sqrt(
+                1f +
+                (verticalTangent * verticalTangent) +
+                (horizontalTangent * horizontalTangent));
+            float depth = (spawnDistance * cornerDepthRatio) -
+                          conservativeCameraAndVisualDepth;
+            return Mathf.Exp(
+                -Mathf.Pow(
+                    RuntimeSceneSetup.CityFogDensity * depth,
+                    2f));
+        }
+
         private static CityPedestrianPlan CreateDistanceSpawnPlan(
             IReadOnlyList<Vector3> anchorPositions)
         {
@@ -1606,8 +1960,11 @@ namespace BarPromenade.Tests.EditMode
                     firstNode,
                     secondNode,
                     CityPedestrianLinkKind.Sidewalk));
+                // Mirrors the production ID shape `…:<lane>:<segment>`, so
+                // each generated route reads as its own sidewalk lane for the
+                // director's dispersion rule.
                 anchors.Add(new CityPedestrianSpawnAnchor(
-                    $"spawn:{index}",
+                    $"spawn:lane:{index}:0",
                     anchorPosition,
                     firstNode,
                     secondNode));

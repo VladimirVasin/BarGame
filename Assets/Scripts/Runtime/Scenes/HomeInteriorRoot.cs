@@ -268,7 +268,8 @@ namespace BarPromenade
                 PedestrianPlan,
                 Player.GameObject.transform,
                 CityPedestrianPlanner.CreateWalkableArea(
-                    PedestrianPlan));
+                    PedestrianPlan),
+                CityPedestrianPopulationProfile.HomeBalcony);
             Pedestrians.enabled = false;
             GameObject musicObject =
                 new GameObject("Home Music");
@@ -362,6 +363,23 @@ namespace BarPromenade
                     "exterior_pedestrian_spawn_anchor_count",
                     PedestrianPlan.Count),
                 GameLog.Field(
+                    "exterior_pedestrian_population",
+                    Pedestrians.Profile.DaytimePopulation),
+                GameLog.Field(
+                    "exterior_pedestrian_band_anchors",
+                    CountAnchorsInBand(
+                        PedestrianPlan,
+                        Player.GameObject.transform.position,
+                        CityPedestrianDirector.MinimumSpawnDistance,
+                        CityPedestrianDirector.MaximumSpawnDistance)),
+                GameLog.Field(
+                    "exterior_pedestrian_fallback_anchors",
+                    CountAnchorsInBand(
+                        PedestrianPlan,
+                        Player.GameObject.transform.position,
+                        CityPedestrianDirector.MinimumConnectedSpawnDistance,
+                        CityPedestrianDirector.MaximumSpawnDistance)),
+                GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
@@ -370,6 +388,35 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        /// <summary>
+        /// Reports how much of the bounded balcony anchor set each fog-hidden
+        /// spawn ring can actually reach, so the exterior population is tuned
+        /// against the reconstruction rather than the full city.
+        /// </summary>
+        private static int CountAnchorsInBand(
+            CityPedestrianPlan plan,
+            Vector3 origin,
+            float minimumDistance,
+            float maximumDistance)
+        {
+            float minimumSquared = minimumDistance * minimumDistance;
+            float maximumSquared = maximumDistance * maximumDistance;
+            int count = 0;
+            for (int index = 0; index < plan.SpawnAnchors.Count; index++)
+            {
+                Vector3 position = plan.SpawnAnchors[index].Position;
+                float deltaX = position.x - origin.x;
+                float deltaZ = position.z - origin.z;
+                float squared = (deltaX * deltaX) + (deltaZ * deltaZ);
+                if (squared >= minimumSquared && squared <= maximumSquared)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private void BuildOpening()

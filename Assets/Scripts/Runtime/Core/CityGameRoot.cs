@@ -327,7 +327,13 @@ namespace BarPromenade
                     PedestrianPlan.Count),
                 GameLog.Field(
                     "pedestrian_active_cap",
-                    CityPedestrianDirector.MaximumActiveModels),
+                    Pedestrians.Profile.DaytimePopulation),
+                GameLog.Field(
+                    "pedestrian_night_cap",
+                    Pedestrians.Profile.NightPopulation),
+                GameLog.Field(
+                    "pedestrian_pool_capacity",
+                    Pedestrians.PoolCapacity),
                 GameLog.Field(
                     "bus_route_link_count",
                     BusPlan.Links.Count),

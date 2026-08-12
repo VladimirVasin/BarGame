@@ -7,6 +7,8 @@ namespace BarPromenade
 {
     public sealed class CityPedestrianArchetype
     {
+        public const int UnlimitedPoolInstances = int.MaxValue;
+
         public CityPedestrianArchetype(
             string designId,
             string prefabResourcePath,
@@ -14,6 +16,46 @@ namespace BarPromenade
             float maximumMovementSpeed,
             float minimumAnimationSpeed,
             float maximumAnimationSpeed)
+            : this(
+                designId,
+                prefabResourcePath,
+                minimumMovementSpeed,
+                maximumMovementSpeed,
+                minimumAnimationSpeed,
+                maximumAnimationSpeed,
+                UnlimitedPoolInstances)
+        {
+        }
+
+        public CityPedestrianArchetype(
+            string designId,
+            string prefabResourcePath,
+            float minimumMovementSpeed,
+            float maximumMovementSpeed,
+            float minimumAnimationSpeed,
+            float maximumAnimationSpeed,
+            int maximumPoolInstances)
+            : this(
+                designId,
+                prefabResourcePath,
+                minimumMovementSpeed,
+                maximumMovementSpeed,
+                minimumAnimationSpeed,
+                maximumAnimationSpeed,
+                maximumPoolInstances,
+                0f)
+        {
+        }
+
+        public CityPedestrianArchetype(
+            string designId,
+            string prefabResourcePath,
+            float minimumMovementSpeed,
+            float maximumMovementSpeed,
+            float minimumAnimationSpeed,
+            float maximumAnimationSpeed,
+            int maximumPoolInstances,
+            float groundTrim)
         {
             if (string.IsNullOrWhiteSpace(designId))
             {
@@ -37,6 +79,13 @@ namespace BarPromenade
                 minimumAnimationSpeed,
                 maximumAnimationSpeed,
                 nameof(minimumAnimationSpeed));
+            if (maximumPoolInstances <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maximumPoolInstances),
+                    "A pedestrian archetype must allow at least one pooled " +
+                    "instance.");
+            }
 
             DesignId = designId;
             PrefabResourcePath = prefabResourcePath;
@@ -44,6 +93,15 @@ namespace BarPromenade
             MaximumMovementSpeed = maximumMovementSpeed;
             MinimumAnimationSpeed = minimumAnimationSpeed;
             MaximumAnimationSpeed = maximumAnimationSpeed;
+            if (!IsFinite(groundTrim) || groundTrim < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(groundTrim),
+                    "A ground trim must be finite and non-negative.");
+            }
+
+            MaximumPoolInstances = maximumPoolInstances;
+            GroundTrim = groundTrim;
         }
 
         public string DesignId { get; }
@@ -52,6 +110,24 @@ namespace BarPromenade
         public float MaximumMovementSpeed { get; }
         public float MinimumAnimationSpeed { get; }
         public float MaximumAnimationSpeed { get; }
+
+        /// <summary>
+        /// Pooled copies this design may own. A design that carries a working
+        /// light declares `1`, which is what bounds the worn lights in the
+        /// world once the pool grew past one instance per design.
+        /// </summary>
+        public int MaximumPoolInstances { get; }
+
+        /// <summary>
+        /// Metres this design is lowered at runtime. Only an airborne design
+        /// needs one: every other walker has its lowest sole pinned to the
+        /// pavement each frame, which already absorbs whatever height the
+        /// shared Generic Avatar introduces when it retargets a skeleton whose
+        /// proportions differ from the hero's. Pinning an airborne design the
+        /// same way would flatten its arc, so the residual lift is declared
+        /// here and tuned by eye against the rendered walker.
+        /// </summary>
+        public float GroundTrim { get; }
 
         private static void ValidateRange(
             float minimum,
@@ -137,14 +213,24 @@ namespace BarPromenade
                 0.86f,
                 0.94f),
             // The fastest walker: one bound covers well over a metre, so the
-            // hopper crosses ground quickly despite never taking a step.
+            // hopper crosses ground quickly despite never taking a step. It is
+            // also the only design wearing a working light, so it stays a
+            // single pooled instance however large the pool grows.
             new CityPedestrianArchetype(
                 HelmetLampDesignId,
                 HelmetLampPrefabResourcePath,
                 1.32f,
                 1.48f,
                 0.94f,
-                1.06f)
+                1.06f,
+                1,
+                // Tuned by eye against the rendered walker. Automated
+                // measurement cannot settle this one: a sole's true height
+                // depends on foot rotation, and the two clips answer a single
+                // world-space offset by different amounts, so no constant
+                // grounds both exactly. This is the one number to nudge if the
+                // hopper reads too high or sinks into the pavement.
+                0.05f)
         };
 
         private static readonly IReadOnlyList<CityPedestrianArchetype>
@@ -172,11 +258,90 @@ namespace BarPromenade
 
         public static GameObject[] LoadPrefabs()
         {
-            var prefabs = new GameObject[OrderedArchetypes.Length];
+            return LoadPrefabs(OrderedArchetypes);
+        }
+
+        /// <summary>
+        /// Spreads <paramref name="poolSize"/> pooled instances over the
+        /// catalog in stable order: every design appears once, then the
+        /// remainder is dealt round-robin while each design stays under its
+        /// declared instance limit.
+        /// </summary>
+        public static IReadOnlyList<CityPedestrianArchetype>
+            CreatePoolComposition(int poolSize)
+        {
+            if (poolSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(poolSize),
+                    "A pedestrian pool requires at least one instance.");
+            }
+
+            if (poolSize < OrderedArchetypes.Length)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(poolSize),
+                    "A pedestrian pool must hold every registered design at " +
+                    "least once.");
+            }
+
+            var counts = new int[OrderedArchetypes.Length];
+            var composition =
+                new List<CityPedestrianArchetype>(poolSize);
             for (int index = 0; index < OrderedArchetypes.Length; index++)
             {
-                CityPedestrianArchetype archetype =
-                    OrderedArchetypes[index];
+                counts[index] = 1;
+                composition.Add(OrderedArchetypes[index]);
+            }
+
+            int cursor = 0;
+            while (composition.Count < poolSize)
+            {
+                bool dealt = false;
+                for (int step = 0;
+                     step < OrderedArchetypes.Length &&
+                     composition.Count < poolSize;
+                     step++)
+                {
+                    int index =
+                        (cursor + step) % OrderedArchetypes.Length;
+                    CityPedestrianArchetype archetype =
+                        OrderedArchetypes[index];
+                    if (counts[index] >= archetype.MaximumPoolInstances)
+                    {
+                        continue;
+                    }
+
+                    counts[index]++;
+                    composition.Add(archetype);
+                    cursor = index + 1;
+                    dealt = true;
+                    break;
+                }
+
+                if (!dealt)
+                {
+                    throw new InvalidOperationException(
+                        $"A pool of {poolSize} pedestrian instances exceeds " +
+                        "the total declared instance limits of the catalog.");
+                }
+            }
+
+            return composition;
+        }
+
+        public static GameObject[] LoadPooledPrefabs(int poolSize)
+        {
+            return LoadPrefabs(CreatePoolComposition(poolSize));
+        }
+
+        private static GameObject[] LoadPrefabs(
+            IReadOnlyList<CityPedestrianArchetype> archetypes)
+        {
+            var prefabs = new GameObject[archetypes.Count];
+            for (int index = 0; index < archetypes.Count; index++)
+            {
+                CityPedestrianArchetype archetype = archetypes[index];
                 prefabs[index] = LoadPrefab(archetype);
                 if (prefabs[index] == null)
                 {

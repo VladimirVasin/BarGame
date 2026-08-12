@@ -6,6 +6,143 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-12 — Walkers give way along the lane
+
+- Measured the geometry before designing, and it decided the design: sidewalks
+  are `1 m`, the lane corridor is `±(AgentRadius + NavigationMargin) = ±0.5 m`,
+  and `RoadWalkableArea.Contains` requires the whole `0.35 m` disc inside, so a
+  walker has `±0.15 m` of lateral room. Two walkers need `0.70 m` of separation
+  to pass. **Walking around each other across the lane is impossible on this
+  pavement**, so no amount of steering work would have produced it.
+- Avoidance therefore works along the lane, in three parts:
+  - A shoulder-shift of up to `0.15 m` away from whatever is ahead,
+    implemented as steering toward an offset point rather than the node, so it
+    re-centres on its own. Arrival became radius-based (`0.18 m`) because an
+    offset walker never lands exactly on a node.
+  - Queueing: a walker travelling the same way as the one ahead drops to that
+    leader's pace instead of stopping dead and setting off again. The old
+    behaviour stuttered.
+  - A blocked-time escape: wanting to move and not moving accumulates, and
+    after `1.5 s` the walker turns back. From the actor's side a prop and
+    another walker are the same problem, so both get the same way out, and it
+    is self-clearing because ordinary continuation already refuses to
+    backtrack — the node behind hands it a different branch.
+- `ShouldYield` became `ResolveAvoidance`, which still returns "must stop" but
+  now also sets a speed scale and a lean bias per walker. Stopping is the last
+  answer rather than the only one. Head-on ties are still broken by stable slot
+  order, so that contract is unchanged.
+- This mattered more after the population went from 2 to 8: two walkers meeting
+  head-on used to stand nose to nose until the distance rule released one.
+- Verification: `CityPedestrianRuntimeTests`, 21/21, including two new focused
+  cases — a walker held indefinitely turns back exactly once and only after the
+  threshold, and a queued walker keeps moving, leans within the lane and
+  re-centres when clear.
+
+## 2026-08-12 — The hopper stops hovering
+
+- Reported symptom: the Helmet Lamp Hopper renders above the pavement.
+- The source clips are not at fault. `CityPedestrianLocomotion.json` reports
+  `ground_min_m = 0.0` for both `HelmetLampIdle` and `HelmetLampHop`, and Idle
+  stays within `0.0097 m` of the ground for its whole cycle, so Blender exports
+  him planted.
+- Root cause is the gap the airborne exception opened. Every other design has
+  its lowest sole pinned to the presentation root every frame, which also
+  absorbs whatever the Avatar's motion-node extraction adds between the proven
+  clip and the rendered pose. `PreservesAirborneMotion` made
+  `CityPedestrianPresentation` skip that correction *entirely*, so for this one
+  design the offset had nothing cancelling it.
+- Built the missing instrument first:
+  `CityPedestrianAirborneGroundingPlayModeTests`. Getting a *valid* reading
+  took four attempts, and the first three were silently inert — worth recording
+  because each looks like a passing measurement:
+  1. Skinned `Renderer.bounds` never recompute without a render pass, so the
+     samples reported the bind pose. Two different import settings produced
+     bit-identical numbers, which is what exposed it.
+  2. Bone transforms fixed that, but the presentation selects
+     `CullUpdateTransforms` and a batch-mode run never renders, so the rig was
+     never driven at all: the measured arc was exactly `0.0`.
+  3. Adding a camera did not help — batch mode still does not render. Only
+     forcing `AlwaysAnimate` in the test drove the rig.
+  The test now asserts the rig actually moved before trusting any sample.
+- With a working reading: the hop is a real `0.272 m` arc, so `lockRootHeightY`
+  had to go back to `true` for airborne clips after all. The previous session's
+  note that locking "stripped the hop" was never verified — it was written in
+  the same session that found its own grounding test inert. Baking is what
+  *preserves* the arc here, because the presentation runs `applyRootMotion =
+  false` and unbaked height is extracted to root motion and thrown away. The
+  FBX was reimported so the setting is live.
+- The remaining lift is not a clip defect. Every other walker's per-frame sole
+  pin also absorbs the height the shared Generic Avatar adds when retargeting a
+  skeleton whose proportions differ from the hero's, and this squat design has
+  no such pin. It is now declared as
+  `CityPedestrianArchetype.GroundTrim` (`0.05 m` for the hopper) and applied to
+  the model root.
+- **The exact trim is a visual call and is not machine-settled.** The
+  instrument's absolute zero is unreliable: it approximates a sole as a fixed
+  drop below its foot bone and so ignores foot rotation, and the idle and hop
+  clips answer the same world-space offset by different amounts, so no single
+  constant grounds both. The test therefore reports absolute heights and gates
+  only on the vertical travel, which it measures soundly. Nudge `GroundTrim` if
+  the hopper still reads high or starts to sink.
+- Verification: the new PlayMode test passes, and the focused
+  `CityPedestrianRuntimeTests` EditMode selection was rerun for regression.
+
+## 2026-08-12 — A populated daytime street
+
+- Replaced the single `MaximumActiveModels = 2` constant with
+  `CityPedestrianPopulationProfile`, so each runtime scales on its own anchor
+  budget: City `8` day / `3` night over a `13`-model pool, Home balcony `5` / `2`
+  over `8`. `CityGameRoot` and `HomeInteriorRoot` now log the resolved caps.
+- The pool repeats designs. `CityPedestrianArchetype.MaximumPoolInstances`
+  makes that safe: `CreatePoolComposition` deals every design once and then
+  round-robins the remainder while respecting each limit, and the Helmet Lamp
+  Hopper declares `1` because it wears the only working light. The factory
+  validator changed from "one model per design" to "every design present, none
+  over its declared limit".
+- One spawn event now activates up to two walkers, and the cadence depends on
+  whether the street is full: `0.4-2 s` while below target, the original
+  `3.5-12.5 s` once only replacements remain. Night keeps one walker per event
+  and its long delays throughout.
+- Added dispersion: a candidate anchor must keep `12 m` from every active
+  walker and no more than two walkers share one sidewalk lane, derived from the
+  anchor ID without allocating. The fallback ladder now gives up connectivity
+  before dispersion, since a distant walker still reads as city life and two
+  stacked on one lane does not.
+- Approach guidance is capped at two concurrent walkers; everyone else takes a
+  seeded 50/50 initial direction with no player-proximity preference at all.
+  Eight walkers all steered at the hero read as pursuit, not as a city.
+- Added a forward-travel bias: above `3 m/s` smoothed player speed, selection
+  prefers anchors in the forward half-plane. This is what makes the bus ride
+  work — at `6 m/s` anything spawned behind is outrun before it can be seen. A
+  per-frame jump beyond `12 m` is treated as a teleport and clears the heading.
+- Performance work that the larger population made mandatory:
+  - `RefreshInitialApproachRoutes` ran an `O(V^2)` Dijkstra over the whole
+    graph (169 layout nodes expand to a much larger pedestrian graph) on every
+    change of the nearest node. It now uses a binary heap with lazy deletion
+    and only recomputes after the player has moved `4 m` *and* the per-component
+    target actually changed. Scratch arrays are reused instead of reallocated.
+  - Candidate search probed `Physics.CheckCapsule` on every one of the 210 city
+    anchors that passed the distance filter. It now collects eligible anchors
+    into reusable buffers and probes at most `4` sampled picks, and one
+    `Physics.SyncTransforms` covers a whole spawn batch instead of one per
+    spawn.
+- **A nearer spawn ring was proposed, implemented, and then rejected on
+  evidence.** The plan called for a `44-56 m` fog-hidden ring to fill the
+  street faster. The existing fog proof in `CityPedestrianRuntimeTests`
+  measures transmittance along the view axis *at the frustum corner*, which is
+  only `0.574` of the radial distance — a factor omitted when the ring was
+  proposed. At `44 m` that leaves `16%` transmittance against an accepted
+  `0.2%` bound, and the bound is not met until roughly `72 m` radially, which
+  is the existing `76 m` band. The ring was removed; the population increase,
+  batch fill and forward bias deliver the goal without it. The test now proves
+  the bound for the whole active population rather than the first pair.
+- Verification: `CityPedestrianRuntimeTests` EditMode selection, 19/19 passed.
+  Not run, and not required by the change: PlayMode, the remaining EditMode
+  fixtures, a player build. The Home balcony population is a first estimate —
+  `HomeInteriorRoot` now logs how many of its 16 anchors fall in the spawn band
+  and in the connected fallback band, so it can be tuned against measurement
+  rather than guessed again.
+
 ## 2026-08-12 — Helmet Lamp Hopper, a worn light and airborne clips
 
 - Added the fifth city walker, `helmet_lamp_hopper_v1`: a squat miner in ochre

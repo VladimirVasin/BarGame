@@ -8,16 +8,25 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityPedestrianDirector : MonoBehaviour
     {
-        public const int MaximumActiveModels = 2;
-        public const int NightMaximumActiveModels = 1;
+        public const int MaximumActiveModels =
+            CityPedestrianPopulationProfile.DefaultDaytimePopulation;
+        public const int NightMaximumActiveModels =
+            CityPedestrianPopulationProfile.DefaultNightPopulation;
         public const float MinimumSpawnDistance = 76f;
         public const float MaximumSpawnDistance = 86f;
+        public const int MaximumSpawnProbes = 4;
         public const float MinimumConnectedSpawnDistance = 32f;
         public const float DespawnDistance = 88f;
         public const float MinimumInitialSpawnDelay = 1.25f;
         public const float MaximumInitialSpawnDelay = 7.5f;
         public const float MinimumSpawnCooldown = 3.5f;
         public const float MaximumSpawnCooldown = 12.5f;
+        public const float MinimumFillSpawnDelay = 0.4f;
+        public const float MaximumFillSpawnDelay = 2f;
+        public const float TravelBiasSpeed = 3f;
+        public const float PlayerHeadingSmoothing = 0.25f;
+        public const float TeleportTravelDistance = 12f;
+        public const float ApproachRefreshMovement = 4f;
         public const float MinimumSpawnRetryDelay = 0.8f;
         public const float MaximumSpawnRetryDelay = 2.4f;
         public const float MinimumNightInitialSpawnDelay = 15f;
@@ -53,30 +62,61 @@ namespace BarPromenade
             new List<CityPedestrianPresentation>();
         private readonly List<bool> initialApproachCompleted =
             new List<bool>();
+        private readonly List<int> candidateBuffer = new List<int>(64);
+        private readonly List<int> forwardCandidateBuffer =
+            new List<int>(64);
         private CityPedestrianPlan plan;
         private Transform player;
         private Transform poolRoot;
         private Func<bool> nightModeProvider;
+        private CityPedestrianPopulationProfile profile =
+            CityPedestrianPopulationProfile.City;
         private float spawnCooldown;
         private uint randomState;
         private bool isNightSpawnMode;
+        private Vector3 previousPlayerPosition;
+        private Vector3 smoothedPlayerVelocity;
+        private bool hasPreviousPlayerPosition;
+        private Vector3 approachRefreshPosition;
+        private bool hasApproachRefreshPosition;
         private int[] initialApproachComponentByNode = Array.Empty<int>();
         private int initialApproachComponentCount;
         private int[] initialApproachTargetNodes = Array.Empty<int>();
         private float[] initialApproachComponentTargetSquaredDistances =
             Array.Empty<float>();
         private float[] initialApproachNodeDistances = Array.Empty<float>();
+        private int[] approachTargetScratch = Array.Empty<int>();
+        private int[] approachHeapNodes = Array.Empty<int>();
+        private float[] approachHeapKeys = Array.Empty<float>();
+        private int approachHeapCount;
 
         public bool IsInitialized { get; private set; }
         public CityPedestrianPlan Plan => plan;
         public IReadOnlyList<CityPedestrianActor> Actors => actors;
+        public CityPedestrianPopulationProfile Profile => profile;
         public int Count => actors.Count;
         public int PoolCapacity => presentationPool.Count;
         public float TimeUntilNextSpawn => spawnCooldown;
         public bool IsNightSpawnMode => isNightSpawnMode;
-        public int CurrentActiveLimit => isNightSpawnMode
-            ? NightMaximumActiveModels
-            : MaximumActiveModels;
+        public int CurrentActiveLimit =>
+            profile.GetPopulation(isNightSpawnMode);
+        public int ApproachGuidedCount
+        {
+            get
+            {
+                int count = 0;
+                for (int index = 0; index < actors.Count; index++)
+                {
+                    if (actors[index].IsSpawned &&
+                        !initialApproachCompleted[index])
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
         public int ActiveCount
         {
             get
@@ -100,7 +140,8 @@ namespace BarPromenade
             IReadOnlyList<CityPedestrianPresentation> pooledPresentations,
             Transform playerTransform,
             Transform presentationPoolRoot,
-            Func<bool> runtimeNightModeProvider = null)
+            Func<bool> runtimeNightModeProvider = null,
+            CityPedestrianPopulationProfile populationProfile = null)
         {
             if (IsInitialized)
             {
@@ -108,6 +149,8 @@ namespace BarPromenade
                     "The city pedestrian director is already initialized.");
             }
 
+            profile = populationProfile ??
+                CityPedestrianPopulationProfile.City;
             plan = pedestrianPlan ??
                 throw new ArgumentNullException(nameof(pedestrianPlan));
             player = playerTransform != null
@@ -129,12 +172,13 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(pooledPresentations));
             }
 
-            if (routeActors.Count > MaximumActiveModels ||
-                (routeActors.Count > 0 && pooledPresentations.Count == 0))
+            if (routeActors.Count > profile.DaytimePopulation ||
+                (routeActors.Count > 0 && pooledPresentations.Count == 0) ||
+                pooledPresentations.Count < routeActors.Count)
             {
                 throw new ArgumentException(
-                    "The pedestrian actor pool must stay within the active " +
-                    "cap and have at least one presentation when non-empty.");
+                    "The pedestrian actor pool must stay within the profile " +
+                    "population and own at least one presentation per slot.");
             }
 
             for (int index = 0; index < routeActors.Count; index++)
@@ -174,6 +218,8 @@ namespace BarPromenade
                 plan.StableSeed,
                 GetEntityId().GetHashCode());
             isNightSpawnMode = nightModeProvider();
+            previousPlayerPosition = player.position;
+            hasPreviousPlayerPosition = true;
             spawnCooldown = GetNextInitialSpawnDelay();
             IsInitialized = true;
         }
@@ -197,6 +243,7 @@ namespace BarPromenade
 
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshSpawnMode();
+            RefreshPlayerTravel(safeDeltaTime);
             if (HasActiveInitialApproach())
             {
                 RefreshInitialApproachRoutes();
@@ -213,7 +260,7 @@ namespace BarPromenade
                 RefreshInitialApproachState(index, actor.Position);
                 actor.Advance(
                     GetActorSimulationDeltaTime(actor, safeDeltaTime),
-                    ShouldYield(actor, index),
+                    ResolveAvoidance(actor, index),
                     initialApproachCompleted[index]
                         ? null
                         : player.position,
@@ -227,19 +274,45 @@ namespace BarPromenade
                 0f,
                 spawnCooldown - safeDeltaTime);
             ReleaseDistantActors();
-            if (ActiveCount < Mathf.Min(
-                    actors.Count,
-                    Mathf.Min(
-                        presentationPool.Count,
-                        CurrentActiveLimit)) &&
-                spawnCooldown <= 0f)
+            int populationLimit = GetEffectivePopulationLimit();
+            if (ActiveCount < populationLimit && spawnCooldown <= 0f)
             {
                 RefreshInitialApproachRoutes();
-                bool spawned = TrySpawnOne();
-                spawnCooldown = spawned
+                int spawned = TrySpawnBatch(populationLimit);
+                spawnCooldown = spawned > 0
                     ? GetNextSpawnCooldown()
                     : GetNextSpawnRetryDelay();
             }
+        }
+
+        private int GetEffectivePopulationLimit()
+        {
+            return Mathf.Min(
+                actors.Count,
+                Mathf.Min(presentationPool.Count, CurrentActiveLimit));
+        }
+
+        private int TrySpawnBatch(int populationLimit)
+        {
+            // One sync covers the whole batch: the collision probes read
+            // static geometry, while peer clearance is resolved against the
+            // director's own actor list rather than the physics scene.
+            Physics.SyncTransforms();
+            int allowed = isNightSpawnMode
+                ? 1
+                : profile.MaximumSpawnsPerEvent;
+            int spawned = 0;
+            while (spawned < allowed && ActiveCount < populationLimit)
+            {
+                if (!TrySpawnOne())
+                {
+                    break;
+                }
+
+                spawned++;
+            }
+
+            return spawned;
         }
 
         public void Shutdown()
@@ -308,6 +381,12 @@ namespace BarPromenade
             if (IsInitialized)
             {
                 isNightSpawnMode = nightModeProvider();
+                // The hero may have moved far while this runtime was idle, so
+                // neither the smoothed heading nor the cached approach search
+                // describes the current position any more.
+                hasPreviousPlayerPosition = false;
+                smoothedPlayerVelocity = Vector3.zero;
+                hasApproachRefreshPosition = false;
                 spawnCooldown = GetNextInitialSpawnDelay();
             }
         }
@@ -349,13 +428,22 @@ namespace BarPromenade
         {
             int actorIndex = FindAvailableActorIndex();
             if (actorIndex < 0 ||
-                !TryFindSpawnCandidate(out SpawnCandidate candidate))
+                !TryFindSpawnAnchor(
+                    out CityPedestrianSpawnAnchor anchor))
             {
                 return false;
             }
 
+            // Only a small share of the population may be steered toward the
+            // hero. The rest take a seeded direction, so a busy street shows
+            // opposing streams instead of a crowd converging on the player.
+            bool guided =
+                ApproachGuidedCount < profile.ApproachGuidedPopulation;
+            var candidate = new SpawnCandidate(
+                anchor,
+                SelectInitialTarget(anchor, NextRandomUInt(), guided));
             CityPedestrianActor actor = actors[actorIndex];
-            initialApproachCompleted[actorIndex] = false;
+            initialApproachCompleted[actorIndex] = !guided;
             uint spawnSeed = CityPedestrianStableHash.Combine(
                 NextRandomUInt(),
                 CityPedestrianStableHash.String(candidate.Anchor.Id));
@@ -407,13 +495,13 @@ namespace BarPromenade
                 behaviorSeed);
             try
             {
-                Physics.SyncTransforms();
                 if (!IsCollisionActivationSafe(
                         actor.Position,
                         actor.AgentRadius,
                         actor))
                 {
                     actor.ReleasePresentation(poolRoot);
+                    initialApproachCompleted[actorIndex] = false;
                     return false;
                 }
 
@@ -422,48 +510,61 @@ namespace BarPromenade
             catch
             {
                 actor.ReleasePresentation(poolRoot);
+                initialApproachCompleted[actorIndex] = false;
                 throw;
             }
 
             return true;
         }
 
-        private bool TryFindSpawnCandidate(out SpawnCandidate result)
+        private bool TryFindSpawnAnchor(
+            out CityPedestrianSpawnAnchor result)
         {
-            if (TryFindSpawnCandidate(
-                    MinimumSpawnDistance,
-                    MaximumSpawnDistance,
-                    true,
-                    out result) ||
-                TryFindSpawnCandidate(
-                    MinimumConnectedSpawnDistance,
-                    MaximumSpawnDistance,
-                    true,
-                    out result))
-            {
-                return true;
-            }
-
-            return TryFindSpawnCandidate(
-                MinimumSpawnDistance,
-                MaximumSpawnDistance,
-                false,
-                out result);
+            // Dispersion outlives connectivity in this ladder: a walker
+            // farther away or in an unreachable component still reads as city
+            // life, while two walkers stacked on one lane does not. Only the
+            // last resort relaxes both.
+            return TryFindSpawnAnchor(
+                       MinimumSpawnDistance,
+                       MaximumSpawnDistance,
+                       true,
+                       true,
+                       out result) ||
+                   TryFindSpawnAnchor(
+                       MinimumConnectedSpawnDistance,
+                       MaximumSpawnDistance,
+                       true,
+                       true,
+                       out result) ||
+                   TryFindSpawnAnchor(
+                       MinimumSpawnDistance,
+                       MaximumSpawnDistance,
+                       false,
+                       true,
+                       out result) ||
+                   TryFindSpawnAnchor(
+                       MinimumConnectedSpawnDistance,
+                       MaximumSpawnDistance,
+                       false,
+                       false,
+                       out result);
         }
 
-        private bool TryFindSpawnCandidate(
+        private bool TryFindSpawnAnchor(
             float minimumSpawnDistance,
             float maximumSpawnDistance,
             bool requireConnectedApproach,
-            out SpawnCandidate result)
+            bool requireDispersion,
+            out CityPedestrianSpawnAnchor result)
         {
-            result = default;
+            result = null;
+            candidateBuffer.Clear();
+            forwardCandidateBuffer.Clear();
             float minimumDistanceSquared =
                 minimumSpawnDistance * minimumSpawnDistance;
             float maximumDistanceSquared =
                 maximumSpawnDistance * maximumSpawnDistance;
-            bool found = false;
-            uint bestRank = uint.MaxValue;
+            bool biasForward = TryGetTravelDirection(out Vector3 heading);
             for (int index = 0;
                  index < plan.SpawnAnchors.Count;
                  index++)
@@ -477,27 +578,166 @@ namespace BarPromenade
                     (requireConnectedApproach &&
                      !CanApproachEncounterRange(anchor)) ||
                     IsAnchorReserved(anchor.Id) ||
-                    !IsCollisionActivationSafe(
+                    (requireDispersion && !IsAnchorDispersed(anchor)))
+                {
+                    continue;
+                }
+
+                candidateBuffer.Add(index);
+                if (biasForward &&
+                    IsAheadOfTravel(anchor.Position, heading))
+                {
+                    forwardCandidateBuffer.Add(index);
+                }
+            }
+
+            // A fast-travelling hero — riding the bus, above all — outruns
+            // anything spawned behind, so prefer anchors the ride is heading
+            // into while any exist.
+            List<int> source = biasForward &&
+                               forwardCandidateBuffer.Count > 0
+                ? forwardCandidateBuffer
+                : candidateBuffer;
+            for (int probe = 0;
+                 probe < MaximumSpawnProbes && source.Count > 0;
+                 probe++)
+            {
+                int pick = (int)(NextRandomUInt() % (uint)source.Count);
+                CityPedestrianSpawnAnchor anchor =
+                    plan.SpawnAnchors[source[pick]];
+                if (IsCollisionActivationSafe(
                         anchor.Position,
                         plan.AgentRadius,
                         null))
                 {
-                    continue;
+                    result = anchor;
+                    return true;
                 }
 
-                uint rank = NextRandomUInt();
-                if (found && rank >= bestRank)
+                source.RemoveAt(pick);
+            }
+
+            return false;
+        }
+
+        private bool IsAnchorDispersed(CityPedestrianSpawnAnchor anchor)
+        {
+            float separation = profile.MinimumPeerSeparation;
+            float separationSquared = separation * separation;
+            int laneCount = 0;
+            for (int index = 0; index < actors.Count; index++)
+            {
+                CityPedestrianActor actor = actors[index];
+                if (!actor.IsSpawned)
                 {
                     continue;
                 }
 
-                int target = SelectInitialTarget(anchor, rank);
-                result = new SpawnCandidate(anchor, target);
-                bestRank = rank;
-                found = true;
+                if (separation > 0f &&
+                    PlanarSquaredDistance(
+                        anchor.Position,
+                        actor.Position) < separationSquared)
+                {
+                    return false;
+                }
+
+                if (!SharesStreetLane(
+                        anchor.Id,
+                        actor.SpawnAnchorId))
+                {
+                    continue;
+                }
+
+                laneCount++;
+                if (laneCount >= profile.MaximumWalkersPerStreetLane)
+                {
+                    return false;
+                }
             }
 
-            return found;
+            return true;
+        }
+
+        /// <summary>
+        /// Spawn anchor IDs end in a segment ordinal, so trimming it leaves
+        /// one key per sidewalk lane: one side of one street edge.
+        /// </summary>
+        private static bool SharesStreetLane(string first, string second)
+        {
+            int firstLength = GetStreetLaneLength(first);
+            return firstLength > 0 &&
+                   firstLength == GetStreetLaneLength(second) &&
+                   string.CompareOrdinal(
+                       first,
+                       0,
+                       second,
+                       0,
+                       firstLength) == 0;
+        }
+
+        private static int GetStreetLaneLength(string anchorId)
+        {
+            if (string.IsNullOrEmpty(anchorId))
+            {
+                return 0;
+            }
+
+            int lastSeparator = anchorId.LastIndexOf(':');
+            return lastSeparator > 0 ? lastSeparator : anchorId.Length;
+        }
+
+        private void RefreshPlayerTravel(float deltaTime)
+        {
+            Vector3 position = player.position;
+            if (!hasPreviousPlayerPosition || deltaTime <= 0f)
+            {
+                previousPlayerPosition = position;
+                hasPreviousPlayerPosition = true;
+                return;
+            }
+
+            Vector3 delta = position - previousPlayerPosition;
+            delta.y = 0f;
+            previousPlayerPosition = position;
+            if (delta.sqrMagnitude >
+                TeleportTravelDistance * TeleportTravelDistance)
+            {
+                // A scene return or a boarding transfer is not travel, and
+                // must not bias the spawn ring toward an arbitrary heading.
+                smoothedPlayerVelocity = Vector3.zero;
+                return;
+            }
+
+            smoothedPlayerVelocity = Vector3.Lerp(
+                smoothedPlayerVelocity,
+                delta / deltaTime,
+                Mathf.Clamp01(deltaTime / PlayerHeadingSmoothing));
+        }
+
+        private bool TryGetTravelDirection(out Vector3 heading)
+        {
+            heading = smoothedPlayerVelocity;
+            heading.y = 0f;
+            float speedSquared = heading.sqrMagnitude;
+            if (speedSquared < TravelBiasSpeed * TravelBiasSpeed)
+            {
+                heading = Vector3.zero;
+                return false;
+            }
+
+            heading /= Mathf.Sqrt(speedSquared);
+            return true;
+        }
+
+        private bool IsAheadOfTravel(Vector3 position, Vector3 heading)
+        {
+            Vector3 offset = position - player.position;
+            offset.y = 0f;
+            float squaredDistance = offset.sqrMagnitude;
+            return squaredDistance > 0.0001f &&
+                   Vector3.Dot(
+                       heading,
+                       offset / Mathf.Sqrt(squaredDistance)) > 0.15f;
         }
 
         private bool CanApproachEncounterRange(
@@ -523,9 +763,11 @@ namespace BarPromenade
 
         private int SelectInitialTarget(
             CityPedestrianSpawnAnchor anchor,
-            uint rank)
+            uint rank,
+            bool guided)
         {
-            if (initialApproachNodeDistances.Length == plan.Nodes.Count)
+            if (guided &&
+                initialApproachNodeDistances.Length == plan.Nodes.Count)
             {
                 float firstCost = initialApproachNodeDistances[
                     anchor.FirstNodeIndex];
@@ -539,22 +781,25 @@ namespace BarPromenade
                 }
             }
 
-            float firstDistance = PlanarSquaredDistance(
-                plan.Nodes[anchor.FirstNodeIndex].Position,
-                player.position);
-            float secondDistance = PlanarSquaredDistance(
-                plan.Nodes[anchor.SecondNodeIndex].Position,
-                player.position);
-            if (Mathf.Abs(firstDistance - secondDistance) <= 0.0001f)
+            if (guided)
             {
-                return (CityPedestrianStableHash.Combine(
-                            rank,
-                            DirectionSalt) & 1u) == 0u
-                    ? anchor.FirstNodeIndex
-                    : anchor.SecondNodeIndex;
+                float firstDistance = PlanarSquaredDistance(
+                    plan.Nodes[anchor.FirstNodeIndex].Position,
+                    player.position);
+                float secondDistance = PlanarSquaredDistance(
+                    plan.Nodes[anchor.SecondNodeIndex].Position,
+                    player.position);
+                if (Mathf.Abs(firstDistance - secondDistance) > 0.0001f)
+                {
+                    return firstDistance < secondDistance
+                        ? anchor.FirstNodeIndex
+                        : anchor.SecondNodeIndex;
+                }
             }
 
-            return firstDistance < secondDistance
+            return (CityPedestrianStableHash.Combine(
+                        rank,
+                        DirectionSalt) & 1u) == 0u
                 ? anchor.FirstNodeIndex
                 : anchor.SecondNodeIndex;
         }
@@ -615,10 +860,17 @@ namespace BarPromenade
                 QueryTriggerInteraction.Ignore);
         }
 
-        private bool ShouldYield(
+        /// <summary>
+        /// Resolves how one walker gives way, and returns whether it has to
+        /// stop outright. A `1 m` pavement cannot fit two walkers abreast, so
+        /// the useful answers are along the lane: lean aside, drop to the pace
+        /// of whoever is in front, and only stop when neither will do.
+        /// </summary>
+        private bool ResolveAvoidance(
             CityPedestrianActor actor,
             int actorIndex)
         {
+            actor.SetAvoidance(1f, 0f);
             if (!actor.IsSpawned ||
                 actor.MotionState != CityPedestrianMotionState.Walking)
             {
@@ -631,6 +883,9 @@ namespace BarPromenade
                 return false;
             }
 
+            bool yield = false;
+            float speedScale = 1f;
+            float lateralBias = 0f;
             if (VerticalCapsulesOverlap(
                     actor.Position,
                     CityPedestrianActor.CollisionHeight,
@@ -643,7 +898,10 @@ namespace BarPromenade
                     player.position,
                     PlayerAvoidanceDistance))
             {
-                return true;
+                // The hero is not a walker and does not take turns, so a
+                // walker steps aside and waits rather than negotiating.
+                lateralBias += SideOf(actor.Position, travel, player.position);
+                yield = true;
             }
 
             for (int index = 0; index < actors.Count; index++)
@@ -663,17 +921,65 @@ namespace BarPromenade
                     continue;
                 }
 
+                lateralBias += SideOf(
+                    actor.Position,
+                    travel,
+                    other.Position);
                 Vector3 otherTravel = other.TravelDirection;
-                bool meetingHeadOn =
-                    otherTravel.sqrMagnitude > 0.0001f &&
-                    Vector3.Dot(travel, otherTravel) < -0.20f;
+                float alignment = otherTravel.sqrMagnitude > 0.0001f
+                    ? Vector3.Dot(travel, otherTravel)
+                    : 0f;
+                if (alignment > 0.20f)
+                {
+                    // Travelling the same way: queue at the leader's pace
+                    // instead of stopping dead and setting off again, which
+                    // reads as stuttering rather than walking behind someone.
+                    float leaderSpeed = other.IsYielding
+                        ? 0f
+                        : other.MovementSpeed;
+                    speedScale = Mathf.Min(
+                        speedScale,
+                        actor.MovementSpeed > 0.0001f
+                            ? leaderSpeed / actor.MovementSpeed
+                            : 0f);
+                    continue;
+                }
+
+                bool meetingHeadOn = alignment < -0.20f;
                 if (!meetingHeadOn || actorIndex > index)
                 {
-                    return true;
+                    yield = true;
                 }
             }
 
-            return false;
+            actor.SetAvoidance(
+                speedScale,
+                Mathf.Clamp(-lateralBias, -1f, 1f));
+            return yield;
+        }
+
+        /// <summary>
+        /// `+1` when the obstruction lies to the walker's right, so leaning by
+        /// the negated value moves away from it.
+        /// </summary>
+        private static float SideOf(
+            Vector3 origin,
+            Vector3 forward,
+            Vector3 obstruction)
+        {
+            Vector3 offset = obstruction - origin;
+            offset.y = 0f;
+            Vector3 right = new Vector3(forward.z, 0f, -forward.x);
+            float side = Vector3.Dot(right, offset);
+            if (Mathf.Abs(side) <= 0.05f)
+            {
+                // Dead ahead: pick a side deterministically instead of
+                // dithering, and make it the same side every walker picks so
+                // two meeting head-on lean apart rather than into each other.
+                return 1f;
+            }
+
+            return Mathf.Sign(side);
         }
 
         private void ReleaseActor(int actorIndex)
@@ -715,15 +1021,50 @@ namespace BarPromenade
             }
 
             EnsureInitialApproachComponents();
-            var nextTargetNodes = new int[initialApproachComponentCount];
-            var nextTargetDistances =
-                new float[initialApproachComponentCount];
+            bool stale =
+                initialApproachNodeDistances.Length != nodeCount ||
+                initialApproachTargetNodes.Length !=
+                initialApproachComponentCount ||
+                initialApproachComponentTargetSquaredDistances.Length !=
+                initialApproachComponentCount;
+            // A whole-graph search is far too expensive to repeat for every
+            // step the hero takes, and the nearest node per component barely
+            // moves in between.
+            if (!stale &&
+                hasApproachRefreshPosition &&
+                PlanarSquaredDistance(
+                    player.position,
+                    approachRefreshPosition) <
+                ApproachRefreshMovement * ApproachRefreshMovement)
+            {
+                return;
+            }
+
+            approachRefreshPosition = player.position;
+            hasApproachRefreshPosition = true;
+            if (initialApproachTargetNodes.Length !=
+                initialApproachComponentCount)
+            {
+                initialApproachTargetNodes =
+                    new int[initialApproachComponentCount];
+                initialApproachComponentTargetSquaredDistances =
+                    new float[initialApproachComponentCount];
+            }
+
+            if (approachTargetScratch.Length !=
+                initialApproachComponentCount)
+            {
+                approachTargetScratch =
+                    new int[initialApproachComponentCount];
+            }
+
             for (int index = 0;
                  index < initialApproachComponentCount;
                  index++)
             {
-                nextTargetNodes[index] = -1;
-                nextTargetDistances[index] = float.PositiveInfinity;
+                initialApproachComponentTargetSquaredDistances[index] =
+                    float.PositiveInfinity;
+                approachTargetScratch[index] = -1;
             }
 
             for (int index = 0; index < nodeCount; index++)
@@ -732,48 +1073,53 @@ namespace BarPromenade
                 float distance = PlanarSquaredDistance(
                     plan.Nodes[index].Position,
                     player.position);
-                if (distance < nextTargetDistances[component])
+                if (distance <
+                    initialApproachComponentTargetSquaredDistances[
+                        component])
                 {
-                    nextTargetDistances[component] = distance;
-                    nextTargetNodes[component] = index;
+                    initialApproachComponentTargetSquaredDistances[
+                        component] = distance;
+                    approachTargetScratch[component] = index;
                 }
             }
 
-            initialApproachComponentTargetSquaredDistances =
-                nextTargetDistances;
-            bool targetsUnchanged =
-                initialApproachTargetNodes.Length ==
-                nextTargetNodes.Length;
-            if (targetsUnchanged)
+            bool targetsUnchanged = !stale;
+            for (int index = 0;
+                 targetsUnchanged &&
+                 index < initialApproachComponentCount;
+                 index++)
             {
-                for (int index = 0;
-                     index < nextTargetNodes.Length;
-                     index++)
-                {
-                    if (initialApproachTargetNodes[index] !=
-                        nextTargetNodes[index])
-                    {
-                        targetsUnchanged = false;
-                        break;
-                    }
-                }
+                targetsUnchanged =
+                    initialApproachTargetNodes[index] ==
+                    approachTargetScratch[index];
             }
 
-            if (targetsUnchanged &&
-                initialApproachNodeDistances.Length == nodeCount)
+            if (targetsUnchanged)
             {
                 return;
             }
 
-            initialApproachTargetNodes = nextTargetNodes;
-            initialApproachNodeDistances = new float[nodeCount];
-            var visited = new bool[nodeCount];
+            Array.Copy(
+                approachTargetScratch,
+                initialApproachTargetNodes,
+                initialApproachComponentCount);
+            if (initialApproachNodeDistances.Length != nodeCount)
+            {
+                initialApproachNodeDistances = new float[nodeCount];
+            }
+
+            RunApproachSearch(nodeCount);
+        }
+
+        private void RunApproachSearch(int nodeCount)
+        {
             for (int index = 0; index < nodeCount; index++)
             {
                 initialApproachNodeDistances[index] =
                     float.PositiveInfinity;
             }
 
+            approachHeapCount = 0;
             for (int index = 0;
                  index < initialApproachTargetNodes.Length;
                  index++)
@@ -782,32 +1128,19 @@ namespace BarPromenade
                 if (targetNode >= 0)
                 {
                     initialApproachNodeDistances[targetNode] = 0f;
+                    PushApproachNode(targetNode, 0f);
                 }
             }
 
-            for (int iteration = 0;
-                 iteration < nodeCount;
-                 iteration++)
+            while (PopApproachNode(
+                       out int node,
+                       out float nodeDistance))
             {
-                int node = -1;
-                float nodeDistance = float.PositiveInfinity;
-                for (int index = 0; index < nodeCount; index++)
+                if (nodeDistance > initialApproachNodeDistances[node])
                 {
-                    if (!visited[index] &&
-                        initialApproachNodeDistances[index] < nodeDistance)
-                    {
-                        node = index;
-                        nodeDistance =
-                            initialApproachNodeDistances[index];
-                    }
+                    continue;
                 }
 
-                if (node < 0)
-                {
-                    break;
-                }
-
-                visited[node] = true;
                 IReadOnlyList<int> linkIndices =
                     plan.GetLinkIndices(node);
                 for (int index = 0; index < linkIndices.Count; index++)
@@ -825,8 +1158,89 @@ namespace BarPromenade
                     }
 
                     initialApproachNodeDistances[other] = nextDistance;
+                    PushApproachNode(other, nextDistance);
                 }
             }
+        }
+
+        private void PushApproachNode(int node, float key)
+        {
+            if (approachHeapCount == approachHeapNodes.Length)
+            {
+                int nextCapacity = Mathf.Max(
+                    64,
+                    approachHeapNodes.Length * 2);
+                Array.Resize(ref approachHeapNodes, nextCapacity);
+                Array.Resize(ref approachHeapKeys, nextCapacity);
+            }
+
+            int child = approachHeapCount++;
+            approachHeapNodes[child] = node;
+            approachHeapKeys[child] = key;
+            while (child > 0)
+            {
+                int parent = (child - 1) / 2;
+                if (approachHeapKeys[parent] <= approachHeapKeys[child])
+                {
+                    break;
+                }
+
+                SwapApproachHeap(parent, child);
+                child = parent;
+            }
+        }
+
+        private bool PopApproachNode(out int node, out float key)
+        {
+            if (approachHeapCount == 0)
+            {
+                node = -1;
+                key = float.PositiveInfinity;
+                return false;
+            }
+
+            node = approachHeapNodes[0];
+            key = approachHeapKeys[0];
+            approachHeapCount--;
+            approachHeapNodes[0] = approachHeapNodes[approachHeapCount];
+            approachHeapKeys[0] = approachHeapKeys[approachHeapCount];
+            int parent = 0;
+            while (true)
+            {
+                int left = (parent * 2) + 1;
+                if (left >= approachHeapCount)
+                {
+                    break;
+                }
+
+                int smallest = left;
+                int right = left + 1;
+                if (right < approachHeapCount &&
+                    approachHeapKeys[right] < approachHeapKeys[left])
+                {
+                    smallest = right;
+                }
+
+                if (approachHeapKeys[parent] <= approachHeapKeys[smallest])
+                {
+                    break;
+                }
+
+                SwapApproachHeap(parent, smallest);
+                parent = smallest;
+            }
+
+            return true;
+        }
+
+        private void SwapApproachHeap(int first, int second)
+        {
+            int node = approachHeapNodes[first];
+            approachHeapNodes[first] = approachHeapNodes[second];
+            approachHeapNodes[second] = node;
+            float key = approachHeapKeys[first];
+            approachHeapKeys[first] = approachHeapKeys[second];
+            approachHeapKeys[second] = key;
         }
 
         private void EnsureInitialApproachComponents()
@@ -1000,6 +1414,14 @@ namespace BarPromenade
 
         private float GetNextInitialSpawnDelay()
         {
+            if (profile.FillsImmediately && !isNightSpawnMode)
+            {
+                // Enabling this runtime is itself a composition boundary, so
+                // the street must not read as empty while a first-event delay
+                // runs down.
+                return 0f;
+            }
+
             return GetRandomRange(
                 isNightSpawnMode
                     ? MinimumNightInitialSpawnDelay
@@ -1011,13 +1433,23 @@ namespace BarPromenade
 
         private float GetNextSpawnCooldown()
         {
-            return GetRandomRange(
-                isNightSpawnMode
-                    ? MinimumNightSpawnCooldown
-                    : MinimumSpawnCooldown,
-                isNightSpawnMode
-                    ? MaximumNightSpawnCooldown
-                    : MaximumSpawnCooldown);
+            if (isNightSpawnMode)
+            {
+                return GetRandomRange(
+                    MinimumNightSpawnCooldown,
+                    MaximumNightSpawnCooldown);
+            }
+
+            // Below the target population the street is still filling, so the
+            // next event follows quickly; the long cadence applies once the
+            // population is complete and only replacements remain.
+            return ActiveCount < GetEffectivePopulationLimit()
+                ? GetRandomRange(
+                    MinimumFillSpawnDelay,
+                    MaximumFillSpawnDelay)
+                : GetRandomRange(
+                    MinimumSpawnCooldown,
+                    MaximumSpawnCooldown);
         }
 
         private float GetNextSpawnRetryDelay()

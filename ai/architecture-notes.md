@@ -251,36 +251,67 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
   removes every reachable dead-end branch before runtime. Long sidewalk links
-  expose deterministic spawn anchors; two reusable actor/presentation slots are the
-  complete runtime population. A director-local runtime random stream mixes
+  expose deterministic spawn anchors. A `CityPedestrianPopulationProfile` owns
+  the complete runtime population, so City and the Home balcony scale
+  independently instead of sharing one constant: City runs `8` daytime and `3`
+  night slots over a `13`-presentation pool, Home runs `5` and `2` over `8`.
+  A director-local runtime random stream mixes
   plan seed, activation time and instance identity, then independently samples
   candidate rank, motion/palette values and every delay. The first event waits
-  `1.25-7.5 s`; each later slot or replacement waits `3.5-12.5 s`, and one
-  event activates at most one slot. Failed searches retry after a randomized
+  `1.25-7.5 s`. One event activates at most `2` slots, and while the population
+  is below its profile target the next event follows in `0.4-2 s`; once the
+  target is complete, only replacements remain and the long `3.5-12.5 s`
+  cadence returns. Failed searches retry after a randomized
   `0.8-2.4 s`. A slot may activate only at a unique, obstacle-safe anchor
-  in a preferred `76-86 m` band from the player. With City's fixed `0.070` Exp2 fog, the inner edge
+  in the preferred `76-86 m` band from the player. With City's fixed `0.070`
+  Exp2 fog, the inner edge
   retains less than `0.2%` scene transmittance even at the widest production
   `70-degree` 16:9 frustum corner after a conservative combined `6 m` camera
-  and full visual-envelope depth offset. When that narrow band offers only
+  and full visual-envelope depth offset. A nearer ring was evaluated and
+  rejected: that proof measures depth *along the view axis* at the frustum
+  corner, only `0.574` of the radial distance, so the same bound is not met
+  until roughly `72 m` radially — a `44-56 m` ring leaves `16%` transmittance,
+  which is a visible silhouette rather than fog. Population size, batch fill
+  and forward bias close the street instead of a shorter approach.
+  Candidate search collects eligible anchors into reusable buffers and probes
+  static clearance on at most `4` sampled picks rather than on every anchor,
+  and one `Physics.SyncTransforms` covers a whole spawn batch. A candidate must
+  also disperse: it keeps `12 m` from every active walker and at most `2`
+  walkers share one sidewalk lane, which is one side of one street edge. The
+  fallback ladder drops connectivity before it drops dispersion, because a
+  walker farther away still reads as city life while two stacked on one lane
+  does not; only the last resort relaxes both. When that band offers only
   disconnected sidewalk components whose closest point remains outside the
   `24 m` encounter radius, selection falls back to a connected obstacle-safe
-  anchor at `32-86 m`; the nearer bound remains inside dense fog. It remains active
+  anchor at `32-86 m`; the nearer bound remains inside dense fog. A walker
+  remains active
   regardless of camera direction or frustum membership and returns to the pool
-  only after crossing beyond `88 m` from the player. To prevent both daytime
-  slots remaining occupied by invisible actors, each new walker temporarily
-  follows the eligible non-backtracking continuation with the shortest physical
+  only after crossing beyond `88 m` from the player. To prevent daytime
+  slots remaining occupied by invisible actors, at most `2` walkers at a time
+  follow the eligible non-backtracking continuation with the shortest physical
   graph distance to the nearest player-side node in its connected component
-  until it first enters a `24 m` encounter radius. This guidance
+  until they first enter a `24 m` encounter radius. This guidance
   then stays disabled for that spawn so ordinary seeded roaming resumes instead
-  of turning into pursuit. Player-distance-only simulation acceleration rises
+  of turning into pursuit. Every other walker takes a seeded `50/50` initial
+  direction with no player-proximity preference at all, so a busy street shows
+  opposing streams rather than a crowd converging on the hero. That shared
+  guidance search is one multi-source Dijkstra over the whole graph, so it uses
+  a binary heap and recomputes only when the player has moved past `4 m` and
+  the nearest node per component actually changed. When the player travels
+  faster than `3 m/s` — a bus ride, above all — candidate selection prefers
+  anchors in the smoothed forward half-plane, because anything spawned behind a
+  `6 m/s` vehicle is outrun before it can be seen; a per-frame jump beyond
+  `12 m` is read as a teleport and clears that heading instead of biasing it.
+  Player-distance-only simulation acceleration rises
   smoothly from authored pace at `32 m` to
   `2.75x` at and beyond `76 m`; this advances both inward approaches and
   outward recycling without reintroducing a camera dependency. Strict night is
-  before `06:00` and from `19:00`: it keeps authored simulation pace, allows
-  only one new population slot, waits
-  `15-35 s` for the first event and `30-70 s` for a replacement, and retries
-  failed searches after `4-10 s`. A second walker already alive at dusk is not
-  culled by the clock and leaves only through the same distance rule. Actors
+  before `06:00` and from `19:00`: it keeps authored simulation pace, activates
+  exactly one walker per event, waits
+  `15-35 s` for the first event and `30-70 s` for every later one including
+  while still below its own population, and retries
+  failed searches after `4-10 s`. Walkers already alive at dusk are not
+  culled by the clock and leave only through the same distance rule. Actors
   never reverse at artificial route endpoints: they continue through graph turns,
   avoid immediate backtracking and make one seeded 50% cross/don't-cross
   choice when passing each zebra entry. An explicit stable catalog owns one
@@ -304,9 +335,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   may leave the pavement or wear one working light, but only by declaring it.
   An airborne archetype declares an apex band; its clips receive a single
   constant pelvis lift instead of a per-frame correction, must never penetrate
-  and must land at least once, the clip importer stops locking their root
-  height, and `CityPedestrianPresentation` stops grounding their soles every
-  frame. A lamp-bearing archetype declares exactly one shadowless Spot bounded
+  and must land at least once. Its root height is still baked into the pose at
+  import: the presentation runs its Animator with `applyRootMotion = false`, so
+  height left unbaked is extracted as root motion and discarded, taking the hop
+  with it. `CityPedestrianPresentation` then lowers the design by one declared
+  `CityPedestrianArchetype.GroundTrim` instead of pinning its sole every frame,
+  which would flatten the arc. That trim exists because every other walker's
+  per-frame pin also silently absorbs the height the shared Generic Avatar
+  introduces when it retargets a skeleton whose proportions differ from the
+  hero's; an airborne design has no such pin, so the residual is declared and
+  tuned by eye. It is deliberately not derived from the clip: a sole's true
+  height depends on foot rotation, and the idle and hop clips answer a single
+  world-space offset by different amounts, so no measured constant grounds both
+  exactly. A lamp-bearing archetype declares exactly one shadowless Spot bounded
   to `7.5 m` and `3.6` intensity, parented to the animated head bone; the
   prefab validator now checks the declared count rather than forbidding lights
   outright, so an accidental extra light still fails. The pool holds one
@@ -320,7 +361,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   becomes physical only after a successful spawn and presentation bind, and
   is disabled before pooling. The dedicated `CityPedestrian` layer collides
   with the player but not other pedestrians; camera collision and interaction
-  queries ignore it. Stable slot order owns head-on yielding. Walkers retain no
+  queries ignore it. Stable slot order still owns head-on yielding, but
+  yielding is the last answer rather than the only one. A `1 m` sidewalk minus
+  a `0.35 m` agent leaves `±0.15 m` of lateral room, and two walkers would need
+  `0.70 m` of separation to pass, so walking around each other across the lane
+  is geometrically impossible and avoidance works along it instead: a walker
+  leans away from an obstruction by up to that `0.15 m` shoulder-shift and
+  re-centres itself once clear; one travelling the same way drops to the pace
+  of whoever is in front and queues rather than stopping and restarting; and a
+  walker that wants to move but does not — pinned against a prop or nose to
+  nose with another walker, which are indistinguishable from the actor's side —
+  turns back after `1.5 s`. Turning back is the only resolution the pavement
+  affords, and it is self-clearing: the node behind offers its other branches
+  because ordinary continuation already refuses to backtrack. Walkers retain no
   prompts, persistence or gameplay reactions, and their four muted palettes
   use the shared material through property blocks. Home transforms this same
   graph and navigation mask through `PlayerHomeBalconyGeometry`, filters spawn
