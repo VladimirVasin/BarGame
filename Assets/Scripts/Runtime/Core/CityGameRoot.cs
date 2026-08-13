@@ -40,6 +40,7 @@ namespace BarPromenade
         public CityMapController Map { get; private set; }
         public MinigameDebugWindow DebugWindow { get; private set; }
         public InventoryController Inventory { get; private set; }
+        public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -211,11 +212,12 @@ namespace BarPromenade
                 }
             }
 
-            spawnPosition.y =
-                (spawnOnSidewalk
-                    ? CityStreetSurfacePlanner.SidewalkTop
-                    : CityStreetSurfacePlanner.RoadTop) +
-                PlayerFactory.GroundedRootOffset;
+            if (!spawnOnSidewalk)
+            {
+                spawnPosition.y +=
+                    CityStreetSurfacePlanner.RoadTop +
+                    PlayerFactory.GroundedRootOffset;
+            }
             bool spawnIsWalkable =
                 World.WalkableArea.Contains(spawnPosition);
             GameLog.Info(
@@ -356,6 +358,11 @@ namespace BarPromenade
                 Map);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
+                Player,
+                follow,
+                intoxicationHud);
+            Journal = ui.AddComponent<JournalController>();
+            Journal.Initialize(
                 Player,
                 follow,
                 intoxicationHud);

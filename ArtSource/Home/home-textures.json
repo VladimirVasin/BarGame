@@ -1,0 +1,466 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "HomeWallpaperAlbedo",
+      "grammar": "wallpaper",
+      "resourcePath": "Home/Textures/HomeWallpaperAlbedo",
+      "meanLinearLuminance": 0.500292,
+      "albedoCompensation": 1.414,
+      "brightnessError": 0.047229,
+      "metersPerTile": 1.9,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.763529,
+      "tints": {
+        "HomeInteriorWorldBuilder.Wall": [
+          0.255,
+          0.225,
+          0.175
+        ],
+        "HomeInteriorWorldBuilder.Trim": [
+          0.37,
+          0.27,
+          0.16
+        ],
+        "HomeBathroomBuilder.Partition": [
+          0.255,
+          0.235,
+          0.205
+        ]
+      },
+      "edgeDelta": 3.3984,
+      "seamRatio": 1.6716,
+      "contrast": 61,
+      "channelRatio": 1.0803,
+      "sha256": "A4B5094FC66C8E46A70D019465FD81EE10F1E709B2116EB36DC90BE25496D301"
+    },
+    {
+      "key": "HomeCeilingPlasterAlbedo",
+      "grammar": "whitewash",
+      "resourcePath": "Home/Textures/HomeCeilingPlasterAlbedo",
+      "meanLinearLuminance": 0.549684,
+      "albedoCompensation": 1.401,
+      "brightnessError": 0.029376,
+      "metersPerTile": 2.8,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.633843,
+      "tints": {
+        "HomeInteriorWorldBuilder.Ceiling": [
+          0.16,
+          0.14,
+          0.11
+        ]
+      },
+      "edgeDelta": 1.7521,
+      "seamRatio": 1.0621,
+      "contrast": 51,
+      "channelRatio": 1.0195,
+      "sha256": "CD5DD931C5F96F053CD15ABAAF07FCF0F9EFD6AEE218A391F26784B1C46BC691"
+    },
+    {
+      "key": "HomePlankFloorAlbedo",
+      "grammar": "planks",
+      "resourcePath": "Home/Textures/HomePlankFloorAlbedo",
+      "meanLinearLuminance": 0.450138,
+      "albedoCompensation": 1.5225,
+      "brightnessError": 0.069348,
+      "metersPerTile": 1.6,
+      "smoothness": 0.1,
+      "metallic": 0.0,
+      "exposure": 0.871844,
+      "tints": {
+        "HomeInteriorWorldBuilder.Floor": [
+          0.115,
+          0.085,
+          0.065
+        ],
+        "HomeBalconyWorldBuilder.Frame": [
+          0.22,
+          0.27,
+          0.25
+        ]
+      },
+      "edgeDelta": 2.7048,
+      "seamRatio": 1.0906,
+      "contrast": 73,
+      "channelRatio": 1.1223,
+      "sha256": "937C3069A8D2E50EB4EFF3A6A9D69F8DBBE448C972645D4A826162590DD44966"
+    },
+    {
+      "key": "HomeDarkWoodAlbedo",
+      "grammar": "veneer",
+      "resourcePath": "Home/Textures/HomeDarkWoodAlbedo",
+      "meanLinearLuminance": 0.519962,
+      "albedoCompensation": 1.43,
+      "brightnessError": 0.073173,
+      "metersPerTile": 1.1,
+      "smoothness": 0.12,
+      "metallic": 0.0,
+      "exposure": 0.662973,
+      "tints": {
+        "HomeInteriorWorldBuilder.DarkWood": [
+          0.115,
+          0.055,
+          0.036
+        ],
+        "HomeBathroomBuilder.Door": [
+          0.19,
+          0.105,
+          0.065
+        ],
+        "HomeBalconyWorldBuilder.Door": [
+          0.08,
+          0.16,
+          0.15
+        ],
+        "HomeInteriorWorldBuilder.KitchenBrokenDoor": [
+          0.12,
+          0.14,
+          0.12
+        ],
+        "HomeInteriorDressingBuilder.WindowBoardUpper": [
+          0.25,
+          0.14,
+          0.08
+        ],
+        "HomeInteriorDressingBuilder.WindowBoardLower": [
+          0.2,
+          0.11,
+          0.065
+        ],
+        "HomeInteriorDressingBuilder.OldRadio": [
+          0.1,
+          0.095,
+          0.08
+        ],
+        "HomeInteriorWorldBuilder.CameraJunkBase": [
+          0.1,
+          0.055,
+          0.035
+        ],
+        "HomeInteriorWorldBuilder.WardrobeDoor": [
+          0.19,
+          0.105,
+          0.06
+        ],
+        "HomeInteriorWorldBuilder.Suitcase": [
+          0.16,
+          0.12,
+          0.075
+        ]
+      },
+      "edgeDelta": 1.8315,
+      "seamRatio": 0.9944,
+      "contrast": 59,
+      "channelRatio": 1.1147,
+      "sha256": "B525D4852F05F5DC09B1A7D8E7372FEB655C01CD11735D7CDBDE66E01EB3C79B"
+    },
+    {
+      "key": "HomeWornLaminateAlbedo",
+      "grammar": "laminate",
+      "resourcePath": "Home/Textures/HomeWornLaminateAlbedo",
+      "meanLinearLuminance": 0.480197,
+      "albedoCompensation": 1.4425,
+      "brightnessError": 0.049726,
+      "metersPerTile": 1.2,
+      "smoothness": 0.18,
+      "metallic": 0.0,
+      "exposure": 0.785066,
+      "tints": {
+        "HomeInteriorWorldBuilder.Trim": [
+          0.37,
+          0.27,
+          0.16
+        ],
+        "HomeInteriorWorldBuilder.KitchenCounter": [
+          0.16,
+          0.18,
+          0.16
+        ]
+      },
+      "edgeDelta": 1.9919,
+      "seamRatio": 1.0108,
+      "contrast": 64,
+      "channelRatio": 1.0654,
+      "sha256": "FC1710410CD257C76EDA63A3B7E540F0B7A20FB4EAB03A952BBCAE1D855011C7"
+    },
+    {
+      "key": "HomeUpholsteryAlbedo",
+      "grammar": "weave",
+      "resourcePath": "Home/Textures/HomeUpholsteryAlbedo",
+      "meanLinearLuminance": 0.450111,
+      "albedoCompensation": 1.5325,
+      "brightnessError": 0.076363,
+      "metersPerTile": 0.85,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.849744,
+      "tints": {
+        "HomeInteriorWorldBuilder.Fabric": [
+          0.14,
+          0.2,
+          0.18
+        ],
+        "HomeInteriorWorldBuilder.Blanket": [
+          0.17,
+          0.255,
+          0.23
+        ],
+        "HomeInteriorWorldBuilder.SunkenCushion": [
+          0.18,
+          0.235,
+          0.2
+        ],
+        "HomeInteriorWorldBuilder.OldCoat": [
+          0.105,
+          0.14,
+          0.13
+        ]
+      },
+      "edgeDelta": 4.8771,
+      "seamRatio": 1.0096,
+      "contrast": 62,
+      "channelRatio": 1.0355,
+      "sha256": "65C2725AC3E120AAC23F8252FAB85115B6E5FFFFBF06203243F6ED7A89BC3C08"
+    },
+    {
+      "key": "HomeBedLinenAlbedo",
+      "grammar": "linen",
+      "resourcePath": "Home/Textures/HomeBedLinenAlbedo",
+      "meanLinearLuminance": 0.579785,
+      "albedoCompensation": 1.3005,
+      "brightnessError": 0.027666,
+      "metersPerTile": 0.9,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.617776,
+      "tints": {
+        "HomeInteriorWorldBuilder.DirtyLinen": [
+          0.43,
+          0.39,
+          0.29
+        ],
+        "HomeInteriorWorldBuilder.Pillow": [
+          0.47,
+          0.43,
+          0.34
+        ],
+        "HomeBathroomBuilder.Curtain": [
+          0.38,
+          0.36,
+          0.22
+        ]
+      },
+      "edgeDelta": 2.7365,
+      "seamRatio": 1.6339,
+      "contrast": 52,
+      "channelRatio": 1.0448,
+      "sha256": "0920AEA7A586A4CCABBDB4D7A5D32BC9CA0558359DAB648915A4F128CE1B61F6"
+    },
+    {
+      "key": "HomeBathroomTileAlbedo",
+      "grammar": "tile",
+      "resourcePath": "Home/Textures/HomeBathroomTileAlbedo",
+      "meanLinearLuminance": 0.520131,
+      "albedoCompensation": 1.39,
+      "brightnessError": 0.033529,
+      "metersPerTile": 1.2,
+      "smoothness": 0.35,
+      "metallic": 0.0,
+      "exposure": 0.608592,
+      "tints": {
+        "HomeBathroomBuilder.Tile": [
+          0.28,
+          0.31,
+          0.28
+        ],
+        "HomeBathroomBuilder.DirtyTile": [
+          0.17,
+          0.21,
+          0.18
+        ]
+      },
+      "edgeDelta": 2.791,
+      "seamRatio": 1.5558,
+      "contrast": 64,
+      "channelRatio": 1.0186,
+      "sha256": "C7E904CF2621223EF36474911D29D2D6EFCCD806F7F9207958CA00B347AE8404"
+    },
+    {
+      "key": "HomeEnamelAlbedo",
+      "grammar": "enamel",
+      "resourcePath": "Home/Textures/HomeEnamelAlbedo",
+      "meanLinearLuminance": 0.620339,
+      "albedoCompensation": 1.2545,
+      "brightnessError": 0.032849,
+      "metersPerTile": 1.0,
+      "smoothness": 0.45,
+      "metallic": 0.05,
+      "exposure": 0.476862,
+      "tints": {
+        "HomeBathroomBuilder.Porcelain": [
+          0.49,
+          0.5,
+          0.42
+        ],
+        "HomeBathroomBuilder.PorcelainShadow": [
+          0.31,
+          0.33,
+          0.29
+        ],
+        "HomeBathroomBuilder.ToiletSeat": [
+          0.33,
+          0.31,
+          0.24
+        ],
+        "HomeRefrigeratorWorldBuilder.Enamel": [
+          0.54,
+          0.55,
+          0.43
+        ],
+        "HomeRefrigeratorWorldBuilder.EnamelHighlight": [
+          0.69,
+          0.7,
+          0.57
+        ],
+        "HomeRefrigeratorWorldBuilder.EnamelShadow": [
+          0.27,
+          0.29,
+          0.23
+        ],
+        "HomeRefrigeratorWorldBuilder.Interior": [
+          0.7,
+          0.73,
+          0.64
+        ],
+        "HomeRefrigeratorWorldBuilder.InteriorShadow": [
+          0.34,
+          0.38,
+          0.34
+        ],
+        "HomeRefrigeratorWorldBuilder.Shelf": [
+          0.49,
+          0.57,
+          0.55
+        ],
+        "HomeBalconyWorldBuilder.Frame": [
+          0.22,
+          0.27,
+          0.25
+        ],
+        "HomeInteriorWorldBuilder.KitchenSink": [
+          0.32,
+          0.38,
+          0.36
+        ]
+      },
+      "edgeDelta": 1.3647,
+      "seamRatio": 1.0166,
+      "contrast": 47,
+      "channelRatio": 1.0345,
+      "sha256": "D4439B2BAC890FA625AEDE18DCAD90DA7C33A3D1B2A9F2287E547991C630AB46"
+    },
+    {
+      "key": "HomePaintedMetalAlbedo",
+      "grammar": "painted_metal",
+      "resourcePath": "Home/Textures/HomePaintedMetalAlbedo",
+      "meanLinearLuminance": 0.450009,
+      "albedoCompensation": 1.4855,
+      "brightnessError": 0.056565,
+      "metersPerTile": 1.0,
+      "smoothness": 0.22,
+      "metallic": 0.3,
+      "exposure": 0.846115,
+      "tints": {
+        "HomeBalconyWorldBuilder.Rail": [
+          0.18,
+          0.25,
+          0.25
+        ],
+        "HomeBathroomBuilder.Rust": [
+          0.4,
+          0.17,
+          0.075
+        ],
+        "HomeInteriorDressingBuilder.Rust": [
+          0.38,
+          0.16,
+          0.075
+        ],
+        "HomeRefrigeratorWorldBuilder.Metal": [
+          0.3,
+          0.31,
+          0.27
+        ]
+      },
+      "edgeDelta": 2.0345,
+      "seamRatio": 0.9456,
+      "contrast": 68,
+      "channelRatio": 1.0172,
+      "sha256": "04699B24949A32E374676A1F66884389F7E2B8182F0649EC34F2413FACFDEA61"
+    },
+    {
+      "key": "HomeConcreteAlbedo",
+      "grammar": "stucco",
+      "resourcePath": "Home/Textures/HomeConcreteAlbedo",
+      "meanLinearLuminance": 0.450024,
+      "albedoCompensation": 1.4985,
+      "brightnessError": 0.026605,
+      "metersPerTile": 2.4,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.8907,
+      "tints": {
+        "HomeBalconyWorldBuilder.Facade": [
+          0.2,
+          0.22,
+          0.19
+        ],
+        "HomeBalconyWorldBuilder.Slab": [
+          0.23,
+          0.23,
+          0.2
+        ],
+        "HomeInteriorWorldBuilder.Wall": [
+          0.255,
+          0.225,
+          0.175
+        ]
+      },
+      "edgeDelta": 2.1042,
+      "seamRatio": 0.9835,
+      "contrast": 62,
+      "channelRatio": 1.0275,
+      "sha256": "B46ED9E2D91FCDBB14FC6D4A3C0B7EC8CF1EC7FFDE7EA78D30C7931C5E5F1476"
+    },
+    {
+      "key": "HomeRugAlbedo",
+      "grammar": "rug",
+      "resourcePath": "Home/Textures/HomeRugAlbedo",
+      "meanLinearLuminance": 0.419819,
+      "albedoCompensation": 1.5445,
+      "brightnessError": 0.000134,
+      "metersPerTile": 1.5,
+      "smoothness": 0.02,
+      "metallic": 0.0,
+      "exposure": 1.017055,
+      "tints": {
+        "HomeInteriorWorldBuilder.EntryRug": [
+          0.22,
+          0.075,
+          0.065
+        ]
+      },
+      "edgeDelta": 3.1174,
+      "seamRatio": 1.139,
+      "contrast": 72,
+      "channelRatio": 1.129,
+      "sha256": "EC465288D88CF8C2F1B56BCA1F0F523ADEE1A93B006CDE17F5AC936D16B716EA"
+    }
+  ]
+}

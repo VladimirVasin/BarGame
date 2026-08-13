@@ -48,6 +48,12 @@ namespace BarPromenade
             var sidewalks = new List<Bounds>();
             var centerMarkings = new List<Bounds>();
             var crosswalkMarkings = new List<Bounds>();
+            var streetGeometry = new List<RuntimeOrientedBox>();
+            var parkPathGeometry = new List<RuntimeOrientedBox>();
+            var sidewalkGeometry = new List<RuntimeOrientedBox>();
+            var centerMarkingGeometry = new List<RuntimeOrientedBox>();
+            var crosswalkMarkingGeometry =
+                new List<RuntimeOrientedBox>();
             var sidewalkWalkableRectangles = new List<Rect>();
             var crosswalkWalkableRectangles = new List<Rect>();
             var crosswalks = new List<CityCrosswalkDescriptor>();
@@ -63,13 +69,16 @@ namespace BarPromenade
                 layout,
                 sortedEdges,
                 streetSurfaces,
-                parkPaths);
+                parkPaths,
+                streetGeometry,
+                parkPathGeometry);
             CreateSidewalkStrips(
                 layout,
                 sortedEdges,
                 connections,
                 busIntersections,
                 sidewalks,
+                sidewalkGeometry,
                 sidewalkWalkableRectangles,
                 edgesWithSidewalks);
             CreateIntersectionSidewalks(
@@ -77,6 +86,7 @@ namespace BarPromenade
                 connections,
                 busIntersections,
                 sidewalks,
+                sidewalkGeometry,
                 sidewalkWalkableRectangles,
                 markingExclusions);
 
@@ -91,6 +101,7 @@ namespace BarPromenade
                 edgesWithSidewalks,
                 carriagewayWidth,
                 crosswalkMarkings,
+                crosswalkMarkingGeometry,
                 crosswalkWalkableRectangles,
                 crosswalks,
                 markingExclusions);
@@ -98,7 +109,8 @@ namespace BarPromenade
                 layout,
                 sortedEdges,
                 markingExclusions,
-                centerMarkings);
+                centerMarkings,
+                centerMarkingGeometry);
 
             return new CityStreetSurfacePlan(
                 carriagewayWidth,
@@ -107,6 +119,11 @@ namespace BarPromenade
                 sidewalks,
                 centerMarkings,
                 crosswalkMarkings,
+                streetGeometry,
+                parkPathGeometry,
+                sidewalkGeometry,
+                centerMarkingGeometry,
+                crosswalkMarkingGeometry,
                 sidewalkWalkableRectangles,
                 crosswalkWalkableRectangles,
                 new List<Vector2Int>(selectedNodes),
@@ -117,32 +134,102 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<RoadEdge> sortedEdges,
             ICollection<Bounds> streetSurfaces,
-            ICollection<Bounds> parkPaths)
+            ICollection<Bounds> parkPaths,
+            ICollection<RuntimeOrientedBox> streetGeometry,
+            ICollection<RuntimeOrientedBox> parkPathGeometry)
         {
+            var streetNodes = new HashSet<Vector2Int>();
+            var parkNodes = new HashSet<Vector2Int>();
+            float halfRoad = layout.RoadWidth * 0.5f;
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
                 Vector3 start = layout.GetNodeWorldPosition(edge.A);
                 Vector3 end = layout.GetNodeWorldPosition(edge.B);
                 Vector3 delta = end - start;
+                float planarLength = new Vector2(
+                    delta.x,
+                    delta.z).magnitude;
+                float insetAmount = planarLength > GeometryTolerance
+                    ? Mathf.Clamp01(halfRoad / planarLength)
+                    : 0f;
+                Vector3 segmentStart = Vector3.Lerp(
+                    start,
+                    end,
+                    insetAmount);
+                Vector3 segmentEnd = Vector3.Lerp(
+                    start,
+                    end,
+                    1f - insetAmount);
+                segmentStart.y = start.y;
+                segmentEnd.y = end.y;
+                bool isStreet = layout.GetPathKind(edge) ==
+                                CityPathKind.Street;
+                bool hasSignatureStair = isStreet &&
+                    layout.ElevationPlan.TryGetSignatureStair(
+                        edge,
+                        out _);
+                float surfaceWidth = hasSignatureStair
+                    ? layout.RoadWidth - (SidewalkWidth * 2f)
+                    : layout.RoadWidth;
+                RuntimeOrientedBox geometry = CreateSurfaceBox(
+                    segmentStart + Vector3.up * RoadTop,
+                    segmentEnd + Vector3.up * RoadTop,
+                    surfaceWidth,
+                    RoadSurfaceHeight);
                 Vector3 size = edge.IsHorizontal
                     ? new Vector3(
                         Mathf.Abs(delta.x) + layout.RoadWidth,
                         RoadSurfaceHeight,
-                        layout.RoadWidth)
+                        surfaceWidth)
                     : new Vector3(
-                        layout.RoadWidth,
+                        surfaceWidth,
                         RoadSurfaceHeight,
                         Mathf.Abs(delta.z) + layout.RoadWidth);
                 var surface = new Bounds((start + end) * 0.5f, size);
-                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                if (!isStreet)
                 {
                     parkPaths.Add(surface);
+                    parkPathGeometry.Add(geometry);
+                    parkNodes.Add(edge.A);
+                    parkNodes.Add(edge.B);
                 }
                 else
                 {
                     streetSurfaces.Add(surface);
+                    streetGeometry.Add(geometry);
+                    streetNodes.Add(edge.A);
+                    streetNodes.Add(edge.B);
                 }
+            }
+
+            foreach (Vector2Int node in streetNodes)
+            {
+                Vector3 center = layout.GetNodeWorldPosition(node);
+                streetGeometry.Add(new RuntimeOrientedBox(
+                    center,
+                    Quaternion.identity,
+                    new Vector3(
+                        layout.RoadWidth,
+                        RoadSurfaceHeight,
+                        layout.RoadWidth)));
+            }
+
+            foreach (Vector2Int node in parkNodes)
+            {
+                if (streetNodes.Contains(node))
+                {
+                    continue;
+                }
+
+                Vector3 center = layout.GetNodeWorldPosition(node);
+                parkPathGeometry.Add(new RuntimeOrientedBox(
+                    center,
+                    Quaternion.identity,
+                    new Vector3(
+                        layout.RoadWidth,
+                        RoadSurfaceHeight,
+                        layout.RoadWidth)));
             }
         }
 
@@ -152,6 +239,7 @@ namespace BarPromenade
             IReadOnlyDictionary<Vector2Int, NodeConnections> connections,
             ISet<Vector2Int> busIntersections,
             ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles,
             ISet<RoadEdge> edgesWithSidewalks)
         {
@@ -167,7 +255,14 @@ namespace BarPromenade
 
                 Vector3 roadStart = layout.GetNodeWorldPosition(edge.A);
                 Vector3 roadEnd = layout.GetNodeWorldPosition(edge.B);
-                Vector3 tangent = (roadEnd - roadStart).normalized;
+                Vector3 delta = roadEnd - roadStart;
+                float planarLength = new Vector2(
+                    delta.x,
+                    delta.z).magnitude;
+                Vector3 tangent = new Vector3(
+                    delta.x,
+                    0f,
+                    delta.z).normalized;
                 float startInset = ResolveEndpointInset(
                     connections[edge.A],
                     halfRoad) +
@@ -180,8 +275,20 @@ namespace BarPromenade
                     (busIntersections.Contains(edge.B)
                         ? BusApproachApronLength
                         : 0f);
-                Vector3 start = roadStart + (tangent * startInset);
-                Vector3 end = roadEnd - (tangent * endInset);
+                Vector3 start = Vector3.Lerp(
+                    roadStart,
+                    roadEnd,
+                    Mathf.Clamp01(startInset / planarLength));
+                Vector3 end = Vector3.Lerp(
+                    roadStart,
+                    roadEnd,
+                    1f - Mathf.Clamp01(endInset / planarLength));
+                start.y = layout.ElevationPlan.SampleRoadDatum(
+                    edge,
+                    Mathf.Clamp01(startInset / planarLength));
+                end.y = layout.ElevationPlan.SampleRoadDatum(
+                    edge,
+                    1f - Mathf.Clamp01(endInset / planarLength));
                 float length = Vector3.Distance(start, end);
                 if (length <= GeometryTolerance)
                 {
@@ -193,22 +300,111 @@ namespace BarPromenade
                     -tangent.z,
                     0f,
                     tangent.x);
-                Vector3 center = (start + end) * 0.5f;
-                center.y = roadStart.y +
-                           ((RoadTop + SidewalkTop) * 0.5f);
-                Vector3 size = edge.IsHorizontal
-                    ? new Vector3(length, SidewalkHeight, SidewalkWidth)
-                    : new Vector3(SidewalkWidth, SidewalkHeight, length);
-                AddSidewalk(
-                    new Bounds(center + (left * sideOffset), size),
-                    sidewalks,
-                    walkableRectangles);
-                AddSidewalk(
-                    new Bounds(center - (left * sideOffset), size),
-                    sidewalks,
-                    walkableRectangles);
+                bool hasStair = layout.ElevationPlan.TryGetSignatureStair(
+                    edge,
+                    out CityElevationStairDescriptor stair);
+                bool stairOnLeft = false;
+                CityElevationStairPlacement stairPlacement = null;
+                if (hasStair)
+                {
+                    stairPlacement =
+                        CityElevationStairPlacementPlanner.Create(
+                            layout,
+                            stair);
+                    stairOnLeft = Vector3.Dot(
+                        stairPlacement.SideDirection,
+                        left) > 0f;
+                }
+
+                if (!hasStair || !stairOnLeft)
+                {
+                    AddSidewalk(
+                        CreateSurfaceBox(
+                            start + left * sideOffset +
+                            Vector3.up * SidewalkTop,
+                            end + left * sideOffset +
+                            Vector3.up * SidewalkTop,
+                            SidewalkWidth,
+                            SidewalkHeight),
+                        sidewalks,
+                        sidewalkGeometry,
+                        walkableRectangles);
+                }
+
+                if (!hasStair || stairOnLeft)
+                {
+                    AddSidewalk(
+                        CreateSurfaceBox(
+                            start - left * sideOffset +
+                            Vector3.up * SidewalkTop,
+                            end - left * sideOffset +
+                            Vector3.up * SidewalkTop,
+                            SidewalkWidth,
+                            SidewalkHeight),
+                        sidewalks,
+                        sidewalkGeometry,
+                        walkableRectangles);
+                }
+
+                if (hasStair)
+                {
+                    AddSignatureStairApproaches(
+                        stair,
+                        stairPlacement,
+                        sidewalks,
+                        sidewalkGeometry,
+                        walkableRectangles);
+                }
                 edgesWithSidewalks.Add(edge);
             }
+        }
+
+        private static void AddSignatureStairApproaches(
+            CityElevationStairDescriptor stair,
+            CityElevationStairPlacement placement,
+            ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
+            ICollection<Rect> walkableRectangles)
+        {
+            AddApproachIfLongEnough(
+                placement.LowerApproachStart,
+                placement.LowerApproachEnd,
+                stair.Width,
+                sidewalks,
+                sidewalkGeometry,
+                walkableRectangles);
+            AddApproachIfLongEnough(
+                placement.UpperApproachStart,
+                placement.UpperApproachEnd,
+                stair.Width,
+                sidewalks,
+                sidewalkGeometry,
+                walkableRectangles);
+            walkableRectangles.Add(placement.Footprint);
+        }
+
+        private static void AddApproachIfLongEnough(
+            Vector3 first,
+            Vector3 second,
+            float width,
+            ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
+            ICollection<Rect> walkableRectangles)
+        {
+            if (Vector3.Distance(first, second) <= GeometryTolerance)
+            {
+                return;
+            }
+
+            AddSidewalk(
+                CreateSurfaceBox(
+                    first,
+                    second,
+                    width,
+                    SidewalkHeight),
+                sidewalks,
+                sidewalkGeometry,
+                walkableRectangles);
         }
 
         private static void CreateIntersectionSidewalks(
@@ -216,6 +412,7 @@ namespace BarPromenade
             IReadOnlyDictionary<Vector2Int, NodeConnections> connections,
             ISet<Vector2Int> busIntersections,
             ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles,
             ICollection<Rect> markingExclusions)
         {
@@ -267,6 +464,7 @@ namespace BarPromenade
                                     SidewalkHeight,
                                     SidewalkWidth)),
                             sidewalks,
+                            sidewalkGeometry,
                             walkableRectangles);
                     }
                 }
@@ -276,6 +474,7 @@ namespace BarPromenade
                     nodeConnections,
                     cornerOffset,
                     sidewalks,
+                    sidewalkGeometry,
                     walkableRectangles);
             }
         }
@@ -285,6 +484,7 @@ namespace BarPromenade
             NodeConnections connections,
             float cornerOffset,
             ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles)
         {
             float mouthSpan = (cornerOffset * 2f) - SidewalkWidth;
@@ -319,6 +519,7 @@ namespace BarPromenade
                 AddSidewalk(
                     new Bounds(center, size),
                     sidewalks,
+                    sidewalkGeometry,
                     walkableRectangles);
             }
         }
@@ -330,6 +531,7 @@ namespace BarPromenade
             ISet<RoadEdge> edgesWithSidewalks,
             float carriagewayWidth,
             ICollection<Bounds> crosswalkMarkings,
+            ICollection<RuntimeOrientedBox> crosswalkMarkingGeometry,
             ICollection<Rect> walkableRectangles,
             ICollection<CityCrosswalkDescriptor> crosswalks,
             ICollection<Rect> markingExclusions)
@@ -356,11 +558,13 @@ namespace BarPromenade
                     Vector2Int other = edge.Other(node);
                     Vector3 otherPosition =
                         layout.GetNodeWorldPosition(other);
-                    Vector3 outward =
-                        (otherPosition - nodePosition).normalized;
+                    Vector3 outward = otherPosition - nodePosition;
+                    outward.y = 0f;
+                    outward.Normalize();
                     Vector3 crosswalkCenter = nodePosition +
                         (outward *
                          (halfRoad + (CrosswalkDepth * 0.5f)));
+                    TrySetRoadDatum(layout, ref crosswalkCenter);
                     Rect walkable = CreateOrientedRect(
                         crosswalkCenter,
                         outward,
@@ -385,8 +589,8 @@ namespace BarPromenade
                               CrosswalkStripeCount) * CrosswalkDepth);
                         Vector3 center = nodePosition +
                             (outward * distance);
-                        center.y = nodePosition.y +
-                                   MarkingCenterAboveRoadBase;
+                        TrySetRoadDatum(layout, ref center);
+                        center.y += MarkingCenterAboveRoadBase;
                         Vector3 size = Mathf.Abs(outward.x) > 0.5f
                             ? new Vector3(
                                 CrosswalkStripeDepth,
@@ -396,7 +600,13 @@ namespace BarPromenade
                                 carriagewayWidth,
                                 MarkingHeight,
                                 CrosswalkStripeDepth);
-                        crosswalkMarkings.Add(new Bounds(center, size));
+                        var marking = new Bounds(center, size);
+                        crosswalkMarkings.Add(marking);
+                        crosswalkMarkingGeometry.Add(
+                            new RuntimeOrientedBox(
+                                marking.center,
+                                Quaternion.identity,
+                                marking.size));
                     }
                 }
             }
@@ -406,7 +616,8 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<RoadEdge> sortedEdges,
             IReadOnlyList<Rect> markingExclusions,
-            ICollection<Bounds> centerMarkings)
+            ICollection<Bounds> centerMarkings,
+            ICollection<RuntimeOrientedBox> centerMarkingGeometry)
         {
             for (int edgeIndex = 0;
                  edgeIndex < sortedEdges.Count;
@@ -420,6 +631,9 @@ namespace BarPromenade
 
                 Vector3 start = layout.GetNodeWorldPosition(edge.A);
                 Vector3 end = layout.GetNodeWorldPosition(edge.B);
+                float planarLength = new Vector2(
+                    end.x - start.x,
+                    end.z - start.z).magnitude;
                 float length = Vector3.Distance(start, end);
                 int dashCount = Mathf.Max(
                     2,
@@ -429,27 +643,41 @@ namespace BarPromenade
                      dashIndex++)
                 {
                     float t = (dashIndex + 0.5f) / dashCount;
-                    Vector3 position = Vector3.Lerp(start, end, t);
-                    position.y = start.y +
-                                 MarkingCenterAboveRoadBase;
                     float dashLength = Mathf.Min(
                         MaximumCenterDashLength,
                         (length / dashCount) * 0.48f);
-                    Vector3 size = edge.IsHorizontal
-                        ? new Vector3(
-                            dashLength,
-                            MarkingHeight,
-                            CenterDashWidth)
-                        : new Vector3(
-                            CenterDashWidth,
-                            MarkingHeight,
-                            dashLength);
-                    var dash = new Bounds(position, size);
+                    float halfAmount = planarLength > GeometryTolerance
+                        ? dashLength * 0.5f / planarLength
+                        : 0f;
+                    Vector3 dashStart = Vector3.Lerp(
+                        start,
+                        end,
+                        Mathf.Clamp01(t - halfAmount));
+                    Vector3 dashEnd = Vector3.Lerp(
+                        start,
+                        end,
+                        Mathf.Clamp01(t + halfAmount));
+                    dashStart.y = layout.ElevationPlan.SampleRoadDatum(
+                        edge,
+                        Mathf.Clamp01(t - halfAmount));
+                    dashEnd.y = layout.ElevationPlan.SampleRoadDatum(
+                        edge,
+                        Mathf.Clamp01(t + halfAmount));
+                    float markingTop =
+                        MarkingCenterAboveRoadBase +
+                        MarkingHeight * 0.5f;
+                    RuntimeOrientedBox geometry = CreateSurfaceBox(
+                        dashStart + Vector3.up * markingTop,
+                        dashEnd + Vector3.up * markingTop,
+                        CenterDashWidth,
+                        MarkingHeight);
+                    Bounds dash = CalculateBounds(geometry);
                     if (!OverlapsAny(
                             CreateRect(dash),
                             markingExclusions))
                     {
                         centerMarkings.Add(dash);
+                        centerMarkingGeometry.Add(geometry);
                     }
                 }
             }
@@ -458,10 +686,85 @@ namespace BarPromenade
         private static void AddSidewalk(
             Bounds sidewalk,
             ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
             ICollection<Rect> walkableRectangles)
         {
             sidewalks.Add(sidewalk);
+            sidewalkGeometry.Add(new RuntimeOrientedBox(
+                sidewalk.center,
+                Quaternion.identity,
+                sidewalk.size));
             walkableRectangles.Add(CreateRect(sidewalk));
+        }
+
+        private static void AddSidewalk(
+            RuntimeOrientedBox sidewalk,
+            ICollection<Bounds> sidewalks,
+            ICollection<RuntimeOrientedBox> sidewalkGeometry,
+            ICollection<Rect> walkableRectangles)
+        {
+            Bounds bounds = CalculateBounds(sidewalk);
+            sidewalks.Add(bounds);
+            sidewalkGeometry.Add(sidewalk);
+            walkableRectangles.Add(CreateRect(bounds));
+        }
+
+        private static RuntimeOrientedBox CreateSurfaceBox(
+            Vector3 topStart,
+            Vector3 topEnd,
+            float width,
+            float thickness)
+        {
+            Vector3 slope = topEnd - topStart;
+            if (slope.sqrMagnitude <= GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    "A graded surface requires a positive run length.");
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                slope.normalized,
+                Vector3.up);
+            Vector3 normal = rotation * Vector3.up;
+            return new RuntimeOrientedBox(
+                (topStart + topEnd) * 0.5f -
+                normal * (thickness * 0.5f),
+                rotation,
+                new Vector3(width, thickness, slope.magnitude));
+        }
+
+        private static void TrySetRoadDatum(
+            CityLayout layout,
+            ref Vector3 position)
+        {
+            if (layout.ElevationPlan.TrySampleSurface(
+                    new Vector2(position.x, position.z),
+                    CitySurfaceRole.RoadDatum,
+                    out float height,
+                    out _))
+            {
+                position.y = height;
+            }
+        }
+
+        private static Bounds CalculateBounds(RuntimeOrientedBox box)
+        {
+            Vector3 half = box.Size * 0.5f;
+            Vector3 right = box.Rotation * Vector3.right;
+            Vector3 up = box.Rotation * Vector3.up;
+            Vector3 forward = box.Rotation * Vector3.forward;
+            Vector3 extents = Abs(right) * half.x +
+                              Abs(up) * half.y +
+                              Abs(forward) * half.z;
+            return new Bounds(box.Center, extents * 2f);
+        }
+
+        private static Vector3 Abs(Vector3 value)
+        {
+            return new Vector3(
+                Mathf.Abs(value.x),
+                Mathf.Abs(value.y),
+                Mathf.Abs(value.z));
         }
 
         private static Rect CreateOrientedRect(

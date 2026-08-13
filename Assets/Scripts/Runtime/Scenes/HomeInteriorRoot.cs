@@ -115,6 +115,7 @@ namespace BarPromenade
         public HomeOpeningController Opening { get; private set; }
         public HomeExit Exit { get; private set; }
         public InventoryController Inventory { get; private set; }
+        public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -328,6 +329,11 @@ namespace BarPromenade
 
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud);
+            Journal = ui.AddComponent<JournalController>();
+            Journal.Initialize(
                 Player,
                 CameraFollow,
                 IntoxicationHud);

@@ -1159,7 +1159,9 @@ namespace BarPromenade
                 {
                     Origin = new Vector3(
                         descriptor.Position.x,
-                        0f,
+                        lot != null
+                            ? lot.Center.y
+                            : descriptor.Position.y,
                         descriptor.Position.z);
                 }
 

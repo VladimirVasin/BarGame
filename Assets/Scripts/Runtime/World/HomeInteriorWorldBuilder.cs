@@ -178,7 +178,7 @@ namespace BarPromenade
             float halfDepth = plan.RoomSize.y * 0.5f;
             float wallThickness =
                 PlayerHomeBalconyGeometry.WallThickness;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Floor",
                 room,
                 new Vector3(0f, -0.08f, 0f),
@@ -186,9 +186,11 @@ namespace BarPromenade
                     plan.RoomSize.x,
                     0.16f,
                     plan.RoomSize.y),
-                Floor);
+                Floor,
+                HomeSurfaceKind.PlankFloor,
+                SurfaceProjection.BoxXZ);
             GameObject ceiling =
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Ceiling",
                     room,
                     new Vector3(
@@ -202,6 +204,8 @@ namespace BarPromenade
                         plan.RoomSize.y +
                         wallThickness * 2f),
                     Ceiling,
+                    HomeSurfaceKind.CeilingPlaster,
+                    SurfaceProjection.BoxXZ,
                     false);
             Renderer ceilingRenderer =
                 ceiling.GetComponent<Renderer>();
@@ -209,7 +213,7 @@ namespace BarPromenade
                 UnityEngine.Rendering
                     .ShadowCastingMode.Off;
             ceilingRenderer.receiveShadows = false;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Back Wall",
                 room,
                 new Vector3(
@@ -220,8 +224,10 @@ namespace BarPromenade
                     plan.RoomSize.x,
                     plan.RoomHeight,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Left Wall",
                 room,
                 new Vector3(
@@ -232,10 +238,12 @@ namespace BarPromenade
                     wallThickness,
                     plan.RoomHeight,
                     plan.RoomSize.y),
-                Wall);
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY);
             if (balcony == null)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Right Wall",
                     room,
                     new Vector3(
@@ -246,7 +254,9 @@ namespace BarPromenade
                         wallThickness,
                         plan.RoomHeight,
                         plan.RoomSize.y),
-                    Wall);
+                    Wall,
+                    HomeSurfaceKind.Wallpaper,
+                    SurfaceProjection.BoxZY);
             }
             else
             {
@@ -257,7 +267,7 @@ namespace BarPromenade
                     halfDepth,
                     wallThickness);
             }
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Wall Left",
                 room,
                 new Vector3(
@@ -268,8 +278,10 @@ namespace BarPromenade
                     3.70f,
                     plan.RoomHeight,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Wall Right",
                 room,
                 new Vector3(
@@ -280,8 +292,10 @@ namespace BarPromenade
                     3.70f,
                     plan.RoomHeight,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Lintel",
                 room,
                 new Vector3(
@@ -292,7 +306,9 @@ namespace BarPromenade
                     2.60f,
                     0.76f,
                     wallThickness),
-                Trim);
+                Trim,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
             const float entryOpeningHalfWidth = 1.30f;
             const float exitDoorWidth = 1.60f;
             const float exitDoorHeight = 2.30f;
@@ -303,7 +319,7 @@ namespace BarPromenade
             float sideInfillCenter =
                 exitDoorWidth * 0.5f +
                 sideInfillWidth * 0.5f;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Wall Left Door Infill",
                 room,
                 new Vector3(
@@ -314,8 +330,10 @@ namespace BarPromenade
                     sideInfillWidth,
                     entryLintelBottom,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Wall Right Door Infill",
                 room,
                 new Vector3(
@@ -326,8 +344,10 @@ namespace BarPromenade
                     sideInfillWidth,
                     entryLintelBottom,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Door Transom Infill",
                 room,
                 new Vector3(
@@ -342,13 +362,17 @@ namespace BarPromenade
                     entryLintelBottom -
                     exitDoorHeight,
                     wallThickness),
-                Wall);
-            RuntimePrimitiveFactory.CreateBox(
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
+            HomeSurfacePrimitives.CreateBox(
                 "Home Entry Rug",
                 room,
                 new Vector3(0f, 0.015f, -2.65f),
                 new Vector3(1.55f, 0.03f, 1.35f),
                 new Color(0.22f, 0.075f, 0.065f),
+                HomeSurfaceKind.Rug,
+                SurfaceProjection.BoxXZ,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Entry Rug Stain",
@@ -357,7 +381,7 @@ namespace BarPromenade
                 new Vector3(0.62f, 0.012f, 0.42f),
                 new Color(0.085f, 0.055f, 0.042f),
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Exit Door",
                 room,
                 new Vector3(
@@ -369,6 +393,8 @@ namespace BarPromenade
                     exitDoorHeight,
                     0.12f),
                 DarkWood,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Exit Door Patch",
@@ -489,7 +515,7 @@ namespace BarPromenade
             float depth,
             float wallThickness)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 name,
                 room,
                 new Vector3(
@@ -501,6 +527,8 @@ namespace BarPromenade
                     roomHeight,
                     wallThickness),
                 Wall,
+                HomeSurfaceKind.Concrete,
+                SurfaceProjection.BoxXY,
                 false);
         }
 
@@ -519,7 +547,7 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 name,
                 room,
                 new Vector3(
@@ -530,7 +558,9 @@ namespace BarPromenade
                     wallThickness,
                     roomHeight,
                     depth),
-                Wall);
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY);
         }
 
         private static void CreateFacadeHorizontalSegment(
@@ -548,7 +578,7 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 name,
                 room,
                 new Vector3(
@@ -559,7 +589,9 @@ namespace BarPromenade
                     wallThickness,
                     height,
                     depth),
-                Wall);
+                Wall,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY);
         }
 
         private static void BuildPracticalFixtures(
@@ -783,7 +815,7 @@ namespace BarPromenade
             HomeOcclusionRegistry occlusionRegistry)
         {
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bed Frame",
                 room,
                 center + (Vector3.up * 0.22f),
@@ -791,8 +823,10 @@ namespace BarPromenade
                     bounds.width,
                     0.38f,
                     bounds.height),
-                DarkWood));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                DarkWood,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXZ));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bed Mattress",
                 room,
                 center + (Vector3.up * 0.47f),
@@ -801,8 +835,10 @@ namespace BarPromenade
                     0.18f,
                     bounds.height - 0.18f),
                 DirtyLinen,
+                HomeSurfaceKind.BedLinen,
+                SurfaceProjection.BoxXZ,
                 false));
-            GameObject blanket = RuntimePrimitiveFactory.CreateBox(
+            GameObject blanket = HomeSurfacePrimitives.CreateBox(
                 "Home Bed Crooked Blanket",
                 room,
                 center +
@@ -812,11 +848,13 @@ namespace BarPromenade
                     0.10f,
                     bounds.height * 0.82f),
                 new Color(0.17f, 0.255f, 0.23f),
+                HomeSurfaceKind.Upholstery,
+                SurfaceProjection.BoxXZ,
                 false);
             parts.Add(blanket);
             blanket.transform.localRotation =
                 Quaternion.Euler(0f, 5f, -2f);
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Pillow",
                 room,
                 center +
@@ -826,6 +864,8 @@ namespace BarPromenade
                     0f),
                 new Vector3(0.62f, 0.18f, 1.05f),
                 new Color(0.47f, 0.43f, 0.34f),
+                HomeSurfaceKind.BedLinen,
+                SurfaceProjection.BoxXZ,
                 false));
             RegisterFurnitureGroup(
                 occlusionRegistry,
@@ -861,7 +901,7 @@ namespace BarPromenade
                 room,
                 "Right",
                 rightCounter);
-            leftParts.Add(RuntimePrimitiveFactory.CreateBox(
+            leftParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Sink",
                 room,
                 new Vector3(
@@ -874,8 +914,10 @@ namespace BarPromenade
                     0.06f,
                     0.55f),
                 new Color(0.32f, 0.38f, 0.36f),
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXZ,
                 false));
-            leftParts.Add(RuntimePrimitiveFactory.CreateBox(
+            leftParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Kitchen Broken Door",
                 room,
                 new Vector3(
@@ -887,6 +929,8 @@ namespace BarPromenade
                     0.70f,
                     0.055f),
                 new Color(0.12f, 0.14f, 0.12f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 false));
             RegisterFurnitureGroup(
                 occlusionRegistry,
@@ -922,7 +966,7 @@ namespace BarPromenade
                 section.center.x,
                 0.48f,
                 section.center.y);
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 $"Home Kitchen Counter {sectionName}",
                 room,
                 center,
@@ -930,8 +974,10 @@ namespace BarPromenade
                     section.width,
                     0.92f,
                     section.height),
-                new Color(0.16f, 0.18f, 0.16f)));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                new Color(0.16f, 0.18f, 0.16f),
+                HomeSurfaceKind.WornLaminate,
+                SurfaceProjection.BoxXY));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 $"Home Kitchen Top {sectionName}",
                 room,
                 new Vector3(center.x, 0.98f, center.z),
@@ -940,6 +986,8 @@ namespace BarPromenade
                     0.10f,
                     section.height + 0.08f),
                 Trim,
+                HomeSurfaceKind.WornLaminate,
+                SurfaceProjection.BoxXZ,
                 false));
             return parts;
         }
@@ -951,7 +999,7 @@ namespace BarPromenade
             HomeOcclusionRegistry occlusionRegistry)
         {
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Sofa Base",
                 room,
                 center + (Vector3.up * 0.35f),
@@ -959,8 +1007,10 @@ namespace BarPromenade
                     bounds.width,
                     0.56f,
                     bounds.height),
-                Fabric));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                Fabric,
+                HomeSurfaceKind.Upholstery,
+                SurfaceProjection.BoxXY));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Sofa Back",
                 room,
                 center +
@@ -972,8 +1022,10 @@ namespace BarPromenade
                     0.25f,
                     1.08f,
                     bounds.height),
-                Fabric));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                Fabric,
+                HomeSurfaceKind.Upholstery,
+                SurfaceProjection.BoxZY));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Sofa Sunken Cushion",
                 room,
                 center +
@@ -986,6 +1038,8 @@ namespace BarPromenade
                     0.16f,
                     bounds.height * 0.78f),
                 new Color(0.18f, 0.235f, 0.20f),
+                HomeSurfaceKind.Upholstery,
+                SurfaceProjection.BoxXZ,
                 false));
             parts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Sofa Tear",
@@ -1011,7 +1065,7 @@ namespace BarPromenade
             HomeOcclusionRegistry occlusionRegistry)
         {
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Scarred Table",
                 room,
                 center + (Vector3.up * 0.82f),
@@ -1019,8 +1073,10 @@ namespace BarPromenade
                     bounds.width,
                     0.12f,
                     bounds.height),
-                Trim));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                Trim,
+                HomeSurfaceKind.WornLaminate,
+                SurfaceProjection.BoxXZ));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Table Base Crooked",
                 room,
                 center +
@@ -1029,7 +1085,9 @@ namespace BarPromenade
                     0.40f,
                     bounds.height * 0.08f),
                 new Vector3(0.28f, 0.80f, 0.28f),
-                DarkWood));
+                DarkWood,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY));
             RegisterFurnitureGroup(
                 occlusionRegistry,
                 TableOccluderId,
@@ -1043,7 +1101,7 @@ namespace BarPromenade
             HomeOcclusionRegistry occlusionRegistry)
         {
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Battered Cabinet",
                 room,
                 center +
@@ -1053,10 +1111,12 @@ namespace BarPromenade
                     bounds.width,
                     BookcaseDressingSurfaceHeight,
                     bounds.height),
-                DarkWood));
+                DarkWood,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY));
             for (int shelf = 0; shelf < 2; shelf++)
             {
-                parts.Add(RuntimePrimitiveFactory.CreateBox(
+                parts.Add(HomeSurfacePrimitives.CreateBox(
                     $"Home Cabinet Shelf {shelf + 1}",
                     room,
                     center +
@@ -1069,6 +1129,8 @@ namespace BarPromenade
                         0.10f,
                         0.08f),
                     Trim,
+                    HomeSurfaceKind.WornLaminate,
+                    SurfaceProjection.BoxXY,
                     false));
             }
 
@@ -1085,7 +1147,7 @@ namespace BarPromenade
             HomeOcclusionRegistry occlusionRegistry)
         {
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Camera Corner Junk Base",
                 room,
                 center + Vector3.up * 0.22f,
@@ -1093,8 +1155,10 @@ namespace BarPromenade
                     bounds.width,
                     0.44f,
                     bounds.height),
-                new Color(0.10f, 0.055f, 0.035f)));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                new Color(0.10f, 0.055f, 0.035f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXZ));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Camera Corner Broken Wardrobe Door",
                 room,
                 center +
@@ -1104,6 +1168,8 @@ namespace BarPromenade
                     0.12f,
                     bounds.height * 0.68f),
                 new Color(0.19f, 0.105f, 0.060f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXZ,
                 false));
             parts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Camera Corner Suitcase",
@@ -1113,13 +1179,15 @@ namespace BarPromenade
                 new Vector3(0.72f, 0.24f, 0.62f),
                 new Color(0.16f, 0.12f, 0.075f),
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Camera Corner Old Coat",
                 room,
                 center +
                 new Vector3(-0.24f, 0.86f, 0.38f),
                 new Vector3(0.78f, 0.10f, 0.72f),
                 new Color(0.105f, 0.14f, 0.13f),
+                HomeSurfaceKind.Upholstery,
+                SurfaceProjection.BoxXZ,
                 false));
             RegisterFurnitureGroup(
                 occlusionRegistry,

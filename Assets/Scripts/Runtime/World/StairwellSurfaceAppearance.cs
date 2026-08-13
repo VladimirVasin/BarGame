@@ -242,130 +242,44 @@ namespace BarPromenade
             StairwellSurfaceProjection projection,
             StairwellSurfaceRecipe recipe)
         {
-            Vector3 dimensions = GetLocalMeshDimensions(renderer);
-            ResolveProjectedDimensions(
-                dimensions,
-                projection,
-                out float uMeters,
-                out float vMeters);
-            float uScale = Mathf.Max(
+            return SurfaceAppearanceCore.CreateBaseMapTransform(
+                renderer,
+                recipe.MetersPerTile,
                 MinimumUvScale,
-                uMeters / recipe.MetersPerTile);
-            float vScale = Mathf.Max(
-                MinimumUvScale,
-                vMeters / recipe.MetersPerTile);
-
-            uint hash = StableHash(renderer.transform, kind);
-            float uOffset = (hash & 0xFFFFu) / 65536f;
-            hash = Mix(hash, 0x9E3779B9u);
-            float vOffset = (hash & 0xFFFFu) / 65536f;
-            return new Vector4(uScale, vScale, uOffset, vOffset);
+                ResolveProjection(projection),
+                (int)kind);
         }
 
         private static Color CreateDisplayTint(
             Color sourceTint,
             StairwellSurfaceRecipe recipe)
         {
-            float compensation = recipe.AlbedoCompensation;
-            return new Color(
-                Mathf.Clamp01(sourceTint.r * compensation),
-                Mathf.Clamp01(sourceTint.g * compensation),
-                Mathf.Clamp01(sourceTint.b * compensation),
-                sourceTint.a);
+            return SurfaceAppearanceCore.CreateDisplayTint(
+                sourceTint,
+                recipe.AlbedoCompensation);
         }
 
-        private static Vector3 GetLocalMeshDimensions(Renderer renderer)
-        {
-            Vector3 meshSize = Vector3.one;
-            MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
-            if (meshFilter != null && meshFilter.sharedMesh != null)
-            {
-                meshSize = meshFilter.sharedMesh.bounds.size;
-            }
-
-            Vector3 scale = renderer.transform.localScale;
-            return new Vector3(
-                Mathf.Abs(meshSize.x * scale.x),
-                Mathf.Abs(meshSize.y * scale.y),
-                Mathf.Abs(meshSize.z * scale.z));
-        }
-
-        private static void ResolveProjectedDimensions(
-            Vector3 dimensions,
-            StairwellSurfaceProjection projection,
-            out float uMeters,
-            out float vMeters)
+        private static SurfaceProjection ResolveProjection(
+            StairwellSurfaceProjection projection)
         {
             switch (projection)
             {
                 case StairwellSurfaceProjection.BoxXY:
-                    uMeters = dimensions.x;
-                    vMeters = dimensions.y;
-                    return;
+                    return SurfaceProjection.BoxXY;
                 case StairwellSurfaceProjection.BoxXZ:
-                case StairwellSurfaceProjection.CylinderCapXZ:
-                    uMeters = dimensions.x;
-                    vMeters = dimensions.z;
-                    return;
+                    return SurfaceProjection.BoxXZ;
                 case StairwellSurfaceProjection.BoxZY:
-                    uMeters = dimensions.z;
-                    vMeters = dimensions.y;
-                    return;
+                    return SurfaceProjection.BoxZY;
                 case StairwellSurfaceProjection.CylinderSide:
-                    uMeters = Mathf.PI *
-                              (dimensions.x + dimensions.z) *
-                              0.5f;
-                    vMeters = dimensions.y;
-                    return;
+                    return SurfaceProjection.CylinderSide;
+                case StairwellSurfaceProjection.CylinderCapXZ:
+                    return SurfaceProjection.CylinderCapXZ;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(projection),
                         projection,
                         null);
             }
-        }
-
-        private static uint StableHash(
-            Transform transform,
-            StairwellSurfaceKind kind)
-        {
-            uint hash = 2166136261u;
-            hash = Mix(hash, unchecked((uint)(int)kind));
-            Transform current = transform;
-            while (current != null)
-            {
-                string objectName = current.gameObject.name;
-                for (int index = 0; index < objectName.Length; index++)
-                {
-                    hash ^= objectName[index];
-                    hash *= 16777619u;
-                }
-
-                Vector3 position = current.localPosition;
-                hash = Mix(
-                    hash,
-                    unchecked(
-                        (uint)Mathf.RoundToInt(position.x * 1000f)));
-                hash = Mix(
-                    hash,
-                    unchecked(
-                        (uint)Mathf.RoundToInt(position.y * 1000f)));
-                hash = Mix(
-                    hash,
-                    unchecked(
-                        (uint)Mathf.RoundToInt(position.z * 1000f)));
-                current = current.parent;
-            }
-
-            return hash;
-        }
-
-        private static uint Mix(uint first, uint second)
-        {
-            uint hash = first ^ second;
-            hash *= 16777619u;
-            hash ^= hash >> 16;
-            return hash;
         }
 
         private static int ValidateKind(StairwellSurfaceKind kind)

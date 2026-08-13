@@ -54,7 +54,7 @@ namespace BarPromenade.Tests.EditMode
                     Vector3 position = point.WaitSlots[slot];
                     Assert.That(
                         position.y,
-                        Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
+                        Is.EqualTo(stop.ShelterPosition.y)
                             .Within(0.0001f),
                         "A waiter stands on the raised sidewalk surface.");
                     Assert.That(
@@ -203,7 +203,7 @@ namespace BarPromenade.Tests.EditMode
                 // that centre pushed outward by half the body plus the
                 // waiting capsule and its clearance.
                 Vector3 dock = stop.Position + (toRoad * doorDepth);
-                dock.y = CityStreetSurfacePlanner.SidewalkTop;
+                dock.y = stop.ShelterPosition.y;
                 if (!pedestrianArea.Contains(
                         dock,
                         CityPedestrianPlanner.AgentRadius))

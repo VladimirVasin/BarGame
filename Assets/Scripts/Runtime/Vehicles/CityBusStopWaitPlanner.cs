@@ -83,7 +83,6 @@ namespace BarPromenade
                 along.Normalize();
                 Vector3 laneCenter = stop.ShelterPosition +
                                      (toRoad * PoleToSidewalkCenter);
-                laneCenter.y = CityStreetSurfacePlanner.SidewalkTop;
                 slots.Clear();
                 for (int offset = 0;
                      offset < SlotLongitudinalOffsets.Length;
@@ -91,7 +90,6 @@ namespace BarPromenade
                 {
                     Vector3 candidate = laneCenter +
                         (along * SlotLongitudinalOffsets[offset]);
-                    candidate.y = CityStreetSurfacePlanner.SidewalkTop;
                     if (walkableArea.Contains(
                             candidate,
                             CityPedestrianPlanner.AgentRadius))

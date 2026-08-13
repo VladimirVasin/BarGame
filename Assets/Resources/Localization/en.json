@@ -1131,6 +1131,50 @@
     {
       "key": "debug.minigame.beer_pong",
       "value": "Beer pong"
+    },
+    {
+      "key": "quest.feed_cat.title",
+      "value": "Feed the cat"
+    },
+    {
+      "key": "quest.feed_cat.description.active",
+      "value": "The cat on the stairwell landing is hungry. I should feed it a can of stew."
+    },
+    {
+      "key": "quest.feed_cat.description.completed",
+      "value": "The cat has been fed. Now I can get on with my day."
+    },
+    {
+      "key": "quest.feed_cat.block.descend",
+      "value": "I have to feed the cat first."
+    },
+    {
+      "key": "inventory.use.failure.reserved_for_quest",
+      "value": "I'm not hungry yet. This one is for the cat."
+    },
+    {
+      "key": "inventory.action.eat.reserved",
+      "value": "EAT"
+    },
+    {
+      "key": "journal.title",
+      "value": "JOURNAL"
+    },
+    {
+      "key": "journal.empty",
+      "value": "No entries yet."
+    },
+    {
+      "key": "journal.status.active",
+      "value": "IN PROGRESS"
+    },
+    {
+      "key": "journal.status.completed",
+      "value": "DONE"
+    },
+    {
+      "key": "journal.hint",
+      "value": "J / Esc \u2014 close"
     }
   ]
 }

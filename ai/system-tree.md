@@ -90,6 +90,20 @@ Assets/
     Bar/
       Npc/
         BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
+    Home/
+      Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
+        HomeWallpaperAlbedo.png         faded stripes, sprig stamps, picture ghosts, damp
+        HomeCeilingPlasterAlbedo.png    whitewash, hairline cracks, water-stain rings
+        HomePlankFloorAlbedo.png        painted boards, staggered joints, knots, scuff track
+        HomeDarkWoodAlbedo.png          DSP/veneer grain, chipped edges, one repair patch
+        HomeWornLaminateAlbedo.png      kitchen speckle, ring stains, scratches, burn
+        HomeUpholsteryAlbedo.png        coarse weave, sagged shading, shiny worn patches
+        HomeBedLinenAlbedo.png          dingy ticking, wrinkle folds, stain blotches
+        HomeBathroomTileAlbedo.png      0.15 m tile grid, dark grout, cracked tiles
+        HomeEnamelAlbedo.png            old white enamel, chip band, rust weeps
+        HomePaintedMetalAlbedo.png      brush streaks, bolt lattice, rust bleeding down
+        HomeConcreteAlbedo.png          stucco, offset formwork seams, damp streaks
+        HomeRugAlbedo.png               diamond lattice, medallions, worn walking track
     Stairwell/
       Textures/                         eight active RGB albedos
         StairwellWallPaintAlbedoV2.png  active higher-contrast plaster/bands
@@ -146,7 +160,7 @@ Assets/
         GameTimeRuntime.cs        persistent scaled-delta driver
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
         GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
-        RuntimePrimitiveFactory.cs shared material primitives + opt-in XZ planar UVs
+        RuntimePrimitiveFactory.cs shared material primitives, oriented batches + opt-in XZ planar UVs
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
@@ -165,12 +179,21 @@ Assets/
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
-        CitySurfacePlan.cs       typed ground/water cells, centered bounds and open-area access
+        CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
+        CityElevationPlanner.cs  default macro profile, local terraces + flat custom fallback
+        CityElevationValidator.cs coverage, water, grade + four-district stair invariants
+        CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
+        CityElevationStairPlacement.cs  sidewalk flight/landing integration
+        CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
+        CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
+        CityRoadGroundBoundaryPlan.cs shared safe-connector/protected-drop seam classification
+        CityTerrainSafetyWorldBuilder.cs physical guards along dangerous terrace drops
+        CitySurfacePlan.cs       typed ground/water cells, explicit datum and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
         CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
-        CityStreetSurfacePlan.cs immutable carriageway/sidewalk/marking geometry
-        CityStreetSurfacePlanner.cs  street split, corners, dashes + zebra approaches
-        CityWorldBuilder.cs      chunked physical asphalt/sidewalk + marking batches
+        CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
+        CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
+        CityWorldBuilder.cs      terrace slabs, graded surfaces, stairs + guarded drops
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery landmark descriptors
         CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
@@ -197,7 +220,7 @@ Assets/
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
-        RoadWalkableArea.cs      Buildable/Open/road union + radius-safe connectors
+        RoadWalkableArea.cs      single-layer Buildable/Open/road union + boundary-safe connectors
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -223,28 +246,30 @@ Assets/
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
         StairwellDressingBuilder.cs pipes, vents, stains, trash and upper debris
         StairwellSurfaceAppearance.cs  cached recipes + projection-aware UV MPBs
+        SurfaceAppearanceCore.cs  shared projection/tiling/hash/tint math for surface pipelines
+        HomeSurfaceAppearance.cs  twelve cached home recipes + HomeSurfacePrimitives wrappers
       Stairwell/Cat/ deterministic perch, idle/look and feeding presentation
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       City/NPC/      local player-relative graph walkers with two reusable slots
         CityPedestrianPlan.cs          immutable nodes, links and spawn anchors
-        CityPedestrianPlanner.cs       sidewalk turns + zebra connector graph
+        CityPedestrianPlanner.cs       height-sampled sidewalks, stairs + zebra connector graph
         CityPedestrianActor.cs         forward graph walk, seeded zebra choice + Route 01 states
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
-        CityBusPlanner.cs          accepted Street graph + full-body clearance proof
-        CityBusTargetRoutePlanner.cs POI/Home candidates + deterministic winding loop solver
-        CityBusWideTurnPlanner.cs  selected-apron two-edge safe-right macro
-        CityBusActor.cs            fixed-loop motion, 10 s dwell, service/passenger ownership + engine
+        CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof
+        CityBusTargetRoutePlanner.cs grounded POI/Home candidates + deterministic winding loop solver
+        CityBusWideTurnPlanner.cs  level-apron two-edge safe-right macro between graded links
+        CityBusActor.cs            3D fixed-loop motion/pitch, 10 s dwell + service ownership
         CityBusDirector.cs         fog spawn, passenger-safe recycle and forced-cleanup lifecycle
-        CityBusRidePlan.cs         any-seat door transfer + level camera geometry
+        CityBusRidePlan.cs         local-surface door transfer + level camera geometry
         CityBusRideController.cs   prompts, board/ride/alight, ride look input + exact cleanup
         CityBusStopWaitPlan.cs     per-stop pavement wait slots + stop-seeded graph distances
-        CityBusStopWaitPlanner.cs  slot geometry, walkability proof + single-source Dijkstra
+        CityBusStopWaitPlanner.cs  locally grounded slot geometry + single-source Dijkstra
         CityBusNpcPassengerController.cs ambient waiters, seated boarding, random alighting
         CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
         CityBusDriverDoorTimeline.cs deterministic approach/dwell hand, button + look samples
@@ -261,7 +286,7 @@ Assets/
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
         PlayerCameraFollow.cs      chase/fixed pose, shared orbit sampling + return-pose resolution
-        PlayerContactShadow.cs     planted/fall-aware analytic ground patch
+        PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
         IntoxicationStageRules.cs   five ranges and interpolated profiles
@@ -365,6 +390,7 @@ Assets/
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
       CatFeedingAnimationAssetTests.cs    cat sprite-track import and timing contract
       StairwellSurfaceAppearanceTests.cs  8 imports, shared MPBs and renderer coverage
+      HomeSurfaceAppearanceTests.cs  12 imports, linear tint rule, dither `_BaseMap` guard and walk coverage
       StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
@@ -417,6 +443,7 @@ ArtSource/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
   City/
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
+  Home/                          apartment albedo contract, manifest and contact sheet
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -432,6 +459,7 @@ tools/
   build-split-the-g-art.py          deterministic minigame background/atlas build
   build-tincture-match-art.py       deterministic shot background/atlas build
   build-city-facade-textures.py     deterministic district wall albedos + validator
+  build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/
 ```

@@ -58,9 +58,9 @@ namespace BarPromenade
                 CreatePracticalLight(
                     "Middle Flickering Light",
                     MiddleEmitterPosition + Vector3.down * 0.16f,
-                    new Color(0.42f, 0.65f, 0.58f),
-                    5.40f,
-                    6.6f,
+                    new Color(0.46f, 0.67f, 0.59f),
+                    7.40f,
+                    8.4f,
                     1.7f,
                     true));
             practicalLights.Add(

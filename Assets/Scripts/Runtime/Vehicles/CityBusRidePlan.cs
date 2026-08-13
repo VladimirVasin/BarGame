@@ -34,7 +34,9 @@ namespace BarPromenade
             0.45f,
             -0.45f,
             0.90f,
-            -0.90f
+            -0.90f,
+            1.60f,
+            -1.60f
         };
 
         private static readonly float[] ExitDockOffsets =
@@ -43,7 +45,9 @@ namespace BarPromenade
             -ExitLongitudinalOffset,
             1.15f,
             -1.15f,
-            0f
+            0f,
+            1.60f,
+            -1.60f
         };
 
         private CityBusRidePlan(
@@ -283,11 +287,14 @@ namespace BarPromenade
                 outward * Mathf.Max(
                     0f,
                     desiredDoorDepth - currentDoorDepth);
+            float localSidewalkTop =
+                actor.CurrentStop.ShelterPosition.y;
             outsideDoor.y =
                 ResolveGroundedRootY(
                     outsideDoor,
                     streetSurfacePlan,
-                    groundedRootOffset);
+                    groundedRootOffset,
+                    localSidewalkTop);
 
             if (!TrySelectDock(
                     outsideDoor,
@@ -297,6 +304,7 @@ namespace BarPromenade
                     playerRadius,
                     streetSurfacePlan,
                     groundedRootOffset,
+                    localSidewalkTop,
                     out Vector3 entryRoot) ||
                 !TrySelectDock(
                     outsideDoor,
@@ -306,6 +314,7 @@ namespace BarPromenade
                     playerRadius,
                     streetSurfacePlan,
                     groundedRootOffset,
+                    localSidewalkTop,
                     out Vector3 exitRoot))
             {
                 return false;
@@ -475,20 +484,27 @@ namespace BarPromenade
             float playerRadius,
             CityStreetSurfacePlan streetSurfacePlan,
             float groundedRootOffset,
+            float localSidewalkTop,
             out Vector3 selected)
         {
             for (int index = 0; index < offsets.Length; index++)
             {
                 Vector3 candidate = origin + forward * offsets[index];
-                candidate.y = ResolveGroundedRootY(
+                float groundedY = ResolveGroundedRootY(
                     candidate,
                     streetSurfacePlan,
-                    groundedRootOffset);
-                if (walkableArea.Contains(candidate, playerRadius))
+                    groundedRootOffset,
+                    localSidewalkTop,
+                    out bool hasPhysicalSurface);
+                candidate.y = groundedY;
+                if (streetSurfacePlan != null && !hasPhysicalSurface ||
+                    !walkableArea.Contains(candidate, playerRadius))
                 {
-                    selected = candidate;
-                    return true;
+                    continue;
                 }
+
+                selected = candidate;
+                return true;
             }
 
             selected = default;
@@ -505,34 +521,115 @@ namespace BarPromenade
             CityStreetSurfacePlan streetSurfacePlan,
             float groundedRootOffset)
         {
+            return ResolveGroundedRootY(
+                position,
+                streetSurfacePlan,
+                groundedRootOffset,
+                CityStreetSurfacePlanner.SidewalkTop);
+        }
+
+        private static float ResolveGroundedRootY(
+            Vector3 position,
+            CityStreetSurfacePlan streetSurfacePlan,
+            float groundedRootOffset,
+            float localSidewalkTop)
+        {
+            return ResolveGroundedRootY(
+                position,
+                streetSurfacePlan,
+                groundedRootOffset,
+                localSidewalkTop,
+                out _);
+        }
+
+        private static float ResolveGroundedRootY(
+            Vector3 position,
+            CityStreetSurfacePlan streetSurfacePlan,
+            float groundedRootOffset,
+            float localSidewalkTop,
+            out bool hasPhysicalSurface)
+        {
             if (streetSurfacePlan == null)
             {
-                return CityStreetSurfacePlanner.SidewalkTop +
-                       groundedRootOffset;
+                hasPhysicalSurface = false;
+                return localSidewalkTop + groundedRootOffset;
             }
 
-            float surfaceTop = CityStreetSurfacePlanner.RoadTop;
-            IReadOnlyList<Bounds> sidewalks =
-                streetSurfacePlan.Sidewalks;
+            IReadOnlyList<RuntimeOrientedBox> sidewalks =
+                streetSurfacePlan.SidewalkGeometry;
+            float surfaceTop = 0f;
+            hasPhysicalSurface = false;
             for (int index = 0; index < sidewalks.Count; index++)
             {
-                Bounds sidewalk = sidewalks[index];
-                if (position.x < sidewalk.min.x -
-                        SurfaceContainmentEpsilon ||
-                    position.x > sidewalk.max.x +
-                        SurfaceContainmentEpsilon ||
-                    position.z < sidewalk.min.z -
-                        SurfaceContainmentEpsilon ||
-                    position.z > sidewalk.max.z +
-                        SurfaceContainmentEpsilon)
+                if (!TrySampleTop(
+                        sidewalks[index],
+                        position,
+                        out float sampledTop))
                 {
                     continue;
                 }
 
-                surfaceTop = Mathf.Max(surfaceTop, sidewalk.max.y);
+                surfaceTop = hasPhysicalSurface
+                    ? Mathf.Max(surfaceTop, sampledTop)
+                    : sampledTop;
+                hasPhysicalSurface = true;
+            }
+
+            if (!hasPhysicalSurface)
+            {
+                IReadOnlyList<RuntimeOrientedBox> streets =
+                    streetSurfacePlan.StreetGeometry;
+                for (int index = 0; index < streets.Count; index++)
+                {
+                    if (!TrySampleTop(
+                            streets[index],
+                            position,
+                            out float sampledTop))
+                    {
+                        continue;
+                    }
+
+                    surfaceTop = hasPhysicalSurface
+                        ? Mathf.Max(surfaceTop, sampledTop)
+                        : sampledTop;
+                    hasPhysicalSurface = true;
+                }
+            }
+
+            if (!hasPhysicalSurface)
+            {
+                surfaceTop = localSidewalkTop -
+                    (CityStreetSurfacePlanner.SidewalkTop -
+                     CityStreetSurfacePlanner.RoadTop);
             }
 
             return surfaceTop + groundedRootOffset;
+        }
+
+        private static bool TrySampleTop(
+            RuntimeOrientedBox box,
+            Vector3 position,
+            out float top)
+        {
+            Vector3 normal = box.Rotation * Vector3.up;
+            if (Mathf.Abs(normal.y) <= SurfaceContainmentEpsilon)
+            {
+                top = 0f;
+                return false;
+            }
+
+            Vector3 planePoint = box.Center +
+                (normal * (box.Size.y * 0.5f));
+            top = planePoint.y -
+                ((normal.x * (position.x - planePoint.x) +
+                  normal.z * (position.z - planePoint.z)) /
+                 normal.y);
+            Vector3 local = Quaternion.Inverse(box.Rotation) *
+                (new Vector3(position.x, top, position.z) - box.Center);
+            return Mathf.Abs(local.x) <=
+                       box.Size.x * 0.5f + SurfaceContainmentEpsilon &&
+                   Mathf.Abs(local.z) <=
+                       box.Size.z * 0.5f + SurfaceContainmentEpsilon;
         }
 
         private static bool IsFinite(Vector3 value)

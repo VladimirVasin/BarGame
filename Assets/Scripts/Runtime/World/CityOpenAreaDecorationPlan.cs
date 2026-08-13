@@ -144,7 +144,6 @@ namespace BarPromenade
 
     public static class CityOpenAreaDecorationPlanner
     {
-        private const float GroundTopY = -0.08f;
         private const float WaterEdgeThickness = 0.42f;
         private const float FenceThickness = 0.16f;
         private const float FencePostSpacing = 3.2f;
@@ -317,7 +316,9 @@ namespace BarPromenade
                         CityOpenAreaDecorationStyle.LakeStone,
                         CreateWaterEdgeBounds(
                             waterSurface.WorldBounds,
-                            direction)));
+                            direction,
+                            neighbour.DatumY +
+                            CityElevationPlan.GroundTopOffset)));
                     shoreAnchors.Add(CreateShoreAnchor(
                         neighbour,
                         waterSurface,
@@ -440,13 +441,15 @@ namespace BarPromenade
                 position.z = water.WorldBounds.yMax + waterGap;
             }
 
-            position.y = GroundTopY;
+            position.y = shore.DatumY +
+                         CityElevationPlan.GroundTopOffset;
             return new ShoreAnchor(shore, directionToWater, position);
         }
 
         private static Bounds CreateWaterEdgeBounds(
             Rect water,
-            Vector2Int shoreDirection)
+            Vector2Int shoreDirection,
+            float groundTopY)
         {
             const float edgeHeight = 0.34f;
             const float cornerClearance = 0.28f;
@@ -462,7 +465,7 @@ namespace BarPromenade
                     shoreDirection.x < 0
                         ? water.xMin - WaterEdgeThickness * 0.5f
                         : water.xMax + WaterEdgeThickness * 0.5f,
-                    GroundTopY + edgeHeight * 0.5f,
+                    groundTopY + edgeHeight * 0.5f,
                     water.center.y);
             }
             else
@@ -473,7 +476,7 @@ namespace BarPromenade
                     WaterEdgeThickness);
                 center = new Vector3(
                     water.center.x,
-                    GroundTopY + edgeHeight * 0.5f,
+                    groundTopY + edgeHeight * 0.5f,
                     shoreDirection.y < 0
                         ? water.yMin - WaterEdgeThickness * 0.5f
                         : water.yMax + WaterEdgeThickness * 0.5f);
@@ -577,18 +580,20 @@ namespace BarPromenade
             }
 
             Rect path = CreateCemeteryPath(grounds, access);
+            float groundTopY = surfaces[0].DatumY +
+                               CityElevationPlan.GroundTopOffset;
             target.Add(new CityOpenAreaDecorationDescriptor(
                 "cemetery-entry-path",
                 CityAreaFeatureKind.Cemetery,
                 CityOpenAreaDecorationKind.CemeteryPath,
                 CityOpenAreaDecorationStyle.CemeteryPath,
                 new Bounds(
-                    new Vector3(path.center.x, GroundTopY + 0.035f, path.center.y),
+                    new Vector3(path.center.x, groundTopY + 0.035f, path.center.y),
                     new Vector3(path.width, 0.07f, path.height))));
 
-            AddCemeteryFence(target, grounds, access);
-            AddCemeteryGraves(target, grounds, path, access);
-            AddCemeteryTrees(target, grounds, path, access);
+            AddCemeteryFence(target, grounds, access, groundTopY);
+            AddCemeteryGraves(target, grounds, path, access, groundTopY);
+            AddCemeteryTrees(target, grounds, path, access, groundTopY);
         }
 
         private static Rect CreateCemeteryPath(
@@ -630,7 +635,8 @@ namespace BarPromenade
         private static void AddCemeteryFence(
             ICollection<CityOpenAreaDecorationDescriptor> target,
             Rect bounds,
-            CityOpenAreaAccessDescriptor access)
+            CityOpenAreaAccessDescriptor access,
+            float groundTopY)
         {
             Vector3 inward = access.OutwardNormal.normalized;
             bool gateOnWest = inward.x > 0.5f;
@@ -656,7 +662,8 @@ namespace BarPromenade
                 bounds.yMax,
                 gateOnWest,
                 gateMinimum,
-                gateMaximum);
+                gateMaximum,
+                groundTopY);
             AddFenceSide(
                 target,
                 ref id,
@@ -666,7 +673,8 @@ namespace BarPromenade
                 bounds.yMax,
                 gateOnEast,
                 gateMinimum,
-                gateMaximum);
+                gateMaximum,
+                groundTopY);
             AddFenceSide(
                 target,
                 ref id,
@@ -676,7 +684,8 @@ namespace BarPromenade
                 bounds.xMax,
                 gateOnSouth,
                 gateMinimum,
-                gateMaximum);
+                gateMaximum,
+                groundTopY);
             AddFenceSide(
                 target,
                 ref id,
@@ -686,19 +695,40 @@ namespace BarPromenade
                 bounds.xMax,
                 gateOnNorth,
                 gateMinimum,
-                gateMaximum);
+                gateMaximum,
+                groundTopY);
 
             if (gateOnWest || gateOnEast)
             {
                 float x = gateOnWest ? bounds.xMin : bounds.xMax;
-                AddGatePillar(target, "cemetery-gate-a", x, gateMinimum);
-                AddGatePillar(target, "cemetery-gate-b", x, gateMaximum);
+                AddGatePillar(
+                    target,
+                    "cemetery-gate-a",
+                    x,
+                    gateMinimum,
+                    groundTopY);
+                AddGatePillar(
+                    target,
+                    "cemetery-gate-b",
+                    x,
+                    gateMaximum,
+                    groundTopY);
             }
             else
             {
                 float z = gateOnSouth ? bounds.yMin : bounds.yMax;
-                AddGatePillar(target, "cemetery-gate-a", gateMinimum, z);
-                AddGatePillar(target, "cemetery-gate-b", gateMaximum, z);
+                AddGatePillar(
+                    target,
+                    "cemetery-gate-a",
+                    gateMinimum,
+                    z,
+                    groundTopY);
+                AddGatePillar(
+                    target,
+                    "cemetery-gate-b",
+                    gateMaximum,
+                    z,
+                    groundTopY);
             }
         }
 
@@ -711,7 +741,8 @@ namespace BarPromenade
             float maximum,
             bool hasGate,
             float gateMinimum,
-            float gateMaximum)
+            float gateMaximum,
+            float groundTopY)
         {
             if (!hasGate)
             {
@@ -721,7 +752,8 @@ namespace BarPromenade
                     horizontal,
                     fixedCoordinate,
                     minimum,
-                    maximum);
+                    maximum,
+                    groundTopY);
                 return;
             }
 
@@ -731,14 +763,16 @@ namespace BarPromenade
                 horizontal,
                 fixedCoordinate,
                 minimum,
-                Mathf.Clamp(gateMinimum, minimum, maximum));
+                Mathf.Clamp(gateMinimum, minimum, maximum),
+                groundTopY);
             AddFenceRun(
                 target,
                 ref id,
                 horizontal,
                 fixedCoordinate,
                 Mathf.Clamp(gateMaximum, minimum, maximum),
-                maximum);
+                maximum,
+                groundTopY);
         }
 
         private static void AddFenceRun(
@@ -747,7 +781,8 @@ namespace BarPromenade
             bool horizontal,
             float fixedCoordinate,
             float minimum,
-            float maximum)
+            float maximum,
+            float groundTopY)
         {
             float length = maximum - minimum;
             if (length <= 0.1f)
@@ -765,7 +800,8 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    height);
+                    height,
+                    groundTopY);
             }
 
             int postCount = Mathf.Max(
@@ -778,8 +814,14 @@ namespace BarPromenade
                     maximum,
                     post / (float)postCount);
                 Vector3 position = horizontal
-                    ? new Vector3(coordinate, 0.66f, fixedCoordinate)
-                    : new Vector3(fixedCoordinate, 0.66f, coordinate);
+                    ? new Vector3(
+                        coordinate,
+                        groundTopY + 0.66f,
+                        fixedCoordinate)
+                    : new Vector3(
+                        fixedCoordinate,
+                        groundTopY + 0.66f,
+                        coordinate);
                 target.Add(new CityOpenAreaDecorationDescriptor(
                     $"cemetery-fence-post-{id++:D3}",
                     CityAreaFeatureKind.Cemetery,
@@ -798,7 +840,8 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float height)
+            float height,
+            float groundTopY)
         {
             float pieceMinimum = minimum;
             while (pieceMinimum < maximum - 0.1f)
@@ -813,8 +856,14 @@ namespace BarPromenade
                     ? new Vector3(length, 0.12f, FenceThickness)
                     : new Vector3(FenceThickness, 0.12f, length);
                 Vector3 position = horizontal
-                    ? new Vector3(center, height, fixedCoordinate)
-                    : new Vector3(fixedCoordinate, height, center);
+                    ? new Vector3(
+                        center,
+                        groundTopY + height,
+                        fixedCoordinate)
+                    : new Vector3(
+                        fixedCoordinate,
+                        groundTopY + height,
+                        center);
                 target.Add(new CityOpenAreaDecorationDescriptor(
                     $"cemetery-fence-rail-{id++:D3}",
                     CityAreaFeatureKind.Cemetery,
@@ -829,7 +878,8 @@ namespace BarPromenade
             ICollection<CityOpenAreaDecorationDescriptor> target,
             string id,
             float x,
-            float z)
+            float z,
+            float groundTopY)
         {
             target.Add(new CityOpenAreaDecorationDescriptor(
                 id,
@@ -837,7 +887,7 @@ namespace BarPromenade
                 CityOpenAreaDecorationKind.CemeteryGate,
                 CityOpenAreaDecorationStyle.GraveStone,
                 CreateGroundedBounds(
-                    new Vector3(x, GroundTopY, z),
+                    new Vector3(x, groundTopY, z),
                     new Vector3(0.58f, 1.8f, 0.58f))));
         }
 
@@ -845,7 +895,8 @@ namespace BarPromenade
             ICollection<CityOpenAreaDecorationDescriptor> target,
             Rect grounds,
             Rect path,
-            CityOpenAreaAccessDescriptor access)
+            CityOpenAreaAccessDescriptor access,
+            float groundTopY)
         {
             int id = 0;
             Rect clearPath = Expand(path, 0.9f);
@@ -858,7 +909,7 @@ namespace BarPromenade
                      x += 6.5f)
                 {
                     Bounds slab = CreateGroundedBounds(
-                        new Vector3(x, GroundTopY, z + 0.35f),
+                        new Vector3(x, groundTopY, z + 0.35f),
                         new Vector3(1.2f, 0.16f, 2.25f));
                     if (OverlapsStrict(ToXZRect(slab), clearPath) ||
                         !IsClearOfAccess(slab, access))
@@ -867,7 +918,7 @@ namespace BarPromenade
                     }
 
                     Bounds headstone = CreateGroundedBounds(
-                        new Vector3(x, GroundTopY, z - 0.78f),
+                        new Vector3(x, groundTopY, z - 0.78f),
                         new Vector3(0.84f, 1.05f, 0.30f));
                     target.Add(new CityOpenAreaDecorationDescriptor(
                         $"cemetery-grave-{id:D2}-slab",
@@ -890,14 +941,15 @@ namespace BarPromenade
             ICollection<CityOpenAreaDecorationDescriptor> target,
             Rect grounds,
             Rect path,
-            CityOpenAreaAccessDescriptor access)
+            CityOpenAreaAccessDescriptor access,
+            float groundTopY)
         {
             Vector3[] positions =
             {
-                new Vector3(grounds.xMin + 2.2f, GroundTopY, grounds.yMin + 2.2f),
-                new Vector3(grounds.xMax - 2.2f, GroundTopY, grounds.yMin + 2.2f),
-                new Vector3(grounds.xMin + 2.2f, GroundTopY, grounds.yMax - 2.2f),
-                new Vector3(grounds.xMax - 2.2f, GroundTopY, grounds.yMax - 2.2f)
+                new Vector3(grounds.xMin + 2.2f, groundTopY, grounds.yMin + 2.2f),
+                new Vector3(grounds.xMax - 2.2f, groundTopY, grounds.yMin + 2.2f),
+                new Vector3(grounds.xMin + 2.2f, groundTopY, grounds.yMax - 2.2f),
+                new Vector3(grounds.xMax - 2.2f, groundTopY, grounds.yMax - 2.2f)
             };
             for (int index = 0; index < positions.Length; index++)
             {
@@ -976,7 +1028,7 @@ namespace BarPromenade
             return new Bounds(
                 new Vector3(
                     groundPosition.x,
-                    GroundTopY + size.y * 0.5f,
+                    groundPosition.y + size.y * 0.5f,
                     groundPosition.z),
                 size);
         }

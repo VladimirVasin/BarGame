@@ -63,6 +63,20 @@ The vertical slice contains:
   northern beach and water strip, and anchors the central park at world/map
   center. Active cells, roads and surfaces may form a connected sparse,
   non-rectangular footprint inside their map bounds;
+- one immutable `CityElevationPlan` produced after 2D topology and before any
+  lot, surface or access is materialized. The default coastal blueprint spans
+  a deterministic `12 m` vertical range, gives every urban district at least
+  `1.5 m` of local terrace variation and keeps sea/lake water on declared
+  datums. Legacy and custom blueprints retain an exact flat fallback. The
+  sampler is authoritative for node, cell, road, sidewalk, entrance, return,
+  open-area and debug-teleport height;
+- four signature exterior stair streets, one in Old Town, Residential,
+  Industrial and Nightlife. Each owns `6-12` visible collider-free steps at
+  `0.15-0.17 m` rise and `0.30-0.34 m` tread, two `1.5 m` landings, physical
+  rails/retaining walls and exactly one hidden seam-free ramp collider per
+  flight. Terrace sides extend to a common terrain base and drops of `0.6 m`
+  or more receive physical guards. The first version deliberately permits
+  only one walkable surface at any XZ projection;
 - one shared MVP day/night lighting cycle for City, the Home window and the
   Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
   `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.

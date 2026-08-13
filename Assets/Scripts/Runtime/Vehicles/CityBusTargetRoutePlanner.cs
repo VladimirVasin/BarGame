@@ -678,7 +678,9 @@ namespace BarPromenade
                     (layout.RoadWidth * 0.5f) +
                     RoadsidePoleOutsideRoadEdge -
                     laneCenterOffset));
-            result.y = CityStreetSurfacePlanner.SidewalkTop;
+            result.y = roadPosition.y +
+                (CityStreetSurfacePlanner.SidewalkTop -
+                 CityStreetSurfacePlanner.RoadTop);
             return result;
         }
 

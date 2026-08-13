@@ -76,11 +76,11 @@ namespace BarPromenade
                 toApartment,
                 upper,
                 new Vector3(-1.45f, 0.14f, -3.78f),
-                new Vector3(3.18f, 3.34f, -3.55f),
+                new Vector3(3.18f, 3.34f, -3.72f),
                 new Vector3(-1.45f, 1.02f, -4.44f),
                 new Vector3(1.62f, 2.04f, 0.68f),
-                new Vector3(3.82f, 4.22f, -3.20f),
-                new Vector3(0.70f, 2.04f, 1.68f),
+                new Vector3(3.82f, 4.22f, -3.72f),
+                new Vector3(0.70f, 2.04f, 1.40f),
                 new Bounds(
                     new Vector3(-1.45f, 4.20f, -0.46f),
                     new Vector3(1.72f, 2.0f, 0.88f)));

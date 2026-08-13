@@ -205,7 +205,7 @@ namespace BarPromenade
             for (int index = 0; index < layout.RoadEdges.Count; index++)
             {
                 RoadEdge edge = layout.RoadEdges[index];
-                if (layout.GetPathKind(edge) == CityPathKind.Street)
+                if (IsBusTraversableStreet(layout, edge))
                 {
                     edges.Add(edge);
                 }
@@ -245,7 +245,7 @@ namespace BarPromenade
                 $"bus:{NodeId(street.From)}:{NodeId(street.To)}:" +
                 (departure ? "departure" : "arrival"),
                 position,
-                street.Forward,
+                street.GradeForward,
                 street.RoadEdge,
                 street.From,
                 street.To);
@@ -263,7 +263,7 @@ namespace BarPromenade
             List<CityBusPathSample> samples = CreateLinearSamples(
                 start,
                 end,
-                street.Forward);
+                street.GradeForward);
             Rect carriageway = GetCarriagewayRect(layout, street.RoadEdge);
             CityBusClearanceResult clearance = ValidateSamples(
                 vehicle,
@@ -320,7 +320,7 @@ namespace BarPromenade
                 RoadEdge edge = layout.RoadEdges[edgeIndex];
                 if (!edge.Contains(incoming.To) ||
                     edge == incoming.RoadEdge ||
-                    layout.GetPathKind(edge) != CityPathKind.Street)
+                    !IsBusTraversableStreet(layout, edge))
                 {
                     continue;
                 }
@@ -576,7 +576,7 @@ namespace BarPromenade
         {
             var result = new List<CityBusPathSample>();
             Vector3 junction = layout.GetNodeWorldPosition(incoming.To);
-            junction.y = CityStreetSurfacePlanner.RoadTop;
+            junction.y += CityStreetSurfacePlanner.RoadTop;
             float halfRoad = layout.RoadWidth * 0.5f;
             float cornerOffset = halfRoad - TurnTangentInset;
             Vector3 start = GetArrivalPosition(layout, incoming);
@@ -809,7 +809,9 @@ namespace BarPromenade
             Vector3 nodePosition = layout.GetNodeWorldPosition(node);
             Vector3 otherPosition = layout.GetNodeWorldPosition(
                 edge.Other(node));
-            Vector3 outward = (otherPosition - nodePosition).normalized;
+            Vector3 outward = otherPosition - nodePosition;
+            outward.y = 0f;
+            outward.Normalize();
             float halfRoad = layout.RoadWidth * 0.5f;
             float length = CityStreetSurfacePlanner
                 .BusApproachApronLength;
@@ -832,10 +834,11 @@ namespace BarPromenade
             CityLayout layout,
             DirectedStreet street)
         {
-            Vector3 result = layout.GetNodeWorldPosition(street.From) +
+            Vector3 node = layout.GetNodeWorldPosition(street.From);
+            Vector3 result = node +
                 (street.Forward * (layout.RoadWidth * 0.5f)) +
                 (street.Right * street.LaneCenterOffset);
-            result.y = CityStreetSurfacePlanner.RoadTop;
+            result.y = node.y + CityStreetSurfacePlanner.RoadTop;
             return result;
         }
 
@@ -843,11 +846,29 @@ namespace BarPromenade
             CityLayout layout,
             DirectedStreet street)
         {
-            Vector3 result = layout.GetNodeWorldPosition(street.To) -
+            Vector3 node = layout.GetNodeWorldPosition(street.To);
+            Vector3 result = node -
                 (street.Forward * (layout.RoadWidth * 0.5f)) +
                 (street.Right * street.LaneCenterOffset);
-            result.y = CityStreetSurfacePlanner.RoadTop;
+            result.y = node.y + CityStreetSurfacePlanner.RoadTop;
             return result;
+        }
+
+        private static bool IsBusTraversableStreet(
+            CityLayout layout,
+            RoadEdge edge)
+        {
+            if (layout.GetPathKind(edge) != CityPathKind.Street)
+            {
+                return false;
+            }
+
+            CityElevationTransitionDescriptor transition =
+                layout.ElevationPlan.GetTransition(edge);
+            return (transition.Mobility & CityTraversalMobility.Bus) != 0 &&
+                   (transition.Kind == CityElevationTransitionKind.Level ||
+                    transition.Kind ==
+                    CityElevationTransitionKind.VehicleGrade);
         }
 
         private static List<CityBusSpawnAnchor> CreateSpawnAnchors(
@@ -1019,12 +1040,25 @@ namespace BarPromenade
                 forward.Normalize();
                 Forward = forward;
                 Right = new Vector3(Forward.z, 0f, -Forward.x);
+                float horizontalRun = Mathf.Max(
+                    0f,
+                    new Vector2(
+                        second.x - first.x,
+                        second.z - first.z).magnitude -
+                    layout.RoadWidth);
+                Vector3 gradeForward =
+                    (Forward * horizontalRun) +
+                    (Vector3.up * (second.y - first.y));
+                GradeForward = gradeForward.sqrMagnitude > 0.0001f
+                    ? gradeForward.normalized
+                    : Forward;
             }
 
             public RoadEdge RoadEdge { get; }
             public Vector2Int From { get; }
             public Vector2Int To { get; }
             public Vector3 Forward { get; }
+            public Vector3 GradeForward { get; }
             public Vector3 Right { get; }
             public float LaneCenterOffset { get; }
             public int DepartureNodeIndex { get; set; }

@@ -78,7 +78,7 @@ namespace BarPromenade
                 cityWorldPosition - home.DoorPosition;
             return new Vector3(
                 HomeFacadeX + Vector3.Dot(delta, direction),
-                cityWorldPosition.y - ApartmentFloorElevation,
+                delta.y - ApartmentFloorElevation,
                 Vector3.Dot(delta, tangent));
         }
 

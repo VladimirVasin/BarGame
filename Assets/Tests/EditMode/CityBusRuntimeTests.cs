@@ -455,6 +455,94 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [TestCase(0f)]
+        [TestCase(6f)]
+        public void Actor_RoutePosePreservesFlatMotionAndSupportsGrades(
+            float firstLinkRise)
+        {
+            CityBusPlan plan = CreateDirectedApproachPlan(
+                80.4f,
+                false,
+                firstLinkRise: firstLinkRise);
+            RuntimeFixture fixture = null;
+            try
+            {
+                fixture = RuntimeFixture.Create("Route Grade", plan);
+                fixture.SpawnDirectly();
+
+                CityBusRouteLink link = plan.Links[0];
+                CityBusPathSample start = link.Samples[0];
+                CityBusPathSample end = link.Samples[1];
+                Vector3 routeForward = start.Forward.normalized;
+                RigidbodyConstraints constraints =
+                    fixture.Actor.RigidBody.constraints;
+                Assert.That(
+                    constraints & RigidbodyConstraints.FreezePositionY,
+                    Is.EqualTo(RigidbodyConstraints.None));
+                Assert.That(
+                    constraints & RigidbodyConstraints.FreezeRotationX,
+                    Is.EqualTo(RigidbodyConstraints.None));
+                Assert.That(
+                    constraints & RigidbodyConstraints.FreezeRotationZ,
+                    Is.EqualTo(RigidbodyConstraints.FreezeRotationZ));
+
+                Transform suspension =
+                    fixture.Presentation.SuspensionVisual;
+                fixture.Actor.Advance(
+                    0.5f,
+                    CityBusObstacleState.Clear,
+                    0f);
+
+                float progress = fixture.Actor.DistanceAlongLink /
+                    link.Length;
+                Vector3 expectedPosition = Vector3.Lerp(
+                    start.Position,
+                    end.Position,
+                    progress);
+                Assert.That(
+                    Vector3.Distance(
+                        fixture.Actor.Position,
+                        expectedPosition),
+                    Is.LessThan(0.0001f));
+                Assert.That(
+                    Vector3.Angle(
+                        fixture.Actor.TravelDirection,
+                        routeForward),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    fixture.Actor.Position.y,
+                    Is.EqualTo(expectedPosition.y).Within(0.0001f));
+                Assert.That(
+                    fixture.Actor.TravelDirection.y,
+                    Is.EqualTo(routeForward.y).Within(0.0001f));
+                Assert.That(
+                    Mathf.Abs(Vector3.Dot(
+                        fixture.Actor.transform.right,
+                        Vector3.up)),
+                    Is.LessThan(0.0001f),
+                    "The road pose may pitch, but must not add route roll.");
+                Assert.That(
+                    fixture.Presentation.transform.localRotation,
+                    Is.EqualTo(Quaternion.identity));
+                Assert.That(
+                    suspension.IsChildOf(
+                        fixture.Presentation.transform),
+                    Is.True,
+                    "The sprung body must stay inside the visual hierarchy " +
+                    "that inherits the 3D route pose.");
+                Assert.That(
+                    Vector3.Angle(
+                        fixture.Presentation.transform.forward,
+                        fixture.Actor.TravelDirection),
+                    Is.LessThan(0.001f),
+                    "The visual root must inherit the actor's grade pose.");
+            }
+            finally
+            {
+                fixture?.Destroy();
+            }
+        }
+
         [Test]
         public void StopDwell_HoldsForTenSecondsBeforeResuming()
         {
@@ -1600,11 +1688,18 @@ namespace BarPromenade.Tests.EditMode
             bool includeStop,
             float farZ = 100.4f,
             bool markEveryLinkAsJunction = false,
-            bool placeStopAtSpawnBand = false)
+            bool placeStopAtSpawnBand = false,
+            float firstLinkRise = 0f)
         {
             Vector3 anchor = new Vector3(0f, 0.08f, anchorZ);
-            Vector3 farNorth = new Vector3(0f, 0.08f, farZ);
-            Vector3 farEast = new Vector3(20f, 0.08f, farZ);
+            Vector3 farNorth = new Vector3(
+                0f,
+                0.08f + firstLinkRise,
+                farZ);
+            Vector3 farEast = new Vector3(
+                20f,
+                0.08f + firstLinkRise,
+                farZ);
             Vector3 nearEast = new Vector3(20f, 0.08f, 20f);
             Vector3 nearWest = new Vector3(0f, 0.08f, 20f);
             Vector3[] points =
@@ -1714,7 +1809,7 @@ namespace BarPromenade.Tests.EditMode
                         0,
                         0f,
                         anchor,
-                        Vector3.forward,
+                        links[0].Samples[0].Forward,
                         edge)
                 },
                 stops,

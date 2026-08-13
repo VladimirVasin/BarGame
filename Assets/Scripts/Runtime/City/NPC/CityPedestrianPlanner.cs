@@ -113,6 +113,7 @@ namespace BarPromenade
             if (supportsCrosswalkNavigation)
             {
                 BuildCrosswalkLinks(
+                    layout,
                     streetSurfacePlan,
                     crosswalkLaneNodes,
                     graph);
@@ -180,6 +181,14 @@ namespace BarPromenade
                 return;
             }
 
+            StairLaneProfile stairProfile =
+                CreateStairLaneProfile(
+                    layout,
+                    edge,
+                    start,
+                    tangent,
+                    left);
+
             crosswalksByEdge.TryGetValue(
                 edge,
                 out List<int> edgeCrosswalks);
@@ -195,7 +204,12 @@ namespace BarPromenade
                         left,
                         safeStart,
                         sideOffset,
-                        side),
+                        side,
+                        length,
+                        layout.ElevationPlan,
+                        edge,
+                        streetSurfacePlan,
+                        stairProfile),
                     false);
                 points.Add(new LanePoint(safeStart, firstNode));
                 endpointsByNode[edge.A].Add(new LaneEndpoint(
@@ -229,13 +243,58 @@ namespace BarPromenade
                                 left,
                                 distance,
                                 sideOffset,
-                                side),
+                                side,
+                                length,
+                                layout.ElevationPlan,
+                                edge,
+                                streetSurfacePlan,
+                                stairProfile),
                             true);
                         points.Add(new LanePoint(distance, crossingNode));
                         crosswalkLaneNodes.Add(
                             new CrosswalkLaneKey(crosswalkIndex, side),
                             crossingNode);
                     }
+                }
+
+                if (stairProfile.AppliesTo(side))
+                {
+                    AddStairBoundaryNode(
+                        laneId,
+                        "first",
+                        stairProfile.FirstDistance,
+                        safeStart,
+                        safeEnd,
+                        start,
+                        tangent,
+                        left,
+                        sideOffset,
+                        side,
+                        length,
+                        layout.ElevationPlan,
+                        edge,
+                        streetSurfacePlan,
+                        stairProfile,
+                        points,
+                        graph);
+                    AddStairBoundaryNode(
+                        laneId,
+                        "second",
+                        stairProfile.SecondDistance,
+                        safeStart,
+                        safeEnd,
+                        start,
+                        tangent,
+                        left,
+                        sideOffset,
+                        side,
+                        length,
+                        layout.ElevationPlan,
+                        edge,
+                        streetSurfacePlan,
+                        stairProfile,
+                        points,
+                        graph);
                 }
 
                 int secondNode = graph.AddNode(
@@ -246,7 +305,12 @@ namespace BarPromenade
                         left,
                         safeEnd,
                         sideOffset,
-                        side),
+                        side,
+                        length,
+                        layout.ElevationPlan,
+                        edge,
+                        streetSurfacePlan,
+                        stairProfile),
                     false);
                 points.Add(new LanePoint(safeEnd, secondNode));
                 endpointsByNode[edge.B].Add(new LaneEndpoint(
@@ -257,12 +321,19 @@ namespace BarPromenade
                     first.Distance.CompareTo(second.Distance));
                 for (int index = 1; index < points.Count; index++)
                 {
+                    bool isStair = stairProfile.AppliesTo(side) &&
+                                   stairProfile.ContainsInterval(
+                                       points[index - 1].Distance,
+                                       points[index].Distance);
                     graph.AddLink(
-                        $"sidewalk:{laneId}:{index - 1}",
+                        isStair
+                            ? $"stair:{stairProfile.Id}:{laneId}:" +
+                              $"{index - 1}"
+                            : $"sidewalk:{laneId}:{index - 1}",
                         points[index - 1].NodeIndex,
                         points[index].NodeIndex,
                         CityPedestrianLinkKind.Sidewalk,
-                        true);
+                        !isStair);
                 }
             }
         }
@@ -306,6 +377,7 @@ namespace BarPromenade
                                     $"corner:{xSign}:{zSign}",
                                     new Vector3(
                                         center.x + (xSign * cornerOffset),
+                                        center.y +
                                         CityStreetSurfacePlanner.SidewalkTop,
                                         center.z + (zSign * cornerOffset)),
                                     false));
@@ -357,6 +429,7 @@ namespace BarPromenade
                             $"mouth:{direction.x}:{direction.y}",
                             new Vector3(
                                 center.x + (direction.x * cornerOffset),
+                                center.y +
                                 CityStreetSurfacePlanner.SidewalkTop,
                                 center.z + (direction.y * cornerOffset)),
                             false);
@@ -453,7 +526,7 @@ namespace BarPromenade
                         continue;
                     }
 
-                    float distance = Vector3.Distance(
+                    float distance = PlanarDistance(
                         endpoints[first].Position,
                         endpoints[second].Position);
                     if (distance <= maximumGap && distance < bestDistance)
@@ -493,6 +566,7 @@ namespace BarPromenade
         }
 
         private static void BuildCrosswalkLinks(
+            CityLayout layout,
             CityStreetSurfacePlan streetSurfacePlan,
             IReadOnlyDictionary<CrosswalkLaneKey, int> crosswalkLaneNodes,
             GraphBuilder graph)
@@ -526,7 +600,19 @@ namespace BarPromenade
 
                 across.Normalize();
                 Vector3 center = streetSurfacePlan.Crosswalks[index].Center;
-                center.y = CityStreetSurfacePlanner.RoadTop;
+                if (layout.ElevationPlan.TrySampleSurface(
+                        new Vector2(center.x, center.z),
+                        CitySurfaceRole.RoadTop,
+                        out float roadHeight,
+                        out _))
+                {
+                    center.y = roadHeight;
+                }
+                else
+                {
+                    center.y += CityStreetSurfacePlanner.RoadTop;
+                }
+
                 int positiveRoad = graph.AddNode(
                     $"crosswalk:{index}:road:positive",
                     center + (across * roadExtent),
@@ -602,13 +688,187 @@ namespace BarPromenade
             Vector3 left,
             float distance,
             float sideOffset,
-            int side)
+            int side,
+            float length,
+            CityElevationPlan elevationPlan,
+            RoadEdge edge,
+            CityStreetSurfacePlan streetSurfacePlan,
+            StairLaneProfile stairProfile)
         {
             Vector3 position = start +
                                (tangent * distance) +
                                (left * (sideOffset * side));
-            position.y = CityStreetSurfacePlanner.SidewalkTop;
+            float regularHeight = ResolveNavigationSurfaceHeight(
+                position,
+                distance,
+                length,
+                elevationPlan,
+                edge,
+                streetSurfacePlan);
+            position.y = stairProfile.ResolveHeight(
+                side,
+                distance,
+                regularHeight);
             return position;
+        }
+
+        private static StairLaneProfile CreateStairLaneProfile(
+            CityLayout layout,
+            RoadEdge edge,
+            Vector3 start,
+            Vector3 tangent,
+            Vector3 left)
+        {
+            if (!layout.ElevationPlan.TryGetSignatureStair(
+                    edge,
+                    out CityElevationStairDescriptor stair))
+            {
+                return default;
+            }
+
+            CityElevationStairPlacement placement =
+                CityElevationStairPlacementPlanner.Create(layout, stair);
+            CityExteriorStairFlightDescriptor flight =
+                placement.ExteriorPlan.Flights[0];
+            int side = Vector3.Dot(
+                placement.SideDirection,
+                left) >= 0f
+                ? 1
+                : -1;
+            float firstDistance = Vector3.Dot(
+                flight.Start - start,
+                tangent);
+            float secondDistance = Vector3.Dot(
+                flight.End - start,
+                tangent);
+            float firstHeight = flight.Start.y;
+            float secondHeight = flight.End.y;
+            if (secondDistance < firstDistance)
+            {
+                Swap(ref firstDistance, ref secondDistance);
+                Swap(ref firstHeight, ref secondHeight);
+            }
+
+            return new StairLaneProfile(
+                stair.Id,
+                side,
+                firstDistance,
+                secondDistance,
+                firstHeight,
+                secondHeight);
+        }
+
+        private static void AddStairBoundaryNode(
+            string laneId,
+            string boundaryId,
+            float distance,
+            float safeStart,
+            float safeEnd,
+            Vector3 start,
+            Vector3 tangent,
+            Vector3 left,
+            float sideOffset,
+            int side,
+            float length,
+            CityElevationPlan elevationPlan,
+            RoadEdge edge,
+            CityStreetSurfacePlan streetSurfacePlan,
+            StairLaneProfile stairProfile,
+            ICollection<LanePoint> points,
+            GraphBuilder graph)
+        {
+            if (distance <= safeStart + GeometryTolerance ||
+                distance >= safeEnd - GeometryTolerance)
+            {
+                return;
+            }
+
+            int nodeIndex = graph.AddNode(
+                $"lane:{laneId}:stair:{stairProfile.Id}:" + boundaryId,
+                SidewalkPosition(
+                    start,
+                    tangent,
+                    left,
+                    distance,
+                    sideOffset,
+                    side,
+                    length,
+                    elevationPlan,
+                    edge,
+                    streetSurfacePlan,
+                    stairProfile),
+                false);
+            points.Add(new LanePoint(distance, nodeIndex));
+        }
+
+        private static float ResolveNavigationSurfaceHeight(
+            Vector3 position,
+            float distance,
+            float length,
+            CityElevationPlan elevationPlan,
+            RoadEdge edge,
+            CityStreetSurfacePlan streetSurfacePlan)
+        {
+            float height = elevationPlan.SampleRoadDatum(
+                               edge,
+                               Mathf.Clamp01(distance / length)) +
+                           CityStreetSurfacePlanner.RoadTop;
+            for (int index = 0;
+                 index < streetSurfacePlan.SidewalkGeometry.Count;
+                 index++)
+            {
+                if (TrySampleSurfaceTop(
+                        streetSurfacePlan.SidewalkGeometry[index],
+                        position,
+                        out float sidewalkTop))
+                {
+                    height = Mathf.Max(height, sidewalkTop);
+                }
+            }
+
+            return height;
+        }
+
+        private static bool TrySampleSurfaceTop(
+            RuntimeOrientedBox box,
+            Vector3 position,
+            out float top)
+        {
+            Vector3 normal = box.Rotation * Vector3.up;
+            if (Mathf.Abs(normal.y) <= GeometryTolerance)
+            {
+                top = 0f;
+                return false;
+            }
+
+            Vector3 planePoint = box.Center +
+                                 normal * (box.Size.y * 0.5f);
+            top = planePoint.y -
+                ((normal.x * (position.x - planePoint.x) +
+                  normal.z * (position.z - planePoint.z)) /
+                 normal.y);
+            Vector3 local = Quaternion.Inverse(box.Rotation) *
+                (new Vector3(position.x, top, position.z) - box.Center);
+            return Mathf.Abs(local.x) <=
+                       box.Size.x * 0.5f + GeometryTolerance &&
+                   Mathf.Abs(local.z) <=
+                       box.Size.z * 0.5f + GeometryTolerance;
+        }
+
+        private static float PlanarDistance(
+            Vector3 first,
+            Vector3 second)
+        {
+            return new Vector2(
+                first.x - second.x,
+                first.z - second.z).magnitude;
+        }
+
+        private static void Swap(ref float first, ref float second)
+        {
+            float value = first;
+            first = second;
+            second = value;
         }
 
         private static float ResolveSurfaceInset(
@@ -917,6 +1177,69 @@ namespace BarPromenade
             public bool Contains(Vector2Int direction)
             {
                 return directions.Contains(direction);
+            }
+        }
+
+        private readonly struct StairLaneProfile
+        {
+            public StairLaneProfile(
+                string id,
+                int side,
+                float firstDistance,
+                float secondDistance,
+                float firstHeight,
+                float secondHeight)
+            {
+                Id = id ?? string.Empty;
+                Side = side;
+                FirstDistance = firstDistance;
+                SecondDistance = secondDistance;
+                FirstHeight = firstHeight;
+                SecondHeight = secondHeight;
+            }
+
+            public string Id { get; }
+            public int Side { get; }
+            public float FirstDistance { get; }
+            public float SecondDistance { get; }
+            public float FirstHeight { get; }
+            public float SecondHeight { get; }
+
+            public bool AppliesTo(int side)
+            {
+                return !string.IsNullOrEmpty(Id) && Side == side;
+            }
+
+            public float ResolveHeight(
+                int side,
+                float distance,
+                float fallback)
+            {
+                if (!AppliesTo(side))
+                {
+                    return fallback;
+                }
+
+                if (distance < FirstDistance - GeometryTolerance ||
+                    distance > SecondDistance + GeometryTolerance)
+                {
+                    return fallback;
+                }
+
+                float span = SecondDistance - FirstDistance;
+                return span > GeometryTolerance
+                    ? Mathf.Lerp(
+                        FirstHeight,
+                        SecondHeight,
+                        (distance - FirstDistance) / span)
+                    : FirstHeight;
+            }
+
+            public bool ContainsInterval(float first, float second)
+            {
+                float midpoint = (first + second) * 0.5f;
+                return midpoint > FirstDistance - GeometryTolerance &&
+                       midpoint < SecondDistance + GeometryTolerance;
             }
         }
 

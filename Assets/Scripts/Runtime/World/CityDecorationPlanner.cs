@@ -682,6 +682,15 @@ namespace BarPromenade
                         xSign * bounds.width * fractions[xIndex],
                         0f,
                         zSign * bounds.height * fractions[zIndex]);
+                    if (layout.ElevationPlan.TrySampleSurface(
+                            new Vector2(candidate.x, candidate.z),
+                            CitySurfaceRole.GroundDatum,
+                            out float datum,
+                            out _))
+                    {
+                        candidate.y = datum;
+                    }
+
                     if (candidate.x < bounds.xMin + margin ||
                         candidate.x > bounds.xMax - margin ||
                         candidate.z < bounds.yMin + margin ||
@@ -850,7 +859,6 @@ namespace BarPromenade
                 lot.Center +
                 (forward * (buildingHalfDepth + depth)) +
                 (right * lateral);
-            position.y = 0f;
             return true;
         }
 

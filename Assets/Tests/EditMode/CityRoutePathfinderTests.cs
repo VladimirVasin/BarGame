@@ -215,13 +215,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Distance(
                     fromPlayer.Points[0],
-                    Flatten(playerStart)),
+                    playerStart),
                 Is.LessThan(PositionTolerance));
             Assert.That(
                 fromPlayer.TotalLength,
                 Is.EqualTo(
                         Vector3.Distance(
-                            Flatten(playerStart),
+                            playerStart,
                             projectedStart) +
                         fromRoad.TotalLength)
                     .Within(PositionTolerance));

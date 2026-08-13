@@ -212,6 +212,136 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs()
+        {
+            CityLayout layout = CreateDefaultLayout(481516);
+            CityStreetSurfacePlan streetSurfacePlan =
+                CityStreetSurfacePlanner.Create(layout);
+            CityPedestrianPlan plan = CityPedestrianPlanner.Create(
+                layout,
+                2203,
+                streetSurfacePlan);
+            CityElevationPlan elevation = layout.ElevationPlan;
+            Assert.That(elevation.IsElevated, Is.True);
+            Assert.That(elevation.SignatureStairs, Is.Not.Empty);
+
+            string[] stairLanePrefixes = elevation.SignatureStairs
+                .Select(stair => "lane:" + EdgeId(stair.Edge) + ":")
+                .ToArray();
+            int sampledSidewalkNodes = 0;
+            int sampledRoadNodes = 0;
+            foreach (CityPedestrianNode node in plan.Nodes)
+            {
+                bool belongsToStairEdge = stairLanePrefixes.Any(prefix =>
+                    node.Id.StartsWith(prefix));
+                if (node.Id.StartsWith("lane:") &&
+                    !belongsToStairEdge)
+                {
+                    Assert.That(
+                        node.Position.y,
+                        Is.EqualTo(
+                            ResolveNavigationSurfaceHeight(
+                                elevation,
+                                streetSurfacePlan,
+                                node.Position))
+                            .Within(PositionTolerance),
+                        node.Id);
+                    sampledSidewalkNodes++;
+                }
+
+                if (node.Id.StartsWith("crosswalk:") &&
+                    node.Id.Contains(":road:"))
+                {
+                    Assert.That(
+                        elevation.TrySampleSurface(
+                            new Vector2(
+                                node.Position.x,
+                                node.Position.z),
+                            CitySurfaceRole.RoadTop,
+                            out float roadHeight,
+                            out _),
+                        Is.True,
+                        node.Id);
+                    Assert.That(
+                        node.Position.y,
+                        Is.EqualTo(roadHeight)
+                            .Within(PositionTolerance),
+                        node.Id);
+                    sampledRoadNodes++;
+                }
+
+                if (node.Id.StartsWith("junction:") &&
+                    !node.Id.Contains(":seam:"))
+                {
+                    string[] idParts = node.Id.Split(':');
+                    var gridNode = new Vector2Int(
+                        int.Parse(idParts[1]),
+                        int.Parse(idParts[2]));
+                    float expectedHeight =
+                        layout.GetNodeWorldPosition(gridNode).y +
+                        CityStreetSurfacePlanner.SidewalkTop;
+                    Assert.That(
+                        node.Position.y,
+                        Is.EqualTo(expectedHeight)
+                            .Within(PositionTolerance),
+                        node.Id);
+                }
+            }
+
+            Assert.That(sampledSidewalkNodes, Is.GreaterThan(0));
+            Assert.That(sampledRoadNodes, Is.GreaterThan(0));
+            Assert.That(
+                plan.SpawnAnchors.Any(anchor =>
+                    anchor.Position.y >
+                    CityStreetSurfacePlanner.SidewalkTop + 0.5f),
+                Is.True);
+
+            foreach (CityElevationStairDescriptor stair in
+                     elevation.SignatureStairs)
+            {
+                string linkPrefix = $"stair:{stair.Id}:";
+                CityPedestrianLink[] stairLinks = plan.Links
+                    .Where(link => link.Id.StartsWith(linkPrefix))
+                    .ToArray();
+                Assert.That(stairLinks, Is.Not.Empty, stair.Id);
+                var nodeIndices = new HashSet<int>();
+                foreach (CityPedestrianLink link in stairLinks)
+                {
+                    Assert.That(
+                        link.Kind,
+                        Is.EqualTo(CityPedestrianLinkKind.Sidewalk),
+                        link.Id);
+                    nodeIndices.Add(link.FirstNodeIndex);
+                    nodeIndices.Add(link.SecondNodeIndex);
+                    Assert.That(
+                        plan.SpawnAnchors.Any(anchor =>
+                            anchor.Id == "spawn:" + link.Id),
+                        Is.False,
+                        link.Id);
+                }
+
+                float minimumHeight = nodeIndices.Min(index =>
+                    plan.Nodes[index].Position.y);
+                float maximumHeight = nodeIndices.Max(index =>
+                    plan.Nodes[index].Position.y);
+                Assert.That(
+                    minimumHeight,
+                    Is.EqualTo(
+                        elevation.GetNodeElevation(stair.LowerNode) +
+                        CityStreetSurfacePlanner.SidewalkTop)
+                        .Within(PositionTolerance),
+                    stair.Id);
+                Assert.That(
+                    maximumHeight,
+                    Is.EqualTo(
+                        elevation.GetNodeElevation(stair.UpperNode) +
+                        CityStreetSurfacePlanner.SidewalkTop)
+                        .Within(PositionTolerance),
+                    stair.Id);
+            }
+        }
+
+        [Test]
         public void Create_OnSmallCity_ReturnsAValidGraphSafely()
         {
             CityGenerationSettings smallSettings =
@@ -279,6 +409,51 @@ namespace BarPromenade.Tests.EditMode
                 Throws.ArgumentNullException);
         }
 
+        private static float ResolveNavigationSurfaceHeight(
+            CityElevationPlan elevation,
+            CityStreetSurfacePlan streetSurfacePlan,
+            Vector3 position)
+        {
+            Assert.That(
+                elevation.TrySampleSurface(
+                    new Vector2(position.x, position.z),
+                    CitySurfaceRole.RoadTop,
+                    out float height,
+                    out _),
+                Is.True);
+            for (int index = 0;
+                 index < streetSurfacePlan.SidewalkGeometry.Count;
+                 index++)
+            {
+                RuntimeOrientedBox box =
+                    streetSurfacePlan.SidewalkGeometry[index];
+                Vector3 normal = box.Rotation * Vector3.up;
+                if (Mathf.Abs(normal.y) <= PositionTolerance)
+                {
+                    continue;
+                }
+
+                Vector3 planePoint = box.Center +
+                                     normal * (box.Size.y * 0.5f);
+                float top = planePoint.y -
+                    ((normal.x * (position.x - planePoint.x) +
+                      normal.z * (position.z - planePoint.z)) /
+                     normal.y);
+                Vector3 local = Quaternion.Inverse(box.Rotation) *
+                    (new Vector3(position.x, top, position.z) -
+                     box.Center);
+                if (Mathf.Abs(local.x) <=
+                        box.Size.x * 0.5f + PositionTolerance &&
+                    Mathf.Abs(local.z) <=
+                        box.Size.z * 0.5f + PositionTolerance)
+                {
+                    height = Mathf.Max(height, top);
+                }
+            }
+
+            return height;
+        }
+
         private static CityLayout CreateDefaultLayout(int seed)
         {
             return CityLayoutGenerator.Generate(
@@ -296,6 +471,11 @@ namespace BarPromenade.Tests.EditMode
             settings.BarCount = 0;
             settings.LoopChance = 1f;
             return settings;
+        }
+
+        private static string EdgeId(RoadEdge edge)
+        {
+            return $"{edge.A.x}:{edge.A.y}:{edge.B.x}:{edge.B.y}";
         }
     }
 }

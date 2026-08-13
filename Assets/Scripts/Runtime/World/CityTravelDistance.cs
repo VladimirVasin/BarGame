@@ -180,7 +180,6 @@ namespace BarPromenade
                     "A road anchor must contain only finite coordinates.");
             }
 
-            anchor = Flatten(anchor);
             Vector3 start = graph.GetPosition(edge.A);
             Vector3 end = graph.GetPosition(edge.B);
             Vector3 projected = ProjectOntoSegment(anchor, start, end);
@@ -306,12 +305,6 @@ namespace BarPromenade
                 : Mathf.Clamp01(
                     Vector3.Dot(point - start, delta) / denominator);
             return start + (delta * amount);
-        }
-
-        private static Vector3 Flatten(Vector3 point)
-        {
-            point.y = 0f;
-            return point;
         }
 
         private static bool IsFinite(Vector3 point)
@@ -553,7 +546,7 @@ namespace BarPromenade
                     }
 
                     indices.Add(node, index);
-                    positions[index] = Flatten(position);
+                    positions[index] = position;
                     neighbours[index] = new List<Neighbour>();
                 }
 

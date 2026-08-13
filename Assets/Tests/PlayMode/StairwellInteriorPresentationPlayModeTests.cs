@@ -308,6 +308,66 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            Scene_PlayerMotorDescendsLowerFlightAcrossCameraCut()
+        {
+            GameSessionState.PrepareStairwellArrival(
+                StairwellArrivalKind.ApartmentDoor);
+            StairwellInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(
+                value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Stairwell root did not initialize.");
+            yield return null;
+
+            GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
+            root.Player.Motor.Teleport(
+                new Vector3(-1.45f, 1.74f, 1.30f));
+            yield return null;
+            Assert.That(
+                root.FixedCamera.ActiveShotKind,
+                Is.EqualTo(
+                    StairwellCameraShotKind.MiddleFlight));
+
+            inputFixture.Press(
+                keyboard.wKey,
+                queueEventOnly: true);
+            inputFixture.Press(
+                keyboard.dKey,
+                queueEventOnly: true);
+            float deadline = Time.realtimeSinceStartup + 8f;
+            Vector3 position =
+                root.Player.GameObject.transform.position;
+            while (position.y > 0.30f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                position =
+                    root.Player.GameObject.transform.position;
+            }
+
+            inputFixture.Release(
+                keyboard.wKey,
+                queueEventOnly: true);
+            inputFixture.Release(
+                keyboard.dKey,
+                queueEventOnly: true);
+            yield return null;
+
+            Assert.That(
+                position.y,
+                Is.LessThanOrEqualTo(0.30f),
+                "The player stalled while descending the lower " +
+                $"flight; final position {position}, active shot " +
+                $"{root.FixedCamera.ActiveShotKind}.");
+            Assert.That(
+                root.FixedCamera.ActiveShotKind,
+                Is.EqualTo(
+                    StairwellCameraShotKind.GroundFlight));
+        }
+
+        [UnityTest]
+        public IEnumerator
             Scene_PlayerClimbsToApartmentButUpperDebrisBlocks()
         {
             GameSessionState.PrepareStairwellArrival(

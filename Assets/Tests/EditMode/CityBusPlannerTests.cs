@@ -412,7 +412,10 @@ namespace BarPromenade.Tests.EditMode
                     stop.Id);
                 Assert.That(
                     stop.ShelterPosition.y,
-                    Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
+                    Is.EqualTo(
+                        stop.Position.y +
+                        CityStreetSurfacePlanner.SidewalkTop -
+                        CityStreetSurfacePlanner.RoadTop)
                         .Within(GeometryTolerance),
                     stop.Id);
                 Assert.That(

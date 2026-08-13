@@ -120,8 +120,6 @@ namespace BarPromenade
                     districtPointsOfInterest,
                 out Dictionary<CityDistrictKind, Vector2Int>
                     primaryLandmarkCells);
-            List<CityDistrictDescriptor> districts =
-                CreateDistricts(snapshot, lots);
             CitySurfacePlanner.Create(
                 blueprint,
                 snapshot,
@@ -132,6 +130,35 @@ namespace BarPromenade
                 out List<CityOpenAreaAccessDescriptor> openAreaAccesses,
                 out Rect worldXZBounds,
                 out Rect mapWorldXZBounds);
+            CityElevationPlan elevationPlan = CityElevationPlanner.Create(
+                blueprint,
+                snapshot,
+                seed,
+                origin,
+                nodes,
+                roads,
+                pathKinds,
+                lots,
+                openAreaAccesses);
+            lots = CityElevationRebaser.RebaseLots(
+                elevationPlan,
+                lots);
+            park = CityElevationRebaser.RebasePark(
+                elevationPlan,
+                park);
+            districtPointsOfInterest =
+                CityElevationRebaser.RebaseDistrictPoints(
+                    elevationPlan,
+                    districtPointsOfInterest);
+            surfaces = CityElevationRebaser.RebaseSurfaces(
+                elevationPlan,
+                surfaces);
+            openAreaAccesses =
+                CityElevationRebaser.RebaseOpenAreaAccesses(
+                    elevationPlan,
+                    openAreaAccesses);
+            List<CityDistrictDescriptor> districts =
+                CreateDistricts(snapshot, lots);
             Vector2Int spawnNode =
                 ResolveInitialSpawnNode(snapshot, lots);
 
@@ -143,6 +170,7 @@ namespace BarPromenade
                 origin,
                 snapshot.RoadWidth,
                 snapshot.MinimumBarRouteDistance,
+                elevationPlan,
                 nodes,
                 roads,
                 pathKinds,

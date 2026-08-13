@@ -29,14 +29,6 @@ namespace BarPromenade
         private const float ConnectorReach =
             (MaximumAgentRadius * 2f) + ConnectorMargin;
 
-        private static readonly Vector2Int[] CardinalDirections =
-        {
-            Vector2Int.down,
-            Vector2Int.right,
-            Vector2Int.up,
-            Vector2Int.left
-        };
-
         public static CityGroundTraversalPlan CreatePlan(CityLayout layout)
         {
             if (layout == null)
@@ -62,14 +54,20 @@ namespace BarPromenade
             }
 
             var connectors = new List<Rect>();
+            CityRoadGroundBoundaryPlan roadGroundBoundaries =
+                CityRoadGroundBoundaryPlanner.Create(layout);
+            for (int index = 0;
+                 index < roadGroundBoundaries.SafeConnections.Count;
+                 index++)
+            {
+                connectors.Add(
+                    roadGroundBoundaries.SafeConnections[index]
+                        .CreateConnector(ConnectorReach));
+            }
+
             foreach (KeyValuePair<Vector2Int, CitySurfaceDescriptor> pair
                      in eligibleByCell)
             {
-                AddRoadConnections(
-                    layout,
-                    pair.Key,
-                    pair.Value.WorldBounds,
-                    connectors);
                 AddGroundConnection(
                     layout,
                     pair.Key,
@@ -89,48 +87,6 @@ namespace BarPromenade
             return new CityGroundTraversalPlan(ground, connectors);
         }
 
-        private static void AddRoadConnections(
-            CityLayout layout,
-            Vector2Int cell,
-            Rect ground,
-            ICollection<Rect> destination)
-        {
-            for (int index = 0;
-                 index < CardinalDirections.Length;
-                 index++)
-            {
-                Vector2Int direction = CardinalDirections[index];
-                if (!layout.HasRoad(
-                        RoadEdge.ForCellFrontage(cell, direction)))
-                {
-                    continue;
-                }
-
-                if (direction.x != 0)
-                {
-                    float boundary = direction.x < 0
-                        ? ground.xMin
-                        : ground.xMax;
-                    destination.Add(Rect.MinMaxRect(
-                        boundary - ConnectorReach,
-                        ground.yMin,
-                        boundary + ConnectorReach,
-                        ground.yMax));
-                }
-                else
-                {
-                    float boundary = direction.y < 0
-                        ? ground.yMin
-                        : ground.yMax;
-                    destination.Add(Rect.MinMaxRect(
-                        ground.xMin,
-                        boundary - ConnectorReach,
-                        ground.xMax,
-                        boundary + ConnectorReach));
-                }
-            }
-        }
-
         private static void AddGroundConnection(
             CityLayout layout,
             Vector2Int cell,
@@ -143,9 +99,13 @@ namespace BarPromenade
             Vector2Int neighbourCell = cell + direction;
             if (!eligibleByCell.TryGetValue(
                     neighbourCell,
-                    out CitySurfaceDescriptor neighbour) ||
+                out CitySurfaceDescriptor neighbour) ||
                 layout.HasRoad(
-                    RoadEdge.ForCellFrontage(cell, direction)))
+                    RoadEdge.ForCellFrontage(cell, direction)) ||
+                Mathf.Abs(
+                    eligibleByCell[cell].PhysicalTopY -
+                    neighbour.PhysicalTopY) >
+                CityRoadGroundBoundaryPlanner.MaximumSafeStep)
             {
                 return;
             }
@@ -249,8 +209,14 @@ namespace BarPromenade
                  accessIndex < layout.OpenAreaAccesses.Count;
                  accessIndex++)
             {
-                area.Add(
-                    layout.OpenAreaAccesses[accessIndex].ApproachBounds);
+                CityOpenAreaAccessDescriptor access =
+                    layout.OpenAreaAccesses[accessIndex];
+                if (area.Contains(
+                        access.Center,
+                        CityGroundTraversalPlanner.MaximumAgentRadius))
+                {
+                    area.Add(access.ApproachBounds);
+                }
             }
 
             for (int pointIndex = 0;
@@ -264,8 +230,27 @@ namespace BarPromenade
                      accessIndex < point.Accesses.Count;
                      accessIndex++)
                 {
-                    area.Add(point.Accesses[accessIndex].ApproachBounds);
+                    CityDistrictPointOfInterestAccessDescriptor access =
+                        point.Accesses[accessIndex];
+                    if (area.Contains(
+                            access.Center,
+                            CityGroundTraversalPlanner
+                                .MaximumAgentRadius))
+                    {
+                        area.Add(access.ApproachBounds);
+                    }
                 }
+            }
+
+            for (int stairIndex = 0;
+                 stairIndex < layout.ElevationPlan.SignatureStairs.Count;
+                 stairIndex++)
+            {
+                CityElevationStairPlacement placement =
+                    CityElevationStairPlacementPlanner.Create(
+                        layout,
+                        layout.ElevationPlan.SignatureStairs[stairIndex]);
+                area.Add(placement.GroundCutFootprint);
             }
 
             return area;

@@ -2,8 +2,15 @@ Shader "Bar Promenade/Home Occluder Dither"
 {
     Properties
     {
+        // Defaults to white so an occluder without a packaged surface
+        // renders exactly as it did before the home albedos existed. The
+        // textured furniture carries _BaseMap and its ST/smoothness values
+        // in its MaterialPropertyBlock, which survives the material swap.
+        [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
         _BaseColor("Base Color", Color) = (1, 1, 1, 1)
         [HideInInspector] _Color("Legacy Color", Color) = (1, 1, 1, 1)
+        _Smoothness("Smoothness", Range(0, 1)) = 0.5
+        _Metallic("Metallic", Range(0, 1)) = 0
         [PerRendererData] _HomeOcclusionVisibility(
             "Home Occlusion Visibility",
             Range(0, 1)) = 1
@@ -22,10 +29,16 @@ Shader "Bar Promenade/Home Occluder Dither"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
+            float4 _BaseMap_ST;
             float4 _BaseColor;
             float4 _Color;
+            float _Smoothness;
+            float _Metallic;
             float _HomeOcclusionVisibility;
         CBUFFER_END
+
+        TEXTURE2D(_BaseMap);
+        SAMPLER(sampler_BaseMap);
 
         half4 ResolveHomeOccluderColor()
         {
@@ -98,6 +111,7 @@ Shader "Bar Promenade/Home Occluder Dither"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -107,6 +121,7 @@ Shader "Bar Promenade/Home Occluder Dither"
                 float3 positionWS : TEXCOORD0;
                 half3 normalWS : TEXCOORD1;
                 half fogFactor : TEXCOORD2;
+                float2 uv : TEXCOORD3;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -127,6 +142,7 @@ Shader "Bar Promenade/Home Occluder Dither"
                 output.normalWS = normalInputs.normalWS;
                 output.fogFactor = ComputeFogFactor(
                     positionInputs.positionCS.z);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
@@ -153,11 +169,15 @@ Shader "Bar Promenade/Home Occluder Dither"
                 inputData.shadowMask = half4(1.0h, 1.0h, 1.0h, 1.0h);
 
                 half4 baseColor = ResolveHomeOccluderColor();
+                half3 baseMap = SAMPLE_TEXTURE2D(
+                    _BaseMap,
+                    sampler_BaseMap,
+                    input.uv).rgb;
                 SurfaceData surfaceData = (SurfaceData)0;
-                surfaceData.albedo = baseColor.rgb;
+                surfaceData.albedo = baseColor.rgb * baseMap;
                 surfaceData.specular = half3(0.2h, 0.2h, 0.2h);
-                surfaceData.metallic = 0.0h;
-                surfaceData.smoothness = 0.5h;
+                surfaceData.metallic = half(_Metallic);
+                surfaceData.smoothness = half(_Smoothness);
                 surfaceData.normalTS = half3(0.0h, 0.0h, 1.0h);
                 surfaceData.emission = half3(0.0h, 0.0h, 0.0h);
                 surfaceData.occlusion = 1.0h;

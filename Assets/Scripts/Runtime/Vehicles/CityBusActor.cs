@@ -237,10 +237,7 @@ namespace BarPromenade
             rigidBody.interpolation = RigidbodyInterpolation.Interpolate;
             rigidBody.collisionDetectionMode =
                 CollisionDetectionMode.ContinuousSpeculative;
-            rigidBody.constraints =
-                RigidbodyConstraints.FreezePositionY |
-                RigidbodyConstraints.FreezeRotationX |
-                RigidbodyConstraints.FreezeRotationZ;
+            rigidBody.constraints = RigidbodyConstraints.FreezeRotationZ;
             InitializeEngineAudio();
             IsInitialized = true;
         }
@@ -1310,7 +1307,6 @@ namespace BarPromenade
 
         private void SetPose(Vector3 position, Vector3 forward)
         {
-            forward.y = 0f;
             Quaternion rotation = forward.sqrMagnitude > 0.0001f
                 ? Quaternion.LookRotation(forward.normalized, Vector3.up)
                 : transform.rotation;
@@ -1360,7 +1356,6 @@ namespace BarPromenade
                     forward = second.Forward;
                 }
 
-                forward.y = 0f;
                 forward = forward.sqrMagnitude > 0.0001f
                     ? forward.normalized
                     : Vector3.forward;
@@ -1370,7 +1365,6 @@ namespace BarPromenade
             CityBusPathSample last = samples[samples.Count - 1];
             position = last.Position;
             forward = last.Forward;
-            forward.y = 0f;
             forward = forward.sqrMagnitude > 0.0001f
                 ? forward.normalized
                 : Vector3.forward;

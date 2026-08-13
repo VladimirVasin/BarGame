@@ -63,7 +63,13 @@ namespace BarPromenade
             AnimatedInteraction { get; private set; }
         public InventoryTargetInteractionController
             TargetInteraction { get; private set; }
+        public StairwellQuestDescentBlocker DescentBlocker
+        {
+            get;
+            private set;
+        }
         public InventoryController Inventory { get; private set; }
+        public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -185,8 +191,24 @@ namespace BarPromenade
                 IntoxicationHud,
                 balanceView);
             BuildExits();
+            GameObject blockerObject = new GameObject(
+                "Stairwell Quest Descent Blocker");
+            blockerObject.transform.SetParent(transform, false);
+            DescentBlocker =
+                blockerObject.AddComponent<
+                    StairwellQuestDescentBlocker>();
+            DescentBlocker.Initialize(
+                transform,
+                Player,
+                InteractionPrompt,
+                Layout);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud);
+            Journal = ui.AddComponent<JournalController>();
+            Journal.Initialize(
                 Player,
                 CameraFollow,
                 IntoxicationHud);

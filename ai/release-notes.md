@@ -6,6 +6,51 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-13 — The city is no longer flat
+
+- The four districts now sit across a real terraced landscape instead of one
+  endless plane. The full city climbs about twelve metres, and every district
+  has its own smaller rises and drops; the sea and lake keep stable shorelines.
+- Old Town, Residential, Industrial and Nightlife each get a signature street
+  stair with visible steps, broad landings, rails and retaining walls. Walking
+  it stays smooth because the physical climb is one continuous ramp under the
+  step geometry.
+- Roads rise between level junctions, dangerous terrace edges are guarded, and
+  buildings, entrances, public places, trees, fences and street lights now sit
+  on their actual local ground instead of floating at world zero.
+- Walkers use the stairs and Route 01 follows bus-safe grades with grounded
+  stops and boarding points. Returning from an interior or using the map test
+  teleport also lands the hero on the correct terrace.
+
+### 2026-08-13 — The apartment gets real surfaces
+
+- The hero's flat is no longer painted in flat colours: faded striped
+  wallpaper with the ghosts of taken-down pictures, scuffed painted
+  floorboards, a stained whitewashed ceiling, chipped dark furniture wood,
+  a scratched kitchen laminate, sagging sofa fabric, dingy bedding, cracked
+  bathroom tiles, old yellowed enamel on the tub, sink and refrigerator,
+  rusty painted pipes and railings, weathered balcony concrete and a worn
+  entry rug.
+- The room keeps exactly its old colours and mood — the textures carry the
+  wear, the palette still comes from the scene — and furniture that fades
+  out when it blocks the camera keeps its surface instead of flashing flat.
+
+### 2026-08-13 — The first quest: feed the cat
+
+- The game now has a quest journal. Press `J` (gamepad `RB`) in any gameplay
+  scene to see current and finished tasks; it pauses the game like the
+  inventory and closes with `J`/`Esc`.
+- A new game starts with one entry already in it: the cat on the stairwell
+  landing is hungry and wants the open can of stew.
+- Until the cat is fed, the hero refuses to leave. Stepping down the lower
+  flight past the cat's landing brings up the quiet bottom-screen thought
+  "Сначала я должен накормить кота", and the hero turns around on his own
+  and walks back up to the landing, facing the cat.
+- The open can of stew cannot be eaten while the cat waits — "Я ещё не
+  голоден. Это для кота." A closed store-bought can is still fair game.
+- Feeding the cat marks the quest done in the journal, frees the stairs and
+  releases the can for ordinary meals.
+
 ### 2026-08-13 — Rain and thunderstorms come to the city
 
 - The city now has weather. Some hours stay dry, some bring a thin drizzle,

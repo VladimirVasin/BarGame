@@ -354,6 +354,8 @@ namespace BarPromenade
                 ownsCatPreparation = false;
                 ownsCatFeeding = true;
                 catFeedingStarted = true;
+                GameSessionState.TryCompleteQuest(
+                    QuestId.FeedTheCat);
                 return;
             }
 

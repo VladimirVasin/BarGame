@@ -1043,8 +1043,12 @@ namespace BarPromenade.Tests.PlayMode
                                 surfaces,
                                 out CityBusRidePlan plan),
                             Is.True,
-                            $"{stop.Id}/{passengerDoor} must create a " +
-                            "production dock plan.");
+                            DescribeDoorPlanGate(
+                                actor,
+                                world.WalkableArea,
+                                0.32f,
+                                passengerDoor,
+                                stop));
                         InspectGroundedPose(
                             $"{stop.Id}/{passengerDoor}/entry",
                             plan.EntryPose.RootPosition,
@@ -1070,14 +1074,12 @@ namespace BarPromenade.Tests.PlayMode
                 AssertRepresentativeSurfaceHeight(
                     "road",
                     surfaces.StreetSurfaces[0].center,
-                    CityStreetSurfacePlanner.RoadTop,
-                    surfaces,
+                    surfaces.StreetGeometry,
                     mismatches);
                 AssertRepresentativeSurfaceHeight(
                     "sidewalk",
                     surfaces.Sidewalks[0].center,
-                    CityStreetSurfacePlanner.SidewalkTop,
-                    surfaces,
+                    surfaces.SidewalkGeometry,
                     mismatches);
                 Assert.That(
                     mismatches,
@@ -1119,9 +1121,6 @@ namespace BarPromenade.Tests.PlayMode
 
             float plannedTop = rootPosition.y -
                                PlayerFactory.GroundedRootOffset;
-            float classifiedTop = sidewalk
-                ? CityStreetSurfacePlanner.SidewalkTop
-                : CityStreetSurfacePlanner.RoadTop;
             string classification = sidewalk
                 ? "sidewalk"
                 : road
@@ -1133,14 +1132,6 @@ namespace BarPromenade.Tests.PlayMode
                 $"physical_top={physicalTop:F3}, " +
                 $"planned_top={plannedTop:F3}, " +
                 $"collider={colliderName}");
-            if (Mathf.Abs(physicalTop - classifiedTop) > 0.005f)
-            {
-                mismatches.Add(
-                    $"{label}: {classification} class resolves " +
-                    $"{classifiedTop:F3}, physical collider resolves " +
-                    $"{physicalTop:F3} ({colliderName}).");
-            }
-
             if (Mathf.Abs(plannedTop - physicalTop) > 0.005f)
             {
                 mismatches.Add(
@@ -1153,10 +1144,19 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertRepresentativeSurfaceHeight(
             string label,
             Vector3 position,
-            float expectedTop,
-            CityStreetSurfacePlan surfaces,
+            IReadOnlyList<RuntimeOrientedBox> geometry,
             ICollection<string> mismatches)
         {
+            if (!TryResolvePlannedTop(
+                    position,
+                    geometry,
+                    out float expectedTop))
+            {
+                mismatches.Add($"{label}: representative surface has no " +
+                               "planned geometry.");
+                return;
+            }
+
             if (!TryResolvePhysicalGroundTop(
                     position,
                     out float physicalTop,
@@ -1167,10 +1167,9 @@ namespace BarPromenade.Tests.PlayMode
                 return;
             }
 
-            bool sidewalk = ContainsPlanar(surfaces.Sidewalks, position);
             TestContext.WriteLine(
                 $"representative/{label}: xz=({position.x:F3}," +
-                $"{position.z:F3}), sidewalk={sidewalk}, " +
+                $"{position.z:F3}), planned_top={expectedTop:F3}, " +
                 $"physical_top={physicalTop:F3}, " +
                 $"collider={colliderName}");
             if (Mathf.Abs(physicalTop - expectedTop) > 0.005f)
@@ -1188,7 +1187,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             Vector3 origin = new Vector3(
                 position.x,
-                8f,
+                position.y + 8f,
                 position.z);
             if (Physics.Raycast(
                     origin,
@@ -1206,6 +1205,42 @@ namespace BarPromenade.Tests.PlayMode
             top = 0f;
             colliderName = string.Empty;
             return false;
+        }
+
+        private static bool TryResolvePlannedTop(
+            Vector3 position,
+            IReadOnlyList<RuntimeOrientedBox> geometry,
+            out float top)
+        {
+            top = float.NegativeInfinity;
+            for (int index = 0; index < geometry.Count; index++)
+            {
+                RuntimeOrientedBox box = geometry[index];
+                Vector3 normal = box.Rotation * Vector3.up;
+                if (Mathf.Abs(normal.y) <= 0.0001f)
+                {
+                    continue;
+                }
+
+                Vector3 planePoint = box.Center +
+                    normal * (box.Size.y * 0.5f);
+                float candidate = planePoint.y -
+                    ((normal.x * (position.x - planePoint.x) +
+                      normal.z * (position.z - planePoint.z)) /
+                     normal.y);
+                Vector3 local = Quaternion.Inverse(box.Rotation) *
+                    (new Vector3(position.x, candidate, position.z) -
+                     box.Center);
+                if (Mathf.Abs(local.x) > box.Size.x * 0.5f + 0.001f ||
+                    Mathf.Abs(local.z) > box.Size.z * 0.5f + 0.001f)
+                {
+                    continue;
+                }
+
+                top = Mathf.Max(top, candidate);
+            }
+
+            return !float.IsNegativeInfinity(top);
         }
 
         private static bool ContainsPlanar(

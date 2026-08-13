@@ -83,11 +83,13 @@ namespace BarPromenade
             AddDescriptors(
                 segments,
                 mapBoundary,
-                RoadFenceSegmentPurpose.MapBoundary);
+                RoadFenceSegmentPurpose.MapBoundary,
+                layout);
             AddDescriptors(
                 segments,
                 deadEnds,
-                RoadFenceSegmentPurpose.DeadEnd);
+                RoadFenceSegmentPurpose.DeadEnd,
+                layout);
             segments.Sort(CompareSegments);
 
             return new RoadFencePlan(segments, openings);
@@ -96,7 +98,8 @@ namespace BarPromenade
         private static void AddDescriptors(
             ICollection<RoadFenceSegmentDescriptor> destination,
             IReadOnlyList<BoundarySpan> spans,
-            RoadFenceSegmentPurpose purpose)
+            RoadFenceSegmentPurpose purpose,
+            CityLayout layout)
         {
             for (int index = 0; index < spans.Count; index++)
             {
@@ -107,6 +110,8 @@ namespace BarPromenade
                 Vector3 end = span.Horizontal
                     ? new Vector3(span.Maximum, 0f, span.Fixed)
                     : new Vector3(span.Fixed, 0f, span.Maximum);
+                start.y = SampleRoadDatum(layout, start);
+                end.y = SampleRoadDatum(layout, end);
                 destination.Add(new RoadFenceSegmentDescriptor(
                     start,
                     end,
@@ -282,7 +287,9 @@ namespace BarPromenade
 
             Vector3 terminal = layout.GetNodeWorldPosition(terminalNode);
             Vector3 neighbour = layout.GetNodeWorldPosition(neighbourNode);
-            Vector3 outward = (terminal - neighbour).normalized;
+            Vector3 outward = terminal - neighbour;
+            outward.y = 0f;
+            outward.Normalize();
             Vector3 center = terminal + (outward * halfRoad);
             destination.Add(edge.IsHorizontal
                 ? new BoundarySpan(
@@ -297,6 +304,19 @@ namespace BarPromenade
                     center.x - halfRoad,
                     center.x + halfRoad,
                     outward));
+        }
+
+        private static float SampleRoadDatum(
+            CityLayout layout,
+            Vector3 position)
+        {
+            return layout.ElevationPlan.TrySampleSurface(
+                new Vector2(position.x, position.z),
+                CitySurfaceRole.RoadDatum,
+                out float height,
+                out _)
+                ? height
+                : 0f;
         }
 
         private static List<BoundarySpan> SubtractSpans(

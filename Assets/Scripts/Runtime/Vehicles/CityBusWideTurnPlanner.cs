@@ -250,9 +250,9 @@ namespace BarPromenade
         {
             var result = new List<CityBusPathSample>();
             Vector3 junction = layout.GetNodeWorldPosition(incoming.To);
-            junction.y = CityStreetSurfacePlanner.RoadTop;
-            float cornerOffset =
-                (layout.RoadWidth * 0.5f) - TurnTangentInset;
+            junction.y += CityStreetSurfacePlanner.RoadTop;
+            float halfRoad = layout.RoadWidth * 0.5f;
+            float cornerOffset = halfRoad - TurnTangentInset;
 
             Vector3 start = GetDeparturePosition(layout, incoming);
             Vector3 incomingTangent = junction -
@@ -286,6 +286,7 @@ namespace BarPromenade
                 result,
                 incomingTangent,
                 incoming.Forward);
+            int incomingEndIndex = result.Count - 1;
 
             AppendTurnArc(
                 result,
@@ -300,6 +301,7 @@ namespace BarPromenade
                 result,
                 outgoingTangent,
                 outgoing.Forward);
+            int turnEndIndex = result.Count - 1;
 
             Vector3 end = GetArrivalPosition(layout, outgoing);
             float outgoingShiftLength = Vector3.Dot(
@@ -334,7 +336,132 @@ namespace BarPromenade
                 result,
                 end,
                 outgoing.Forward);
+            ApplyRoadGrade(
+                result,
+                0,
+                incomingEndIndex,
+                start,
+                junction - (incoming.Forward * halfRoad),
+                incoming.Forward);
+            FlattenNodePad(
+                result,
+                incomingEndIndex + 1,
+                turnEndIndex - 1,
+                junction.y);
+            ApplyRoadGrade(
+                result,
+                turnEndIndex,
+                result.Count - 1,
+                junction + (outgoing.Forward * halfRoad),
+                end,
+                outgoing.Forward);
+            RebuildSampleDistances(result);
             return result;
+        }
+
+        private static void ApplyRoadGrade(
+            IList<CityBusPathSample> samples,
+            int firstIndex,
+            int lastIndex,
+            Vector3 start,
+            Vector3 end,
+            Vector3 roadForward)
+        {
+            if (firstIndex < 0 ||
+                lastIndex >= samples.Count ||
+                firstIndex > lastIndex)
+            {
+                return;
+            }
+
+            Vector3 planarRoadForward = roadForward;
+            planarRoadForward.y = 0f;
+            planarRoadForward.Normalize();
+            float horizontalRun = Vector3.Dot(
+                end - start,
+                planarRoadForward);
+            float elevationDelta = end.y - start.y;
+            float risePerMeter = Mathf.Abs(horizontalRun) >
+                                 GeometryTolerance
+                ? elevationDelta / horizontalRun
+                : 0f;
+            for (int index = firstIndex; index <= lastIndex; index++)
+            {
+                CityBusPathSample sample = samples[index];
+                Vector3 position = sample.Position;
+                float rawAmount = Mathf.Abs(horizontalRun) >
+                                  GeometryTolerance
+                    ? Vector3.Dot(
+                        position - start,
+                        planarRoadForward) /
+                      horizontalRun
+                    : 0f;
+                float amount = Mathf.Clamp01(rawAmount);
+                position.y = Mathf.Lerp(start.y, end.y, amount);
+
+                Vector3 planarForward = sample.Forward;
+                planarForward.y = 0f;
+                planarForward = planarForward.sqrMagnitude > 0.0001f
+                    ? planarForward.normalized
+                    : planarRoadForward;
+                float tangentRise = rawAmount > GeometryTolerance &&
+                                    rawAmount < 1f - GeometryTolerance
+                    ? risePerMeter * Vector3.Dot(
+                        planarForward,
+                        planarRoadForward)
+                    : 0f;
+                Vector3 gradedForward =
+                    planarForward + (Vector3.up * tangentRise);
+                samples[index] = new CityBusPathSample(
+                    position,
+                    gradedForward.normalized,
+                    sample.Distance);
+            }
+        }
+
+        private static void FlattenNodePad(
+            IList<CityBusPathSample> samples,
+            int firstIndex,
+            int lastIndex,
+            float elevation)
+        {
+            for (int index = Mathf.Max(0, firstIndex);
+                 index <= lastIndex && index < samples.Count;
+                 index++)
+            {
+                CityBusPathSample sample = samples[index];
+                Vector3 position = sample.Position;
+                position.y = elevation;
+                Vector3 forward = sample.Forward;
+                forward.y = 0f;
+                samples[index] = new CityBusPathSample(
+                    position,
+                    forward.sqrMagnitude > 0.0001f
+                        ? forward.normalized
+                        : Vector3.forward,
+                    sample.Distance);
+            }
+        }
+
+        private static void RebuildSampleDistances(
+            IList<CityBusPathSample> samples)
+        {
+            float distance = 0f;
+            for (int index = 0; index < samples.Count; index++)
+            {
+                CityBusPathSample sample = samples[index];
+                if (index > 0)
+                {
+                    distance += Vector3.Distance(
+                        samples[index - 1].Position,
+                        sample.Position);
+                }
+
+                samples[index] = new CityBusPathSample(
+                    sample.Position,
+                    sample.Forward,
+                    distance);
+            }
         }
 
         private static float CalculateLaneShiftAngle(

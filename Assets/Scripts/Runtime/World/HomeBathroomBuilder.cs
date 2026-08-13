@@ -62,7 +62,7 @@ namespace BarPromenade
             Rect bathroom = plan.BathroomBounds;
             Rect doorway = plan.BathroomDoorway;
             float wallHeight = plan.RoomHeight;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom West Wall",
                 room,
                 new Vector3(
@@ -73,12 +73,14 @@ namespace BarPromenade
                     PartitionThickness,
                     wallHeight,
                     bathroom.height),
-                Partition);
+                Partition,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY);
 
             float leftWidth = doorway.xMin - bathroom.xMin;
             if (leftWidth > 0.01f)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Bathroom Front Wall Left",
                     room,
                     new Vector3(
@@ -89,13 +91,15 @@ namespace BarPromenade
                         leftWidth,
                         wallHeight,
                         PartitionThickness),
-                    Partition);
+                    Partition,
+                    HomeSurfaceKind.Wallpaper,
+                    SurfaceProjection.BoxXY);
             }
 
             float rightWidth = bathroom.xMax - doorway.xMax;
             if (rightWidth > 0.01f)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Bathroom Front Wall Right",
                     room,
                     new Vector3(
@@ -106,11 +110,13 @@ namespace BarPromenade
                         rightWidth,
                         wallHeight,
                         PartitionThickness),
-                    Partition);
+                    Partition,
+                    HomeSurfaceKind.Wallpaper,
+                    SurfaceProjection.BoxXY);
             }
 
             const float doorHeight = 2.25f;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Door Lintel",
                 room,
                 new Vector3(
@@ -122,9 +128,11 @@ namespace BarPromenade
                     doorway.width,
                     wallHeight - doorHeight,
                     PartitionThickness),
-                Partition);
+                Partition,
+                HomeSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY);
 
-            GameObject door = RuntimePrimitiveFactory.CreateBox(
+            GameObject door = HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Door Ajar",
                 room,
                 new Vector3(
@@ -135,7 +143,9 @@ namespace BarPromenade
                     doorway.width * 0.68f,
                     2.12f,
                     0.08f),
-                Door);
+                Door,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY);
             door.transform.localRotation =
                 Quaternion.Euler(0f, -75f, 0f);
             occlusionRegistry?.Register(
@@ -149,7 +159,7 @@ namespace BarPromenade
             Transform room,
             Rect bathroom)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Tile Floor",
                 room,
                 new Vector3(
@@ -161,8 +171,10 @@ namespace BarPromenade
                     0.024f,
                     bathroom.height - 0.20f),
                 Tile,
+                HomeSurfaceKind.BathroomTile,
+                SurfaceProjection.BoxXZ,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Back Tile",
                 room,
                 new Vector3(
@@ -174,8 +186,10 @@ namespace BarPromenade
                     1.70f,
                     0.022f),
                 DirtyTile,
+                HomeSurfaceKind.BathroomTile,
+                SurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Right Tile",
                 room,
                 new Vector3(
@@ -187,6 +201,8 @@ namespace BarPromenade
                     1.70f,
                     bathroom.height - 0.12f),
                 DirtyTile,
+                HomeSurfaceKind.BathroomTile,
+                SurfaceProjection.BoxZY,
                 false);
         }
 
@@ -237,7 +253,7 @@ namespace BarPromenade
                 0f,
                 bounds.center.y);
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Toilet Footprint",
                 room,
                 center + Vector3.up * 0.24f,
@@ -245,8 +261,10 @@ namespace BarPromenade
                     bounds.width * 0.82f,
                     0.48f,
                     bounds.height * 0.78f),
-                PorcelainShadow));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+                PorcelainShadow,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXY));
+            parts.Add(HomeSurfacePrimitives.CreateCylinder(
                 "Home Bathroom Toilet Bowl",
                 room,
                 center +
@@ -259,8 +277,10 @@ namespace BarPromenade
                     0.12f,
                     bounds.height * 0.52f),
                 Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.CylinderCapXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeSurfacePrimitives.CreateCylinder(
                 "Home Bathroom Toilet Seat",
                 room,
                 center +
@@ -273,8 +293,10 @@ namespace BarPromenade
                     0.025f,
                     bounds.height * 0.46f),
                 new Color(0.33f, 0.31f, 0.24f),
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.CylinderCapXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Toilet Cistern",
                 room,
                 center +
@@ -287,6 +309,8 @@ namespace BarPromenade
                     0.72f,
                     bounds.height * 0.68f),
                 Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXY,
                 false));
             parts.Add(RuntimePrimitiveFactory.CreateCylinder(
                 "Home Bathroom Toilet Flush",
@@ -316,7 +340,7 @@ namespace BarPromenade
                 0f,
                 bounds.center.y);
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Shower Tray",
                 room,
                 center + Vector3.up * 0.09f,
@@ -324,8 +348,10 @@ namespace BarPromenade
                     bounds.width,
                     0.18f,
                     bounds.height),
-                PorcelainShadow));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                PorcelainShadow,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXZ));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Shower Basin",
                 room,
                 center + Vector3.up * 0.19f,
@@ -334,8 +360,10 @@ namespace BarPromenade
                     0.045f,
                     bounds.height - 0.14f),
                 Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXZ,
                 false));
-            GameObject curtain = RuntimePrimitiveFactory.CreateBox(
+            GameObject curtain = HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Shower Curtain",
                 room,
                 center +
@@ -348,6 +376,8 @@ namespace BarPromenade
                     1.82f,
                     0.035f),
                 Curtain,
+                HomeSurfaceKind.BedLinen,
+                SurfaceProjection.BoxXY,
                 false);
 
             parts.Add(CreatePipe(
@@ -406,13 +436,15 @@ namespace BarPromenade
                 0f,
                 bounds.center.y);
             var parts = new List<GameObject>();
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeSurfacePrimitives.CreateCylinder(
                 "Home Bathroom Sink Pedestal",
                 room,
                 center + Vector3.up * 0.36f,
                 new Vector3(0.26f, 0.36f, 0.26f),
-                PorcelainShadow));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                PorcelainShadow,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.CylinderSide));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Sink Basin",
                 room,
                 center + Vector3.up * 0.78f,
@@ -420,7 +452,9 @@ namespace BarPromenade
                     bounds.width,
                     0.20f,
                     bounds.height),
-                Porcelain));
+                Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXZ));
             parts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Bathroom Sink Hollow",
                 room,
@@ -534,12 +568,14 @@ namespace BarPromenade
             Vector3 size,
             Vector3 eulerAngles)
         {
-            GameObject pipe = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject pipe = HomeSurfacePrimitives.CreateCylinder(
                 name,
                 parent,
                 position,
                 size,
                 Rust,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.CylinderSide,
                 false);
             pipe.transform.localRotation =
                 Quaternion.Euler(eulerAngles);

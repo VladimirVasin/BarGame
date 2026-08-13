@@ -30,6 +30,7 @@ namespace BarPromenade
             Vector3 worldOrigin,
             float roadWidth,
             float minimumBarRouteDistance,
+            CityElevationPlan elevationPlan,
             IList<Vector2Int> nodes,
             IList<RoadEdge> roadEdges,
             IDictionary<RoadEdge, CityPathKind> pathKinds,
@@ -54,6 +55,8 @@ namespace BarPromenade
             WorldOrigin = worldOrigin;
             RoadWidth = roadWidth;
             MinimumBarRouteDistance = minimumBarRouteDistance;
+            ElevationPlan = elevationPlan ??
+                throw new ArgumentNullException(nameof(elevationPlan));
             Nodes = new ReadOnlyCollection<Vector2Int>(
                 new List<Vector2Int>(nodes));
             RoadEdges = new ReadOnlyCollection<RoadEdge>(
@@ -159,6 +162,7 @@ namespace BarPromenade
         public Vector3 WorldOrigin { get; }
         public float RoadWidth { get; }
         public float MinimumBarRouteDistance { get; }
+        public CityElevationPlan ElevationPlan { get; }
         public IReadOnlyList<Vector2Int> Nodes { get; }
         public IReadOnlyList<RoadEdge> RoadEdges { get; }
         public IReadOnlyDictionary<RoadEdge, CityPathKind> PathKinds =>
@@ -193,15 +197,20 @@ namespace BarPromenade
 
             return WorldOrigin + new Vector3(
                 node.x * NodeSpacing.x,
-                0f,
+                ElevationPlan.GetNodeElevation(node),
                 node.y * NodeSpacing.y);
         }
 
         public Vector3 GetGridWorldPosition(Vector2Int coordinate)
         {
+            float elevation = ElevationPlan.TryGetNodeElevation(
+                coordinate,
+                out float nodeElevation)
+                ? nodeElevation
+                : 0f;
             return WorldOrigin + new Vector3(
                 coordinate.x * NodeSpacing.x,
-                0f,
+                elevation,
                 coordinate.y * NodeSpacing.y);
         }
 
@@ -456,6 +465,12 @@ namespace BarPromenade
             }
 
             ValidateSurfacesAndOpenAreas();
+            CityElevationValidator.ValidateOrThrow(
+                ElevationPlan,
+                Blueprint,
+                Nodes,
+                RoadEdges,
+                PathKinds);
 
             int expectedLotCount = Blueprint.LotCellCount;
             if (BuildingLots.Count != expectedLotCount)

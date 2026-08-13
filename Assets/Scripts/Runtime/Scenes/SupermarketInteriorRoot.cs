@@ -76,6 +76,7 @@ namespace BarPromenade
             shelfStations;
         public SupermarketExit Exit { get; private set; }
         public InventoryController Inventory { get; private set; }
+        public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
 
         private void Awake()
@@ -145,6 +146,11 @@ namespace BarPromenade
             BuildExit();
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud);
+            Journal = ui.AddComponent<JournalController>();
+            Journal.Initialize(
                 Player,
                 CameraFollow,
                 IntoxicationHud);

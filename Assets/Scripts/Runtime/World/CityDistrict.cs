@@ -60,11 +60,7 @@ namespace BarPromenade
         public CityDistrictKind Kind { get; }
         public IReadOnlyList<Vector2Int> Cells { get; }
         public Bounds WorldBounds { get; }
-        public Vector3 CenterWorldPosition =>
-            new Vector3(
-                WorldBounds.center.x,
-                0f,
-                WorldBounds.center.z);
+        public Vector3 CenterWorldPosition => WorldBounds.center;
 
         public bool ContainsCell(Vector2Int cell)
         {

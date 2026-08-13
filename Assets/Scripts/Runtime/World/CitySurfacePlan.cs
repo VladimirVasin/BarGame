@@ -24,6 +24,7 @@ namespace BarPromenade
             CitySurfaceKind kind,
             Vector2Int cell,
             Rect worldBounds,
+            float datumY,
             Color mapColor,
             bool isWalkable)
         {
@@ -32,6 +33,7 @@ namespace BarPromenade
             Kind = kind;
             Cell = cell;
             WorldBounds = worldBounds;
+            DatumY = datumY;
             MapColor = mapColor;
             IsWalkable = isWalkable;
         }
@@ -41,12 +43,29 @@ namespace BarPromenade
         public CitySurfaceKind Kind { get; }
         public Vector2Int Cell { get; }
         public Rect WorldBounds { get; }
+        public float DatumY { get; }
         public Color MapColor { get; }
         public bool IsWalkable { get; }
         public bool IsWater => Kind == CitySurfaceKind.Water;
+        public float PhysicalTopY
+        {
+            get
+            {
+                switch (Kind)
+                {
+                    case CitySurfaceKind.ParkGround:
+                        return DatumY;
+                    case CitySurfaceKind.Water:
+                        return DatumY - 0.12f;
+                    default:
+                        return DatumY +
+                               CityElevationPlan.GroundTopOffset;
+                }
+            }
+        }
         public Vector3 Center => new Vector3(
             WorldBounds.center.x,
-            0f,
+            DatumY,
             WorldBounds.center.y);
 
         public bool Equals(CitySurfaceDescriptor other)
@@ -59,6 +78,7 @@ namespace BarPromenade
                    Kind == other.Kind &&
                    Cell == other.Cell &&
                    WorldBounds.Equals(other.WorldBounds) &&
+                   DatumY.Equals(other.DatumY) &&
                    MapColor.Equals(other.MapColor) &&
                    IsWalkable == other.IsWalkable;
         }
@@ -77,6 +97,7 @@ namespace BarPromenade
                 hash = (hash * 397) ^ (int)Kind;
                 hash = (hash * 397) ^ Cell.GetHashCode();
                 hash = (hash * 397) ^ WorldBounds.GetHashCode();
+                hash = (hash * 397) ^ DatumY.GetHashCode();
                 hash = (hash * 397) ^ MapColor.GetHashCode();
                 return (hash * 397) ^ IsWalkable.GetHashCode();
             }
@@ -304,6 +325,7 @@ namespace BarPromenade
                     kind,
                     cell.Cell,
                     bounds,
+                    0f,
                     cell.Area.MapColor,
                     cell.Topology == CityCellTopologyKind.OpenLand));
             }

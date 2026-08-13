@@ -46,19 +46,23 @@ namespace BarPromenade
                 new Vector3(1.62f, 1.05f, 0.025f),
                 ColdGlass,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Window Board Upper",
                 room,
                 new Vector3(-2.65f, 2.34f, 3.835f),
                 new Vector3(1.86f, 0.14f, 0.08f),
                 new Color(0.25f, 0.14f, 0.08f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Window Board Lower",
                 room,
                 new Vector3(-2.65f, 1.87f, 3.82f),
                 new Vector3(1.78f, 0.12f, 0.09f),
                 new Color(0.20f, 0.11f, 0.065f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Back Wall Damp",
@@ -297,12 +301,14 @@ namespace BarPromenade
                     .BookcaseDressingSurfaceHeight,
                 bookcase.Bounds.center.y);
             var cabinetParts = new List<GameObject>();
-            cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
+            cabinetParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Old Radio",
                 room,
                 cabinetSurface + Vector3.up * 0.15f,
                 new Vector3(0.56f, 0.30f, 0.36f),
                 new Color(0.10f, 0.095f, 0.08f),
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 false));
             cabinetParts.Add(RuntimePrimitiveFactory.CreateBox(
                 "Home Radio Dial",
@@ -431,12 +437,14 @@ namespace BarPromenade
             Vector3 eulerAngles,
             Color color)
         {
-            GameObject pipe = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject pipe = HomeSurfacePrimitives.CreateCylinder(
                 name,
                 parent,
                 position,
                 size,
                 color,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.CylinderSide,
                 false);
             pipe.transform.localRotation =
                 Quaternion.Euler(eulerAngles);

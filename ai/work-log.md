@@ -6,6 +6,121 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-13 — Gave the default city terrain and exterior stairs
+
+- Added a pure immutable `CityElevationPlan` between blueprint topology and
+  spatial materialization. The default coastal blueprint now spans `12 m`,
+  every urban district has at least `1.5 m` of local terrace variation, water
+  keeps declared sea/lake datums, and legacy/custom blueprints stay exactly
+  flat. One sampler now grounds nodes, cells, lots, entrances, returns, public
+  places, open-area access, stops, waiting slots and debug teleports.
+- Rebuilt City ground as deep terrace slabs and streets as oriented graded
+  road/sidewalk/paint meshes with level junction pads. One shared boundary
+  plan emits radius-safe connectors where road and ground differ by at most
+  the `0.28 m` controller step and physical guards everywhere else; decorations, facade proxies, fences, night
+  fixtures, park dressing, lake/cemetery dressing and Home's same-seed exterior
+  transform inherit their local datum.
+- Added one validated signature stair street in Old Town, Residential,
+  Industrial and Nightlife. Each has `6-12` visible collider-free steps,
+  `0.15-0.17 m` rise, `0.30-0.34 m` tread, two `1.5 m` landings, physical
+  rails/retaining walls and exactly one hidden continuous ramp collider. The
+  pedestrian graph includes both stair directions while a parallel grade-safe
+  Street edge preserves Route 01.
+- Made Route 01 elevation-aware end to end: grade-filtered links and 3D
+  samples, level turns, local stops/waiters/boarding docks and actor pitch with
+  roll locked. Fresh/return spawns and map test-teleport resolve the same live
+  surface. The player contact patch now follows the collider normal; a balance
+  check refuses to start on slopes above `12°`.
+
+Verification:
+
+- `dotnet build BarPromenade.Runtime.csproj -nologo --verbosity quiet` passed
+  with `0` warnings and `0` errors.
+- Focused EditMode `CityElevationPlannerTests` passed `8/8`; focused EditMode
+  `CityExteriorStairModuleTests` passed `4/4`. Focused PlayMode
+  `CityBusRidePlayModeTests.ProductionCityDoorDocks_MatchPhysicalSurfaceHeight`
+  passed `1/1` after proving every Route 01 transfer dock against the built
+  collider surface. Full suites and a player build were intentionally omitted
+  in fast mode.
+
+## 2026-08-13 — Textured the player's apartment
+
+- Twelve deterministic seamless apartment albedos (wallpaper, ceiling
+  plaster, painted planks, dark wood, worn laminate, upholstery, bed linen,
+  bathroom tile, white enamel, painted metal, concrete, entry rug) from a
+  new Pillow generator `tools/build-home-textures.py` — facade-pipeline
+  structure (1024 source / 512 import, periodic-by-construction noise,
+  `--verify`, SHA256 manifest in `ArtSource/Home/home-textures.json`,
+  contact sheet). Compensation constants are solved per sheet with the
+  city-facade **linear** rule against the exact builder tints (channels
+  below `0.09` clamp-checked only — sRGB toe); the stairwell gamma rule
+  would have over-brightened the dark home palette up to 2x.
+- Extracted `SurfaceAppearanceCore` (projection enum, metre tiling,
+  stable-hash UV offsets, display tint) out of
+  `StairwellSurfaceAppearance`, which now delegates with bit-identical
+  hash order; new `HomeSurfaceAppearance` (12 recipes, lazy cache,
+  `[RuntimeInitializeOnLoadMethod]` reset, hash salt `1000 + kind`) plus
+  `HomeSurfacePrimitives.CreateBox/CreateCylinder` wrappers.
+- Threaded through the builders keeping every existing `Color` as the
+  tint: `HomeInteriorWorldBuilder` (shell, facade piers, furniture),
+  `HomeBathroomBuilder` (walls, three tile planes, porcelain fixtures,
+  pipes), `HomeBalconyWorldBuilder` (facades, deck, rails, frames, door
+  leaf), `HomeInteriorDressingBuilder` (window boards, radio, radiator
+  pipes), `HomeRefrigeratorWorldBuilder` (cabinet, front frame, cavity
+  liners, shelves, door). Decal overlays (damp/peel/stains), sub-`0.45 m`
+  props, the alarm clock and fridge food stay flat-tinted by an explicit
+  exemption list; `HomeExteriorViewBuilder` untouched (already textured by
+  the city systems).
+- `HomeOccluderDither.shader` now declares and samples `[MainTexture]
+  _BaseMap` (default white) plus `_Smoothness`/`_Metallic` in ForwardLit,
+  so textured furniture keeps its albedo through visibility fades instead
+  of flashing to the compensated flat tint — the MPB survives the
+  controller's `sharedMaterial` swap untouched.
+- New EditMode `HomeSurfaceAppearanceTests`: 12 import contracts + raw-PNG
+  opacity/seam/contrast checks, a C# re-derivation of the linear
+  compensation rule from the shared tint table, MPB apply/stability/
+  projection tests, a dither-shader `_BaseMap` regression guard, and a
+  full `HomeInteriorWorldBuilder.Build` walk asserting every ordinary
+  renderer is textured or on the exemption list with all 12 sheets seen.
+  Unity-side test runs still pending (editor import of the new PNGs
+  required); generator `--verify` passes twice with identical hashes.
+
+## 2026-08-13 — Quest system, journal menu and the feed-the-cat gate
+
+- Added a minimal data-first quest core: `QuestId`/`QuestStatus`/
+  `QuestDefinition`/`QuestCatalog` plus a pure `QuestLogState`
+  (activate-once, complete-once), owned by `GameSessionState` next to the
+  inventory. `ResetToDefaults` seeds `FeedTheCat` as active on every new
+  game; activation and completion are logged under the `quest` channel.
+- `StairwellCatInteraction` completes `FeedTheCat` at the moment the
+  prepared feeding actually begins (the can is already consumed and the cat
+  eats), not at the exit clip, so an aborted exit cannot lose the
+  completion.
+- New `StairwellQuestDescentBlocker` in the stairwell root: while the quest
+  is active, crossing `0.35 m` below the middle-landing elevation on the way
+  down shows the localized `quest.feed_cat.block.descend` line through the
+  existing `InteractionPromptView` feedback panel and drives the hero back
+  to a landing return pose via `PlayerMotor.MoveTowardsInteractionPose`
+  with input locked; stall detection ends the walk gracefully. Crossing
+  detection (previous sample above, current below) means a spawn below the
+  threshold can never trap the player.
+- While the quest is active `GameSessionState.EvaluateInventoryItemUse`
+  returns the new `InventoryItemUseStatus.ReservedForQuest` for
+  `OpenStewCan`, so the inventory eat action refuses with
+  `inventory.use.failure.reserved_for_quest` and keeps the can; the closed
+  can stays edible. The cat feeding itself removes the item through the
+  target-interaction path, which is deliberately unaffected.
+- New `JournalController` (J / gamepad RB — Select was already the map)
+  in all five gameplay roots: shared `BarMinigameModalLock`, frozen time
+  scale like the inventory, localized quest list with per-status
+  description and IN PROGRESS/DONE tags. Eleven new ru/en localization
+  entries.
+- Focused new EditMode `QuestLogTests` passed `5/5` (new-game activation,
+  one-shot completion, reserved/released/closed-can consumption rules);
+  the run also compiled the runtime assembly. Full suites and a player
+  build were intentionally not run. Batchmode serializer churn in
+  `Assets/Vehicles/Materials` was reverted, not committed.
+
 ## 2026-08-13 — Working bus windshield wipers
 
 - The bus carried two static wiper cylinders welded into one `GEO_Wipers`

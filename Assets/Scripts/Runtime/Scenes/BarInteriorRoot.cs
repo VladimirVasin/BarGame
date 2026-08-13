@@ -70,6 +70,7 @@ namespace BarPromenade
         }
         public MinigameDebugWindow DebugWindow { get; private set; }
         public InventoryController Inventory { get; private set; }
+        public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
         public CocktailMinigameController CocktailMinigame
         {
@@ -237,6 +238,13 @@ namespace BarPromenade
             BuildArrivalPresentation(camera, follow);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
+                Player,
+                follow,
+                intoxicationHud,
+                () => ArrivalPresentation == null ||
+                      !ArrivalPresentation.IsPlaying);
+            Journal = ui.AddComponent<JournalController>();
+            Journal.Initialize(
                 Player,
                 follow,
                 intoxicationHud,

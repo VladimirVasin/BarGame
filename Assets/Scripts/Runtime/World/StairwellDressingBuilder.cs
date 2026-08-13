@@ -313,7 +313,7 @@ namespace BarPromenade
             {
                 new Vector3(2.82f, 0.025f, -2.82f),
                 new Vector3(-3.20f, 0.025f, -2.52f),
-                new Vector3(2.60f, plan.ApartmentElevation + 0.025f, -2.52f),
+                new Vector3(2.60f, plan.ApartmentElevation + 0.025f, -3.30f),
                 new Vector3(-0.20f, plan.MiddleElevation + 0.025f, 1.72f)
             };
             for (int index = 0;
@@ -339,7 +339,7 @@ namespace BarPromenade
             CreateSurfaceCylinder(
                 "Empty Bottle",
                 root,
-                new Vector3(3.48f, 3.29f, -2.48f),
+                new Vector3(3.48f, 3.29f, -3.32f),
                 new Vector3(0.075f, 0.22f, 0.075f),
                 new Color(0.095f, 0.18f, 0.11f),
                 StairwellSurfaceKind.Debris,

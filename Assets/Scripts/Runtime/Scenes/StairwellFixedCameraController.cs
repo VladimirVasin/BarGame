@@ -345,7 +345,31 @@ namespace BarPromenade
                 selector.Select(target.position);
             bool changed =
                 selected.Kind != ActiveShot.Kind;
+            StairwellCameraShotKind previousKind =
+                ActiveShot.Kind;
             ActiveShot = selected;
+            if (changed)
+            {
+                GameLog.Info(
+                    "stairwell",
+                    "camera_shot_changed",
+                    GameLog.Field(
+                        "from",
+                        previousKind.ToString()),
+                    GameLog.Field(
+                        "to",
+                        selected.Kind.ToString()),
+                    GameLog.Field(
+                        "player_x",
+                        target.position.x),
+                    GameLog.Field(
+                        "player_y",
+                        target.position.y),
+                    GameLog.Field(
+                        "player_z",
+                        target.position.z));
+            }
+
             if (forceApply ||
                 changed ||
                 !cameraFollow.FixedPoseActive)

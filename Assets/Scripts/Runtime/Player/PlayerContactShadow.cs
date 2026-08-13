@@ -16,6 +16,12 @@ namespace BarPromenade
         public const float BaseWidth = 0.58f;
         public const float BaseDepth = 0.28f;
 
+        private const float GroundProbeStartHeight = 0.45f;
+        private const float GroundProbeDistance = 1.4f;
+
+        private static readonly RaycastHit[] GroundHits =
+            new RaycastHit[12];
+
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
 
@@ -143,39 +149,48 @@ namespace BarPromenade
             depth = Mathf.Lerp(depth, 0.42f, fall);
             alpha = Mathf.Lerp(alpha, 0.5f, fall);
 
-            if (fall <= 0.001f)
+            ResolveGroundPose(
+                out Vector3 groundPosition,
+                out Vector3 groundNormal);
+            Vector3 referenceForward = Vector3.ProjectOnPlane(
+                groundTransform.forward,
+                groundNormal);
+            if (referenceForward.sqrMagnitude <= 0.0001f)
             {
-                shadowRoot.localPosition =
-                    new Vector3(0f, GroundOffset, 0f);
-                shadowRoot.localRotation = Quaternion.identity;
+                referenceForward = Vector3.Cross(
+                    groundTransform.right,
+                    groundNormal);
             }
-            else
+
+            referenceForward.Normalize();
+            Vector3 offset = Vector3.zero;
+            if (fall > 0.001f)
             {
                 Vector3 fallRight = metrics.FacingTransform != null
                     ? metrics.FacingTransform.right
                     : groundTransform.right;
                 fallRight = Vector3.ProjectOnPlane(
                     fallRight,
-                    Vector3.up);
+                    groundNormal);
                 if (fallRight.sqrMagnitude <= 0.0001f)
                 {
-                    fallRight = groundTransform.right;
+                    fallRight = Vector3.Cross(
+                        groundNormal,
+                        referenceForward);
                 }
 
                 fallRight.Normalize();
-                Vector3 forward =
-                    Vector3.Cross(fallRight, Vector3.up);
-                shadowRoot.SetPositionAndRotation(
-                    groundTransform.position +
-                    Vector3.up * GroundOffset +
-                    fallRight *
-                    metrics.FallDirection *
-                    fall *
-                    0.24f,
-                    Quaternion.LookRotation(
-                        forward,
-                        Vector3.up));
+                offset = fallRight *
+                         metrics.FallDirection *
+                         fall *
+                         0.24f;
             }
+
+            shadowRoot.SetPositionAndRotation(
+                groundPosition + groundNormal * GroundOffset + offset,
+                Quaternion.LookRotation(
+                    referenceForward,
+                    groundNormal));
 
             shadowRoot.localScale = new Vector3(width, 1f, depth);
 
@@ -190,6 +205,39 @@ namespace BarPromenade
                 new Color(0.018f, 0.024f, 0.021f, alpha));
             shadowRenderer.SetPropertyBlock(properties);
             shadowRenderer.enabled = true;
+        }
+
+        private void ResolveGroundPose(
+            out Vector3 position,
+            out Vector3 normal)
+        {
+            position = groundTransform.position;
+            normal = Vector3.up;
+            Vector3 origin = position +
+                             Vector3.up * GroundProbeStartHeight;
+            int count = Physics.RaycastNonAlloc(
+                origin,
+                Vector3.down,
+                GroundHits,
+                GroundProbeDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            float closestDistance = float.PositiveInfinity;
+            for (int index = 0; index < count; index++)
+            {
+                RaycastHit hit = GroundHits[index];
+                if (hit.collider == null ||
+                    hit.collider.transform.IsChildOf(groundTransform) ||
+                    hit.normal.y <= 0.001f ||
+                    hit.distance >= closestDistance)
+                {
+                    continue;
+                }
+
+                closestDistance = hit.distance;
+                position = hit.point;
+                normal = hit.normal.normalized;
+            }
         }
 
         private static void DestroyGeneratedObject(

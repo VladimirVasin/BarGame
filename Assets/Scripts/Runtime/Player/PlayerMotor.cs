@@ -16,6 +16,7 @@ namespace BarPromenade
         private const float InteractionStallTimeoutSeconds = 1.5f;
         private const float InteractionProgressDistance = 0.0001f;
         private const float InteractionProgressDegrees = 0.05f;
+        private const float CameraCutLatchDegrees = 30f;
 
         public const float InteractionPositionTolerance = 0.015f;
         public const float InteractionVerticalTolerance = 0.02f;
@@ -32,6 +33,10 @@ namespace BarPromenade
         private float interactionPoseStallSeconds;
         private Vector3 lastInteractionPosePosition;
         private Quaternion lastInteractionPoseRotation;
+        private Vector3 heldInputForward;
+        private Vector3 heldInputRight;
+        private bool hasHeldInputBasis;
+        private bool heldInputBasisLatched;
 
         public bool InputEnabled { get; private set; } = true;
         public bool IsGrounded =>
@@ -87,6 +92,8 @@ namespace BarPromenade
 
             transform.position = position;
             verticalSpeed = 0f;
+            hasHeldInputBasis = false;
+            heldInputBasisLatched = false;
             ResetInteractionPoseMove();
             StopPlanarMotion();
 
@@ -482,6 +489,8 @@ namespace BarPromenade
         {
             if (input.sqrMagnitude < 0.001f)
             {
+                hasHeldInputBasis = false;
+                heldInputBasisLatched = false;
                 return Vector3.zero;
             }
 
@@ -496,6 +505,30 @@ namespace BarPromenade
             right.y = 0f;
             forward.Normalize();
             right.Normalize();
+
+            // A fixed-camera cut mid-hold would instantly re-aim the
+            // held input and bounce the player between two camera
+            // zones; keep steering in the pre-cut frame until the
+            // keys or stick are released.
+            if (hasHeldInputBasis &&
+                Vector3.Angle(heldInputForward, forward) >
+                CameraCutLatchDegrees)
+            {
+                heldInputBasisLatched = true;
+            }
+
+            if (heldInputBasisLatched)
+            {
+                forward = heldInputForward;
+                right = heldInputRight;
+            }
+            else
+            {
+                heldInputForward = forward;
+                heldInputRight = right;
+                hasHeldInputBasis = true;
+            }
+
             return Vector3.ClampMagnitude(
                 (right * input.x) + (forward * input.y),
                 1f);

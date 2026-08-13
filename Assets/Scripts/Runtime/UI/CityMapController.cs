@@ -644,7 +644,21 @@ namespace BarPromenade
                 }
             }
 
-            destination.y = PlayerWorldPosition.y;
+            if (Layout.ElevationPlan.TrySampleSurface(
+                    new Vector2(destination.x, destination.z),
+                    CitySurfaceRole.RoadTop,
+                    out float roadTop,
+                    out _))
+            {
+                destination.y = roadTop +
+                                PlayerFactory.GroundedRootOffset;
+            }
+            else
+            {
+                destination.y += CityStreetSurfacePlanner.RoadTop +
+                                 PlayerFactory.GroundedRootOffset;
+            }
+
             return destination;
         }
 
@@ -653,10 +667,10 @@ namespace BarPromenade
             Vector3 start,
             Vector3 end)
         {
-            point.y = 0f;
-            start.y = 0f;
-            end.y = 0f;
-            Vector3 segment = end - start;
+            Vector2 pointXZ = new Vector2(point.x, point.z);
+            Vector2 startXZ = new Vector2(start.x, start.z);
+            Vector2 endXZ = new Vector2(end.x, end.z);
+            Vector2 segment = endXZ - startXZ;
             float squaredLength = segment.sqrMagnitude;
             if (squaredLength <= 0.0001f)
             {
@@ -664,9 +678,9 @@ namespace BarPromenade
             }
 
             float progress = Mathf.Clamp01(
-                Vector3.Dot(point - start, segment) /
+                Vector2.Dot(pointXZ - startXZ, segment) /
                 squaredLength);
-            return start + segment * progress;
+            return Vector3.Lerp(start, end, progress);
         }
 
         internal static bool TryGetPointOfInterestLocalizationKey(

@@ -84,7 +84,7 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.HomeFacadeX;
             float lowerHeight =
                 -plan.StreetGroundY;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Lower Exterior Facade",
                 parent,
                 new Vector3(
@@ -97,6 +97,8 @@ namespace BarPromenade
                     lowerHeight,
                     interior.RoomSize.y),
                 Facade,
+                HomeSurfaceKind.Concrete,
+                SurfaceProjection.BoxZY,
                 false);
 
             float localBuildingTop =
@@ -111,7 +113,7 @@ namespace BarPromenade
                     interior.RoomHeight);
             if (upperHeight > 0f)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Upper Exterior Facade",
                     parent,
                     new Vector3(
@@ -125,8 +127,10 @@ namespace BarPromenade
                         upperHeight,
                         interior.RoomSize.y),
                     Facade,
+                    HomeSurfaceKind.Concrete,
+                    SurfaceProjection.BoxZY,
                     false);
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Exterior Roof Lip",
                     parent,
                     new Vector3(
@@ -138,6 +142,8 @@ namespace BarPromenade
                         0.20f,
                         interior.RoomSize.y + 0.32f),
                     Rail,
+                    HomeSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxZY,
                     false);
             }
 
@@ -213,7 +219,7 @@ namespace BarPromenade
             float slabThickness =
                 PlayerHomeBalconyGeometry
                     .BalconySlabThickness;
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Deck",
                 parent,
                 new Vector3(
@@ -224,9 +230,11 @@ namespace BarPromenade
                     bounds.width,
                     slabThickness,
                     bounds.height),
-                Slab);
+                Slab,
+                HomeSurfaceKind.Concrete,
+                SurfaceProjection.BoxXZ);
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Threshold",
                 parent,
                 new Vector3(
@@ -239,7 +247,9 @@ namespace BarPromenade
                         .WallThickness + 0.34f,
                     0.09f,
                     plan.DoorSize.z - 0.10f),
-                Frame);
+                Frame,
+                HomeSurfaceKind.PlankFloor,
+                SurfaceProjection.BoxXZ);
 
             RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Deck Water Stain",
@@ -313,7 +323,7 @@ namespace BarPromenade
             var outerParts = new List<GameObject>();
             var southParts = new List<GameObject>();
             var northParts = new List<GameObject>();
-            outerParts.Add(RuntimePrimitiveFactory.CreateBox(
+            outerParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Outer Rail Cap",
                 parent,
                 new Vector3(
@@ -325,8 +335,10 @@ namespace BarPromenade
                     capHeight,
                     bounds.height + 0.06f),
                 Rail,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXZ,
                 false));
-            southParts.Add(RuntimePrimitiveFactory.CreateBox(
+            southParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Balcony South Rail Cap",
                 parent,
                 new Vector3(
@@ -338,8 +350,10 @@ namespace BarPromenade
                     capHeight,
                     thickness + 0.08f),
                 Rail,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXZ,
                 false));
-            northParts.Add(RuntimePrimitiveFactory.CreateBox(
+            northParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Balcony North Rail Cap",
                 parent,
                 new Vector3(
@@ -351,6 +365,8 @@ namespace BarPromenade
                     capHeight,
                     thickness + 0.08f),
                 Rail,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXZ,
                 false));
 
             float halfWidth =
@@ -481,7 +497,7 @@ namespace BarPromenade
             float height,
             float thickness)
         {
-            return RuntimePrimitiveFactory.CreateBox(
+            return HomeSurfacePrimitives.CreateBox(
                 name,
                 parent,
                 new Vector3(
@@ -493,6 +509,8 @@ namespace BarPromenade
                     height,
                     thickness),
                 Rail,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
                 false);
         }
 
@@ -537,7 +555,7 @@ namespace BarPromenade
 
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Balcony Window Jamb",
                     parent,
                     center +
@@ -552,8 +570,10 @@ namespace BarPromenade
                         size.y + 0.12f,
                         frameWidth),
                     Frame,
+                    HomeSurfaceKind.Enamel,
+                    SurfaceProjection.BoxZY,
                     false);
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Balcony Window Horizontal Frame",
                     parent,
                     center +
@@ -568,10 +588,12 @@ namespace BarPromenade
                         frameWidth,
                         size.z + 0.12f),
                     Frame,
+                    HomeSurfaceKind.Enamel,
+                    SurfaceProjection.BoxZY,
                     false);
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Window Mullion",
                 parent,
                 center,
@@ -580,8 +602,10 @@ namespace BarPromenade
                     size.y - 0.04f,
                     0.055f),
                 Frame,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxZY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Window Crossbar",
                 parent,
                 center,
@@ -590,8 +614,10 @@ namespace BarPromenade
                     0.055f,
                     size.z - 0.04f),
                 Frame,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxZY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Exterior Sill",
                 parent,
                 new Vector3(
@@ -605,6 +631,8 @@ namespace BarPromenade
                     0.11f,
                     size.z + 0.24f),
                 Slab,
+                HomeSurfaceKind.Concrete,
+                SurfaceProjection.BoxXZ,
                 false);
         }
 
@@ -619,7 +647,7 @@ namespace BarPromenade
             const float frameWidth = 0.10f;
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                HomeSurfacePrimitives.CreateBox(
                     "Home Balcony Door Jamb",
                     parent,
                     new Vector3(
@@ -634,10 +662,12 @@ namespace BarPromenade
                         size.y,
                         frameWidth),
                     Frame,
+                    HomeSurfaceKind.Enamel,
+                    SurfaceProjection.BoxZY,
                     false);
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Door Header",
                 parent,
                 new Vector3(
@@ -649,6 +679,8 @@ namespace BarPromenade
                     frameWidth,
                     size.z + frameWidth * 2f),
                 Frame,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxZY,
                 false);
 
             Transform pivot =
@@ -682,7 +714,7 @@ namespace BarPromenade
 
             for (int side = 0; side < 2; side++)
             {
-                cutawayParts.Add(RuntimePrimitiveFactory.CreateBox(
+                cutawayParts.Add(HomeSurfacePrimitives.CreateBox(
                     "Home Balcony Door Leaf Stile",
                     pivot,
                     new Vector3(
@@ -697,6 +729,8 @@ namespace BarPromenade
                         height,
                         frameWidth),
                     Door,
+                    HomeSurfaceKind.DarkWood,
+                    SurfaceProjection.BoxZY,
                     false));
             }
 
@@ -722,7 +756,7 @@ namespace BarPromenade
                 leafDepth,
                 frameWidth));
 
-            cutawayParts.Add(RuntimePrimitiveFactory.CreateBox(
+            cutawayParts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Balcony Door Lower Panel",
                 pivot,
                 new Vector3(
@@ -734,6 +768,8 @@ namespace BarPromenade
                     0.62f,
                     width - frameWidth * 2f),
                 Door,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxZY,
                 false));
             RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Door Glass",
@@ -783,7 +819,7 @@ namespace BarPromenade
             float depth,
             float frameWidth)
         {
-            return RuntimePrimitiveFactory.CreateBox(
+            return HomeSurfacePrimitives.CreateBox(
                 name,
                 pivot,
                 new Vector3(
@@ -795,6 +831,8 @@ namespace BarPromenade
                     frameWidth,
                     width),
                 Door,
+                HomeSurfaceKind.DarkWood,
+                SurfaceProjection.BoxZY,
                 false);
         }
     }

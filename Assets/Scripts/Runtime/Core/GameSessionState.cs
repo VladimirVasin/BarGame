@@ -17,7 +17,8 @@ namespace BarPromenade
         NotConsumable,
         MissingItem,
         NoEffect,
-        MaximumIntoxication
+        MaximumIntoxication,
+        ReservedForQuest
     }
 
     public readonly struct InventoryItemUseResult
@@ -95,6 +96,8 @@ namespace BarPromenade
             new HashSet<string>(StringComparer.Ordinal);
         private static readonly InventoryState inventory =
             new InventoryState();
+        private static readonly QuestLogState questLog =
+            new QuestLogState();
         private static readonly GameTimeState gameTime =
             new GameTimeState();
         private static readonly PlayerNeedsProgressionState needsProgression =
@@ -134,6 +137,8 @@ namespace BarPromenade
         public static int VisitedBarCount => visitedBars.Count;
         public static IReadOnlyList<InventoryItemStack> InventoryItems =>
             inventory.Items;
+        public static IReadOnlyList<QuestLogEntry> Quests =>
+            questLog.Entries;
         public static int CollectedWorldItemCount =>
             collectedWorldItems.Count;
         public static bool IsGameTimeRunning => gameTime.IsRunning;
@@ -224,7 +229,53 @@ namespace BarPromenade
             visitedBars.Clear();
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            questLog.ResetWithStarterQuests();
             GameLog.SetCitySeed(CitySeed);
+        }
+
+        public static QuestStatus GetQuestStatus(QuestId questId)
+        {
+            return questLog.GetStatus(questId);
+        }
+
+        public static bool IsQuestActive(QuestId questId)
+        {
+            return questLog.GetStatus(questId) == QuestStatus.Active;
+        }
+
+        public static bool TryActivateQuest(QuestId questId)
+        {
+            bool activated = questLog.TryActivate(questId);
+            if (activated)
+            {
+                GameLog.Info(
+                    "quest",
+                    "quest_activated",
+                    GameLog.Field("quest_id", questId.ToString()));
+            }
+
+            return activated;
+        }
+
+        public static bool TryCompleteQuest(QuestId questId)
+        {
+            bool completed = questLog.TryComplete(questId);
+            if (completed)
+            {
+                GameLog.Info(
+                    "quest",
+                    "quest_completed",
+                    GameLog.Field("quest_id", questId.ToString()));
+            }
+
+            return completed;
+        }
+
+        public static bool IsInventoryItemReservedForQuest(
+            InventoryItemId itemId)
+        {
+            return itemId == InventoryItemId.OpenStewCan &&
+                   IsQuestActive(QuestId.FeedTheCat);
         }
 
         public static bool TryAddInventoryItem(
@@ -358,6 +409,16 @@ namespace BarPromenade
             {
                 return CreateInventoryItemUseResult(
                     InventoryItemUseStatus.MissingItem,
+                    itemId,
+                    definition.Kind,
+                    itemCount,
+                    itemCount);
+            }
+
+            if (IsInventoryItemReservedForQuest(itemId))
+            {
+                return CreateInventoryItemUseResult(
+                    InventoryItemUseStatus.ReservedForQuest,
                     itemId,
                     definition.Kind,
                     itemCount,

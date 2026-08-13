@@ -136,31 +136,35 @@ namespace BarPromenade
                 0.045f,
                 bodyBack - cavityBack);
 
-            CreateBox(
+            CreateEnamelBox(
                 "Home Refrigerator Cabinet Left",
                 root,
                 center + Vector3.left * (body.x - side) * 0.5f,
                 new Vector3(side, body.y, body.z),
-                Enamel);
-            CreateBox(
+                Enamel,
+                SurfaceProjection.BoxZY);
+            CreateEnamelBox(
                 "Home Refrigerator Cabinet Right",
                 root,
                 center + Vector3.right * (body.x - side) * 0.5f,
                 new Vector3(side, body.y, body.z),
-                EnamelHighlight);
-            CreateBox(
+                EnamelHighlight,
+                SurfaceProjection.BoxZY);
+            CreateEnamelBox(
                 "Home Refrigerator Cabinet Top",
                 root,
                 center + Vector3.up * (body.y - cap) * 0.5f,
                 new Vector3(body.x - side * 2f, cap, body.z),
-                EnamelHighlight);
-            CreateBox(
+                EnamelHighlight,
+                SurfaceProjection.BoxXZ);
+            CreateEnamelBox(
                 "Home Refrigerator Cabinet Bottom",
                 root,
                 center + Vector3.down * (body.y - cap) * 0.5f,
                 new Vector3(body.x - side * 2f, cap, body.z),
-                EnamelShadow);
-            CreateBox(
+                EnamelShadow,
+                SurfaceProjection.BoxXZ);
+            CreateEnamelBox(
                 "Home Refrigerator Cabinet Back",
                 root,
                 new Vector3(
@@ -171,7 +175,8 @@ namespace BarPromenade
                     body.x - side * 2f,
                     body.y - cap * 2f,
                     back),
-                EnamelShadow);
+                EnamelShadow,
+                SurfaceProjection.BoxXY);
 
             BuildFrontFrame(root, plan, side, cap);
             BuildCabinetFeet(root, plan);
@@ -190,7 +195,7 @@ namespace BarPromenade
             float frameSide = Mathf.Max(0.045f, side * 0.72f);
             float frameCap = Mathf.Max(0.045f, cap * 0.72f);
 
-            CreateBox(
+            CreateEnamelBox(
                 "Home Refrigerator Front Frame Left",
                 root,
                 new Vector3(
@@ -198,8 +203,9 @@ namespace BarPromenade
                     center.y,
                     z),
                 new Vector3(frameSide, cavity.y + frameCap * 2f, 0.055f),
-                EnamelHighlight);
-            CreateBox(
+                EnamelHighlight,
+                SurfaceProjection.BoxXY);
+            CreateEnamelBox(
                 "Home Refrigerator Front Frame Right",
                 root,
                 new Vector3(
@@ -207,8 +213,9 @@ namespace BarPromenade
                     center.y,
                     z),
                 new Vector3(frameSide, cavity.y + frameCap * 2f, 0.055f),
-                Enamel);
-            CreateBox(
+                Enamel,
+                SurfaceProjection.BoxXY);
+            CreateEnamelBox(
                 "Home Refrigerator Front Frame Top",
                 root,
                 new Vector3(
@@ -216,8 +223,9 @@ namespace BarPromenade
                     center.y + cavity.y * 0.5f + frameCap * 0.5f,
                     z),
                 new Vector3(cavity.x, frameCap, 0.055f),
-                EnamelHighlight);
-            CreateBox(
+                EnamelHighlight,
+                SurfaceProjection.BoxXY);
+            CreateEnamelBox(
                 "Home Refrigerator Front Frame Bottom",
                 root,
                 new Vector3(
@@ -225,7 +233,8 @@ namespace BarPromenade
                     center.y - cavity.y * 0.5f - frameCap * 0.5f,
                     z),
                 new Vector3(cavity.x, frameCap, 0.055f),
-                EnamelShadow);
+                EnamelShadow,
+                SurfaceProjection.BoxXY);
         }
 
         private static void BuildCabinetFeet(
@@ -297,36 +306,41 @@ namespace BarPromenade
         {
             Vector3 size = plan.CavitySize;
             const float liner = 0.028f;
-            CreateBox(
+            CreateEnamelBox(
                 "Home Refrigerator Cavity Back Liner",
                 cavityRoot,
                 new Vector3(0f, 0f, size.z * 0.5f - liner * 0.5f),
                 new Vector3(size.x, size.y, liner),
-                InteriorShadow);
-            CreateBox(
+                InteriorShadow,
+                SurfaceProjection.BoxXY);
+            CreateEnamelBox(
                 "Home Refrigerator Cavity Left Liner",
                 cavityRoot,
                 new Vector3(-size.x * 0.5f + liner * 0.5f, 0f, 0f),
                 new Vector3(liner, size.y, size.z),
-                Interior);
-            CreateBox(
+                Interior,
+                SurfaceProjection.BoxZY);
+            CreateEnamelBox(
                 "Home Refrigerator Cavity Right Liner",
                 cavityRoot,
                 new Vector3(size.x * 0.5f - liner * 0.5f, 0f, 0f),
                 new Vector3(liner, size.y, size.z),
-                Interior);
-            CreateBox(
+                Interior,
+                SurfaceProjection.BoxZY);
+            CreateEnamelBox(
                 "Home Refrigerator Cavity Ceiling Liner",
                 cavityRoot,
                 new Vector3(0f, size.y * 0.5f - liner * 0.5f, 0f),
                 new Vector3(size.x, liner, size.z),
-                Interior);
-            CreateBox(
+                Interior,
+                SurfaceProjection.BoxXZ);
+            CreateEnamelBox(
                 "Home Refrigerator Cavity Floor Liner",
                 cavityRoot,
                 new Vector3(0f, -size.y * 0.5f + liner * 0.5f, 0f),
                 new Vector3(size.x, liner, size.z),
-                InteriorShadow);
+                InteriorShadow,
+                SurfaceProjection.BoxXZ);
 
             BuildCoolingPlate(cavityRoot, size);
             BuildShelves(cavityRoot, plan);
@@ -411,7 +425,7 @@ namespace BarPromenade
             for (int index = 0; index < heights.Count; index++)
             {
                 float y = heights[index];
-                CreateBox(
+                CreateEnamelBox(
                     $"Home Refrigerator Shelf {index + 1}",
                     parent,
                     new Vector3(0f, y, 0.015f),
@@ -419,7 +433,8 @@ namespace BarPromenade
                         cavity.x * 0.91f,
                         0.032f,
                         cavity.z * 0.88f),
-                    Shelf);
+                    Shelf,
+                    SurfaceProjection.BoxXZ);
                 CreateBox(
                     $"Home Refrigerator Shelf {index + 1} Front Rail",
                     parent,
@@ -496,12 +511,13 @@ namespace BarPromenade
                 new Vector3(0f, y - height * 0.45f, 0.04f),
                 new Vector3(width, 0.035f, depth),
                 InteriorShadow);
-            CreateBox(
+            CreateEnamelBox(
                 "Home Refrigerator Lower Drawer Front",
                 parent,
                 new Vector3(0f, y, -depth * 0.5f),
                 new Vector3(width, height, 0.045f),
-                Shelf);
+                Shelf,
+                SurfaceProjection.BoxXY);
             CreateBox(
                 "Home Refrigerator Lower Drawer Left",
                 parent,
@@ -563,13 +579,14 @@ namespace BarPromenade
             Transform doorLeaf,
             Vector3 size)
         {
-            CreateBox(
+            CreateEnamelBox(
                 "Home Refrigerator Door Enamel",
                 doorLeaf,
                 Vector3.zero,
                 size,
-                Enamel);
-            CreateBox(
+                Enamel,
+                SurfaceProjection.BoxXY);
+            CreateEnamelBox(
                 "Home Refrigerator Door Inner Liner",
                 doorLeaf,
                 new Vector3(0f, 0f, size.z * 0.515f),
@@ -577,7 +594,8 @@ namespace BarPromenade
                     size.x * 0.88f,
                     size.y * 0.91f,
                     0.025f),
-                Interior);
+                Interior,
+                SurfaceProjection.BoxXY);
             BuildDoorGasket(doorLeaf, size);
             BuildDoorExteriorDetails(doorLeaf, size);
         }
@@ -1048,6 +1066,25 @@ namespace BarPromenade
                 position,
                 size,
                 color,
+                false);
+        }
+
+        private static GameObject CreateEnamelBox(
+            string name,
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            Color color,
+            SurfaceProjection projection)
+        {
+            return HomeSurfacePrimitives.CreateBox(
+                name,
+                parent,
+                position,
+                size,
+                color,
+                HomeSurfaceKind.Enamel,
+                projection,
                 false);
         }
 

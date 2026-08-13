@@ -153,6 +153,56 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator CameraCutDuringHeldInput_KeepsPreCutFrameUntilRelease()
+        {
+            movementCamera.transform.rotation =
+                Quaternion.Euler(19f, 136f, 0f);
+            Vector3 preCutForward = Vector3.ProjectOnPlane(
+                movementCamera.transform.forward,
+                Vector3.up).normalized;
+
+            inputFixture.Press(
+                keyboard.wKey,
+                queueEventOnly: true);
+            yield return WaitForMovement();
+
+            movementCamera.transform.rotation =
+                Quaternion.Euler(24f, 38f, 0f);
+            yield return null;
+            yield return null;
+
+            Assert.That(
+                Vector3.Angle(motor.PlanarVelocity, preCutForward),
+                Is.LessThan(0.5f),
+                "A hard camera cut must not re-aim input that is " +
+                "already held.");
+
+            inputFixture.Release(
+                keyboard.wKey,
+                queueEventOnly: true);
+            yield return WaitForStop();
+
+            Vector3 postCutForward = Vector3.ProjectOnPlane(
+                movementCamera.transform.forward,
+                Vector3.up).normalized;
+            inputFixture.Press(
+                keyboard.wKey,
+                queueEventOnly: true);
+            yield return WaitForMovement();
+
+            Assert.That(
+                Vector3.Angle(motor.PlanarVelocity, postCutForward),
+                Is.LessThan(0.5f),
+                "After releasing input the motor must adopt the new " +
+                "camera frame.");
+
+            inputFixture.Release(
+                keyboard.wKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator HeldThenReleasedInput_AcceleratesAndCoastsToStop()
         {
             movementCamera.transform.rotation = Quaternion.identity;

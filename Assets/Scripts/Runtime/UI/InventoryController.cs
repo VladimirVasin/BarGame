@@ -74,6 +74,13 @@ namespace BarPromenade
 
                 InventoryItemUseResult evaluation =
                     SelectedUseEvaluation;
+                if (evaluation.Status ==
+                    InventoryItemUseStatus.ReservedForQuest)
+                {
+                    return LocalizationService.Get(
+                        "inventory.action.eat.reserved");
+                }
+
                 if (evaluation.Kind == InventoryConsumableKind.Alcohol)
                 {
                     return string.Format(
@@ -469,6 +476,10 @@ namespace BarPromenade
                 case InventoryItemUseStatus.MaximumIntoxication:
                     localizationKey =
                         "inventory.use.failure.maximum_intoxication";
+                    break;
+                case InventoryItemUseStatus.ReservedForQuest:
+                    localizationKey =
+                        "inventory.use.failure.reserved_for_quest";
                     break;
                 default:
                     localizationKey = "inventory.use.failure.generic";

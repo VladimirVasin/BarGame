@@ -68,7 +68,7 @@ namespace BarPromenade
 
                 if (geometry.RailBoxes.Count > 0)
                 {
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                         "Safety Rails",
                         chunkRoot,
                         geometry.RailBoxes,
@@ -93,11 +93,8 @@ namespace BarPromenade
             IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
             RoadFenceSegmentDescriptor descriptor)
         {
-            Vector3 segmentCenter =
-                descriptor.Center +
-                (descriptor.OutwardNormal * (FenceDepth * 0.5f));
             AddRails(chunks, descriptor);
-            AddPosts(chunks, descriptor, segmentCenter);
+            AddPosts(chunks, descriptor);
         }
 
         private static void AddRails(
@@ -139,47 +136,57 @@ namespace BarPromenade
                 return;
             }
 
-            float centerCoordinate = (minimum + maximum) * 0.5f;
-            Vector3 center = descriptor.IsHorizontal
-                ? new Vector3(
-                    centerCoordinate,
-                    0f,
-                    descriptor.FixedCoordinate)
-                : new Vector3(
-                    descriptor.FixedCoordinate,
-                    0f,
-                    centerCoordinate);
+            float startAmount = Mathf.InverseLerp(
+                descriptor.MinimumCoordinate,
+                descriptor.MaximumCoordinate,
+                minimum);
+            float endAmount = Mathf.InverseLerp(
+                descriptor.MinimumCoordinate,
+                descriptor.MaximumCoordinate,
+                maximum);
+            Vector3 pieceStart = Vector3.Lerp(
+                descriptor.Start,
+                descriptor.End,
+                startAmount);
+            Vector3 pieceEnd = Vector3.Lerp(
+                descriptor.Start,
+                descriptor.End,
+                endAmount);
+            Vector3 center = (pieceStart + pieceEnd) * 0.5f;
             center +=
                 descriptor.OutwardNormal * (FenceDepth * 0.5f);
             Vector3 railSize = descriptor.IsHorizontal
                 ? new Vector3(
-                    length,
+                    Vector3.Distance(pieceStart, pieceEnd),
                     RailHeight,
                     FenceDepth)
                 : new Vector3(
                     FenceDepth,
                     RailHeight,
-                    length);
-            AddBox(
+                    Vector3.Distance(pieceStart, pieceEnd));
+            Vector3 pieceDirection = (pieceEnd - pieceStart).normalized;
+            Quaternion rotation = descriptor.IsHorizontal
+                ? Quaternion.FromToRotation(Vector3.right, pieceDirection)
+                : Quaternion.FromToRotation(Vector3.forward, pieceDirection);
+            AddOrientedBox(
                 chunks,
-                new Bounds(
+                new RuntimeOrientedBox(
                     center +
                     (Vector3.up * (RoadSurfaceY + LowerRailY)),
-                    railSize),
-                true);
-            AddBox(
+                    rotation,
+                    railSize));
+            AddOrientedBox(
                 chunks,
-                new Bounds(
+                new RuntimeOrientedBox(
                     center +
                     (Vector3.up * (RoadSurfaceY + UpperRailY)),
-                    railSize),
-                true);
+                    rotation,
+                    railSize));
         }
 
         private static void AddPosts(
             IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
-            RoadFenceSegmentDescriptor descriptor,
-            Vector3 segmentCenter)
+            RoadFenceSegmentDescriptor descriptor)
         {
             float length = descriptor.Length;
             float endInset =
@@ -190,9 +197,8 @@ namespace BarPromenade
             {
                 AddPost(
                     chunks,
-                    descriptor.IsHorizontal,
-                    segmentCenter,
-                    0f);
+                    descriptor.Center +
+                    descriptor.OutwardNormal * (FenceDepth * 0.5f));
                 return;
             }
 
@@ -200,52 +206,61 @@ namespace BarPromenade
                 1,
                 Mathf.CeilToInt(
                     usableLength / MaximumPostSpacing));
+            float startAmount = endInset / length;
+            float endAmount = 1f - startAmount;
             for (int post = 0; post <= intervalCount; post++)
             {
                 float t = post / (float)intervalCount;
-                float offset =
-                    Mathf.Lerp(
-                        -usableLength * 0.5f,
-                        usableLength * 0.5f,
-                        t);
+                Vector3 position = Vector3.Lerp(
+                    descriptor.Start,
+                    descriptor.End,
+                    Mathf.Lerp(startAmount, endAmount, t));
+                position += descriptor.OutwardNormal *
+                            (FenceDepth * 0.5f);
                 AddPost(
                     chunks,
-                    descriptor.IsHorizontal,
-                    segmentCenter,
-                    offset);
+                    position);
             }
         }
 
         private static void AddPost(
             IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
-            bool horizontal,
-            Vector3 segmentCenter,
-            float offset)
+            Vector3 groundPosition)
         {
-            Vector3 localOffset = horizontal
-                ? new Vector3(
-                    offset,
-                    RoadSurfaceY + (PostHeight * 0.5f),
-                    0f)
-                : new Vector3(
-                    0f,
-                    RoadSurfaceY + (PostHeight * 0.5f),
-                    offset);
             AddBox(
                 chunks,
                 new Bounds(
-                    segmentCenter + localOffset,
+                    groundPosition + Vector3.up *
+                    (RoadSurfaceY + PostHeight * 0.5f),
                     new Vector3(
                         PostWidth,
                         PostHeight,
-                        PostWidth)),
-                false);
+                        PostWidth)));
+        }
+
+        private static void AddOrientedBox(
+            IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
+            RuntimeOrientedBox box)
+        {
+            ChunkCoordinate coordinate =
+                ChunkCoordinate.FromPosition(box.Center);
+            if (!chunks.TryGetValue(
+                    coordinate,
+                    out FenceChunkGeometry geometry))
+            {
+                geometry = new FenceChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            geometry.RailBoxes.Add(new RuntimeOrientedBox(
+                box.Center - coordinate.Origin,
+                box.Rotation,
+                box.Size));
         }
 
         private static void AddBox(
             IDictionary<ChunkCoordinate, FenceChunkGeometry> chunks,
-            Bounds box,
-            bool isRail)
+            Bounds box)
         {
             ChunkCoordinate coordinate =
                 ChunkCoordinate.FromPosition(box.center);
@@ -259,14 +274,7 @@ namespace BarPromenade
 
             Bounds localBox = box;
             localBox.center -= coordinate.Origin;
-            if (isRail)
-            {
-                geometry.RailBoxes.Add(localBox);
-            }
-            else
-            {
-                geometry.PostBoxes.Add(localBox);
-            }
+            geometry.PostBoxes.Add(localBox);
         }
 
         private static int CompareChunks(
@@ -328,8 +336,8 @@ namespace BarPromenade
 
         private sealed class FenceChunkGeometry
         {
-            public List<Bounds> RailBoxes { get; } =
-                new List<Bounds>();
+            public List<RuntimeOrientedBox> RailBoxes { get; } =
+                new List<RuntimeOrientedBox>();
             public List<Bounds> PostBoxes { get; } =
                 new List<Bounds>();
         }

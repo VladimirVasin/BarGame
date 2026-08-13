@@ -134,9 +134,15 @@ namespace BarPromenade.Tests
                 layout.Park.Cells,
                 Is.EquivalentTo(blueprint.CentralPark.Cells));
             Assert.That(
-                Vector3.Distance(
-                    layout.Park.Center,
-                    layout.GetGridWorldPosition(blueprint.CenterNode)),
+                Vector2.Distance(
+                    new Vector2(
+                        layout.Park.Center.x,
+                        layout.Park.Center.z),
+                    new Vector2(
+                        layout.GetGridWorldPosition(
+                            blueprint.CenterNode).x,
+                        layout.GetGridWorldPosition(
+                            blueprint.CenterNode).z)),
                 Is.LessThan(0.001f));
 
             Assert.That(

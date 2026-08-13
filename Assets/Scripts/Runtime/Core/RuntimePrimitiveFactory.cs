@@ -6,6 +6,23 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
+    public readonly struct RuntimeOrientedBox
+    {
+        public RuntimeOrientedBox(
+            Vector3 center,
+            Quaternion rotation,
+            Vector3 size)
+        {
+            Center = center;
+            Rotation = rotation;
+            Size = size;
+        }
+
+        public Vector3 Center { get; }
+        public Quaternion Rotation { get; }
+        public Vector3 Size { get; }
+    }
+
     public static class RuntimePrimitiveFactory
     {
         private const int LowPolyCylinderSides = 8;
@@ -222,6 +239,56 @@ namespace BarPromenade
                 xzPlanarUvTileSize);
         }
 
+        public static GameObject CreateCombinedOrientedBoxes(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeOrientedBox> boxes,
+            Color color,
+            bool collider = false,
+            float? xzPlanarUvTileSize = null)
+        {
+            if (boxes == null)
+            {
+                throw new ArgumentNullException(nameof(boxes));
+            }
+
+            if (xzPlanarUvTileSize.HasValue &&
+                !IsPositiveFinite(xzPlanarUvTileSize.Value))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(xzPlanarUvTileSize));
+            }
+
+            var transforms = new Matrix4x4[boxes.Count];
+            for (int index = 0; index < boxes.Count; index++)
+            {
+                RuntimeOrientedBox box = boxes[index];
+                if (!IsPositiveFinite(box.Size) ||
+                    !IsFinite(box.Center) ||
+                    !IsFinite(box.Rotation))
+                {
+                    throw new ArgumentException(
+                        "Combined oriented boxes require finite transforms " +
+                        "and positive dimensions.",
+                        nameof(boxes));
+                }
+
+                transforms[index] = Matrix4x4.TRS(
+                    box.Center,
+                    box.Rotation,
+                    box.Size);
+            }
+
+            return CreateCombinedBoxTransforms(
+                name,
+                parent,
+                transforms,
+                color,
+                null,
+                collider,
+                xzPlanarUvTileSize);
+        }
+
         private static GameObject CreateCombinedBoxes(
             string name,
             Transform parent,
@@ -243,6 +310,55 @@ namespace BarPromenade
                     nameof(boxes));
             }
 
+            var transforms = new Matrix4x4[boxes.Count];
+            for (int index = 0; index < boxes.Count; index++)
+            {
+                Bounds box = boxes[index];
+                Vector3 size = box.size;
+                if (!IsPositiveFinite(size))
+                {
+                    throw new ArgumentException(
+                        "Combined boxes require finite positive dimensions.",
+                        nameof(boxes));
+                }
+
+                transforms[index] = Matrix4x4.TRS(
+                    box.center,
+                    Quaternion.identity,
+                    size);
+            }
+
+            return CreateCombinedBoxTransforms(
+                name,
+                parent,
+                transforms,
+                color,
+                sharedMaterial,
+                collider,
+                xzPlanarUvTileSize);
+        }
+
+        private static GameObject CreateCombinedBoxTransforms(
+            string name,
+            Transform parent,
+            IReadOnlyList<Matrix4x4> transforms,
+            Color color,
+            Material sharedMaterial,
+            bool collider,
+            float? xzPlanarUvTileSize)
+        {
+            if (transforms == null)
+            {
+                throw new ArgumentNullException(nameof(transforms));
+            }
+
+            if (transforms.Count == 0)
+            {
+                throw new ArgumentException(
+                    "At least one box transform is required.",
+                    nameof(transforms));
+            }
+
             GameObject result = CreatePrimitive(
                 PrimitiveType.Cube,
                 name,
@@ -252,37 +368,15 @@ namespace BarPromenade
                 color,
                 false,
                 sharedMaterial);
-            MeshFilter meshFilter =
-                result.GetComponent<MeshFilter>();
+            MeshFilter meshFilter = result.GetComponent<MeshFilter>();
             Mesh sourceMesh = meshFilter.sharedMesh;
-            var combine = new CombineInstance[boxes.Count];
-            for (int index = 0; index < boxes.Count; index++)
+            var combine = new CombineInstance[transforms.Count];
+            for (int index = 0; index < transforms.Count; index++)
             {
-                Bounds box = boxes[index];
-                Vector3 size = box.size;
-                if (!IsPositiveFinite(size))
-                {
-                    if (Application.isPlaying)
-                    {
-                        Object.Destroy(result);
-                    }
-                    else
-                    {
-                        Object.DestroyImmediate(result);
-                    }
-
-                    throw new ArgumentException(
-                        "Combined boxes require finite positive dimensions.",
-                        nameof(boxes));
-                }
-
                 combine[index] = new CombineInstance
                 {
                     mesh = sourceMesh,
-                    transform = Matrix4x4.TRS(
-                        box.center,
-                        Quaternion.identity,
-                        size)
+                    transform = transforms[index]
                 };
             }
 
@@ -290,7 +384,7 @@ namespace BarPromenade
             {
                 name = $"{name} Combined Mesh",
                 hideFlags = HideFlags.HideAndDontSave,
-                indexFormat = boxes.Count * sourceMesh.vertexCount >
+                indexFormat = transforms.Count * sourceMesh.vertexCount >
                               ushort.MaxValue
                     ? IndexFormat.UInt32
                     : IndexFormat.UInt16
@@ -338,6 +432,26 @@ namespace BarPromenade
             }
 
             mesh.uv = uvs;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z) &&
+                   IsFinite(value.w);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private static GameObject CreatePrimitive(

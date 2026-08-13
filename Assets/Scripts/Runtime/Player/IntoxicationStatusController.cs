@@ -15,6 +15,10 @@ namespace BarPromenade
         public const float ModalExitGraceDuration = 3f;
         public const float PostFallGraceDuration = 6f;
 
+        private const float MaximumBalanceSurfaceAngle = 12f;
+        private const float BalanceSurfaceProbeStartHeight = 0.35f;
+        private const float BalanceSurfaceProbeDistance = 1f;
+
         private enum BalanceState
         {
             Idle = 0,
@@ -744,7 +748,41 @@ namespace BarPromenade
                    interactor != null &&
                    motor.InputEnabled &&
                    interactor.InputEnabled &&
-                   motor.IsGrounded;
+                   motor.IsGrounded &&
+                   HasStableBalanceSurface();
+        }
+
+        private bool HasStableBalanceSurface()
+        {
+            RaycastHit[] hits = Physics.RaycastAll(
+                motor.transform.position +
+                Vector3.up * BalanceSurfaceProbeStartHeight,
+                Vector3.down,
+                BalanceSurfaceProbeDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            float closestDistance = float.PositiveInfinity;
+            Vector3 closestNormal = Vector3.up;
+            bool found = false;
+            for (int index = 0; index < hits.Length; index++)
+            {
+                RaycastHit hit = hits[index];
+                if (hit.collider == null ||
+                    hit.collider.transform.IsChildOf(motor.transform) ||
+                    hit.normal.y <= 0.001f ||
+                    hit.distance >= closestDistance)
+                {
+                    continue;
+                }
+
+                found = true;
+                closestDistance = hit.distance;
+                closestNormal = hit.normal;
+            }
+
+            return !found ||
+                   Vector3.Angle(closestNormal, Vector3.up) <=
+                   MaximumBalanceSurfaceAngle;
         }
 
         private void ApplyPresentation()

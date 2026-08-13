@@ -244,7 +244,13 @@ namespace BarPromenade.Tests.EditMode
                     edge.IsHorizontal
                         ? surface.size.z
                         : surface.size.x,
-                    Is.EqualTo(layout.RoadWidth).Within(Tolerance));
+                    Is.EqualTo(
+                            layout.ElevationPlan.TryGetSignatureStair(
+                                edge,
+                                out _)
+                                ? plan.CarriagewayWidth
+                                : layout.RoadWidth)
+                        .Within(Tolerance));
             }
 
             Assert.That(
@@ -281,7 +287,13 @@ namespace BarPromenade.Tests.EditMode
                         CityStreetSurfacePlanner.SidewalkWidth) ||
                     Mathf.Approximately(
                         walkable.height,
-                        CityStreetSurfacePlanner.SidewalkWidth),
+                        CityStreetSurfacePlanner.SidewalkWidth) ||
+                    layout.ElevationPlan.SignatureStairs.Any(stair =>
+                        Mathf.Abs(
+                            stair.Width -
+                            Mathf.Min(
+                                walkable.width,
+                                walkable.height)) <= Tolerance),
                     Is.True);
             }
         }

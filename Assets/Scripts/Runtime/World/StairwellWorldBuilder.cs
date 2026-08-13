@@ -545,7 +545,7 @@ namespace BarPromenade
                 "Apartment Door Leaf",
                 door,
                 new Vector3(0f, 1.16f, 0f),
-                new Vector3(0.13f, 2.32f, 1.62f),
+                new Vector3(0.13f, 2.32f, 1.24f),
                 ApartmentDoor,
                 StairwellSurfaceKind.DoorPaint,
                 StairwellSurfaceProjection.BoxZY,
@@ -554,7 +554,7 @@ namespace BarPromenade
                 door,
                 Vector3.zero,
                 Quaternion.Euler(0f, 90f, 0f),
-                1.62f,
+                1.24f,
                 2.32f);
             return door;
         }

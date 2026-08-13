@@ -40,7 +40,7 @@ namespace BarPromenade
             Graph graph = Graph.Create(layout);
             RoadAnchor current = FindNearestAnchor(layout, startWorldPosition);
             var routePoints = new List<Vector3>();
-            AppendSimplified(routePoints, Flatten(startWorldPosition));
+            AppendSimplified(routePoints, startWorldPosition);
             AppendSimplified(routePoints, current.Position);
 
             for (int index = 0; index < orderedStops.Count; index++)
@@ -120,7 +120,7 @@ namespace BarPromenade
                 layout,
                 edge,
                 stop.ReturnPosition);
-            Vector3 returnPosition = Flatten(stop.ReturnPosition);
+            Vector3 returnPosition = stop.ReturnPosition;
             if ((projected - returnPosition).sqrMagnitude >
                 PointEpsilonSquared)
             {
@@ -462,22 +462,23 @@ namespace BarPromenade
         {
             Vector3 start = layout.GetNodeWorldPosition(edge.A);
             Vector3 end = layout.GetNodeWorldPosition(edge.B);
-            Vector3 delta = end - start;
-            delta.y = 0f;
-            Vector3 offset = point - start;
-            offset.y = 0f;
+            Vector2 delta = new Vector2(
+                end.x - start.x,
+                end.z - start.z);
+            Vector2 offset = new Vector2(
+                point.x - start.x,
+                point.z - start.z);
             float denominator = delta.sqrMagnitude;
             float amount = denominator <= PointEpsilonSquared
                 ? 0f
-                : Mathf.Clamp01(Vector3.Dot(offset, delta) / denominator);
-            return Flatten(start + (delta * amount));
+                : Mathf.Clamp01(Vector2.Dot(offset, delta) / denominator);
+            return Vector3.Lerp(start, end, amount);
         }
 
         private static void AppendSimplified(
             List<Vector3> points,
             Vector3 point)
         {
-            point = Flatten(point);
             if (points.Count > 0 &&
                 (points[points.Count - 1] - point).sqrMagnitude <=
                 PointEpsilonSquared)
@@ -520,12 +521,6 @@ namespace BarPromenade
             float x = first.x - second.x;
             float z = first.z - second.z;
             return (x * x) + (z * z);
-        }
-
-        private static Vector3 Flatten(Vector3 point)
-        {
-            point.y = 0f;
-            return point;
         }
 
         private static bool IsFinite(Vector3 point)

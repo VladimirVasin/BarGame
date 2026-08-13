@@ -326,7 +326,10 @@ namespace BarPromenade
                 if (descriptor.AnchorKind ==
                     CityDecorationAnchorKind.BuildingFacade)
                 {
-                    Origin = new Vector3(Origin.x, 0f, Origin.z);
+                    Origin = new Vector3(
+                        Origin.x,
+                        lot != null ? lot.Center.y : Origin.y,
+                        Origin.z);
                 }
 
                 Forward = ResolveForward(descriptor.Forward, lot);

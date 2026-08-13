@@ -79,7 +79,7 @@ namespace BarPromenade
             for (int index = 0; index < bars.Count; index++)
             {
                 Vector3 position = bars[index].transform.position;
-                position.y = 2.45f;
+                position.y += 1.63f;
                 barLightPositions.Add(position);
             }
 

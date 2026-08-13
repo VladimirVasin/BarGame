@@ -59,27 +59,64 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   eligible lot remains. Its branded storefront, walkable apron, interaction
   trigger, fence opening and return point derive from the canonical lot and
   frontage data.
+- **Accepted — One deterministic single-layer city elevation plan:** The
+  existing 2D blueprint and road topology remain the first generation stage,
+  but the default coastal blueprint now creates one immutable
+  `CityElevationPlan` before lots and surfaces are spatially materialized.
+  Its authored north macro profile plus east bias yields a `12 m` city-wide
+  range and at least `1.5 m` within every urban district; sea water stays at
+  datum `0`, lake water at datum `1`, and legacy/custom blueprints retain the
+  exact flat fallback. Cell terraces are aligned to their canonical building
+  frontage, open precincts to their one declared access and public places to
+  the street approaches that remain usable. All node/cell positions, surface
+  datums, doors, returns, stops, waiting slots, pedestrians and debug
+  teleports read that plan or its sampler rather than adding an absolute Y.
+  The v1 topology deliberately forbids bridges, tunnels and two walkable
+  levels with the same XZ projection; layer-aware navigation is a separate
+  future architecture change.
+  Street intersections and stop pads are level. Between their `4 m` setbacks,
+  oriented road/sidewalk strips may grade up to `6%` for Street/Route 01 and
+  `8.3%` for pedestrian ParkPath. The bus route excludes non-bus transitions,
+  samples Y and grade tangent, pitches without roll and grounds stop/ride
+  anchors locally. Every urban district also owns one signature sidewalk
+  stair: `6-12` visible collider-free steps, `0.15-0.17 m` rise,
+  `0.30-0.34 m` tread, two `1.5 m` landings, physical rails/retaining walls
+  and exactly one continuous hidden ramp collider. A grade-safe roadway stays
+  beside it for Route 01. Terrace slabs extend to a common base. One shared
+  `CityRoadGroundBoundaryPlan` classifies every road-to-ground seam: a span
+  becomes a radius-safe walkable connector only while its sampled top delta
+  stays within the `0.28 m` controller step, otherwise the same span receives
+  a physical guard. Signature stair footprints are the explicit guarded-cut
+  exception. The player
+  contact patch raycasts to the live surface normal, and balance checks refuse
+  to start above a `12°` surface angle so a stair flight cannot begin a fall
+  sequence it was never designed to recover on.
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ streets, park lawn,
   blueprint `OpenLand` and the complete logical `BuildableGround` regions.
-  Radius-safe connector rectangles overlap road-to-ground and adjacent
-  ground-to-ground seams for the maximum `0.35 m` agent radius. Water,
-  unmapped cells and space outside the active footprint remain excluded;
-  buildings and other visible obstacles are governed by their physical
-  colliders instead of being carved out of the macro walkable mask.
+  Radius-safe connector rectangles overlap only the road-to-ground spans that
+  the shared boundary plan classifies as step-safe; every other span is
+  physically guarded. Ground-to-ground connectors are emitted only when both
+  terraces share a datum; the graded physical road and one hidden ramp per
+  stair flight own all climbing. Water, unmapped cells and space outside the active footprint
+  remain excluded; buildings and other visible obstacles are governed by
+  their physical colliders instead of being carved out of the macro walkable
+  mask.
 - **Accepted — Road v2 deterministic street corridor:** The canonical default
   street footprint is `8 m`, so `CityStreetSurfacePlanner` partitions every
   ordinary street into a dark `6 m` carriageway and two `1 m` sidewalks raised
-  from the `0.08 m` road top to `0.14 m`; ParkPath remains independent. The
+  from the local datum's `+0.08 m` road top to `+0.14 m`; ParkPath remains
+  independent. The
   default grid step is therefore `26 m` for an `18 m` block. The pure plan also
   owns center dashes, an `8 x 8 m` intersection core with a clear `6 x 6 m`
   carriageway apron, intersection corner pavement, radius-query rectangles and
   four-stripe zebra approaches. One shared stable selector chooses at most six
   degree-3+ Street-only intersections that are clear of ParkPath and blocked
   public space, so paired signals and crossings cannot drift. Dashes are
-  excluded from intersection and zebra bounds. City builds physical sidewalk
-  surfaces in `48 m` chunks; Home consumes the same plan in local space without
-  collision. Generation settings reject widths that leave no positive
+  excluded from intersection and zebra bounds. City builds physical graded
+  strips as combined oriented meshes with level node pads; Home consumes the
+  same plan in local space without collision. Generation settings reject
+  widths that leave no positive
   carriageway between the two sidewalks. Asphalt, sidewalk and white paint use
   three packaged albedos through MPBs on the shared Lit material. Road v2.1 adds
   a second stable selector for eligible Street-only perpendicular two-way

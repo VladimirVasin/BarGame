@@ -69,6 +69,11 @@ namespace BarPromenade
             IList<Bounds> sidewalks,
             IList<Bounds> centerMarkings,
             IList<Bounds> crosswalkMarkings,
+            IList<RuntimeOrientedBox> streetGeometry,
+            IList<RuntimeOrientedBox> parkPathGeometry,
+            IList<RuntimeOrientedBox> sidewalkGeometry,
+            IList<RuntimeOrientedBox> centerMarkingGeometry,
+            IList<RuntimeOrientedBox> crosswalkMarkingGeometry,
             IList<Rect> sidewalkWalkableRectangles,
             IList<Rect> crosswalkWalkableRectangles,
             IList<Vector2Int> crosswalkNodes,
@@ -88,6 +93,11 @@ namespace BarPromenade
             Sidewalks = Copy(sidewalks);
             CenterMarkings = Copy(centerMarkings);
             CrosswalkMarkings = Copy(crosswalkMarkings);
+            StreetGeometry = Copy(streetGeometry);
+            ParkPathGeometry = Copy(parkPathGeometry);
+            SidewalkGeometry = Copy(sidewalkGeometry);
+            CenterMarkingGeometry = Copy(centerMarkingGeometry);
+            CrosswalkMarkingGeometry = Copy(crosswalkMarkingGeometry);
             SidewalkWalkableRectangles = Copy(
                 sidewalkWalkableRectangles);
             CrosswalkWalkableRectangles = Copy(
@@ -102,6 +112,17 @@ namespace BarPromenade
         public IReadOnlyList<Bounds> Sidewalks { get; }
         public IReadOnlyList<Bounds> CenterMarkings { get; }
         public IReadOnlyList<Bounds> CrosswalkMarkings { get; }
+        public IReadOnlyList<RuntimeOrientedBox> StreetGeometry { get; }
+        public IReadOnlyList<RuntimeOrientedBox> ParkPathGeometry { get; }
+        public IReadOnlyList<RuntimeOrientedBox> SidewalkGeometry { get; }
+        public IReadOnlyList<RuntimeOrientedBox> CenterMarkingGeometry
+        {
+            get;
+        }
+        public IReadOnlyList<RuntimeOrientedBox> CrosswalkMarkingGeometry
+        {
+            get;
+        }
         public IReadOnlyList<Rect> SidewalkWalkableRectangles { get; }
         public IReadOnlyList<Rect> CrosswalkWalkableRectangles { get; }
         public IReadOnlyList<Vector2Int> CrosswalkNodes { get; }
