@@ -125,6 +125,14 @@
       "value": "E \u2014 \u0437\u0430\u043a\u0443\u0440\u0438\u0442\u044c"
     },
     {
+      "key": "interaction.sit_bench",
+      "value": "E — присесть на лавочку"
+    },
+    {
+      "key": "interaction.stand_up",
+      "value": "E — встать"
+    },
+    {
       "key": "interaction.stop_smoking",
       "value": "E \u2014 \u0437\u0430\u043a\u043e\u043d\u0447\u0438\u0442\u044c \u043a\u0443\u0440\u0438\u0442\u044c"
     },

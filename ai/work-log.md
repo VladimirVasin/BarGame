@@ -6,6 +6,89 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Textured facade windows on the night-factor clock
+
+- Added `tools/build-city-window-textures.py`: a deterministic 512 sheet of
+  four pane variants (plain, curtains, blinds, lamp) authored light-glass /
+  dark-frame in the facade sheets' doctrine and tone family, pre-corrected
+  for the pane's 3.5:1 stretch, shipped as
+  `Resources/Textures/CityWindowAlbedo.png`.
+- Added `CityWindowAppearance`: one shared runtime material per lit window
+  family (Cold/Warm/Bar/Home/Supermarket) cloned from the packaged unlit
+  emission material with the sheet as `_BaseMap`; per-pane variety is an
+  MPB `_BaseMap_ST` quadrant only, so the material keeps colour authority.
+  `SetNightFactor` lerps each family colour between unlit `DayGlass` and its
+  lit hue — the whole city's windows dim through five materials.
+  `CityNightWorldResult.SetNightFactor` calls it, which covers both the City
+  and the bounded Home exterior clocks. Dark panes keep the default lit
+  material and get the same sheet via MPB, so they read as glazing all day.
+- Replaced `CityExteriorAppearance.ResolveWindowColor` with
+  `ResolveWindowFamily` (same hash, same 65/25/10 mix — seeds light the same
+  rooms) and refactored both window builders onto it. Added
+  `RuntimePrimitiveFactory.CreateMaterialBox`, a box that writes no colour
+  property block so material-wide changes reach it.
+- Added `CityWindowAppearanceTests` covering family determinism and mix,
+  shared-material identity and night-factor lerp, variant quadrant bounds
+  and the shipped sheet.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK.
+- Focused EditMode under Unity `6000.5.5f1`: `CityDecorationPlannerTests`
+  passed `10/10` alongside the new fixture (also re-proving the booth
+  lightbox build path); `CityWindowAppearanceTests` passed `4/4` after
+  switching an exact `Color` equality to per-channel tolerance
+  (`Mathf.Lerp(a, b, 1f)` is not bit-exact `b`).
+
+## 2026-08-14 — Leaning yard utilities and citywide booth/dumpster coverage
+
+- Added `HomeYardUtilityPlanner` to the shared yard site contract: it leans a
+  phone booth against the hero's own wall (door into the yard) and the shared
+  dumpster at the far end of the same wall. Both anchors keep their whole
+  footprint `ring radius + 1.4 m` off the wheelchair circuit and never
+  overlap each other; the yard slot objects now treat those footprints as
+  reserved ground.
+- The city decoration planner consumes the same anchors as ordinary
+  `RoadsidePhoneBooth`/`RoadsideDumpsterAndUtility` descriptors
+  (`…-homeyard-booth`/`…-homeyard-dumpster`), so recipes, night neon,
+  chunked collision proxies and the home balcony exterior view all come from
+  the existing street catalogue.
+- Made booths and dumpsters repeat like infrastructure. Random roadside
+  clusters demote a crowding utility to roadwork (booths never closer than
+  `55 m`, dumpsters `40 m`), and a new row-major coverage pass fills the gaps
+  (a booth within about `90 m` of every ordinary lot; dumpsters within `65 m`
+  in Residential/Industrial and `100 m` elsewhere).
+- Prepared interactivity: new `CityStreetUtilityDock.CreateAll` mirrors the
+  bench-seat read-back and derives one dock per booth door and dumpster lid
+  from shared recipe constants, so a future interaction pass can install
+  triggers exactly like the bench sit pass does.
+- Replaced the booth's bare floating neon slab with a municipal lightbox on
+  the roof fascia: a dark `Street` housing, one recessed panel in a new
+  seventh `BacklitSign` batch style (pale fluorescent `1.22/1.36/1.18` HDR
+  glow on the shared emissive material, quieter than nightlife neon) and
+  seven dark glyph strokes that read as the sign's word abstractly, matching
+  the supermarket block-letter idiom. Batching stays per-chunk shared-material
+  only.
+- Extended pure coverage: spacing/coverage invariants across seeds, the
+  hero-wall lean and circuit clearance contracts, yard dressing staying off
+  the reserved utility ground, and dock determinism/ownership/reach.
+
+Verification:
+
+- Focused `BarPromenade.Tests.EditMode` run over `CityDecorationPlannerTests`,
+  `CityOpenAreaDecorationPlannerTests` and `CityStreetUtilityPlanTests`
+  passed `15/15` under Unity `6000.5.5f1`, including the unchanged strict
+  yard dressing counts.
+- `PlansAcrossSeeds_ExerciseCompleteRecipeCatalog` was stale since the
+  roadside pool became shelter-free and now expects the route-owned shelter
+  to stay absent from ambient decoration.
+- Known unrelated failure, not addressed here: `CityBusPlannerTests
+  .OrderedRoute_IsStreetOnlyRightHandAndOneInOneOut` misses its `1.5 m`
+  departure-lane assertion by `0.0011` on this branch; the bus planner reads
+  only the decoration plan's seed, so it is independent of this change.
+- No broader suite or player build was run in fast mode.
+
 ## 2026-08-14 — Turned the permanent yard light into a noir key
 
 - Strengthened the same single static neighbour-wall Spot from the ordinary

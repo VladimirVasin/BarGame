@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -472,6 +473,51 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.DoesNotThrow(() =>
                 CityOpenAreaDecorationPlanner.ValidateOrThrow(layout, first));
+        }
+
+        [Test]
+        public void HomeYard_KeepsItsDressingOffTheLeaningUtilities()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityOpenAreaDecorationPlan plan =
+                CityOpenAreaDecorationPlanner.Create(layout);
+            Assert.That(plan.HomeYardSite.HasValue, Is.True);
+            HomeYardSitePlan site = plan.HomeYardSite.Value;
+
+            // The same anchors the city decoration planner consumes:
+            // the yard dressing must have kept every slot object off
+            // that reserved ground.
+            var reserved = new List<Rect>(2);
+            Assert.That(
+                HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    site,
+                    out HomeYardUtilityAnchor booth),
+                Is.True,
+                "The default yard must host its phone booth.");
+            reserved.Add(booth.Footprint);
+            Assert.That(
+                HomeYardUtilityPlanner.TryCreateDumpster(
+                    site,
+                    out HomeYardUtilityAnchor dumpster),
+                Is.True,
+                "The default yard must host its dumpster.");
+            reserved.Add(dumpster.Footprint);
+
+            foreach (CityOpenAreaDecorationDescriptor part in
+                     plan.Descriptors.Where(item =>
+                         item.Feature == CityAreaFeatureKind.Yard))
+            {
+                foreach (Rect footprint in reserved)
+                {
+                    Assert.That(
+                        Overlaps(ToXZRect(part.Bounds), footprint),
+                        Is.False,
+                        $"{part.StableId} stands on utility ground.");
+                }
+            }
         }
 
         private static void AssertSpotlightCoversCircuit(

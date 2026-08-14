@@ -643,35 +643,43 @@ namespace BarPromenade
                     continue;
                 }
 
-                Color color =
-                    CityExteriorAppearance.ResolveWindowColor(
+                CityWindowFamily family =
+                    CityExteriorAppearance.ResolveWindowFamily(
                         lot,
                         context.Layout.Seed,
                         floor,
                         pane,
                         side,
-                        out bool emissive);
+                        out uint paneHash);
 
-                if (emissive)
+                GameObject paneObject;
+                if (family == CityWindowFamily.Off)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
+                    paneObject = RuntimePrimitiveFactory.CreateBox(
                         $"Exterior Window {floor}-{side}-{pane}",
                         parent,
                         exteriorPane.center,
                         exteriorPane.size,
-                        color,
-                        CityNightResources.EmissiveMaterial,
+                        CityExteriorAppearance.WindowOff,
                         false);
+                    CityWindowAppearance.ApplyDarkPane(
+                        paneObject.GetComponent<Renderer>(),
+                        paneHash);
                 }
                 else
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        $"Exterior Window {floor}-{side}-{pane}",
-                        parent,
-                        exteriorPane.center,
-                        exteriorPane.size,
-                        color,
-                        false);
+                    paneObject =
+                        RuntimePrimitiveFactory.CreateMaterialBox(
+                            $"Exterior Window {floor}-{side}-{pane}",
+                            parent,
+                            exteriorPane.center,
+                            exteriorPane.size,
+                            CityWindowAppearance.ResolveLitMaterial(
+                                family),
+                            false);
+                    CityWindowAppearance.ApplyLitPane(
+                        paneObject.GetComponent<Renderer>(),
+                        paneHash);
                 }
             }
         }

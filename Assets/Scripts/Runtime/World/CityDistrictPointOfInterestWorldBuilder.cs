@@ -21,6 +21,23 @@ namespace BarPromenade
         private const float ReferencePublicWidth = 15f;
         private const float PublicGroundHeight = 0.12f;
 
+        // The two sittable benches, shared between the visual recipes
+        // below and <see cref="TryDescribeBenchSeat"/> so the seat the
+        // hero docks against is always the seat that was drawn.
+        private const float DryingBenchX = -3.25f;
+        private const float DryingBenchSeatCenterY = 0.53f;
+        private const float DryingBenchZ = 4.45f;
+        private const float DryingBenchWidth = 2.40f;
+        private const float DryingBenchSeatThickness = 0.18f;
+        private const float DryingBenchDepth = 0.58f;
+        private const float IslandBenchX = 2.85f;
+        private const float IslandBenchSeatCenterY = 0.66f;
+        private const float IslandBenchZ = 2.55f;
+        private const float IslandBenchWidth = 2.50f;
+        private const float IslandBenchSeatThickness = 0.22f;
+        private const float IslandBenchDepth = 0.72f;
+        private const float IslandBenchYaw = 22f;
+
         private static readonly Color OldTownPaving =
             new Color(0.255f, 0.235f, 0.190f);
         private static readonly Color OldStone =
@@ -160,6 +177,84 @@ namespace BarPromenade
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
+        }
+
+        /// <summary>
+        /// Describes the sittable bench seat one point of interest
+        /// carries, in world space, mirroring the recipe transform the
+        /// city build applies. Only the drying yard and the last route
+        /// island keep a bench; every other kind reports none.
+        /// </summary>
+        public static bool TryDescribeBenchSeat(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityBenchSeat seat)
+        {
+            Vector3 localSeatCenter;
+            Vector3 localSeatSize;
+            float localYaw;
+            string id;
+            switch (descriptor.Kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    localSeatCenter = new Vector3(
+                        DryingBenchX,
+                        DryingBenchSeatCenterY,
+                        DryingBenchZ);
+                    localSeatSize = new Vector3(
+                        DryingBenchWidth,
+                        DryingBenchSeatThickness,
+                        DryingBenchDepth);
+                    localYaw = 0f;
+                    id = "drying-yard-shared-bench";
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    localSeatCenter = new Vector3(
+                        IslandBenchX,
+                        IslandBenchSeatCenterY,
+                        IslandBenchZ);
+                    localSeatSize = new Vector3(
+                        IslandBenchWidth,
+                        IslandBenchSeatThickness,
+                        IslandBenchDepth);
+                    localYaw = IslandBenchYaw;
+                    id = "last-route-island-empty-bench";
+                    break;
+                default:
+                    seat = default;
+                    return false;
+            }
+
+            Quaternion recipeRotation = Quaternion.LookRotation(
+                ResolveForward(descriptor),
+                Vector3.up);
+            float horizontalScale =
+                ResolveHorizontalScale(descriptor.PublicBounds);
+            Vector3 worldSeatCenter = descriptor.Center +
+                recipeRotation * new Vector3(
+                    localSeatCenter.x * horizontalScale,
+                    localSeatCenter.y,
+                    localSeatCenter.z * horizontalScale);
+
+            // Both authored benches face their recipe's local -Z: the
+            // shared bench looks at the drying frames, the empty bench
+            // looks back across the island.
+            Vector3 faceDirection = recipeRotation *
+                (Quaternion.Euler(0f, localYaw, 0f) *
+                 Vector3.back);
+            seat = new CityBenchSeat(
+                id,
+                new Vector3(
+                    worldSeatCenter.x,
+                    worldSeatCenter.y +
+                    localSeatSize.y * 0.5f,
+                    worldSeatCenter.z),
+                localSeatSize.x * horizontalScale,
+                localSeatSize.z * horizontalScale,
+                descriptor.Center.y + PublicGroundHeight * 0.5f,
+                faceDirection);
+            return true;
         }
 
         private static void BuildCitySite(
@@ -435,8 +530,10 @@ namespace BarPromenade
                 1.70f, 0.94f, 0.065f, ResidentialClothCold, false, homeExterior);
             AddBox(parent, "Small Towel", 2.75f, 1.94f, 3f,
                 0.90f, 0.58f, 0.065f, ResidentialPatch, false, homeExterior);
-            AddBox(parent, "Shared Bench Seat", -3.25f, 0.53f, 4.45f,
-                2.40f, 0.18f, 0.58f, ResidentialCloth, false, homeExterior);
+            AddBox(parent, "Shared Bench Seat",
+                DryingBenchX, DryingBenchSeatCenterY, DryingBenchZ,
+                DryingBenchWidth, DryingBenchSeatThickness,
+                DryingBenchDepth, ResidentialCloth, false, homeExterior);
             AddBox(parent, "Shared Bench Leg A", -4.02f, 0.28f, 4.45f,
                 0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior);
             AddBox(parent, "Shared Bench Leg B", -2.48f, 0.28f, 4.45f,
@@ -452,8 +549,8 @@ namespace BarPromenade
                 AddObstacleCollider(
                     parent,
                     "Shared Bench Collider",
-                    new Vector3(-3.25f, 0.38f, 4.45f),
-                    new Vector3(2.40f, 0.76f, 0.62f));
+                    new Vector3(DryingBenchX, 0.38f, DryingBenchZ),
+                    new Vector3(DryingBenchWidth, 0.76f, 0.62f));
             }
         }
 
@@ -614,10 +711,15 @@ namespace BarPromenade
             AddBox(parent, "Departure Schedule Row C", 2.45f, 1.90f, -2.365f,
                 1.92f, 0.07f, 0.025f, NightlifeRoutePaper, false, homeExterior,
                 -12f);
-            AddBox(parent, "Empty Bench", 2.85f, 0.66f, 2.55f,
-                2.50f, 0.22f, 0.72f, NightlifeSeat, false, homeExterior, 22f);
-            AddBox(parent, "Empty Bench Base", 2.85f, 0.33f, 2.55f,
-                0.38f, 0.66f, 0.48f, NightlifeFrame, false, homeExterior, 22f);
+            AddBox(parent, "Empty Bench",
+                IslandBenchX, IslandBenchSeatCenterY, IslandBenchZ,
+                IslandBenchWidth, IslandBenchSeatThickness,
+                IslandBenchDepth, NightlifeSeat, false, homeExterior,
+                IslandBenchYaw);
+            AddBox(parent, "Empty Bench Base",
+                IslandBenchX, 0.33f, IslandBenchZ,
+                0.38f, 0.66f, 0.48f, NightlifeFrame, false, homeExterior,
+                IslandBenchYaw);
             AddBox(parent, "Island Waste Bin", 4.15f, 0.71f, 2.20f,
                 0.72f, 1.00f, 0.72f, NightlifeWaste, false, homeExterior, 8f);
             AddBox(parent, "Island Waste Bin Rim", 4.15f, 1.23f, 2.20f,
@@ -654,9 +756,12 @@ namespace BarPromenade
                 AddObstacleCollider(
                     parent,
                     "Empty Bench Collider",
-                    new Vector3(2.85f, 0.44f, 2.55f),
-                    new Vector3(2.50f, 0.88f, 0.72f),
-                    22f);
+                    new Vector3(IslandBenchX, 0.44f, IslandBenchZ),
+                    new Vector3(
+                        IslandBenchWidth,
+                        0.88f,
+                        IslandBenchDepth),
+                    IslandBenchYaw);
                 AddObstacleCollider(
                     parent,
                     "Island Waste Bin Collider",

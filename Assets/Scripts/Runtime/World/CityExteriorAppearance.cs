@@ -263,50 +263,52 @@ namespace BarPromenade
                 1f);
         }
 
-        public static Color ResolveWindowColor(
+        /// <summary>
+        /// Which family a facade pane belongs to, plus the stable hash the
+        /// window appearance uses to pick its texture variant. The lit/dark
+        /// split and the cold/warm ratio are unchanged from the original
+        /// flat-colour windows, so a seed lights the same rooms it always
+        /// did.
+        /// </summary>
+        public static CityWindowFamily ResolveWindowFamily(
             BuildingLot lot,
             int citySeed,
             int floor,
             int pane,
             int side,
-            out bool emissive)
+            out uint paneHash)
         {
-            if (lot.IsBar)
-            {
-                emissive = true;
-                return BarWindow;
-            }
-
-            if (lot.IsPlayerHome)
-            {
-                emissive = true;
-                return HomeWindow;
-            }
-
-            if (lot.IsSupermarket)
-            {
-                emissive = true;
-                return SupermarketWindow;
-            }
-
-            uint hash = StableHash(
+            paneHash = StableHash(
                 citySeed,
                 lot.Cell.x,
                 lot.Cell.y,
                 floor,
                 pane,
                 side);
-            int selection = (int)(hash % 100u);
-            if (selection < 65)
+            if (lot.IsBar)
             {
-                emissive = false;
-                return WindowOff;
+                return CityWindowFamily.Bar;
             }
 
-            emissive = true;
+            if (lot.IsPlayerHome)
+            {
+                return CityWindowFamily.Home;
+            }
+
+            if (lot.IsSupermarket)
+            {
+                return CityWindowFamily.Supermarket;
+            }
+
+            int selection = (int)(paneHash % 100u);
+            if (selection < 65)
+            {
+                return CityWindowFamily.Off;
+            }
+
             return selection < 90
-                ? ColdWindow
-                : WarmWindow;
+                ? CityWindowFamily.Cold
+                : CityWindowFamily.Warm;
         }
 
         public static Color Darken(

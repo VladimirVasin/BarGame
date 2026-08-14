@@ -5,12 +5,34 @@ namespace BarPromenade
 {
     public static class CityBusStopWorldBuilder
     {
+        /// <summary>
+        /// The shelter stands beside the `01` pole, not on it: shifted
+        /// along the lane so the pole, both door docks (`+3.05 m` and
+        /// `-1.34 m`) and the pavement wait slots (`+0.30..+1.40 m`)
+        /// all stay clear of the structure.
+        /// </summary>
+        public const float ShelterOffsetAlongLane = -2.55f;
+
+        // The bench under the roof, in stop-local space. Local +Z faces
+        // the road, so the sitter watches for the bus.
+        public const float ShelterBenchSeatTopHeight = 0.80f;
+        public const float ShelterBenchSeatThickness = 0.16f;
+        public const float ShelterBenchSeatWidth = 2.65f;
+        public const float ShelterBenchSeatDepth = 0.62f;
+        public const float ShelterBenchSeatForwardOffset = 0.05f;
+
         private static readonly Color PoleColor =
             new Color32(45, 49, 54, 255);
         private static readonly Color RouteColor =
             new Color32(91, 143, 209, 255);
         private static readonly Color PlateInsetColor =
             new Color32(202, 218, 220, 255);
+        private static readonly Color ShelterPanelColor =
+            new Color32(63, 70, 74, 255);
+        private static readonly Color ShelterRoofColor =
+            new Color32(52, 58, 63, 255);
+        private static readonly Color ShelterBenchColor =
+            new Color32(97, 56, 26, 255);
 
         public static GameObject Build(
             Transform parent,
@@ -110,6 +132,36 @@ namespace BarPromenade
             return root;
         }
 
+        /// <summary>
+        /// Describes the shelter bench of one stop in world space, so
+        /// the sit interaction docks against exactly the plank this
+        /// builder draws. The sitter faces local +Z: the road.
+        /// </summary>
+        public static CityBenchSeat DescribeShelterBenchSeat(
+            CityBusStopDescriptor stop)
+        {
+            if (stop == null)
+            {
+                throw new ArgumentNullException(nameof(stop));
+            }
+
+            Quaternion rotation = ResolveRotation(
+                stop.Forward,
+                stop.RoadsideForward);
+            Vector3 seatTopCenter = stop.ShelterPosition +
+                rotation * new Vector3(
+                    ShelterOffsetAlongLane,
+                    ShelterBenchSeatTopHeight,
+                    ShelterBenchSeatForwardOffset);
+            return new CityBenchSeat(
+                $"{stop.Id}-shelter-bench",
+                seatTopCenter,
+                ShelterBenchSeatWidth,
+                ShelterBenchSeatDepth,
+                stop.ShelterPosition.y,
+                rotation * Vector3.forward);
+        }
+
         private static void BuildStopVisual(
             Transform root,
             bool collider)
@@ -121,6 +173,7 @@ namespace BarPromenade
                 new Vector3(0.12f, 2.40f, 0.12f),
                 PoleColor,
                 collider);
+            BuildShelter(root, collider);
             RuntimePrimitiveFactory.CreateBox(
                 "Route Plate",
                 root,
@@ -136,6 +189,90 @@ namespace BarPromenade
                 PlateInsetColor,
                 false);
             BuildRouteNumber(root);
+        }
+
+        /// <summary>
+        /// The waiting shelter, adapted from the retired roadside
+        /// decoration recipe: back wall on the frontage side, roof
+        /// over the pavement edge, bench facing the road. The sign
+        /// pole of the recipe is dropped — the real `01` pole already
+        /// stands beside the structure.
+        /// </summary>
+        private static void BuildShelter(
+            Transform root,
+            bool collider)
+        {
+            const float x = ShelterOffsetAlongLane;
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Back Wall",
+                root,
+                new Vector3(x, 1.32f, -0.48f),
+                new Vector3(4.25f, 2.45f, 0.10f),
+                ShelterPanelColor,
+                collider);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Roof",
+                root,
+                new Vector3(x, 2.62f, 0f),
+                new Vector3(4.65f, 0.18f, 1.18f),
+                ShelterRoofColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Post West",
+                root,
+                new Vector3(x - 2.05f, 1.30f, 0f),
+                new Vector3(0.16f, 2.60f, 0.16f),
+                PoleColor,
+                collider);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Post Back",
+                root,
+                new Vector3(x, 1.30f, -0.48f),
+                new Vector3(0.16f, 2.60f, 0.16f),
+                PoleColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Post East",
+                root,
+                new Vector3(x + 2.05f, 1.30f, 0f),
+                new Vector3(0.16f, 2.60f, 0.16f),
+                PoleColor,
+                collider);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Bench Seat",
+                root,
+                new Vector3(
+                    x,
+                    ShelterBenchSeatTopHeight -
+                    ShelterBenchSeatThickness * 0.5f,
+                    ShelterBenchSeatForwardOffset),
+                new Vector3(
+                    ShelterBenchSeatWidth,
+                    ShelterBenchSeatThickness,
+                    ShelterBenchSeatDepth),
+                ShelterBenchColor,
+                collider);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Bench Backrest",
+                root,
+                new Vector3(x, 1.10f, -0.20f),
+                new Vector3(2.65f, 0.62f, 0.14f),
+                ShelterBenchColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Bench Leg West",
+                root,
+                new Vector3(x - 0.90f, 0.34f, 0.05f),
+                new Vector3(0.14f, 0.68f, 0.14f),
+                PoleColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Shelter Bench Leg East",
+                root,
+                new Vector3(x + 0.90f, 0.34f, 0.05f),
+                new Vector3(0.14f, 0.68f, 0.14f),
+                PoleColor,
+                false);
         }
 
         private static void BuildRouteNumber(Transform parent)

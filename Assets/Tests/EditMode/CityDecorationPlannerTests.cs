@@ -198,9 +198,19 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Array expected = Enum.GetValues(typeof(CityDecorationKind));
-            Assert.That(kinds.Count, Is.EqualTo(expected.Length));
+            Assert.That(kinds.Count, Is.EqualTo(expected.Length - 1));
             foreach (CityDecorationKind kind in expected)
             {
+                if (kind == CityDecorationKind.RoadsideBusShelter)
+                {
+                    Assert.That(
+                        kinds.Contains(kind),
+                        Is.False,
+                        "Bus shelters are route-owned infrastructure, " +
+                        "never ambient decoration.");
+                    continue;
+                }
+
                 Assert.That(kinds, Does.Contain(kind), kind.ToString());
             }
         }
@@ -367,6 +377,219 @@ namespace BarPromenade.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(parent);
                 UnityEngine.Object.DestroyImmediate(homeParent);
+            }
+        }
+
+        [Test]
+        public void StreetUtilities_RepeatRegularlyButNeverCrowd()
+        {
+            for (int seedOffset = 0; seedOffset < 3; seedOffset++)
+            {
+                CityDecorationPlan plan = CreatePlan(
+                    GameSessionState.DefaultCitySeed + seedOffset,
+                    out _,
+                    out _,
+                    out _);
+                var booths = new List<Vector3>();
+                var dumpsters = new List<Vector3>();
+                for (int index = 0;
+                     index < plan.Descriptors.Count;
+                     index++)
+                {
+                    CityDecorationDescriptor descriptor =
+                        plan.Descriptors[index];
+                    if (descriptor.Kind ==
+                        CityDecorationKind.RoadsidePhoneBooth)
+                    {
+                        booths.Add(descriptor.Position);
+                    }
+                    else if (descriptor.Kind ==
+                             CityDecorationKind
+                                 .RoadsideDumpsterAndUtility)
+                    {
+                        dumpsters.Add(descriptor.Position);
+                    }
+                }
+
+                Assert.That(
+                    booths,
+                    Has.Count.InRange(4, 40),
+                    "Phone booths must repeat like infrastructure.");
+                Assert.That(
+                    dumpsters,
+                    Has.Count.InRange(6, 60),
+                    "Dumpsters must repeat like infrastructure.");
+                AssertMinimumPlanarSpacing(
+                    booths,
+                    CityDecorationPlanner.PhoneBoothMinimumSpacing,
+                    "phone booths");
+                AssertMinimumPlanarSpacing(
+                    dumpsters,
+                    CityDecorationPlanner.DumpsterMinimumSpacing,
+                    "dumpsters");
+            }
+        }
+
+        [Test]
+        public void HomeYard_LeansPhoneBoothAndDumpsterOnTheHeroWall()
+        {
+            CityDecorationPlan plan = CreatePlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout,
+                out _,
+                out _);
+            Assert.That(
+                HomeYardSitePlanner.TryCreate(
+                    layout,
+                    out HomeYardSitePlan site),
+                Is.True);
+            Assert.That(
+                HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    site,
+                    out HomeYardUtilityAnchor boothAnchor),
+                Is.True);
+            Assert.That(
+                HomeYardUtilityPlanner.TryCreateDumpster(
+                    site,
+                    out HomeYardUtilityAnchor dumpsterAnchor),
+                Is.True);
+
+            CityDecorationDescriptor booth = FindBySuffix(
+                plan,
+                "-homeyard-booth");
+            CityDecorationDescriptor dumpster = FindBySuffix(
+                plan,
+                "-homeyard-dumpster");
+            Assert.That(
+                booth.Kind,
+                Is.EqualTo(CityDecorationKind.RoadsidePhoneBooth));
+            Assert.That(
+                dumpster.Kind,
+                Is.EqualTo(
+                    CityDecorationKind.RoadsideDumpsterAndUtility));
+            Assert.That(booth.Position, Is.EqualTo(boothAnchor.Position));
+            Assert.That(booth.Forward, Is.EqualTo(boothAnchor.Forward));
+            Assert.That(
+                dumpster.Position,
+                Is.EqualTo(dumpsterAnchor.Position));
+            Assert.That(
+                dumpster.Forward,
+                Is.EqualTo(dumpsterAnchor.Forward));
+            Assert.That(
+                booth.District,
+                Is.EqualTo(site.Home.District));
+            Assert.That(
+                dumpster.District,
+                Is.EqualTo(site.Home.District));
+
+            // Both lean on the hero's own wall: the back face sits a
+            // whisker proud of the facade plane and the service side
+            // opens into the yard.
+            Vector2Int direction = site.DirectionFromHomeToNeighbour;
+            float wallX = direction.x > 0
+                ? site.GroundBounds.xMin - HomeYardSitePlanner.WallMargin
+                : site.GroundBounds.xMax + HomeYardSitePlanner.WallMargin;
+            var intoYard = new Vector3(direction.x, 0f, direction.y);
+            Assert.That(booth.Forward, Is.EqualTo(intoYard));
+            Assert.That(dumpster.Forward, Is.EqualTo(intoYard));
+            AssertLeansOnWall(
+                booth.Position,
+                direction.x,
+                wallX,
+                HomeYardUtilityPlanner.BoothBackHalfDepth);
+            AssertLeansOnWall(
+                dumpster.Position,
+                direction.x,
+                wallX,
+                HomeYardUtilityPlanner.DumpsterBackHalfDepth);
+
+            // Neither footprint may crowd the worn circuit the chair
+            // rides, nor each other.
+            AssertClearOfRing(site, boothAnchor.Footprint);
+            AssertClearOfRing(site, dumpsterAnchor.Footprint);
+            Assert.That(
+                boothAnchor.Footprint.Overlaps(
+                    dumpsterAnchor.Footprint),
+                Is.False);
+        }
+
+        private static CityDecorationDescriptor FindBySuffix(
+            CityDecorationPlan plan,
+            string suffix)
+        {
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                if (plan.Descriptors[index].StableId.EndsWith(
+                        suffix,
+                        StringComparison.Ordinal))
+                {
+                    return plan.Descriptors[index];
+                }
+            }
+
+            Assert.Fail($"No descriptor with suffix '{suffix}'.");
+            return default;
+        }
+
+        private static void AssertLeansOnWall(
+            Vector3 position,
+            int directionX,
+            float wallX,
+            float backHalfDepth)
+        {
+            float backX = position.x - directionX * backHalfDepth;
+            Assert.That(
+                Mathf.Abs(backX - wallX),
+                Is.LessThanOrEqualTo(
+                    HomeYardUtilityPlanner.WallProudOffset + 0.001f));
+        }
+
+        private static void AssertClearOfRing(
+            HomeYardSitePlan site,
+            Rect footprint)
+        {
+            float nearestX = Mathf.Max(
+                Mathf.Abs(site.RingCenter.x -
+                          Mathf.Clamp(
+                              site.RingCenter.x,
+                              footprint.xMin,
+                              footprint.xMax)),
+                0f);
+            float nearestZ = Mathf.Max(
+                Mathf.Abs(site.RingCenter.z -
+                          Mathf.Clamp(
+                              site.RingCenter.z,
+                              footprint.yMin,
+                              footprint.yMax)),
+                0f);
+            Assert.That(
+                Mathf.Sqrt(
+                    (nearestX * nearestX) + (nearestZ * nearestZ)),
+                Is.GreaterThanOrEqualTo(
+                    site.RingRadius +
+                    HomeYardUtilityPlanner.CircuitClearance -
+                    0.001f));
+        }
+
+        private static void AssertMinimumPlanarSpacing(
+            IReadOnlyList<Vector3> positions,
+            float minimumSpacing,
+            string label)
+        {
+            float squared = minimumSpacing * minimumSpacing;
+            for (int first = 0; first < positions.Count; first++)
+            {
+                for (int second = first + 1;
+                     second < positions.Count;
+                     second++)
+                {
+                    float x = positions[first].x - positions[second].x;
+                    float z = positions[first].z - positions[second].z;
+                    Assert.That(
+                        (x * x) + (z * z),
+                        Is.GreaterThanOrEqualTo(squared - 0.01f),
+                        $"Two {label} crowd one corner.");
+                }
             }
         }
 

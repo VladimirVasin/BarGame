@@ -8,7 +8,7 @@ namespace BarPromenade
     public static class CityDecorationWorldBuilder
     {
         private const float SpatialChunkSize = 48f;
-        private const int BatchStyleCount = 6;
+        private const int BatchStyleCount = 7;
 
         private static readonly Color MasonryColor =
             new Color(0.27f, 0.22f, 0.17f);
@@ -22,6 +22,10 @@ namespace BarPromenade
             new Color(1.25f, 0.18f, 0.72f);
         private static readonly Color CyanGlow =
             new Color(0.16f, 0.88f, 1.30f);
+        // Pale fluorescent lightbox white-green: municipal utility
+        // signage, deliberately quieter than the nightlife neon.
+        private static readonly Color BacklitSignGlow =
+            new Color(1.22f, 1.36f, 1.18f);
 
         public static GameObject Build(
             Transform parent,
@@ -411,13 +415,202 @@ namespace BarPromenade
                 0.92f, 1.00f, 0.05f);
         }
 
+        // The sittable seats hidden in the decoration recipes, shared
+        // with <see cref="AppendBenchSeats"/> so the seat the hero
+        // docks against is always the seat that was drawn.
+        private const float CouchX = 0.55f;
+        private const float CouchSeatCenterY = 0.48f;
+        private const float CouchSeatThickness = 0.42f;
+        private const float CouchWidth = 2.20f;
+        private const float CouchDepth = 0.92f;
+        private const float ChessTableOffset = 1.85f;
+        private const float ChessBenchSeatCenterY = 0.46f;
+        private const float ChessBenchSeatThickness = 0.16f;
+        private const float ChessBenchZ = 1.02f;
+        private const float ChessBenchWidth = 0.90f;
+        private const float ChessBenchDepth = 0.38f;
+        private const float PlaygroundBenchZ = 2.25f;
+        private const float PlaygroundBenchSeatCenterY = 0.62f;
+        private const float PlaygroundBenchSeatThickness = 0.18f;
+        private const float PlaygroundBenchWidth = 3.75f;
+        private const float PlaygroundBenchDepth = 0.42f;
+
+        /// <summary>
+        /// Describes the sittable seats one street decoration carries,
+        /// in world space, mirroring the recipe transform used by the
+        /// geometry expansion. The chess benches face their table, the
+        /// discarded couch faces the street, the playground bench
+        /// faces the swings; every other kind reports none.
+        /// </summary>
+        public static void AppendBenchSeats(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            ICollection<CityBenchSeat> target)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            descriptor.TryResolveLot(
+                layout,
+                out BuildingLot lot);
+            var context = new RecipeContext(descriptor, lot);
+            switch (descriptor.Kind)
+            {
+                case CityDecorationKind.ResidentialDiscardedFurniture:
+                    target.Add(DescribeSeat(
+                        context,
+                        $"{descriptor.StableId}-couch",
+                        -CouchX * context.Mirror,
+                        CouchSeatCenterY + CouchSeatThickness * 0.5f,
+                        0f,
+                        CouchWidth,
+                        CouchDepth,
+                        1f));
+                    return;
+                case CityDecorationKind.ParkChessTables:
+                    for (int table = -1; table <= 1; table += 2)
+                    {
+                        for (int side = -1; side <= 1; side += 2)
+                        {
+                            target.Add(DescribeSeat(
+                                context,
+                                $"{descriptor.StableId}-seat" +
+                                $"-{(table < 0 ? 'a' : 'b')}" +
+                                $"{(side < 0 ? '1' : '2')}",
+                                table * ChessTableOffset,
+                                ChessBenchSeatCenterY +
+                                ChessBenchSeatThickness * 0.5f,
+                                side * ChessBenchZ,
+                                ChessBenchWidth,
+                                ChessBenchDepth,
+                                -side));
+                        }
+                    }
+
+                    return;
+                case CityDecorationKind.ParkPlayground:
+                    target.Add(DescribeSeat(
+                        context,
+                        $"{descriptor.StableId}-bench",
+                        0f,
+                        PlaygroundBenchSeatCenterY +
+                        PlaygroundBenchSeatThickness * 0.5f,
+                        PlaygroundBenchZ,
+                        PlaygroundBenchWidth,
+                        PlaygroundBenchDepth,
+                        -1f));
+                    return;
+                default:
+                    return;
+            }
+        }
+
+        private static CityBenchSeat DescribeSeat(
+            RecipeContext context,
+            string id,
+            float x,
+            float seatTopHeight,
+            float z,
+            float width,
+            float depth,
+            float faceSign)
+        {
+            float depthScale = context.StreetDepthScale;
+            Vector3 seatTopCenter = context.Origin +
+                (context.Tangent * x) +
+                (Vector3.up * seatTopHeight) +
+                (context.Forward * (z * depthScale));
+            return new CityBenchSeat(
+                id,
+                seatTopCenter,
+                width,
+                Mathf.Max(0.05f, depth * depthScale),
+                context.Origin.y,
+                context.Forward * faceSign);
+        }
+
+        // The reachable faces of the street utilities, shared with
+        // <see cref="AppendUtilityDocks"/> so the dock a future
+        // interaction uses always fronts the drawn door and lid.
+        private const float PhoneBoothDoorLocalZ = 0.59f;
+        private const float PhoneBoothDoorHalfDepth = 0.04f;
+        private const float DumpsterBodyLocalX = -0.65f;
+        private const float DumpsterBodyHalfDepth = 0.675f;
+        public const float UtilityDockClearance = 0.62f;
+
+        /// <summary>
+        /// Describes the interaction dock one street decoration
+        /// carries, in world space, mirroring the recipe transform
+        /// used by the geometry expansion. The phone booth docks a
+        /// body in front of its door, the dumpster in front of its
+        /// bin lid; every other kind reports none.
+        /// </summary>
+        public static void AppendUtilityDocks(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            ICollection<CityStreetUtilityDock> target)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            descriptor.TryResolveLot(
+                layout,
+                out BuildingLot lot);
+            var context = new RecipeContext(descriptor, lot);
+            float depthScale = context.StreetDepthScale;
+            switch (descriptor.Kind)
+            {
+                case CityDecorationKind.RoadsidePhoneBooth:
+                    float doorReach =
+                        (PhoneBoothDoorLocalZ +
+                         PhoneBoothDoorHalfDepth) * depthScale +
+                        UtilityDockClearance;
+                    target.Add(new CityStreetUtilityDock(
+                        $"{descriptor.StableId}-door",
+                        descriptor.StableId,
+                        CityStreetUtilityKind.PhoneBooth,
+                        context.Origin + context.Forward * doorReach,
+                        -context.Forward));
+                    return;
+                case CityDecorationKind.RoadsideDumpsterAndUtility:
+                    float lidReach =
+                        DumpsterBodyHalfDepth * depthScale +
+                        UtilityDockClearance;
+                    target.Add(new CityStreetUtilityDock(
+                        $"{descriptor.StableId}-lid",
+                        descriptor.StableId,
+                        CityStreetUtilityKind.Dumpster,
+                        context.Origin +
+                        context.Tangent * DumpsterBodyLocalX +
+                        context.Forward * lidReach,
+                        -context.Forward));
+                    return;
+                default:
+                    return;
+            }
+        }
+
         private static void BuildFurniture(
             RecipeContext c,
             ICollection<DecorationPart> parts)
         {
             float mirror = c.Mirror;
-            Add(parts, c, c.Primary, -0.55f * mirror, 0.48f, 0f,
-                2.20f, 0.42f, 0.92f);
+            Add(parts, c, c.Primary, -CouchX * mirror, CouchSeatCenterY, 0f,
+                CouchWidth, CouchSeatThickness, CouchDepth);
             Add(parts, c, c.Primary, -0.55f * mirror, 1.02f, -0.37f,
                 2.20f, 0.78f, 0.18f);
             Add(parts, c, c.Primary, -1.58f * mirror, 0.78f, 0f,
@@ -709,8 +902,8 @@ namespace BarPromenade
             RecipeContext c,
             ICollection<DecorationPart> parts)
         {
-            Add(parts, c, BatchStyle.Industrial, -0.65f, 0.62f, 0f,
-                2.45f, 1.24f, 1.35f);
+            Add(parts, c, BatchStyle.Industrial, DumpsterBodyLocalX,
+                0.62f, 0f, 2.45f, 1.24f, DumpsterBodyHalfDepth * 2f);
             Add(parts, c, BatchStyle.Street, -1.25f, 1.34f, -0.08f,
                 1.16f, 0.16f, 1.42f);
             Add(parts, c, BatchStyle.Street, -0.05f, 1.34f, -0.08f,
@@ -760,12 +953,25 @@ namespace BarPromenade
                 0.06f, 1.65f, 0.92f);
             Add(parts, c, BatchStyle.Residential, 0.63f, 1.55f, 0f,
                 0.06f, 1.65f, 0.92f);
-            Add(parts, c, c.Primary, 0f, 1.42f, 0.59f,
-                1.05f, 1.90f, 0.08f);
+            Add(parts, c, c.Primary, 0f, 1.42f, PhoneBoothDoorLocalZ,
+                1.05f, 1.90f, PhoneBoothDoorHalfDepth * 2f);
             Add(parts, c, BatchStyle.Street, -0.30f, 1.46f, 0.65f,
                 0.28f, 0.62f, 0.10f);
-            Add(parts, c, c.Neon, 0f, 2.36f, 0.70f,
-                0.92f, 0.26f, 0.05f);
+
+            // The municipal lightbox over the door: a dark housing on
+            // the roof fascia, one pale fluorescent panel recessed
+            // behind its frame, and dark glyph strokes across the glow
+            // that read as the word without spelling it.
+            Add(parts, c, BatchStyle.Street, 0f, 2.65f, 0.66f,
+                1.50f, 0.30f, 0.12f);
+            Add(parts, c, BatchStyle.BacklitSign, 0f, 2.65f, 0.725f,
+                1.32f, 0.20f, 0.03f);
+            for (int stroke = -3; stroke <= 3; stroke++)
+            {
+                Add(parts, c, BatchStyle.Street,
+                    stroke * 0.165f, 2.65f, 0.745f,
+                    0.055f, (stroke & 1) == 0 ? 0.13f : 0.10f, 0.02f);
+            }
         }
 
         private static void BuildBusShelter(
@@ -899,17 +1105,21 @@ namespace BarPromenade
         {
             for (int table = -1; table <= 1; table += 2)
             {
-                float x = table * 1.85f;
+                float x = table * ChessTableOffset;
                 Add(parts, c, BatchStyle.Masonry, x, 0.82f, 0f,
                     1.20f, 0.14f, 1.20f);
                 Add(parts, c, BatchStyle.Masonry, x, 0.40f, 0f,
                     0.28f, 0.80f, 0.28f);
                 Add(parts, c, BatchStyle.Residential, x, 0.90f, 0f,
                     0.92f, 0.05f, 0.92f);
-                Add(parts, c, BatchStyle.Street, x, 0.46f, -1.02f,
-                    0.90f, 0.16f, 0.38f);
-                Add(parts, c, BatchStyle.Street, x, 0.46f, 1.02f,
-                    0.90f, 0.16f, 0.38f);
+                Add(parts, c, BatchStyle.Street, x,
+                    ChessBenchSeatCenterY, -ChessBenchZ,
+                    ChessBenchWidth, ChessBenchSeatThickness,
+                    ChessBenchDepth);
+                Add(parts, c, BatchStyle.Street, x,
+                    ChessBenchSeatCenterY, ChessBenchZ,
+                    ChessBenchWidth, ChessBenchSeatThickness,
+                    ChessBenchDepth);
             }
         }
 
@@ -940,9 +1150,12 @@ namespace BarPromenade
                     0.72f, 0.12f, 0.34f);
             }
 
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.62f, 2.25f,
-                3.75f, 0.18f, 0.42f);
-            Add(parts, c, BatchStyle.Street, 0f, 0.34f, 2.25f,
+            Add(parts, c, BatchStyle.Masonry, 0f,
+                PlaygroundBenchSeatCenterY, PlaygroundBenchZ,
+                PlaygroundBenchWidth, PlaygroundBenchSeatThickness,
+                PlaygroundBenchDepth);
+            Add(parts, c, BatchStyle.Street, 0f, 0.34f,
+                PlaygroundBenchZ,
                 0.42f, 0.68f, 0.42f);
         }
 
@@ -1046,7 +1259,8 @@ namespace BarPromenade
 
                     bool emissive =
                         style == BatchStyle.NeonMagenta ||
-                        style == BatchStyle.NeonCyan;
+                        style == BatchStyle.NeonCyan ||
+                        style == BatchStyle.BacklitSign;
                     GameObject result =
                         RuntimePrimitiveFactory.CreateCombinedBoxes(
                             GetBatchName(style),
@@ -1080,6 +1294,8 @@ namespace BarPromenade
                     return "Magenta Emissive Details";
                 case BatchStyle.NeonCyan:
                     return "Cyan Emissive Details";
+                case BatchStyle.BacklitSign:
+                    return "Backlit Sign Details";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }
@@ -1101,6 +1317,8 @@ namespace BarPromenade
                     return MagentaGlow;
                 case BatchStyle.NeonCyan:
                     return CyanGlow;
+                case BatchStyle.BacklitSign:
+                    return BacklitSignGlow;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }
@@ -1140,7 +1358,8 @@ namespace BarPromenade
             Industrial = 2,
             Street = 3,
             NeonMagenta = 4,
-            NeonCyan = 5
+            NeonCyan = 5,
+            BacklitSign = 6
         }
 
         private readonly struct RecipeContext

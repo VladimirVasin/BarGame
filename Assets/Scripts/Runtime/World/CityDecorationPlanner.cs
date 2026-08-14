@@ -10,6 +10,17 @@ namespace BarPromenade
         public const float MinimumFrontageSpan = 5.2f;
         public const int MaximumRoadsideClusters = 24;
 
+        // Street utilities repeat like infrastructure, not like random
+        // dressing: never closer than the minimum spacing (two booths
+        // on one corner read as absurd), and the coverage pass fills
+        // the gaps so a walk never goes longer than roughly one long
+        // block without passing one.
+        public const float PhoneBoothMinimumSpacing = 55f;
+        public const float PhoneBoothCoverageSpacing = 90f;
+        public const float DumpsterMinimumSpacing = 40f;
+        public const float DumpsterCoverageSpacingHousing = 65f;
+        public const float DumpsterCoverageSpacingShowcase = 100f;
+
         private const uint CoreKindSalt = 0x434F5245u;
         private const uint CoreVariantSalt = 0x43564152u;
         private const uint CorePaletteSalt = 0x4350414Cu;
@@ -23,6 +34,9 @@ namespace BarPromenade
         private const uint RoadsideKindSalt = 0x524B494Eu;
         private const uint RoadsideSideSalt = 0x52534944u;
         private const uint RoadsideVariantSalt = 0x52564152u;
+        private const uint UtilitySideSalt = 0x55534944u;
+        private const uint UtilityVariantSalt = 0x55564152u;
+        private const uint HomeYardVariantSalt = 0x48595652u;
         private const uint ParkLandmarkVariantSalt = 0x504C5652u;
         private const uint ParkFeatureVariantSalt = 0x50465652u;
 
@@ -87,7 +101,20 @@ namespace BarPromenade
                 nightPlan,
                 descriptors,
                 occupiedGroundPositions);
+            AddHomeYardUtility(
+                layout,
+                fencePlan,
+                nightPlan,
+                descriptors,
+                occupiedGroundPositions);
             AddRoadsideClusters(
+                layout,
+                ordinaryLots,
+                fencePlan,
+                nightPlan,
+                descriptors,
+                occupiedGroundPositions);
+            AddStreetUtilityCoverage(
                 layout,
                 ordinaryLots,
                 fencePlan,
@@ -385,9 +412,15 @@ namespace BarPromenade
             IReadOnlyList<BuildingLot> lots,
             RoadFencePlan fencePlan,
             CityNightFixturePlan nightPlan,
-            ICollection<CityDecorationDescriptor> target,
+            List<CityDecorationDescriptor> target,
             ICollection<Vector3> occupiedGroundPositions)
         {
+            List<Vector3> boothPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsidePhoneBooth);
+            List<Vector3> dumpsterPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsideDumpsterAndUtility);
             var candidates = new List<RankedLot>(lots.Count);
             for (int index = 0; index < lots.Count; index++)
             {
@@ -443,6 +476,34 @@ namespace BarPromenade
                     continue;
                 }
 
+                // Utilities that would crowd an existing one fall back
+                // to roadwork, so the cluster cadence survives without
+                // two booths sharing a corner.
+                if ((kind == CityDecorationKind.RoadsidePhoneBooth &&
+                     !IsSeparated(
+                         position,
+                         boothPositions,
+                         PhoneBoothMinimumSpacing)) ||
+                    (kind ==
+                     CityDecorationKind.RoadsideDumpsterAndUtility &&
+                     !IsSeparated(
+                         position,
+                         dumpsterPositions,
+                         DumpsterMinimumSpacing)))
+                {
+                    kind =
+                        CityDecorationKind.RoadsideRoadworkAndBicycle;
+                    if (CityDecorationValidator.IsProtectedGroundAnchor(
+                            position,
+                            CityDecorationValidator
+                                .ResolveProtectionRadius(kind),
+                            fencePlan,
+                            nightPlan))
+                    {
+                        continue;
+                    }
+                }
+
                 target.Add(new CityDecorationDescriptor(
                     CreateLotId(layout.Seed, lot.Cell, "roadside"),
                     kind,
@@ -463,8 +524,249 @@ namespace BarPromenade
                         : CityDecorationVisibilityTier.MidRange,
                     CityDecorationCollisionCatalog.ResolveTier(kind)));
                 occupiedGroundPositions.Add(position);
+                if (kind == CityDecorationKind.RoadsidePhoneBooth)
+                {
+                    boothPositions.Add(position);
+                }
+                else if (kind ==
+                         CityDecorationKind.RoadsideDumpsterAndUtility)
+                {
+                    dumpsterPositions.Add(position);
+                }
+
                 added++;
             }
+        }
+
+        /// <summary>
+        /// Leans the yard's phone booth and dumpster on the hero's own
+        /// wall, exactly where the shared yard contract reserved their
+        /// ground. They are ordinary street-utility descriptors, so the
+        /// recipes, collision proxies and future interaction docks all
+        /// come from the same catalogue as their street siblings.
+        /// </summary>
+        private static void AddHomeYardUtility(
+            CityLayout layout,
+            RoadFencePlan fencePlan,
+            CityNightFixturePlan nightPlan,
+            ICollection<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            if (!HomeYardSitePlanner.TryCreate(
+                    layout,
+                    out HomeYardSitePlan site))
+            {
+                return;
+            }
+
+            if (HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    site,
+                    out HomeYardUtilityAnchor booth))
+            {
+                AddHomeYardUtilityDescriptor(
+                    layout,
+                    site,
+                    CityDecorationKind.RoadsidePhoneBooth,
+                    "booth",
+                    booth,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+            }
+
+            if (HomeYardUtilityPlanner.TryCreateDumpster(
+                    site,
+                    out HomeYardUtilityAnchor dumpster))
+            {
+                AddHomeYardUtilityDescriptor(
+                    layout,
+                    site,
+                    CityDecorationKind.RoadsideDumpsterAndUtility,
+                    "dumpster",
+                    dumpster,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+            }
+        }
+
+        private static void AddHomeYardUtilityDescriptor(
+            CityLayout layout,
+            HomeYardSitePlan site,
+            CityDecorationKind kind,
+            string role,
+            HomeYardUtilityAnchor anchor,
+            RoadFencePlan fencePlan,
+            CityNightFixturePlan nightPlan,
+            ICollection<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            if (target.Count >=
+                CityDecorationPlan.MaximumDescriptorCount ||
+                CityDecorationValidator.IsProtectedGroundAnchor(
+                    anchor.Position,
+                    CityDecorationValidator.ResolveProtectionRadius(
+                        kind),
+                    fencePlan,
+                    nightPlan))
+            {
+                return;
+            }
+
+            target.Add(new CityDecorationDescriptor(
+                CreateHomeYardId(layout.Seed, role),
+                kind,
+                CityDecorationAnchorKind.Roadside,
+                site.Home.District,
+                CityDecorationDescriptor.NoLot,
+                anchor.Position,
+                anchor.Forward,
+                HashToVariant(StableHash(
+                    layout.Seed,
+                    site.HomeCell.x,
+                    site.HomeCell.y,
+                    HomeYardVariantSalt ^ (uint)kind)),
+                CityDecorationPalette.StreetUtility,
+                CityDecorationVisibilityTier.MidRange,
+                CityDecorationCollisionCatalog.ResolveTier(kind)));
+            occupiedGroundPositions.Add(anchor.Position);
+        }
+
+        /// <summary>
+        /// Walks the lots row-major and adds a booth or dumpster
+        /// wherever the nearest one has fallen behind its coverage
+        /// spacing. Housing and industry keep their dumpsters close;
+        /// the showcase districts only get one when a long gap opens.
+        /// </summary>
+        private static void AddStreetUtilityCoverage(
+            CityLayout layout,
+            IReadOnlyList<BuildingLot> lots,
+            RoadFencePlan fencePlan,
+            CityNightFixturePlan nightPlan,
+            List<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            List<Vector3> boothPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsidePhoneBooth);
+            List<Vector3> dumpsterPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsideDumpsterAndUtility);
+            for (int index = 0; index < lots.Count; index++)
+            {
+                BuildingLot lot = lots[index];
+                float side = (StableHash(
+                    layout.Seed,
+                    lot.Cell.x,
+                    lot.Cell.y,
+                    UtilitySideSalt) & 1u) == 0u
+                    ? -0.30f
+                    : 0.30f;
+                TryAddUtilityCoverage(
+                    layout,
+                    lot,
+                    CityDecorationKind.RoadsidePhoneBooth,
+                    "utility-booth",
+                    side,
+                    boothPositions,
+                    PhoneBoothMinimumSpacing,
+                    PhoneBoothCoverageSpacing,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+                TryAddUtilityCoverage(
+                    layout,
+                    lot,
+                    CityDecorationKind.RoadsideDumpsterAndUtility,
+                    "utility-dumpster",
+                    -side,
+                    dumpsterPositions,
+                    DumpsterMinimumSpacing,
+                    lot.District == CityDistrictKind.Residential ||
+                    lot.District == CityDistrictKind.Industrial
+                        ? DumpsterCoverageSpacingHousing
+                        : DumpsterCoverageSpacingShowcase,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+            }
+        }
+
+        private static void TryAddUtilityCoverage(
+            CityLayout layout,
+            BuildingLot lot,
+            CityDecorationKind kind,
+            string role,
+            float side,
+            List<Vector3> placedPositions,
+            float minimumSpacing,
+            float coverageSpacing,
+            RoadFencePlan fencePlan,
+            CityNightFixturePlan nightPlan,
+            ICollection<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            if (target.Count >=
+                CityDecorationPlan.MaximumDescriptorCount ||
+                !IsSeparated(lot.Center, placedPositions, coverageSpacing))
+            {
+                return;
+            }
+
+            if (!TryCreateClearFrontageAnchor(
+                    layout,
+                    lot,
+                    side,
+                    CityDecorationValidator.ResolveProtectionRadius(
+                        kind),
+                    fencePlan,
+                    nightPlan,
+                    occupiedGroundPositions,
+                    out Vector3 position,
+                    out Vector3 forward) ||
+                !IsSeparated(position, placedPositions, minimumSpacing))
+            {
+                return;
+            }
+
+            target.Add(new CityDecorationDescriptor(
+                CreateLotId(layout.Seed, lot.Cell, role),
+                kind,
+                CityDecorationAnchorKind.Roadside,
+                lot.District,
+                CityDecorationDescriptor.NoLot,
+                position,
+                forward,
+                HashToVariant(StableHash(
+                    layout.Seed,
+                    lot.Cell.x,
+                    lot.Cell.y,
+                    UtilityVariantSalt ^ (uint)kind)),
+                CityDecorationPalette.StreetUtility,
+                CityDecorationVisibilityTier.MidRange,
+                CityDecorationCollisionCatalog.ResolveTier(kind)));
+            occupiedGroundPositions.Add(position);
+            placedPositions.Add(position);
+        }
+
+        private static List<Vector3> CollectKindPositions(
+            List<CityDecorationDescriptor> descriptors,
+            CityDecorationKind kind)
+        {
+            var positions = new List<Vector3>();
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                if (descriptors[index].Kind == kind)
+                {
+                    positions.Add(descriptors[index].Position);
+                }
+            }
+
+            return positions;
         }
 
         private static void AddParkLandmarks(
@@ -1086,6 +1388,12 @@ namespace BarPromenade
         {
             return $"city-decor-{unchecked((uint)seed):x8}-" +
                    $"park-{(int)kind:D2}";
+        }
+
+        private static string CreateHomeYardId(int seed, string role)
+        {
+            return $"city-decor-{unchecked((uint)seed):x8}-" +
+                   $"homeyard-{role}";
         }
 
         private static int CompareLotsRowMajor(

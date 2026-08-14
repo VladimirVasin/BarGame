@@ -181,7 +181,8 @@ namespace BarPromenade
         private const float YardEdgeOffset = 3.4f;
 
         private const float YardSlotLateralOffset = 2.1f;
-        private const float YardCircuitClearance = 1.4f;
+        private const float YardCircuitClearance =
+            HomeYardUtilityPlanner.CircuitClearance;
         private const int YardRingSegments = 24;
         private const uint YardSalt = 0x59415244u;
 
@@ -1287,6 +1288,27 @@ namespace BarPromenade
             // the ground rectangle itself, which never reaches the
             // frontage.
             CityOpenAreaAccessDescriptor access = default;
+
+            // The leaning utilities are authored by the shared yard
+            // contract and drawn by the city decoration pass; the yard
+            // dressing only has to keep its slots off their ground.
+            var reservedGround = new List<Rect>(2);
+            if (HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    site,
+                    out HomeYardUtilityAnchor booth))
+            {
+                reservedGround.Add(
+                    Expand(booth.Footprint, AccessClearance));
+            }
+
+            if (HomeYardUtilityPlanner.TryCreateDumpster(
+                    site,
+                    out HomeYardUtilityAnchor dumpster))
+            {
+                reservedGround.Add(
+                    Expand(dumpster.Footprint, AccessClearance));
+            }
+
             AddYardRing(target, center, radius, access);
             AddYardDeadTree(target, center, access);
             AddYardEdgeObjects(
@@ -1295,7 +1317,8 @@ namespace BarPromenade
                 ground,
                 center,
                 radius,
-                access);
+                access,
+                reservedGround);
         }
 
         /// <summary>
@@ -1392,7 +1415,8 @@ namespace BarPromenade
             Rect grounds,
             Vector3 center,
             float radius,
-            CityOpenAreaAccessDescriptor access)
+            CityOpenAreaAccessDescriptor access,
+            IReadOnlyList<Rect> reservedGround)
         {
             uint hash = StableHash(
                 layout.Seed,
@@ -1410,6 +1434,7 @@ namespace BarPromenade
                     firstSlot,
                     access,
                     new Vector3(1.85f, 0.52f, 0.52f),
+                    reservedGround,
                     out Vector3 benchPosition))
             {
                 Bounds benchSeat = CreateGroundedBounds(
@@ -1458,6 +1483,7 @@ namespace BarPromenade
                     firstSlot + 1,
                     access,
                     new Vector3(2.55f, 1.69f, 0.30f),
+                    reservedGround,
                     out Vector3 framePosition))
             {
                 Bounds frameHeader = new Bounds(
@@ -1496,6 +1522,7 @@ namespace BarPromenade
                     firstSlot + 2,
                     access,
                     new Vector3(2.20f, 0.24f, 2.20f),
+                    reservedGround,
                     out Vector3 sandpitPosition))
             {
                 Bounds sandpitEdge = CreateGroundedBounds(
@@ -1550,6 +1577,7 @@ namespace BarPromenade
                     firstSlot + 3,
                     access,
                     new Vector3(0.70f, 3.35f, 0.40f),
+                    reservedGround,
                     out Vector3 lampPosition))
             {
                 Bounds lampPost = CreateGroundedBounds(
@@ -1580,6 +1608,7 @@ namespace BarPromenade
                     firstSlot + 2,
                     access,
                     new Vector3(1.02f, 1.02f, 0.72f),
+                    reservedGround,
                     out Vector3 binPosition))
             {
                 Bounds binBody = CreateGroundedBounds(
@@ -1609,6 +1638,7 @@ namespace BarPromenade
             int slot,
             CityOpenAreaAccessDescriptor access,
             Vector3 footprint,
+            IReadOnlyList<Rect> reservedGround,
             out Vector3 position)
         {
             bool longIsX = grounds.width >= grounds.height;
@@ -1647,16 +1677,46 @@ namespace BarPromenade
                     continue;
                 }
 
-                if (IsClearOfAccess(
+                if (!IsClearOfAccess(
                         CreateGroundedBounds(candidate, footprint),
                         access))
                 {
-                    position = candidate;
+                    continue;
+                }
+
+                if (OverlapsReservedGround(
+                        CreateGroundedBounds(candidate, footprint),
+                        reservedGround))
+                {
+                    continue;
+                }
+
+                position = candidate;
+                return true;
+            }
+
+            position = default;
+            return false;
+        }
+
+        private static bool OverlapsReservedGround(
+            Bounds bounds,
+            IReadOnlyList<Rect> reservedGround)
+        {
+            if (reservedGround == null)
+            {
+                return false;
+            }
+
+            Rect footprint = ToXZRect(bounds);
+            for (int index = 0; index < reservedGround.Count; index++)
+            {
+                if (OverlapsStrict(footprint, reservedGround[index]))
+                {
                     return true;
                 }
             }
 
-            position = default;
             return false;
         }
 

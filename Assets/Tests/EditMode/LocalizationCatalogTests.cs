@@ -24,6 +24,8 @@ namespace BarPromenade.Tests.EditMode
             "interaction.wake",
             "interaction.smoke",
             "interaction.stop_smoking",
+            "interaction.sit_bench",
+            "interaction.stand_up",
             "interaction.open_refrigerator",
             "interaction.close_refrigerator",
             "home.refrigerator.item.vodka.name",

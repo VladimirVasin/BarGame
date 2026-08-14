@@ -36,6 +36,11 @@ namespace BarPromenade
             private set;
         }
         public YardWheelchairActor YardWheelchair { get; private set; }
+        public IReadOnlyList<CityBenchSitInteraction> BenchSits
+        {
+            get;
+            private set;
+        }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -327,6 +332,20 @@ namespace BarPromenade
             YardWheelchair = YardWheelchairFactory.Create(
                 transform,
                 YardWheelchairPlan.Create(World.OpenAreaDecorationPlan));
+            // Every authored seat is sittable in the bus ride's seated
+            // pose: the home yard bench faces the dead tree, the park,
+            // point-of-interest and street-decoration seats face their
+            // own centres and every bus stop shelter bench faces its
+            // road.
+            BenchSits = CityBenchSitWorldBuilder.Build(
+                transform,
+                CityBenchSitPlan.CreateAll(
+                    Layout,
+                    World.OpenAreaDecorationPlan,
+                    BusPlan,
+                    World.DecorationPlan),
+                Player,
+                camera);
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 

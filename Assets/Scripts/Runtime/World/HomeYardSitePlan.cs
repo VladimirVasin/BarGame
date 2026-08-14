@@ -580,4 +580,197 @@ namespace BarPromenade
             }
         }
     }
+
+    /// <summary>
+    /// One utility object leaning on a yard wall: where it stands, which
+    /// way its service side faces and the ground footprint every other
+    /// yard pass must keep clear.
+    /// </summary>
+    public readonly struct HomeYardUtilityAnchor
+    {
+        internal HomeYardUtilityAnchor(
+            Vector3 position,
+            Vector3 forward,
+            Rect footprint)
+        {
+            Position = position;
+            Forward = forward;
+            Footprint = footprint;
+            IsPresent = true;
+        }
+
+        public Vector3 Position { get; }
+        public Vector3 Forward { get; }
+        public Rect Footprint { get; }
+        public bool IsPresent { get; }
+    }
+
+    /// <summary>
+    /// Deterministic placement for the yard's leaning utilities: the
+    /// phone booth against the hero's own wall and the shared dumpster
+    /// at the far end of the same wall. Both are shared contracts: the
+    /// city decoration planner turns them into street-utility
+    /// descriptors and the yard dressing keeps its slots off their
+    /// ground, so the drawn objects, the collision proxies and the
+    /// future interactions can never disagree.
+    /// </summary>
+    public static class HomeYardUtilityPlanner
+    {
+        // Recipe extents of the street phone booth and dumpster in
+        // CityDecorationWorldBuilder after their roadside depth
+        // scales, padded a touch so the exclusion footprint also hides
+        // seam errors.
+        public const float BoothBackHalfDepth = 0.55f;
+        public const float BoothFrontHalfDepth = 0.64f;
+        public const float BoothTangentHalfWidth = 0.80f;
+        public const float DumpsterBackHalfDepth = 0.60f;
+        public const float DumpsterFrontHalfDepth = 0.55f;
+        public const float DumpsterTangentHalfWidth = 1.98f;
+
+        public const float WallProudOffset = 0.02f;
+        public const float PreferredEndOffset = 3.1f;
+        public const float EndMargin = 0.45f;
+
+        // The chair on the worn ring wanders 0.14 m off its line and
+        // carries a 0.31 m half-track; this is the same clearance the
+        // yard slot objects keep.
+        public const float CircuitClearance = 1.4f;
+
+        /// <summary>
+        /// The booth leans on the home wall toward the yard's north
+        /// end, door into the yard.
+        /// </summary>
+        public static bool TryCreatePhoneBooth(
+            HomeYardSitePlan site,
+            out HomeYardUtilityAnchor anchor)
+        {
+            return TryPlaceAgainstHomeWall(
+                site,
+                BoothBackHalfDepth,
+                BoothFrontHalfDepth,
+                BoothTangentHalfWidth,
+                1f,
+                null,
+                out anchor);
+        }
+
+        /// <summary>
+        /// The dumpster takes the opposite end of the same wall, lid
+        /// into the yard, never overlapping the booth.
+        /// </summary>
+        public static bool TryCreateDumpster(
+            HomeYardSitePlan site,
+            out HomeYardUtilityAnchor anchor)
+        {
+            Rect? obstacle = null;
+            if (TryCreatePhoneBooth(
+                    site,
+                    out HomeYardUtilityAnchor booth))
+            {
+                obstacle = booth.Footprint;
+            }
+
+            return TryPlaceAgainstHomeWall(
+                site,
+                DumpsterBackHalfDepth,
+                DumpsterFrontHalfDepth,
+                DumpsterTangentHalfWidth,
+                -1f,
+                obstacle,
+                out anchor);
+        }
+
+        private static bool TryPlaceAgainstHomeWall(
+            HomeYardSitePlan site,
+            float backHalfDepth,
+            float frontHalfDepth,
+            float tangentHalfWidth,
+            float preferredEndSign,
+            Rect? obstacle,
+            out HomeYardUtilityAnchor anchor)
+        {
+            anchor = default;
+            Vector2Int direction = site.DirectionFromHomeToNeighbour;
+            if (direction.x == 0)
+            {
+                return false;
+            }
+
+            Rect grounds = site.GroundBounds;
+            float forwardSign = Mathf.Sign(direction.x);
+            float wallX = direction.x > 0
+                ? grounds.xMin - HomeYardSitePlanner.WallMargin
+                : grounds.xMax + HomeYardSitePlanner.WallMargin;
+            float centerX = wallX +
+                            forwardSign *
+                            (WallProudOffset + backHalfDepth);
+            float endLimit = grounds.height * 0.5f -
+                             tangentHalfWidth -
+                             EndMargin;
+            if (endLimit <= 0f)
+            {
+                return false;
+            }
+
+            // Keep the whole footprint, not just its centre, off the
+            // worn circuit the chair rides.
+            float clearance = site.RingRadius + CircuitClearance;
+            float ringDx = Mathf.Abs(centerX - site.RingCenter.x);
+            float nearestX = Mathf.Max(0f, ringDx - frontHalfDepth);
+            float requiredEndOffset = 0f;
+            if (nearestX < clearance)
+            {
+                requiredEndOffset =
+                    tangentHalfWidth +
+                    Mathf.Sqrt(
+                        clearance * clearance -
+                        nearestX * nearestX);
+            }
+
+            if (requiredEndOffset > endLimit + 0.001f)
+            {
+                return false;
+            }
+
+            float xNear = centerX - forwardSign * backHalfDepth;
+            float xFar = centerX + forwardSign * frontHalfDepth;
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                float endSign = attempt == 0
+                    ? preferredEndSign
+                    : -preferredEndSign;
+                float endOffset = Mathf.Min(
+                    Mathf.Max(PreferredEndOffset, requiredEndOffset),
+                    endLimit);
+                float z = site.RingCenter.z + endSign * endOffset;
+                var footprint = Rect.MinMaxRect(
+                    Mathf.Min(xNear, xFar),
+                    z - tangentHalfWidth,
+                    Mathf.Max(xNear, xFar),
+                    z + tangentHalfWidth);
+                if (obstacle.HasValue &&
+                    Overlaps(footprint, obstacle.Value))
+                {
+                    continue;
+                }
+
+                anchor = new HomeYardUtilityAnchor(
+                    new Vector3(centerX, site.GroundY, z),
+                    new Vector3(forwardSign, 0f, 0f),
+                    footprint);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool Overlaps(Rect left, Rect right)
+        {
+            const float epsilon = 0.001f;
+            return left.xMin < right.xMax - epsilon &&
+                   left.xMax > right.xMin + epsilon &&
+                   left.yMin < right.yMax - epsilon &&
+                   left.yMax > right.yMin + epsilon;
+        }
+    }
 }

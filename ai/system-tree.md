@@ -203,7 +203,7 @@ Assets/
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      terrace slabs, graded surfaces, stairs + guarded drops
-        HomeYardSitePlan.cs      shared roadless-gap, rider-ring and neighbour-light geometry
+        HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building home-yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
@@ -213,11 +213,13 @@ Assets/
         CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
-        CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers and clear clusters
+        CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. home-yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityDecorationWorldBuilder.cs  six-style visuals + chunked collision proxies
+        CityDecorationWorldBuilder.cs  six-style visuals, chunked collision proxies + utility dock read-back
+        CityStreetUtilityDock.cs     booth-door/dumpster-lid docks for future interactions
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
-        CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes
+        CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
+        CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
         CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
         CityFacadeAppearance.cs      district wall albedos tiled by that grid, not by metres
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign

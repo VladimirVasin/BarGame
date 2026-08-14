@@ -6,6 +6,36 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — Facade windows become real glazing on a day-night clock
+
+- The glowing rectangles on buildings are now actual windows: every pane
+  carries a deterministic frame-mullion-glass sheet with four variants
+  (plain glass, curtains, blinds, a lamp burning near one end), standing in
+  the facade texture's painted reveal on the shared bay grid.
+- Lit rooms now follow the clock. At night they glow in their old warm,
+  cold, bar, home and supermarket hues through the glass while frames stay
+  dark; by day the same panes fade to unlit glazing. Dark rooms stay dark
+  around the clock. Which rooms light up per seed is unchanged.
+- The whole city dims through five shared window materials, so the day-night
+  transition costs the same as the street lamp bulbs it already drives.
+
+### 2026-08-14 — A phone booth and dumpster move into the yard
+
+- A street phone booth now leans against the hero's own wall in the home
+  yard, its door opening toward the worn wheelchair ring, and the building's
+  shared dumpster stands at the far end of the same wall. Both keep clear of
+  the circuit and of the yard's older traces.
+- Phone booths and dumpsters now repeat across the whole city like
+  infrastructure: never two on one corner, but a walk no longer goes a long
+  block without passing one. Housing and industry keep their dumpsters close;
+  the showcase streets stay tidier.
+- Both objects are physical and carry stable interaction docks in front of
+  the booth door and the bin lid, ready for the upcoming interactions.
+- The booth's stray glowing slab became a proper municipal lightbox: a dark
+  housing on the roof fascia with a pale fluorescent panel and dark glyph
+  strokes that read as its word, deliberately quieter than the nightlife
+  neon. Every booth in the city shares it.
+
 ### 2026-08-14 — The yard spotlight goes full noir
 
 - The neighbour's single permanent spotlight is now twenty times stronger than

@@ -68,6 +68,11 @@ namespace BarPromenade
 
             nightFactor = clampedFactor;
             hasAppliedNightFactor = true;
+
+            // The lit facade windows follow the same clock as the lamp
+            // bulbs: five shared family materials dim instead of
+            // thousands of pane renderers.
+            CityWindowAppearance.SetNightFactor(nightFactor);
             Color displayedBulbColor = new Color(
                 streetLampBulbNightColor.r * nightFactor,
                 streetLampBulbNightColor.g * nightFactor,

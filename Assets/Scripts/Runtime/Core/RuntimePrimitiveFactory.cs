@@ -96,6 +96,36 @@ namespace BarPromenade
                 sharedMaterial);
         }
 
+        /// <summary>
+        /// A box that leaves colour entirely to its shared material: no
+        /// property block is written, so a later material-wide colour
+        /// change (for example the day-night window dim) reaches it.
+        /// </summary>
+        public static GameObject CreateMaterialBox(
+            string name,
+            Transform parent,
+            Vector3 localPosition,
+            Vector3 size,
+            Material sharedMaterial,
+            bool collider = true)
+        {
+            if (sharedMaterial == null)
+            {
+                throw new ArgumentNullException(nameof(sharedMaterial));
+            }
+
+            return CreatePrimitive(
+                PrimitiveType.Cube,
+                name,
+                parent,
+                localPosition,
+                size,
+                Color.white,
+                collider,
+                sharedMaterial,
+                false);
+        }
+
         public static GameObject CreateCylinder(
             string name,
             Transform parent,
@@ -462,7 +492,8 @@ namespace BarPromenade
             Vector3 size,
             Color color,
             bool collider,
-            Material sharedMaterial)
+            Material sharedMaterial,
+            bool applyColor = true)
         {
             GameObject result = GameObject.CreatePrimitive(type);
             result.name = name;
@@ -484,7 +515,10 @@ namespace BarPromenade
                 }
             }
 
-            SetColor(renderer, color);
+            if (applyColor)
+            {
+                SetColor(renderer, color);
+            }
 
             if (!collider)
             {

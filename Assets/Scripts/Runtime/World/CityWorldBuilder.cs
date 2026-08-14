@@ -775,7 +775,7 @@ namespace BarPromenade
             CityFacadeAppearance.ApplyRoof(
                 roof.GetComponent<Renderer>(),
                 roofColor);
-            BuildWindowBands(building, lot, citySeed, emissiveMaterial);
+            BuildWindowBands(building, lot, citySeed);
 
             if (lot.IsPlayerHome)
             {
@@ -809,8 +809,7 @@ namespace BarPromenade
         private static void BuildWindowBands(
             Transform parent,
             BuildingLot lot,
-            int citySeed,
-            Material emissiveMaterial)
+            int citySeed)
         {
             int floorCount = CityFacadeGrid.ResolveFloorCount(lot.Height);
             for (int floor = 0; floor < floorCount; floor++)
@@ -873,8 +872,7 @@ namespace BarPromenade
                         lot,
                         citySeed,
                         floor,
-                        0,
-                        emissiveMaterial);
+                        0);
                 }
 
                 BuildWindowRow(
@@ -885,8 +883,7 @@ namespace BarPromenade
                     lot,
                     citySeed,
                     floor,
-                    1,
-                    emissiveMaterial);
+                    1);
             }
         }
 
@@ -934,8 +931,7 @@ namespace BarPromenade
             BuildingLot lot,
             int citySeed,
             int floor,
-            int side,
-            Material emissiveMaterial)
+            int side)
         {
             Transform row = new GameObject(name).transform;
             row.SetParent(parent, false);
@@ -960,35 +956,43 @@ namespace BarPromenade
                 Vector3 paneSize = runsAlongX
                     ? new Vector3(paneLength, paneHeight, rowSize.z)
                     : new Vector3(rowSize.x, paneHeight, paneLength);
-                Color color =
-                    CityExteriorAppearance.ResolveWindowColor(
+                CityWindowFamily family =
+                    CityExteriorAppearance.ResolveWindowFamily(
                         lot,
                         citySeed,
                         floor,
                         pane,
                         side,
-                        out bool emissive);
+                        out uint paneHash);
 
-                if (emissive)
+                GameObject paneObject;
+                if (family == CityWindowFamily.Off)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
+                    paneObject = RuntimePrimitiveFactory.CreateBox(
                         $"Window {floor}-{pane}",
                         row,
                         panePosition,
                         paneSize,
-                        color,
-                        emissiveMaterial,
+                        CityExteriorAppearance.WindowOff,
                         false);
+                    CityWindowAppearance.ApplyDarkPane(
+                        paneObject.GetComponent<Renderer>(),
+                        paneHash);
                 }
                 else
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        $"Window {floor}-{pane}",
-                        row,
-                        panePosition,
-                        paneSize,
-                        color,
-                        false);
+                    paneObject =
+                        RuntimePrimitiveFactory.CreateMaterialBox(
+                            $"Window {floor}-{pane}",
+                            row,
+                            panePosition,
+                            paneSize,
+                            CityWindowAppearance.ResolveLitMaterial(
+                                family),
+                            false);
+                    CityWindowAppearance.ApplyLitPane(
+                        paneObject.GetComponent<Renderer>(),
+                        paneHash);
                 }
             }
         }
