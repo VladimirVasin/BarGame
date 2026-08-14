@@ -321,6 +321,32 @@ namespace BarPromenade.Tests.PlayMode
                 RenderSettings.reflectionIntensity;
             Material bulbSharedMaterial =
                 city.Night.StreetLampBulbRenderers[0].sharedMaterial;
+            Assert.That(
+                city.World.OpenAreaDecorationPlan.YardSpotlight.HasValue,
+                Is.True);
+            HomeYardSpotlightDescriptor yardDescriptor =
+                city.World.OpenAreaDecorationPlan.YardSpotlight.Value;
+            Light[] openAreaLights = city.World.OpenAreaDecorationRoot
+                .GetComponentsInChildren<Light>(true);
+            Assert.That(openAreaLights, Has.Length.EqualTo(1));
+            Light yardSpotlight = openAreaLights[0];
+            Assert.That(
+                yardSpotlight.transform.IsChildOf(
+                    city.Night.Root.transform),
+                Is.False,
+                "The permanent yard light must stay outside NightFactor.");
+            if (city.YardWheelchair != null)
+            {
+                Assert.That(
+                    yardSpotlight.transform.IsChildOf(
+                        city.YardWheelchair.transform),
+                    Is.False,
+                    "The passive wheelchair prefab must not own the light.");
+            }
+
+            AssertYardSpotlightMatchesPlan(
+                yardSpotlight,
+                yardDescriptor);
 
             GameSessionState.AdvanceGameTime(360f);
             city.DayNight.ApplyCurrentTime();
@@ -356,6 +382,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(halo.IntensityFactor, Is.EqualTo(0f));
                 Assert.That(halo.IsVisible, Is.False);
             }
+            CollectionAssert.DoesNotContain(
+                dayNightLights,
+                yardSpotlight);
+            AssertYardSpotlightMatchesPlan(
+                yardSpotlight,
+                yardDescriptor);
 
             Renderer bulb = city.Night.StreetLampBulbRenderers[0];
             Assert.That(
@@ -442,6 +474,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 city.Night.Atmosphere.BarLights[0].enabled,
                 Is.True);
+            AssertYardSpotlightMatchesPlan(
+                yardSpotlight,
+                yardDescriptor);
             Assert.That(
                 city.Night.Atmosphere.ReassignmentCount,
                 Is.GreaterThan(darkPoolReassignmentCount));
@@ -1075,6 +1110,44 @@ namespace BarPromenade.Tests.PlayMode
                     AssertLastRouteIslandDetails(recipe);
                     break;
             }
+        }
+
+        private static void AssertYardSpotlightMatchesPlan(
+            Light light,
+            HomeYardSpotlightDescriptor descriptor)
+        {
+            Assert.That(light, Is.Not.Null);
+            Assert.That(light.enabled, Is.True);
+            Assert.That(light.type, Is.EqualTo(LightType.Spot));
+            Assert.That(light.color, Is.EqualTo(descriptor.Color));
+            Assert.That(
+                light.intensity,
+                Is.EqualTo(descriptor.Intensity).Within(0.001f));
+            Assert.That(
+                light.range,
+                Is.EqualTo(descriptor.Range).Within(0.001f));
+            Assert.That(
+                light.spotAngle,
+                Is.EqualTo(descriptor.SpotAngle).Within(0.001f));
+            Assert.That(
+                light.innerSpotAngle,
+                Is.EqualTo(descriptor.InnerSpotAngle).Within(0.001f));
+            Assert.That(
+                Vector3.Distance(
+                    light.transform.position,
+                    descriptor.MountPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Angle(
+                    light.transform.forward,
+                    (descriptor.TargetPosition -
+                     descriptor.MountPosition).normalized),
+                Is.LessThan(0.01f));
+            CityLightHalo halo =
+                light.GetComponentInChildren<CityLightHalo>(true);
+            Assert.That(halo, Is.Not.Null);
+            Assert.That(halo.IntensityFactor, Is.EqualTo(1f));
+            Assert.That(halo.IsVisible, Is.True);
         }
 
         private static void AssertLastRouteIslandDetails(

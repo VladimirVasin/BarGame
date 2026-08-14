@@ -50,6 +50,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   void. Yards are excluded from signature stairs and from bus-stop corner
   eligibility so the canonical city's stairs, Route 01 and home stop do not
   drift.
+- **Accepted — The home yard is an inter-building gap, not a fringe Yard:**
+  `CityOpenAreaDecorationPlanner` derives the authored composition from the
+  walkable roadless-side gap between `PlayerHome` and its neighbouring
+  building. The 24-part worn ring, dead tree and sparse traces therefore stay
+  beside the hero instead of using the large eastern `Yard` precinct; all five
+  typed fringe yards remain separate bare areas. The same pure plan owns one
+  stable wall-light descriptor. `CityOpenAreaWorldBuilder` mounts its static
+  cold near-white Spot on the neighbour at intensity `240`, twenty times the
+  ordinary `12`-intensity street practical. Range is the greater of `1.5x` the
+  sampled throw and sampled throw plus `3 m`; only `6°` of total cone feather
+  keeps the full wheelchair circuit inside the bright inner cone. The one
+  source uses hard `0.95`-strength high-resolution shadows, a `4.8x` HDR lens
+  and a larger, brighter source halo, but no volumetric beam. It stays enabled
+  at constant intensity through day and night and never reads or tracks the
+  runtime rider transform. The two `YardDeadLamp` geometry parts remain
+  non-emissive and create no `Light`.
 - **Accepted — Graph-separated accessible bars:** Buildable lots get street
   frontage and bar return points are validated against it. The default four
   bars occupy different urban districts and every pair is separated by at
@@ -251,12 +267,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   shadowless cabin `Spot` lights under the sprung body. The shared `NightFactor`
   scales them, disables them at zero and resets them off with the rest of the
   pooled presentation. These four bus-owned lights sit outside the fixed
-  12-light city-atmosphere pool, so one active bus keeps the exterior bounded at
-  16 realtime lights. The City map
-  consumes the same immutable plan, simplifies its closed geometry, draws a blue
-  ink-outlined loop below the orange player itinerary and adds five numbered
-  localized stops in the default layout plus a compact legend. It deliberately
-  has no live bus marker.
+  12-light city-atmosphere pool, so atmosphere plus one active bus reaches a
+  16-light subtotal. The single pooled helmet Spot and the fixed yard Spot can
+  add one each, making the bounded worst case `18` local realtime lights; the
+  scene Directional and transient lightning Directional are separate. The City
+  map consumes the same immutable plan, simplifies its closed geometry, draws
+  a blue ink-outlined loop below the orange player itinerary and adds five
+  numbered localized stops in the default layout plus a compact legend. It
+  deliberately has no live bus marker.
   The City-only passenger MVP uses three ordinary Default-layer trigger children
   instead of admitting the solid `CityBus` body to general interaction queries:
   one at each front/rear passenger door and one at passenger seat `07`
@@ -1130,15 +1148,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   immediately.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
   `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
-  points that compose the hero below frame center. Orbit yaw and target
-  focus use deliberately weighty `0.20 s` and `0.18 s` damping; focus stays
-  within `0.45 m` and snaps on jumps beyond `1.75 m`.
+  points that compose the hero below frame center. RMB mouse motion and the
+  gamepad right stick drive independent yaw and pitch in ordinary City, Bar
+  and Supermarket follow; pitch is clamped to `-20°..55°`. Orbit yaw, pitch and
+  target focus use deliberately weighty `0.20 s`, `0.18 s` and `0.18 s`
+  damping; focus stays within `0.45 m` and snaps on jumps beyond `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only
   focus, pitch and roll; requested yaw and FOV remain stable. Collision
   shortens the arm immediately, restores it with `0.32 s` damping and fades
   cinematic motion during fullscreen modal ownership. Balance checks disable
   orbit input but deliberately retain cinematic motion so intoxication lean
-  and fall reactions remain visible.
+  and fall reactions remain visible. Fixed Home/Stairwell and contextual
+  camera owners remain non-orbiting; the bus keeps its separate seated bounds.
 - **Superseded 2026-08-04 — Eight-direction player presentation:** A corrected
   point-filtered `512x96` reference and a derived `512x864` layered atlas
   provide eight explicit `64x96` views at PPU 48. Each view has one body layer
@@ -1249,7 +1270,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityNightAtmosphere` scales the bounded lamps, bar lights, emissive bulbs
   and halos with the sample's night factor. `HomeDayNightController` applies
   the same sample to the apartment window shaft and reconstructed Balcony
-  exterior. Bar, Supermarket and Stairwell visual profiles remain unchanged.
+  exterior. The neighbour-wall yard Spot is the explicit City-local exception:
+  it lives with the open-area composition, outside `Night.Root`, and remains
+  enabled at its authored intensity at every sample. Bar, Supermarket and
+  Stairwell visual profiles remain unchanged.
   Presentation updates are change-driven: stable day/night samples perform no
   lighting work, ordinary dawn/dusk updates do not regenerate the environment
   cubemap, and a zero-factor street-light pool does not scan lamp anchors.
@@ -1290,9 +1314,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the identical storm without extra state. The flash is one transient
   shadowless directional `Light` (`CityLightningFlashLight`, peak `1.9`
   scaled down to `45%` at the far distance band) that stays disabled outside
-  its `0.5`-game-minute flicker envelope and lives outside `Night.Root`, so
-  the pooled 12+4 city-atmosphere budget and its light-count assertions are
-  untouched. Thunder is a deterministic synthesized one-shot
+  its `0.5`-game-minute flicker envelope and lives outside `Night.Root`.
+  Because it is directional and transient, it is counted separately from the
+  bounded `18` local realtime lights and does not change the pooled
+  atmosphere/bus assertions. Thunder is a deterministic synthesized one-shot
   (`CityThunderSound`, `Ambience/Details`, two rotating voices on child
   objects because a low-pass filter processes its whole GameObject) played
   `0.6-3 s` after the flash with distance-scaled volume and cutoff. A frozen
@@ -1311,8 +1336,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Bounded practical lights:** All bulbs and signal lenses reuse
   one HDR URP Unlit material; a player-relative pool of directed street spot
   lights plus bar entrance point lights keeps the city-atmosphere pool at no
-  more than 12 shadowless realtime lights. The sole active bus may add only its
-  four runtime-owned shadowless Spots, for a bounded exterior maximum of 16.
+  more than `12` shadowless realtime lights. The sole active bus may add `4`
+  runtime-owned shadowless Spots, the single pooled helmet-lamp pedestrian may
+  add `1`, and the fixed always-on yard Spot adds `1`, for a bounded worst case
+  of `18` local realtime lights. The scene Directional and transient lightning
+  Directional are separate from this local-light count.
 - **Accepted — Safe signal rhythm:** Each selected intersection uses one
   seed-phased controller for two heads and flashes amber below 1 Hz; red and
   green lenses remain dimly visible without realtime lights.

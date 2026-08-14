@@ -203,8 +203,9 @@ Assets/
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      terrace slabs, graded surfaces, stairs + guarded drops
-        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery/home-yard landmark descriptors
-        CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
+        HomeYardSitePlan.cs      shared roadless-gap, rider-ring and neighbour-light geometry
+        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building home-yard/light descriptors
+        CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
@@ -302,7 +303,7 @@ Assets/
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
-        PlayerCameraFollow.cs      chase/fixed pose, shared orbit sampling + return-pose resolution
+        PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief

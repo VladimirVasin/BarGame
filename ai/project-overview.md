@@ -78,6 +78,18 @@ The vertical slice contains:
   datums. Legacy and custom blueprints retain an exact flat fallback. The
   sampler is authoritative for node, cell, road, sidewalk, entrance, return,
   open-area and debug-teleport height;
+- one authored home-yard composition in the walkable roadless gap between the
+  player's home and its neighbouring building, distinct from the five typed
+  fringe `Yard` areas. A worn 24-segment ring surrounds the dead tree and
+  carries the pipe-backed wheelchair rider. One fixed cold near-white Spot on
+  the neighbour's wall runs at intensity `240`, twenty times the `12`-intensity
+  street practical. Its bright inner cone contains the complete circuit with
+  only `6°` total feather, while range is the greater of `1.5x` the sampled
+  throw and sampled throw plus `3 m`. Hard shadows use `0.95` strength and high
+  resolution. The HDR lens is boosted `4.8x` and its source halo is larger and
+  brighter, but there is no volumetric beam. It stays constant through day and
+  night and never tracks the rider, while the old yard lamp remains a dead
+  physical trace;
 - four signature exterior stair streets, one in Old Town, Residential,
   Industrial and Nightlife. Each owns `6-12` visible collider-free steps at
   `0.15-0.17 m` rise and `0.30-0.34 m` tread, two `1.5 m` landings, physical
@@ -89,8 +101,13 @@ The vertical slice contains:
   Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
   `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.
   It blends directional/ambient/reflection lighting and the bounded City/Home
-  exterior night fixtures; Bar, Supermarket and Stairwell lighting remain
-  unchanged. The `0.070` exponential-squared luminous gray-green fog,
+  exterior night fixtures; the fixed neighbour-wall yard Spot is deliberately
+  outside `NightFactor` and stays on. The atmosphere pool remains capped at
+  `12` local realtime lights. One active bus may add `4`, the single pooled
+  helmet-lamp pedestrian `1` and the yard `1`, for a bounded worst case of
+  `18`; the scene Directional and transient lightning Directional are counted
+  separately. Bar, Supermarket and Stairwell lighting remain unchanged. The
+  `0.070` exponential-squared luminous gray-green fog,
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
   `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
   Windows player explicitly retains the runtime-only Exp2 shader variant;
@@ -477,14 +494,17 @@ The vertical slice contains:
   hard modal/transition/teleport stops remain immediate, constrained
   displacement cannot store hidden momentum, and the last actual movement
   heading is preserved while idle;
-- in City and BarInterior, a very close freely orbiting perspective
-  third-person chase camera with
+- in City, BarInterior and ordinary Supermarket play, a very close freely
+  orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
   raised `1.4 m / 1.3 m` focus points that keep the hero in the lower frame,
-  weighty yaw/focus damping, bounded focus lag, teleport snapping, subtle
-  deterministic idle/walk motion and smoothly recovering obstacle-aware
-  distance; cinematic motion fades out for fullscreen modals, while the
-  balance-specific lock keeps its intoxication and fall reactions visible;
+  weighty yaw/pitch/focus damping, a player-controlled vertical orbit bounded
+  to `-20°..55°`, bounded focus lag, teleport snapping, subtle deterministic
+  idle/walk motion and smoothly recovering obstacle-aware distance. RMB mouse
+  motion and the gamepad right stick drive both orbit axes in City, Bar and
+  ordinary Supermarket play; cinematic motion fades out for fullscreen modals,
+  while the balance-specific lock keeps its intoxication and fall reactions
+  visible;
 - Home keeps its three authored fixed shots and now protects the player from
   foreground occlusion through one explicit registry of logical furniture,
   dressing, door and balcony-rail groups. Five 3D presentation samples cover

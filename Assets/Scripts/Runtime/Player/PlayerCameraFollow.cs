@@ -25,10 +25,13 @@ namespace BarPromenade
 
         [Header("Motion")]
         [SerializeField, Min(0f)] private float yawSmoothTime = 0.2f;
+        [SerializeField, Min(0f)] private float pitchSmoothTime = 0.18f;
         [SerializeField, Min(0f)] private float focusSmoothTime = 0.18f;
         [SerializeField, Min(0f)] private float maximumFocusLag = 0.45f;
         [SerializeField, Min(0f)] private float teleportSnapDistance = 1.75f;
         [SerializeField, Min(0f)] private float distanceRecoverySmoothTime = 0.32f;
+        [SerializeField, Range(-40f, 0f)] private float minimumOrbitPitch = -20f;
+        [SerializeField, Range(0f, 75f)] private float maximumOrbitPitch = 55f;
         [SerializeField, Min(0f)] private float mouseYawSensitivity = 0.16f;
         [SerializeField, Min(0f)] private float mousePitchSensitivity = 0.14f;
         [SerializeField, Min(0f)] private float gamepadYawSpeed = 150f;
@@ -67,6 +70,9 @@ namespace BarPromenade
         private float targetYaw;
         private float currentYaw;
         private float yawVelocity;
+        private float targetPitch;
+        private float currentPitch;
+        private float pitchVelocity;
         private float currentDistance;
         private float distanceVelocity;
         private Vector3 currentFocusPoint;
@@ -99,6 +105,14 @@ namespace BarPromenade
         public float FollowFieldOfView => isInterior
             ? interiorFieldOfView
             : exteriorFieldOfView;
+        public float CurrentOrbitPitch => currentPitch;
+        public float TargetOrbitPitch => targetPitch;
+        public float MinimumOrbitPitch => Mathf.Min(
+            minimumOrbitPitch,
+            maximumOrbitPitch);
+        public float MaximumOrbitPitch => Mathf.Max(
+            minimumOrbitPitch,
+            maximumOrbitPitch);
 
         public void Initialize(Camera camera, Transform target, bool interior)
         {
@@ -112,6 +126,9 @@ namespace BarPromenade
             fixedPoseActive = false;
             targetYaw = target != null ? target.eulerAngles.y : 0f;
             currentYaw = targetYaw;
+            targetPitch = ClampOrbitPitch(
+                isInterior ? interiorPitch : exteriorPitch);
+            currentPitch = targetPitch;
             ConfigureCamera();
             Snap();
         }
@@ -241,6 +258,16 @@ namespace BarPromenade
             targetYaw = Mathf.Repeat(targetYaw + degrees, 360f);
         }
 
+        public void RotatePitch(float degrees)
+        {
+            if (fixedPoseActive)
+            {
+                return;
+            }
+
+            targetPitch = ClampOrbitPitch(targetPitch + degrees);
+        }
+
         /// <summary>
         /// Samples the same orbit controls used by the ordinary chase camera.
         /// A camera owner can consume both axes while a fixed pose is active;
@@ -296,6 +323,8 @@ namespace BarPromenade
 
             currentYaw = targetYaw;
             yawVelocity = 0f;
+            currentPitch = targetPitch;
+            pitchVelocity = 0f;
             distanceVelocity = 0f;
             focusVelocity = Vector3.zero;
             movementSpeedWeight = 0f;
@@ -326,7 +355,7 @@ namespace BarPromenade
                 return;
             }
 
-            ReadYawInput(deltaTime);
+            ReadOrbitInput(deltaTime);
             if (ShouldSnapForTeleport())
             {
                 Snap();
@@ -349,6 +378,16 @@ namespace BarPromenade
                     Mathf.Infinity,
                     deltaTime);
             currentYaw = Mathf.Repeat(currentYaw, 360f);
+            currentPitch = pitchSmoothTime <= 0f
+                ? targetPitch
+                : Mathf.SmoothDamp(
+                    currentPitch,
+                    targetPitch,
+                    ref pitchVelocity,
+                    pitchSmoothTime,
+                    Mathf.Infinity,
+                    deltaTime);
+            currentPitch = ClampOrbitPitch(currentPitch);
 
             UpdateCinematicMotionWeight(deltaTime);
             EvaluateCinematicMotion(
@@ -450,9 +489,8 @@ namespace BarPromenade
             float pitchOffset = 0f,
             float rollOffset = 0f)
         {
-            float pitch = isInterior ? interiorPitch : exteriorPitch;
             return Quaternion.Euler(
-                pitch + pitchOffset,
+                currentPitch + pitchOffset,
                 currentYaw,
                 rollOffset);
         }
@@ -668,9 +706,19 @@ namespace BarPromenade
                    (candidate == followTarget || candidate.IsChildOf(followTarget));
         }
 
-        private void ReadYawInput(float deltaTime)
+        private void ReadOrbitInput(float deltaTime)
         {
-            RotateYaw(SampleOrbitInputDegrees(deltaTime).x);
+            Vector2 input = SampleOrbitInputDegrees(deltaTime);
+            RotateYaw(input.x);
+            RotatePitch(input.y);
+        }
+
+        private float ClampOrbitPitch(float pitch)
+        {
+            return Mathf.Clamp(
+                pitch,
+                MinimumOrbitPitch,
+                MaximumOrbitPitch);
         }
 
         private void ConfigureCamera()

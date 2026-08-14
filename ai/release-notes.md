@@ -6,6 +6,33 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — The yard spotlight goes full noir
+
+- The neighbour's single permanent spotlight is now twenty times stronger than
+  an ordinary street practical. Its cold near-white core holds the complete
+  wheelchair circuit and throws hard, high-resolution shadows with a brighter
+  fixture lens and source halo.
+- It remains one fixed day-and-night light: it does not follow the rider and
+  adds no artificial volumetric beam. The dead yard lamp and the existing
+  `18`-local-light worst-case budget are unchanged.
+
+### 2026-08-14 — The chase camera can finally look up and down
+
+- Holding RMB and moving the mouse vertically now tilts the ordinary
+  third-person camera instead of discarding that input. The gamepad right
+  stick uses the same two-axis orbit.
+- The vertical angle stays within `-20°..55°`; fixed apartment, stairwell and
+  interaction shots remain authored, while the bus keeps its separate seated
+  camera limits.
+
+### 2026-08-14 — The neighbour leaves the yard spotlight on
+
+- The wheelchair circuit in the narrow gap between the hero's building and
+  its neighbour now has a fixed wall spotlight. It covers the whole worn ring
+  and stays on through day and night.
+- The beam does not follow the pipe-backed rider; he moves through one static
+  pool of light. The old lamp post inside the yard is still dead.
+
 ### 2026-08-14 — The yard rider has his wheelchair back
 
 - The pipe-backed rider no longer appears without his wheelchair. Its two

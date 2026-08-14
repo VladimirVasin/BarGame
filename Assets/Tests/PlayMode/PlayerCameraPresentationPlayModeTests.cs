@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests
@@ -97,6 +98,123 @@ namespace BarPromenade.Tests
                 Vector3.Angle(originalPlayerToCamera, playerToCamera),
                 Is.EqualTo(135f).Within(0.1f),
                 "RotateYaw must orbit the camera independently.");
+        }
+
+
+
+        [UnityTest]
+        public IEnumerator ExteriorCamera_VerticalOrbitConsumesMouseInputAndClamps()
+        {
+            InputTestFixture inputFixture = null;
+            Mouse mouse = null;
+            try
+            {
+                inputFixture = new InputTestFixture();
+                inputFixture.Setup();
+                mouse = InputSystem.AddDevice<Mouse>();
+
+                Camera camera = CreateCamera(Vector3.zero);
+                GameObject player = CreateObject(
+                    "Vertical Orbit Camera Target");
+                player.transform.position = new Vector3(0f, 100f, 0f);
+                player.transform.rotation = Quaternion.Euler(0f, 35f, 0f);
+
+                PlayerCameraFollow follow =
+                    camera.gameObject.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(camera, player.transform, false);
+                follow.SetCinematicMotionEnabled(false);
+                follow.Snap();
+                yield return null;
+
+                Quaternion playerHeading = player.transform.rotation;
+                Vector3 initialPlanarForward = Vector3.ProjectOnPlane(
+                    camera.transform.forward,
+                    Vector3.up).normalized;
+                float initialForwardY = camera.transform.forward.y;
+                float initialCameraY = camera.transform.position.y;
+                Assert.That(
+                    follow.CurrentOrbitPitch,
+                    Is.EqualTo(14f).Within(0.001f));
+
+                follow.SetOrbitInputEnabled(false);
+                inputFixture.Press(
+                    mouse.rightButton,
+                    queueEventOnly: true);
+                inputFixture.Set(
+                    mouse.delta,
+                    new Vector2(0f, 60f),
+                    queueEventOnly: true);
+                yield return null;
+                yield return null;
+
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.EqualTo(14f).Within(0.001f),
+                    "A modal orbit lock must suppress vertical input too.");
+
+                follow.SetOrbitInputEnabled(true);
+                inputFixture.Set(
+                    mouse.delta,
+                    new Vector2(0f, 60f),
+                    queueEventOnly: true);
+                yield return null;
+                yield return null;
+                follow.Snap();
+
+                Assert.That(
+                    follow.CurrentOrbitPitch,
+                    Is.LessThan(14f),
+                    "Positive mouse Y must raise the ordinary chase view.");
+                Assert.That(
+                    camera.transform.forward.y,
+                    Is.GreaterThan(initialForwardY + 0.05f));
+                Assert.That(
+                    camera.transform.position.y,
+                    Is.LessThan(initialCameraY - 0.1f));
+                Assert.That(
+                    Vector3.Angle(
+                        initialPlanarForward,
+                        Vector3.ProjectOnPlane(
+                            camera.transform.forward,
+                            Vector3.up).normalized),
+                    Is.LessThan(0.1f),
+                    "Pure vertical input must not change orbit yaw.");
+                Assert.That(
+                    Quaternion.Angle(
+                        player.transform.rotation,
+                        playerHeading),
+                    Is.LessThan(0.001f));
+                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+
+                follow.RotatePitch(10000f);
+                follow.Snap();
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.EqualTo(follow.MaximumOrbitPitch));
+                Assert.That(
+                    follow.CurrentOrbitPitch,
+                    Is.EqualTo(55f).Within(0.001f));
+                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+
+                follow.RotatePitch(-10000f);
+                follow.Snap();
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.EqualTo(follow.MinimumOrbitPitch));
+                Assert.That(
+                    follow.CurrentOrbitPitch,
+                    Is.EqualTo(-20f).Within(0.001f));
+                AssertCameraAimsAtFocus(camera, player.transform, 1.4f, 2.6f);
+            }
+            finally
+            {
+                if (mouse != null && mouse.added)
+                {
+                    InputSystem.RemoveDevice(mouse);
+                }
+
+                inputFixture?.TearDown();
+            }
         }
 
 
@@ -526,6 +644,25 @@ namespace BarPromenade.Tests
                 camera.fieldOfView,
                 Is.EqualTo(expectedFieldOfView).Within(0.001f),
                 "Cinematic motion must not pulse the field of view.");
+        }
+
+
+
+        private static void AssertCameraAimsAtFocus(
+            Camera camera,
+            Transform target,
+            float focusHeight,
+            float expectedDistance)
+        {
+            Vector3 focus = target.position + Vector3.up * focusHeight;
+            Assert.That(
+                Vector3.Angle(
+                    camera.transform.forward,
+                    (focus - camera.transform.position).normalized),
+                Is.LessThan(0.1f));
+            Assert.That(
+                Vector3.Distance(focus, camera.transform.position),
+                Is.EqualTo(expectedDistance).Within(0.001f));
         }
 
 

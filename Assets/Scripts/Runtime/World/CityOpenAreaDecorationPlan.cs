@@ -108,7 +108,9 @@ namespace BarPromenade
             CityOpenAreaDecorationDescriptor> descriptors;
 
         internal CityOpenAreaDecorationPlan(
-            IList<CityOpenAreaDecorationDescriptor> source)
+            IList<CityOpenAreaDecorationDescriptor> source,
+            HomeYardSitePlan? homeYardSite,
+            HomeYardSpotlightDescriptor? yardSpotlight)
         {
             var copy = new List<CityOpenAreaDecorationDescriptor>(source);
             copy.Sort((left, right) => string.Compare(
@@ -117,11 +119,15 @@ namespace BarPromenade
                 StringComparison.Ordinal));
             descriptors = new ReadOnlyCollection<
                 CityOpenAreaDecorationDescriptor>(copy);
+            HomeYardSite = homeYardSite;
+            YardSpotlight = yardSpotlight;
         }
 
         public IReadOnlyList<CityOpenAreaDecorationDescriptor>
             Descriptors => descriptors;
         public int Count => descriptors.Count;
+        public HomeYardSitePlan? HomeYardSite { get; }
+        public HomeYardSpotlightDescriptor? YardSpotlight { get; }
 
         public int GetCount(CityOpenAreaDecorationKind kind)
         {
@@ -170,17 +176,10 @@ namespace BarPromenade
         // The yard between the hero's building and its neighbour. The
         // typed fringe precincts are a different thing and stay bare.
         private const string HomeYardId = "home-yard";
-        private const float YardMinimumRingRadius = 3.5f;
         private const float YardRingWidth = 1.1f;
         private const float YardRingEdgeMargin = 2.2f;
         private const float YardEdgeOffset = 3.4f;
 
-        // The gap between the hero's building and its neighbour is narrow,
-        // so the circuit is smaller than an open precinct would allow and
-        // keeps a hand's width off both walls.
-        private const float HomeYardRingRadius = 4.6f;
-        private const float HomeYardRingMargin = 1.1f;
-        private const float HomeYardWallMargin = 0.6f;
         private const float YardSlotLateralOffset = 2.1f;
         private const float YardCircuitClearance = 1.4f;
         private const int YardRingSegments = 24;
@@ -205,8 +204,17 @@ namespace BarPromenade
                 new List<CityOpenAreaDecorationDescriptor>(260);
             BuildLake(layout, descriptors);
             BuildCemetery(layout, descriptors);
-            BuildHomeYard(layout, descriptors);
-            var plan = new CityOpenAreaDecorationPlan(descriptors);
+            HomeYardSitePlan? homeYardSite =
+                HomeYardSitePlanner.Create(layout);
+            BuildHomeYard(layout, descriptors, homeYardSite);
+            HomeYardSpotlightDescriptor? yardSpotlight =
+                homeYardSite.HasValue
+                    ? HomeYardSpotlightPlanner.Create(homeYardSite.Value)
+                    : null;
+            var plan = new CityOpenAreaDecorationPlan(
+                descriptors,
+                homeYardSite,
+                yardSpotlight);
             ValidateOrThrow(layout, plan);
             return plan;
         }
@@ -230,6 +238,8 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "Open-area decoration exceeds its bounded part count.");
             }
+
+            ValidateHomeYardContracts(layout, plan);
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var water = new List<Rect>();
@@ -292,6 +302,230 @@ namespace BarPromenade
                             "blocks its canonical street approach.");
                     }
                 }
+            }
+        }
+
+        private static void ValidateHomeYardContracts(
+            CityLayout layout,
+            CityOpenAreaDecorationPlan plan)
+        {
+            bool hasSite = plan.HomeYardSite.HasValue;
+            bool hasSpotlight = plan.YardSpotlight.HasValue;
+            if (hasSpotlight && !hasSite)
+            {
+                throw new InvalidOperationException(
+                    "A home-yard spotlight requires a home-yard site.");
+            }
+
+            if (!hasSite)
+            {
+                return;
+            }
+
+            HomeYardSitePlan site = plan.HomeYardSite.Value;
+            if (layout.PlayerHome == null ||
+                site.Home == null ||
+                !ReferenceEquals(site.Home, layout.PlayerHome) ||
+                site.HomeCell != layout.PlayerHome.Cell)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard site must reference the layout's home.");
+            }
+
+            if (site.DirectionFromHomeToNeighbour != Vector2Int.left &&
+                site.DirectionFromHomeToNeighbour != Vector2Int.right)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard neighbour must lie beside the home.");
+            }
+
+            if (!IsPositiveFinite(site.GroundBounds.size) ||
+                !IsFinite(site.GroundBounds.position) ||
+                !IsFinite(site.GroundY) ||
+                !IsFinite(site.RingCenter) ||
+                !IsFinite(site.RingRadius) ||
+                site.RingRadius < HomeYardSitePlanner.MinimumRingRadius)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard site requires finite ground and ring geometry.");
+            }
+
+            var expectedRingCenter = new Vector3(
+                site.GroundBounds.center.x,
+                site.GroundY,
+                site.GroundBounds.center.y);
+            if ((site.RingCenter - expectedRingCenter).sqrMagnitude >
+                0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard ring must be centred on its ground.");
+            }
+
+            BuildingLot expectedNeighbour = null;
+            for (int index = 0; index < layout.BuildingLots.Count; index++)
+            {
+                BuildingLot candidate = layout.BuildingLots[index];
+                if (candidate != null &&
+                    candidate.Cell == site.NeighbourCell)
+                {
+                    expectedNeighbour = candidate;
+                    break;
+                }
+            }
+
+            if (!ReferenceEquals(site.Neighbour, expectedNeighbour))
+            {
+                throw new InvalidOperationException(
+                    "The home-yard neighbour does not match its layout cell.");
+            }
+
+            if (!hasSpotlight)
+            {
+                return;
+            }
+
+            HomeYardSpotlightDescriptor spotlight =
+                plan.YardSpotlight.Value;
+            if (expectedNeighbour == null ||
+                !expectedNeighbour.HasBuilding ||
+                spotlight.NeighbourCell != site.NeighbourCell)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight requires the selected real " +
+                    "neighbour building.");
+            }
+
+            if (string.IsNullOrWhiteSpace(spotlight.StableId) ||
+                !string.Equals(
+                    spotlight.StableId,
+                    HomeYardSpotlightPlanner.StableId,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight requires its stable ID.");
+            }
+
+            float rotationMagnitudeSquared =
+                spotlight.Rotation.x * spotlight.Rotation.x +
+                spotlight.Rotation.y * spotlight.Rotation.y +
+                spotlight.Rotation.z * spotlight.Rotation.z +
+                spotlight.Rotation.w * spotlight.Rotation.w;
+            if (!IsFinite(spotlight.MountPosition) ||
+                !IsFinite(spotlight.TargetPosition) ||
+                !IsFinite(spotlight.FacadeNormal) ||
+                !IsFinite(spotlight.Color) ||
+                !IsFinite(spotlight.Rotation) ||
+                !IsFinite(rotationMagnitudeSquared) ||
+                rotationMagnitudeSquared < 0.5f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight transform and color must be finite.");
+            }
+
+            if (!IsFinite(spotlight.Intensity) ||
+                !IsFinite(spotlight.Range) ||
+                spotlight.Intensity < HomeYardSpotlightPlanner.Intensity ||
+                spotlight.Range <= HomeYardSpotlightPlanner.RangeMargin ||
+                !IsFinite(spotlight.InnerSpotAngle) ||
+                !IsFinite(spotlight.SpotAngle) ||
+                spotlight.InnerSpotAngle <= 0f ||
+                spotlight.InnerSpotAngle >= spotlight.SpotAngle ||
+                spotlight.SpotAngle >= 180f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight requires its theatrical " +
+                    "intensity, protected range margin and nested cone " +
+                    "angles below 180 degrees.");
+            }
+
+            Vector3 expectedNormal =
+                site.NeighbourFacadeNormal.normalized;
+            Vector3 actualNormal = spotlight.FacadeNormal.normalized;
+            if (expectedNormal.sqrMagnitude < 0.5f ||
+                actualNormal.sqrMagnitude < 0.5f ||
+                Vector3.Dot(expectedNormal, actualNormal) < 0.999f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight must face out from the selected wall.");
+            }
+
+            Vector3 targetDelta =
+                spotlight.TargetPosition - spotlight.MountPosition;
+            Vector3 forward = spotlight.Rotation * Vector3.forward;
+            if (targetDelta.sqrMagnitude < 0.0001f ||
+                forward.sqrMagnitude < 0.5f ||
+                Vector3.Dot(
+                    targetDelta.normalized,
+                    forward.normalized) < 0.999f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight rotation must aim at its target.");
+            }
+
+            Vector3 expectedTarget =
+                site.RingCenter +
+                Vector3.up * HomeYardSpotlightPlanner.AimHeight;
+            if ((spotlight.TargetPosition - expectedTarget).sqrMagnitude >
+                0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight must target the ring.");
+            }
+
+            ValidateHomeYardSpotlightCoverage(site, spotlight, forward);
+        }
+
+        private static void ValidateHomeYardSpotlightCoverage(
+            HomeYardSitePlan site,
+            HomeYardSpotlightDescriptor spotlight,
+            Vector3 forward)
+        {
+            float coverageRadius =
+                site.RingRadius +
+                HomeYardSpotlightPlanner.RadialCoverageMargin;
+            float hotHalfAngle = spotlight.InnerSpotAngle * 0.5f;
+            for (int index = 0;
+                 index < HomeYardSpotlightPlanner.CoverageSampleCount;
+                 index++)
+            {
+                float angle = Mathf.PI * 2f * index /
+                              HomeYardSpotlightPlanner.CoverageSampleCount;
+                var radial = new Vector3(
+                    Mathf.Cos(angle) * coverageRadius,
+                    0f,
+                    Mathf.Sin(angle) * coverageRadius);
+                ValidateHomeYardSpotlightSample(
+                    spotlight,
+                    forward,
+                    site.RingCenter + radial,
+                    hotHalfAngle);
+                ValidateHomeYardSpotlightSample(
+                    spotlight,
+                    forward,
+                    site.RingCenter + radial +
+                    Vector3.up *
+                    HomeYardSpotlightPlanner.ChairCoverageHeight,
+                    hotHalfAngle);
+            }
+        }
+
+        private static void ValidateHomeYardSpotlightSample(
+            HomeYardSpotlightDescriptor spotlight,
+            Vector3 forward,
+            Vector3 sample,
+            float hotHalfAngle)
+        {
+            const float tolerance = 0.001f;
+            Vector3 delta = sample - spotlight.MountPosition;
+            float protectedRange = Mathf.Min(
+                spotlight.Range - HomeYardSpotlightPlanner.RangeMargin,
+                spotlight.Range / HomeYardSpotlightPlanner.RangeMultiplier);
+            if (delta.magnitude > protectedRange + tolerance ||
+                Vector3.Angle(forward, delta) > hotHalfAngle + tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The home-yard spotlight hot core must cover the full " +
+                    "wheelchair circuit inside its protected range.");
             }
         }
 
@@ -1035,36 +1269,18 @@ namespace BarPromenade
         /// </summary>
         private static void BuildHomeYard(
             CityLayout layout,
-            ICollection<CityOpenAreaDecorationDescriptor> target)
+            ICollection<CityOpenAreaDecorationDescriptor> target,
+            HomeYardSitePlan? plannedSite)
         {
-            BuildingLot home = layout.PlayerHome;
-            if (home == null)
+            if (!plannedSite.HasValue)
             {
                 return;
             }
 
-            if (!TryFindHomeYardGround(
-                    layout,
-                    home,
-                    out Rect ground,
-                    out float groundTopY))
-            {
-                return;
-            }
-
-            float radius = Mathf.Min(
-                HomeYardRingRadius,
-                Mathf.Min(ground.width, ground.height) * 0.5f -
-                HomeYardRingMargin);
-            if (radius < YardMinimumRingRadius)
-            {
-                return;
-            }
-
-            var center = new Vector3(
-                ground.center.x,
-                groundTopY,
-                ground.center.y);
+            HomeYardSitePlan site = plannedSite.Value;
+            Rect ground = site.GroundBounds;
+            Vector3 center = site.RingCenter;
+            float radius = site.RingRadius;
 
             // No street access descriptor governs this ground, so nothing
             // is culled against an approach; the door side is protected by
@@ -1080,129 +1296,6 @@ namespace BarPromenade
                 center,
                 radius,
                 access);
-        }
-
-        /// <summary>
-        /// The usable gap beside the home: bounded by the two buildings
-        /// along the roadless side, and by the shared lot ground across it.
-        /// </summary>
-        private static bool TryFindHomeYardGround(
-            CityLayout layout,
-            BuildingLot home,
-            out Rect ground,
-            out float groundTopY)
-        {
-            ground = default;
-            groundTopY = 0f;
-            if (!TryGetCellSurface(layout, home.Cell, out CitySurfaceDescriptor homeSurface))
-            {
-                return false;
-            }
-
-            bool found = false;
-            float bestWidth = 0f;
-            for (int index = 0; index < CardinalDirections.Length; index++)
-            {
-                Vector2Int direction = CardinalDirections[index];
-                if (direction.y != 0)
-                {
-                    // Only the sides of the building, never its frontage.
-                    continue;
-                }
-
-                if (layout.HasRoad(
-                        RoadEdge.ForCellFrontage(home.Cell, direction)))
-                {
-                    continue;
-                }
-
-                Vector2Int neighbourCell = home.Cell + direction;
-                if (!TryGetCellSurface(
-                        layout,
-                        neighbourCell,
-                        out CitySurfaceDescriptor neighbourSurface))
-                {
-                    continue;
-                }
-
-                BuildingLot neighbour = null;
-                for (int lotIndex = 0;
-                     lotIndex < layout.BuildingLots.Count;
-                     lotIndex++)
-                {
-                    if (layout.BuildingLots[lotIndex].Cell == neighbourCell)
-                    {
-                        neighbour = layout.BuildingLots[lotIndex];
-                        break;
-                    }
-                }
-
-                float homeFace = direction.x < 0
-                    ? home.Center.x - home.Size.x * 0.5f
-                    : home.Center.x + home.Size.x * 0.5f;
-                float neighbourFace;
-                if (neighbour != null && neighbour.HasBuilding)
-                {
-                    neighbourFace = direction.x < 0
-                        ? neighbour.Center.x + neighbour.Size.x * 0.5f
-                        : neighbour.Center.x - neighbour.Size.x * 0.5f;
-                }
-                else
-                {
-                    neighbourFace = direction.x < 0
-                        ? neighbourSurface.WorldBounds.xMin
-                        : neighbourSurface.WorldBounds.xMax;
-                }
-
-                float minimumX = Mathf.Min(homeFace, neighbourFace) +
-                                 HomeYardWallMargin;
-                float maximumX = Mathf.Max(homeFace, neighbourFace) -
-                                 HomeYardWallMargin;
-                float minimumZ = Mathf.Max(
-                                     homeSurface.WorldBounds.yMin,
-                                     neighbourSurface.WorldBounds.yMin) +
-                                 HomeYardWallMargin;
-                float maximumZ = Mathf.Min(
-                                     homeSurface.WorldBounds.yMax,
-                                     neighbourSurface.WorldBounds.yMax) -
-                                 HomeYardWallMargin;
-                float width = maximumX - minimumX;
-                float depth = maximumZ - minimumZ;
-                if (width <= 0f || depth <= 0f || width <= bestWidth)
-                {
-                    continue;
-                }
-
-                ground = Rect.MinMaxRect(
-                    minimumX,
-                    minimumZ,
-                    maximumX,
-                    maximumZ);
-                groundTopY = homeSurface.DatumY +
-                             CityElevationPlan.GroundTopOffset;
-                bestWidth = width;
-                found = true;
-            }
-
-            return found;
-        }
-
-        private static bool TryGetCellSurface(
-            CityLayout layout,
-            Vector2Int cell,
-            out CitySurfaceDescriptor surface)
-        {
-            for (int index = 0; index < layout.Surfaces.Count; index++)
-            {
-                if (layout.Surfaces[index].Cell == cell)
-                {
-                    surface = layout.Surfaces[index];
-                    return true;
-                }
-            }
-
-            surface = default;
-            return false;
         }
 
         /// <summary>
@@ -1646,6 +1739,40 @@ namespace BarPromenade
                    IsFinite(value.x) &&
                    IsFinite(value.y) &&
                    IsFinite(value.z);
+        }
+
+        private static bool IsPositiveFinite(Vector2 value)
+        {
+            return value.x > 0f && value.y > 0f &&
+                   IsFinite(value.x) && IsFinite(value.y);
+        }
+
+        private static bool IsFinite(Vector2 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Color value)
+        {
+            return IsFinite(value.r) &&
+                   IsFinite(value.g) &&
+                   IsFinite(value.b) &&
+                   IsFinite(value.a);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) &&
+                   IsFinite(value.y) &&
+                   IsFinite(value.z) &&
+                   IsFinite(value.w);
         }
 
         private static bool IsFinite(float value)

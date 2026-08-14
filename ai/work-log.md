@@ -6,6 +6,71 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Turned the permanent yard light into a noir key
+
+- Strengthened the same single static neighbour-wall Spot from the ordinary
+  street-practical level to intensity `240` (`20x` the street value of `12`) and
+  retained its cold near-white color and day/night independence.
+- Set range to the greater of `1.5x` the sampled throw and sampled throw plus
+  `3 m`, then tightened the cone so the complete wheelchair circuit stays
+  inside the bright inner region with only `6°` of total feather. The source
+  now casts hard shadows at `0.95` strength and high resolution; its HDR lens
+  multiplier is `4.8x` and its halo is larger and brighter.
+- Kept the presentation architectural: there is no volumetric beam, no rider
+  tracking and no second `Light`. The old yard lamp remains dead, so the
+  bounded worst case stays `18` local realtime lights.
+
+Verification:
+
+- Focused `BarPromenade.Tests.EditMode`
+  `CityOpenAreaDecorationPlannerTests`
+  `.DefaultCity_DressesOnlyTheHomeYardWithACircuitAndTraces`: passed `1/1`
+  under Unity `6000.5.5f1`.
+- No broader suite or player build was run in fast mode.
+
+## 2026-08-14 — Enabled vertical orbit on the ordinary chase camera
+
+- `PlayerCameraFollow` now consumes both components of its existing RMB mouse
+  and gamepad right-stick sample. The new pitch target is smoothed over
+  `0.18 s`, clamped to `-20°..55°` and retained across fixed-camera ownership,
+  just like the independent chase yaw.
+- City, Bar and ordinary Supermarket follow gain vertical orbit. Home,
+  Stairwell, contextual fixed shots and the bus's separately bounded seated
+  view keep their existing ownership and limits. Modal `OrbitInputEnabled`
+  suppression still gates both axes.
+
+Verification:
+
+- Focused `PlayerCameraPresentationPlayModeTests`
+  `.ExteriorCamera_VerticalOrbitConsumesMouseInputAndClamps`: passed `1/1`
+  under Unity `6000.5.5f1` in an isolated HEAD-based project copy carrying
+  only the camera runtime and regression-test changes.
+- No broader suite or player build was run in fast mode.
+
+## 2026-08-14 — Put a permanent neighbour spotlight over the home yard
+
+- Corrected the authored home-yard contract to the world that is actually
+  built: the wheelchair circuit occupies the walkable roadless gap between the
+  hero's building and its neighbour, not the large eastern fringe `Yard`.
+- Added one stable wall-mounted spotlight to the same data-first composition.
+  Its fixed shadowless cone covers the complete worn circuit at constant
+  intensity through day and night, stays outside `NightFactor` and never tracks
+  the rider. The old two-part yard lamp remains dead geometry with no emitter.
+- Accounted for the permanent source without shrinking the atmosphere pool:
+  `12` atmosphere lights + `4` bus Spots + `1` pooled helmet Spot + `1` yard
+  Spot gives a bounded worst case of `18` local realtime lights. The scene
+  Directional and transient lightning Directional remain separate.
+
+Verification:
+
+- `BarPromenade.Tests.EditMode.CityOpenAreaDecorationPlannerTests`
+  `.DefaultCity_DressesOnlyTheHomeYardWithACircuitAndTraces`: passed `1/1`
+  under Unity `6000.5.5f1`.
+- `BarPromenade.Tests.PlayMode.CityNightPresentationPlayModeTests`
+  `.CityDayNight_ChangesLightingWithoutChangingFog`: passed `1/1` under Unity
+  `6000.5.5f1`.
+- No broader suite or player build was run in fast mode.
+
 ## 2026-08-14 — Restored the Pipeback Roller's wheelchair at full size
 
 - Fixed the staged Unity prefab build that multiplied all `17` root-bound
