@@ -190,9 +190,9 @@ namespace BarPromenade.Tests
 
             Assert.That(blueprint.NorthWaterfront, Is.Not.Null);
             int northernCellZ = blueprint.CellBounds.yMax - 1;
-            for (int x = blueprint.CellBounds.xMin;
-                 x < blueprint.CellBounds.xMax;
-                 x++)
+            // The water row spans the normalized footprint; the negative
+            // west yard column carries no waterfront duty.
+            for (int x = 0; x < blueprint.CellBounds.xMax; x++)
             {
                 var northernCell = new Vector2Int(x, northernCellZ);
                 Assert.That(
@@ -301,6 +301,290 @@ namespace BarPromenade.Tests
                 Is.True);
             Assert.That(layout.IsRoadGraphConnected(), Is.True);
             Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void DefaultCoastalBlueprint_CreatesReachableEastYard()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                settings,
+                GameSessionState.DefaultCitySeed);
+
+            Assert.That(
+                blueprint.TryGetArea(
+                    "yard-east",
+                    out CityAreaPlacement yard),
+                Is.True);
+            Assert.That(yard.Cells, Has.Count.EqualTo(24));
+            var expectedCells = new List<Vector2Int>();
+            for (int x = settings.BlocksX; x < settings.BlocksX + 4; x++)
+            {
+                for (int z = 2; z < 8; z++)
+                {
+                    expectedCells.Add(new Vector2Int(x, z));
+                }
+            }
+
+            Assert.That(yard.Cells, Is.EquivalentTo(expectedCells));
+            Assert.That(
+                yard.Cells.All(cell =>
+                    yard.GetTopology(cell) ==
+                    CityCellTopologyKind.OpenLand),
+                Is.True);
+            Assert.That(
+                yard.Cells.All(cell => !blueprint.CreatesLot(cell)),
+                Is.True);
+            // 198 pre-yard cells + 24 east + 12 south + 12 west.
+            Assert.That(blueprint.Cells, Has.Count.EqualTo(246));
+            Assert.That(
+                yard.Definition.Feature,
+                Is.EqualTo(CityAreaFeatureKind.Yard));
+            Assert.That(
+                yard.Definition.Archetype,
+                Is.EqualTo(CityDistrictKind.Yard));
+            Assert.That(
+                yard.Definition.LocalizationKey,
+                Is.EqualTo("map.district.yard"));
+
+            List<CitySurfaceDescriptor> yardSurfaces = layout.Surfaces
+                .Where(surface =>
+                    string.Equals(
+                        surface.AreaId,
+                        "yard-east",
+                        StringComparison.Ordinal))
+                .ToList();
+            Assert.That(yardSurfaces, Has.Count.EqualTo(24));
+            foreach (CitySurfaceDescriptor surface in yardSurfaces)
+            {
+                Assert.That(
+                    surface.Kind,
+                    Is.EqualTo(CitySurfaceKind.OpenGround),
+                    surface.Cell.ToString());
+                Assert.That(
+                    surface.IsWalkable,
+                    Is.True,
+                    surface.Cell.ToString());
+                Assert.That(
+                    surface.DatumY,
+                    Is.EqualTo(yardSurfaces[0].DatumY).Within(0.001f),
+                    surface.Cell.ToString());
+            }
+
+            CityOpenAreaAccessDescriptor access =
+                layout.OpenAreaAccesses.Single(candidate =>
+                    string.Equals(
+                        candidate.AreaId,
+                        "yard-east",
+                        StringComparison.Ordinal));
+            Assert.That(access.Id, Is.EqualTo("yard-east-access"));
+            Assert.That(
+                access.Feature,
+                Is.EqualTo(CityAreaFeatureKind.Yard));
+            Assert.That(layout.HasRoad(access.FrontageEdge), Is.True);
+            Assert.That(
+                layout.GetPathKind(access.FrontageEdge),
+                Is.EqualTo(CityPathKind.Street));
+
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+            CitySurfaceDescriptor accessSurface = layout.Surfaces.Single(
+                surface => surface.Cell == access.Cell);
+            Assert.That(
+                accessSurface.Kind,
+                Is.EqualTo(CitySurfaceKind.OpenGround));
+            Assert.That(walkable.Contains(access.Center, 0.28f), Is.True);
+            Assert.That(
+                walkable.Contains(accessSurface.Center, 0.28f),
+                Is.True);
+
+            // The typed fringe precincts stay bare: the dressed yard is
+            // the gap beside the hero's building, not this pocket.
+            CityOpenAreaDecorationPlan decorations =
+                CityOpenAreaDecorationPlanner.Create(layout);
+            Rect pocket = layout.Surfaces
+                .Where(surface => string.Equals(
+                    surface.AreaId,
+                    "yard-east",
+                    StringComparison.Ordinal))
+                .Select(surface => surface.WorldBounds)
+                .Aggregate((left, right) => Rect.MinMaxRect(
+                    Mathf.Min(left.xMin, right.xMin),
+                    Mathf.Min(left.yMin, right.yMin),
+                    Mathf.Max(left.xMax, right.xMax),
+                    Mathf.Max(left.yMax, right.yMax)));
+            Assert.That(
+                decorations.Descriptors.Any(descriptor =>
+                    descriptor.Feature == CityAreaFeatureKind.Yard &&
+                    pocket.Contains(
+                        new Vector2(
+                            descriptor.Bounds.center.x,
+                            descriptor.Bounds.center.z))),
+                Is.False,
+                "The eastern pocket carries no yard decoration.");
+
+            CityLayout repeat = CityLayoutGenerator.Generate(
+                blueprint,
+                settings,
+                GameSessionState.DefaultCitySeed);
+            CityOpenAreaAccessDescriptor repeatAccess =
+                repeat.OpenAreaAccesses.Single(candidate =>
+                    string.Equals(
+                        candidate.AreaId,
+                        "yard-east",
+                        StringComparison.Ordinal));
+            Assert.That(repeatAccess.Cell, Is.EqualTo(access.Cell));
+            Assert.That(
+                repeatAccess.Center,
+                Is.EqualTo(access.Center));
+            Assert.That(
+                repeat.Surfaces
+                    .Where(surface =>
+                        string.Equals(
+                            surface.AreaId,
+                            "yard-east",
+                            StringComparison.Ordinal))
+                    .Select(surface => surface.Center),
+                Is.EqualTo(
+                    yardSurfaces.Select(surface => surface.Center)));
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void DefaultCoastalBlueprint_CreatesReachablePerimeterYards()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                settings,
+                GameSessionState.DefaultCitySeed);
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+
+            string[] perimeterYards =
+            {
+                "yard-south-west",
+                "yard-south-east",
+                "yard-west-south",
+                "yard-west-north"
+            };
+            foreach (string yardId in perimeterYards)
+            {
+                Assert.That(
+                    blueprint.TryGetArea(
+                        yardId,
+                        out CityAreaPlacement yard),
+                    Is.True,
+                    yardId);
+                Assert.That(
+                    yard.Cells.All(cell => cell.x < 0 || cell.y < 0),
+                    Is.True,
+                    yardId);
+                Assert.That(
+                    yard.Cells.All(cell =>
+                        yard.GetTopology(cell) ==
+                        CityCellTopologyKind.OpenLand),
+                    Is.True,
+                    yardId);
+                Assert.That(
+                    yard.Cells.All(cell => !blueprint.CreatesLot(cell)),
+                    Is.True,
+                    yardId);
+
+                CityOpenAreaAccessDescriptor access =
+                    layout.OpenAreaAccesses.Single(candidate =>
+                        string.Equals(
+                            candidate.AreaId,
+                            yardId,
+                            StringComparison.Ordinal));
+                Assert.That(
+                    layout.HasRoad(access.FrontageEdge),
+                    Is.True,
+                    yardId);
+                Assert.That(
+                    layout.GetPathKind(access.FrontageEdge),
+                    Is.EqualTo(CityPathKind.Street),
+                    yardId);
+                Assert.That(
+                    walkable.Contains(access.Center, 0.28f),
+                    Is.True,
+                    yardId);
+
+                List<CitySurfaceDescriptor> surfaces = layout.Surfaces
+                    .Where(surface =>
+                        string.Equals(
+                            surface.AreaId,
+                            yardId,
+                            StringComparison.Ordinal))
+                    .ToList();
+                Assert.That(surfaces, Is.Not.Empty, yardId);
+                foreach (CitySurfaceDescriptor surface in surfaces)
+                {
+                    Assert.That(
+                        surface.Kind,
+                        Is.EqualTo(CitySurfaceKind.OpenGround),
+                        surface.Cell.ToString());
+                    Assert.That(
+                        surface.IsWalkable,
+                        Is.True,
+                        surface.Cell.ToString());
+                    Assert.That(
+                        surface.DatumY,
+                        Is.EqualTo(surfaces[0].DatumY).Within(0.001f),
+                        surface.Cell.ToString());
+                }
+            }
+
+            // The lot footprint stays normalized even though the fringe is
+            // negative: the coordinate-seeded random streams depend on it.
+            Assert.That(
+                layout.BuildingLots.All(lot =>
+                    lot.Cell.x >= 0 && lot.Cell.y >= 0),
+                Is.True);
+            Assert.That(
+                layout.BuildingLots,
+                Has.Count.EqualTo(settings.BlocksX * settings.BlocksZ));
+            Assert.That(
+                blueprint.ContainsCell(new Vector2Int(-1, -1)),
+                Is.False,
+                "The south-west corner cell stays void.");
+            Assert.That(
+                layout.OpenAreaAccesses.Count(candidate =>
+                    candidate.Feature == CityAreaFeatureKind.Yard),
+                Is.EqualTo(5));
+            Assert.That(layout.IsRoadGraphConnected(), Is.True);
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
+        public void DefaultSeed_KeepsCanonicalHomePlacement()
+        {
+            // Canary against random-stream drift: the yard plumbing must
+            // not move the canonical home, its partner bar or the public
+            // places. These constants match the pre-yard default city.
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+
+            BuildingLot home = layout.BuildingLots.Single(
+                lot => lot.IsPlayerHome);
+            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(11, 5)));
+            Assert.That(home.Center.x, Is.EqualTo(143f).Within(0.001f));
+            Assert.That(home.Center.z, Is.EqualTo(-13f).Within(0.001f));
+            Assert.That(
+                layout.BuildingLots.Any(lot =>
+                    lot.IsBar &&
+                    lot.Cell == new Vector2Int(11, 6)),
+                Is.True);
+            Assert.That(
+                layout.DistrictPointsOfInterest,
+                Has.Count.EqualTo(4));
         }
 
         [Test]

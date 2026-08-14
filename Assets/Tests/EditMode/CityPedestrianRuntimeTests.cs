@@ -19,6 +19,15 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Models/LongArmPedestrian3D.fbx";
         private const string HelmetLampModelPath =
             "Assets/Pedestrians/Models/HelmetLampPedestrian3D.fbx";
+        private const string PipebackRollerModelPath =
+            "Assets/Pedestrians/Staged/Models/PipebackRoller3D.fbx";
+        private const string PipebackRollerManifestPath =
+            "Assets/Pedestrians/Staged/Models/PipebackRoller3D.json";
+        private const string PipebackRollerPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
+        private const string PipebackRollerDesignId =
+            "pipeback_roller_v1";
+        private const int StagedLocomotionClipCount = 2;
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -129,7 +138,7 @@ namespace BarPromenade.Tests.EditMode
                     .OrderBy(clip => clip.name, StringComparer.Ordinal)
                     .ToArray();
             // One shared animation-only FBX carries an idle and a walk for
-            // every registered design.
+            // every production or staged design.
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -143,6 +152,8 @@ namespace BarPromenade.Tests.EditMode
                     "LongArmWalk",
                     "HelmetLampIdle",
                     "HelmetLampHop",
+                    "PipebackIdle",
+                    "PipebackRoll",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",
@@ -150,15 +161,16 @@ namespace BarPromenade.Tests.EditMode
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
-            // An idle and a walk for every design, plus one authored seated
-            // loop for each design that declares a Route 01 ride.
+            // Production owns two clips per catalog design and its declared
+            // seated loops; the isolated Pipeback contributes two more.
             int seatedCount = CityPedestrianResources.Archetypes
                 .Count(archetype => archetype.CanRideBus);
             Assert.That(
                 locomotionClips,
                 Has.Length.EqualTo(
                     (CityPedestrianResources.Archetypes.Count * 2) +
-                    seatedCount));
+                    seatedCount +
+                    StagedLocomotionClipCount));
             Assert.That(
                 locomotionClips.All(clip => clip.isLooping),
                 Is.True,
@@ -254,6 +266,265 @@ namespace BarPromenade.Tests.EditMode
                 designId,
                 idleClipName,
                 walkClipName);
+        }
+
+        [Test]
+        public void StagedPipebackRoller_ImportsPassiveWheelchairAndRemainsOutsidePool()
+        {
+            ModelImporter importer =
+                AssetImporter.GetAtPath(PipebackRollerModelPath) as
+                    ModelImporter;
+            Assert.That(importer, Is.Not.Null);
+            Assert.That(
+                importer.animationType,
+                Is.EqualTo(ModelImporterAnimationType.Generic));
+            Assert.That(
+                importer.avatarSetup,
+                Is.EqualTo(ModelImporterAvatarSetup.CopyFromOther));
+            Assert.That(importer.sourceAvatar, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(importer.sourceAvatar),
+                Is.EqualTo(PlayerModelPath));
+            Assert.That(importer.importAnimation, Is.False);
+            Assert.That(importer.preserveHierarchy, Is.True);
+            Assert.That(importer.optimizeGameObjects, Is.False);
+            Assert.That(importer.addCollider, Is.False);
+            Assert.That(
+                AssetDatabase.LoadAllAssetsAtPath(PipebackRollerModelPath)
+                    .OfType<AnimationClip>()
+                    .Where(clip => !clip.name.StartsWith(
+                        "__preview__",
+                        StringComparison.Ordinal)),
+                Is.Empty,
+                "The staged model FBX must remain animation-free.");
+
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                PipebackRollerPrefabPath);
+            Material sharedMaterial =
+                AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(sharedMaterial, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(prefab),
+                Is.EqualTo(PipebackRollerPrefabPath));
+            Assert.That(
+                PipebackRollerPrefabPath,
+                Does.Not.Contain("/Resources/"),
+                "The staged design must not be loadable by the ambient " +
+                "Resources catalog.");
+            Assert.That(
+                Resources.Load<GameObject>("Pedestrians/PipebackRoller3D"),
+                Is.Null);
+
+            CityPedestrianAssetRegistry registry =
+                prefab.GetComponent<CityPedestrianAssetRegistry>();
+            CityWheelchairNpcAssetRegistry wheelchairRegistry =
+                prefab.GetComponent<CityWheelchairNpcAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            Assert.That(wheelchairRegistry, Is.Not.Null);
+            Assert.That(
+                wheelchairRegistry.PedestrianRegistry,
+                Is.SameAs(registry));
+            Assert.That(registry.DesignId, Is.EqualTo(PipebackRollerDesignId));
+            Assert.That(registry.Animator, Is.Not.Null);
+            Assert.That(registry.Animator.avatar, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.Animator.avatar),
+                Is.EqualTo(PlayerModelPath));
+            Assert.That(registry.Animator.applyRootMotion, Is.False);
+            Assert.That(registry.Animator.runtimeAnimatorController, Is.Null);
+            Assert.That(registry.PreservesAirborneMotion, Is.False);
+            Assert.That(registry.HeadLamp, Is.Null);
+            Assert.That(registry.PelvisAnchor, Is.Not.Null);
+            Assert.That(registry.LeftFootAnchor, Is.Not.Null);
+            Assert.That(registry.RightFootAnchor, Is.Not.Null);
+            Assert.That(registry.SitClip, Is.Null);
+            Assert.That(
+                NormalizeAnimationClipName(registry.IdleClip.name),
+                Is.EqualTo("PipebackIdle"));
+            Assert.That(
+                NormalizeAnimationClipName(registry.WalkClip.name),
+                Is.EqualTo("PipebackRoll"));
+            Assert.That(
+                registry.IdleClip.length,
+                Is.EqualTo(3f).Within(1f / 24f));
+            Assert.That(
+                registry.WalkClip.length,
+                Is.EqualTo(2f).Within(1f / 24f));
+            Assert.That(registry.IdleClip.isLooping, Is.True);
+            Assert.That(registry.WalkClip.isLooping, Is.True);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.IdleClip),
+                Is.EqualTo(LocomotionAnimationPath));
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.WalkClip),
+                Is.EqualTo(LocomotionAnimationPath));
+            Assert.That(
+                registry.LocalBounds.min.y,
+                Is.EqualTo(0f).Within(0.025f));
+            Assert.That(
+                registry.LocalBounds.size.y,
+                Is.EqualTo(1.75f).Within(0.035f));
+            AssertWheelchairVisualDimensions(prefab);
+
+            var modelManifest = JsonUtility.FromJson<PedestrianModelManifest>(
+                System.IO.File.ReadAllText(PipebackRollerManifestPath));
+            Assert.That(modelManifest, Is.Not.Null);
+            Assert.That(
+                modelManifest.design_id,
+                Is.EqualTo(PipebackRollerDesignId));
+            Assert.That(
+                modelManifest.triangle_budget,
+                Is.EqualTo(new[] { 1400, 2400 }));
+            Assert.That(modelManifest.staged, Is.True);
+            Assert.That(modelManifest.pool_eligible, Is.False);
+            Assert.That(
+                modelManifest.wheel_radius_m,
+                Is.EqualTo(0.30f).Within(0.0001f));
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "PIVOT_Wheel.L",
+                    "PIVOT_Wheel.R",
+                    "PIVOT_Caster.L",
+                    "PIVOT_Caster.R",
+                    "PIVOT_Bellows",
+                    "PIVOT_PipeBank"
+                },
+                modelManifest.pivot_names);
+            Assert.That(
+                registry.SourceTriangleCount,
+                Is.EqualTo(modelManifest.triangle_count));
+            Assert.That(
+                registry.Renderers.Count,
+                Is.EqualTo(modelManifest.mesh_count));
+            CollectionAssert.AreEqual(
+                new[] { "PipebackIdle", "PipebackRoll" },
+                modelManifest.shared_clips);
+
+            Transform[] pivots =
+            {
+                wheelchairRegistry.LeftWheelPivot,
+                wheelchairRegistry.RightWheelPivot,
+                wheelchairRegistry.LeftCasterPivot,
+                wheelchairRegistry.RightCasterPivot,
+                wheelchairRegistry.BellowsPivot,
+                wheelchairRegistry.PipeBankPivot
+            };
+            Assert.That(pivots.All(pivot => pivot != null), Is.True);
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "PIVOT_Wheel.L",
+                    "PIVOT_Wheel.R",
+                    "PIVOT_Caster.L",
+                    "PIVOT_Caster.R",
+                    "PIVOT_Bellows",
+                    "PIVOT_PipeBank"
+                },
+                pivots.Select(pivot => pivot.name).ToArray());
+            Assert.That(
+                pivots.Distinct().Count(),
+                Is.EqualTo(pivots.Length));
+            Assert.That(
+                pivots.All(pivot => pivot.IsChildOf(registry.ModelRoot)),
+                Is.True);
+
+            AssertPassiveSharedPresentation(
+                prefab,
+                registry,
+                sharedMaterial);
+            Assert.That(
+                prefab.GetComponentsInChildren<Collider2D>(true),
+                Is.Empty);
+            Assert.That(
+                prefab.GetComponentsInChildren<Rigidbody2D>(true),
+                Is.Empty);
+            Assert.That(prefab.GetComponentsInChildren<Camera>(true), Is.Empty);
+            Assert.That(
+                prefab.GetComponentsInChildren<AudioSource>(true),
+                Is.Empty);
+            Assert.That(
+                prefab.GetComponentsInChildren<MonoBehaviour>(true)
+                    .All(behaviour =>
+                        behaviour is CityPedestrianAssetRegistry ||
+                        behaviour is CityWheelchairNpcAssetRegistry),
+                Is.True,
+                "The staged prefab may carry passive asset registries only.");
+
+            LocomotionManifest locomotionManifest =
+                JsonUtility.FromJson<LocomotionManifest>(
+                    System.IO.File.ReadAllText(LocomotionManifestPath));
+            LocomotionClip[] ownedClips = locomotionManifest.clips
+                .Where(clip => string.Equals(
+                    clip.archetype,
+                    PipebackRollerDesignId,
+                    StringComparison.Ordinal))
+                .ToArray();
+            CollectionAssert.AreEquivalent(
+                new[] { "PipebackIdle", "PipebackRoll" },
+                ownedClips.Select(clip => clip.name));
+            Assert.That(ownedClips.All(clip => clip.loop), Is.True);
+            Assert.That(ownedClips.All(clip => clip.in_place), Is.True);
+            Assert.That(
+                ownedClips.All(clip => clip.keyed_bone_count == 31),
+                Is.True);
+            Assert.That(
+                ownedClips.Single(clip => clip.name == "PipebackIdle")
+                    .duration_seconds,
+                Is.EqualTo(3f).Within(0.0001f));
+            Assert.That(
+                ownedClips.Single(clip => clip.name == "PipebackRoll")
+                    .duration_seconds,
+                Is.EqualTo(2f).Within(0.0001f));
+            Assert.That(
+                ownedClips.All(clip =>
+                    clip.wheel_ground_min_m >= -0.002f),
+                Is.True);
+            Assert.That(
+                ownedClips.All(clip =>
+                    clip.wheel_ground_max_contact_gap_m <= 0.002f),
+                Is.True);
+            Assert.That(
+                ownedClips.All(clip =>
+                    clip.footrest_min_clearance_m >= 0.03f),
+                Is.True);
+            Assert.That(
+                ownedClips.All(clip =>
+                    clip.rim_hand_max_distance_m <= 0.10f),
+                Is.True);
+
+            Assert.That(
+                CityPedestrianResources.TryGetArchetype(
+                    PipebackRollerDesignId,
+                    out _),
+                Is.False);
+            Assert.That(
+                CityPedestrianResources.Archetypes.Any(archetype =>
+                    string.Equals(
+                        archetype.DesignId,
+                        PipebackRollerDesignId,
+                        StringComparison.Ordinal)),
+                Is.False);
+            Assert.That(
+                CityPedestrianResources.LoadPrefabs().Any(candidate =>
+                    candidate.GetComponent<CityPedestrianAssetRegistry>()
+                        .DesignId == PipebackRollerDesignId),
+                Is.False);
+            foreach (CityPedestrianPopulationProfile profile in new[]
+                     {
+                         CityPedestrianPopulationProfile.City,
+                         CityPedestrianPopulationProfile.HomeBalcony
+                     })
+            {
+                Assert.That(
+                    CityPedestrianResources.CreatePoolComposition(
+                            profile.PoolSize)
+                        .Any(archetype => archetype.DesignId ==
+                            PipebackRollerDesignId),
+                    Is.False,
+                    $"The staged design leaked into the {profile.Id} pool.");
+            }
         }
 
         [Test]
@@ -1513,6 +1784,62 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        private static void AssertWheelchairVisualDimensions(
+            GameObject prefab)
+        {
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                instance.transform.SetPositionAndRotation(
+                    Vector3.zero,
+                    Quaternion.identity);
+                instance.transform.localScale = Vector3.one;
+                Renderer[] renderers =
+                    instance.GetComponentsInChildren<Renderer>(true);
+                Renderer leftWheel = renderers.Single(renderer =>
+                    renderer.name == "ACC_WheelTyre.L");
+                Renderer rightWheel = renderers.Single(renderer =>
+                    renderer.name == "ACC_WheelTyre.R");
+                Renderer seat = renderers.Single(renderer =>
+                    renderer.name == "ACC_SeatCushion");
+
+                foreach (Renderer wheel in new[] { leftWheel, rightWheel })
+                {
+                    Assert.That(
+                        wheel.bounds.size.x,
+                        Is.InRange(0.04f, 0.075f),
+                        $"{wheel.name} has a shrunken tyre width.");
+                    Assert.That(
+                        wheel.bounds.size.y,
+                        Is.InRange(0.55f, 0.65f),
+                        $"{wheel.name} has a shrunken diameter.");
+                    Assert.That(
+                        wheel.bounds.size.z,
+                        Is.InRange(0.55f, 0.65f),
+                        $"{wheel.name} has a shrunken diameter.");
+                    Assert.That(
+                        wheel.bounds.min.y,
+                        Is.EqualTo(instance.transform.position.y)
+                            .Within(0.025f),
+                        $"{wheel.name} no longer contacts the ground.");
+                }
+
+                Assert.That(
+                    seat.bounds.size.x,
+                    Is.InRange(0.40f, 0.48f));
+                Assert.That(
+                    seat.bounds.size.y,
+                    Is.InRange(0.05f, 0.09f));
+                Assert.That(
+                    seat.bounds.size.z,
+                    Is.InRange(0.38f, 0.48f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
         private static void AssertRuntimeCollisionContract(
             CityPedestrianDirector director)
         {
@@ -1710,6 +2037,20 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Serializable]
+        private sealed class PedestrianModelManifest
+        {
+            public string design_id;
+            public int mesh_count;
+            public int triangle_count;
+            public int[] triangle_budget;
+            public string[] shared_clips;
+            public bool staged;
+            public bool pool_eligible;
+            public float wheel_radius_m;
+            public string[] pivot_names;
+        }
+
+        [Serializable]
         private sealed class LocomotionClip
         {
             public bool seated;
@@ -1721,6 +2062,14 @@ namespace BarPromenade.Tests.EditMode
             public float ground_min_m;
             public float ground_max_contact_gap_m;
             public float apex_lift_m;
+            public float duration_seconds;
+            public bool loop;
+            public bool in_place;
+            public int keyed_bone_count;
+            public float wheel_ground_min_m;
+            public float wheel_ground_max_contact_gap_m;
+            public float footrest_min_clearance_m;
+            public float rim_hand_max_distance_m;
         }
 
         private static float GetLowestSoleHeight(

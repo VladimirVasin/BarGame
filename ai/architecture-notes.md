@@ -36,6 +36,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   deterministic runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
+- **Accepted — Typed yards instead of boundary voids:** The former unmapped
+  gaps behind the eastern, southern and western boundary streets are five
+  `Yard` areas: one `4 x 6` pocket east of the player's home and four
+  one-cell perimeter strips, each halved so it aligns to its own access
+  datum on the terraced perimeter. They reuse the open-area contract
+  wholesale — one declared street access, `OpenGround` surface, walkable
+  `OpenLand`, guard rails on the unsafe spans — and carry no decoration in
+  v1: they are authored placeholders, filled in later one at a time. The
+  lot and road-grid footprint is still normalized to `(0,0)` because every
+  per-cell random stream hashes raw cell coordinates; only the
+  `OpenLand`/`Water` fringe may reach `-1`, and the `(-1,-1)` corner stays
+  void. Yards are excluded from signature stairs and from bus-stop corner
+  eligibility so the canonical city's stairs, Route 01 and home stop do not
+  drift.
 - **Accepted — Graph-separated accessible bars:** Buildable lots get street
   frontage and bar return points are validated against it. The default four
   bars occupy different urban districts and every pair is separated by at
@@ -399,6 +413,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   violate the lifecycle contract. Home therefore keeps its pedestrian exterior
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
+- **Accepted — A staged wheelchair NPC is not a production archetype:**
+  `pipeback_roller_v1` is a complete passive presentation asset, but it lives
+  under `Assets/Pedestrians/Staged/` rather than `Resources`. Its strangeness
+  belongs to the chair's asymmetrical organ-pipe back and breathing bellows,
+  not to the rider's disability. The seated rider preserves the exact
+  production 31-bone Generic skeleton contract, and the whole model reuses the
+  `Player3DLit` material;
+  the non-deforming `PIVOT_Wheel.L/R`, `PIVOT_Caster.L/R`, `PIVOT_Bellows`
+  and `PIVOT_PipeBank` transforms declare future procedural anchors without
+  changing the Avatar. Its current `PipebackIdle` and `PipebackRoll` loops are
+  exact 31-bone, in-place skeletal clips: the raised levers frame the hand
+  path, the root-bound chair stays planted, and the bellows/pipe load follows
+  pelvis/chest motion. No auxiliary pivot curves or distance-driven wheel
+  motion are claimed at this staged milestone. The prefab can be inspected and
+  sampled through its `CityPedestrianAssetRegistry` and passive
+  `CityWheelchairNpcAssetRegistry` bindings without acquiring a runtime actor,
+  collider, light, audio source, interaction or persistence.
+  Isolation is structural rather than conventional:
+  `CityPedestrianResources.OrderedArchetypes` remains the only production
+  catalog, no directory scan discovers staged prefabs, and the City/Home pool
+  compositions remain `13` and `8`. Consequently the Pipeback Roller cannot
+  roam either exterior, wait at a stop or occupy Route 01 merely because its
+  imported asset exists.
+  **Deferred — production wheelchair locomotion:** registration requires an
+  accessible graph that excludes stairs and proves curb/turn clearances, a
+  chair footprint instead of the ordinary `0.35 m` pedestrian capsule, and
+  wheel-contact presentation that derives independent drive-wheel rotation and
+  caster steering from actual motion instead of grounding a pair of shoes.
+  Route 01 also needs an explicit accessible boarding and securement design;
+  the ordinary pelvis-to-seat passenger transfer is not applicable to a rider
+  who remains in their chair. Until those contracts exist, moving the prefab
+  into `Resources`, adding it to the catalog or declaring a seated ride is an
+  architecture change, not an asset toggle.
 - **Accepted — Local player-relative street pedestrians:** City layout and session
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
@@ -609,11 +656,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   starts the existing bed interaction directly in its sleeping loop, captures
   modal input and holds the first rendered Home frame on a silent `05:59`
   clock. Its complete display flickers briefly at three-second intervals.
-  For five seconds no menu choice or input path exists; the localized
-  PS1-style Wake Up/Quit menu then appears without changing the silent,
-  flickering `05:59` display or leaving the clock shot. Wake Up alone switches
-  the clock to solid `06:00`, starts the session clock and mechanical ring,
-  and hides the menu.
+  For five seconds no ordinary menu choice or gameplay input path exists; the
+  localized PS1-style Wake Up/Quit menu then appears without changing the
+  silent, flickering `05:59` display or leaving the clock shot. Wake Up alone
+  switches the clock to solid `06:00`, starts the session clock and mechanical
+  ring, and hides the menu.
   The camera and persistent sleep loop hold for three more unscaled seconds;
   only when the ring stops does the existing 24-frame exit begin with a `3x`
   duration multiplier (`6 s` instead of the ordinary `2 s`). The camera then
@@ -625,15 +672,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Editor Play pins its start scene to `MainMenu`; the exact temporary
   `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
   override for PlayMode tests and restores it after returning to Edit Mode.
+- **Accepted — One-shot Home F9 entry to the City debug map:**
+  `HomeInteriorRoot` always installs `HomeDebugCityMapShortcut`, including for
+  the locked opening `ClockHold`. An accepted F9 disables the current motor,
+  directly requests `City`, starts the session clock from `06:00` if it is
+  still frozen, prepares `CityReturnKind.PlayerHome` and sets
+  `DebugCityMapOnArrivalRequested`; a rejected or duplicate transition does
+  not mutate that handoff. `CityGameRoot` waits until the transition guard is
+  clear, enables `CityMapController` test teleport and then uses a
+  success-driven retry window bounded to `2 s` of realtime. It accepts an
+  already-open map immediately and otherwise retries `Open` only after both
+  the scene transition and the previous scene's `BarMinigameModalLock` have
+  released. Success clears the request exactly once; timeout also consumes the
+  one-shot and records the final lock, transition and attempt state instead of
+  leaking the request into a later City load. The debug branch preserves the
+  fresh seed, cash, needs and starter inventory and does not alter the ordinary
+  Wake/Quit or Home -> Stairwell -> City path.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
   state carries the seed, active bar context, explicit
   bar/home/supermarket city return kind, the next stairwell arrival side and
-  the consumed Home arrival kind plus current game time/day index
+  the consumed Home arrival kind, one-shot debug-map arrival request and
+  current game time/day index
   between Single-mode scene loads. `BeginNewGame` restores all of those values
   together with route, visits, wallet, drinking and balance state.
 - **Accepted — Wake-started scaled session clock:** `GameTimeState` resets to
-  frozen `05:59`. Only the successful startup Wake atomically moves it to
-  `06:00` and starts it; later bed interactions do not reset or pause it.
+  frozen `05:59`. A successful startup Wake or accepted Home F9 debug skip
+  atomically moves it to `06:00` and starts it; later bed interactions do not
+  reset or pause it.
   `GameTimeRuntime` persists across Single-mode loads and advances through
   `Time.deltaTime` at `1.0` game minute per real second, making one full `24 h`
   day exactly `1440` real seconds (`24` minutes). Midnight increments a
@@ -1343,9 +1408,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   debug instances. Cocktail mixing, beer pong, Split the G and Tinctures in a
   Row are built-ins; registering a unique future activity definition makes it
   available to the F9 window without changing that window.
-- **Accepted — Isolated F9 debug launch:** Both runtime roots install the same
-  minigame debug window. Opening it closes a conflicting city map and cancels
-  a scene minigame or prior debug game before capturing the modal state.
+- **Accepted — Isolated F9 debug launch:** The City and BarInterior runtime
+  roots install the same minigame debug window. Opening it closes a conflicting
+  city map and cancels a scene minigame or prior debug game before capturing
+  the modal state.
   Debug-created controllers start with fresh drinking state, do not write
   intoxication or drink progress, and are not subscribed to bar-visit
   completion; closing either window or game restores the previously captured

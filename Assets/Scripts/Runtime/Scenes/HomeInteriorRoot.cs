@@ -113,6 +113,11 @@ namespace BarPromenade
             private set;
         }
         public HomeOpeningController Opening { get; private set; }
+        public HomeDebugCityMapShortcut DebugCityMapShortcut
+        {
+            get;
+            private set;
+        }
         public HomeExit Exit { get; private set; }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
@@ -324,6 +329,10 @@ namespace BarPromenade
             {
                 BuildOpening();
             }
+
+            DebugCityMapShortcut =
+                ui.AddComponent<HomeDebugCityMapShortcut>();
+            DebugCityMapShortcut.Initialize(Player);
 
             BuildPlayerOcclusion(camera);
 

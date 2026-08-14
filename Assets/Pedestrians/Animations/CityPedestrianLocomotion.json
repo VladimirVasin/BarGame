@@ -1,13 +1,13 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
   "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
   "bone_count": 31,
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 14,
+  "clip_count": 16,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -300,7 +300,53 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.240901,
       "apex_lift_m": 0.240901
+    },
+    {
+      "name": "PipebackIdle",
+      "archetype": "pipeback_roller_v1",
+      "duration_seconds": 3.0,
+      "frame_start": 0,
+      "frame_end": 72,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "self-propelled seated posture, feet planted on twin footrests",
+      "gait": "still head over a slow breath that pumps bellows under the pipe load",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "wheel_ground_min_m": 0.0,
+      "wheel_ground_max_contact_gap_m": 0.0,
+      "footrest_min_clearance_m": 0.268367,
+      "rim_hand_max_distance_m": 0.057017,
+      "seat_contact_max_gap_m": 0.008039
+    },
+    {
+      "name": "PipebackRoll",
+      "archetype": "pipeback_roller_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "self-propelled seated posture, hands following both raised push levers",
+      "gait": "two-handed lever push, release and recovery under a swaying pipe load",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "wheel_ground_min_m": 0.0,
+      "wheel_ground_max_contact_gap_m": 0.0,
+      "footrest_min_clearance_m": 0.268367,
+      "rim_hand_max_distance_m": 0.085905,
+      "seat_contact_max_gap_m": 0.022731
     }
   ],
-  "build_signature": "f4503783a2c9e7b02a68337a14cc4e97b98fe5fbb0e6c760b5200779c4effb03"
+  "build_signature": "a9241ae176b48862934211ed7f399aee469000a60bb1c7eb0c867e7865062cbd"
 }

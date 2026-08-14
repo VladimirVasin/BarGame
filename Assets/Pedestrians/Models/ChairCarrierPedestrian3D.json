@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
   "design_id": "chair_carrier_v1",
   "display_name": "Chair Carrier",
@@ -15,6 +15,10 @@
     800,
     1600
   ],
+  "staged": false,
+  "pool_eligible": true,
+  "wheel_radius_m": 0.0,
+  "pivot_names": [],
   "bounds_min": [
     -0.761249,
     -0.225,
@@ -41,7 +45,7 @@
     1.02,
     1.1
   ],
-  "build_signature": "9b7998ec917a420dadbd30bfe08882a827e64e118e09949ce31d0357a3c2936a",
+  "build_signature": "764b04063716c75e2452c6c22b0f204631f0500f03208a1478d7e6d94d93f776",
   "bones": [
     {
       "name": "root",

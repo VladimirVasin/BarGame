@@ -14,7 +14,8 @@ namespace BarPromenade
         CentralPark = 4,
         NorthWaterfront = 5,
         Lake = 6,
-        Cemetery = 7
+        Cemetery = 7,
+        Yard = 8
     }
 
     public enum CityLandUseKind

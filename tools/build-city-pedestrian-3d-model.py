@@ -5,10 +5,10 @@ Run this with Blender, not CPython:
 
     blender --background --python tools/build-city-pedestrian-3d-model.py
 
-The generator owns two editable model .blends, two animation-free production
-FBXs, one animation-only locomotion FBX, manifests and review renders.  Both
-pedestrians and every clip deliberately carry the exact Generic skeleton names,
-parent hierarchy and A-pose rest transforms of PlayerCharacter3D.
+The generator owns one editable source and animation-free FBX per authored
+design, one shared animation-only locomotion FBX, manifests and review renders.
+Every rider/walker and clip deliberately carries the exact Generic skeleton
+names, parent hierarchy and A-pose rest transforms of PlayerCharacter3D.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 """
@@ -34,11 +34,25 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "3.0.0"
+GENERATOR_VERSION = "3.1.0"
 CANONICAL_HEIGHT = 1.75
 SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
 ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
+PIPEBACK_PIVOT_NAMES = (
+    "PIVOT_Wheel.L",
+    "PIVOT_Wheel.R",
+    "PIVOT_Caster.L",
+    "PIVOT_Caster.R",
+    "PIVOT_Bellows",
+    "PIVOT_PipeBank",
+)
+PIPEBACK_WHEEL_CENTERS = {
+    "L": (0.315, 0.105, 0.300),
+    "R": (-0.315, 0.105, 0.300),
+}
+PIPEBACK_PUSH_RIM_RADIUS = 0.238
+PIPEBACK_SEAT_TOP_M = 0.705
 
 
 @dataclass(frozen=True)
@@ -73,6 +87,15 @@ class ArchetypeSpec:
     # included. The cabin gives 2.05 m from floor to ceiling and the cushion
     # sits 0.41 m up, so anything past 1.64 m would pass through the roof.
     seated_clearance_m: tuple[float, float] | None = None
+    # A wheelchair stays grounded on its tyres rather than on the rider's
+    # shoes. Declaring a radius switches the animation bake/validator to that
+    # support contract and keeps the feet on the authored footrests.
+    wheel_radius_m: float | None = None
+    # Staged designs are built and validated with the production art library,
+    # but their prefabs live outside Resources and are not eligible for the
+    # runtime pedestrian catalog until a later accessibility milestone.
+    staged: bool = False
+    pool_eligible: bool = True
 
 
 ARCHETYPES = {
@@ -109,6 +132,15 @@ ARCHETYPES = {
         "HelmetLampPedestrian3D.png", "HelmetLampIdle", "HelmetLampHop",
         (800, 1700), None, (0.080, 0.400),
     ),
+    "pipeback_roller": ArchetypeSpec(
+        "pipeback_roller", "pipeback_roller_v1", "Pipeback Roller", 631907,
+        "PipebackRoller3D.blend", "PipebackRoller3D",
+        "PipebackRoller3D.png", "PipebackIdle", "PipebackRoll",
+        (1400, 2400),
+        wheel_radius_m=0.30,
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -138,6 +170,7 @@ class BuildResult:
     export_collection: bpy.types.Collection
     material: bpy.types.Material
     parts: list[PartRecord] = field(default_factory=list)
+    pivots: dict[str, bpy.types.Object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -231,6 +264,24 @@ PALETTE = {
     "miner_rubber": (0.048, 0.044, 0.040, 1.0),
     "miner_cable": (0.062, 0.058, 0.056, 1.0),
     "lamp_lens": (0.880, 0.820, 0.640, 1.0),
+    # Pipeback Roller. The person is sober oxblood and charcoal; all visual
+    # absurdity belongs to the tarnished organ-chair mechanism behind them.
+    "roller_coat": (0.205, 0.055, 0.070, 1.0),
+    "roller_coat_light": (0.300, 0.090, 0.100, 1.0),
+    "roller_coat_dark": (0.075, 0.025, 0.032, 1.0),
+    "roller_trousers": (0.055, 0.060, 0.065, 1.0),
+    "roller_skin": (0.405, 0.285, 0.215, 1.0),
+    "roller_skin_dark": (0.235, 0.155, 0.115, 1.0),
+    "chair_frame": (0.060, 0.066, 0.068, 1.0),
+    "chair_frame_light": (0.135, 0.145, 0.145, 1.0),
+    "chair_tyre": (0.018, 0.021, 0.020, 1.0),
+    "chair_rim": (0.250, 0.225, 0.170, 1.0),
+    "chair_seat": (0.090, 0.040, 0.045, 1.0),
+    "pipe_brass": (0.390, 0.285, 0.105, 1.0),
+    "pipe_brass_light": (0.570, 0.435, 0.180, 1.0),
+    "pipe_brass_dark": (0.155, 0.105, 0.042, 1.0),
+    "pipe_ivory": (0.585, 0.555, 0.465, 1.0),
+    "bellows": (0.170, 0.075, 0.055, 1.0),
 }
 
 
@@ -317,6 +368,11 @@ def parse_args() -> argparse.Namespace:
         default=Path("Assets/Pedestrians/Animations"),
     )
     parser.add_argument(
+        "--staged-model-dir",
+        type=Path,
+        default=Path("Assets/Pedestrians/Staged/Models"),
+    )
+    parser.add_argument(
         "--archetype",
         choices=("all", *ARCHETYPES),
         default="all",
@@ -327,7 +383,9 @@ def parse_args() -> argparse.Namespace:
     # Blender resolves a relative render path against the unsaved startup
     # blend's `//` root (often the drive root), unlike Python file writes.
     # Resolve every output from the invocation cwd before touching Blender IO.
-    for field_name in ("source_dir", "model_dir", "animation_dir"):
+    for field_name in (
+        "source_dir", "model_dir", "animation_dir", "staged_model_dir"
+    ):
         setattr(config, field_name, getattr(config, field_name).resolve())
     return config
 
@@ -459,6 +517,57 @@ def make_ellipsoid(
     return vertices, faces
 
 
+def make_torus_x(
+    center: Sequence[float],
+    major_radius: float,
+    tube_radius: float,
+    major_segments: int = 16,
+    tube_segments: int = 6,
+):
+    """Low-poly torus whose axle runs along anatomical X."""
+
+    center_vector = v(center)
+    vertices: list[Vector] = []
+    for major in range(major_segments):
+        major_angle = 2.0 * math.pi * major / major_segments
+        radial = Vector((
+            0.0,
+            math.cos(major_angle),
+            math.sin(major_angle),
+        ))
+        for tube in range(tube_segments):
+            tube_angle = 2.0 * math.pi * tube / tube_segments
+            vertices.append(
+                center_vector
+                + radial * (major_radius + tube_radius * math.cos(tube_angle))
+                + Vector((tube_radius * math.sin(tube_angle), 0.0, 0.0))
+            )
+    faces: list[tuple[int, int, int, int]] = []
+    for major in range(major_segments):
+        next_major = (major + 1) % major_segments
+        for tube in range(tube_segments):
+            next_tube = (tube + 1) % tube_segments
+            faces.append((
+                major * tube_segments + tube,
+                next_major * tube_segments + tube,
+                next_major * tube_segments + next_tube,
+                major * tube_segments + next_tube,
+            ))
+    return vertices, faces
+
+
+def combine_geometry(*items):
+    """Join deterministic primitive payloads without a Blender operator."""
+
+    vertices: list[Vector] = []
+    faces: list[tuple[int, ...]] = []
+    for item_vertices, item_faces in items:
+        offset = len(vertices)
+        vertices.extend(item_vertices)
+        faces.extend(tuple(index + offset for index in face) for face in item_faces)
+    return vertices, faces
+
+
 class PedestrianBuilder:
     def __init__(self, spec: ArchetypeSpec):
         self.spec = spec
@@ -486,6 +595,8 @@ class PedestrianBuilder:
         root["bp_forward_axis"] = "-Y"
         root["bp_anatomical_left_axis"] = "+X"
         root["bp_shared_animation_source"] = ANIMATION_SOURCE
+        root["bp_staged"] = self.spec.staged
+        root["bp_pool_eligible"] = self.spec.pool_eligible
 
         rig = self.create_armature(export_collection, root)
         self.result = BuildResult(root, rig, export_collection, material)
@@ -508,6 +619,10 @@ class PedestrianBuilder:
             "helmet_lamp": (
                 self.build_helmet_lamp_body,
                 self.build_helmet_lamp_details,
+            ),
+            "pipeback_roller": (
+                self.build_pipeback_roller_body,
+                self.build_pipeback_roller_chair,
             ),
         }
         if self.spec.key not in builders:
@@ -632,17 +747,20 @@ class PedestrianBuilder:
         obj.location = origin_vector
         obj.color = color
         obj.data.materials.append(self.result.material)
-        obj.parent = self.result.rig
-        obj.matrix_parent_inverse = self.result.rig.matrix_world.inverted()
+        static_root_part = bone_name == "root"
+        parent = self.result.root if static_root_part else self.result.rig
+        obj.parent = parent
+        obj.matrix_parent_inverse = parent.matrix_world.inverted()
 
         group = obj.vertex_groups.new(name=bone_name)
         group.add(range(len(mesh.vertices)), 1.0, "REPLACE")
         triangulate = obj.modifiers.new("Triangulate", "TRIANGULATE")
         triangulate.quad_method = "FIXED"
         triangulate.ngon_method = "CLIP"
-        armature = obj.modifiers.new("Armature", "ARMATURE")
-        armature.object = self.result.rig
-        armature.use_deform_preserve_volume = False
+        if not static_root_part:
+            armature = obj.modifiers.new("Armature", "ARMATURE")
+            armature.object = self.result.rig
+            armature.use_deform_preserve_volume = False
 
         obj["bp_export"] = True
         obj["bp_role"] = role
@@ -654,6 +772,403 @@ class PedestrianBuilder:
             PartRecord(obj, bone_name, role, palette_name, color)
         )
         return obj
+
+    def create_pivot(
+        self,
+        name: str,
+        location: Sequence[float],
+    ) -> bpy.types.Object:
+        if self.result is None:
+            raise RuntimeError("Build has not been initialized")
+        if name in self.result.pivots:
+            raise ValueError(f"Duplicate pedestrian pivot {name}")
+        pivot = bpy.data.objects.new(name, None)
+        self.result.export_collection.objects.link(pivot)
+        pivot.parent = self.result.root
+        pivot.location = v(location)
+        pivot.empty_display_type = "PLAIN_AXES"
+        pivot.empty_display_size = 0.08
+        pivot["bp_export"] = True
+        pivot["bp_pivot"] = True
+        self.result.pivots[name] = pivot
+        return pivot
+
+    def add_pivot_part(
+        self,
+        name: str,
+        geometry,
+        pivot_name: str,
+        bone_name: str,
+        role: str,
+        palette_name: str,
+    ) -> bpy.types.Object:
+        if self.result is None or pivot_name not in self.result.pivots:
+            raise ValueError(f"Unknown pedestrian pivot {pivot_name}")
+        pivot = self.result.pivots[pivot_name]
+        obj = self.add_part(
+            name,
+            geometry,
+            bone_name,
+            role,
+            palette_name,
+            origin=tuple(pivot.location),
+        )
+        # The Empty is an exported procedural anchor, not a transform parent.
+        # Parenting a skinned FBX mesh through an auxiliary Empty introduces
+        # a second centimetre conversion in Unity. The stable bp_pivot marker
+        # keeps the intended binding explicit for the future presentation
+        # driver without corrupting the current staged prefab.
+        obj["bp_pivot"] = pivot_name
+        return obj
+
+    def build_pipeback_roller_body(self) -> None:
+        """Build the sober seated rider around the unchanged Player rig.
+
+        The source model remains in the canonical A-pose so it can copy the
+        production Avatar exactly. PipebackIdle/PipebackRoll fold that body
+        into the chair; the chair itself is rooted independently.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.045, 1.545), (0.105, 0.090, 0.132), 12, 6),
+            "head", "body", "roller_skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between(
+                (0, -0.008, 1.322), (0, -0.024, 1.438), 0.070, 0.061, 8
+            ),
+            "neck", "body", "roller_skin_dark",
+        )
+        self.add_part(
+            "GEO_Torso",
+            make_tapered_box(
+                (0, 0.010, 0.805), (0, -0.002, 1.330),
+                (0.300, 0.185, 0), (0.350, 0.205, 0),
+            ),
+            "chest", "body", "roller_coat_dark",
+        )
+        self.add_part(
+            "GEO_Pelvis",
+            make_tapered_box(
+                (0, 0.012, 0.670), (0, 0.010, 0.855),
+                (0.310, 0.205, 0), (0.325, 0.205, 0),
+            ),
+            "pelvis", "body", "roller_coat",
+        )
+        arm_points = {
+            "L": (
+                (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                (0.680, -0.018, 1.075), (0.755, -0.022, 1.035),
+            ),
+            "R": (
+                (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                (-0.680, -0.018, 1.075), (-0.755, -0.022, 1.035),
+            ),
+        }
+        leg_points = {
+            "L": ((0.083, 0.012, 0.750), (0.103, -0.012, 0.354), (0.112, -0.026, 0.095)),
+            "R": ((-0.083, -0.004, 0.750), (-0.103, 0.012, 0.354), (-0.112, 0.018, 0.095)),
+        }
+        for side in ("L", "R"):
+            shoulder, elbow, wrist, hand = arm_points[side]
+            hip, knee, ankle = leg_points[side]
+            sign = 1.0 if side == "L" else -1.0
+            self.add_part(
+                f"GEO_UpperArm.{side}",
+                make_frustum_between(shoulder, elbow, 0.075, 0.060, 8),
+                f"upper_arm.{side}", "body", "roller_coat",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(wrist, elbow, 0.050, 0.062, 8),
+                f"forearm.{side}", "body", "roller_coat_light",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid(hand, (0.070, 0.050, 0.060), 8, 4),
+                f"hand.{side}", "hand", "roller_skin",
+            )
+            self.add_part(
+                f"GEO_Thigh.{side}",
+                make_frustum_between(hip, knee, 0.093, 0.073, 10),
+                f"thigh.{side}", "body", "roller_trousers",
+            )
+            self.add_part(
+                f"GEO_Shin.{side}",
+                make_frustum_between(knee, ankle, 0.072, 0.058, 10),
+                f"shin.{side}", "body", "roller_trousers",
+            )
+            self.add_part(
+                f"GEO_Foot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.090, 0.0),
+                    (sign * 0.112, -0.065, 0.135),
+                    (0.155, 0.245, 0), (0.130, 0.180, 0),
+                ),
+                f"foot.{side}", "foot", "shoe",
+            )
+            self.add_part(
+                f"ACC_ShoeSole.{side}",
+                make_box((sign * 0.112, -0.090, 0.010), (0.162, 0.252, 0.020)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+
+        for side, x in (("L", 0.082), ("R", -0.082)):
+            self.add_part(
+                f"CLO_CoatFront.{side}",
+                make_tapered_box(
+                    (x, -0.110, 0.820), (x * 0.88, -0.112, 1.302),
+                    (0.158, 0.036, 0), (0.175, 0.042, 0),
+                ),
+                "chest", "clothing",
+                "roller_coat_light" if side == "L" else "roller_coat",
+            )
+        self.add_part(
+            "CLO_CoatBack",
+            make_tapered_box(
+                (0, 0.110, 0.815), (0, 0.108, 1.305),
+                (0.310, 0.040, 0), (0.350, 0.044, 0),
+            ),
+            "chest", "clothing", "roller_coat_dark",
+        )
+        self.add_part(
+            "CLO_Collar",
+            make_box((0, -0.014, 1.322), (0.325, 0.225, 0.052)),
+            "chest", "clothing_detail", "roller_coat_light",
+        )
+        self.add_part(
+            "ACC_Hair",
+            make_tapered_box(
+                (0, 0.010, 1.575), (0, -0.008, 1.700),
+                (0.195, 0.175, 0), (0.155, 0.145, 0),
+            ),
+            "head", "clothing_detail", "roller_coat_dark",
+        )
+        for side, x in (("L", 0.052), ("R", -0.052)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.135, 1.572), (0.040, 0.018, 0.024)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box(
+                (0, -0.145, 1.500), (0, -0.132, 1.548),
+                (0.048, 0.056, 0), (0.035, 0.040, 0),
+            ),
+            "head", "face_detail", "roller_skin_dark",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.132, 1.472), (0.074, 0.022, 0.018)),
+            "head", "face_detail", "void",
+        )
+
+    def build_pipeback_roller_chair(self) -> None:
+        """Build the manual wheelchair and its impossible organ mechanism."""
+
+        wheel_centers = PIPEBACK_WHEEL_CENTERS
+        caster_centers = {
+            "L": (0.205, -0.455, 0.065),
+            "R": (-0.205, -0.455, 0.065),
+        }
+        for side in ("L", "R"):
+            self.create_pivot(f"PIVOT_Wheel.{side}", wheel_centers[side])
+        for side in ("L", "R"):
+            self.create_pivot(f"PIVOT_Caster.{side}", caster_centers[side])
+        self.create_pivot("PIVOT_Bellows", (0, 0.255, 0.650))
+        self.create_pivot("PIVOT_PipeBank", (0, 0.292, 1.080))
+
+        for side, center in wheel_centers.items():
+            sign = 1.0 if side == "L" else -1.0
+            pivot = f"PIVOT_Wheel.{side}"
+            self.add_pivot_part(
+                f"ACC_WheelTyre.{side}",
+                make_torus_x(center, 0.272, 0.028, 12, 4),
+                pivot, "root", "wheel_tyre", "chair_tyre",
+            )
+            self.add_pivot_part(
+                f"ACC_PushRim.{side}",
+                make_torus_x(
+                    (center[0] + sign * 0.030, center[1], center[2]),
+                    PIPEBACK_PUSH_RIM_RADIUS, 0.009, 10, 4,
+                ),
+                pivot, "root", "wheel_rim", "chair_rim",
+            )
+            spokes = []
+            for index in range(6):
+                angle = 2.0 * math.pi * index / 6
+                end = (
+                    center[0],
+                    center[1] + math.cos(angle) * 0.250,
+                    center[2] + math.sin(angle) * 0.250,
+                )
+                spokes.append(
+                    make_frustum_between(center, end, 0.006, 0.004, 4, 1.0)
+                )
+            spokes.append(
+                make_frustum_between(
+                    (center[0] - 0.035, center[1], center[2]),
+                    (center[0] + 0.035, center[1], center[2]),
+                    0.030, 0.030, 8, 1.0,
+                )
+            )
+            self.add_pivot_part(
+                f"ACC_WheelSpokes.{side}",
+                combine_geometry(*spokes),
+                pivot, "root", "wheel_mechanism", "chair_frame_light",
+            )
+
+        for side, center in caster_centers.items():
+            pivot = f"PIVOT_Caster.{side}"
+            self.add_pivot_part(
+                f"ACC_CasterTyre.{side}",
+                make_torus_x(center, 0.052, 0.013, 10, 4),
+                pivot, "root", "caster", "chair_tyre",
+            )
+            self.add_pivot_part(
+                f"ACC_CasterHub.{side}",
+                make_frustum_between(
+                    (center[0] - 0.022, center[1], center[2]),
+                    (center[0] + 0.022, center[1], center[2]),
+                    0.022, 0.022, 8, 1.0,
+                ),
+                pivot, "root", "caster", "chair_frame_light",
+            )
+
+        frame_geometry = combine_geometry(
+            make_frustum_between((-0.235, 0.170, 0.330), (-0.235, 0.205, 1.030), 0.020, 0.020, 8),
+            make_frustum_between((0.235, 0.170, 0.330), (0.235, 0.205, 1.030), 0.020, 0.020, 8),
+            make_frustum_between((-0.235, 0.155, 0.635), (-0.205, -0.455, 0.145), 0.018, 0.014, 8),
+            make_frustum_between((0.235, 0.155, 0.635), (0.205, -0.455, 0.145), 0.018, 0.014, 8),
+            make_frustum_between((-0.235, 0.175, 0.620), (0.235, 0.175, 0.620), 0.016, 0.016, 8),
+            make_frustum_between((-0.235, -0.255, 0.315), (0.235, -0.255, 0.315), 0.014, 0.014, 8),
+        )
+        self.add_part(
+            "ACC_ChairFrame", frame_geometry,
+            "root", "wheelchair_frame", "chair_frame",
+            origin=(0, 0.02, 0.60),
+        )
+        self.add_part(
+            "ACC_SeatCushion",
+            make_tapered_box(
+                (0, -0.030, 0.635), (0, -0.020, 0.705),
+                (0.440, 0.430, 0), (0.420, 0.410, 0),
+            ),
+            "root", "seat", "chair_seat", origin=(0, -0.025, 0.67),
+        )
+        self.add_part(
+            "ACC_Backrest",
+            make_tapered_box(
+                (0, 0.215, 0.705), (0, 0.235, 1.055),
+                (0.420, 0.055, 0), (0.385, 0.055, 0),
+            ),
+            "root", "seat", "chair_seat", origin=(0, 0.225, 0.88),
+        )
+        self.add_part(
+            "ACC_Armrests",
+            combine_geometry(
+                make_box((0.255, -0.015, 0.825), (0.055, 0.410, 0.045)),
+                make_box((-0.255, -0.015, 0.825), (0.055, 0.410, 0.045)),
+            ),
+            "root", "wheelchair_frame", "chair_frame_light",
+            origin=(0, -0.015, 0.825),
+        )
+        self.add_part(
+            "ACC_Footrests",
+            combine_geometry(
+                make_box((0.120, -0.505, 0.195), (0.190, 0.210, 0.030)),
+                make_box((-0.120, -0.505, 0.195), (0.190, 0.210, 0.030)),
+            ),
+            "root", "footrest", "chair_frame_light",
+            origin=(0, -0.505, 0.195),
+        )
+        self.add_part(
+            "ACC_FootrestStems",
+            combine_geometry(
+                make_frustum_between((0.205, -0.240, 0.350), (0.120, -0.470, 0.220), 0.014, 0.012, 6),
+                make_frustum_between((-0.205, -0.240, 0.350), (-0.120, -0.470, 0.220), 0.014, 0.012, 6),
+            ),
+            "root", "wheelchair_frame", "chair_frame",
+            origin=(0, -0.35, 0.28),
+        )
+        self.add_part(
+            "ACC_PushLevers",
+            combine_geometry(*(
+                geometry
+                for sign in (1.0, -1.0)
+                for geometry in (
+                    make_frustum_between(
+                        (sign * 0.395, -0.080, 0.750),
+                        (sign * 0.250, 0.230, 1.000),
+                        0.014, 0.014, 4, 1.0,
+                    ),
+                    make_frustum_between(
+                        (sign * 0.250, 0.230, 1.000),
+                        (sign * 0.720, 0.220, 1.180),
+                        0.022, 0.020, 4, 1.0,
+                    ),
+                )
+            )),
+            "root", "drive_lever", "chair_rim",
+            origin=(0, 0.10, 0.92),
+        )
+
+        bellows = combine_geometry(*(
+            make_tapered_box(
+                (0, 0.242 + index * 0.012, 0.555 + index * 0.035),
+                (0, 0.242 + index * 0.012, 0.580 + index * 0.035),
+                (0.300 - index * 0.018, 0.100, 0),
+                (0.270 - index * 0.018, 0.092, 0),
+            )
+            for index in range(4)
+        ))
+        self.add_pivot_part(
+            "ACC_Bellows", bellows, "PIVOT_Bellows",
+            "pelvis", "bellows", "bellows",
+        )
+
+        pipe_specs = (
+            (-0.205, 1.420, "pipe_brass_dark"),
+            (-0.125, 1.610, "pipe_ivory"),
+            (-0.040, 1.750, "pipe_brass_light"),
+            (0.050, 1.560, "pipe_brass"),
+            (0.135, 1.680, "pipe_ivory"),
+            (0.215, 1.470, "pipe_brass_dark"),
+        )
+        for index, (x, top, palette) in enumerate(pipe_specs, start=1):
+            bend = x + (0.022 if index % 2 == 0 else -0.018)
+            geometry = combine_geometry(
+                make_frustum_between(
+                    (x * 0.72, 0.275, 0.760),
+                    (bend, 0.305, 1.080),
+                    0.025, 0.030, 8, 1.0,
+                ),
+                make_frustum_between(
+                    (bend, 0.305, 1.080),
+                    (x, 0.305, top - 0.090),
+                    0.030, 0.032, 8, 1.0,
+                ),
+                make_frustum_between(
+                    (x, 0.305, top - 0.090),
+                    (x, 0.305, top),
+                    0.052, 0.040, 10, 1.0,
+                ),
+            )
+            self.add_pivot_part(
+                f"ACC_OrganPipe.{index:02d}", geometry,
+                "PIVOT_PipeBank", "chest", "signature_silhouette", palette,
+            )
+        self.add_pivot_part(
+            "ACC_PipeManifold",
+            make_tapered_box(
+                (0, 0.285, 0.720), (0, 0.300, 0.825),
+                (0.470, 0.130, 0), (0.420, 0.120, 0),
+            ),
+            "PIVOT_PipeBank", "chest", "pipe_manifold", "pipe_brass_dark",
+        )
 
     def build_body(self) -> None:
         # A dark interior head exists only to give the open hood real depth.
@@ -1687,6 +2202,25 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
     if result.rig.animation_data is not None and result.rig.animation_data.action is not None:
         errors.append("Pedestrian rig has an active animation")
 
+    expected_pivots = PIPEBACK_PIVOT_NAMES if archetype.wheel_radius_m is not None else ()
+    if tuple(result.pivots) != expected_pivots:
+        errors.append(
+            f"Mechanism pivots are {tuple(result.pivots)!r}; "
+            f"expected {expected_pivots!r}"
+        )
+    signature_pivots = []
+    for name, pivot in result.pivots.items():
+        if pivot.type != "EMPTY" or pivot.parent != result.root:
+            errors.append(f"{name} must be an Empty directly below ROOT_Player")
+        if not bool(pivot.get("bp_pivot", False)):
+            errors.append(f"{name} lacks its deterministic pivot marker")
+        signature_pivots.append(
+            {
+                "name": name,
+                "location": [stable_float(value) for value in pivot.location],
+            }
+        )
+
     forbidden_fragments = ("bandage", "shoulderpatch", "satchel")
     mesh_count = len(result.parts)
     triangle_count = 0
@@ -1780,6 +2314,7 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
             for spec in SKELETON
         ],
         "parts": signature_parts,
+        "pivots": signature_pivots,
     }
     signature = hashlib.sha256(
         json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -1804,6 +2339,8 @@ def select_export_objects(result: BuildResult) -> None:
     bpy.ops.object.select_all(action="DESELECT")
     result.root.select_set(True)
     result.rig.select_set(True)
+    for pivot in result.pivots.values():
+        pivot.select_set(True)
     for part in result.parts:
         part.obj.select_set(True)
     bpy.context.view_layer.objects.active = result.rig
@@ -1834,6 +2371,11 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     if presentation is None:
         raise RuntimeError("Preview collection is missing")
 
+    posed_preview = spec.wheel_radius_m is not None
+    if posed_preview:
+        apply_pose(result.rig, pipeback_base_pose())
+        bpy.context.view_layer.update()
+
     camera_data = bpy.data.cameras.new("CAM_PedestrianPreview")
     camera = bpy.data.objects.new("CAM_PedestrianPreview", camera_data)
     presentation.objects.link(camera)
@@ -1842,8 +2384,9 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         "kettle_hat": (2.55, -4.25, 1.90),
         "long_arm": (2.60, -4.35, 2.05),
         "helmet_lamp": (2.70, -4.30, 1.95),
+        "pipeback_roller": (2.80, -4.65, 1.82),
     }.get(spec.key, (2.65, -4.40, 2.10))
-    target = Vector((0, 0, 0.88))
+    target = Vector((0, 0, 0.84 if posed_preview else 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.lens = 56
     scene.camera = camera
@@ -1874,6 +2417,9 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
 
     scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
+    if posed_preview:
+        reset_pose(result.rig)
+        bpy.context.view_layer.update()
 
 
 def save_blend(path: Path) -> None:
@@ -1905,6 +2451,10 @@ def write_manifest(
         "mesh_count": report.mesh_count,
         "triangle_count": report.triangle_count,
         "triangle_budget": list(spec.triangle_budget),
+        "staged": spec.staged,
+        "pool_eligible": spec.pool_eligible,
+        "wheel_radius_m": spec.wheel_radius_m or 0.0,
+        "pivot_names": list(result.pivots),
         "bounds_min": list(report.bounds_min),
         "bounds_max": list(report.bounds_max),
         "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -2031,6 +2581,16 @@ ACTION_SPECS = (
         "coiled crouch on both hind feet, forearms tucked like forepaws",
         "two-footed rabbit hop: crouch, launch, tucked airborne apex, landing",
     ),
+    ActionSpec(
+        "PipebackIdle", "pipeback_roller_v1", 3.0, 72,
+        "self-propelled seated posture, feet planted on twin footrests",
+        "still head over a slow breath that pumps bellows under the pipe load",
+    ),
+    ActionSpec(
+        "PipebackRoll", "pipeback_roller_v1", 2.0, 48,
+        "self-propelled seated posture, hands following both raised push levers",
+        "two-handed lever push, release and recovery under a swaying pipe load",
+    ),
 )
 
 
@@ -2064,6 +2624,35 @@ def merge_pose(
     for override in overrides:
         merged.update(override)
     return merged
+
+
+def interpolate_pose(
+    start: dict[str, BonePose],
+    end: dict[str, BonePose],
+    amount: float,
+) -> dict[str, BonePose]:
+    """Linear source-pose sampling for deterministic clearance validation."""
+
+    amount = max(0.0, min(1.0, amount))
+    sampled: dict[str, BonePose] = {}
+    for name in set(start) | set(end):
+        first = start.get(name, BonePose())
+        second = end.get(name, BonePose())
+        sampled[name] = BonePose(
+            rotation_degrees=tuple(
+                a + (b - a) * amount
+                for a, b in zip(first.rotation_degrees, second.rotation_degrees)
+            ),
+            location_m=tuple(
+                a + (b - a) * amount
+                for a, b in zip(first.location_m, second.location_m)
+            ),
+            scale=tuple(
+                a + (b - a) * amount
+                for a, b in zip(first.scale, second.scale)
+            ),
+        )
+    return sampled
 
 
 def reset_pose(rig: bpy.types.Object) -> None:
@@ -2147,6 +2736,25 @@ def create_action(
     animation_data.action = None
     reset_pose(rig)
     return action
+
+
+def offset_pipeback_hands(
+    pose: dict[str, BonePose],
+    left_x: float,
+    right_x: float,
+    y: float,
+    z: float,
+) -> dict[str, BonePose]:
+    """Document a rim target while preserving the connected Player hands.
+
+    The exact Player rig ignores translation on its connected hand bones, so
+    the reachable rim path is authored with the shoulder/forearm rotations.
+    Keeping the target in this helper makes that deliberate limitation visible
+    beside the pose instead of looking like an omitted IK pass.
+    """
+
+    _ = left_x, right_x, y, z
+    return dict(pose)
 
 
 def lampshade_base_pose() -> dict[str, BonePose]:
@@ -2282,12 +2890,42 @@ def helmet_lamp_base_pose() -> dict[str, BonePose]:
     }
 
 
+def pipeback_base_pose() -> dict[str, BonePose]:
+    """Stable manual-chair posture with the hands resting on both rims."""
+
+    return offset_pipeback_hands({
+        "pelvis": BonePose(
+            rotation_degrees=(0.0, 0.0, 0.0),
+            location_m=(0.0, 0.0, 0.0),
+        ),
+        "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -4.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 4.0, -6.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(38.0, 8.0, 38.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(38.0, -8.0, -38.0)),
+        "forearm.L": BonePose(rotation_degrees=(-96.0, 4.0, -20.0)),
+        "forearm.R": BonePose(rotation_degrees=(-96.0, -4.0, 20.0)),
+        "hand.L": BonePose(rotation_degrees=(-12.0, -4.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(-12.0, 4.0, -4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-79.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-79.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    }, 0.345, -0.345, 0.090, 0.515)
+
+
 def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
     lampshade = lampshade_base_pose()
     chair = chair_base_pose()
     kettle = kettle_base_pose()
     long_arm = long_arm_base_pose()
     helmet = helmet_lamp_base_pose()
+    pipeback = pipeback_base_pose()
     lamp_idle_left = merge_pose(lampshade, {
         "pelvis": BonePose(rotation_degrees=(11.0, 1.0, -4.0), location_m=(0, 0.025, -0.058)),
         "spine": BonePose(rotation_degrees=(19.5, 0.0, 4.5)),
@@ -2563,6 +3201,47 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "upper_arm.L": BonePose(rotation_degrees=(26.0, 8.0, 42.0)),
         "upper_arm.R": BonePose(rotation_degrees=(26.0, -8.0, -42.0)),
     })
+    pipeback_idle_inhale = merge_pose(pipeback, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, 0.8, -0.6), location_m=(0, 0.004, 0.008)),
+        "spine": BonePose(rotation_degrees=(6.5, -0.5, 0.8)),
+        "chest": BonePose(rotation_degrees=(5.5, 0.8, -1.0)),
+        # The neck cancels the body drift so the face stays unnaturally level.
+        "neck": BonePose(rotation_degrees=(-7.5, -0.8, 0.8)),
+        "head": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+    })
+    pipeback_idle_exhale = merge_pose(pipeback, {
+        "pelvis": BonePose(rotation_degrees=(-8.0, -0.8, 0.6), location_m=(0, -0.003, 0.002)),
+        "spine": BonePose(rotation_degrees=(3.5, 0.5, -0.8)),
+        "chest": BonePose(rotation_degrees=(2.5, -0.8, 1.0)),
+        "neck": BonePose(rotation_degrees=(-4.5, 0.8, -0.8)),
+        "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+    })
+    pipeback_push = merge_pose(pipeback, {
+        "pelvis": BonePose(rotation_degrees=(-2.0, 0.0, 0.0), location_m=(0, -0.018, 0.008)),
+        "spine": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-15.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(50.0, 7.0, 35.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(50.0, -7.0, -35.0)),
+        "forearm.L": BonePose(rotation_degrees=(-82.0, 4.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-82.0, -4.0, 18.0)),
+        "hand.L": BonePose(rotation_degrees=(-20.0, -4.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(-20.0, 4.0, -4.0)),
+    })
+    pipeback_release = merge_pose(pipeback, {
+        "pelvis": BonePose(rotation_degrees=(-9.0, 0.0, 0.0), location_m=(0, 0.006, 0.003)),
+        "spine": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(1.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(28.0, 9.0, 41.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(28.0, -9.0, -41.0)),
+        "forearm.L": BonePose(rotation_degrees=(-108.0, 4.0, -22.0)),
+        "forearm.R": BonePose(rotation_degrees=(-108.0, -4.0, 22.0)),
+        "hand.L": BonePose(rotation_degrees=(-6.0, -4.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(-6.0, 4.0, -4.0)),
+    })
     # Seated loops. Each keeps the design's own upper body over one shared
     # seated leg shape, then breathes between two settled poses so the clip
     # loops on itself without ever standing up.
@@ -2605,6 +3284,19 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, 18.0)),
     })
     return {
+        "PipebackIdle": (
+            (0.0, pipeback),
+            (0.25, pipeback_idle_inhale),
+            (0.5, pipeback),
+            (0.75, pipeback_idle_exhale),
+            (1.0, pipeback),
+        ),
+        "PipebackRoll": (
+            (0.0, pipeback),
+            (0.32, pipeback_push),
+            (0.62, pipeback_release),
+            (1.0, pipeback),
+        ),
         "LampshadeSit": ((0.0, lamp_seated), (0.5, lamp_seated_breath), (1.0, lamp_seated)),
         "ChairCarrierSit": ((0.0, chair_seated), (0.5, chair_seated_breath), (1.0, chair_seated)),
         "KettleHatSit": ((0.0, kettle_seated), (0.5, kettle_seated_breath), (1.0, kettle_seated)),
@@ -2705,6 +3397,180 @@ def evaluated_part_min_z(part: PartRecord, depsgraph) -> float:
         evaluated.to_mesh_clear()
 
 
+def evaluated_part_world_vertices(part: PartRecord, depsgraph) -> list[Vector]:
+    evaluated = part.obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        return [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices]
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def point_segment_distance(point: Vector, start: Vector, end: Vector) -> float:
+    segment = end - start
+    length_squared = segment.length_squared
+    if length_squared <= 0.0000001:
+        return (point - start).length
+    amount = max(0.0, min(1.0, (point - start).dot(segment) / length_squared))
+    return (point - (start + segment * amount)).length
+
+
+def validate_wheelchair_clips(
+    result: BuildResult,
+    actions: dict[str, bpy.types.Action],
+    archetype: ArchetypeSpec,
+    authored_keys: dict[str, tuple[tuple[float, dict[str, BonePose]], ...]],
+) -> dict[str, dict[str, object]]:
+    """Prove wheelchair support, rider clearance and manual rim reach.
+
+    The chair is intentionally not pelvis-baked: its two main tyres own the
+    support plane while the body stays seated and the shoes remain clear of
+    it.  Both hands must remain close enough to their own push-rim during the
+    authored push/recovery loop; this catches a seated-looking pose that
+    cannot actually propel the chair.
+    """
+
+    if archetype.wheel_radius_m is None:
+        raise RuntimeError("Wheelchair validation needs a declared wheel radius")
+    tyres = {
+        side: next(
+            (
+                part for part in result.parts
+                if part.role == "wheel_tyre" and part.obj.name.endswith(f".{side}")
+            ),
+            None,
+        )
+        for side in ("L", "R")
+    }
+    hands = {
+        side: next(
+            (part for part in result.parts if part.obj.name == f"GEO_Hand.{side}"),
+            None,
+        )
+        for side in ("L", "R")
+    }
+    footwear = {
+        side: [part for part in result.parts if part.bone == f"foot.{side}"]
+        for side in ("L", "R")
+    }
+    pelvis_parts = [part for part in result.parts if part.bone == "pelvis"]
+    if any(item is None for item in tyres.values()):
+        raise RuntimeError("Wheelchair validation needs both main tyre meshes")
+    if any(item is None for item in hands.values()):
+        raise RuntimeError("Wheelchair validation needs both hand meshes")
+    if any(not parts for parts in footwear.values()) or not pelvis_parts:
+        raise RuntimeError("Wheelchair validation needs feet and seated pelvis geometry")
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    reports: dict[str, dict[str, object]] = {}
+    for action_name, action in actions.items():
+        animation_data.action = None
+        tyre_samples: list[float] = []
+        foot_samples: list[float] = []
+        hand_rim_samples: list[float] = []
+        hand_rim_details: list[tuple[float, int, str, Vector]] = []
+        seat_samples: list[float] = []
+        for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+            normalized = frame / max(1, round(action.frame_end))
+            keyframes = authored_keys[action_name]
+            active_pose = keyframes[-1][1]
+            for index in range(len(keyframes) - 1):
+                start_time, start_pose = keyframes[index]
+                end_time, end_pose = keyframes[index + 1]
+                if normalized <= end_time:
+                    blend = 0.0 if end_time == start_time else (
+                        normalized - start_time
+                    ) / (end_time - start_time)
+                    active_pose = interpolate_pose(start_pose, end_pose, blend)
+                    break
+            reset_pose(rig)
+            apply_pose(rig, active_pose)
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            for side in ("L", "R"):
+                tyre_samples.append(evaluated_part_min_z(tyres[side], depsgraph))
+                foot_samples.append(
+                    min(
+                        evaluated_part_min_z(part, depsgraph)
+                        for part in footwear[side]
+                    )
+                )
+                # The long connected Player arms meet the chair's two raised
+                # push levers. The manifest keeps the historic `rim_hand`
+                # field name because both lever bases drive conventional rims
+                # at the hubs.
+                hand_bone = rig.pose.bones[f"hand.{side}"]
+                hand_center = rig.matrix_world @ (
+                    (hand_bone.head + hand_bone.tail) * 0.5
+                )
+                sign = 1.0 if side == "L" else -1.0
+                elbow = Vector((sign * 0.250, 0.230, 1.000))
+                distance = min(
+                    point_segment_distance(
+                        hand_center,
+                        Vector((sign * 0.395, -0.080, 0.750)),
+                        elbow,
+                    ),
+                    point_segment_distance(
+                        hand_center,
+                        elbow,
+                        Vector((sign * 0.720, 0.220, 1.180)),
+                    ),
+                )
+                hand_rim_samples.append(distance)
+                hand_rim_details.append(
+                    (distance, frame, side, hand_center)
+                )
+            pelvis_anchor_z = (
+                rig.matrix_world @ rig.pose.bones["pelvis"].head
+            ).z
+            seat_samples.append(pelvis_anchor_z)
+
+        wheel_min = min(tyre_samples)
+        wheel_gap = max(abs(value) for value in tyre_samples)
+        foot_clearance = min(foot_samples)
+        rim_distance = max(hand_rim_samples)
+        seat_gap = max(abs(value - PIPEBACK_SEAT_TOP_M) for value in seat_samples)
+        if wheel_min < -0.002:
+            raise RuntimeError(
+                f"{action_name} tyres penetrate ground at {wheel_min:.4f} m"
+            )
+        if wheel_gap > 0.002:
+            raise RuntimeError(
+                f"{action_name} tyres lose contact by {wheel_gap:.4f} m"
+            )
+        if foot_clearance < 0.030:
+            raise RuntimeError(
+                f"{action_name} feet leave their rests and approach the ground "
+                f"at {foot_clearance:.4f} m"
+            )
+        if rim_distance > 0.100:
+            _, worst_frame, worst_side, worst_vertex = max(hand_rim_details)
+            raise RuntimeError(
+                f"{action_name} hands miss their push-rims by {rim_distance:.4f} m "
+                f"({worst_side}, frame {worst_frame}, nearest hand vertex "
+                f"{tuple(round(value, 4) for value in worst_vertex)})"
+            )
+        if seat_gap > 0.080:
+            raise RuntimeError(
+                f"{action_name} rider loses seat contact by {seat_gap:.4f} m"
+            )
+        reports[action_name] = {
+            "wheel_ground_min_m": stable_float(wheel_min),
+            "wheel_ground_max_contact_gap_m": stable_float(wheel_gap),
+            "footrest_min_clearance_m": stable_float(foot_clearance),
+            "rim_hand_max_distance_m": stable_float(rim_distance),
+            "seat_contact_max_gap_m": stable_float(seat_gap),
+        }
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
+    return reports
+
+
 def validate_animated_grounding(
     result: BuildResult,
     actions: dict[str, bpy.types.Action],
@@ -2717,6 +3583,14 @@ def validate_animated_grounding(
     design whose hands hang near the ankles will happily push them through
     the road while every sole still reports a perfect contact.
     """
+
+    if archetype is not None and archetype.wheel_radius_m is not None:
+        return validate_wheelchair_clips(
+            result,
+            actions,
+            archetype,
+            animation_keys(),
+        )
 
     scene = bpy.context.scene
     rig = result.rig
@@ -3111,7 +3985,9 @@ def ground_actions_per_archetype(
             name: action for name, action in actions.items()
             if not is_seated_action(name)
         }
-        if spec.airborne_lift_m is None:
+        if spec.wheel_radius_m is not None:
+            pass
+        elif spec.airborne_lift_m is None:
             bake_grounded_pelvis(result, grounded_actions)
         else:
             bake_constant_pelvis_offset(result, grounded_actions)
@@ -3130,9 +4006,10 @@ def ground_actions_per_archetype(
             print(f"  airborne {spec.design_id}: {apex:.3f} m apex lift")
         for name, action in actions.items():
             pelvis_tracks[name] = capture_pelvis_track(action)
+        support = "its own tyres" if spec.wheel_radius_m is not None else "its own footwear"
         print(
             f"  grounded {spec.design_id}: "
-            f"{', '.join(sorted(actions))} against its own footwear"
+            f"{', '.join(sorted(actions))} against {support}"
         )
     missing = [spec.name for spec in ACTION_SPECS if spec.name not in pelvis_tracks]
     if missing:
@@ -3259,7 +4136,9 @@ def render_animation_contact_sheet(
             name: action for name, action in local_actions.items()
             if not is_seated_action(name)
         }
-        if spec.airborne_lift_m is None:
+        if spec.wheel_radius_m is not None:
+            pass
+        elif spec.airborne_lift_m is None:
             bake_grounded_pelvis(result, grounded_actions)
         else:
             bake_constant_pelvis_offset(result, grounded_actions)
@@ -3358,8 +4237,9 @@ def main() -> None:
         result = PedestrianBuilder(spec).build()
         report = validate_result(result, spec)
         blend_path = config.source_dir / spec.blend_name
-        fbx_path = config.model_dir / f"{spec.model_name}.fbx"
-        manifest_path = config.model_dir / f"{spec.model_name}.json"
+        model_dir = config.staged_model_dir if spec.staged else config.model_dir
+        fbx_path = model_dir / f"{spec.model_name}.fbx"
+        manifest_path = model_dir / f"{spec.model_name}.json"
         preview_path = config.source_dir / spec.preview_name
         if not config.no_preview:
             render_preview(preview_path, result, spec)

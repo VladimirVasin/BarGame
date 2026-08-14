@@ -6,6 +6,251 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Restored the Pipeback Roller's wheelchair at full size
+
+- Fixed the staged Unity prefab build that multiplied all `17` root-bound
+  wheelchair `MeshRenderer` transforms by an extra `0.01`. The FBX importer
+  already honours the model's metre units, so the duplicate conversion left
+  the wheels, rims, spokes, casters, frame, seat, backrest, armrests,
+  footrests and push levers at one percent of their authored size while the
+  skinned rider remained full-size.
+- Removed that additional scale conversion and rebuilt
+  `Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab`; the complete
+  chair is visible again without changing the isolated provider or ambient
+  pedestrian pool contract.
+- This fix restores the static mechanism geometry only. The passive
+  `PIVOT_*` anchors are still not transform parents of their meshes, so
+  procedural wheel/caster/mechanism articulation remains a separate
+  limitation.
+
+Verification:
+
+- Focused EditMode
+  `StagedPipebackRoller_ImportsPassiveWheelchairAndRemainsOutsidePool` passed
+  `1/1` after the staged prefab rebuild.
+- No broader suite or player build was run in fast mode.
+
+## 2026-08-14 — Added a one-key Home-to-City debug map entry
+
+- `HomeInteriorRoot` now always installs `HomeDebugCityMapShortcut`. F9 works
+  from any Home phase, including the opening's locked `ClockHold`, and uses the
+  guarded direct scene-transition path instead of playing the apartment and
+  stairwell presentations.
+- If the session clock is still frozen, an accepted shortcut starts it from
+  `06:00`, prepares the normal player-home City return and sets the resettable
+  `GameSessionState.DebugCityMapOnArrivalRequested` handoff. Seed, cash, needs
+  and starter inventory are otherwise untouched.
+- A real runtime skip from the opening's `AwaitingWake` menu exposed a
+  lifecycle race: City enabled test teleport after the scene transition, but
+  its single map-open attempt ran while the previous Home opening still owned
+  `BarMinigameModalLock`, so the map remained closed.
+- `CityGameRoot` now enables test teleport after the transition and uses a
+  success-driven retry window bounded to `2 s` of realtime. It opens only
+  after both the transition and previous modal lock release, consumes the
+  one-shot on success, and also clears it with diagnostic state on timeout so
+  a failed request cannot leak into a later City load. Ordinary Wake/Quit and
+  Home -> Stairwell -> City behavior is unchanged.
+
+Verification:
+
+- The focused PlayMode
+  `BarPromenade.Tests.PlayMode.HomeOpeningPlayModeTests.MainMenu_F9SkipsHomeAndOpensCityDebugTeleportMap`
+  now waits for `AwaitingWake` and asserts the active modal-lock precondition
+  before F9. It passed `1/1` in an isolated Unity project copy while the main
+  editor remained open.
+- No broader suite or player build was run in fast mode.
+
+## 2026-08-13 — Staged the Pipeback Roller wheelchair NPC
+
+- Added `pipeback_roller_v1` / Pipeback Roller («Трубный седок») as a complete
+  staged presentation rather than a sixth production pedestrian. The ordinary
+  seated rider wears dark burgundy; the bizarre silhouette belongs to the
+  wheelchair's two large drive wheels, nervous front casters, under-seat
+  bellows and asymmetrical fan of tarnished organ pipes.
+- Extended the deterministic pedestrian generator with
+  `Assets/Pedestrians/Staged/Models/PipebackRoller3D.{fbx,json}` and the
+  adjacent editable source/preview. The rider preserves the exact production
+  31-bone Generic hierarchy and shared `Player3DLit` material. Six passive
+  `PIVOT_Wheel.L/R`, `PIVOT_Caster.L/R`, `PIVOT_Bellows` and `PIVOT_PipeBank`
+  anchors expose the future procedural mechanism contract without adding
+  deform bones or auxiliary curves to the Avatar.
+- Added two in-place Actions to the shared animation-only locomotion library.
+  `PipebackIdle` keeps the head level over a slow breath under the pipe load;
+  `PipebackRoll` stages a two-handed raised-lever push, forward body lean,
+  release and recovery. Bellows and pipes follow the authored pelvis/chest
+  motion; wheel/caster rotation remains intentionally procedural and deferred.
+  The staged design deliberately owns no `Sit` clip.
+- Added the passive staged prefab at
+  `Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab`. It is outside
+  `Resources` and carries only the shared `CityPedestrianAssetRegistry` plus a
+  passive `CityWheelchairNpcAssetRegistry` for those six mechanism pivots. It
+  has no runtime actor, collider, Rigidbody, light, audio or interaction, and
+  `CityPedestrianResources.OrderedArchetypes` remains the five-design
+  production catalog. City and Home therefore keep their existing `13`- and
+  `8`-presentation pools, and the staged NPC cannot roam, wait for or ride
+  Route 01.
+- Production registration is deferred until the graph can exclude stairs and
+  prove curb/turn clearance, the actor has a wheelchair footprint rather than
+  the ordinary `0.35 m` capsule, runtime derives wheel/caster motion from
+  travelled distance, and Route 01 owns an accessible boarding and securement
+  design instead of the ordinary pelvis-to-seat transfer.
+
+Verification:
+
+- Blender 5.0.1 completed the full generator/validator, rendered the six-row
+  contact sheet and matched repeated model signatures. Pipeback measures `52`
+  meshes / `2388` triangles at exactly `1.75 m`; both clips remain in-place and
+  loop-closed with wheel contact `0.000 m`, footrest clearance `0.268 m`, seat
+  gap at most `0.023 m` and hand-to-lever distance below `0.10 m`.
+- Unity rebuilt the passive staged prefab and the one focused EditMode contract
+  `StagedPipebackRoller_ImportsPassiveWheelchairAndRemainsOutsidePool` passed
+  `1/1`, including avatar/material/passivity, the two clips, six pivots, absence
+  from `Resources`/catalog, and unchanged City `13` / Home `8` pool isolation.
+  Complete suites and a player build were intentionally omitted in fast mode.
+
+## 2026-08-14 — Moved the yard composition to where the hero actually stands
+
+- Reported from play: the yard by the home read as empty ground. The
+  dressing was anchored to the centroid of the yard area, but `yard-east`
+  is the whole eastern pocket (`4 x 6` cells, over `100 x 150 m`), so the
+  centroid landed ~`65 m` east of the home — past the `48 m` far clip and
+  the fog. The ground was there; every object was invisible.
+- The composition is now anchored to the yard's street entrance, which the
+  layout puts at cell `(12,5)`, `17 m` from the door. The ring is offset
+  past the approach (`approach reach + clearance + radius + margin`) so
+  the worn circuit stays unbroken instead of losing segments to the
+  entrance, and the dressed rect is built along the inward normal from the
+  entrance rather than over the whole pocket.
+- Measured after the change (default seed): dead tree `27.6 m` from the
+  home, bin `20 m`, everything else `23-35 m`; yard datum `7.00` against
+  the home's `7.44`, so the `0.44 m` step is a kerb, not the cliff a
+  far-side access would have produced.
+- Guards added so this cannot regress silently: every yard part must be
+  within `46 m` of the home, the dead tree within `34 m`, and the ring must
+  keep all `24` segments.
+
+## 2026-08-14 — Put the Pipeback Roller on the yard circuit, drifting
+
+- New `Assets/Scripts/Runtime/City/Yard/`: `YardWheelchairMotion` (pure
+  pose math), `YardWheelchairPlan` (reads the circuit back out of the
+  authored dressing — trunk gives the centre and ground height, the worn
+  ring segments give the radius, so rider and track can never drift
+  apart), `YardWheelchairPresentation`, `YardWheelchairActor`,
+  `YardWheelchairFactory`, `YardWheelchairProvider`.
+- The drift is the whole point: the chassis is yawed `19° ± 7.5°` into the
+  circle *against* the direction of travel, the slip breathes over `0.37`
+  laps, the pace sags and recovers in the same phase (`1.05 m/s ± 8%`), the
+  ridden line wanders `±0.14 m` off the worn ring over `0.83` laps, and the
+  body holds a `4.5°` outward lean. Wheels turn from real distance with an
+  inner/outer differential plus a scrub factor from the slip angle;
+  casters trail round to point where the chair is actually going rather
+  than where it faces; bellows pump and the pipe bank rocks.
+- Isolation respected exactly as specified: the prefab stays at
+  `Assets/Pedestrians/Staged/Prefabs/`, out of `Resources`, out of
+  `CityPedestrianResources`/`OrderedArchetypes`, and is never passed to
+  `CityPedestrianFactory`. The only reference is a serialized
+  `YardWheelchairProvider` asset at `Resources/City/`, which is what the
+  factory loads — the prefab itself is never `Resources.Load`ed.
+- `CityPedestrianPresentation` was deliberately NOT reused: it grounds a
+  walker by its shoe soles, and this NPC has to sit on its wheels. The new
+  presentation builds its own two-clip manual `PlayableGraph`
+  (`PipebackIdle`/`PipebackRoll`) with an `AnimationPlayableOutput`, since
+  the staged prefab ships no `AnimatorController`. Prefab passivity is
+  re-validated at instantiation.
+- Wired in `CityGameRoot` beside the bus, with `yard_wheelchair_present`
+  and `yard_wheelchair_radius` in the init log.
+- Tests: new `YardWheelchairMotionTests` — the plan matches the authored
+  ring segment-by-segment, the pose holds the circuit and always carries a
+  slip angle, the drift mirrors with direction, a lap returns to its start,
+  non-positive steps are ignored, and the wheel differential favours the
+  outer wheel and grows with distance.
+
+## 2026-08-13 — Dressed the home yard around a circuit nobody else uses
+
+- First authored yard composition, in `CityOpenAreaDecorationPlanner`:
+  a third `BuildYards` call beside `BuildLake`/`BuildCemetery`, dressing
+  only `yard-east` (the other four wait for their own descriptions).
+  Nine new `CityOpenAreaDecorationKind` values and four styles
+  (`YardWornTrack`, `YardTimber`, `YardPipe`, `YardPaint`) with colours in
+  `CityOpenAreaWorldBuilder.ResolveColor`; the flat ring and the dropped
+  toy are declared non-blocking.
+- Composition follows the art bible's rule that this city is made bleak by
+  subtraction, not by piling on rubbish: a bare dead trunk with two broken
+  limbs at the centre, a 24-chord worn ring at radius `6 m` around it, and
+  seven edge traces — repaired bench (one leg swapped for painted pipe),
+  carpet-beating frame, empty sandpit, one child's toy as the only
+  saturated colour, dead lamp post, bin beside the entrance, one bottle.
+  The yard emits no light at all, by design.
+- Placement rules: everything derives from the union of the yard's surface
+  bounds and the declared access; edge objects rotate their authored angle
+  in quarter turns until the footprint clears the street approach, and the
+  bin is offset sideways from the entrance rather than standing in it (the
+  first version put it straight in the approach and was rejected by the
+  planner's own clearance check). Ring chords are short, so nothing spans
+  a `48 m` batching chunk. Randomness is one salted `StableHash`
+  (`0x59415244`) that only spins the edge ring.
+- The middle of the ring is deliberately left empty for the wheelchair
+  rider; the model is still being authored, so no actor, presentation or
+  placeholder was added in this pass. The character contract is recorded
+  in the plan: chair as an unrigged `GEO_*`/`PIVOT_Wheel*` prop (the shared
+  31-bone rig has no wheel bones), rider on the shared rig, registered
+  outside the pedestrian catalog.
+- Tests: `CityOpenAreaDecorationPlannerTests` gained a yard fixture
+  (determinism, per-kind counts, containment in the yard ground, ring stays
+  non-blocking, circuit centre free of props) and its clearance loop was
+  fixed — `.Single(access.Feature == descriptor.Feature)` threw once five
+  yards shared one feature. `CityLayoutGeneratorTests`' "yards carry no
+  decoration" assertion is inverted to "only `yard-east` is dressed".
+- Art bible gained §10a for the yard in the same shape as the four public
+  places (essence, movement grammar «замкнутый круг», light, Нельзя,
+  Проверка).
+
+## 2026-08-13 — Typed the boundary voids as Yards
+
+- The three unmapped regions behind the boundary streets are now five typed
+  `Yard` areas: `yard-east` (`RectInt(12,2,4,6)`, the pocket beside the
+  player's home between cemetery and lake) plus `yard-south-{west,east}`
+  and `yard-west-{south,north}` — one-cell perimeter strips halved so each
+  aligns to its own access datum on the terraced perimeter. `(-1,-1)` and
+  the `x15/z0-1` notch stay void. Blueprint cells `198 -> 246`; yard open-area
+  accesses `5`.
+- New `CityAreaFeatureKind.Yard` + `CityDistrictKind.Yard` wired through
+  every gate that defaults to throw: combination/topology/structural
+  validation, `IsSpecialArchetype`, the `CreateUrbanArea` guard, the
+  required-access lists in `CitySurfacePlan` and `CityLayout`, elevation
+  datum + preferred stair connections, `RequiresAuthoredAccess`, the world
+  ground bucket (`OpenGround` -> new `YardGround` colour) and the map
+  (`YardLand` fill + `map.district.yard` = «Двор»/"Yard" in ru/en).
+  `CitySurfaceKind.OpenGround` — previously unreachable — is now the yard's
+  surface kind.
+- Stage 2 relaxed one declared invariant deliberately: only the lot and
+  road-grid footprint must normalize to `(0,0)` (every per-cell random
+  stream hashes raw coordinates, so shifting the grid would regenerate a
+  different city); the `OpenLand`/`Water` fringe may reach `-1`, bounded by
+  a named constant. `ValidateNorthWaterfront` and its test now scan the
+  normalized `x >= 0` range.
+- Three determinism hazards were identified up front and neutralized:
+  yards are excluded from `TryResolveSignatureStairOwner` (else the four
+  district stairs re-rank), from bus-corner support in
+  `CityBusIntersectionSelector` (else the home stop drifts to the new
+  boundary corners), and the new `EnsureYardAccessEdges` runs *after* every
+  RNG consumer so it is a no-op on the canonical city instead of re-seeding
+  the road graph.
+- Zero decoration by construction: `CityOpenAreaDecorationPlanner` still
+  only builds lake and cemetery, and a test asserts no yard descriptor
+  exists. The yards are placeholders awaiting authored content.
+- Verification: EditMode city suites green (`75/75` across
+  `CityLayoutGeneratorTests`, `CityElevationPlannerTests`,
+  `RoadFencePlannerTests`, `CityOpenAreaDecorationPlannerTests`,
+  `CityMapDistrictPresentationTests`, `LocalizationCatalogTests`),
+  including new `DefaultCoastalBlueprint_CreatesReachableEastYard`,
+  `...CreatesReachablePerimeterYards` and a
+  `DefaultSeed_KeepsCanonicalHomePlacement` canary (home still `(11,5)` at
+  `(143,-13)`, partner bar `(11,6)`, four public places). Nine unrelated
+  failures in the full suite (bus/pedestrian/GameSessionState/day-night)
+  reproduce on clean `HEAD` without these changes and are not caused here.
+  PlayMode not run.
+
 ## 2026-08-13 — Gave the default city terrain and exterior stairs
 
 - Added a pure immutable `CityElevationPlan` between blueprint topology and

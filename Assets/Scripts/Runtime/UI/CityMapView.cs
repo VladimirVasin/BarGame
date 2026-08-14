@@ -104,6 +104,8 @@ namespace BarPromenade
             new Color32(50, 91, 101, 255);
         private static readonly Color CemeteryLand =
             new Color32(66, 77, 65, 255);
+        private static readonly Color YardLand =
+            new Color32(94, 84, 63, 255);
         private static readonly Color WaterLand =
             new Color32(35, 91, 119, 255);
         private static readonly Color PublicPlaceLand =
@@ -2078,6 +2080,8 @@ namespace BarPromenade
                     return LakeLand;
                 case CityDistrictKind.Cemetery:
                     return CemeteryLand;
+                case CityDistrictKind.Yard:
+                    return YardLand;
                 default:
                     return Building;
             }
@@ -2096,6 +2100,8 @@ namespace BarPromenade
                     return LakeLand;
                 case CitySurfaceKind.CemeteryGround:
                     return CemeteryLand;
+                case CitySurfaceKind.OpenGround:
+                    return YardLand;
                 default:
                     return surface.MapColor;
             }
@@ -2122,6 +2128,8 @@ namespace BarPromenade
                     return "map.district.lake";
                 case CityDistrictKind.Cemetery:
                     return "map.district.cemetery";
+                case CityDistrictKind.Yard:
+                    return "map.district.yard";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(district),

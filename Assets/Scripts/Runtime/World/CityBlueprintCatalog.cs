@@ -30,6 +30,8 @@ namespace BarPromenade
             new Color32(66, 91, 99, 255);
         private static readonly Color CemeteryMapColor =
             new Color32(82, 91, 78, 255);
+        private static readonly Color YardMapColor =
+            new Color32(116, 102, 78, 255);
 
         private static CityBlueprint defaultBlueprint;
 
@@ -113,6 +115,48 @@ namespace BarPromenade
                     settings.BlocksX + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.Water);
+            // The east yard fills the former void between the cemetery and
+            // the lake, one solid rectangle bordering the eastern boundary
+            // street. Appended last so every existing area (and therefore
+            // every existing access descriptor id and order) is unchanged.
+            builder.AddRectangle(
+                CreateYard("yard-east"),
+                new RectInt(
+                    settings.BlocksX,
+                    DefaultCemeteryDepth,
+                    EasternOpenAreaWidth,
+                    settings.BlocksZ - DefaultLakeSize - DefaultCemeteryDepth),
+                CityCellTopologyKind.OpenLand);
+            // The south and west fringes: one open row/column beyond the
+            // boundary streets, split in halves so each yard aligns to its
+            // own access datum on the terraced perimeter. The (-1,-1)
+            // corner stays void.
+            int halfBlocksX = settings.BlocksX / 2;
+            int halfBlocksZ = settings.BlocksZ / 2;
+            builder.AddRectangle(
+                CreateYard("yard-south-west"),
+                new RectInt(0, -1, halfBlocksX, 1),
+                CityCellTopologyKind.OpenLand);
+            builder.AddRectangle(
+                CreateYard("yard-south-east"),
+                new RectInt(
+                    halfBlocksX,
+                    -1,
+                    settings.BlocksX - halfBlocksX,
+                    1),
+                CityCellTopologyKind.OpenLand);
+            builder.AddRectangle(
+                CreateYard("yard-west-south"),
+                new RectInt(-1, 0, 1, halfBlocksZ),
+                CityCellTopologyKind.OpenLand);
+            builder.AddRectangle(
+                CreateYard("yard-west-north"),
+                new RectInt(
+                    -1,
+                    halfBlocksZ,
+                    1,
+                    settings.BlocksZ - halfBlocksZ),
+                CityCellTopologyKind.OpenLand);
             return builder.Build(true, true);
         }
 
@@ -143,7 +187,8 @@ namespace BarPromenade
             if (archetype == CityDistrictKind.CentralPark ||
                 archetype == CityDistrictKind.NorthWaterfront ||
                 archetype == CityDistrictKind.Lake ||
-                archetype == CityDistrictKind.Cemetery)
+                archetype == CityDistrictKind.Cemetery ||
+                archetype == CityDistrictKind.Yard)
             {
                 throw new ArgumentOutOfRangeException(nameof(archetype));
             }
@@ -185,6 +230,20 @@ namespace BarPromenade
                 CityAreaPlacementPolicy.Movable,
                 localizationKey,
                 CemeteryMapColor);
+        }
+
+        public static CityAreaDefinition CreateYard(
+            string id,
+            string localizationKey = "map.district.yard")
+        {
+            return new CityAreaDefinition(
+                id,
+                CityDistrictKind.Yard,
+                CityAreaCategory.NonUrbanOpen,
+                CityAreaFeatureKind.Yard,
+                CityAreaPlacementPolicy.Movable,
+                localizationKey,
+                YardMapColor);
         }
 
         private static CityBlueprintBuilder CreateUrbanCoreBuilder(

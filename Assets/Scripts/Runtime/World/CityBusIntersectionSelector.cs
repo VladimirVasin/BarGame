@@ -156,6 +156,10 @@ namespace BarPromenade
                 CitySurfaceDescriptor surface =
                     layout.Surfaces[surfaceIndex];
                 if (surface.IsWater ||
+                    // v1 yards are undecorated bare ground; keeping them
+                    // non-supporting preserves the pre-yard Route 01 bus
+                    // intersections (the home stop would drift otherwise).
+                    surface.Kind == CitySurfaceKind.OpenGround ||
                     !Contains(surface.WorldBounds, corner))
                 {
                     continue;

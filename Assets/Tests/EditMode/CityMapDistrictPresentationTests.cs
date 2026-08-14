@@ -53,6 +53,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             CityDistrictKind.Cemetery,
             "map.district.cemetery")]
+        [TestCase(
+            CityDistrictKind.Yard,
+            "map.district.yard")]
         public void DistrictLocalizationKeys_AreStable(
             CityDistrictKind district,
             string expected)

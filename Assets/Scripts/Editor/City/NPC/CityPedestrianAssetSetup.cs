@@ -32,6 +32,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Models/HelmetLampPedestrian3D.fbx";
         public const string HelmetLampManifestPath =
             "Assets/Pedestrians/Models/HelmetLampPedestrian3D.json";
+        public const string PipebackRollerModelPath =
+            "Assets/Pedestrians/Staged/Models/PipebackRoller3D.fbx";
+        public const string PipebackRollerManifestPath =
+            "Assets/Pedestrians/Staged/Models/PipebackRoller3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -52,6 +56,18 @@ namespace BarPromenade.Editor
             "Assets/Resources/Pedestrians/LongArmPedestrian3D.prefab";
         public const string HelmetLampPrefabPath =
             "Assets/Resources/Pedestrians/HelmetLampPedestrian3D.prefab";
+        public const string PipebackRollerPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
+
+        private const string LeftWheelPivotName = "PIVOT_Wheel.L";
+        private const string RightWheelPivotName = "PIVOT_Wheel.R";
+        private const string LeftCasterPivotName = "PIVOT_Caster.L";
+        private const string RightCasterPivotName = "PIVOT_Caster.R";
+        private const string BellowsPivotName = "PIVOT_Bellows";
+        private const string PipeBankPivotName = "PIVOT_PipeBank";
+        private const string LeftWheelRendererName = "ACC_WheelTyre.L";
+        private const string RightWheelRendererName = "ACC_WheelTyre.R";
+        private const string SeatRendererName = "ACC_SeatCushion";
 
         // The one worn lamp the pedestrian contract allows. It stays
         // shadowless and short-range so a single moving Spot cannot disturb
@@ -69,8 +85,8 @@ namespace BarPromenade.Editor
         private const int ExpectedAnimationFps = 24;
 
         /// <summary>
-        /// An idle and a walk for every design, plus one authored seated loop
-        /// for each design that declares a Route 01 ride.
+        /// An idle and a walk for every production or staged design, plus one
+        /// authored seated loop for each design that declares a Route 01 ride.
         /// </summary>
         private static int ExpectedLocomotionClipCount
         {
@@ -167,7 +183,25 @@ namespace BarPromenade.Editor
                 800,
                 1700,
                 carriesHeadLamp: true,
-                preservesAirborneMotion: true)
+                preservesAirborneMotion: true),
+            // Authored and imported with the shared animation library, but
+            // deliberately saved outside Resources and absent from the
+            // runtime catalog until wheelchair-aware navigation exists.
+            new PedestrianDescriptor(
+                "Pipeback Roller",
+                "PipebackRoller3D",
+                "pipeback_roller_v1",
+                PipebackRollerModelPath,
+                PipebackRollerManifestPath,
+                PipebackRollerPrefabPath,
+                "PipebackIdle",
+                "PipebackRoll",
+                3f,
+                2f,
+                1400,
+                2400,
+                isStaged: true,
+                isWheelchair: true)
         };
 
         private static bool isBuilding;
@@ -188,7 +222,7 @@ namespace BarPromenade.Editor
         {
             BuildOrThrow();
             Debug.Log(
-                "City pedestrian archetype prefabs rebuilt.");
+                "City pedestrian production and staged prefabs rebuilt.");
         }
 
         [MenuItem("Bar Promenade/City Pedestrian 3D/Validate Imported Contract")]
@@ -196,8 +230,16 @@ namespace BarPromenade.Editor
         {
             ValidateOrThrow();
             Debug.Log(
-                "City pedestrian models, custom clips and prefab contracts " +
-                "are valid.");
+                "City pedestrian production/staged models, custom clips " +
+                "and prefab contracts are valid.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Pipeback Roller")]
+        public static void RunPipebackRoller()
+        {
+            BuildPipebackRollerOrThrow();
+            Debug.Log("Staged Pipeback Roller prefab rebuilt.");
         }
 
         /// <summary>
@@ -300,6 +342,215 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void ValidateDescriptorScope(
+            PedestrianDescriptor descriptor)
+        {
+            if (!descriptor.IsStaged)
+            {
+                return;
+            }
+
+            if (!descriptor.ModelPath.StartsWith(
+                    "Assets/Pedestrians/Staged/",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !descriptor.ManifestPath.StartsWith(
+                    "Assets/Pedestrians/Staged/",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !descriptor.PrefabPath.StartsWith(
+                    "Assets/Pedestrians/Staged/",
+                    StringComparison.OrdinalIgnoreCase) ||
+                descriptor.PrefabPath.IndexOf(
+                    "/Resources/",
+                    StringComparison.OrdinalIgnoreCase) >= 0 ||
+                CityPedestrianResources.TryGetArchetype(
+                    descriptor.DesignId,
+                    out _))
+            {
+                throw new InvalidOperationException(
+                    $"Staged pedestrian '{descriptor.DesignId}' must keep " +
+                    "all staged assets outside Resources and remain absent " +
+                    "from the production pedestrian catalog.");
+            }
+        }
+
+        private static void ValidateWheelchairBindings(
+            GameObject prefab,
+            CityPedestrianAssetRegistry pedestrianRegistry,
+            PedestrianDescriptor descriptor)
+        {
+            CityWheelchairNpcAssetRegistry[] wheelchairRegistries =
+                prefab.GetComponentsInChildren<
+                    CityWheelchairNpcAssetRegistry>(true);
+            int expectedCount = descriptor.IsWheelchair ? 1 : 0;
+            if (wheelchairRegistries.Length != expectedCount)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' declares {expectedCount} " +
+                    "wheelchair registry component(s), but its prefab " +
+                    $"contains {wheelchairRegistries.Length}.");
+            }
+
+            if (!descriptor.IsWheelchair)
+            {
+                return;
+            }
+
+            CityWheelchairNpcAssetRegistry wheelchairRegistry =
+                wheelchairRegistries[0];
+            if (wheelchairRegistry.gameObject != prefab ||
+                wheelchairRegistry.PedestrianRegistry != pedestrianRegistry)
+            {
+                throw new InvalidOperationException(
+                    "The wheelchair registry must live on the prefab root " +
+                    "and bind its shared pedestrian registry.");
+            }
+
+            Dictionary<string, Transform> transforms =
+                IndexUniqueTransforms(prefab, "wheelchair prefab");
+            Transform[] expectedPivots =
+            {
+                RequireTransform(
+                    transforms,
+                    LeftWheelPivotName,
+                    "wheelchair prefab"),
+                RequireTransform(
+                    transforms,
+                    RightWheelPivotName,
+                    "wheelchair prefab"),
+                RequireTransform(
+                    transforms,
+                    LeftCasterPivotName,
+                    "wheelchair prefab"),
+                RequireTransform(
+                    transforms,
+                    RightCasterPivotName,
+                    "wheelchair prefab"),
+                RequireTransform(
+                    transforms,
+                    BellowsPivotName,
+                    "wheelchair prefab"),
+                RequireTransform(
+                    transforms,
+                    PipeBankPivotName,
+                    "wheelchair prefab")
+            };
+            Transform[] registeredPivots =
+            {
+                wheelchairRegistry.LeftWheelPivot,
+                wheelchairRegistry.RightWheelPivot,
+                wheelchairRegistry.LeftCasterPivot,
+                wheelchairRegistry.RightCasterPivot,
+                wheelchairRegistry.BellowsPivot,
+                wheelchairRegistry.PipeBankPivot
+            };
+            for (int index = 0; index < expectedPivots.Length; index++)
+            {
+                if (registeredPivots[index] != expectedPivots[index] ||
+                    !registeredPivots[index].IsChildOf(
+                        pedestrianRegistry.ModelRoot))
+                {
+                    throw new InvalidOperationException(
+                        "The wheelchair registry has a missing, stale or " +
+                        "out-of-model pivot binding.");
+                }
+            }
+
+            if (registeredPivots.Distinct().Count() !=
+                registeredPivots.Length)
+            {
+                throw new InvalidOperationException(
+                    "Every wheelchair mechanism requires its own named " +
+                    "pivot transform.");
+            }
+        }
+
+        private static void ValidateWheelchairVisualScale(
+            GameObject prefab,
+            float wheelRadius)
+        {
+            Dictionary<string, Renderer> renderers =
+                IndexUniqueRenderers(prefab);
+            Renderer leftWheel = RequireRenderer(
+                renderers,
+                LeftWheelRendererName);
+            Renderer rightWheel = RequireRenderer(
+                renderers,
+                RightWheelRendererName);
+            Renderer seat = RequireRenderer(
+                renderers,
+                SeatRendererName);
+
+            Bounds leftBounds = CalculateLocalBounds(
+                prefab.transform,
+                new[] { leftWheel });
+            Bounds rightBounds = CalculateLocalBounds(
+                prefab.transform,
+                new[] { rightWheel });
+            Bounds seatBounds = CalculateLocalBounds(
+                prefab.transform,
+                new[] { seat });
+            float diameter = wheelRadius * 2f;
+            bool wheelsMatch =
+                WheelMatches(leftBounds, diameter) &&
+                WheelMatches(rightBounds, diameter);
+            bool seatMatches =
+                seatBounds.size.x >= 0.40f &&
+                seatBounds.size.x <= 0.48f &&
+                seatBounds.size.y >= 0.05f &&
+                seatBounds.size.y <= 0.09f &&
+                seatBounds.size.z >= 0.38f &&
+                seatBounds.size.z <= 0.48f;
+            if (!wheelsMatch || !seatMatches)
+            {
+                throw new InvalidOperationException(
+                    "The staged wheelchair visual geometry has the wrong " +
+                    "import scale: " +
+                    $"left wheel={leftBounds.size}, " +
+                    $"right wheel={rightBounds.size}, " +
+                    $"seat={seatBounds.size}; expected {diameter:F2} m " +
+                    "drive wheels and a roughly 0.44 x 0.43 m seat.");
+            }
+        }
+
+        private static bool WheelMatches(Bounds bounds, float diameter)
+        {
+            return bounds.size.x >= 0.04f &&
+                   bounds.size.x <= 0.075f &&
+                   Mathf.Abs(bounds.size.y - diameter) <= 0.05f &&
+                   Mathf.Abs(bounds.size.z - diameter) <= 0.05f &&
+                   Mathf.Abs(bounds.min.y) <= 0.025f;
+        }
+
+        private static Renderer RequireRenderer(
+            IReadOnlyDictionary<string, Renderer> renderers,
+            string name)
+        {
+            if (renderers.TryGetValue(name, out Renderer renderer) &&
+                renderer != null)
+            {
+                return renderer;
+            }
+
+            throw new InvalidOperationException(
+                $"Imported wheelchair hierarchy is missing renderer " +
+                $"'{name}'.");
+        }
+
+        private static bool HasExpectedWheelchairVisualScale(
+            GameObject prefab,
+            float wheelRadius)
+        {
+            try
+            {
+                ValidateWheelchairVisualScale(prefab, wheelRadius);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
+
         private static Light CreateHeadLamp(Transform head)
         {
             // Parented to the head bone so the beam follows the real animated
@@ -359,6 +610,17 @@ namespace BarPromenade.Editor
             EditorApplication.delayCall += RunQueuedBuild;
         }
 
+        private static void QueuePipebackRollerBuildWhenSourcesExist()
+        {
+            if (isBuilding || buildQueued || !SourcesExist())
+            {
+                return;
+            }
+
+            buildQueued = true;
+            EditorApplication.delayCall += RunQueuedPipebackRollerBuild;
+        }
+
         public static void BuildOrThrow()
         {
             if (isBuilding)
@@ -369,9 +631,10 @@ namespace BarPromenade.Editor
             if (!SourcesExist())
             {
                 throw new InvalidOperationException(
-                    "City pedestrian build requires both model FBX/manifest " +
-                    "pairs, the custom locomotion FBX/manifest, production " +
-                    "Player model and shared Player3DLit material.");
+                    "City pedestrian build requires every production/staged " +
+                    "model FBX/manifest pair, the custom locomotion " +
+                    "FBX/manifest, production Player model and shared " +
+                    "Player3DLit material.");
             }
 
             isBuilding = true;
@@ -425,41 +688,10 @@ namespace BarPromenade.Editor
 
                 for (int index = 0; index < Descriptors.Length; index++)
                 {
-                    PedestrianDescriptor descriptor = Descriptors[index];
-                    CityPedestrianManifest manifest =
-                        LoadAndValidateManifest(descriptor);
-                    GameObject modelAsset =
-                        AssetDatabase.LoadAssetAtPath<GameObject>(
-                            descriptor.ModelPath);
-                    if (modelAsset == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"Unity did not import a model from " +
-                            $"'{descriptor.ModelPath}'.");
-                    }
-
-                    AnimationClip idle = LoadLocomotionClip(
-                        descriptor.IdleClipName,
-                        descriptor.IdleDuration,
-                        animationManifest);
-                    AnimationClip walk = LoadLocomotionClip(
-                        descriptor.WalkClipName,
-                        descriptor.WalkDuration,
-                        animationManifest);
-                    AnimationClip sit = descriptor.RidesBus
-                        ? LoadLocomotionClip(
-                            descriptor.SitClipName,
-                            descriptor.SitDuration,
-                            animationManifest)
-                        : null;
-                    BuildPrefab(
-                        descriptor,
-                        modelAsset,
-                        sharedMaterial,
-                        idle,
-                        walk,
-                        sit,
-                        manifest);
+                    BuildDescriptor(
+                        Descriptors[index],
+                        animationManifest,
+                        sharedMaterial);
                 }
 
                 AssetDatabase.SaveAssets();
@@ -469,6 +701,117 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
+        }
+
+        public static void BuildPipebackRollerOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Pipeback Roller build requires its model, " +
+                    "manifest, locomotion library, production Player model " +
+                    "and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    YardWheelchairProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        private static void BuildDescriptor(
+            PedestrianDescriptor descriptor,
+            CityPedestrianAnimationManifest animationManifest,
+            Material sharedMaterial)
+        {
+            CityPedestrianManifest manifest =
+                LoadAndValidateManifest(descriptor);
+            GameObject modelAsset =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.ModelPath);
+            if (modelAsset == null)
+            {
+                throw new InvalidOperationException(
+                    $"Unity did not import a model from " +
+                    $"'{descriptor.ModelPath}'.");
+            }
+
+            AnimationClip idle = LoadLocomotionClip(
+                descriptor.IdleClipName,
+                descriptor.IdleDuration,
+                animationManifest);
+            AnimationClip walk = LoadLocomotionClip(
+                descriptor.WalkClipName,
+                descriptor.WalkDuration,
+                animationManifest);
+            AnimationClip sit = descriptor.RidesBus
+                ? LoadLocomotionClip(
+                    descriptor.SitClipName,
+                    descriptor.SitDuration,
+                    animationManifest)
+                : null;
+            BuildPrefab(
+                descriptor,
+                modelAsset,
+                sharedMaterial,
+                idle,
+                walk,
+                sit,
+                manifest);
         }
 
         public static void ValidateOrThrow()
@@ -531,6 +874,14 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City pedestrian prefab is missing a model/head/foot " +
                     "anchor binding.");
+            }
+
+            ValidateWheelchairBindings(prefab, registry, descriptor);
+            if (descriptor.IsWheelchair)
+            {
+                ValidateWheelchairVisualScale(
+                    prefab,
+                    manifest.wheel_radius_m);
             }
 
             ValidateLocomotionClip(
@@ -624,6 +975,16 @@ namespace BarPromenade.Editor
                     "Atmospheric pedestrian prefabs must not be interactive.");
             }
 
+            if (descriptor.IsStaged && behaviours.Any(behaviour =>
+                    behaviour != null &&
+                    !(behaviour is CityPedestrianAssetRegistry) &&
+                    !(behaviour is CityWheelchairNpcAssetRegistry)))
+            {
+                throw new InvalidOperationException(
+                    "A staged pedestrian prefab may carry only its passive " +
+                    "asset registries.");
+            }
+
             Material expectedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
             for (int index = 0; index < registry.Renderers.Count; index++)
@@ -687,6 +1048,15 @@ namespace BarPromenade.Editor
                         QueueBuildWhenSourcesExist();
                         return;
                     }
+
+                    if (descriptor.IsWheelchair &&
+                        !HasExpectedWheelchairVisualScale(
+                            prefab,
+                            manifest.wheel_radius_m))
+                    {
+                        QueuePipebackRollerBuildWhenSourcesExist();
+                        return;
+                    }
                 }
             }
             catch (Exception exception)
@@ -718,9 +1088,31 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void RunQueuedPipebackRollerBuild()
+        {
+            buildQueued = false;
+            if (!SourcesExist())
+            {
+                return;
+            }
+
+            try
+            {
+                BuildPipebackRollerOrThrow();
+                Debug.Log("Staged Pipeback Roller prefab rebuilt.");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    $"Could not build staged Pipeback Roller prefab: " +
+                    $"{exception}");
+            }
+        }
+
         private static CityPedestrianManifest LoadAndValidateManifest(
             PedestrianDescriptor descriptor)
         {
+            ValidateDescriptorScope(descriptor);
             TextAsset source =
                 AssetDatabase.LoadAssetAtPath<TextAsset>(
                     descriptor.ManifestPath);
@@ -821,6 +1213,27 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City pedestrian manifest lacks deterministic source " +
                     "metadata.");
+            }
+
+            if (descriptor.IsStaged &&
+                (!manifest.staged ||
+                 manifest.pool_eligible ||
+                 Mathf.Abs(manifest.wheel_radius_m - 0.30f) > 0.0001f ||
+                 manifest.pivot_names == null ||
+                 !manifest.pivot_names.SequenceEqual(new[]
+                 {
+                     LeftWheelPivotName,
+                     RightWheelPivotName,
+                     LeftCasterPivotName,
+                     RightCasterPivotName,
+                     BellowsPivotName,
+                     PipeBankPivotName
+                 })))
+            {
+                throw new InvalidOperationException(
+                    "The staged wheelchair manifest must declare its " +
+                    "non-pool status, 0.30 m wheels and six mechanism " +
+                    "pivots in stable order.");
             }
 
             HashSet<string> partNames =
@@ -934,7 +1347,14 @@ namespace BarPromenade.Editor
                     clip.root_translation_range_m == null ||
                     clip.root_translation_range_m.Length != 3 ||
                     clip.root_translation_range_m.Any(component =>
-                        Mathf.Abs(component) > 0.0001f))
+                        Mathf.Abs(component) > 0.0001f) ||
+                    (owner.IsWheelchair &&
+                     (clip.wheel_ground_min_m < -0.002f ||
+                      clip.wheel_ground_max_contact_gap_m < 0f ||
+                      clip.wheel_ground_max_contact_gap_m > 0.002f ||
+                      clip.footrest_min_clearance_m < 0.03f ||
+                      clip.rim_hand_max_distance_m < 0f ||
+                      clip.rim_hand_max_distance_m > 0.10f)))
                 {
                     throw new InvalidOperationException(
                         $"Locomotion manifest clip {index} violates the " +
@@ -974,8 +1394,8 @@ namespace BarPromenade.Editor
                 clipOwners.Keys.Any(name => !names.Contains(name)))
             {
                 throw new InvalidOperationException(
-                    "Locomotion manifest must contain exactly the four " +
-                    "approved archetype clips.");
+                    "Locomotion manifest must contain exactly the approved " +
+                    "production and staged archetype clips.");
             }
 
             ModelImporter importer =
@@ -1290,6 +1710,13 @@ namespace BarPromenade.Editor
                     "foot.R",
                     "pedestrian prefab");
                 Renderer[] renderers = rendererList.ToArray();
+                if (descriptor.IsWheelchair)
+                {
+                    ValidateWheelchairVisualScale(
+                        prefabRoot,
+                        manifest.wheel_radius_m);
+                }
+
                 Bounds localBounds = CalculateLocalBounds(
                     prefabRoot.transform,
                     renderers);
@@ -1298,9 +1725,22 @@ namespace BarPromenade.Editor
                     Mathf.Abs(localBounds.min.y) > 0.025f ||
                     CountTriangles(renderers) != manifest.triangle_count)
                 {
+                    Renderer largestRenderer = renderers
+                        .OrderByDescending(candidate =>
+                            candidate.bounds.size.sqrMagnitude)
+                        .First();
                     throw new InvalidOperationException(
-                        "Imported pedestrian geometry lost source bounds or " +
-                        "triangle count.");
+                        $"Imported pedestrian '{descriptor.DesignId}' " +
+                        "geometry lost source bounds or triangle count: " +
+                        $"bounds min={localBounds.min}, " +
+                        $"size={localBounds.size}, triangles=" +
+                        $"{CountTriangles(renderers)}; expected height=" +
+                        $"{manifest.height_m} and triangles=" +
+                        $"{manifest.triangle_count}. Largest renderer=" +
+                        $"'{largestRenderer.name}', localPosition=" +
+                        $"{largestRenderer.transform.localPosition}, " +
+                        $"localScale={largestRenderer.transform.localScale}, " +
+                        $"parent='{largestRenderer.transform.parent?.name}'.");
                 }
 
                 Light headLamp = descriptor.CarriesHeadLamp
@@ -1327,6 +1767,43 @@ namespace BarPromenade.Editor
                     descriptor.PreservesAirborneMotion,
                     pelvis,
                     sit);
+
+                if (descriptor.IsWheelchair)
+                {
+                    // The shared animation FBX deliberately remains an exact
+                    // 31-bone library. These named mechanism pivots are a
+                    // staged contract for future procedural wheel/chair
+                    // motion, not auxiliary animation channels.
+                    CityWheelchairNpcAssetRegistry wheelchairRegistry =
+                        prefabRoot.AddComponent<
+                            CityWheelchairNpcAssetRegistry>();
+                    wheelchairRegistry.Configure(
+                        registry,
+                        RequireTransform(
+                            transformsByName,
+                            LeftWheelPivotName,
+                            "wheelchair prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            RightWheelPivotName,
+                            "wheelchair prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            LeftCasterPivotName,
+                            "wheelchair prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            RightCasterPivotName,
+                            "wheelchair prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            BellowsPivotName,
+                            "wheelchair prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            PipeBankPivotName,
+                            "wheelchair prefab"));
+                }
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1698,6 +2175,10 @@ namespace BarPromenade.Editor
             public string[] animations;
             public string shared_animation_source;
             public string[] shared_clips;
+            public bool staged;
+            public bool pool_eligible;
+            public float wheel_radius_m;
+            public string[] pivot_names;
             public string build_signature;
             public CityPedestrianManifestBone[] bones;
             public CityPedestrianManifestPart[] parts;
@@ -1738,8 +2219,12 @@ namespace BarPromenade.Editor
                 bool carriesHeadLamp = false,
                 bool preservesAirborneMotion = false,
                 string sitClipName = null,
-                float sitDuration = 0f)
+                float sitDuration = 0f,
+                bool isStaged = false,
+                bool isWheelchair = false)
             {
+                IsStaged = isStaged;
+                IsWheelchair = isWheelchair;
                 SitClipName = sitClipName;
                 SitDuration = sitDuration;
                 CarriesHeadLamp = carriesHeadLamp;
@@ -1794,6 +2279,18 @@ namespace BarPromenade.Editor
             /// </summary>
             public bool PreservesAirborneMotion { get; }
 
+            /// <summary>
+            /// Staged designs are authored by this import pipeline but stay
+            /// outside Resources and the runtime archetype catalog.
+            /// </summary>
+            public bool IsStaged { get; }
+
+            /// <summary>
+            /// Declares the additional passive mechanism-pivot registry used
+            /// by an authored wheelchair design.
+            /// </summary>
+            public bool IsWheelchair { get; }
+
             public int ExpectedLightCount => CarriesHeadLamp ? 1 : 0;
             public float Height => ExpectedHeight;
         }
@@ -1827,6 +2324,10 @@ namespace BarPromenade.Editor
             public int keyed_bone_count;
             public float loop_max_error;
             public float[] root_translation_range_m;
+            public float wheel_ground_min_m;
+            public float wheel_ground_max_contact_gap_m;
+            public float footrest_min_clearance_m;
+            public float rim_hand_max_distance_m;
         }
     }
 }

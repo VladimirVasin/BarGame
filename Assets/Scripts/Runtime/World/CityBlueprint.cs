@@ -17,7 +17,8 @@ namespace BarPromenade
         CentralPark = 1,
         NorthWaterfront = 2,
         Lake = 3,
-        Cemetery = 4
+        Cemetery = 4,
+        Yard = 5
     }
 
     public enum CityAreaPlacementPolicy
@@ -154,6 +155,12 @@ namespace BarPromenade
                         CityAreaPlacementPolicy.Movable,
                         "cemetery");
                     break;
+                case CityAreaFeatureKind.Yard:
+                    ValidateSpecialCombination(
+                        CityDistrictKind.Yard,
+                        CityAreaPlacementPolicy.Movable,
+                        "yard");
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(Feature));
             }
@@ -184,6 +191,7 @@ namespace BarPromenade
                 case CityDistrictKind.NorthWaterfront:
                 case CityDistrictKind.Lake:
                 case CityDistrictKind.Cemetery:
+                case CityDistrictKind.Yard:
                     return true;
                 default:
                     return false;
@@ -281,6 +289,12 @@ namespace BarPromenade
 
     public sealed class CityBlueprint
     {
+        // How far the OpenLand/Water fringe may extend below the
+        // normalized lot footprint. Lot cells themselves must stay
+        // non-negative because per-cell random streams hash raw
+        // coordinates.
+        private const int OpenFringeMinimumCell = -1;
+
         private static readonly Vector2Int[] CardinalDirections =
         {
             Vector2Int.down,
@@ -385,11 +399,34 @@ namespace BarPromenade
             urbanAreas =
                 new ReadOnlyCollection<CityAreaPlacement>(copiedUrbanAreas);
             CellBounds = CalculateCellBounds(copiedCells);
-            if (CellBounds.position != Vector2Int.zero)
+            // The lot/road-grid footprint stays normalized to (0,0) so
+            // every coordinate-seeded random stream keeps its meaning; an
+            // OpenLand/Water fringe (yards) may extend one cell into the
+            // negatives around it.
+            var roadGridCells = new List<Vector2Int>();
+            for (int index = 0; index < copiedCells.Count; index++)
+            {
+                if (copiedCells[index].ParticipatesInRoadGrid)
+                {
+                    roadGridCells.Add(copiedCells[index].Cell);
+                }
+            }
+
+            if (roadGridCells.Count == 0 ||
+                CalculateCellBounds(roadGridCells).position !=
+                Vector2Int.zero)
             {
                 throw new InvalidOperationException(
-                    "City blueprint cells must be normalized so their " +
+                    "City blueprint lot cells must be normalized so their " +
                     "minimum X and Z coordinates are zero.");
+            }
+
+            if (CellBounds.xMin < OpenFringeMinimumCell ||
+                CellBounds.yMin < OpenFringeMinimumCell)
+            {
+                throw new InvalidOperationException(
+                    "The open fringe may extend at most one cell below " +
+                    "the normalized lot footprint.");
             }
 
             MapNodeBounds = CalculateCenteredMapNodeBounds(
@@ -497,13 +534,25 @@ namespace BarPromenade
             for (int index = 0; index < area.Cells.Count; index++)
             {
                 Vector2Int cell = area.Cells[index];
+                CityCellTopologyKind topology = area.GetTopology(cell);
                 if (cell.x < 0 || cell.y < 0)
                 {
-                    throw new InvalidOperationException(
-                        $"Area '{area.Id}' uses negative cell {cell}.");
+                    // Lot-creating cells must stay normalized because the
+                    // per-cell random streams are seeded by raw cell
+                    // coordinates; only the open fringe may dip below zero,
+                    // and only by one bounded row/column.
+                    bool lotTopology =
+                        topology == CityCellTopologyKind.BuildableLand ||
+                        topology == CityCellTopologyKind.ParkLand;
+                    if (lotTopology ||
+                        cell.x < OpenFringeMinimumCell ||
+                        cell.y < OpenFringeMinimumCell)
+                    {
+                        throw new InvalidOperationException(
+                            $"Area '{area.Id}' uses negative cell {cell}.");
+                    }
                 }
 
-                CityCellTopologyKind topology = area.GetTopology(cell);
                 ValidateTopology(area.Definition, topology);
             }
 
@@ -547,6 +596,14 @@ namespace BarPromenade
                     {
                         throw new InvalidOperationException(
                             "A cemetery can contain only open land in the MVP.");
+                    }
+
+                    break;
+                case CityAreaFeatureKind.Yard:
+                    if (topology != CityCellTopologyKind.OpenLand)
+                    {
+                        throw new InvalidOperationException(
+                            "A yard can contain only open land in v1.");
                     }
 
                     break;
@@ -643,6 +700,8 @@ namespace BarPromenade
                         ValidateMixedOpenWaterArea(area, "lake");
                         break;
                     case CityAreaFeatureKind.Cemetery:
+                        break;
+                    case CityAreaFeatureKind.Yard:
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(
@@ -819,7 +878,9 @@ namespace BarPromenade
         private void ValidateNorthWaterfront(CityAreaPlacement waterfront)
         {
             int northernCellZ = CellBounds.yMax - 1;
-            for (int x = CellBounds.xMin; x < CellBounds.xMax; x++)
+            // The water row spans the normalized (non-negative) footprint;
+            // a negative-fringe yard column carries no waterfront duty.
+            for (int x = 0; x < CellBounds.xMax; x++)
             {
                 var northernCell = new Vector2Int(x, northernCellZ);
                 if (!cellsByCell.TryGetValue(

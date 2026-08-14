@@ -15,7 +15,16 @@ namespace BarPromenade
         CemeteryGate = 5,
         CemeteryPath = 6,
         CemeteryGrave = 7,
-        CemeteryTree = 8
+        CemeteryTree = 8,
+        YardRingTrack = 9,
+        YardDeadTree = 10,
+        YardBench = 11,
+        YardCarpetFrame = 12,
+        YardSandpit = 13,
+        YardChildToy = 14,
+        YardDeadLamp = 15,
+        YardBin = 16,
+        YardBottle = 17
     }
 
     public enum CityOpenAreaDecorationStyle
@@ -27,7 +36,11 @@ namespace BarPromenade
         CemeteryPath = 4,
         GraveStone = 5,
         TreeTrunk = 6,
-        DarkFoliage = 7
+        DarkFoliage = 7,
+        YardWornTrack = 8,
+        YardTimber = 9,
+        YardPipe = 10,
+        YardPaint = 11
     }
 
     public readonly struct CityOpenAreaDecorationDescriptor :
@@ -135,6 +148,10 @@ namespace BarPromenade
                 case CityOpenAreaDecorationStyle.Reeds:
                 case CityOpenAreaDecorationStyle.CemeteryPath:
                 case CityOpenAreaDecorationStyle.DarkFoliage:
+                // The worn ring is a flat trace in the ground and the
+                // dropped toy is ankle-high; neither may stop a body.
+                case CityOpenAreaDecorationStyle.YardWornTrack:
+                case CityOpenAreaDecorationStyle.YardPaint:
                     return false;
                 default:
                     return true;
@@ -149,6 +166,25 @@ namespace BarPromenade
         private const float FencePostSpacing = 3.2f;
         private const float AccessClearance = 0.45f;
         private const float SpatialChunkSize = 48f;
+
+        // The yard between the hero's building and its neighbour. The
+        // typed fringe precincts are a different thing and stay bare.
+        private const string HomeYardId = "home-yard";
+        private const float YardMinimumRingRadius = 3.5f;
+        private const float YardRingWidth = 1.1f;
+        private const float YardRingEdgeMargin = 2.2f;
+        private const float YardEdgeOffset = 3.4f;
+
+        // The gap between the hero's building and its neighbour is narrow,
+        // so the circuit is smaller than an open precinct would allow and
+        // keeps a hand's width off both walls.
+        private const float HomeYardRingRadius = 4.6f;
+        private const float HomeYardRingMargin = 1.1f;
+        private const float HomeYardWallMargin = 0.6f;
+        private const float YardSlotLateralOffset = 2.1f;
+        private const float YardCircuitClearance = 1.4f;
+        private const int YardRingSegments = 24;
+        private const uint YardSalt = 0x59415244u;
 
         private static readonly Vector2Int[] CardinalDirections =
         {
@@ -169,6 +205,7 @@ namespace BarPromenade
                 new List<CityOpenAreaDecorationDescriptor>(260);
             BuildLake(layout, descriptors);
             BuildCemetery(layout, descriptors);
+            BuildHomeYard(layout, descriptors);
             var plan = new CityOpenAreaDecorationPlan(descriptors);
             ValidateOrThrow(layout, plan);
             return plan;
@@ -985,6 +1022,549 @@ namespace BarPromenade
                         positions[index] + Vector3.up * 4.55f,
                         new Vector3(0.85f, 1.7f, 0.85f))));
             }
+        }
+
+        /// <summary>
+        /// Dresses the yard the hero actually lives against: the roadless
+        /// strip of ground between his building and the neighbouring one.
+        /// This is the "двор" in the ordinary sense — the gap between two
+        /// houses that belongs to nobody and is crossed by everybody.
+        ///
+        /// The typed <see cref="CityAreaFeatureKind.Yard"/> precincts on
+        /// the city fringe are a different thing and stay bare.
+        /// </summary>
+        private static void BuildHomeYard(
+            CityLayout layout,
+            ICollection<CityOpenAreaDecorationDescriptor> target)
+        {
+            BuildingLot home = layout.PlayerHome;
+            if (home == null)
+            {
+                return;
+            }
+
+            if (!TryFindHomeYardGround(
+                    layout,
+                    home,
+                    out Rect ground,
+                    out float groundTopY))
+            {
+                return;
+            }
+
+            float radius = Mathf.Min(
+                HomeYardRingRadius,
+                Mathf.Min(ground.width, ground.height) * 0.5f -
+                HomeYardRingMargin);
+            if (radius < YardMinimumRingRadius)
+            {
+                return;
+            }
+
+            var center = new Vector3(
+                ground.center.x,
+                groundTopY,
+                ground.center.y);
+
+            // No street access descriptor governs this ground, so nothing
+            // is culled against an approach; the door side is protected by
+            // the ground rectangle itself, which never reaches the
+            // frontage.
+            CityOpenAreaAccessDescriptor access = default;
+            AddYardRing(target, center, radius, access);
+            AddYardDeadTree(target, center, access);
+            AddYardEdgeObjects(
+                target,
+                layout,
+                ground,
+                center,
+                radius,
+                access);
+        }
+
+        /// <summary>
+        /// The usable gap beside the home: bounded by the two buildings
+        /// along the roadless side, and by the shared lot ground across it.
+        /// </summary>
+        private static bool TryFindHomeYardGround(
+            CityLayout layout,
+            BuildingLot home,
+            out Rect ground,
+            out float groundTopY)
+        {
+            ground = default;
+            groundTopY = 0f;
+            if (!TryGetCellSurface(layout, home.Cell, out CitySurfaceDescriptor homeSurface))
+            {
+                return false;
+            }
+
+            bool found = false;
+            float bestWidth = 0f;
+            for (int index = 0; index < CardinalDirections.Length; index++)
+            {
+                Vector2Int direction = CardinalDirections[index];
+                if (direction.y != 0)
+                {
+                    // Only the sides of the building, never its frontage.
+                    continue;
+                }
+
+                if (layout.HasRoad(
+                        RoadEdge.ForCellFrontage(home.Cell, direction)))
+                {
+                    continue;
+                }
+
+                Vector2Int neighbourCell = home.Cell + direction;
+                if (!TryGetCellSurface(
+                        layout,
+                        neighbourCell,
+                        out CitySurfaceDescriptor neighbourSurface))
+                {
+                    continue;
+                }
+
+                BuildingLot neighbour = null;
+                for (int lotIndex = 0;
+                     lotIndex < layout.BuildingLots.Count;
+                     lotIndex++)
+                {
+                    if (layout.BuildingLots[lotIndex].Cell == neighbourCell)
+                    {
+                        neighbour = layout.BuildingLots[lotIndex];
+                        break;
+                    }
+                }
+
+                float homeFace = direction.x < 0
+                    ? home.Center.x - home.Size.x * 0.5f
+                    : home.Center.x + home.Size.x * 0.5f;
+                float neighbourFace;
+                if (neighbour != null && neighbour.HasBuilding)
+                {
+                    neighbourFace = direction.x < 0
+                        ? neighbour.Center.x + neighbour.Size.x * 0.5f
+                        : neighbour.Center.x - neighbour.Size.x * 0.5f;
+                }
+                else
+                {
+                    neighbourFace = direction.x < 0
+                        ? neighbourSurface.WorldBounds.xMin
+                        : neighbourSurface.WorldBounds.xMax;
+                }
+
+                float minimumX = Mathf.Min(homeFace, neighbourFace) +
+                                 HomeYardWallMargin;
+                float maximumX = Mathf.Max(homeFace, neighbourFace) -
+                                 HomeYardWallMargin;
+                float minimumZ = Mathf.Max(
+                                     homeSurface.WorldBounds.yMin,
+                                     neighbourSurface.WorldBounds.yMin) +
+                                 HomeYardWallMargin;
+                float maximumZ = Mathf.Min(
+                                     homeSurface.WorldBounds.yMax,
+                                     neighbourSurface.WorldBounds.yMax) -
+                                 HomeYardWallMargin;
+                float width = maximumX - minimumX;
+                float depth = maximumZ - minimumZ;
+                if (width <= 0f || depth <= 0f || width <= bestWidth)
+                {
+                    continue;
+                }
+
+                ground = Rect.MinMaxRect(
+                    minimumX,
+                    minimumZ,
+                    maximumX,
+                    maximumZ);
+                groundTopY = homeSurface.DatumY +
+                             CityElevationPlan.GroundTopOffset;
+                bestWidth = width;
+                found = true;
+            }
+
+            return found;
+        }
+
+        private static bool TryGetCellSurface(
+            CityLayout layout,
+            Vector2Int cell,
+            out CitySurfaceDescriptor surface)
+        {
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                if (layout.Surfaces[index].Cell == cell)
+                {
+                    surface = layout.Surfaces[index];
+                    return true;
+                }
+            }
+
+            surface = default;
+            return false;
+        }
+
+        /// <summary>
+        /// The worn circuit, laid as flat chords so it reads as a trodden
+        /// trace rather than as a built path. Each chord is short, so no
+        /// segment ever spans a spatial batching chunk.
+        /// </summary>
+        private static void AddYardRing(
+            ICollection<CityOpenAreaDecorationDescriptor> target,
+            Vector3 center,
+            float radius,
+            CityOpenAreaAccessDescriptor access)
+        {
+            for (int step = 0; step < YardRingSegments; step++)
+            {
+                float angle = Mathf.PI * 2f *
+                              ((step + 0.5f) / YardRingSegments);
+                var position = new Vector3(
+                    center.x + Mathf.Cos(angle) * radius,
+                    center.y,
+                    center.z + Mathf.Sin(angle) * radius);
+                float chord = Mathf.PI * 2f * radius / YardRingSegments;
+                bool alongX = Mathf.Abs(Mathf.Sin(angle)) >
+                              Mathf.Abs(Mathf.Cos(angle));
+                Vector3 size = alongX
+                    ? new Vector3(chord + 0.25f, 0.06f, YardRingWidth)
+                    : new Vector3(YardRingWidth, 0.06f, chord + 0.25f);
+                Bounds bounds = CreateGroundedBounds(position, size);
+                if (!IsClearOfAccess(bounds, access))
+                {
+                    continue;
+                }
+
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-ring-{step:D2}",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardRingTrack,
+                    CityOpenAreaDecorationStyle.YardWornTrack,
+                    bounds));
+            }
+        }
+
+        /// <summary>
+        /// A dead trunk with two broken limbs: the only tall mass in the
+        /// yard and the axis the circuit is drawn around. No crown, so the
+        /// silhouette stays bare against the fog.
+        /// </summary>
+        private static void AddYardDeadTree(
+            ICollection<CityOpenAreaDecorationDescriptor> target,
+            Vector3 center,
+            CityOpenAreaAccessDescriptor access)
+        {
+            Bounds trunk = CreateGroundedBounds(
+                center,
+                new Vector3(0.46f, 4.1f, 0.46f));
+            if (!IsClearOfAccess(trunk, access))
+            {
+                return;
+            }
+
+            target.Add(new CityOpenAreaDecorationDescriptor(
+                $"{HomeYardId}-tree-trunk",
+                CityAreaFeatureKind.Yard,
+                CityOpenAreaDecorationKind.YardDeadTree,
+                CityOpenAreaDecorationStyle.TreeTrunk,
+                trunk));
+            target.Add(new CityOpenAreaDecorationDescriptor(
+                $"{HomeYardId}-tree-limb-a",
+                CityAreaFeatureKind.Yard,
+                CityOpenAreaDecorationKind.YardDeadTree,
+                CityOpenAreaDecorationStyle.TreeTrunk,
+                new Bounds(
+                    center + new Vector3(0.52f, 3.05f, 0.06f),
+                    new Vector3(1.30f, 0.20f, 0.20f))));
+            target.Add(new CityOpenAreaDecorationDescriptor(
+                $"{HomeYardId}-tree-limb-b",
+                CityAreaFeatureKind.Yard,
+                CityOpenAreaDecorationKind.YardDeadTree,
+                CityOpenAreaDecorationStyle.TreeTrunk,
+                new Bounds(
+                    center + new Vector3(-0.10f, 3.62f, -0.58f),
+                    new Vector3(0.17f, 0.17f, 1.05f))));
+        }
+
+        /// <summary>
+        /// The edge objects. Every one of them is a specific trace of a
+        /// person who is not here: a bench somebody repaired, a carpet
+        /// frame nobody beats carpets on, an empty sandpit, one dropped
+        /// toy, a dead lamp, a bin and a single bottle.
+        /// </summary>
+        private static void AddYardEdgeObjects(
+            ICollection<CityOpenAreaDecorationDescriptor> target,
+            CityLayout layout,
+            Rect grounds,
+            Vector3 center,
+            float radius,
+            CityOpenAreaAccessDescriptor access)
+        {
+            uint hash = StableHash(
+                layout.Seed,
+                Mathf.RoundToInt(grounds.center.x),
+                Mathf.RoundToInt(grounds.center.y),
+                YardSalt);
+            int firstSlot = (int)(hash & 3u);
+
+            // Bench: faces the circuit, so the empty seat and the circling
+            // are read in one frame.
+            if (TryResolveYardSlot(
+                    center,
+                    grounds,
+                    radius,
+                    firstSlot,
+                    access,
+                    new Vector3(1.85f, 0.52f, 0.52f),
+                    out Vector3 benchPosition))
+            {
+                Bounds benchSeat = CreateGroundedBounds(
+                    benchPosition + Vector3.up * 0.42f,
+                    new Vector3(1.85f, 0.10f, 0.52f));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bench-seat",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBench,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    benchSeat));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bench-leg-a",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBench,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    CreateGroundedBounds(
+                        benchPosition + new Vector3(-0.74f, 0f, 0f),
+                        new Vector3(0.14f, 0.42f, 0.46f))));
+                // The replaced leg is the repair the bible asks for: a
+                // painted pipe under a timber seat.
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bench-leg-b-repair",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBench,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    CreateGroundedBounds(
+                        benchPosition + new Vector3(0.74f, 0f, 0f),
+                        new Vector3(0.10f, 0.42f, 0.10f))));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bench-bottle",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBottle,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    CreateGroundedBounds(
+                        benchPosition + new Vector3(1.18f, 0f, 0.28f),
+                        new Vector3(0.09f, 0.27f, 0.09f))));
+            }
+
+            // Carpet-beating frame: the second vertical, deliberately
+            // transparent so it never closes the yard in.
+            if (TryResolveYardSlot(
+                    center,
+                    grounds,
+                    radius,
+                    firstSlot + 1,
+                    access,
+                    new Vector3(2.55f, 1.69f, 0.30f),
+                    out Vector3 framePosition))
+            {
+                Bounds frameHeader = new Bounds(
+                    framePosition + Vector3.up * 1.62f,
+                    new Vector3(2.55f, 0.14f, 0.14f));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-carpet-frame-header",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardCarpetFrame,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    frameHeader));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-carpet-frame-post-a",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardCarpetFrame,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    CreateGroundedBounds(
+                        framePosition + new Vector3(-1.22f, 0f, 0f),
+                        new Vector3(0.13f, 1.69f, 0.13f))));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-carpet-frame-post-b",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardCarpetFrame,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    CreateGroundedBounds(
+                        framePosition + new Vector3(1.22f, 0f, 0f),
+                        new Vector3(0.13f, 1.69f, 0.13f))));
+            }
+
+            // Sandpit with no sand, and the one object in the yard that
+            // was a child's. It is the only saturated colour here.
+            if (TryResolveYardSlot(
+                    center,
+                    grounds,
+                    radius,
+                    firstSlot + 2,
+                    access,
+                    new Vector3(2.20f, 0.24f, 2.20f),
+                    out Vector3 sandpitPosition))
+            {
+                Bounds sandpitEdge = CreateGroundedBounds(
+                    sandpitPosition,
+                    new Vector3(2.20f, 0.24f, 0.18f));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-sandpit-edge-a",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardSandpit,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    sandpitEdge));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-sandpit-edge-b",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardSandpit,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    CreateGroundedBounds(
+                        sandpitPosition + new Vector3(0f, 0f, 2.02f),
+                        new Vector3(2.20f, 0.24f, 0.18f))));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-sandpit-edge-c",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardSandpit,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    CreateGroundedBounds(
+                        sandpitPosition + new Vector3(-1.01f, 0f, 1.01f),
+                        new Vector3(0.18f, 0.24f, 1.84f))));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-sandpit-edge-d",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardSandpit,
+                    CityOpenAreaDecorationStyle.YardTimber,
+                    CreateGroundedBounds(
+                        sandpitPosition + new Vector3(1.01f, 0f, 1.01f),
+                        new Vector3(0.18f, 0.24f, 1.84f))));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-sandpit-toy",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardChildToy,
+                    CityOpenAreaDecorationStyle.YardPaint,
+                    CreateGroundedBounds(
+                        sandpitPosition + new Vector3(0.34f, 0f, 1.46f),
+                        new Vector3(0.24f, 0.16f, 0.20f))));
+            }
+
+            // A lamp post that has not worked in years: the yard owns no
+            // light, so this is a silhouette, never an emitter.
+            if (TryResolveYardSlot(
+                    center,
+                    grounds,
+                    radius,
+                    firstSlot + 3,
+                    access,
+                    new Vector3(0.70f, 3.35f, 0.40f),
+                    out Vector3 lampPosition))
+            {
+                Bounds lampPost = CreateGroundedBounds(
+                    lampPosition,
+                    new Vector3(0.17f, 3.35f, 0.17f));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-dead-lamp-post",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardDeadLamp,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    lampPost));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-dead-lamp-head",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardDeadLamp,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    new Bounds(
+                        lampPosition + new Vector3(0.16f, 3.34f, 0f),
+                        new Vector3(0.54f, 0.22f, 0.34f))));
+            }
+
+            // The bin stands against a wall at one end, clear of the
+            // circuit like everything else here.
+            if (TryResolveYardSlot(
+                    center,
+                    grounds,
+                    radius,
+                    firstSlot + 2,
+                    access,
+                    new Vector3(1.02f, 1.02f, 0.72f),
+                    out Vector3 binPosition))
+            {
+                Bounds binBody = CreateGroundedBounds(
+                    binPosition,
+                    new Vector3(1.02f, 1.02f, 0.72f));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bin-body",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBin,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    binBody));
+                target.Add(new CityOpenAreaDecorationDescriptor(
+                    $"{HomeYardId}-bin-lid",
+                    CityAreaFeatureKind.Yard,
+                    CityOpenAreaDecorationKind.YardBin,
+                    CityOpenAreaDecorationStyle.YardPipe,
+                    new Bounds(
+                        binPosition + new Vector3(0.06f, 1.07f, 0f),
+                        new Vector3(1.06f, 0.10f, 0.76f))));
+            }
+        }
+
+        private static bool TryResolveYardSlot(
+            Vector3 center,
+            Rect grounds,
+            float radius,
+            int slot,
+            CityOpenAreaAccessDescriptor access,
+            Vector3 footprint,
+            out Vector3 position)
+        {
+            bool longIsX = grounds.width >= grounds.height;
+            Vector3 along = longIsX ? Vector3.right : Vector3.forward;
+            Vector3 across = longIsX ? Vector3.forward : Vector3.right;
+            float reach = radius + YardEdgeOffset;
+            float lateral = Mathf.Min(
+                YardSlotLateralOffset,
+                (longIsX ? grounds.height : grounds.width) * 0.5f -
+                YardRingEdgeMargin);
+
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                int index = (slot + attempt) & 3;
+                float endSign = (index & 1) == 0 ? 1f : -1f;
+                float sideSign = (index & 2) == 0 ? 1f : -1f;
+                Vector3 candidate = center +
+                                    along * (reach * endSign) +
+                                    across * (lateral * sideSign);
+                candidate.y = center.y;
+                candidate.x = Mathf.Clamp(
+                    candidate.x,
+                    grounds.xMin + footprint.x * 0.5f,
+                    grounds.xMax - footprint.x * 0.5f);
+                candidate.z = Mathf.Clamp(
+                    candidate.z,
+                    grounds.yMin + footprint.z * 0.5f,
+                    grounds.yMax - footprint.z * 0.5f);
+
+                // Never let a clamp drag an object back onto the circuit.
+                float fromCircuit = Vector2.Distance(
+                    new Vector2(center.x, center.z),
+                    new Vector2(candidate.x, candidate.z));
+                if (fromCircuit < radius + YardCircuitClearance)
+                {
+                    continue;
+                }
+
+                if (IsClearOfAccess(
+                        CreateGroundedBounds(candidate, footprint),
+                        access))
+                {
+                    position = candidate;
+                    return true;
+                }
+            }
+
+            position = default;
+            return false;
         }
 
         private static bool TryGetAccess(

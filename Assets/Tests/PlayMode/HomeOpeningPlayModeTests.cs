@@ -38,7 +38,8 @@ namespace BarPromenade.Tests.PlayMode
                 (active.name == SceneIds.MainMenu ||
                  active.name == SceneIds.HomeInterior ||
                  active.name == SceneIds.DoorTransition ||
-                 active.name == SceneIds.StairwellInterior))
+                 active.name == SceneIds.StairwellInterior ||
+                 active.name == SceneIds.City))
             {
                 Scene cleanup = SceneManager.CreateScene(
                     "Home Opening Test Cleanup");
@@ -668,6 +669,96 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 stairwell.Arrival,
                 Is.EqualTo(StairwellArrivalKind.ApartmentDoor));
+        }
+
+        [UnityTest]
+        public IEnumerator
+            MainMenu_F9SkipsHomeAndOpensCityDebugTeleportMap()
+        {
+            AsyncOperation load = SceneManager.LoadSceneAsync(
+                SceneIds.MainMenu,
+                LoadSceneMode.Single);
+            Assert.That(load, Is.Not.Null);
+            while (!load.isDone)
+            {
+                yield return null;
+            }
+
+            HomeInteriorRoot home = null;
+            yield return WaitUntil(
+                () =>
+                {
+                    home = Object.FindAnyObjectByType<
+                        HomeInteriorRoot>();
+                    return home != null &&
+                           home.IsInitialized &&
+                           home.Opening != null &&
+                           home.DebugCityMapShortcut != null;
+                },
+                "The startup Home did not install its debug City shortcut.");
+
+            yield return WaitUntil(
+                () => home.Opening.Phase ==
+                      HomeOpeningPhase.AwaitingWake,
+                "The startup Home did not reach the Wake Up menu.");
+
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True);
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(
+                GameSessionState.DebugCityMapOnArrivalRequested,
+                Is.False);
+
+            yield return PressAndRelease(keyboard.f9Key);
+
+            CityGameRoot city = null;
+            yield return WaitUntil(
+                () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return SceneManager.GetActiveScene().name ==
+                           SceneIds.City &&
+                           city != null &&
+                           city.IsInitialized &&
+                           !SceneTransitionService.IsTransitioning &&
+                           city.Map != null &&
+                           city.Map.IsOpen;
+                },
+                "F9 did not skip Home and open the City debug map.");
+
+            Assert.That(city.Map.DebugTeleportEnabled, Is.True);
+            Assert.That(
+                GameSessionState.DebugCityMapOnArrivalRequested,
+                Is.False,
+                "The map-open request must be consumed exactly once.");
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(6));
+            Assert.That(
+                GameSessionState.ReturnKind,
+                Is.EqualTo(CityReturnKind.None));
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(GameSessionState.DefaultCash));
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.ApartmentKeys),
+                Is.True);
+            Assert.That(
+                GameSessionState.HasInventoryItem(
+                    InventoryItemId.Lighter),
+                Is.True);
+            Assert.That(
+                Object.FindAnyObjectByType<HomeInteriorRoot>(),
+                Is.Null);
+
+            Vector3 actual =
+                city.Player.GameObject.transform.position;
+            Vector3 expected =
+                city.World.PlayerHome.ReturnPosition;
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(actual.x, actual.z),
+                    new Vector2(expected.x, expected.z)),
+                Is.LessThan(0.05f));
         }
 
         [UnityTest]

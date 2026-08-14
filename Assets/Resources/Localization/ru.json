@@ -901,6 +901,10 @@
       "value": "Кладбище"
     },
     {
+      "key": "map.district.yard",
+      "value": "Двор"
+    },
+    {
       "key": "inventory.status",
       "value": "СОСТОЯНИЕ"
     },

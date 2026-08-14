@@ -375,9 +375,9 @@ MonoBehaviour:
     m_Center: {x: -0.000000059604645, y: 0.875, z: 0.026999965}
     m_Extent: {x: 0.6460844, y: 0.875, z: 0.154}
   sourceTriangleCount: 1044
-  sourceGeneratorVersion: 3.0.0
+  sourceGeneratorVersion: 3.1.0
   designId: long_arm_walker_v1
-  buildSignature: 0ee5561d6f9fc501abcfdd8ed660f6738c2daff3cc9e2237714851de22c7a05f
+  buildSignature: fde07fc10014416f43f3d733ff205f820cec9958f14340a56765573c090c090c
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

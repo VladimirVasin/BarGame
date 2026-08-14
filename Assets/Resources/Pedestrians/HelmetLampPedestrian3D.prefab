@@ -393,9 +393,9 @@ MonoBehaviour:
     m_Center: {x: -0.000000059604645, y: 0.875, z: 0.100550056}
     m_Extent: {x: 0.76750004, y: 0.875, z: 0.28344992}
   sourceTriangleCount: 1084
-  sourceGeneratorVersion: 3.0.0
+  sourceGeneratorVersion: 3.1.0
   designId: helmet_lamp_hopper_v1
-  buildSignature: ac099be34c4e5c7944a9dac5c1ff38e21f01c6af8d0b9286ba73a7271f078bc9
+  buildSignature: dd456a1e88821504744dd27b15e0dbbb47ae12cf0f996f8dbf72cb69442959bc
   paletteVariant: 0
   headLamp: {fileID: 2885974950837579249}
   preservesAirborneMotion: 1

@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82ff71a6e61d4f4ea05bc90ff01a8107, type: 3}
+  m_Name: YardWheelchairProvider
+  m_EditorClassIdentifier:
+  stagedPrefab: {fileID: 3813222065861775117, guid: f9bce729c4ae3d54ca598e0e3684fa80, type: 3}

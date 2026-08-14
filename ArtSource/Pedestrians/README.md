@@ -26,6 +26,28 @@ The generated editable sources are:
   off its head bone;
 - `Blender/CityPedestrianLocomotion.blend`: the shared animation-only source.
 
+The staged source is deliberately separate from that registered five-design
+library:
+
+- `Blender/PipebackRoller3D.blend`: **Pipeback Roller**
+  (`pipeback_roller_v1`), a self-propelled wheelchair user in dark burgundy
+  clothes. Two large drive wheels, small front casters and raised hand levers
+  support an asymmetrical fan of tarnished organ pipes behind the backrest;
+  bellows under the seat and pipe shutters make the chair, rather than the
+  rider's disability, the bizarre element;
+- `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
+  `PipebackIdle` keeps the head level over a slow body breath that pumps the
+  bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
+  push, release and recovery with a forward body lean and swaying pipe load.
+
+Both staged clips carry the same exact 31 keyed Generic bones as the production
+library and no auxiliary animation curves. The non-deforming
+`PIVOT_Wheel.L/R`, `PIVOT_Caster.L/R`, `PIVOT_Bellows` and `PIVOT_PipeBank`
+transforms are passive anchors for a future displacement-driven presentation
+layer; today the frame stays root-bound while bellows and pipes follow the
+authored pelvis/chest motion. The model has an adjacent deterministic review
+PNG and the shared locomotion contact sheet includes its staged row.
+
 Every walker keeps the same `1.75 m` envelope and the same `31`-bone rig, so
 "short" is authored as proportion rather than scale: the Kettle Hat Walker's
 human mass stops near `1.40 m` and the kettle fills the rest. Lowering the
@@ -43,9 +65,10 @@ stay clear of.
 
 Each model has an adjacent deterministic review PNG.
 `Blender/CityPedestrianLocomotionContactSheet.png` shows, left to right, Idle
-and two opposite Walk phases, with one row per archetype in catalog order:
-Lampshade, Chair Carrier, Kettle Hat, Long-Arm, then Helmet Lamp. The sheet grows a row
-automatically when an archetype is added.
+and two opposite locomotion phases, with one row per authored design:
+Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
+Pipeback Roller. The sheet grows a row automatically when an authored design is
+added; appearing here does not register a staged design with the runtime pool.
 
 Rebuild from the repository root with Blender 5:
 
@@ -63,11 +86,38 @@ collider-free model exports, no model-local Actions, and the exact 31-bone
 Generic names, hierarchy and rest pose of `PlayerCharacter3D`. It writes the
 production FBXs and manifests under `Assets/Pedestrians/Models/`.
 
+The Pipeback Roller takes a separate staged output branch:
+
+- `Assets/Pedestrians/Staged/Models/PipebackRoller3D.fbx` and `.json`;
+- `Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab`.
+
+That prefab is intentionally outside every `Resources` directory. It reuses
+the one shared `Player3DLit` material and is passive: no collider,
+`Rigidbody`, runtime pedestrian component, light, audio or interaction. Its
+ordinary `CityPedestrianAssetRegistry` binds the Animator, clips and body
+anchors; `CityWheelchairNpcAssetRegistry` is passive metadata for the six
+mechanism anchors. It declares no `Sit` clip. The generator appends the two
+staged loops to the shared animation-only `CityPedestrianLocomotion.fbx`, but
+importing them does not add a sixth entry to `CityPedestrianResources`.
+
+Its grounding proof is wheel-specific. Both drive tyres must meet the ground
+without penetration, their centres and radii must stay stable, both feet must
+remain on the footplates and both hands must meet the raised push levers during
+the roll cycle. The clips must also close exactly and keep zero gameplay-root
+travel.
+This contract must not be weakened to the production walker's lowest-sole bake:
+the rider is already seated and the chair, not either shoe, establishes ground
+contact.
+
 The same run writes `Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx`
-with fourteen looping, in-place, bone-only clips — an `Idle` and a `Walk` per
-registered design, plus one `Sit` for each design that declares a Route 01
-ride. Its validator checks all 31 keyed bones, closed loop endpoints, zero
-gameplay-root translation and footwear grounding at every exported frame.
+with sixteen looping, in-place clips: an `Idle` and a `Walk` per registered
+design, one `Sit` for each design that declares a Route 01 ride, plus the two
+staged Pipeback loops. Every clip keys only the exact 31 Generic bones. The
+staged model separately exposes six passive mechanism anchors for later
+procedural wheel/caster motion. The validator checks closed loop endpoints and
+zero gameplay-root translation, then applies the owning design's footwear,
+seated, airborne or wheel-contact proof rather than pretending one grounding
+rule fits all four.
 
 A seated clip is the one exception to footwear grounding, and it is declared
 rather than assumed. Its feet leave the pavement plane on purpose, so it is
@@ -120,3 +170,11 @@ Player Avatar. The generated prefabs at
 `Resources/Pedestrians/LongArmPedestrian3D` and
 `Resources/Pedestrians/HelmetLampPedestrian3D` bind those dedicated clips and
 the one shared `Player3DLit` material.
+
+The staged Pipeback prefab is not ready to join that list. Production use is
+deferred until the pedestrian graph can exclude stairs and prove curb/turn
+clearance, the actor owns a wheelchair footprint rather than the ordinary
+`0.35 m` capsule, runtime presentation derives drive-wheel rotation and caster
+steering from travelled motion, and Route 01 has an explicit accessible
+boarding/securement design. The existing pelvis-to-seat passenger transfer is
+not a substitute for transporting a rider who remains in their chair.

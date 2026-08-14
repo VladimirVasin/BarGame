@@ -388,7 +388,8 @@ namespace BarPromenade
             CityAreaFeatureKind feature = area.Definition.Feature;
             if (feature != CityAreaFeatureKind.NorthWaterfront &&
                 feature != CityAreaFeatureKind.Lake &&
-                feature != CityAreaFeatureKind.Cemetery)
+                feature != CityAreaFeatureKind.Cemetery &&
+                feature != CityAreaFeatureKind.Yard)
             {
                 return false;
             }
@@ -665,6 +666,8 @@ namespace BarPromenade
                             return CitySurfaceKind.LakeShore;
                         case CityAreaFeatureKind.Cemetery:
                             return CitySurfaceKind.CemeteryGround;
+                        case CityAreaFeatureKind.Yard:
+                            return CitySurfaceKind.OpenGround;
                         default:
                             return CitySurfaceKind.OpenGround;
                     }

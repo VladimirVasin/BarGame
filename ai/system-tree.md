@@ -117,6 +117,8 @@ Assets/
       Cat/
         StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
         StairwellCatFeedingAtlas.png    512x128, top-first 8x2 feeding atlas
+    City/
+      YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
     Localization/
       ru.json
       en.json
@@ -141,8 +143,14 @@ Assets/
       HelmetLampPedestrian3D.fbx        compatible Generic hopping miner model
       HelmetLampPedestrian3D.json       deterministic geometry/rig manifest
     Animations/
-      CityPedestrianLocomotion.fbx      ten dedicated in-place archetype loops
-      CityPedestrianLocomotion.json     per-archetype gait/contact/clearance/apex manifest
+      CityPedestrianLocomotion.fbx      fourteen production loops + two staged Pipeback loops
+      CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
+    Staged/
+      Models/
+        PipebackRoller3D.fbx            passive 31-bone wheelchair NPC model
+        PipebackRoller3D.json           staged geometry/rig/passive-anchor manifest
+      Prefabs/
+        PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -155,7 +163,8 @@ Assets/
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
-        GameSessionState.cs       persistent clock + needs transaction owner
+        CityGameRoot.cs           city composition + deferred debug-map arrival
+        GameSessionState.cs       persistent clock/needs + one-shot debug-map handoff
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
         GameTimeRuntime.cs        persistent scaled-delta driver
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
@@ -178,7 +187,7 @@ Assets/
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
-        CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery + legacy blueprint
+        CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery, five Yards + legacy blueprint
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
         CityElevationPlanner.cs  default macro profile, local terraces + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
@@ -188,13 +197,13 @@ Assets/
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
         CityRoadGroundBoundaryPlan.cs shared safe-connector/protected-drop seam classification
         CityTerrainSafetyWorldBuilder.cs physical guards along dangerous terrace drops
-        CitySurfacePlan.cs       typed ground/water cells, explicit datum and open-area access
+        CitySurfacePlan.cs       typed ground/water cells (incl. Yard OpenGround), datum and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
         CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      terrace slabs, graded surfaces, stairs + guarded drops
-        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery landmark descriptors
+        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery/home-yard landmark descriptors
         CityOpenAreaWorldBuilder.cs    chunked physical open-area landmark recipes
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
@@ -259,6 +268,14 @@ Assets/
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
+        CityWheelchairNpcAssetRegistry.cs passive future mechanism-pivot bindings; metadata only
+      Yard/          the authored rider on the home-yard circuit, outside the ambient pool
+        YardWheelchairMotion.cs      pure drift pose; computes the reserved wheel differential
+        YardWheelchairPlan.cs        circuit read back from the authored ring and dead tree
+        YardWheelchairPresentation.cs two-clip skeletal graph; mechanism pivots reserved/future
+        YardWheelchairActor.cs       owns distance along the ring and applies the pose
+        YardWheelchairFactory.cs     one instance, passivity re-checked at instantiation
+        YardWheelchairProvider.cs    the only serialized reference to the staged prefab
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof
@@ -321,6 +338,7 @@ Assets/
       Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 2x wake
+        HomeDebugCityMapShortcut.cs     Home F9 -> City/home return + one-shot debug map request
         HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
         HomeDayNightController.cs      window and balcony time-of-day lighting
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
@@ -356,7 +374,7 @@ Assets/
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       Player3D/       deterministic model/animation/portrait import + prefab setup
-      City/NPC/       pedestrian Generic import, dependency validation + prefab setup
+      City/NPC/       production/staged pedestrian Generic import, validation + prefab setup
       City/Traffic/   bus/driver FBX import, shared materials + Resources prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
@@ -374,7 +392,7 @@ Assets/
       Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
-      CityPedestrianRuntimeTests.cs     shared clips, grounded gait, cap + lifecycle
+      CityPedestrianRuntimeTests.cs     production lifecycle + staged Pipeback isolation/bindings
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
       CityBusRuntimeTests.cs            encounter/loop/dwell plus passenger holds, recycle guards + reset
       CityBusRidePlayModeTests.cs       both-door prompt, ride/next-stop exit + state restoration
@@ -411,7 +429,7 @@ Assets/
       InventoryPlayModeTests.cs            I/Escape, clock/needs freeze and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
-      HomeOpeningPlayModeTests.cs           launch, wake, running clock and cleanup
+      HomeOpeningPlayModeTests.cs           launch, wake, Home F9 map skip and cleanup
       HomeBalconyPresentationPlayModeTests.cs  time/fog invariants + pedestrian gate
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
@@ -432,7 +450,7 @@ ArtSource/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
-    Blender/                    five model .blends/previews + per-archetype-row locomotion contact sheet
+    Blender/                    five production + one staged model .blends/previews and shared locomotion contact sheet
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     Blender/                    production .blend, transparent preview and authoring notes
@@ -471,7 +489,8 @@ build index 0 -> MainMenuRoot -> BeginNewGame
                               -> HomeArrival.OpeningSleep
                               -> Single-load HomeInterior
                               -> time frozen at 05:59
-startup Wake -> session time 06:00 -> GameTimeRuntime scaled delta
+startup Wake or accepted Home F9 debug skip -> session time 06:00
+                                             -> GameTimeRuntime scaled delta
                                   -> 1440 real seconds per game day
                                   -> PlayerNeedsProgressionState
                                      -> hunger 0..100 / 1440 game minutes
@@ -829,7 +848,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                              -> ring stops -> wake + smooth camera arc
                                              -> 2x exit + continuous gameplay settle
                                              -> existing wake frames
-                                             -> normal Home camera/input, no handoff cut
+                                              -> normal Home camera/input, no handoff cut
+       -> HomeDebugCityMapShortcut -> F9 from any Home phase
+                                   -> direct City load + PlayerHome return
+                                   -> DebugCityMapOnArrivalRequested
+                                      -> City waits for transition completion
+                                      -> enable teleport + open map + clear request
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths
@@ -883,7 +907,8 @@ GameSessionState intoxication -> IntoxicationStageRules
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> BarMinigameCatalog -> isolated minigame instance
                           -> City test-teleport toggle -> CityMap all-lot selection
-                                                      -> Yes -> PlayerMotor.Teleport
+                                                       -> Yes -> PlayerMotor.Teleport
+Home F9 -> HomeDebugCityMapShortcut -> City at home -> open debug-teleport map
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^

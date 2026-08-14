@@ -1,0 +1,1249 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "3.1.0",
+  "blender_version": "5.0.1",
+  "design_id": "pipeback_roller_v1",
+  "display_name": "Pipeback Roller",
+  "seed": 631907,
+  "height_m": 1.75,
+  "pose": "apose",
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "mesh_count": 52,
+  "triangle_count": 2388,
+  "triangle_budget": [
+    1400,
+    2400
+  ],
+  "staged": true,
+  "pool_eligible": false,
+  "wheel_radius_m": 0.3,
+  "pivot_names": [
+    "PIVOT_Wheel.L",
+    "PIVOT_Wheel.R",
+    "PIVOT_Caster.L",
+    "PIVOT_Caster.R",
+    "PIVOT_Bellows",
+    "PIVOT_PipeBank"
+  ],
+  "bounds_min": [
+    -0.825,
+    -0.61,
+    0.0
+  ],
+  "bounds_max": [
+    0.825,
+    0.405,
+    1.75
+  ],
+  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "emissive": false,
+  "colliders": false,
+  "animation_count": 0,
+  "animations": [],
+  "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "shared_clips": [
+    "PipebackIdle",
+    "PipebackRoll"
+  ],
+  "rides_bus": false,
+  "seated_clearance_m": null,
+  "build_signature": "d9f60151c1a74c7714f7b99e25ae31a2448380e54ebceed2c9b7ae45a3bced98",
+  "bones": [
+    {
+      "name": "root",
+      "parent": "",
+      "head": [
+        0,
+        0,
+        0
+      ],
+      "tail": [
+        0,
+        0,
+        0.18
+      ],
+      "deform": false
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "head": [
+        0,
+        0.008,
+        0.7
+      ],
+      "tail": [
+        0,
+        0.004,
+        0.9
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine",
+      "parent": "pelvis",
+      "head": [
+        0,
+        0.004,
+        0.9
+      ],
+      "tail": [
+        0,
+        0,
+        1.12
+      ],
+      "deform": true
+    },
+    {
+      "name": "chest",
+      "parent": "spine",
+      "head": [
+        0,
+        0,
+        1.12
+      ],
+      "tail": [
+        0,
+        -0.01,
+        1.335
+      ],
+      "deform": true
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.01,
+        1.335
+      ],
+      "tail": [
+        0,
+        -0.025,
+        1.43
+      ],
+      "deform": true
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "head": [
+        0,
+        -0.025,
+        1.43
+      ],
+      "tail": [
+        0,
+        -0.05,
+        1.675
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.L",
+      "parent": "head",
+      "head": [
+        0.052,
+        -0.147,
+        1.581
+      ],
+      "tail": [
+        0.052,
+        -0.147,
+        1.599
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.R",
+      "parent": "head",
+      "head": [
+        -0.052,
+        -0.147,
+        1.581
+      ],
+      "tail": [
+        -0.052,
+        -0.147,
+        1.599
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.L",
+      "parent": "head",
+      "head": [
+        0.082,
+        -0.154,
+        1.627
+      ],
+      "tail": [
+        0.027,
+        -0.157,
+        1.621
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.R",
+      "parent": "head",
+      "head": [
+        -0.082,
+        -0.154,
+        1.625
+      ],
+      "tail": [
+        -0.027,
+        -0.157,
+        1.619
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.mouth",
+      "parent": "head",
+      "head": [
+        -0.036,
+        -0.151,
+        1.477
+      ],
+      "tail": [
+        0.048,
+        -0.151,
+        1.477
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Mouth",
+      "parent": "head",
+      "head": [
+        0.006,
+        -0.158,
+        1.477
+      ],
+      "tail": [
+        0.006,
+        -0.218,
+        1.477
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.L",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.325
+      ],
+      "tail": [
+        0.208,
+        -0.004,
+        1.292
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.L",
+      "parent": "clavicle.L",
+      "head": [
+        0.208,
+        -0.004,
+        1.292
+      ],
+      "tail": [
+        0.47,
+        -0.01,
+        1.175
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.L",
+      "parent": "upper_arm.L",
+      "head": [
+        0.47,
+        -0.01,
+        1.175
+      ],
+      "tail": [
+        0.68,
+        -0.018,
+        1.075
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.L",
+      "parent": "forearm.L",
+      "head": [
+        0.68,
+        -0.018,
+        1.075
+      ],
+      "tail": [
+        0.755,
+        -0.022,
+        1.035
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.L",
+      "parent": "hand.L",
+      "head": [
+        0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        0.734,
+        -0.07588,
+        1.0462
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Vessel.L",
+      "parent": "hand.L",
+      "head": [
+        0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        0.734,
+        -0.02088,
+        0.9612
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.R",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.325
+      ],
+      "tail": [
+        -0.208,
+        0.004,
+        1.292
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.R",
+      "parent": "clavicle.R",
+      "head": [
+        -0.208,
+        0.004,
+        1.292
+      ],
+      "tail": [
+        -0.47,
+        -0.01,
+        1.175
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.R",
+      "parent": "upper_arm.R",
+      "head": [
+        -0.47,
+        -0.01,
+        1.175
+      ],
+      "tail": [
+        -0.68,
+        -0.018,
+        1.075
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.R",
+      "parent": "forearm.R",
+      "head": [
+        -0.68,
+        -0.018,
+        1.075
+      ],
+      "tail": [
+        -0.755,
+        -0.022,
+        1.035
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        -0.734,
+        -0.07588,
+        1.0462
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Cigarette.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.03088,
+        1.0582
+      ],
+      "tail": [
+        -0.734,
+        -0.10588,
+        1.0582
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Bottle.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        -0.734,
+        -0.02088,
+        0.9612
+      ],
+      "deform": false
+    },
+    {
+      "name": "thigh.L",
+      "parent": "pelvis",
+      "head": [
+        0.083,
+        0.012,
+        0.75
+      ],
+      "tail": [
+        0.103,
+        -0.012,
+        0.354
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.L",
+      "parent": "thigh.L",
+      "head": [
+        0.103,
+        -0.012,
+        0.354
+      ],
+      "tail": [
+        0.112,
+        -0.026,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.L",
+      "parent": "shin.L",
+      "head": [
+        0.112,
+        -0.026,
+        0.095
+      ],
+      "tail": [
+        0.112,
+        -0.23,
+        0.045
+      ],
+      "deform": true
+    },
+    {
+      "name": "thigh.R",
+      "parent": "pelvis",
+      "head": [
+        -0.083,
+        -0.004,
+        0.75
+      ],
+      "tail": [
+        -0.103,
+        0.012,
+        0.354
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.R",
+      "parent": "thigh.R",
+      "head": [
+        -0.103,
+        0.012,
+        0.354
+      ],
+      "tail": [
+        -0.112,
+        0.018,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.R",
+      "parent": "shin.R",
+      "head": [
+        -0.112,
+        0.018,
+        0.095
+      ],
+      "tail": [
+        -0.112,
+        -0.188,
+        0.045
+      ],
+      "deform": true
+    }
+  ],
+  "parts": [
+    {
+      "name": "ACC_Armrests",
+      "role": "wheelchair_frame",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "ACC_Backrest",
+      "role": "seat",
+      "bone": "root",
+      "palette_name": "chair_seat",
+      "base_color": [
+        0.09,
+        0.04,
+        0.045,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Bellows",
+      "role": "bellows",
+      "bone": "pelvis",
+      "palette_name": "bellows",
+      "base_color": [
+        0.17,
+        0.075,
+        0.055,
+        1.0
+      ],
+      "vertices": 32,
+      "triangles": 48
+    },
+    {
+      "name": "ACC_CasterHub.L",
+      "role": "caster",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "ACC_CasterHub.R",
+      "role": "caster",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "ACC_CasterTyre.L",
+      "role": "caster",
+      "bone": "root",
+      "palette_name": "chair_tyre",
+      "base_color": [
+        0.018,
+        0.021,
+        0.02,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 80
+    },
+    {
+      "name": "ACC_CasterTyre.R",
+      "role": "caster",
+      "bone": "root",
+      "palette_name": "chair_tyre",
+      "base_color": [
+        0.018,
+        0.021,
+        0.02,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 80
+    },
+    {
+      "name": "ACC_ChairFrame",
+      "role": "wheelchair_frame",
+      "bone": "root",
+      "palette_name": "chair_frame",
+      "base_color": [
+        0.06,
+        0.066,
+        0.068,
+        1.0
+      ],
+      "vertices": 96,
+      "triangles": 168
+    },
+    {
+      "name": "ACC_Eye.L",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "void",
+      "base_color": [
+        0.008,
+        0.01,
+        0.009,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Eye.R",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "void",
+      "base_color": [
+        0.008,
+        0.01,
+        0.009,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_FootrestStems",
+      "role": "wheelchair_frame",
+      "bone": "root",
+      "palette_name": "chair_frame",
+      "base_color": [
+        0.06,
+        0.066,
+        0.068,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 40
+    },
+    {
+      "name": "ACC_Footrests",
+      "role": "footrest",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "ACC_Hair",
+      "role": "clothing_detail",
+      "bone": "head",
+      "palette_name": "roller_coat_dark",
+      "base_color": [
+        0.075,
+        0.025,
+        0.032,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Mouth",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "void",
+      "base_color": [
+        0.008,
+        0.01,
+        0.009,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Nose",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "roller_skin_dark",
+      "base_color": [
+        0.235,
+        0.155,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_OrganPipe.01",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_brass_dark",
+      "base_color": [
+        0.155,
+        0.105,
+        0.042,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_OrganPipe.02",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_ivory",
+      "base_color": [
+        0.585,
+        0.555,
+        0.465,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_OrganPipe.03",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_brass_light",
+      "base_color": [
+        0.57,
+        0.435,
+        0.18,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_OrganPipe.04",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_brass",
+      "base_color": [
+        0.39,
+        0.285,
+        0.105,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_OrganPipe.05",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_ivory",
+      "base_color": [
+        0.585,
+        0.555,
+        0.465,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_OrganPipe.06",
+      "role": "signature_silhouette",
+      "bone": "chest",
+      "palette_name": "pipe_brass_dark",
+      "base_color": [
+        0.155,
+        0.105,
+        0.042,
+        1.0
+      ],
+      "vertices": 52,
+      "triangles": 92
+    },
+    {
+      "name": "ACC_PipeManifold",
+      "role": "pipe_manifold",
+      "bone": "chest",
+      "palette_name": "pipe_brass_dark",
+      "base_color": [
+        0.155,
+        0.105,
+        0.042,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_PushLevers",
+      "role": "drive_lever",
+      "bone": "root",
+      "palette_name": "chair_rim",
+      "base_color": [
+        0.25,
+        0.225,
+        0.17,
+        1.0
+      ],
+      "vertices": 32,
+      "triangles": 48
+    },
+    {
+      "name": "ACC_PushRim.L",
+      "role": "wheel_rim",
+      "bone": "root",
+      "palette_name": "chair_rim",
+      "base_color": [
+        0.25,
+        0.225,
+        0.17,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 80
+    },
+    {
+      "name": "ACC_PushRim.R",
+      "role": "wheel_rim",
+      "bone": "root",
+      "palette_name": "chair_rim",
+      "base_color": [
+        0.25,
+        0.225,
+        0.17,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 80
+    },
+    {
+      "name": "ACC_SeatCushion",
+      "role": "seat",
+      "bone": "root",
+      "palette_name": "chair_seat",
+      "base_color": [
+        0.09,
+        0.04,
+        0.045,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_ShoeSole.L",
+      "role": "footwear_detail",
+      "bone": "foot.L",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_ShoeSole.R",
+      "role": "footwear_detail",
+      "bone": "foot.R",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_WheelSpokes.L",
+      "role": "wheel_mechanism",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 64,
+      "triangles": 100
+    },
+    {
+      "name": "ACC_WheelSpokes.R",
+      "role": "wheel_mechanism",
+      "bone": "root",
+      "palette_name": "chair_frame_light",
+      "base_color": [
+        0.135,
+        0.145,
+        0.145,
+        1.0
+      ],
+      "vertices": 64,
+      "triangles": 100
+    },
+    {
+      "name": "ACC_WheelTyre.L",
+      "role": "wheel_tyre",
+      "bone": "root",
+      "palette_name": "chair_tyre",
+      "base_color": [
+        0.018,
+        0.021,
+        0.02,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 96
+    },
+    {
+      "name": "ACC_WheelTyre.R",
+      "role": "wheel_tyre",
+      "bone": "root",
+      "palette_name": "chair_tyre",
+      "base_color": [
+        0.018,
+        0.021,
+        0.02,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 96
+    },
+    {
+      "name": "CLO_CoatBack",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "roller_coat_dark",
+      "base_color": [
+        0.075,
+        0.025,
+        0.032,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CoatFront.L",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "roller_coat_light",
+      "base_color": [
+        0.3,
+        0.09,
+        0.1,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CoatFront.R",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "roller_coat",
+      "base_color": [
+        0.205,
+        0.055,
+        0.07,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Collar",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "roller_coat_light",
+      "base_color": [
+        0.3,
+        0.09,
+        0.1,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Foot.L",
+      "role": "foot",
+      "bone": "foot.L",
+      "palette_name": "shoe",
+      "base_color": [
+        0.045,
+        0.038,
+        0.032,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Foot.R",
+      "role": "foot",
+      "bone": "foot.R",
+      "palette_name": "shoe",
+      "base_color": [
+        0.045,
+        0.038,
+        0.032,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Forearm.L",
+      "role": "body",
+      "bone": "forearm.L",
+      "palette_name": "roller_coat_light",
+      "base_color": [
+        0.3,
+        0.09,
+        0.1,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_Forearm.R",
+      "role": "body",
+      "bone": "forearm.R",
+      "palette_name": "roller_coat_light",
+      "base_color": [
+        0.3,
+        0.09,
+        0.1,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_Hand.L",
+      "role": "hand",
+      "bone": "hand.L",
+      "palette_name": "roller_skin",
+      "base_color": [
+        0.405,
+        0.285,
+        0.215,
+        1.0
+      ],
+      "vertices": 26,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_Hand.R",
+      "role": "hand",
+      "bone": "hand.R",
+      "palette_name": "roller_skin",
+      "base_color": [
+        0.405,
+        0.285,
+        0.215,
+        1.0
+      ],
+      "vertices": 26,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_Head",
+      "role": "body",
+      "bone": "head",
+      "palette_name": "roller_skin",
+      "base_color": [
+        0.405,
+        0.285,
+        0.215,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body",
+      "bone": "neck",
+      "palette_name": "roller_skin_dark",
+      "base_color": [
+        0.235,
+        0.155,
+        0.115,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_Pelvis",
+      "role": "body",
+      "bone": "pelvis",
+      "palette_name": "roller_coat",
+      "base_color": [
+        0.205,
+        0.055,
+        0.07,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Shin.L",
+      "role": "body",
+      "bone": "shin.L",
+      "palette_name": "roller_trousers",
+      "base_color": [
+        0.055,
+        0.06,
+        0.065,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Shin.R",
+      "role": "body",
+      "bone": "shin.R",
+      "palette_name": "roller_trousers",
+      "base_color": [
+        0.055,
+        0.06,
+        0.065,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Thigh.L",
+      "role": "body",
+      "bone": "thigh.L",
+      "palette_name": "roller_trousers",
+      "base_color": [
+        0.055,
+        0.06,
+        0.065,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Thigh.R",
+      "role": "body",
+      "bone": "thigh.R",
+      "palette_name": "roller_trousers",
+      "base_color": [
+        0.055,
+        0.06,
+        0.065,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Torso",
+      "role": "body",
+      "bone": "chest",
+      "palette_name": "roller_coat_dark",
+      "base_color": [
+        0.075,
+        0.025,
+        0.032,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_UpperArm.L",
+      "role": "body",
+      "bone": "upper_arm.L",
+      "palette_name": "roller_coat",
+      "base_color": [
+        0.205,
+        0.055,
+        0.07,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_UpperArm.R",
+      "role": "body",
+      "bone": "upper_arm.R",
+      "palette_name": "roller_coat",
+      "base_color": [
+        0.205,
+        0.055,
+        0.07,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    }
+  ]
+}

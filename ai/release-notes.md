@@ -6,6 +6,61 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — The yard rider has his wheelchair back
+
+- The pipe-backed rider no longer appears without his wheelchair. Its two
+  large wheels, casters, frame, seat, footrests and push levers now render at
+  their intended full size while he circles the worn yard track.
+- This restores the chair's visible geometry; procedural articulation of its
+  separate mechanism pivots remains future work.
+
+### 2026-08-14 — F9 jumps straight from the flat to the City map
+
+- Pressing `F9` anywhere in the apartment, even during the initial sleeping
+  clock shot, now skips the flat and stairwell and places the hero outside by
+  the home.
+- In a fresh session the clock starts from `06:00`, and the City map opens
+  automatically with test teleport already enabled. The ordinary Wake Up and
+  stairwell route are unchanged.
+
+### 2026-08-14 — Somebody is always riding in the yard
+
+- The worn ring in the yard by the hero's door is no longer just a mark in
+  the ground. A man in a pipe-backed wheelchair rides it, and he never
+  stops — day, night, rain.
+- He does not ride it cleanly. The chair hangs sideways through the whole
+  turn, nose pointed into the circle, sliding round the dead tree; the
+  angle of the slide breathes as he shifts his weight, his pace sags and
+  picks up in the same rhythm, and his line wanders a little every lap.
+  His skeletal roll loop works the torso and raised hand levers. The visible
+  chair travels as one assembly; its wheel, caster and other mechanism pivots
+  remain reserved for future procedural articulation.
+
+### 2026-08-13 — The yard by the hero's door gets its story
+
+- The yard east of the hero's building is no longer bare dirt. A dead tree
+  stands in the middle, and the ground around it is worn into a ring —
+  somebody has been going round and round it for years.
+- At the edges: a bench with one leg replaced, a carpet-beating frame with no
+  carpet on it, an empty sandpit with a single child's toy dropped beside it,
+  a lamp post that has not worked in a long time, a bin by the entrance and
+  one bottle by the bench.
+- The yard has no light of its own. What reaches it comes from the windows of
+  the house and the street lamp beyond its edge.
+- Nothing blocks the way in, and the middle of the ring is deliberately kept
+  clear.
+
+### 2026-08-13 — The city gets its yards
+
+- The empty ground behind the boundary streets is no longer the edge of the
+  world. Five yards now exist: a large one just east of the hero's building
+  (between the cemetery and the lake) and four narrower strips along the
+  southern and western edges of the city.
+- They are open, walkable ground with one entrance each off the street, and
+  they show on the city map in their own colour, labelled «Двор».
+- They are deliberately bare for now — dirt and nothing else. Each will be
+  furnished separately later.
+
 ### 2026-08-13 — The city is no longer flat
 
 - The four districts now sit across a real terraced landscape instead of one

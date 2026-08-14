@@ -901,6 +901,10 @@
       "value": "Cemetery"
     },
     {
+      "key": "map.district.yard",
+      "value": "Yard"
+    },
+    {
       "key": "inventory.status",
       "value": "STATUS"
     },

@@ -94,6 +94,7 @@ namespace BarPromenade
                 nodes,
                 allEdges);
             EnsureEveryBlockHasFrontage(snapshot, seed, roads);
+            EnsureYardAccessEdges(snapshot, roads);
             roads.Sort(RoadEdge.Compare);
 
             Vector3 origin = anchorAtBlueprintCenter
@@ -587,6 +588,91 @@ namespace BarPromenade
                         CardinalDirections[start]);
                     roads.Add(added);
                     roadSet.Add(added);
+                }
+            }
+        }
+
+        private static void EnsureYardAccessEdges(
+            CityGenerationSettings settings,
+            List<RoadEdge> roads)
+        {
+            // Yards must be reachable from a street for the open-area
+            // access contract. This runs after every random-driven road
+            // pass, so on any blueprint where a yard already borders a
+            // built street (the canonical city) it is a strict no-op and
+            // the road RNG stream is untouched.
+            CityBlueprint blueprint = settings.Blueprint;
+            if (blueprint == null)
+            {
+                return;
+            }
+
+            var roadSet = new HashSet<RoadEdge>(roads);
+            for (int areaIndex = 0;
+                 areaIndex < blueprint.Areas.Count;
+                 areaIndex++)
+            {
+                CityAreaPlacement area = blueprint.Areas[areaIndex];
+                if (area.Definition.Feature != CityAreaFeatureKind.Yard)
+                {
+                    continue;
+                }
+
+                bool hasAccess = false;
+                bool hasBest = false;
+                RoadEdge best = default;
+                long bestDistance = long.MaxValue;
+                for (int cellIndex = 0;
+                     cellIndex < area.Cells.Count && !hasAccess;
+                     cellIndex++)
+                {
+                    Vector2Int cell = area.Cells[cellIndex];
+                    for (int directionIndex = 0;
+                         directionIndex < CardinalDirections.Length;
+                         directionIndex++)
+                    {
+                        Vector2Int direction =
+                            CardinalDirections[directionIndex];
+                        if (!settings.ParticipatesInRoadGrid(
+                                cell + direction))
+                        {
+                            continue;
+                        }
+
+                        RoadEdge candidate = RoadEdge.ForCellFrontage(
+                            cell,
+                            direction);
+                        if (roadSet.Contains(candidate))
+                        {
+                            hasAccess = true;
+                            break;
+                        }
+
+                        Vector2Int doubledMidpoint =
+                            candidate.A + candidate.B;
+                        Vector2Int doubledCenter =
+                            blueprint.CenterNode * 2;
+                        long deltaX =
+                            doubledMidpoint.x - doubledCenter.x;
+                        long deltaZ =
+                            doubledMidpoint.y - doubledCenter.y;
+                        long distance = deltaX * deltaX + deltaZ * deltaZ;
+                        if (!hasBest ||
+                            distance < bestDistance ||
+                            (distance == bestDistance &&
+                             RoadEdge.Compare(candidate, best) < 0))
+                        {
+                            best = candidate;
+                            hasBest = true;
+                            bestDistance = distance;
+                        }
+                    }
+                }
+
+                if (!hasAccess && hasBest)
+                {
+                    roads.Add(best);
+                    roadSet.Add(best);
                 }
             }
         }

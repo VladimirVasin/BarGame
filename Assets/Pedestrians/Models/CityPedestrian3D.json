@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
   "design_id": "lampshade_walker_v1",
   "display_name": "Lampshade Walker",
@@ -15,6 +15,10 @@
     800,
     1400
   ],
+  "staged": false,
+  "pool_eligible": true,
+  "wheel_radius_m": 0.0,
+  "pivot_names": [],
   "bounds_min": [
     -0.761249,
     -0.2525,
@@ -41,7 +45,7 @@
     0.99,
     1.07
   ],
-  "build_signature": "0b81c4ae86e6138b7af2f5de64dca65e8a085e0c67ecd20e6c2749a1f148851f",
+  "build_signature": "0c70dc24ac329986cbc330761cce100ca8417411e8041f903763e772e5253caf",
   "bones": [
     {
       "name": "root",

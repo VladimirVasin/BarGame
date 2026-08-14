@@ -438,9 +438,9 @@ MonoBehaviour:
     m_Center: {x: -0.000000059604645, y: 0.875, z: 0.008940846}
     m_Extent: {x: 0.62600005, y: 0.875, z: 0.37055907}
   sourceTriangleCount: 1356
-  sourceGeneratorVersion: 3.0.0
+  sourceGeneratorVersion: 3.1.0
   designId: kettle_hat_walker_v1
-  buildSignature: f9939e810294049bd590d73784a88311aa1a081c822462a8528a39e46f3b7d46
+  buildSignature: 9403821a25b0cb3bc8dea9a3f2512be8146b3395220d9903d2548eba7438a595
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

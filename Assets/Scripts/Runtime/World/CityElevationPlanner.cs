@@ -210,6 +210,14 @@ namespace BarPromenade
                 return 2.3f;
             }
 
+            if (cell.Area.Feature == CityAreaFeatureKind.Yard)
+            {
+                // Yards are required to declare a street access, so this
+                // placeholder is always overwritten by
+                // AlignOpenAreasToAccesses with the access frontage datum.
+                return 0f;
+            }
+
             Vector2Int minimum = cell.Cell;
             float average =
                 GetNode(nodeElevations, minimum) +
@@ -440,6 +448,18 @@ namespace BarPromenade
                 return false;
             }
 
+            // Yards host no signature stairs in v1, and excluding them
+            // keeps the pre-yard stair selection bit-identical: before the
+            // yards existed these edges had no outward cell and were
+            // rejected by the existence check above.
+            if (firstCell.Area.Feature == CityAreaFeatureKind.Yard ||
+                secondCell.Area.Feature == CityAreaFeatureKind.Yard)
+            {
+                district = default;
+                stairSide = default;
+                return false;
+            }
+
             bool firstUrban = firstCell.Area.Feature ==
                               CityAreaFeatureKind.UrbanDistrict;
             bool secondUrban = secondCell.Area.Feature ==
@@ -550,6 +570,8 @@ namespace BarPromenade
                     return 4;
                 case CityDistrictKind.NorthWaterfront:
                     return 2;
+                case CityDistrictKind.Yard:
+                    return 0;
                 default:
                     return 0;
             }

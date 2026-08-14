@@ -25,6 +25,16 @@ namespace BarPromenade
             new Color(0.13f, 0.10f, 0.07f);
         private static readonly Color DarkFoliage =
             new Color(0.08f, 0.16f, 0.10f);
+        // Bare earth beaten a shade darker than the yard ground it cuts.
+        private static readonly Color YardWornTrack =
+            new Color(0.22f, 0.19f, 0.14f);
+        private static readonly Color YardTimber =
+            new Color(0.24f, 0.19f, 0.14f);
+        private static readonly Color YardPipe =
+            new Color(0.19f, 0.20f, 0.19f);
+        // The single saturated note in the yard, on one dropped toy.
+        private static readonly Color YardPaint =
+            new Color(0.46f, 0.23f, 0.16f);
 
         public static GameObject Build(
             Transform parent,
@@ -97,6 +107,14 @@ namespace BarPromenade
                     return GraveStone;
                 case CityOpenAreaDecorationStyle.TreeTrunk:
                     return TreeTrunk;
+                case CityOpenAreaDecorationStyle.YardWornTrack:
+                    return YardWornTrack;
+                case CityOpenAreaDecorationStyle.YardTimber:
+                    return YardTimber;
+                case CityOpenAreaDecorationStyle.YardPipe:
+                    return YardPipe;
+                case CityOpenAreaDecorationStyle.YardPaint:
+                    return YardPaint;
                 case CityOpenAreaDecorationStyle.DarkFoliage:
                     return DarkFoliage;
                 default:

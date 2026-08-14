@@ -135,6 +135,7 @@ namespace BarPromenade
             var beach = new List<Bounds>();
             var lakeShore = new List<Bounds>();
             var cemetery = new List<Bounds>();
+            var yard = new List<Bounds>();
             var water = new List<Bounds>();
             float terrainBottom =
                 layout.ElevationPlan.MinimumElevation - 0.32f;
@@ -177,6 +178,9 @@ namespace BarPromenade
                         case CitySurfaceKind.CemeteryGround:
                             cemetery.Add(bounds);
                             break;
+                        case CitySurfaceKind.OpenGround:
+                            yard.Add(bounds);
+                            break;
                         case CitySurfaceKind.Water:
                             water.Add(bounds);
                             break;
@@ -209,6 +213,12 @@ namespace BarPromenade
                 surfaces,
                 cemetery,
                 CityExteriorAppearance.CemeteryGround,
+                true);
+            BuildCombinedBoxesIfAny(
+                "Yard Ground",
+                surfaces,
+                yard,
+                CityExteriorAppearance.YardGround,
                 true);
             BuildCombinedBoxesIfAny(
                 "Water",

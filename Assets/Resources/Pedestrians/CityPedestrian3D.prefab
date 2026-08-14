@@ -402,9 +402,9 @@ MonoBehaviour:
     m_Center: {x: -0.005899787, y: 0.875, z: 0.0049999803}
     m_Extent: {x: 0.7671483, y: 0.875, z: 0.24750002}
   sourceTriangleCount: 1160
-  sourceGeneratorVersion: 3.0.0
+  sourceGeneratorVersion: 3.1.0
   designId: lampshade_walker_v1
-  buildSignature: 0b81c4ae86e6138b7af2f5de64dca65e8a085e0c67ecd20e6c2749a1f148851f
+  buildSignature: 0c70dc24ac329986cbc330761cce100ca8417411e8041f903763e772e5253caf
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

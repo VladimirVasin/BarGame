@@ -51,9 +51,17 @@ The vertical slice contains:
   sleeping loop, the alarm stops; only then does the six-second,
   two-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
   and easing onward into the active gameplay shot without a cut;
+- one Home-wide F9 debug shortcut, installed even for the locked opening
+  `ClockHold`: an accepted press directly loads `City`, starts the session
+  clock at `06:00` if it is still frozen, prepares the player-home exterior
+  return and sets one scene-crossing map request. `CityGameRoot` waits until
+  that transition is complete, enables map test teleport, opens the map and
+  clears the request. The ordinary Wake and Home -> Stairwell -> City paths
+  remain unchanged;
 - one session-owned in-game clock that starts every fresh run frozen at
-  `05:59`, advances only after the successful startup Wake sets it to `06:00`,
-  and persists through Single-mode scene loads. It advances on scaled time at
+  `05:59`, advances only after the successful startup Wake or accepted Home
+  F9 debug skip sets it to `06:00`, and persists through Single-mode scene
+  loads. It advances on scaled time at
   `1.0` game minute per real second, so a full `24 h` cycle takes exactly
   `1440` real seconds (`24` minutes), crosses midnight with a day index and
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
@@ -536,7 +544,8 @@ The vertical slice contains:
   line below the orange player itinerary, adds five numbered stop markers in
   the default layout with localized hover labels and keeps both symbols in a
   compact legend. The map deliberately has no live bus marker. With the
-  City-only F9 test-teleport toggle enabled, every map lot becomes selectable,
+  test teleport enabled through the City F9 toggle or the Home F9 arrival,
+  every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a
   confirmed target moves the hero to that lot's street-front return point or
   its nearest generated route when no frontage edge exists.
@@ -552,7 +561,8 @@ The vertical slice contains:
   seed/bar/route/visited context for the current city, with an explicit
   bar/home/supermarket return
   kind, a separate stairwell-arrival side and a consumed
-  `Normal`/`OpeningSleep` Home arrival value;
+  `Normal`/`OpeningSleep` Home arrival value and a resettable one-shot
+  `DebugCityMapOnArrivalRequested` flag;
 - a dedicated `3.15 s` `DoorTransition` scene between connected locations:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
@@ -880,7 +890,10 @@ The vertical slice contains:
   last-drink or consumed-drink context; an unpaid bar-menu presentation may
   be replaced immediately, but a committed physical drink service cannot be
   interrupted through this debug path. In `City` the same window also owns a
-  persistent scene-local test-teleport toggle consumed by the city map;
+  persistent scene-local test-teleport toggle consumed by the city map. In
+  `HomeInterior`, where that window is not installed, F9 instead uses
+  `HomeDebugCityMapShortcut` to bypass Home and Stairwell and arrive beside
+  the home with the debug-teleport map already open;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route and visit state, minigame runs, drinking and balance outcomes, plus

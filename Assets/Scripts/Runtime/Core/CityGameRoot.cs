@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -6,6 +7,8 @@ namespace BarPromenade
 {
     public sealed class CityGameRoot : MonoBehaviour
     {
+        private const float DebugMapOpenTimeoutSeconds = 2f;
+
         public bool IsInitialized { get; private set; }
         public CityLayout Layout { get; private set; }
         public CityWorldResult World { get; private set; }
@@ -32,6 +35,7 @@ namespace BarPromenade
             get;
             private set;
         }
+        public YardWheelchairActor YardWheelchair { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -46,6 +50,58 @@ namespace BarPromenade
         private void Awake()
         {
             Initialize();
+        }
+
+        private IEnumerator Start()
+        {
+            if (!GameSessionState.DebugCityMapOnArrivalRequested)
+            {
+                yield break;
+            }
+
+            while (SceneTransitionService.IsTransitioning)
+            {
+                yield return null;
+            }
+
+            Map.SetDebugTeleportEnabled(true);
+            float deadline =
+                Time.realtimeSinceStartup + DebugMapOpenTimeoutSeconds;
+            int openAttempts = 0;
+            do
+            {
+                if (Map.IsOpen)
+                {
+                    GameSessionState.CompleteDebugCityMapOnArrival();
+                    yield break;
+                }
+
+                if (!SceneTransitionService.IsTransitioning &&
+                    !BarMinigameModalLock.IsAnyLocked)
+                {
+                    openAttempts++;
+                    if (Map.Open())
+                    {
+                        GameSessionState.CompleteDebugCityMapOnArrival();
+                        yield break;
+                    }
+                }
+
+                yield return null;
+            }
+            while (Time.realtimeSinceStartup < deadline);
+
+            GameSessionState.CompleteDebugCityMapOnArrival();
+            GameLog.Warning(
+                "map",
+                "debug_map_on_arrival_open_failed",
+                GameLog.Field("open_attempts", openAttempts),
+                GameLog.Field(
+                    "modal_locked",
+                    BarMinigameModalLock.IsAnyLocked),
+                GameLog.Field(
+                    "transitioning",
+                    SceneTransitionService.IsTransitioning));
         }
 
         private void Initialize()
@@ -265,6 +321,12 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 Pedestrians,
                 () => Night.NightFactor);
+            // The yard rider is authored, not ambient: one staged NPC on
+            // the worn ring beside the player's home, outside the
+            // pedestrian pool and its spawn bands.
+            YardWheelchair = YardWheelchairFactory.Create(
+                transform,
+                YardWheelchairPlan.Create(World.OpenAreaDecorationPlan));
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 
@@ -424,7 +486,15 @@ namespace BarPromenade
                     CityBusDirector.MaximumActiveModels),
                 GameLog.Field(
                     "bus_boarding_enabled",
-                    BusRide != null));
+                    BusRide != null),
+                GameLog.Field(
+                    "yard_wheelchair_present",
+                    YardWheelchair != null),
+                GameLog.Field(
+                    "yard_wheelchair_radius",
+                    YardWheelchair != null
+                        ? YardWheelchair.Plan.Radius
+                        : 0f));
         }
 
         private static void ReportLayout(CityLayout layout)

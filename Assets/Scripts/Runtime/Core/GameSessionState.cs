@@ -149,6 +149,11 @@ namespace BarPromenade
         public static double GameTimeOfDayMinutes =>
             gameTime.TimeOfDayMinutes;
         public static double GameDayFraction => gameTime.DayFraction;
+        public static bool DebugCityMapOnArrivalRequested
+        {
+            get;
+            private set;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -215,6 +220,7 @@ namespace BarPromenade
             ReturnKind = CityReturnKind.None;
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
+            DebugCityMapOnArrivalRequested = false;
             IntoxicationLevel = 0;
             needsProgression.Reset();
             StressLevel = DefaultStress;
@@ -938,6 +944,34 @@ namespace BarPromenade
                     "return_kind",
                     ReturnKind.ToString()),
                 GameLog.Field("is_returning", true));
+        }
+
+        public static bool RequestDebugCityMapOnArrival()
+        {
+            if (DebugCityMapOnArrivalRequested)
+            {
+                return false;
+            }
+
+            DebugCityMapOnArrivalRequested = true;
+            GameLog.Info(
+                "session",
+                "debug_city_map_on_arrival_requested");
+            return true;
+        }
+
+        public static bool CompleteDebugCityMapOnArrival()
+        {
+            if (!DebugCityMapOnArrivalRequested)
+            {
+                return false;
+            }
+
+            DebugCityMapOnArrivalRequested = false;
+            GameLog.Info(
+                "session",
+                "debug_city_map_on_arrival_completed");
+            return true;
         }
 
         public static void PrepareSupermarketReturn()
