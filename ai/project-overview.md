@@ -78,8 +78,10 @@ The vertical slice contains:
   across its south and north edges, while a separate `2.8 m` timber
   ParkPath bridge reconnects the two `2 x 4` halves of the 16-cell central
   park. Each road bridge owns one staircase and lower waterside platform per
-  bank, producing four navigable lower landings. Route 01 may use the road
-  bridges but never the timber crossing;
+  bank, producing four navigable lower landings. River-owned parapets stop at
+  the bank-road pads and preserve those four stair openings; generic road-edge
+  fences treat bridge decks as support-only and do not duplicate them. Route
+  01 may use the road bridges but never the timber crossing;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
@@ -672,8 +674,18 @@ The vertical slice contains:
   contract or the fog-free `220 m` bar range;
 - one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
   protected aisles, three shelf sections, a stockroom facade and a decorative
-  unstaffed checkout awaiting its future 3D cashier. The checkout is not a
-  purchase station: activating a shelf opens its authored fixed product view centered on
+  checkout staffed by the Watcher Cashier — a bespoke animation-free 3D
+  clerk on the shared 31-bone Avatar whose five-segment neck lies along a
+  pursuit curve: his body never leaves the register, but the head travels
+  up to `4.5 m` of neck to hover beside the hero anywhere in the hall,
+  arcing over any shelf in the way; he snap-retracts with hysteresis when
+  the hero turns to look (pupils pinched, blinking suppressed) and
+  otherwise blinks once per `6.5 s`; a
+  separate `E — talk` stub answers with a placeholder stare. Four
+  ceiling-corner CCTV units servo their lenses after the hero from the
+  first frame (fake-emissive recording LEDs, no colliders, no real
+  lights). The checkout
+  is not a purchase station: activating a shelf opens its authored fixed product view centered on
   the first available physical product. The modal browser keeps one continuous
   lock while previous/next input cycles through every stocked shelf, skips
   empty shelves and moves the camera to the selected shelf while aiming at the
@@ -979,6 +991,7 @@ The vertical slice contains:
   and platform release work.
 - Bar minigames: the original four sprite minigames are cut entirely; any
   future bar activities start from a new design.
-- A dedicated 3D bartender and supermarket cashier (planned next passes).
+- A dedicated 3D bartender (planned next pass; the supermarket cashier
+  shipped as the Watcher Cashier).
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

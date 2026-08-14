@@ -221,6 +221,14 @@
       "value": "E — открыть барное меню"
     },
     {
+      "key": "interaction.talk_cashier",
+      "value": "E — заговорить с кассиром"
+    },
+    {
+      "key": "supermarket.cashier.placeholder",
+      "value": "Кассир молча смотрит на вас. Кажется, он не моргает."
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Опьянение: {0}/100"
     },

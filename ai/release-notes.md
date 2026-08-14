@@ -6,6 +6,14 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — River stairs and bank roads are clear
+
+- Removed the duplicate road-edge rails that crossed the river bridges and
+  sealed the four intended stair openings. Both promenades and all four lower
+  waterside platforms are physically reachable again.
+- Road and timber bridge guards now stop before the bank-road pads instead of
+  protruding into their intersections.
+
 ### 2026-08-14 — A river now divides the city
 
 - The old 144-block city has grown one column wider so a `10 m` river can run
@@ -17,6 +25,23 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 - Both banks of each road bridge have stairs down to a lower waterside
   platform: four separate embankment descents in all. The City map shows the
   river, both promenades and three visibly different bridge styles.
+
+### 2026-08-14 — The supermarket hires the Watcher Cashier
+
+- Behind the checkout now stands a hunched clerk with a tiny head, enormous
+  mismatched eyes and an absurdly long five-vertebra neck. His body never
+  leaves the register, but his face does: the neck stretches out to
+  `4.5 m` and the head literally follows you around the shop, hovering
+  just beside your face — and when a shelf stands in the way, the neck
+  arcs up and over it.
+- Turn to look at him and he flinches: the neck snaps back down, the pupils
+  pinch, the eyes go wide — and he stops blinking entirely until you look
+  away. Not that he blinks much anyway: once every six and a half seconds.
+- `E` at the register — try to talk to him. For now the answer is a silent,
+  unblinking stare; a real conversation comes in a later pass.
+- He is not the only one watching: CCTV cameras with red recording lights
+  now hang in all four corners of the hall, and every lens follows you
+  wherever you walk.
 
 ### 2026-08-14 — The «bar visited» mechanic is gone
 

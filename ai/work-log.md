@@ -6,6 +6,22 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — River fence ownership and stair access correction
+
+- Corrected the post-river collision conflict between `RoadFencePlanner` and
+  `CityRiverWorldBuilder`. Declared river bridges are now support-only inputs
+  to the generic road-boundary planner, while both promenade bounds support
+  their adjoining bank roads. Generic colliders no longer duplicate the
+  authored bridge parapets or close their four stair gaps.
+- Trimmed the Works, Mouth and timber bridge guards to the inner edges of the
+  two `8 m` bank-road pads, including the half-width of their end posts. Decks
+  and structural members still meet the road nodes; only the obstructing guard
+  geometry is shortened.
+- Added river-layout regression coverage for fence ownership and physical
+  bridge-guard bounds. The focused `CityRiver` EditMode category passed
+  `12/12`; broad EditMode/PlayMode suites and a player build were intentionally
+  not run in fast mode.
+
 ## 2026-08-14 — North-south river and three bridge hierarchy
 
 - Expanded the default urban envelope from `12 x 12` to `13 x 12` while
@@ -32,6 +48,118 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   category, covering topology, grades, walkability, physical river geometry,
   pedestrians, Route 01 and the map. Broad EditMode/PlayMode suites and a
   player build were intentionally not run in fast mode.
+
+## 2026-08-15 — Corner CCTV cameras track the hero
+
+- `SupermarketSecurityCameraWorldBuilder` hangs four camera units in the
+  hall corners, positions resolved purely from the layout plan (half
+  room size minus wall minus `0.55 m` inset, `0.42 m` below the
+  ceiling). Each unit: ceiling stem, boxy head with hood and dark lens,
+  and a fake-emissive red recording LED with shadows off — primitive
+  boxes on the shared runtime material, no Collider, no Light, so the
+  one-directional-light budget is untouched.
+- `SupermarketSecurityCamera` snaps its head onto the hero at
+  initialization (never caught pointing at a wall) and then servos at
+  `240°/s` via `Quaternion.RotateTowards` in `LateUpdate`; `Track` is
+  public so EditMode drives it without a play loop. Built by the
+  interior root right after the cashier, tracking the same body
+  transform.
+- `SupermarketSecurityCameraTests`: the four resolved corners are
+  symmetric, distinct and under the ceiling; `ResolveAim` points the
+  lens forward vector at the focus and survives a degenerate target;
+  a real build under a temp root aims all four heads at a fake hero,
+  follows him after `Track`, and stays collider- and light-free.
+
+Verification:
+
+- Runtime and EditModeTests assemblies compile with 0 errors. The
+  focused EditMode batch (cameras + cashier state/asset + supermarket
+  layout) is still pending: the open Unity editor holds the project
+  lock; run it with the editor closed.
+
+## 2026-08-15 — Cashier neck: head reattached, pursuit over the shelves
+
+- In-game check showed the head tearing off the chain: head rotation ran
+  around the canonical head bone, which rests `~0.5 m` below the authored
+  face, so every pitch swung the skull off the neck. The head is now
+  pinned to the curve tip by its authored neck-attachment point captured
+  at bind (`InverseTransformPoint`), and rotates around that joint.
+- The neck no longer just elongates — it pursues. The five pivots are
+  laid along a quadratic curve from the neck base to a hover point beside
+  the hero's face (`0.85 m` standoff, `0.25 m` lift), capped at `4.5 m`
+  of neck; when the straight line crosses a shelf or fixture AABB, the
+  curve's control point lifts above the tallest obstruction `+0.45 m`,
+  so the chain arcs over the aisles instead of clipping through them.
+  Obstacles and the hall roam box come from the layout plan through the
+  root and factory into the presentation.
+- `SupermarketCashierSurveillanceState` reworked to a pursuit weight:
+  saturates to `1` whenever the hero is present (no more distance
+  periscope or `ProximityCrane`), creeps at `0.9/s`, reels back at
+  `2.4/s` under the caught-looking startle (cap `0.30`), blink
+  suppression unchanged. Tool manifest ratio updated to `8.2`
+  (`4.5 m / 0.55 m`) — geometry untouched, signature identical, prefab
+  stays valid.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests compile with 0 errors; the
+  Blender manifest regeneration reproduced the same build signature.
+- The focused EditMode batch (cashier state/asset + supermarket layout)
+  could not run this pass: the Unity editor held the project lock.
+  Compile-clean recorded; run the fixtures with the editor closed.
+
+## 2026-08-14 — The Watcher Cashier staffs the supermarket checkout
+
+- Authored `tools/build-supermarket-cashier-3d-model.py` on the
+  bus-driver pattern: subclasses the pedestrian `PedestrianBuilder`,
+  keeps the exact 31-bone Player A-pose skeleton and exports an
+  animation-free FBX + manifest (`watcher_cashier_v1`, 44 meshes,
+  1588/2200 triangles, resting height `2.05 m`, signature-stamped).
+  The design: hunched clerk, tiny head, five `0.11 m` neck segments
+  with vertebra rings on `PIVOT_Neck.01..05` empties, a strangling
+  collar narrower than the neck, one saturated name tag, enormous
+  bulging eye whites (the right 8% larger) with pinprick pupils on
+  the `face.eye.*` bones. A standalone validator owns the cashier's
+  numbers (the shared one now demands an `ArchetypeSpec`).
+- Runtime set under `Runtime/Supermarket/Cashier/`: provider asset in
+  Resources referencing the off-Resources prefab (wheelchair pattern),
+  registry with bones + pivots + manifest colors, factory with
+  passivity guard, `PlayerAttentionMagnet` (2.0 m) and spawn logging,
+  and a fully procedural presentation — restore rest pose each frame,
+  hunch, CCD palms onto the counter, re-parent segments under pivots,
+  fold pivots into a chain off the neck bone, stretch to `2.4x` on
+  per-segment shares, serpentine yaw/pitch distribution, head hard on
+  the chain tip delta inside a clamp box, pupil darts by bone
+  translation (the eye bones sit `0.39 m` below the authored face, so
+  rotations would sling pupils off the face), startle pupil pinch and
+  `forceRenderingOff` blink.
+- Pure logic split for tests: `SupermarketCashierSurveillanceState`
+  (periscope `smoothstep 2..9 m`, extend `0.9/s` vs retract `2.4/s`,
+  caught-looking hysteresis `cos 22°/0.15 s` in — `cos 30°/0.8 s`
+  out, extension cap `0.30`, blink resume delay `1.2 s`) and
+  `SupermarketCashierBlinkState` (`6.5 s` cycle, close/hold/open
+  `0.09/0.16/0.14`, suppression restarts the cycle).
+- Editor pass: `SupermarketCashierModelImporter` (shared Player
+  Avatar via CopyFromOther) + `SupermarketCashierAssetSetup` (manifest
+  contract incl. `neck_segment_count == 5` and pivot names, prefab
+  build with forced shared material and bindings in manifest order,
+  provider binding, menu items). Prefab built headless via
+  `-executeMethod` and passed its own `ValidateOrThrow`.
+- `SupermarketInteriorRoot.BuildCashier()` spawns the clerk on the
+  authored `cashier-main` plan anchor after the player exists and
+  plants the `E — заговорить` talk stub (booth/dumpster contract) in
+  front of the register; +2 localization keys in ru/en (192 each).
+
+Verification:
+
+- Blender 5.0.1 headless build OK (44 meshes, 1588 triangles, 5
+  pivots, deterministic signature); preview render checked visually.
+- Runtime, Editor and EditModeTests assemblies compile with 0 errors.
+- Unity batch `SupermarketCashierAssetSetup.Run` built and validated
+  the prefab + provider. Focused EditMode batch:
+  `SupermarketCashierStateTests` + `SupermarketCashierAssetTests` +
+  `SupermarketInteriorLayoutTests` + `LocalizationCatalogTests` —
+  23/23 passed.
 
 ## 2026-08-14 — Bar-visited mechanic removed entirely
 

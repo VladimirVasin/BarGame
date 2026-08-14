@@ -75,6 +75,17 @@ namespace BarPromenade
         public IReadOnlyList<SupermarketShelfStation> ShelfStations =>
             shelfStations;
         public SupermarketExit Exit { get; private set; }
+        public SupermarketCashierActor Cashier { get; private set; }
+        public SupermarketCashierInteraction CashierTalk
+        {
+            get;
+            private set;
+        }
+        public IReadOnlyList<SupermarketSecurityCamera> SecurityCameras
+        {
+            get;
+            private set;
+        }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -138,6 +149,11 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 true);
 
+            BuildCashier();
+            SecurityCameras = SupermarketSecurityCameraWorldBuilder.Build(
+                transform,
+                Layout,
+                Player.GameObject.transform);
             BuildShelfShop(ui);
             BuildStatus(ui, camera);
             BuildExit();
@@ -175,6 +191,86 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        /// <summary>
+        /// The 3D Watcher Cashier takes the authored plan anchor behind
+        /// the checkout, tracking the hero; a separate talk-stub
+        /// trigger stands on the customer side of the register.
+        /// </summary>
+        private void BuildCashier()
+        {
+            Player3DAssetRegistry playerRegistry =
+                Player.GameObject.GetComponentInChildren<
+                    Player3DAssetRegistry>(true);
+
+            // The pursuing head roams the whole hall between chest and
+            // ceiling; every shelf and fixture is an obstacle its neck
+            // arcs over instead of clipping through.
+            var obstacles = new List<Bounds>(
+                Layout.Shelves.Count + Layout.Fixtures.Count);
+            for (int index = 0;
+                 index < Layout.Shelves.Count;
+                 index++)
+            {
+                SupermarketShelfPlan shelf = Layout.Shelves[index];
+                obstacles.Add(new Bounds(
+                    shelf.RootPosition +
+                    (Vector3.up * (shelf.Height * 0.5f)),
+                    shelf.Size));
+            }
+
+            for (int index = 0;
+                 index < Layout.Fixtures.Count;
+                 index++)
+            {
+                obstacles.Add(new Bounds(
+                    Layout.Fixtures[index].Center,
+                    Layout.Fixtures[index].Size));
+            }
+
+            Rect walkable = Layout.WalkableBounds;
+            var headLimits = new Bounds(
+                new Vector3(
+                    walkable.center.x,
+                    (1.10f + 3.35f) * 0.5f,
+                    walkable.center.y),
+                new Vector3(
+                    walkable.width,
+                    3.35f - 1.10f,
+                    walkable.height));
+
+            Cashier = SupermarketCashierFactory.Create(
+                transform,
+                Layout.Cashier,
+                Player.GameObject.transform,
+                playerRegistry != null
+                    ? playerRegistry.Anchors.Head
+                    : null,
+                headLimits,
+                obstacles);
+
+            SupermarketCashierPlan plan = Layout.Cashier;
+            Quaternion facing = Quaternion.Euler(
+                0f,
+                plan.YawDegrees,
+                0f);
+            Vector3 forward = facing * Vector3.forward;
+            Vector3 standPosition = plan.Position + forward * 1.55f;
+            var trigger = new GameObject("Cashier Talk Stub");
+            trigger.transform.SetParent(transform, false);
+            trigger.transform.SetPositionAndRotation(
+                standPosition +
+                (Vector3.up * 0.95f) -
+                (forward * 0.30f),
+                Quaternion.LookRotation(-forward, Vector3.up));
+            BoxCollider collider =
+                trigger.AddComponent<BoxCollider>();
+            collider.isTrigger = true;
+            collider.size = new Vector3(1.4f, 1.9f, 1.2f);
+            CashierTalk = trigger
+                .AddComponent<SupermarketCashierInteraction>();
+            CashierTalk.Initialize(standPosition);
         }
 
         private void BuildShelfShop(GameObject ui)

@@ -76,8 +76,8 @@ namespace BarPromenade
                 Transform checkout = BuildCheckout(root, plan);
                 BuildStockroomFacade(root, plan);
 
-                // The sprite cashier is removed; the checkout stands
-                // staffed by nobody until a dedicated 3D cashier pass.
+                // The 3D Watcher Cashier is built by the interior root
+                // after the player exists — he needs a hero to stare at.
                 return new SupermarketInteriorWorldResult(
                     root,
                     shelves,

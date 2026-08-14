@@ -221,6 +221,14 @@
       "value": "E — open the bar menu"
     },
     {
+      "key": "interaction.talk_cashier",
+      "value": "E — Talk to the cashier"
+    },
+    {
+      "key": "supermarket.cashier.placeholder",
+      "value": "The cashier stares at you in silence. He does not seem to blink."
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Intoxication: {0}/100"
     },

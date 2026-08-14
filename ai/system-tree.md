@@ -243,7 +243,8 @@ Assets/
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
-        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, unstaffed checkout
+        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, checkout shell
+        SupermarketSecurityCameraWorldBuilder.cs  four corner CCTV heads servoed at the hero
         Supermarket{Shelf,Product}View.cs  registered physical stock and source IDs
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
@@ -351,6 +352,15 @@ Assets/
         BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
         BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
+      Supermarket/Cashier/  the Watcher Cashier: provider-bound passive prefab
+        SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
+        SupermarketCashierAssetRegistry.cs bones, five neck pivots, renderer bindings
+        SupermarketCashierFactory.cs       spawn on the plan anchor + passivity guard + magnet
+        SupermarketCashierPresentation.cs  procedural hunch, periscope chain, pupils, blink
+        SupermarketCashierActor.cs         samples the hero, drives surveillance + pose
+        SupermarketCashierSurveillanceState.cs pure periscope/startle/blink-suppression logic
+        SupermarketCashierBlinkState.cs    pure 6.5 s rare-blink cycle
+        SupermarketCashierInteraction.cs   E talk stub on its own trigger
       UI/            retro UI, pause/inventory, segmented HUD, district/bus map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
         CityMapBusOverlay.cs        simplified blue loop + ordered localized stop markers
@@ -875,7 +885,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                 -> noodles + day-old loaf
                                                 -> vodka + closed stew
                                                 -> chicken egg
-                                             -> decorative unstaffed checkout
+                                             -> decorative checkout + Watcher Cashier
+                                                -> pursuit curve -> head hovers by the hero
+                                                -> arcs over shelves, never clips
+                                                -> caught-looking retract + stare
+                                                -> E talk stub -> placeholder line
+                                             -> four corner CCTV heads track the hero
        -> SupermarketShelfStation -> product-centered authored shelf camera
                                    -> cyclic stocked-shelf navigation
                                       -> muted clickable arrows beside product

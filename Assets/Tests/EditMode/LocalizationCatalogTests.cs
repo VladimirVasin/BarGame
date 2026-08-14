@@ -97,6 +97,8 @@ namespace BarPromenade.Tests.EditMode
             "stairwell.cat.feed.confirm",
             "stairwell.cat.feed.missing",
             "interaction.buy_drink",
+            "interaction.talk_cashier",
+            "supermarket.cashier.placeholder",
             "pause.title",
             "pause.resume",
             "pause.restart",

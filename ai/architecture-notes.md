@@ -626,6 +626,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside the active non-water footprint, plus full-road-width caps at true
   degree-one Street terminals. Degree counts both Street and ParkPath edges,
   so a street continuing into the park is never mistaken for a dead end.
+  River promenades count as supporting travel surfaces, and declared bridge
+  edges are support-only rather than generic fence sources: the river builder
+  alone owns their parapets, trims them before the bank-road pads and preserves
+  the four authored stair openings.
   Existing entrance/gate/public/open-area opening descriptors remain metadata
   for decoration clearance. Runtime rails own combined `MeshCollider`s while
   narrow posts remain visual-only; both stay batched in `48 m` chunks.
@@ -1461,6 +1465,57 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   standing roles idle in place. The `Bartender` anchor is deliberately left
   empty until a dedicated 3D bartender pass, mirroring the empty supermarket
   checkout.
+- **Accepted — The Watcher Cashier:** The supermarket checkout is staffed
+  by one bespoke animation-free 3D clerk (`watcher_cashier_v1`) built by
+  `tools/build-supermarket-cashier-3d-model.py` on the exact shared 31-bone
+  Player Avatar. His signature long neck is five rigid segments on exported
+  `PIVOT_Neck.01..05` empties: the runtime re-parents the segments under the
+  pivots and folds the pivots into a chain off the neck bone (the wheelchair
+  mechanism pattern), so the shared Avatar and every 31-bone validator stay
+  untouched while the chain stretches to `2.4x`, bends serpentine on
+  per-segment shares and carries the deliberately undersized head after its
+  tip. The prefab lives outside Resources behind
+  `SupermarketCashierProvider` (the yard-wheelchair provider pattern), is
+  validated passive (no Collider/Rigidbody/AudioSource/Light/Camera) and
+  gets a `PlayerAttentionMagnet` at `2.0 m` so the hero and the clerk can
+  catch each other staring.
+- **Accepted — Pursuit-curve neck solve:** The chain is not rotated by
+  per-joint shares; each frame the five pivots are laid explicitly along a
+  quadratic curve from the neck base to the head target — the hero's face
+  plus a `0.85 m` standoff and `0.25 m` lift, clamped to the hall box and
+  capped at `4.5 m` of neck. If the straight base-to-tip line crosses any
+  shelf or fixture AABB, the curve's control point lifts above the tallest
+  obstruction plus `0.45 m`, so the neck arcs over the aisles instead of
+  clipping through them. Each pivot turns its rest up-axis onto the local
+  curve direction and scales its rigid segment to span the gap; the head is
+  pinned to the curve tip by its authored neck-attachment point
+  (`InverseTransformPoint` captured at bind), so head rotation happens
+  around that joint — never around the distant canonical head bone — and
+  the head cannot tear off the chain.
+- **Accepted — Cashier surveillance logic is pure:**
+  `SupermarketCashierSurveillanceState` owns the numbers — a pursuit
+  weight that saturates whenever the hero is present, asymmetric creep
+  `0.9/s` vs guilty retract `2.4/s`, a caught-looking startle entered at
+  `dot > cos 22°` held `0.15 s` and released at `dot < cos 30°` held
+  `0.8 s` that caps extension at `0.30`, freezes the idle scan, pinches the
+  pupils and suppresses blinking `1.2 s` past release —
+  and `SupermarketCashierBlinkState` owns the rare `6.5 s` blink cycle that
+  restarts from zero after every suppression, so the stare after being
+  watched is always a full unbroken cycle. Both are Unity-free and covered
+  by EditMode tests; the presentation only renders their outputs, restoring
+  the imported rest pose every frame like the bus driver.
+- **Accepted — Cashier talk stub:** A separate trigger object in front of
+  the register carries the booth/dumpster placeholder contract
+  (`interaction.talk_cashier` / `supermarket.cashier.placeholder`); the
+  passive prefab itself stays collider-free.
+- **Accepted — Corner CCTV heads:** Four camera units hang in the room
+  corners, positions resolved purely from the plan
+  (`RoomSize/WallThickness/RoomHeight`, inset `0.55 m`, drop `0.42 m`).
+  Each head snaps onto the hero at initialization and then servos at
+  `240°/s` (`Quaternion.RotateTowards`), so the lens is always trained on
+  him. The units are dressing under the supermarket's one-directional
+  light budget: primitive boxes, a fake-emissive recording LED with
+  shadows off, no Collider and no Light.
 - **Accepted — Debug window without a launcher:** The City and BarInterior
   roots still install the F9 debug window, but it owns only deliberate test
   controls: the Left/Right arrow keys or clickable buttons change the real
