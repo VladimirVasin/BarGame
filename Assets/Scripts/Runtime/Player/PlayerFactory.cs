@@ -89,6 +89,12 @@ namespace BarPromenade
 
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
             interactor.Initialize(promptView);
+
+            // The Silent Hill head: the hero notices interactables and
+            // characters near his path and turns his head toward them.
+            PlayerAttentionController attention =
+                player.AddComponent<PlayerAttentionController>();
+            attention.Initialize(interactor, visual);
             return new PlayerRuntime(
                 player,
                 motor,

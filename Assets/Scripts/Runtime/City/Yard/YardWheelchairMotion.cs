@@ -14,7 +14,8 @@ namespace BarPromenade
             float slipDegrees,
             float speed,
             float leftWheelSpin,
-            float rightWheelSpin)
+            float rightWheelSpin,
+            float pushPhase)
         {
             Position = position;
             Rotation = rotation;
@@ -23,6 +24,7 @@ namespace BarPromenade
             Speed = speed;
             LeftWheelSpin = leftWheelSpin;
             RightWheelSpin = rightWheelSpin;
+            PushPhase = pushPhase;
         }
 
         public Vector3 Position { get; }
@@ -41,6 +43,12 @@ namespace BarPromenade
         public float Speed { get; }
         public float LeftWheelSpin { get; }
         public float RightWheelSpin { get; }
+
+        /// <summary>
+        /// Where the chair is inside one hand-push cycle, 0..1: the
+        /// stroke begins at 0, the coast carries the rest.
+        /// </summary>
+        public float PushPhase { get; }
     }
 
     /// <summary>
@@ -70,13 +78,28 @@ namespace BarPromenade
         /// <summary>Laps per full breath of the drift angle.</summary>
         public const float SlipBreathLaps = 0.37f;
 
-        /// <summary>How far the line wanders off the worn ring, in metres.</summary>
+        /// <summary>How far the line wanders off the ring, in metres.</summary>
         public const float RadiusWander = 0.14f;
 
         public const float RadiusWanderLaps = 0.83f;
 
         /// <summary>Outward lean held through the slide, in degrees.</summary>
         public const float LeanDegrees = 4.5f;
+
+        /// <summary>
+        /// Metres of ground one hand-push cycle covers: the stroke
+        /// surges the chair forward, the coast bleeds it off again.
+        /// </summary>
+        public const float PushDistance = 1.35f;
+
+        /// <summary>Fraction of the cycle spent on the stroke itself.</summary>
+        public const float PushStrokeFraction = 0.24f;
+
+        /// <summary>Speed multiplier at the top of the stroke.</summary>
+        public const float PushSurge = 1.42f;
+
+        /// <summary>Speed multiplier at the end of the coast.</summary>
+        public const float CoastTrough = 0.62f;
 
         public const float WheelRadius = 0.3f;
 
@@ -92,7 +115,7 @@ namespace BarPromenade
             float lap = distance / lapLength;
             float turn = plan.Clockwise ? -1f : 1f;
 
-            // The ridden line is never exactly the worn ring.
+            // The ridden line is never exactly the authored ring.
             float wander = Mathf.Sin(
                 lap / Mathf.Max(0.01f, RadiusWanderLaps) * Mathf.PI * 2f);
             float ridingRadius = radius + wander * RadiusWander;
@@ -103,7 +126,10 @@ namespace BarPromenade
                 0f,
                 Mathf.Sin(angle) * ridingRadius);
             Vector3 position = plan.Center + offset;
-            position.y = plan.GroundY;
+
+            // The yard is not one flat plane: the lap follows the
+            // sampled ground profile across every terrace lip.
+            position.y = plan.SampleGroundHeight(angle);
 
             // Travel direction: the tangent of the ring at this angle.
             var tangent = new Vector3(
@@ -123,8 +149,18 @@ namespace BarPromenade
 
             // The pace sags in the same rhythm, so the slide reads as
             // weariness rather than as sport.
-            float speed = CruiseSpeed * (1f - SpeedSway * 0.5f +
-                                         breath * SpeedSway * 0.5f);
+            float swayFactor = 1f - SpeedSway * 0.5f +
+                               breath * SpeedSway * 0.5f;
+
+            // And over that, the ragged hand rhythm: every push is a
+            // surge, every gap between pushes a slow bleed of speed.
+            // Nothing here is periodic in time — the cycle lives on the
+            // ground, so the wheels, the bellows and the pace can never
+            // drift apart.
+            float pushPhase =
+                Mathf.Repeat(distance, PushDistance) / PushDistance;
+            float pushFactor = SamplePushFactor(pushPhase);
+            float speed = CruiseSpeed * swayFactor * pushFactor;
 
             Quaternion rotation =
                 Quaternion.Euler(0f, heading + slip, 0f) *
@@ -151,7 +187,36 @@ namespace BarPromenade
                 slip,
                 speed,
                 leftSpin,
-                rightSpin);
+                rightSpin,
+                pushPhase);
+        }
+
+        /// <summary>
+        /// The speed multiplier across one push cycle: a fast smooth
+        /// rise through the stroke, then a long fall through the coast.
+        /// </summary>
+        public static float SamplePushFactor(float pushPhase)
+        {
+            float phase = Mathf.Repeat(pushPhase, 1f);
+            if (phase < PushStrokeFraction)
+            {
+                return Mathf.Lerp(
+                    CoastTrough,
+                    PushSurge,
+                    Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        phase / PushStrokeFraction));
+            }
+
+            return Mathf.Lerp(
+                PushSurge,
+                CoastTrough,
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    (phase - PushStrokeFraction) /
+                    (1f - PushStrokeFraction)));
         }
 
         /// <summary>

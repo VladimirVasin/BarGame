@@ -4,25 +4,36 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The circuit the yard rider follows: the worn ring the decoration
-    /// pass already put in the ground, read back so the rider and the
-    /// track can never disagree.
+    /// The circuit the yard rider follows: the ring the shared yard
+    /// site contract authored around the dead tree. Nothing is drawn
+    /// for it — the chair rides bare ground, and the same contract
+    /// keeps the yard dressing and the leaning utilities off the lap.
     /// </summary>
     public readonly struct YardWheelchairPlan
     {
         public const string TreeTrunkId = "home-yard-tree-trunk";
-        public const string RingIdPrefix = "home-yard-ring-";
+
+        /// <summary>Height samples taken around one full circle.</summary>
+        public const int GroundSampleCount = 64;
+
+        private readonly float[] groundHeights;
 
         public YardWheelchairPlan(
             Vector3 center,
             float radius,
             float groundY,
-            bool clockwise)
+            bool clockwise,
+            float[] circuitGroundHeights = null)
         {
             Center = new Vector3(center.x, groundY, center.z);
             Radius = radius;
             GroundY = groundY;
             Clockwise = clockwise;
+            groundHeights =
+                circuitGroundHeights != null &&
+                circuitGroundHeights.Length > 1
+                    ? circuitGroundHeights
+                    : null;
             IsPresent = radius > 0.5f;
         }
 
@@ -34,75 +45,111 @@ namespace BarPromenade
         public float LapLength => Mathf.PI * 2f * Radius;
 
         /// <summary>
-        /// Derives the circuit from the authored yard decoration. The dead
-        /// tree gives the centre, the worn ring segments give the radius
-        /// and the ground height.
+        /// The ground under the circuit at one ring angle. The yard can
+        /// straddle two terraces, so the lap is not a flat plane: the
+        /// sampled profile follows every datum change, interpolated so a
+        /// terrace lip reads as a short ramp instead of a hover.
+        /// </summary>
+        public float SampleGroundHeight(float angle)
+        {
+            if (groundHeights == null)
+            {
+                return GroundY;
+            }
+
+            float turns = Mathf.Repeat(
+                angle / (Mathf.PI * 2f),
+                1f);
+            float scaled = turns * groundHeights.Length;
+            int first = Mathf.FloorToInt(scaled) % groundHeights.Length;
+            int second = (first + 1) % groundHeights.Length;
+            return Mathf.Lerp(
+                groundHeights[first],
+                groundHeights[second],
+                scaled - Mathf.Floor(scaled));
+        }
+
+        /// <summary>
+        /// Derives the circuit from the shared yard site contract: its
+        /// authored ring centre and radius are the lap, its ground the
+        /// height. The dead tree must still stand at the centre — the
+        /// rider circles something, not an abstract point. With an
+        /// elevation plan the lap also carries a sampled ground
+        /// profile, so the chair rides the real terraces instead of one
+        /// flat plane.
         /// </summary>
         public static YardWheelchairPlan Create(
-            CityOpenAreaDecorationPlan decorations)
+            CityOpenAreaDecorationPlan decorations,
+            CityElevationPlan elevation = null)
         {
             if (decorations == null)
             {
                 throw new ArgumentNullException(nameof(decorations));
             }
 
-            var center = Vector3.zero;
-            bool hasCenter = false;
-            float radiusSum = 0f;
-            int radiusCount = 0;
-            float groundY = 0f;
+            if (!decorations.HomeYardSite.HasValue)
+            {
+                return default;
+            }
+
+            bool hasTree = false;
             for (int index = 0;
                  index < decorations.Descriptors.Count;
                  index++)
             {
-                CityOpenAreaDecorationDescriptor descriptor =
-                    decorations.Descriptors[index];
                 if (string.Equals(
-                        descriptor.StableId,
+                        decorations.Descriptors[index].StableId,
                         TreeTrunkId,
                         StringComparison.Ordinal))
                 {
-                    center = descriptor.Bounds.center;
-                    groundY = descriptor.Bounds.min.y;
-                    hasCenter = true;
+                    hasTree = true;
+                    break;
                 }
             }
 
-            if (!hasCenter)
+            if (!hasTree)
             {
                 return default;
             }
 
-            for (int index = 0;
-                 index < decorations.Descriptors.Count;
-                 index++)
-            {
-                CityOpenAreaDecorationDescriptor descriptor =
-                    decorations.Descriptors[index];
-                if (!descriptor.StableId.StartsWith(
-                        RingIdPrefix,
-                        StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                Vector3 segment = descriptor.Bounds.center;
-                radiusSum += new Vector2(
-                    segment.x - center.x,
-                    segment.z - center.z).magnitude;
-                radiusCount++;
-            }
-
-            if (radiusCount == 0)
-            {
-                return default;
-            }
-
+            HomeYardSitePlan site = decorations.HomeYardSite.Value;
             return new YardWheelchairPlan(
-                center,
-                radiusSum / radiusCount,
-                groundY,
-                true);
+                site.RingCenter,
+                site.RingRadius,
+                site.GroundY,
+                true,
+                SampleCircuitGround(site, elevation));
+        }
+
+        private static float[] SampleCircuitGround(
+            HomeYardSitePlan site,
+            CityElevationPlan elevation)
+        {
+            if (elevation == null)
+            {
+                return null;
+            }
+
+            var heights = new float[GroundSampleCount];
+            for (int index = 0; index < GroundSampleCount; index++)
+            {
+                float angle = Mathf.PI * 2f * index /
+                              GroundSampleCount;
+                var probe = new Vector2(
+                    site.RingCenter.x +
+                    Mathf.Cos(angle) * site.RingRadius,
+                    site.RingCenter.z +
+                    Mathf.Sin(angle) * site.RingRadius);
+                heights[index] = elevation.TrySampleSurface(
+                    probe,
+                    CitySurfaceRole.GroundDatum,
+                    out float datum,
+                    out _)
+                    ? datum + CityElevationPlan.GroundTopOffset
+                    : site.GroundY;
+            }
+
+            return heights;
         }
     }
 }

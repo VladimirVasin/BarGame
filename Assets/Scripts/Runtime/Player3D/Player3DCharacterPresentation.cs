@@ -26,6 +26,20 @@ namespace BarPromenade
     {
         public const float FullWalkSpeed = 2.6f;
 
+        // The Silent Hill head: how fast attention takes and releases
+        // the head, how the turn is shared down the neck, and the sign
+        // conventions of the imported bone axes.
+        public const float AttentionBlendInSeconds = 0.22f;
+        public const float AttentionBlendOutSeconds = 0.38f;
+        public const float AttentionTurnSmoothTime = 0.16f;
+        public const float AttentionHeadShare = 0.62f;
+        public const float AttentionNeckShare = 0.38f;
+        // In-game check: a positive local-X turn on the imported neck
+        // and head bones pitches the face UP, so a look-down needs the
+        // positive sign — the mirror of the wheel-roll lesson.
+        public const float AttentionYawSign = 1f;
+        public const float AttentionPitchSign = 1f;
+
         private const float LocomotionBlendInTime = 0.14f;
         private const float LocomotionBlendOutTime = 0.20f;
         private const float MotionThreshold = 0.05f;
@@ -85,6 +99,17 @@ namespace BarPromenade
         private Transform rightThighBone;
         private Transform leftShinBone;
         private Transform rightShinBone;
+        private Transform headBone;
+        private Transform neckBone;
+        private Vector3? attentionFocus;
+        private float attentionWeight;
+        private float attentionYaw;
+        private float attentionPitch;
+        private float attentionYawVelocity;
+        private float attentionPitchVelocity;
+        private Quaternion attentionHeadBase;
+        private Quaternion attentionNeckBase;
+        private bool attentionBaseCaptured;
         private ProceduralStatusPoseBase proceduralStatusPoseBase;
         private bool proceduralStatusPoseBaseCaptured;
         private FootGroundingProbe footGroundingProbe;
@@ -464,6 +489,7 @@ namespace BarPromenade
             {
                 ApplyProceduralStatusPose();
                 ApplyFacialPose();
+                ApplyAttentionPose(Time.deltaTime);
             }
 
             if (releaseInteractionHandoffAfterLateUpdate)
@@ -483,6 +509,7 @@ namespace BarPromenade
             {
                 ApplyProceduralStatusPose();
                 ApplyFacialExpression(facialState.CurrentExpression);
+                ApplyAttentionPose(0f);
             }
         }
 
@@ -504,6 +531,13 @@ namespace BarPromenade
             locomotionBlendVelocity = 0f;
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
+            RestoreAttentionPoseBase();
+            attentionFocus = null;
+            attentionWeight = 0f;
+            attentionYaw = 0f;
+            attentionPitch = 0f;
+            attentionYawVelocity = 0f;
+            attentionPitchVelocity = 0f;
 
             if (activeClipBinding != null)
             {
@@ -666,6 +700,141 @@ namespace BarPromenade
                 locomotionBlend);
         }
 
+        /// <summary>
+        /// Where the hero's head should look, in world space, or null
+        /// for nothing. Set every frame by the attention controller;
+        /// the presentation owns all smoothing and limits.
+        /// </summary>
+        public void SetAttentionFocus(Vector3? focus)
+        {
+            attentionFocus = focus;
+        }
+
+        public float AttentionWeight => attentionWeight;
+
+        /// <summary>
+        /// The Silent Hill head turn: an additive post-animation yaw
+        /// and pitch shared between neck and head, eased in when a
+        /// noticeable thing appears and eased back out when it is
+        /// gone. Modal clips, interaction handoffs and the ragdoll own
+        /// the whole body, so attention stands down for them.
+        /// </summary>
+        private void ApplyAttentionPose(float deltaTime)
+        {
+            RestoreAttentionPoseBase();
+            bool allowed = registry != null &&
+                           headBone != null &&
+                           !IsClipActive &&
+                           !interactionHandoffLocked &&
+                           !ragdollPoseActive &&
+                           attentionFocus.HasValue;
+            float weightTarget = allowed ? 1f : 0f;
+            if (allowed)
+            {
+                PlayerAttentionRules.ResolveHeadAngles(
+                    headBone.position,
+                    actorFacingTransform.eulerAngles.y,
+                    attentionFocus.Value,
+                    out float targetYaw,
+                    out float targetPitch);
+                if (attentionWeight <= 0.001f)
+                {
+                    // A fresh glance starts on target instead of
+                    // swinging in from wherever the head last looked.
+                    attentionYaw = targetYaw;
+                    attentionPitch = targetPitch;
+                    attentionYawVelocity = 0f;
+                    attentionPitchVelocity = 0f;
+                }
+                else if (deltaTime > 0f)
+                {
+                    attentionYaw = Mathf.SmoothDampAngle(
+                        attentionYaw,
+                        targetYaw,
+                        ref attentionYawVelocity,
+                        AttentionTurnSmoothTime,
+                        float.PositiveInfinity,
+                        deltaTime);
+                    attentionPitch = Mathf.SmoothDamp(
+                        attentionPitch,
+                        targetPitch,
+                        ref attentionPitchVelocity,
+                        AttentionTurnSmoothTime,
+                        float.PositiveInfinity,
+                        deltaTime);
+                }
+            }
+
+            if (deltaTime > 0f)
+            {
+                attentionWeight = Mathf.MoveTowards(
+                    attentionWeight,
+                    weightTarget,
+                    deltaTime / (weightTarget > attentionWeight
+                        ? AttentionBlendInSeconds
+                        : AttentionBlendOutSeconds));
+            }
+
+            if (attentionWeight <= 0.0001f)
+            {
+                return;
+            }
+
+            float yaw = AttentionYawSign *
+                        attentionYaw *
+                        attentionWeight;
+            float pitch = AttentionPitchSign *
+                          attentionPitch *
+                          attentionWeight;
+            CaptureAttentionPoseBase();
+            if (neckBone != null)
+            {
+                neckBone.localRotation *= Quaternion.Euler(
+                    pitch * AttentionNeckShare,
+                    yaw * AttentionNeckShare,
+                    0f);
+            }
+
+            if (headBone != null)
+            {
+                headBone.localRotation *= Quaternion.Euler(
+                    pitch * AttentionHeadShare,
+                    yaw * AttentionHeadShare,
+                    0f);
+            }
+        }
+
+        private void CaptureAttentionPoseBase()
+        {
+            attentionHeadBase = headBone != null
+                ? headBone.localRotation
+                : Quaternion.identity;
+            attentionNeckBase = neckBone != null
+                ? neckBone.localRotation
+                : Quaternion.identity;
+            attentionBaseCaptured = true;
+        }
+
+        private void RestoreAttentionPoseBase()
+        {
+            if (!attentionBaseCaptured)
+            {
+                return;
+            }
+
+            if (headBone != null)
+            {
+                headBone.localRotation = attentionHeadBase;
+            }
+
+            if (neckBone != null)
+            {
+                neckBone.localRotation = attentionNeckBase;
+            }
+
+            attentionBaseCaptured = false;
+        }
+
         private void ApplyProceduralStatusPose()
         {
             RestoreProceduralStatusPoseBase();
@@ -721,6 +890,8 @@ namespace BarPromenade
         {
             pelvisBone = registry.Anchors.Pelvis;
             chestBone = registry.Anchors.Chest;
+            headBone = registry.Anchors.Head;
+            neckBone = GetPartBone(Player3DAnatomicalPart.Neck);
             leftUpperArmBone = GetPartBone(
                 Player3DAnatomicalPart.LeftUpperArm);
             rightUpperArmBone = GetPartBone(

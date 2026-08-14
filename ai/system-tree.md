@@ -216,7 +216,8 @@ Assets/
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. home-yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style visuals, chunked collision proxies + utility dock read-back
-        CityStreetUtilityDock.cs     booth-door/dumpster-lid docks for future interactions
+        CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
+        CityStreetUtilityWorldBuilder.cs  one placeholder trigger per utility dock
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
         CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
@@ -306,6 +307,7 @@ Assets/
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
+        PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue

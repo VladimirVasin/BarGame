@@ -53,9 +53,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — The home yard is an inter-building gap, not a fringe Yard:**
   `CityOpenAreaDecorationPlanner` derives the authored composition from the
   walkable roadless-side gap between `PlayerHome` and its neighbouring
-  building. The 24-part worn ring, dead tree and sparse traces therefore stay
-  beside the hero instead of using the large eastern `Yard` precinct; all five
-  typed fringe yards remain separate bare areas. The same pure plan owns one
+  building. The dead tree and sparse traces therefore stay beside the hero
+  instead of using the large eastern `Yard` precinct; all five typed fringe
+  yards remain separate bare areas. The rider's circuit is deliberately
+  unmarked — no drawn ring — and lives only in the yard site contract that
+  the wheelchair plan, the slot clearances and the leaning utilities share. The same pure plan owns one
   stable wall-light descriptor. `CityOpenAreaWorldBuilder` mounts its static
   cold near-white Spot on the neighbour at intensity `240`, twenty times the
   ordinary `12`-intensity street practical. Range is the greater of `1.5x` the

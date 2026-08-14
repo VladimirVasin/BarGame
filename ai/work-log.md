@@ -6,6 +6,196 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Silent Hill attention: the hero's head finds targets
+
+- Added the attention system in `PlayerAttention.cs`. Pure
+  `PlayerAttentionRules` define the notice cone (`3.6 m`, `±75°`), the
+  wider release cone (`4.2 m`, `±100°`) so a held target never
+  flickers at the edge, the people-first ordering (`0.8x` effective
+  distance) and the neck limits (`±68°` yaw, `±32°` pitch).
+- `PlayerAttentionController` (installed by `PlayerFactory`) scans at
+  `0.18 s` intervals: one physics overlap finds every `CanInteract`
+  interactable and the pedestrians by their collision layer, and a
+  static `PlayerAttentionMagnet` registry covers colliderless
+  characters — the yard rider gets a magnet at seated head height in
+  his factory. Between scans the held target is tracked live, so a
+  walking passer-by keeps the head on him.
+- `Player3DCharacterPresentation` applies the glance post-animation in
+  `LateUpdate` with the established capture/restore base pattern:
+  yaw/pitch shared `62/38` between head and neck bones,
+  `SmoothDampAngle` turns, `0.22 s` ease-in / `0.38 s` ease-out, a
+  fresh glance starting on target, and full stand-down whenever a
+  modal clip, interaction handoff or ragdoll owns the body. Axis signs
+  are named constants after the wheel-roll lesson.
+- Added `PlayerAttentionTests`: cone and hysteresis contracts, neck
+  clamps, and a controller pass proving people outrank closer objects,
+  the fallback to interactables, and the release behind the back.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `PlayerAttentionTests` passed `3/3` (after
+  marking the magnet `[ExecuteAlways]` so edit-mode registration works)
+  and `YardWheelchairMotionTests` passed `10/10` in the same batch —
+  clearing the previously blocked roll-sign and ground-profile
+  contracts as well.
+- In-game check: only the magnet-driven rider drew the head. The scan's
+  self-filter compared `transform.root`, and every gameplay scene
+  parents the player and the whole world under one composition root —
+  so all colliderful targets read as "self". Replaced it with
+  `IsChildOf(player transform)` and re-rooted the controller test so
+  the player and its targets share one root like a real scene; the
+  batch rerun was blocked by the open editor at the time of writing.
+- Second in-game check: the hero craned his neck upward in the
+  apartment. Points of interest never hang overhead by design, so the
+  rules now reject any focus more than `2.1 m` above the hero's feet
+  and the pitch clamp became asymmetric — the chin still drops `32°`
+  for floor items but rises at most `10°`. Both are covered by the
+  rules fixture.
+- Third in-game check exposed the real culprit behind both cranes: the
+  pitch axis sign. NPC faces sit at eye height (pitch about zero) and
+  looked right, while interactables sit low — the intended `32°` chin
+  drop applied inverted as a `32°` crane. Positive local X on the
+  imported neck/head bones pitches the face up, so
+  `AttentionPitchSign` flipped to `+1` (the wheel-roll lesson again);
+  the overhead-focus and `+10°` up-clamp guards stay as safety.
+
+## 2026-08-14 — The rider's lap follows the real ground
+
+- In-game check found the chair hovering where the yard straddles two
+  terraces: the plan's single flat `GroundY` came from the home cell's
+  datum while the neighbour half of the circle can sit on another
+  terrace. `YardWheelchairPlan.Create` now optionally takes the
+  `CityElevationPlan` and samples `64` ground heights around the ring
+  (`GroundDatum` + `GroundTopOffset`, falling back to the site ground
+  where sampling misses); `Sample` reads the interpolated profile, so a
+  terrace lip reads as a short ramp instead of a hover. `CityGameRoot`
+  passes the layout's elevation plan.
+- Extended the motion fixture: a synthetic stepped profile must carry
+  the pose off the flat plane exactly along the interpolation, and the
+  default-city elevated plan must match the elevation samples at every
+  probed angle.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK. The focused `YardWheelchairMotionTests` batch run was
+  blocked by the open editor holding the project lock; the two new
+  deterministic contracts run with the next unlocked suite.
+
+## 2026-08-14 — The drawn yard ring is removed; the rider keeps its circuit
+
+- Removed the 24-chord `YardRingTrack` geometry, its `YardWornTrack`
+  style, the packed-earth albedo, its generator tool and its focused
+  test: the rider now circles the dead tree on bare ground with nothing
+  drawn for the lap (reversing the same-day albedo work by user
+  decision).
+- Rewired `YardWheelchairPlan.Create` from ring read-back onto the yard
+  site contract: `HomeYardSite.RingCenter/RingRadius/GroundY` are the
+  circuit, with the dead tree still required at the centre. Slot
+  clearances, utility anchors and the spotlight already used the same
+  contract, so every keep-off-the-lap rule survives unchanged.
+- Updated the open-area and wheelchair fixtures: no `home-yard-ring-`
+  descriptors may exist, and the plan must equal the site ring exactly.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `YardWheelchairMotionTests` +
+  `CityOpenAreaDecorationPlannerTests` + `CityDecorationPlannerTests`
+  passed `22/22` under Unity `6000.5.5f1`, which also exercised the
+  earlier roll-sign regression assertion for the first time in batch.
+
+## 2026-08-14 — Turning wheels and a ragged push rhythm for the rider
+
+- Made the pivot articulation real: `YardWheelchairPresentation` now
+  adopts the static chair meshes (`ACC_WheelTyre/PushRim/WheelSpokes`,
+  `ACC_CasterTyre/CasterHub`) under their authored `PIVOT_*` empties at
+  initialize. The exporter deliberately ships them beside the pivots
+  (parenting a skinned FBX mesh through an Empty double-converts units)
+  with each mesh origin on its pivot, so the runtime reparent is exact —
+  the existing distance-locked pivot rotations finally turn visible
+  geometry, differential and caster swivel included. Bellows and organ
+  pipes stay bone-skinned and keep riding the body animation.
+- Added the hand-push cycle to `YardWheelchairMotion`: a `1.35 m`
+  ground-locked cycle (`PushDistance`), smooth surge to `1.42x` through
+  the `24%` stroke and a long bleed to `0.62x` through the coast,
+  multiplied over the existing lap sway. Defined on distance, not time,
+  so wheels, pace, the arm loop (speed clamp widened to `0.30-1.60`)
+  and the bellows pump (now driven by `PushPhase`) can never drift
+  apart. Minimum sampled speed stays above the `0.5 m/s` contract.
+- Extended the motion fixture: a push cycle must surge at least `1.8x`
+  over its trough and repeat exactly one push-distance later, and the
+  presentation must adopt the wheel meshes under their pivots and turn
+  them with covered distance.
+- In-game check found the tyres rolling backwards: the baked FBX axis
+  conversion leaves the axle on local X with positive spin reversed.
+  Added `YardWheelchairPresentation.RollSign = -1` applied to both
+  drive wheels and the caster roll, with an exact-rotation regression
+  assertion so the sign cannot silently flip back.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `YardWheelchairMotionTests` passed `9/9` under
+  Unity `6000.5.5f1` — the two new contracts plus every pre-existing
+  motion invariant (circuit hold, drift flip, lap time, wheel
+  differential, minimum speed). The subsequent roll-sign fix compiled
+  clean; its batch rerun was blocked by the open editor holding the
+  project, and the sign assertion mirrors the presentation formula
+  exactly.
+
+## 2026-08-14 — Packed-earth albedo for the yard wheelchair circuit
+
+- Added `tools/build-city-yard-track-texture.py`: a deterministic 512
+  seamless sheet of compacted bare earth (pressed hollows, wheel-polished
+  dust, pressed-in stones, fine grain), isotropic on purpose — a circle
+  has no single rut direction under world-planar mapping. Authored at
+  mean RGB `120/104/80`, about twice as bright and warmer than
+  `CityGroundSoilAlbedo` (`53/52/40`), so the trace contrasts against
+  the yard soil while reading as trodden dirt.
+- The `YardWornTrack` batch in `CityOpenAreaWorldBuilder` now builds
+  through the planar-UV combine path (`1.8 m` tile) and receives the
+  sheet via the shared `CityExteriorAppearance.ApplyYardTrackSurface`
+  recipe (white tint, `0.05` smoothness, shared `RuntimePrimitiveLit`);
+  every other open-area style stays a flat colour. Ring geometry, the
+  rider's derived circuit and collision are untouched.
+- Extended the open-area fixture: worn-track chunks must carry the
+  packed-earth albedo with authored UVs on the shared material, and
+  non-track chunks must stay textureless.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `CityOpenAreaDecorationPlannerTests` passed `4/4`
+  under Unity `6000.5.5f1`, including the new worn-track albedo
+  contract.
+
+## 2026-08-14 — Placeholder interactions on every booth and dumpster
+
+- Added `CityStreetUtilityInteraction`: an `IInteractable` stub standing
+  on the recipe-derived dock of every phone booth door and dumpster lid.
+  It offers the real prompts (`interaction.use_phone_booth`,
+  `interaction.search_dumpster`) and answers through
+  `PlayerInteractor.ShowFeedback` with `city.phone_booth.placeholder` /
+  `city.dumpster.placeholder` for `2.5 s` — the same stub contract the
+  stairwell cat used before feeding shipped. A future pass swaps only
+  `Interact`; the trigger and dock stay.
+- Added `CityStreetUtilityWorldBuilder` mirroring the bench sit pass:
+  one oriented trigger volume per dock under
+  `City Street Utility Interactions`, wired in `CityGameRoot` right
+  after the bench sits from `CityStreetUtilityDock.CreateAll`.
+- Added the four localization keys to both catalogs and the required-key
+  list; extended `CityStreetUtilityPlanTests` with a builder contract
+  (one placeholder per dock, kind-matched prompt, trigger volume).
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `CityStreetUtilityPlanTests` +
+  `LocalizationCatalogTests` EditMode passed `10/10` under Unity
+  `6000.5.5f1`.
+
 ## 2026-08-14 — Audit: every exterior electric glow joins the night clock
 
 - Audited all `CityNoirEmission` users. Interiors (bar, home, stairwell,

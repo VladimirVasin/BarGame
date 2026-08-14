@@ -109,6 +109,55 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(yardDockCount, Is.EqualTo(2));
         }
 
+        [Test]
+        public void WorldBuilder_InstallsOnePlaceholderPerDock()
+        {
+            CityDecorationPlan plan = CreatePlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout);
+            List<CityStreetUtilityDock> docks =
+                CityStreetUtilityDock.CreateAll(layout, plan);
+            var parent = new GameObject(
+                "Street Utility Test Parent");
+            try
+            {
+                IReadOnlyList<CityStreetUtilityInteraction> interactions =
+                    CityStreetUtilityWorldBuilder.Build(
+                        parent.transform,
+                        docks);
+                Assert.That(
+                    interactions,
+                    Has.Count.EqualTo(docks.Count),
+                    "Every dock must carry its placeholder.");
+                for (int index = 0; index < interactions.Count; index++)
+                {
+                    CityStreetUtilityInteraction interaction =
+                        interactions[index];
+                    Assert.That(interaction.Dock.IsPresent, Is.True);
+                    Assert.That(
+                        interaction.PromptKey,
+                        Is.EqualTo(
+                            interaction.Dock.Kind ==
+                            CityStreetUtilityKind.PhoneBooth
+                                ? CityStreetUtilityInteraction
+                                    .PhoneBoothPromptKey
+                                : CityStreetUtilityInteraction
+                                    .DumpsterPromptKey));
+                    Assert.That(
+                        interaction.InteractionPosition,
+                        Is.EqualTo(interaction.Dock.StandPosition));
+                    BoxCollider trigger =
+                        interaction.GetComponent<BoxCollider>();
+                    Assert.That(trigger, Is.Not.Null);
+                    Assert.That(trigger.isTrigger, Is.True);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
         private static CityDecorationPlan CreatePlan(
             int seed,
             out CityLayout layout)

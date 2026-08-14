@@ -38,26 +38,93 @@ namespace BarPromenade.Tests.EditMode
                 plan.GroundY,
                 Is.EqualTo(trunk.Bounds.min.y).Within(0.001f));
 
-            // The ring the rider follows is the ring worn into the ground.
-            foreach (CityOpenAreaDecorationDescriptor segment in
-                     decorations.Descriptors)
-            {
-                if (!segment.StableId.StartsWith(
-                        YardWheelchairPlan.RingIdPrefix))
-                {
-                    continue;
-                }
+            // Nothing is drawn for the lap any more: the circuit is the
+            // yard site contract's authored ring, ridden on bare ground.
+            Assert.That(decorations.HomeYardSite.HasValue, Is.True);
+            HomeYardSitePlan site = decorations.HomeYardSite.Value;
+            Assert.That(
+                plan.Radius,
+                Is.EqualTo(site.RingRadius).Within(0.001f));
+            Assert.That(
+                Vector3.Distance(plan.Center, site.RingCenter),
+                Is.LessThan(0.001f));
+            Assert.That(
+                decorations.Descriptors.Any(descriptor =>
+                    descriptor.StableId.StartsWith("home-yard-ring-")),
+                Is.False,
+                "The worn ring geometry must stay removed.");
 
-                float distance = Vector2.Distance(
-                    new Vector2(plan.Center.x, plan.Center.z),
-                    new Vector2(
-                        segment.Bounds.center.x,
-                        segment.Bounds.center.z));
+            // With the elevation plan the lap carries the real ground:
+            // every probed angle must match the sampled terrace datum,
+            // so the chair can never hover over a lower terrace.
+            YardWheelchairPlan elevated = YardWheelchairPlan.Create(
+                decorations,
+                layout.ElevationPlan);
+            Assert.That(elevated.IsPresent, Is.True);
+            for (int probe = 0; probe < 8; probe++)
+            {
+                float angle = Mathf.PI * 2f * probe / 8f;
+                var point = new Vector2(
+                    site.RingCenter.x +
+                    Mathf.Cos(angle) * site.RingRadius,
+                    site.RingCenter.z +
+                    Mathf.Sin(angle) * site.RingRadius);
                 Assert.That(
-                    distance,
-                    Is.EqualTo(plan.Radius).Within(0.05f),
-                    segment.StableId);
+                    layout.ElevationPlan.TrySampleSurface(
+                        point,
+                        CitySurfaceRole.GroundDatum,
+                        out float datum,
+                        out _),
+                    Is.True,
+                    $"probe {probe}");
+                Assert.That(
+                    elevated.SampleGroundHeight(angle),
+                    Is.EqualTo(
+                        datum + CityElevationPlan.GroundTopOffset)
+                        .Within(0.001f),
+                    $"probe {probe}");
             }
+        }
+
+        [Test]
+        public void Sample_FollowsTheSampledGroundProfile()
+        {
+            var heights = new float[8];
+            for (int index = 0; index < heights.Length; index++)
+            {
+                heights[index] = 2f + ((index & 1) == 0 ? 0f : 0.4f);
+            }
+
+            var plan = new YardWheelchairPlan(
+                Vector3.zero,
+                6f,
+                2f,
+                true,
+                heights);
+
+            bool leftThePlane = false;
+            for (int step = 0; step <= 48; step++)
+            {
+                float distance = plan.LapLength * step / 48f;
+                YardWheelchairPose pose =
+                    YardWheelchairMotion.Sample(plan, distance);
+                float angle = -distance / 6f;
+                Assert.That(
+                    pose.Position.y,
+                    Is.EqualTo(plan.SampleGroundHeight(angle))
+                        .Within(0.0001f),
+                    $"step {step}");
+                Assert.That(
+                    pose.Position.y,
+                    Is.InRange(2f, 2.4f),
+                    $"step {step}");
+                leftThePlane |= pose.Position.y > 2.1f;
+            }
+
+            Assert.That(
+                leftThePlane,
+                Is.True,
+                "The lap must actually ride the profile, not the plane.");
         }
 
         [Test]
@@ -248,6 +315,136 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 YardWheelchairMotion.Advance(plan, 4f, float.NaN),
                 Is.EqualTo(4f));
+        }
+
+        [Test]
+        public void Sample_PulsesLikeHandPushes()
+        {
+            var plan = new YardWheelchairPlan(
+                Vector3.zero,
+                6f,
+                0f,
+                true);
+
+            float minSpeed = float.PositiveInfinity;
+            float maxSpeed = 0f;
+            for (int step = 0; step <= 200; step++)
+            {
+                float distance = 10f +
+                                 YardWheelchairMotion.PushDistance *
+                                 step / 200f;
+                YardWheelchairPose pose =
+                    YardWheelchairMotion.Sample(plan, distance);
+                minSpeed = Mathf.Min(minSpeed, pose.Speed);
+                maxSpeed = Mathf.Max(maxSpeed, pose.Speed);
+                Assert.That(
+                    pose.PushPhase,
+                    Is.InRange(0f, 1f),
+                    $"step {step}");
+            }
+
+            // One cycle must read as a push: a real surge, a real sag,
+            // but the chair never actually stops.
+            Assert.That(maxSpeed / minSpeed, Is.GreaterThan(1.8f));
+            Assert.That(minSpeed, Is.GreaterThan(0.5f));
+
+            // The rhythm lives on the ground, so it repeats exactly
+            // one push-distance later.
+            Assert.That(
+                YardWheelchairMotion.Sample(plan, 10f).PushPhase,
+                Is.EqualTo(
+                    YardWheelchairMotion.Sample(
+                        plan,
+                        10f + YardWheelchairMotion.PushDistance)
+                        .PushPhase)
+                    .Within(0.001f));
+        }
+
+        [Test]
+        public void Presentation_TurnsRealWheelGeometry()
+        {
+            YardWheelchairProvider provider =
+                YardWheelchairProvider.Load();
+            GameObject instance =
+                Object.Instantiate(provider.StagedPrefab);
+            try
+            {
+                var registry = instance
+                    .GetComponentInChildren<
+                        CityWheelchairNpcAssetRegistry>(true);
+                var presentation = instance.AddComponent<
+                    YardWheelchairPresentation>();
+                presentation.Initialize(registry);
+
+                // The static chair meshes must now hang under their
+                // authored pivots, so a pivot turn moves real geometry.
+                AssertAdopted(
+                    instance.transform,
+                    "ACC_WheelTyre.L",
+                    registry.LeftWheelPivot);
+                AssertAdopted(
+                    instance.transform,
+                    "ACC_PushRim.R",
+                    registry.RightWheelPivot);
+                AssertAdopted(
+                    instance.transform,
+                    "ACC_CasterTyre.L",
+                    registry.LeftCasterPivot);
+                AssertAdopted(
+                    instance.transform,
+                    "ACC_CasterHub.R",
+                    registry.RightCasterPivot);
+
+                var plan = new YardWheelchairPlan(
+                    Vector3.zero,
+                    6f,
+                    0f,
+                    true);
+                Quaternion rest =
+                    registry.LeftWheelPivot.localRotation;
+                YardWheelchairPose pose =
+                    YardWheelchairMotion.Sample(plan, 5f);
+                presentation.Advance(1f / 60f, pose, 5f, true);
+                Assert.That(
+                    Quaternion.Angle(
+                        rest,
+                        registry.LeftWheelPivot.localRotation),
+                    Is.GreaterThan(1f),
+                    "Covered distance must turn the wheel pivot.");
+
+                // The roll sign is a regression contract: positive
+                // covered ground must apply the flipped spin, or the
+                // tyres visibly roll backwards again.
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.LeftWheelPivot.localRotation,
+                        rest * Quaternion.Euler(
+                            YardWheelchairPresentation.RollSign *
+                            pose.LeftWheelSpin,
+                            0f,
+                            0f)),
+                    Is.LessThan(0.1f));
+                presentation.Shutdown();
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        private static void AssertAdopted(
+            Transform root,
+            string partName,
+            Transform pivot)
+        {
+            Transform part = root
+                .GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(child => child.name == partName);
+            Assert.That(part, Is.Not.Null, partName);
+            Assert.That(
+                part.parent,
+                Is.SameAs(pivot),
+                $"'{partName}' must hang under '{pivot.name}'.");
         }
 
         [Test]

@@ -631,7 +631,7 @@ namespace BarPromenade
         public const float PreferredEndOffset = 3.1f;
         public const float EndMargin = 0.45f;
 
-        // The chair on the worn ring wanders 0.14 m off its line and
+        // The chair on the ring wanders 0.14 m off its line and
         // carries a 0.31 m half-track; this is the same clearance the
         // yard slot objects keep.
         public const float CircuitClearance = 1.4f;

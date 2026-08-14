@@ -71,6 +71,11 @@ namespace BarPromenade
 
             var actor = instance.AddComponent<YardWheelchairActor>();
             actor.Initialize(plan, presentation);
+
+            // The rider is colliderless, so the hero's attention finds
+            // him through a magnet at seated head height.
+            var magnet = instance.AddComponent<PlayerAttentionMagnet>();
+            magnet.FocusHeight = 1.15f;
             ReportSpawn(instance, plan);
             return actor;
         }

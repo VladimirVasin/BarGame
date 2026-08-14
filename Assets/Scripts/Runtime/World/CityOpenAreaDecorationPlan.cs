@@ -16,7 +16,6 @@ namespace BarPromenade
         CemeteryPath = 6,
         CemeteryGrave = 7,
         CemeteryTree = 8,
-        YardRingTrack = 9,
         YardDeadTree = 10,
         YardBench = 11,
         YardCarpetFrame = 12,
@@ -37,7 +36,6 @@ namespace BarPromenade
         GraveStone = 5,
         TreeTrunk = 6,
         DarkFoliage = 7,
-        YardWornTrack = 8,
         YardTimber = 9,
         YardPipe = 10,
         YardPaint = 11
@@ -154,9 +152,7 @@ namespace BarPromenade
                 case CityOpenAreaDecorationStyle.Reeds:
                 case CityOpenAreaDecorationStyle.CemeteryPath:
                 case CityOpenAreaDecorationStyle.DarkFoliage:
-                // The worn ring is a flat trace in the ground and the
-                // dropped toy is ankle-high; neither may stop a body.
-                case CityOpenAreaDecorationStyle.YardWornTrack:
+                // The dropped toy is ankle-high; it may not stop a body.
                 case CityOpenAreaDecorationStyle.YardPaint:
                     return false;
                 default:
@@ -176,14 +172,12 @@ namespace BarPromenade
         // The yard between the hero's building and its neighbour. The
         // typed fringe precincts are a different thing and stay bare.
         private const string HomeYardId = "home-yard";
-        private const float YardRingWidth = 1.1f;
         private const float YardRingEdgeMargin = 2.2f;
         private const float YardEdgeOffset = 3.4f;
 
         private const float YardSlotLateralOffset = 2.1f;
         private const float YardCircuitClearance =
             HomeYardUtilityPlanner.CircuitClearance;
-        private const int YardRingSegments = 24;
         private const uint YardSalt = 0x59415244u;
 
         private static readonly Vector2Int[] CardinalDirections =
@@ -1309,7 +1303,9 @@ namespace BarPromenade
                     Expand(dumpster.Footprint, AccessClearance));
             }
 
-            AddYardRing(target, center, radius, access);
+            // The rider's circuit is invisible ground: the chair rides
+            // bare earth around the dead tree, and only the yard site
+            // contract knows the circle. Nothing is drawn for it.
             AddYardDeadTree(target, center, access);
             AddYardEdgeObjects(
                 target,
@@ -1319,46 +1315,6 @@ namespace BarPromenade
                 radius,
                 access,
                 reservedGround);
-        }
-
-        /// <summary>
-        /// The worn circuit, laid as flat chords so it reads as a trodden
-        /// trace rather than as a built path. Each chord is short, so no
-        /// segment ever spans a spatial batching chunk.
-        /// </summary>
-        private static void AddYardRing(
-            ICollection<CityOpenAreaDecorationDescriptor> target,
-            Vector3 center,
-            float radius,
-            CityOpenAreaAccessDescriptor access)
-        {
-            for (int step = 0; step < YardRingSegments; step++)
-            {
-                float angle = Mathf.PI * 2f *
-                              ((step + 0.5f) / YardRingSegments);
-                var position = new Vector3(
-                    center.x + Mathf.Cos(angle) * radius,
-                    center.y,
-                    center.z + Mathf.Sin(angle) * radius);
-                float chord = Mathf.PI * 2f * radius / YardRingSegments;
-                bool alongX = Mathf.Abs(Mathf.Sin(angle)) >
-                              Mathf.Abs(Mathf.Cos(angle));
-                Vector3 size = alongX
-                    ? new Vector3(chord + 0.25f, 0.06f, YardRingWidth)
-                    : new Vector3(YardRingWidth, 0.06f, chord + 0.25f);
-                Bounds bounds = CreateGroundedBounds(position, size);
-                if (!IsClearOfAccess(bounds, access))
-                {
-                    continue;
-                }
-
-                target.Add(new CityOpenAreaDecorationDescriptor(
-                    $"{HomeYardId}-ring-{step:D2}",
-                    CityAreaFeatureKind.Yard,
-                    CityOpenAreaDecorationKind.YardRingTrack,
-                    CityOpenAreaDecorationStyle.YardWornTrack,
-                    bounds));
-            }
         }
 
         /// <summary>

@@ -133,6 +133,22 @@
       "value": "E — stand up"
     },
     {
+      "key": "interaction.use_phone_booth",
+      "value": "E \u2014 use the phone"
+    },
+    {
+      "key": "interaction.search_dumpster",
+      "value": "E \u2014 check the dumpster"
+    },
+    {
+      "key": "city.phone_booth.placeholder",
+      "value": "The receiver is cold. No dial tone."
+    },
+    {
+      "key": "city.dumpster.placeholder",
+      "value": "Just damp cardboard and the smell."
+    },
+    {
       "key": "interaction.stop_smoking",
       "value": "E \u2014 stop smoking"
     },

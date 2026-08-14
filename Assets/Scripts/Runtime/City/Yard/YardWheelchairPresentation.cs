@@ -19,6 +19,13 @@ namespace BarPromenade
     {
         public const float RollBlendDuration = 0.35f;
 
+        /// <summary>
+        /// The baked FBX axis conversion leaves the axle on local X
+        /// with a positive spin rolling backwards; this sign turns the
+        /// covered ground into forward wheel travel.
+        /// </summary>
+        public const float RollSign = -1f;
+
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable idlePlayable;
@@ -59,6 +66,7 @@ namespace BarPromenade
                     "registry with an Animator and both loops.");
             }
 
+            BindMechanismParts();
             CaptureRestPoses();
 
             Animator animator = pedestrianRegistry.Animator;
@@ -120,11 +128,13 @@ namespace BarPromenade
                 target,
                 step / RollBlendDuration);
             ApplyWeights();
+            // The arm loop chases the ragged push rhythm: it races
+            // through the stroke and dawdles through the coast.
             rollPlayable.SetSpeed(moving
                 ? Mathf.Clamp(
                     pose.Speed / YardWheelchairMotion.CruiseSpeed,
-                    0.35f,
-                    1.4f)
+                    0.30f,
+                    1.60f)
                 : 0d);
             graph.Evaluate(step);
             ApplyMechanism(pose, distance);
@@ -151,6 +161,66 @@ namespace BarPromenade
         private void OnDestroy()
         {
             Shutdown();
+        }
+
+        /// <summary>
+        /// Adopts the static chair meshes under their authored pivots.
+        /// The exporter deliberately ships them beside the empties (an
+        /// FBX skinned mesh parented through an auxiliary Empty picks
+        /// up a second unit conversion), each mesh with its origin on
+        /// the pivot — so a runtime reparent is exact, and turning a
+        /// pivot finally turns real geometry.
+        /// </summary>
+        private void BindMechanismParts()
+        {
+            Transform modelRoot =
+                pedestrianRegistry.ModelRoot != null
+                    ? pedestrianRegistry.ModelRoot
+                    : registry.transform;
+            Transform[] children =
+                modelRoot.GetComponentsInChildren<Transform>(true);
+            Adopt(children, registry.LeftWheelPivot,
+                "ACC_WheelTyre.L", "ACC_PushRim.L", "ACC_WheelSpokes.L");
+            Adopt(children, registry.RightWheelPivot,
+                "ACC_WheelTyre.R", "ACC_PushRim.R", "ACC_WheelSpokes.R");
+            Adopt(children, registry.LeftCasterPivot,
+                "ACC_CasterTyre.L", "ACC_CasterHub.L");
+            Adopt(children, registry.RightCasterPivot,
+                "ACC_CasterTyre.R", "ACC_CasterHub.R");
+        }
+
+        private static void Adopt(
+            Transform[] children,
+            Transform pivot,
+            params string[] partNames)
+        {
+            if (pivot == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < children.Length; index++)
+            {
+                Transform child = children[index];
+                if (child == null || child.parent == pivot)
+                {
+                    continue;
+                }
+
+                for (int nameIndex = 0;
+                     nameIndex < partNames.Length;
+                     nameIndex++)
+                {
+                    if (string.Equals(
+                            child.name,
+                            partNames[nameIndex],
+                            StringComparison.Ordinal))
+                    {
+                        child.SetParent(pivot, true);
+                        break;
+                    }
+                }
+            }
         }
 
         private void CaptureRestPoses()
@@ -207,20 +277,27 @@ namespace BarPromenade
             {
                 registry.LeftWheelPivot.localRotation =
                     leftWheelRest *
-                    Quaternion.Euler(pose.LeftWheelSpin, 0f, 0f);
+                    Quaternion.Euler(
+                        RollSign * pose.LeftWheelSpin,
+                        0f,
+                        0f);
             }
 
             if (registry.RightWheelPivot != null)
             {
                 registry.RightWheelPivot.localRotation =
                     rightWheelRest *
-                    Quaternion.Euler(pose.RightWheelSpin, 0f, 0f);
+                    Quaternion.Euler(
+                        RollSign * pose.RightWheelSpin,
+                        0f,
+                        0f);
             }
 
             // Casters trail the slide: they are dragged round to point
             // where the chair is actually going, not where it faces.
             float casterYaw = -pose.SlipDegrees;
-            float casterSpin = distance / YardWheelchairMotion.WheelRadius *
+            float casterSpin = RollSign * distance /
+                               YardWheelchairMotion.WheelRadius *
                                Mathf.Rad2Deg * 1.6f;
             if (registry.LeftCasterPivot != null)
             {
@@ -236,11 +313,13 @@ namespace BarPromenade
                     Quaternion.Euler(casterSpin, casterYaw, 0f);
             }
 
-            // The bellows works with every push, and the pipe bank rocks
-            // against the slide.
+            // The bellows works with every push: it squeezes through
+            // the stroke and reinflates on the coast, locked to the
+            // same ground the wheels ride.
             if (registry.BellowsPivot != null)
             {
-                float pump = Mathf.Sin(distance * 1.9f) * 0.018f;
+                float pump = Mathf.Sin(
+                    pose.PushPhase * Mathf.PI * 2f) * 0.022f;
                 registry.BellowsPivot.localPosition =
                     bellowsRest + new Vector3(0f, pump, 0f);
             }

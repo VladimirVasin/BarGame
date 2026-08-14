@@ -244,11 +244,6 @@ namespace BarPromenade.Tests.EditMode
                 Is.True,
                 "Only the yard beside the home is dressed in this pass.");
 
-            // The circuit is unbroken: a ring worn by years of the same
-            // lap cannot have a gap chewed out of it by the entrance.
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.YardRingTrack),
-                Is.EqualTo(24));
             Assert.That(
                 first.GetCount(CityOpenAreaDecorationKind.YardDeadTree),
                 Is.EqualTo(3));
@@ -273,15 +268,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.GetCount(CityOpenAreaDecorationKind.YardBin),
                 Is.EqualTo(2));
-
-            // The ring is a flat trace, so it must never block a body.
-            Assert.That(
-                yardParts
-                    .Where(item =>
-                        item.Kind ==
-                        CityOpenAreaDecorationKind.YardRingTrack)
-                    .All(item => !item.BlocksMovement),
-                Is.True);
 
             // Nothing may stand inside either building: the yard is the
             // gap between them.
@@ -315,8 +301,7 @@ namespace BarPromenade.Tests.EditMode
                 trunk.Bounds.center.z);
             foreach (CityOpenAreaDecorationDescriptor part in yardParts)
             {
-                if (part.Kind == CityOpenAreaDecorationKind.YardDeadTree ||
-                    part.Kind == CityOpenAreaDecorationKind.YardRingTrack)
+                if (part.Kind == CityOpenAreaDecorationKind.YardDeadTree)
                 {
                     continue;
                 }

@@ -41,6 +41,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public IReadOnlyList<CityStreetUtilityInteraction> StreetUtilities
+        {
+            get;
+            private set;
+        }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -327,11 +332,13 @@ namespace BarPromenade
                 Pedestrians,
                 () => Night.NightFactor);
             // The yard rider is authored, not ambient: one staged NPC on
-            // the worn ring beside the player's home, outside the
-            // pedestrian pool and its spawn bands.
+            // the invisible circuit beside the player's home, outside
+            // the pedestrian pool and its spawn bands.
             YardWheelchair = YardWheelchairFactory.Create(
                 transform,
-                YardWheelchairPlan.Create(World.OpenAreaDecorationPlan));
+                YardWheelchairPlan.Create(
+                    World.OpenAreaDecorationPlan,
+                    Layout.ElevationPlan));
             // Every authored seat is sittable in the bus ride's seated
             // pose: the home yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their
@@ -346,6 +353,14 @@ namespace BarPromenade
                     World.DecorationPlan),
                 Player,
                 camera);
+            // Placeholder interactions on every booth door and dumpster
+            // lid: the real prompt on the real dock, answered with a
+            // feedback line until the actual call and search ship.
+            StreetUtilities = CityStreetUtilityWorldBuilder.Build(
+                transform,
+                CityStreetUtilityDock.CreateAll(
+                    Layout,
+                    World.DecorationPlan));
             IntoxicationHudView intoxicationHud =
                 ui.AddComponent<IntoxicationHudView>();
 

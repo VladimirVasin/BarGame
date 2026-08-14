@@ -6,6 +6,55 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — The hero notices things the Silent Hill way
+
+- The hero now turns his head toward what deserves attention: benches,
+  entrances, phone booths, dumpsters, the stairwell cat, passing
+  pedestrians and the yard rider. The glance reaches further than the
+  interaction radius, so a turning head is the first hint that something
+  nearby can be approached.
+- The head and neck turn smoothly within human limits, hold a target at
+  the edge of vision without flickering, prefer people over street
+  furniture, and let go the moment an animated interaction, a fall or
+  the bus takes over the body.
+
+### 2026-08-14 — The pipeback rider actually pushes his chair
+
+- The chair's wheels finally turn: the tyres, push rims, spokes and both
+  casters now hang under their authored pivots and roll exactly with the
+  ground covered, outer wheel faster than inner through the permanent
+  drift.
+- The lap is no longer one even glide. Every hand push surges the chair
+  forward and every gap between pushes bleeds the speed off — a ragged
+  push-and-coast rhythm that lives on the ground, so the wheels, the arm
+  loop and the organ bellows all breathe in the same beat. He still never
+  quite stops.
+
+### 2026-08-14 — The rider's wheels stay on the ground
+
+- The pipeback rider no longer hovers where the yard changes height: his
+  lap now carries a sampled ground profile from the real terrain, so the
+  chair follows every terrace lip as a short ramp instead of floating
+  over the lower ground.
+
+### 2026-08-14 — The rider's circuit leaves no mark
+
+- The drawn ring in the home yard is gone entirely: the pipeback rider
+  now circles the dead tree on bare ground, and nothing on the earth
+  betrays the lap. The circuit itself is unchanged — the same authored
+  circle still steers the chair and keeps the benches, utilities and
+  traces off his path.
+
+### 2026-08-14 — Phone booths and dumpsters answer the hero
+
+- Every phone booth door and dumpster lid in the city — the yard pair
+  included — now offers a real interaction prompt on its dock:
+  «E — позвонить» and «E — заглянуть в контейнер».
+- For now they answer with a placeholder line, the way the stairwell cat
+  did before feeding shipped: the receiver has no dial tone, the dumpster
+  holds only damp cardboard. The docks and triggers are final; the actual
+  call and search will replace only the response.
+
 ### 2026-08-14 — Electric glow all over the city now dies by day
 
 - An audit of every always-glowing element found the stragglers the window
