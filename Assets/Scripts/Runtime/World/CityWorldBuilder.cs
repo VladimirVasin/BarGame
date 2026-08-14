@@ -1548,7 +1548,7 @@ namespace BarPromenade
                     localPosition);
             if (sharedMaterial != null)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                GameObject glowBox = RuntimePrimitiveFactory.CreateBox(
                     name,
                     parent,
                     worldPosition,
@@ -1556,6 +1556,13 @@ namespace BarPromenade
                     color,
                     sharedMaterial,
                     false);
+
+                // The only material passed here is the emissive one, on
+                // the hero's own lit balcony window: it follows the
+                // night clock like every other electric glow.
+                CityNightGlowRegistry.Register(
+                    glowBox.GetComponent<Renderer>(),
+                    color);
                 return;
             }
 
@@ -1605,7 +1612,7 @@ namespace BarPromenade
                 headerSize,
                 HomeTrim,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject porchLight = RuntimePrimitiveFactory.CreateBox(
                 "Home Porch Light",
                 parent,
                 doorPosition +
@@ -1616,6 +1623,9 @@ namespace BarPromenade
                 CityExteriorAppearance.HomeWindow * 1.35f,
                 CityNightResources.EmissiveMaterial,
                 false);
+            CityNightGlowRegistry.Register(
+                porchLight.GetComponent<Renderer>(),
+                CityExteriorAppearance.HomeWindow * 1.35f);
         }
 
         private static Rect RectFromCenter(Vector3 center, float width, float depth)

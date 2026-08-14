@@ -220,6 +220,7 @@ Assets/
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
         CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
+        CityNightGlowRegistry.cs     registered electric glows (neon/signs/lamps) that die by day
         CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
         CityFacadeAppearance.cs      district wall albedos tiled by that grid, not by metres
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign

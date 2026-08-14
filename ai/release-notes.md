@@ -6,6 +6,22 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — Electric glow all over the city now dies by day
+
+- An audit of every always-glowing element found the stragglers the window
+  pass missed: nightlife neon and the cinema marquee, the phone booth
+  lightboxes, the supermarket sign and its letters, the home porch light,
+  the hero's lit balcony window, the lower facade panes seen from the
+  balcony and the site lamps at the waterworks court and weighbridge.
+- All of them now follow the same day-night clock as the street lamps and
+  windows: full glow at night, a dead tinted fixture under the day sky.
+  Working instruments keep burning around the clock on purpose — traffic
+  signals, the weighbridge indicator face — and the yard's noir spotlight
+  stays always-on by its authored decision.
+- The supermarket storefront glass stopped being two flat glowing slabs:
+  it is now real framed glazing on the same window sheet as every other
+  pane, green at night, dark glass by day.
+
 ### 2026-08-14 — Facade windows become real glazing on a day-night clock
 
 - The glowing rectangles on buildings are now actual windows: every pane

@@ -579,7 +579,8 @@ namespace BarPromenade
             AddBox(parent, "Scale Indicator Head", 3.25f, 4.63f, 0.20f,
                 2.25f, 0.82f, 0.62f, IndustrialDark, false, homeExterior);
             AddBox(parent, "Scale Indicator Face", 3.25f, 4.66f, 0.525f,
-                1.78f, 0.52f, 0.035f, IndustrialGlow, true, homeExterior);
+                1.78f, 0.52f, 0.035f, IndustrialGlow, true, homeExterior,
+                alwaysLit: true);
             AddBox(parent, "Scale Needle", 3.25f, 4.66f, 0.55f,
                 0.10f, 0.42f, 0.035f, IndustrialDark, false, homeExterior, 28f);
             AddBox(parent, "Mechanical Linkage", 2.65f, 1.10f, 0.20f,
@@ -783,7 +784,8 @@ namespace BarPromenade
             Color color,
             bool emissive,
             bool homeExterior,
-            float yaw = 0f)
+            float yaw = 0f,
+            bool alwaysLit = false)
         {
             Material material = emissive
                 ? CityNightResources.EmissiveMaterial
@@ -798,6 +800,15 @@ namespace BarPromenade
                 false);
             part.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             ConfigureRenderer(part, homeExterior);
+
+            // Site lamps die by day with every other electric glow;
+            // only a working instrument face may stay always lit.
+            if (emissive && !alwaysLit)
+            {
+                CityNightGlowRegistry.Register(
+                    part.GetComponent<Renderer>(),
+                    color);
+            }
         }
 
         private static void AddCylinder(

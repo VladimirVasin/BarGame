@@ -197,6 +197,30 @@ namespace BarPromenade
             renderer.SetPropertyBlock(properties);
         }
 
+        /// <summary>
+        /// Locks a pane to the plain-glass quadrant of the sheet, for
+        /// storefront glazing where curtains or blinds would be wrong.
+        /// </summary>
+        public static void ApplyPlainPane(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetVector(
+                BaseMapStId,
+                PlainPaneScaleOffset);
+            renderer.SetPropertyBlock(properties);
+        }
+
+        // The authored sheet keeps its plain cell top-left, which is
+        // the (0, 0.5) quadrant once the image lands in UV space.
+        public static readonly Vector4 PlainPaneScaleOffset =
+            new Vector4(0.5f, 0.5f, 0f, 0.5f);
+
         public static Vector4 ResolveVariantScaleOffset(uint paneHash)
         {
             uint variant = (paneHash >> 8) % (uint)VariantCount;

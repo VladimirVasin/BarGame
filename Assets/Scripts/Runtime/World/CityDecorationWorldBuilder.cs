@@ -1274,6 +1274,14 @@ namespace BarPromenade
                     Renderer renderer = result.GetComponent<Renderer>();
                     renderer.shadowCastingMode = ShadowCastingMode.Off;
                     renderer.receiveShadows = false;
+                    if (emissive)
+                    {
+                        // Neon and sign lightboxes are electric: they
+                        // die to a tinted tube under the day sky.
+                        CityNightGlowRegistry.Register(
+                            renderer,
+                            GetBatchColor(style));
+                    }
                 }
             }
         }

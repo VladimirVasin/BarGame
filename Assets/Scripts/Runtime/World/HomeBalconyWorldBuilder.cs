@@ -193,20 +193,25 @@ namespace BarPromenade
                         -halfDepth +
                         0.45f +
                         spacing * (pane + 0.5f);
-                    RuntimePrimitiveFactory.CreateBox(
-                        $"Home Lower Facade Window {floor + 1}-{pane + 1}",
-                        parent,
-                        new Vector3(
-                            facadeX + 0.126f,
-                            y,
-                            z),
-                        new Vector3(
-                            0.026f,
-                            paneHeight,
-                            Mathf.Min(paneWidth, spacing - 0.24f)),
-                        LowerWindow,
-                        CityNightResources.EmissiveMaterial,
-                        false);
+                    GameObject paneObject =
+                        RuntimePrimitiveFactory.CreateBox(
+                            $"Home Lower Facade Window " +
+                            $"{floor + 1}-{pane + 1}",
+                            parent,
+                            new Vector3(
+                                facadeX + 0.126f,
+                                y,
+                                z),
+                            new Vector3(
+                                0.026f,
+                                paneHeight,
+                                Mathf.Min(paneWidth, spacing - 0.24f)),
+                            LowerWindow,
+                            CityNightResources.EmissiveMaterial,
+                            false);
+                    CityNightGlowRegistry.Register(
+                        paneObject.GetComponent<Renderer>(),
+                        LowerWindow);
                 }
             }
         }

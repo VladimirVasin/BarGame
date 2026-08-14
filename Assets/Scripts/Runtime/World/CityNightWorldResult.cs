@@ -71,8 +71,11 @@ namespace BarPromenade
 
             // The lit facade windows follow the same clock as the lamp
             // bulbs: five shared family materials dim instead of
-            // thousands of pane renderers.
+            // thousands of pane renderers. The registered electric
+            // glows (neon, sign lightboxes, porch and site lamps)
+            // follow it too.
             CityWindowAppearance.SetNightFactor(nightFactor);
+            CityNightGlowRegistry.SetNightFactor(nightFactor);
             Color displayedBulbColor = new Color(
                 streetLampBulbNightColor.r * nightFactor,
                 streetLampBulbNightColor.g * nightFactor,

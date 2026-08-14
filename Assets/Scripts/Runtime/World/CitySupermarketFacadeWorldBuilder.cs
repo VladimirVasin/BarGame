@@ -13,8 +13,6 @@ namespace BarPromenade
             new Color(0.46f, 0.49f, 0.38f);
         private static readonly Color DoorColor =
             new Color(0.10f, 0.13f, 0.11f);
-        private static readonly Color GlassColor =
-            new Color(0.50f, 0.82f, 0.66f);
         private static readonly Color CanopyColor =
             new Color(0.30f, 0.34f, 0.25f);
         private static readonly Color SignHousingColor =
@@ -109,8 +107,12 @@ namespace BarPromenade
                     direction * 0.060f +
                     tangent * (side * glassOffset) +
                     Vector3.up * 1.18f;
-                CreateBox(
-                    "Supermarket Storefront Glass",
+
+                // The storefront panels are real glazing on the
+                // supermarket window family: framed plain glass that
+                // glows green at night and dies to dark glass by day
+                // with every other lit window.
+                CreateStorefrontGlass(
                     parent,
                     panelCenter,
                     CreateFacadeSize(
@@ -118,8 +120,6 @@ namespace BarPromenade
                         0.10f,
                         2.20f,
                         glassWidth),
-                    GlassColor,
-                    emissiveMaterial,
                     clipToHomeExterior);
 
                 float outerFrameOffset =
@@ -203,7 +203,7 @@ namespace BarPromenade
                 SignHousingColor,
                 null,
                 clipToHomeExterior);
-            CreateBox(
+            CreateGlowBox(
                 "Supermarket Sign",
                 parent,
                 doorPosition +
@@ -220,7 +220,7 @@ namespace BarPromenade
 
             for (int letter = -2; letter <= 2; letter++)
             {
-                CreateBox(
+                CreateGlowBox(
                     "Supermarket Sign Letter",
                     parent,
                     doorPosition +
@@ -236,6 +236,64 @@ namespace BarPromenade
                     emissiveMaterial,
                     clipToHomeExterior);
             }
+        }
+
+        private static void CreateStorefrontGlass(
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            bool clipToHomeExterior)
+        {
+            Bounds bounds = new Bounds(position, size);
+            if (clipToHomeExterior &&
+                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
+                    bounds,
+                    out bounds))
+            {
+                return;
+            }
+
+            GameObject glass = RuntimePrimitiveFactory.CreateMaterialBox(
+                "Supermarket Storefront Glass",
+                parent,
+                bounds.center,
+                bounds.size,
+                CityWindowAppearance.ResolveLitMaterial(
+                    CityWindowFamily.Supermarket),
+                false);
+            CityWindowAppearance.ApplyPlainPane(
+                glass.GetComponent<Renderer>());
+        }
+
+        private static void CreateGlowBox(
+            string name,
+            Transform parent,
+            Vector3 position,
+            Vector3 size,
+            Color color,
+            Material emissiveMaterial,
+            bool clipToHomeExterior)
+        {
+            Bounds bounds = new Bounds(position, size);
+            if (clipToHomeExterior &&
+                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
+                    bounds,
+                    out bounds))
+            {
+                return;
+            }
+
+            GameObject box = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                bounds.center,
+                bounds.size,
+                color,
+                emissiveMaterial,
+                false);
+            CityNightGlowRegistry.Register(
+                box.GetComponent<Renderer>(),
+                color);
         }
 
         private static Vector3 CreateFacadeSize(

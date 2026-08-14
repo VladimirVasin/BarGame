@@ -6,6 +6,39 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Audit: every exterior electric glow joins the night clock
+
+- Audited all `CityNoirEmission` users. Interiors (bar, home, stairwell,
+  supermarket, fridge, alarm clock) legitimately own their light; the
+  exterior stragglers were the nightlife neon batches, the booth backlit
+  signs, the supermarket sign/letters and its two flat glowing storefront
+  slabs, the home porch light, the hero's lit balcony window, the
+  balcony-view lower facade panes and the POI lamps (waterworks
+  `Working Lamp`, weighbridge `Cold Service Lamp`).
+- Added `CityNightGlowRegistry`: builders register each electric renderer
+  with its lit colour; `CityNightWorldResult.SetNightFactor` lerps them
+  between a `0.10x` dead-fixture tint and full glow and prunes destroyed
+  renderers, covering City and the bounded Home exterior. Deliberate
+  exceptions stay always-on: traffic signals, the weighbridge
+  `Scale Indicator Face` (`alwaysLit`) and the authored yard spotlight;
+  the bus already dims through `CityBusPresentation.SetNightFactor`, and
+  the Home-view terminal haze is a backdrop, not a fixture.
+- Rebuilt the supermarket storefront glass as real glazing: the panels now
+  use the shared Supermarket window-family material with the plain-glass
+  quadrant of the window sheet (`CityWindowAppearance.ApplyPlainPane`), so
+  they are framed, textured and follow the clock for free.
+- Added `CityNightGlowRegistryTests` covering the lit/dead lerp contract
+  and dead-renderer pruning.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK.
+- Focused EditMode under Unity `6000.5.5f1` passed `15/15`:
+  `CityNightGlowRegistryTests`, `CityWindowAppearanceTests` and
+  `CityDecorationPlannerTests` together, re-proving the decoration
+  build path with the registered neon batches.
+
 ## 2026-08-14 — Textured facade windows on the night-factor clock
 
 - Added `tools/build-city-window-textures.py`: a deterministic 512 sheet of
