@@ -386,14 +386,36 @@ namespace BarPromenade.Tests
                 CityRiverBridgeDescriptor footbridge = layout.River.Bridges
                     .Single(bridge => bridge.Definition.Role ==
                         CityBridgeRole.ParkFootbridge);
-                Renderer timber = bridges.Find(
-                        "Central Park Timber Footbridge/Timber Deck Planks")
+                Transform timberRoot = bridges.Find(
+                    "Central Park Timber Footbridge");
+                Renderer timber = timberRoot.Find("Timber Deck Planks")
                     .GetComponent<Renderer>();
                 Assert.That(
                     timber.bounds.max.y,
                     Is.EqualTo(
                         footbridge.AverageY +
                         CityStreetSurfacePlanner.RoadTop).Within(0.01f));
+                MeshFilter timberStructure = timberRoot.Find(
+                        "Timber Bridge Structure")
+                    .GetComponent<MeshFilter>();
+                float timberDeckY = footbridge.AverageY +
+                                    CityStreetSurfacePlanner.RoadTop;
+                Vector3[] elevatedTimberVertices = timberStructure
+                    .sharedMesh.vertices
+                    .Select(timberStructure.transform.TransformPoint)
+                    .Where(vertex => vertex.y > timberDeckY + 0.20f)
+                    .ToArray();
+                Assert.That(elevatedTimberVertices, Is.Not.Empty);
+                Assert.That(
+                    elevatedTimberVertices.Min(vertex => vertex.x),
+                    Is.GreaterThanOrEqualTo(
+                        footbridge.DeckBounds.xMin +
+                        layout.RoadWidth * 0.5f - 0.001f));
+                Assert.That(
+                    elevatedTimberVertices.Max(vertex => vertex.x),
+                    Is.LessThanOrEqualTo(
+                        footbridge.DeckBounds.xMax -
+                        layout.RoadWidth * 0.5f + 0.001f));
                 Assert.That(rails, Is.Not.Null);
                 Assert.That(
                     rails.Find("West Quay South End Rail"),
@@ -421,6 +443,35 @@ namespace BarPromenade.Tests
                             ContainsXZ(collider.bounds, eastX, z)),
                         Is.False,
                         bridge.Definition.Id + ":east");
+                }
+                foreach (CityRiverBridgeDescriptor bridge in
+                         layout.River.Bridges.Where(candidate =>
+                             candidate.Definition.CarriesRoadTraffic))
+                {
+                    Transform bridgeRoot = bridges.Find(
+                        $"{bridge.Definition.Id} Road Bridge");
+                    Assert.That(bridgeRoot, Is.Not.Null);
+                    float minimum = bridge.DeckBounds.xMin +
+                                    layout.RoadWidth * 0.5f;
+                    float maximum = bridge.DeckBounds.xMax -
+                                    layout.RoadWidth * 0.5f;
+                    foreach (string parapetName in new[]
+                             {
+                                 "Outer Parapet",
+                                 "Landing Parapet"
+                             })
+                    {
+                        Renderer parapet = bridgeRoot.Find(parapetName)
+                            .GetComponent<Renderer>();
+                        Assert.That(
+                            parapet.bounds.min.x,
+                            Is.GreaterThanOrEqualTo(minimum - 0.001f),
+                            $"{bridge.Definition.Id}:{parapetName}:west");
+                        Assert.That(
+                            parapet.bounds.max.x,
+                            Is.LessThanOrEqualTo(maximum + 0.001f),
+                            $"{bridge.Definition.Id}:{parapetName}:east");
+                    }
                 }
                 Assert.That(landings, Is.Not.Null);
                 Assert.That(landings.childCount, Is.EqualTo(4));

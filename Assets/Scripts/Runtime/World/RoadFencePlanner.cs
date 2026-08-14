@@ -17,7 +17,7 @@ namespace BarPromenade
 
             layout.ValidateOrThrow();
             IReadOnlyList<Rect> streetRectangles =
-                layout.CreateStreetRects();
+                CreateFenceSourceStreetRects(layout);
             var exposedSides = new List<BoundarySpan>(
                 checked(streetRectangles.Count * 4));
 
@@ -67,7 +67,7 @@ namespace BarPromenade
             List<BoundarySpan> mapBoundary = KeepUnsupportedBoundary(
                 Merge(exposedSides),
                 layout.Surfaces,
-                CreateParkPathRects(layout));
+                CreateSupportingTravelRects(layout));
             List<BoundarySpan> deadEnds = CreateDeadEndCaps(layout);
             mapBoundary = SubtractSpans(mapBoundary, deadEnds);
             mapBoundary = Merge(mapBoundary);
@@ -93,6 +93,23 @@ namespace BarPromenade
             segments.Sort(CompareSegments);
 
             return new RoadFencePlan(segments, openings);
+        }
+
+        private static IReadOnlyList<Rect> CreateFenceSourceStreetRects(
+            CityLayout layout)
+        {
+            var streets = new List<Rect>(layout.RoadEdges.Count);
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (layout.GetPathKind(edge) == CityPathKind.Street &&
+                    !layout.IsRiverBridgeEdge(edge))
+                {
+                    streets.Add(layout.GetRoadRect(edge));
+                }
+            }
+
+            return streets;
         }
 
         private static void AddDescriptors(
@@ -123,7 +140,7 @@ namespace BarPromenade
         private static List<BoundarySpan> KeepUnsupportedBoundary(
             IReadOnlyList<BoundarySpan> boundary,
             IReadOnlyList<CitySurfaceDescriptor> surfaces,
-            IReadOnlyList<Rect> parkPaths)
+            IReadOnlyList<Rect> supportingTravel)
         {
             var remaining = new List<BoundarySpan>();
             for (int spanIndex = 0;
@@ -162,10 +179,11 @@ namespace BarPromenade
                 }
 
                 for (int pathIndex = 0;
-                     pathIndex < parkPaths.Count && fragments.Count > 0;
+                     pathIndex < supportingTravel.Count &&
+                     fragments.Count > 0;
                      pathIndex++)
                 {
-                    Rect path = parkPaths[pathIndex];
+                    Rect path = supportingTravel[pathIndex];
                     if (!ExtendsAcrossBoundary(
                             path,
                             span.Horizontal,
@@ -198,7 +216,7 @@ namespace BarPromenade
             return remaining;
         }
 
-        private static IReadOnlyList<Rect> CreateParkPathRects(
+        private static IReadOnlyList<Rect> CreateSupportingTravelRects(
             CityLayout layout)
         {
             var paths = new List<Rect>();
@@ -210,6 +228,13 @@ namespace BarPromenade
                 {
                     paths.Add(layout.GetRoadRect(edge));
                 }
+            }
+
+            for (int index = 0;
+                 index < layout.River.Promenades.Count;
+                 index++)
+            {
+                paths.Add(layout.River.Promenades[index].Bounds);
             }
 
             return paths;

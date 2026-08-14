@@ -322,7 +322,7 @@ namespace BarPromenade
                 if (bridge.Definition.Role ==
                     CityBridgeRole.ParkFootbridge)
                 {
-                    BuildTimberFootbridge(bridges, bridge);
+                    BuildTimberFootbridge(bridges, layout, bridge);
                 }
                 else
                 {
@@ -389,16 +389,21 @@ namespace BarPromenade
             bool innerNorth = bridge.Definition.InteriorDirection.y > 0;
             float innerZ = innerNorth ? deck.yMax : deck.yMin;
             float outerZ = innerNorth ? deck.yMin : deck.yMax;
+            AxisRange guardRange = CreateBridgeGuardRange(
+                layout,
+                bridge);
             List<AxisRange> landingGaps = CreateBridgeLandingGaps(
                 layout.River,
                 bridge.Definition.Id,
-                deck.xMin,
-                deck.xMax);
+                guardRange.Minimum,
+                guardRange.Maximum);
             BuildBridgeRail(
                 root,
                 "Outer Parapet",
                 bridge,
                 outerZ,
+                guardRange.Minimum,
+                guardRange.Maximum,
                 Array.Empty<AxisRange>(),
                 structure);
             BuildBridgeRail(
@@ -406,6 +411,8 @@ namespace BarPromenade
                 "Landing Parapet",
                 bridge,
                 innerZ,
+                guardRange.Minimum,
+                guardRange.Maximum,
                 landingGaps,
                 structure);
         }
@@ -415,13 +422,14 @@ namespace BarPromenade
             string name,
             CityRiverBridgeDescriptor bridge,
             float z,
+            float minimum,
+            float maximum,
             IReadOnlyList<AxisRange> gaps,
             Color color)
         {
-            Rect deck = bridge.DeckBounds;
             List<AxisRange> spans = SubtractRanges(
-                deck.xMin,
-                deck.xMax,
+                minimum,
+                maximum,
                 gaps);
             var boxes = new List<Bounds>();
             bool solid = bridge.Definition.Style == CityBridgeStyle.Mouth;
@@ -473,6 +481,7 @@ namespace BarPromenade
 
         private static void BuildTimberFootbridge(
             Transform parent,
+            CityLayout layout,
             CityRiverBridgeDescriptor bridge)
         {
             Transform root = new GameObject(
@@ -517,15 +526,22 @@ namespace BarPromenade
                         deck.center.y + deck.height * 0.30f),
                     new Vector3(deck.width, 0.38f, 0.22f))
             };
+            AxisRange guardRange = CreateBridgeGuardRange(
+                layout,
+                bridge);
+            float guardCenter =
+                (guardRange.Minimum + guardRange.Maximum) * 0.5f;
+            float guardLength =
+                guardRange.Maximum - guardRange.Minimum;
             for (int side = -1; side <= 1; side += 2)
             {
                 float z = deck.center.y + side * (deck.height * 0.5f - 0.10f);
                 structure.Add(new Bounds(
-                    new Vector3(deck.center.x, deckY + RailHeight, z),
-                    new Vector3(deck.width, 0.13f, 0.13f)));
+                    new Vector3(guardCenter, deckY + RailHeight, z),
+                    new Vector3(guardLength, 0.13f, 0.13f)));
                 AddRailPostsAlongX(
                     structure,
-                    new AxisRange(deck.xMin, deck.xMax),
+                    guardRange,
                     z,
                     bridge.AverageY,
                     2.1f);
@@ -537,6 +553,17 @@ namespace BarPromenade
                 structure,
                 TimberEdge,
                 true);
+        }
+
+        private static AxisRange CreateBridgeGuardRange(
+            CityLayout layout,
+            CityRiverBridgeDescriptor bridge)
+        {
+            float inset = layout.RoadWidth * 0.5f +
+                          RailThickness * 0.5f;
+            return new AxisRange(
+                bridge.DeckBounds.xMin + inset,
+                bridge.DeckBounds.xMax - inset);
         }
 
         private static void BuildLandings(

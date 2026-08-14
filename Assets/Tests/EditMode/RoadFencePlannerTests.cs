@@ -132,6 +132,77 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("CityRiver")]
+        public void CreatePlan_LeavesPromenadesAndBridgeParapetsToRiverBuilder()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            RoadFencePlan plan = RoadFencePlanner.CreatePlan(layout);
+
+            Assert.That(layout.River.IsEnabled, Is.True);
+            Assert.That(layout.River.Promenades, Has.Count.EqualTo(2));
+            Assert.That(
+                layout.River.Bridges.Count(bridge =>
+                    bridge.Definition.CarriesRoadTraffic),
+                Is.EqualTo(2));
+
+            foreach (CityRiverPromenadeDescriptor promenade in
+                     layout.River.Promenades)
+            {
+                float seamX = promenade.WestBank
+                    ? promenade.Bounds.xMin
+                    : promenade.Bounds.xMax;
+                Vector3 outward = promenade.WestBank
+                    ? Vector3.right
+                    : Vector3.left;
+                Assert.That(
+                    plan.Segments.Any(segment =>
+                        !segment.IsHorizontal &&
+                        Mathf.Abs(segment.FixedCoordinate - seamX) <=
+                        Tolerance &&
+                        (segment.OutwardNormal - outward).sqrMagnitude <=
+                        Tolerance * Tolerance &&
+                        HasPositiveOverlap(
+                            segment.MinimumCoordinate,
+                            segment.MaximumCoordinate,
+                            promenade.Bounds.yMin,
+                            promenade.Bounds.yMax)),
+                    Is.False,
+                    $"A generic fence separates {promenade.Id} from " +
+                    "its bank road.");
+            }
+
+            foreach (CityRiverBridgeDescriptor bridge in
+                     layout.River.Bridges.Where(candidate =>
+                         candidate.Definition.CarriesRoadTraffic))
+            {
+                float minimum = bridge.DeckBounds.xMin +
+                                layout.RoadWidth * 0.5f;
+                float maximum = bridge.DeckBounds.xMax -
+                                layout.RoadWidth * 0.5f;
+                Assert.That(
+                    plan.Segments.Any(segment =>
+                        segment.IsHorizontal &&
+                        HasPositiveOverlap(
+                            segment.MinimumCoordinate,
+                            segment.MaximumCoordinate,
+                            minimum,
+                            maximum) &&
+                        (Mathf.Abs(
+                             segment.FixedCoordinate -
+                             bridge.DeckBounds.yMin) <= Tolerance ||
+                         Mathf.Abs(
+                             segment.FixedCoordinate -
+                             bridge.DeckBounds.yMax) <= Tolerance)),
+                    Is.False,
+                    $"Generic fences duplicate the authored parapets on " +
+                    $"{bridge.Definition.Id}.");
+            }
+        }
+
+        [Test]
         public void CreatePlan_PreservesClearanceOpeningMetadata()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -291,6 +362,14 @@ namespace BarPromenade.Tests.EditMode
                    point.z > rectangle.yMin &&
                    point.z < rectangle.yMax;
         }
+
+        private static bool HasPositiveOverlap(
+            float firstMinimum,
+            float firstMaximum,
+            float secondMinimum,
+            float secondMaximum) =>
+            Mathf.Min(firstMaximum, secondMaximum) -
+            Mathf.Max(firstMinimum, secondMinimum) > Tolerance;
 
         private static bool IsCardinal(Vector3 direction)
         {
