@@ -259,22 +259,6 @@ namespace BarPromenade.Tests.PlayMode
             {
                 window.Close();
             }
-
-            foreach (CocktailMinigameController minigame in
-                     Object.FindObjectsByType<
-                         CocktailMinigameController>(
-                         FindObjectsInactive.Include))
-            {
-                minigame.Cancel();
-            }
-
-            foreach (BeerPongMinigameController minigame in
-                     Object.FindObjectsByType<
-                         BeerPongMinigameController>(
-                         FindObjectsInactive.Include))
-            {
-                minigame.Cancel();
-            }
         }
 
         private static void ResetSession()

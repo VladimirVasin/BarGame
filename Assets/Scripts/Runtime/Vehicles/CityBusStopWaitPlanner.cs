@@ -122,9 +122,10 @@ namespace BarPromenade
         /// <summary>
         /// Single-source Dijkstra from the stop node over the pedestrian
         /// graph, using the same binary-heap shape as the population
-        /// director's player guidance.
+        /// director's player guidance. Shared with the bench rest
+        /// planner, which seeds it at a bench instead of a stop.
         /// </summary>
-        private static float[] CreateNodeDistances(
+        internal static float[] CreateNodeDistances(
             CityPedestrianPlan plan,
             int sourceNodeIndex)
         {
@@ -234,7 +235,7 @@ namespace BarPromenade
             public float Distance { get; }
         }
 
-        private static bool TryFindNearestNode(
+        internal static bool TryFindNearestNode(
             CityPedestrianPlan plan,
             Vector3 position,
             out int nodeIndex)

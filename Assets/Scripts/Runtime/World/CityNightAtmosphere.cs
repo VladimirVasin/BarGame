@@ -11,7 +11,13 @@ namespace BarPromenade
 
         private const float ReassignmentInterval = 0.35f;
         private const float ReassignmentDistance = 1.25f;
-        private const float StreetLightIntensity = 12f;
+
+        // The mast grew from 2.92 m to 4.70 m of source height; the
+        // inverse-square law wants (4.70/2.92)^2 = 2.6x the luminous
+        // power for the same pavement below, and the pool reaches
+        // correspondingly further.
+        private const float StreetLightIntensity = 31f;
+        private const float StreetLightRange = 16.5f;
         private const float BarLightIntensity = 8f;
         private const float VisibleFactorThreshold = 0.0001f;
 
@@ -106,9 +112,9 @@ namespace BarPromenade
                     StreetLightColor,
                     LightType.Spot,
                     StreetLightIntensity,
-                    10.5f,
-                    0.80f,
-                    2.20f,
+                    StreetLightRange,
+                    1.15f,
+                    3.10f,
                     StreetHaloInner,
                     StreetHaloOuter,
                     out streetLightHalos[index]);

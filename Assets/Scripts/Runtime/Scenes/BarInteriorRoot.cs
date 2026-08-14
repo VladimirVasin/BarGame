@@ -49,20 +49,17 @@ namespace BarPromenade
         public BarAmbiencePlayer Ambience { get; private set; }
         public BarSoundscape Soundscape { get; private set; }
         public BarInteriorAtmosphere Atmosphere { get; private set; }
-        public BarNpcPlan NpcPlan { get; private set; }
-        public BarNpcDirector NpcDirector { get; private set; }
+        public IReadOnlyList<BarPatron> Patrons { get; private set; }
         public BarArrivalPresentation ArrivalPresentation
         {
             get;
             private set;
         }
         public BarActivityKind ActiveActivity { get; private set; }
-        public BarActivityStation ActivityStation { get; private set; }
         public BarCounterStation CounterStation { get; private set; }
         public BarDrinkServicePlan DrinkServicePlan { get; private set; }
         public BarDrinkServiceView DrinkServiceView { get; private set; }
         public BarDrinkShopController DrinkShop { get; private set; }
-        public IBarMinigame ActiveMinigame { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -72,26 +69,6 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
-        public CocktailMinigameController CocktailMinigame
-        {
-            get;
-            private set;
-        }
-        public BeerPongMinigameController BeerPongMinigame
-        {
-            get;
-            private set;
-        }
-        public SplitTheGMinigameController SplitTheGMinigame
-        {
-            get;
-            private set;
-        }
-        public TinctureMatchMinigameController TinctureMatchMinigame
-        {
-            get;
-            private set;
-        }
 
         private void Awake()
         {
@@ -204,7 +181,6 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, true);
-            BuildMinigame(ui, intoxicationHud, follow);
             BuildDrinkShop(ui, intoxicationHud, follow);
 
             BalanceCheckView balanceView =
@@ -225,12 +201,10 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 null,
-                ActiveMinigame,
                 DrinkShop);
             ReportPhase("player_and_ui", phaseTimer);
 
             phaseTimer.Restart();
-            BuildActivityStation();
             BuildCounterStation();
             BuildExit();
             BuildNpcCrowd(camera);
@@ -267,14 +241,11 @@ namespace BarPromenade
                     "activity",
                     ActiveActivity.ToString()),
                 GameLog.Field(
-                    "minigame_id",
-                    GetMinigameId()),
-                GameLog.Field(
                     "stable_seed",
                     (long)Layout.StableSeed),
                 GameLog.Field(
-                    "npc_count",
-                    NpcPlan.Definitions.Count),
+                    "patron_count",
+                    Patrons.Count),
                 GameLog.Field(
                     "light_count",
                     Layout.LightAnchors.Count),
@@ -287,14 +258,6 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     totalTimer.ElapsedMilliseconds));
-        }
-
-        private void OnDestroy()
-        {
-            if (ActiveMinigame != null)
-            {
-                ActiveMinigame.Completed -= HandleMinigameCompleted;
-            }
         }
 
         private void BuildRoom()
@@ -378,18 +341,10 @@ namespace BarPromenade
 
         private void BuildNpcCrowd(Camera camera)
         {
-            NpcPlan = BarNpcPlanner.Create(
-                Layout.CitySeed,
-                Layout.BarId,
-                Layout.Activity,
-                Layout.NpcAnchors);
-            NpcDirector = BarNpcFactory.CreateWithDefaultLibrary(
-                transform,
-                camera,
-                NpcPlan);
-            NpcDirector.ConfigureDepthSorting(
-                camera,
-                Player.GameObject.transform);
+            // The sprite crowd is retired: the production 3D
+            // pedestrians take the same authored anchors. The
+            // bartender's spot stays empty until his own pass.
+            Patrons = BarPatronWorldBuilder.Build(transform, Layout);
         }
 
         private void BuildArrivalPresentation(
@@ -407,49 +362,6 @@ namespace BarPromenade
                     new Vector3(-0.6f, 1.25f, 2.6f)),
                 61f,
                 1.35f);
-        }
-
-        private void BuildMinigame(
-            GameObject ui,
-            IntoxicationHudView intoxicationHud,
-            PlayerCameraFollow follow)
-        {
-            if (!BarMinigameCatalog.TryGet(
-                    ActiveActivity,
-                    out BarMinigameDefinition definition))
-            {
-                throw new System.InvalidOperationException(
-                    $"No minigame is registered for '{ActiveActivity}'.");
-            }
-
-            var context = new BarMinigameFactoryContext(
-                ui,
-                intoxicationHud,
-                Player,
-                follow,
-                true);
-            ActiveMinigame = definition.Create(context);
-            CocktailMinigame =
-                ActiveMinigame as CocktailMinigameController;
-            BeerPongMinigame =
-                ActiveMinigame as BeerPongMinigameController;
-            SplitTheGMinigame =
-                ActiveMinigame as SplitTheGMinigameController;
-            TinctureMatchMinigame =
-                ActiveMinigame as TinctureMatchMinigameController;
-
-            ActiveMinigame.Completed += HandleMinigameCompleted;
-            GameLog.Info(
-                "bar",
-                "minigame_created",
-                GameLog.Field("bar_id", activeBarId),
-                GameLog.Field("minigame_id", definition.Id),
-                GameLog.Field(
-                    "activity",
-                    definition.Activity.ToString()),
-                GameLog.Field(
-                    "controller",
-                    ActiveMinigame.GetType().Name));
         }
 
         private void BuildDrinkShop(
@@ -542,117 +454,17 @@ namespace BarPromenade
                 false);
         }
 
-        private void BuildActivityStation()
-        {
-            bool isBeerPong =
-                ActiveActivity == BarActivityKind.BeerPong;
-            bool isSplitTheG =
-                ActiveActivity == BarActivityKind.SplitTheG;
-            bool isTinctureMatch =
-                ActiveActivity == BarActivityKind.TinctureMatch;
-            Vector3 stationPosition =
-                Layout.ActivityStationPosition;
-            Vector3 triggerSize =
-                Layout.ActivityStationTriggerSize;
-            string stationName;
-            string pointName;
-            string signName;
-            Vector3 signPosition;
-            if (isBeerPong)
-            {
-                stationName = "Beer Pong Minigame Station";
-                pointName = "Play Point";
-                signName = "Beer Pong Point Sign";
-                signPosition = new Vector3(
-                    stationPosition.x,
-                    1.38f,
-                    stationPosition.z + 0.35f);
-            }
-            else if (isSplitTheG)
-            {
-                stationName = "Split the G Minigame Station";
-                pointName = "Split the G Point";
-                signName = "Split the G Point Sign";
-                signPosition =
-                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
-            }
-            else if (isTinctureMatch)
-            {
-                stationName = "Tincture Match Minigame Station";
-                pointName = "Tincture Match Point";
-                signName = "Tincture Match Point Sign";
-                signPosition =
-                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
-            }
-            else
-            {
-                stationName = "Cocktail Minigame Station";
-                pointName = "Order Point";
-                signName = "Order Point Sign";
-                signPosition =
-                    stationPosition + new Vector3(0f, 0.85f, 0.42f);
-            }
-
-            string promptKey = BarMinigameCatalog.TryGet(
-                ActiveActivity,
-                out BarMinigameDefinition definition)
-                ? definition.PromptKey
-                : BarActivityStation.DefaultPromptKey;
-
-            GameObject station = new GameObject(stationName);
-            station.transform.SetParent(transform, false);
-            station.transform.localPosition = stationPosition;
-            BoxCollider trigger = station.AddComponent<BoxCollider>();
-            trigger.isTrigger = true;
-            trigger.size = triggerSize;
-            ActivityStation =
-                station.AddComponent<BarActivityStation>();
-            ActivityStation.Configure(ActiveMinigame, promptKey);
-
-            Color markerColor = new Color(0.96f, 0.67f, 0.18f);
-            RuntimePrimitiveFactory.CreateBox(
-                pointName,
-                transform,
-                new Vector3(
-                    stationPosition.x,
-                    0.07f,
-                    stationPosition.z),
-                new Vector3(0.72f, 0.10f, 0.72f),
-                markerColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                signName,
-                transform,
-                signPosition,
-                new Vector3(0.82f, 0.48f, 0.10f),
-                markerColor,
-                false);
-        }
-
-        private void HandleMinigameCompleted()
-        {
-            bool firstVisit =
-                GameSessionState.MarkBarVisited(activeBarId);
-            GameLog.Info(
-                "bar",
-                "minigame_completed",
-                GameLog.Field("bar_id", activeBarId),
-                GameLog.Field(
-                    "activity",
-                    ActiveActivity.ToString()),
-                GameLog.Field(
-                    "minigame_id",
-                    GetMinigameId()),
-                GameLog.Field("first_visit", firstVisit),
-                GameLog.Field(
-                    "visited_count",
-                    GameSessionState.VisitedBarCount));
-        }
-
         private static BarActivityKind ResolveActivity(
             BarActivityKind activity)
         {
-            return BarMinigameCatalog.NormalizeActivity(activity);
+            // The minigames are gone: the activity survives only as
+            // the interior layout flavour of this bar.
+            return System.Enum.IsDefined(
+                       typeof(BarActivityKind),
+                       activity) &&
+                   activity != BarActivityKind.None
+                ? activity
+                : BarActivityKind.Cocktail;
         }
 
         private static void ReportLayout(
@@ -707,15 +519,6 @@ namespace BarPromenade
                 GameLog.Field(
                     "counter_station_z",
                     layout.CounterStationPosition.z));
-        }
-
-        private string GetMinigameId()
-        {
-            return BarMinigameCatalog.TryGet(
-                ActiveActivity,
-                out BarMinigameDefinition definition)
-                ? definition.Id
-                : string.Empty;
         }
 
         private static void ReportPhase(

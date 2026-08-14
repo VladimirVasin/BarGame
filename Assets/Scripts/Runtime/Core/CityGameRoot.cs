@@ -46,6 +46,7 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CityBenchNpcRestController BenchRests { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
         {
             get;
@@ -147,10 +148,7 @@ namespace BarPromenade
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
                     "route_count",
-                    GameSessionState.PlannedBarRoute.Count),
-                GameLog.Field(
-                    "visited_count",
-                    GameSessionState.VisitedBarCount));
+                    GameSessionState.PlannedBarRoute.Count));
 
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
             Audio = RetroAudioService.EnsureInstalled();
@@ -344,15 +342,24 @@ namespace BarPromenade
             // point-of-interest and street-decoration seats face their
             // own centres and every bus stop shelter bench faces its
             // road.
-            BenchSits = CityBenchSitWorldBuilder.Build(
-                transform,
+            List<CityBenchSitPlan> benchPlans =
                 CityBenchSitPlan.CreateAll(
                     Layout,
                     World.OpenAreaDecorationPlan,
                     BusPlan,
-                    World.DecorationPlan),
+                    World.DecorationPlan);
+            BenchSits = CityBenchSitWorldBuilder.Build(
+                transform,
+                benchPlans,
                 Player,
                 camera);
+            // Life simulation: every now and then a walker near a free
+            // bench sits down for a while and moves on.
+            BenchRests = CityBenchNpcRestController.Create(
+                transform,
+                CityBenchRestPlanner.Create(benchPlans, PedestrianPlan),
+                Pedestrians,
+                GameSessionState.CitySeed);
             // Placeholder interactions on every booth door and dumpster
             // lid: the real prompt on the real dock, answered with a
             // feedback line until the actual call and search ship.

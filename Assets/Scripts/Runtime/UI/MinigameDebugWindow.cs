@@ -1,22 +1,19 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// The F9 debug window. The bar minigames it once launched are cut
+    /// from the project; what remains is the debug surface itself:
+    /// intoxication adjustment, the City map's test-teleport toggle and
+    /// the F8 diagnostics hotkeys, under the same modal lock.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class MinigameDebugWindow : MonoBehaviour
     {
         private const int IntoxicationStep = 20;
-        private const int DefaultVisibleRowCount = 5;
-        private const int CityVisibleRowCount = 4;
-        private const float RowHeight = 30f;
-        private const float RowGap = 5f;
 
-        private readonly Dictionary<string, IBarMinigame> debugMinigames =
-            new Dictionary<string, IBarMinigame>(
-                StringComparer.Ordinal);
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
 
@@ -24,42 +21,32 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private CityMapController cityMap;
-        private IBarMinigame sceneMinigame;
         private BarDrinkShopController drinkShop;
         private GUIStyle titleStyle;
         private GUIStyle hintStyle;
         private GUIStyle rowStyle;
         private GUIStyle footerStyle;
-        private string pendingLaunchId = string.Empty;
         private int inputUnlockFrame;
-        private int firstVisibleIndex;
 
         public bool IsInitialized { get; private set; }
         public bool IsOpen { get; private set; }
-        public int SelectedIndex { get; private set; }
         public string LastLaunchErrorKey { get; private set; } =
             string.Empty;
-        public IBarMinigame ActiveDebugMinigame { get; private set; }
         public bool DebugTeleportEnabled =>
             cityMap != null && cityMap.DebugTeleportEnabled;
-        public IReadOnlyList<BarMinigameDefinition> Definitions =>
-            BarMinigameCatalog.Definitions;
 
         public void Initialize(
             PlayerRuntime playerRuntime,
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
             CityMapController map = null,
-            IBarMinigame activeSceneMinigame = null,
             BarDrinkShopController activeDrinkShop = null)
         {
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
             cityMap = map;
-            sceneMinigame = activeSceneMinigame;
             drinkShop = activeDrinkShop;
-            ClampSelection();
             IsInitialized = player.Interactor != null;
         }
 
@@ -92,7 +79,6 @@ namespace BarPromenade
                 return false;
             }
 
-            ClampSelection();
             inputUnlockFrame = Time.frameCount + 1;
             LastLaunchErrorKey = string.Empty;
             IsOpen = true;
@@ -108,75 +94,6 @@ namespace BarPromenade
         public bool Toggle()
         {
             return IsOpen ? Close() : Open();
-        }
-
-        public bool TryLaunch(string id)
-        {
-            if (!IsInitialized ||
-                SceneTransitionService.IsTransitioning ||
-                HasCommittedDrinkService() ||
-                !BarMinigameCatalog.TryGet(
-                    id,
-                    out BarMinigameDefinition definition))
-            {
-                LastLaunchErrorKey =
-                    "debug.minigames.unavailable";
-                return false;
-            }
-
-            bool reopenOnFailure = IsOpen;
-            if (IsOpen)
-            {
-                Close(false);
-            }
-            else
-            {
-                if (!CloseOtherModalContent())
-                {
-                    LastLaunchErrorKey =
-                        "debug.minigames.unavailable";
-                    return false;
-                }
-            }
-
-            IBarMinigame minigame = GetOrCreateDebugMinigame(
-                definition);
-            if (minigame != null &&
-                minigame.Open(player.Interactor))
-            {
-                ActiveDebugMinigame = minigame;
-                LastLaunchErrorKey = string.Empty;
-                return true;
-            }
-
-            LastLaunchErrorKey = "debug.minigames.unavailable";
-            if (reopenOnFailure)
-            {
-                Open();
-                LastLaunchErrorKey =
-                    "debug.minigames.unavailable";
-            }
-
-            return false;
-        }
-
-        public bool Select(int index)
-        {
-            IReadOnlyList<BarMinigameDefinition> definitions =
-                Definitions;
-            if (index < 0 || index >= definitions.Count)
-            {
-                return false;
-            }
-
-            if (SelectedIndex != index)
-            {
-                SelectedIndex = index;
-                KeepSelectionVisible();
-                RetroAudio.Play(RetroSfxId.UiMove);
-            }
-
-            return true;
         }
 
         public bool ToggleDebugTeleport()
@@ -225,14 +142,6 @@ namespace BarPromenade
                 return;
             }
 
-            if (!string.IsNullOrEmpty(pendingLaunchId))
-            {
-                string id = pendingLaunchId;
-                pendingLaunchId = string.Empty;
-                TryLaunch(id);
-                return;
-            }
-
             if (WasCancelPressed())
             {
                 Close();
@@ -243,24 +152,6 @@ namespace BarPromenade
             if (intoxicationDelta != 0)
             {
                 TryAdjustIntoxication(intoxicationDelta);
-                return;
-            }
-
-            int selectionDelta = ReadSelectionDelta();
-            if (selectionDelta != 0)
-            {
-                MoveSelection(selectionDelta);
-            }
-
-            if (WasConfirmPressed())
-            {
-                IReadOnlyList<BarMinigameDefinition> definitions =
-                    Definitions;
-                if (SelectedIndex >= 0 &&
-                    SelectedIndex < definitions.Count)
-                {
-                    TryLaunch(definitions[SelectedIndex].Id);
-                }
             }
         }
 
@@ -272,7 +163,6 @@ namespace BarPromenade
             }
 
             EnsureStyles();
-            HandleMouseWheel();
             GUI.depth = -300;
 
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
@@ -298,8 +188,6 @@ namespace BarPromenade
         private void OnDestroy()
         {
             Close(false);
-            debugMinigames.Clear();
-            ActiveDebugMinigame = null;
         }
 
         private bool Close(bool playSound)
@@ -310,7 +198,6 @@ namespace BarPromenade
             }
 
             IsOpen = false;
-            pendingLaunchId = string.Empty;
             modalLock.Restore();
             if (playSound)
             {
@@ -332,73 +219,17 @@ namespace BarPromenade
                 cityMap.Close();
             }
 
-            if (sceneMinigame != null && sceneMinigame.IsOpen)
-            {
-                sceneMinigame.Cancel();
-            }
-
             if (drinkShop != null && drinkShop.IsOpen)
             {
                 drinkShop.Close();
             }
 
-            foreach (IBarMinigame minigame in debugMinigames.Values)
-            {
-                if (minigame != null && minigame.IsOpen)
-                {
-                    minigame.Cancel();
-                }
-            }
-
-            ActiveDebugMinigame = null;
             return true;
         }
 
         private bool HasCommittedDrinkService()
         {
             return drinkShop != null && drinkShop.IsServing;
-        }
-
-        private IBarMinigame GetOrCreateDebugMinigame(
-            BarMinigameDefinition definition)
-        {
-            if (debugMinigames.TryGetValue(
-                    definition.Id,
-                    out IBarMinigame existing) &&
-                IsAlive(existing))
-            {
-                return existing;
-            }
-
-            debugMinigames.Remove(definition.Id);
-            GameObject host = new GameObject(
-                $"Debug Minigame - {definition.Id}");
-            host.transform.SetParent(transform, false);
-            var context = new BarMinigameFactoryContext(
-                host,
-                intoxicationHud,
-                player,
-                cameraFollow,
-                false);
-
-            try
-            {
-                IBarMinigame created = definition.Create(context);
-                if (created == null)
-                {
-                    DestroyHost(host);
-                    return null;
-                }
-
-                debugMinigames.Add(definition.Id, created);
-                return created;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception, this);
-                DestroyHost(host);
-                return null;
-            }
         }
 
         private void DrawWindow()
@@ -413,7 +244,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 312f);
+            Rect panel = new Rect(112f, 24f, 416f, 200f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -437,29 +268,10 @@ namespace BarPromenade
                 DrawDebugTeleportControl();
             }
 
-            IReadOnlyList<BarMinigameDefinition> definitions =
-                Definitions;
-            if (definitions.Count == 0)
-            {
-                GUI.Label(
-                    new Rect(
-                        140f,
-                        cityMap == null ? 145f : 174f,
-                        360f,
-                        34f),
-                    LocalizationService.Get(
-                        "debug.minigames.empty"),
-                    hintStyle);
-            }
-            else
-            {
-                DrawDefinitionRows(definitions);
-            }
-
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 303f, 376f, 20f),
+                    new Rect(132f, 191f, 376f, 20f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -543,48 +355,6 @@ namespace BarPromenade
             GUI.enabled = previousEnabled;
         }
 
-        private void DrawDefinitionRows(
-            IReadOnlyList<BarMinigameDefinition> definitions)
-        {
-            int visibleRowCount = GetVisibleRowCount();
-            int lastIndex = Mathf.Min(
-                definitions.Count,
-                firstVisibleIndex + visibleRowCount);
-            for (int index = firstVisibleIndex;
-                 index < lastIndex;
-                 index++)
-            {
-                int visibleIndex = index - firstVisibleIndex;
-                Rect row = new Rect(
-                    132f,
-                    (cityMap == null ? 125f : 154f) +
-                    visibleIndex * (RowHeight + RowGap),
-                    376f,
-                    RowHeight);
-                bool selected = index == SelectedIndex;
-                RetroUiTheme.DrawPanel(
-                    row,
-                    selected
-                        ? RetroUiTheme.PanelRaised
-                        : RetroUiTheme.PanelInset,
-                    selected
-                        ? RetroUiTheme.Accent
-                        : RetroUiTheme.BorderMuted,
-                    selected,
-                    2f,
-                    selected ? 2f : 1f);
-
-                string label = LocalizationService.Get(
-                    definitions[index].LabelKey);
-                if (GUI.Button(row, label, rowStyle))
-                {
-                    SelectedIndex = index;
-                    KeepSelectionVisible();
-                    pendingLaunchId = definitions[index].Id;
-                }
-            }
-        }
-
         private bool TryAdjustIntoxication(int delta)
         {
             if (!IsOpen || delta == 0)
@@ -605,80 +375,6 @@ namespace BarPromenade
                 GameSessionState.DrinksConsumed);
             RetroAudio.Play(RetroSfxId.UiMove);
             return true;
-        }
-
-        private void MoveSelection(int direction)
-        {
-            IReadOnlyList<BarMinigameDefinition> definitions =
-                Definitions;
-            if (definitions.Count == 0)
-            {
-                return;
-            }
-
-            int normalizedDirection = direction < 0 ? -1 : 1;
-            int next = (SelectedIndex + normalizedDirection) %
-                definitions.Count;
-            if (next < 0)
-            {
-                next += definitions.Count;
-            }
-
-            Select(next);
-        }
-
-        private void ClampSelection()
-        {
-            int count = Definitions.Count;
-            SelectedIndex = count == 0
-                ? -1
-                : Mathf.Clamp(SelectedIndex, 0, count - 1);
-            KeepSelectionVisible();
-        }
-
-        private void KeepSelectionVisible()
-        {
-            int count = Definitions.Count;
-            int visibleRowCount = GetVisibleRowCount();
-            int maximumFirst = Mathf.Max(
-                0,
-                count - visibleRowCount);
-            if (SelectedIndex < firstVisibleIndex)
-            {
-                firstVisibleIndex = SelectedIndex;
-            }
-            else if (SelectedIndex >=
-                     firstVisibleIndex + visibleRowCount)
-            {
-                firstVisibleIndex =
-                    SelectedIndex - visibleRowCount + 1;
-            }
-
-            firstVisibleIndex = Mathf.Clamp(
-                firstVisibleIndex,
-                0,
-                maximumFirst);
-        }
-
-        private int GetVisibleRowCount()
-        {
-            return cityMap == null
-                ? DefaultVisibleRowCount
-                : CityVisibleRowCount;
-        }
-
-        private void HandleMouseWheel()
-        {
-            Event current = Event.current;
-            if (current == null ||
-                current.type != EventType.ScrollWheel ||
-                Mathf.Approximately(current.delta.y, 0f))
-            {
-                return;
-            }
-
-            MoveSelection(current.delta.y < 0f ? -1 : 1);
-            current.Use();
         }
 
         private void EnsureStyles()
@@ -712,34 +408,6 @@ namespace BarPromenade
                 true);
         }
 
-        private static bool IsAlive(IBarMinigame minigame)
-        {
-            if (minigame == null)
-            {
-                return false;
-            }
-
-            return !(minigame is UnityEngine.Object unityObject) ||
-                   unityObject != null;
-        }
-
-        private static void DestroyHost(GameObject host)
-        {
-            if (host == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(host);
-            }
-            else
-            {
-                DestroyImmediate(host);
-            }
-        }
-
         private static bool WasTogglePressed()
         {
             Keyboard keyboard = Keyboard.current;
@@ -768,38 +436,6 @@ namespace BarPromenade
             Keyboard keyboard = Keyboard.current;
             return keyboard != null &&
                    keyboard.escapeKey.wasPressedThisFrame;
-        }
-
-        private static bool WasConfirmPressed()
-        {
-            Keyboard keyboard = Keyboard.current;
-            return keyboard != null &&
-                   (keyboard.enterKey.wasPressedThisFrame ||
-                    keyboard.numpadEnterKey.wasPressedThisFrame ||
-                    keyboard.eKey.wasPressedThisFrame);
-        }
-
-        private static int ReadSelectionDelta()
-        {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard == null)
-            {
-                return 0;
-            }
-
-            if (keyboard.upArrowKey.wasPressedThisFrame ||
-                keyboard.wKey.wasPressedThisFrame)
-            {
-                return -1;
-            }
-
-            if (keyboard.downArrowKey.wasPressedThisFrame ||
-                keyboard.sKey.wasPressedThisFrame)
-            {
-                return 1;
-            }
-
-            return 0;
         }
 
         private static int ReadIntoxicationDelta()

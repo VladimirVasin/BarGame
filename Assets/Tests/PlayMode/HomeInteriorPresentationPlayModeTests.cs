@@ -16,7 +16,6 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.EnterHome();
             GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             yield return null;
@@ -46,7 +45,6 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             yield return null;

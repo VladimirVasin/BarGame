@@ -75,15 +75,13 @@ namespace BarPromenade
 
                 Transform checkout = BuildCheckout(root, plan);
                 BuildStockroomFacade(root, plan);
-                BarNpcDirector cashier = BuildCashier(
-                    root,
-                    camera,
-                    plan);
+
+                // The sprite cashier is removed; the checkout stands
+                // staffed by nobody until a dedicated 3D cashier pass.
                 return new SupermarketInteriorWorldResult(
                     root,
                     shelves,
-                    checkout,
-                    cashier);
+                    checkout);
             }
             catch
             {
@@ -779,34 +777,6 @@ namespace BarPromenade
                 stockroom.Height * 0.5f,
                 0f);
             collider.size = stockroom.Size;
-        }
-
-        private static BarNpcDirector BuildCashier(
-            Transform root,
-            Camera camera,
-            SupermarketInteriorLayoutPlan plan)
-        {
-            SupermarketCashierPlan cashier = plan.Cashier;
-            var anchors = new[]
-            {
-                new BarNpcAnchor(
-                    cashier.Id,
-                    BarNpcRole.Bartender,
-                    cashier.Position,
-                    cashier.YawDegrees,
-                    cashier.VisualVariant,
-                    cashier.AnimationPhase)
-            };
-            BarNpcPlan npcPlan = BarNpcPlanner.Create(
-                plan.CitySeed,
-                plan.SupermarketId,
-                BarActivityKind.None,
-                anchors,
-                1);
-            return BarNpcFactory.CreateWithDefaultLibrary(
-                root,
-                camera,
-                npcPlan);
         }
 
         private static BoxCollider BuildSelectionCollider(

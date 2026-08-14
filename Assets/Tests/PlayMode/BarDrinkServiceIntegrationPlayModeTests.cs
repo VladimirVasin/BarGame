@@ -75,7 +75,6 @@ namespace BarPromenade.Tests.PlayMode
                 cameraFollow,
                 hud,
                 null,
-                null,
                 shop);
 
             Assert.That(serviceView.Plan, Is.SameAs(servicePlan));
@@ -90,7 +89,6 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            debugWindow?.ActiveDebugMinigame?.Cancel();
             debugWindow?.Close();
             shop?.Close();
             Destroy(uiObject);
@@ -122,9 +120,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shop.IsServing, Is.True);
 
             Assert.That(debugWindow.Open(), Is.False);
-            Assert.That(
-                debugWindow.TryLaunch(BarMinigameCatalog.CocktailId),
-                Is.False);
             Assert.That(
                 debugWindow.LastLaunchErrorKey,
                 Is.EqualTo("debug.minigames.unavailable"));

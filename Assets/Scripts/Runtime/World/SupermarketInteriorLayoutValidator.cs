@@ -262,7 +262,6 @@ namespace BarPromenade
                 !IsFinite(cashier.Position) ||
                 !IsFinite(cashier.YawDegrees) ||
                 cashier.VisualVariant < 0 ||
-                cashier.VisualVariant >= BarNpcSpriteLibrary.VariantCount ||
                 !IsFinite(cashier.AnimationPhase) ||
                 !Contains(plan.WalkableBounds, cashier.Position) ||
                 !plan.TryGetFixture(

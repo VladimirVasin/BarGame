@@ -426,7 +426,7 @@ namespace BarPromenade
         public const float MountHeightFraction = 0.55f;
         public const float RoofClearance = 0.75f;
         public const float AimHeight = 0.85f;
-        // Twenty ordinary street practicals compressed into one deliberately
+        // Many ordinary street practicals compressed into one deliberately
         // unreal key: the yard must read as a noir stage even at noon after
         // inverse-square falloff across the full circuit.
         public const float Intensity = 240f;

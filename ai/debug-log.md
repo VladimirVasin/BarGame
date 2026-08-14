@@ -5,7 +5,7 @@ intended to answer four questions quickly:
 
 1. Which build, scene and deterministic seed reproduced the issue?
 2. Which state-changing actions led to it?
-3. Did a transition or minigame start but fail to reach a terminal event?
+3. Did a transition or modal interaction start but fail to reach a terminal event?
 4. What warning or exception did Unity report at that point?
 
 ## Location and profiles
@@ -44,7 +44,6 @@ The stable top-level fields make the file sortable and machine-readable:
 The important correlation fields are:
 
 - `operation_id` across a requested scene transition and its result;
-- `minigame_run_id` across one opening, actions and terminal result;
 - `sequence` for a scheduled balance challenge;
 - `snapshot_id` for a manual support snapshot.
 
@@ -55,12 +54,11 @@ Manual snapshots include the current `hunger`, `stress` and `fatigue` beside
 
 | Category | Recorded events |
 | --- | --- |
-| `session` | start/end, seed, route, visited bars, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
+| `session` | start/end, seed, route, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
 | `needs`, `inventory` | visible hunger/fatigue passive-progression boundaries, explicit hunger/stress/fatigue mutations, committed alcohol relief and atomic item-use results |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed |
 | `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings |
 | `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events; path rebuilds are verbose-only |
-| minigame categories | opening, bounded player actions, committed round/throw/move results, cancellation and completion |
 | `intoxication`, `balance` | stage changes and balance scheduling, start, result, fall, recovery or cancellation |
 | `diagnostics` | manual snapshots and support-directory commands |
 | `unity` | Unity warnings, assertions, errors and exceptions with stack traces |
@@ -89,8 +87,8 @@ For a useful report:
 1. Start a fresh session and reproduce the problem.
 2. Press `F8` as soon as the bad state is visible.
 3. Press `Shift+F8` and collect `debug.log` plus any numbered archives.
-4. Search first for `"level":"error"`, the last transition `operation_id`, or
-   the last minigame `minigame_run_id`.
+4. Search first for `"level":"error"` or the last transition
+   `operation_id`.
 
 The logger deliberately avoids recording usernames, save paths or arbitrary
 per-frame telemetry. A filesystem path can still appear inside a Unity-provided

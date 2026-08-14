@@ -96,11 +96,7 @@ namespace BarPromenade.Tests.EditMode
             "stairwell.cat.placeholder",
             "stairwell.cat.feed.confirm",
             "stairwell.cat.feed.missing",
-            "interaction.order_drinks",
             "interaction.buy_drink",
-            "interaction.play_beer_pong",
-            "interaction.play_split_the_g",
-            "interaction.play_tincture_match",
             "pause.title",
             "pause.resume",
             "pause.restart",
@@ -124,107 +120,6 @@ namespace BarPromenade.Tests.EditMode
             "intoxication.stage.very_drunk",
             "balance.warning",
             "balance.hold",
-            "cocktail.title",
-            "cocktail.stage",
-            "cocktail.choose_base",
-            "cocktail.choose_base_hint",
-            "cocktail.mix_hint",
-            "cocktail.serve",
-            "cocktail.finish",
-            "cocktail.score.current",
-            "cocktail.score.total",
-            "cocktail.feedback.good",
-            "cocktail.feedback.bad",
-            "cocktail.result.round",
-            "cocktail.result.final",
-            "cocktail.result.max_intoxication",
-            "cocktail.rank.slop",
-            "cocktail.rank.okay",
-            "cocktail.rank.amateur",
-            "cocktail.rank.master",
-            "cocktail.rank.perfect",
-            "cocktail.ingredient.beer",
-            "cocktail.ingredient.wine",
-            "cocktail.ingredient.vodka",
-            "cocktail.ingredient.cognac",
-            "cocktail.ingredient.tonic",
-            "cocktail.ingredient.soda",
-            "cocktail.ingredient.cola",
-            "cocktail.ingredient.orange",
-            "cocktail.ingredient.lemon",
-            "cocktail.ingredient.ginger_ale",
-            "cocktail.ingredient.honey",
-            "cocktail.ingredient.mint",
-            "cocktail.ingredient.berries",
-            "cocktail.ingredient.cherry",
-            "cocktail.ingredient.ice",
-            "beerpong.title",
-            "beerpong.score",
-            "beerpong.throws",
-            "beerpong.cups",
-            "beerpong.intoxication",
-            "beerpong.aim",
-            "beerpong.power",
-            "beerpong.feedback.clean",
-            "beerpong.feedback.bank",
-            "beerpong.feedback.rim",
-            "beerpong.feedback.bounce",
-            "beerpong.feedback.miss",
-            "beerpong.result.cleared",
-            "beerpong.result.out_of_throws",
-            "beerpong.result.max_intoxication",
-            "beerpong.result.final",
-            "beerpong.finish",
-            "splitg.title",
-            "splitg.attempt",
-            "splitg.best",
-            "splitg.intoxication",
-            "splitg.target",
-            "splitg.countdown",
-            "splitg.release_first",
-            "splitg.ready",
-            "splitg.drinking",
-            "splitg.settling",
-            "splitg.result.score",
-            "splitg.result.error",
-            "splitg.retry",
-            "splitg.continue",
-            "splitg.final",
-            "splitg.rank.perfect",
-            "splitg.rank.excellent",
-            "splitg.rank.good",
-            "splitg.rank.close",
-            "splitg.rank.miss",
-            "splitg.direction.under",
-            "splitg.direction.over",
-            "splitg.direction.target",
-            "tincture.title",
-            "tincture.moves",
-            "tincture.score",
-            "tincture.combo",
-            "tincture.intoxication",
-            "tincture.selected",
-            "tincture.selected.none",
-            "tincture.invalid_swap",
-            "tincture.reshuffling",
-            "tincture.final",
-            "tincture.result.score",
-            "tincture.result.moves",
-            "tincture.result.combo",
-            "tincture.result.moonshine",
-            "tincture.continue",
-            "tincture.xxx.warning",
-            "tincture.flavor.cherry",
-            "tincture.flavor.seabuckthorn",
-            "tincture.flavor.blueberry",
-            "tincture.flavor.mint",
-            "tincture.flavor.horseradish",
-            "tincture.flavor.moonshine",
-            "tincture.rank.miss",
-            "tincture.rank.close",
-            "tincture.rank.good",
-            "tincture.rank.excellent",
-            "tincture.rank.perfect",
             "drink.light_beer",
             "drink.dark_beer",
             "drink.white_wine",
@@ -265,7 +160,6 @@ namespace BarPromenade.Tests.EditMode
             "bus.stop.default_coastal.old_town",
             "bus.stop.default_coastal.home",
             "map.clear",
-            "map.visited_count",
             "map.distance",
             "map.object",
             "map.teleport.title",
@@ -287,14 +181,9 @@ namespace BarPromenade.Tests.EditMode
             "map.district.yard",
             "debug.minigames.title",
             "debug.minigames.hint",
-            "debug.minigames.empty",
             "debug.minigames.unavailable",
             "debug.teleport.disabled",
-            "debug.teleport.enabled",
-            "debug.minigame.cocktail",
-            "debug.minigame.beer_pong",
-            "debug.minigame.split_the_g",
-            "debug.minigame.tincture_match"
+            "debug.teleport.enabled"
         };
 
         private static readonly string[] RetiredControlHintKeys =
@@ -302,16 +191,6 @@ namespace BarPromenade.Tests.EditMode
             "opening.controls",
             "home.refrigerator.controls.browse",
             "home.refrigerator.controls.inspect",
-            "cocktail.controls.choose",
-            "cocktail.controls.add",
-            "cocktail.controls.serve",
-            "cocktail.controls.back",
-            "beerpong.controls.aim",
-            "beerpong.controls.throw",
-            "beerpong.controls.cancel",
-            "beerpong.result.continue",
-            "splitg.controls",
-            "tincture.controls",
             "drink_shop.controls",
             "map.open_hint",
             "map.instructions",
@@ -345,34 +224,6 @@ namespace BarPromenade.Tests.EditMode
                     $"{resourcePath} has no player-visible value for '{key}'.");
             }
 
-            Assert.That(valuesByKey["cocktail.stage"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["cocktail.result.final"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["cocktail.result.final"], Does.Contain("{1}"));
-            Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["beerpong.result.final"], Does.Contain("{1}"));
-            Assert.That(valuesByKey["splitg.attempt"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["splitg.attempt"], Does.Contain("{1}"));
-            Assert.That(valuesByKey["splitg.result.score"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["splitg.result.error"], Does.Contain("{0"));
-            Assert.That(valuesByKey["tincture.moves"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["tincture.score"], Does.Contain("{0}"));
-            Assert.That(valuesByKey["tincture.combo"], Does.Contain("{0}"));
-            Assert.That(
-                valuesByKey["tincture.intoxication"],
-                Does.Contain("{0}"));
-            Assert.That(valuesByKey["tincture.selected"], Does.Contain("{0}"));
-            Assert.That(
-                valuesByKey["tincture.result.score"],
-                Does.Contain("{0}"));
-            Assert.That(
-                valuesByKey["tincture.result.moves"],
-                Does.Contain("{0}"));
-            Assert.That(
-                valuesByKey["tincture.result.combo"],
-                Does.Contain("{0}"));
-            Assert.That(
-                valuesByKey["tincture.result.moonshine"],
-                Does.Contain("{0}"));
             Assert.That(
                 valuesByKey["drink_shop.balance"],
                 Does.Contain("{0}"));

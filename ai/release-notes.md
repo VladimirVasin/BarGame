@@ -6,6 +6,46 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — The «bar visited» mechanic is gone
+
+- The city no longer keeps score of which bars you have been to: no green
+  visited markers on the map, no «посещено» counter in the legend, and
+  entering a bar no longer crosses it off your planned route. The orange
+  route is yours alone — add, reorder and remove stops by hand on the map.
+
+### 2026-08-14 — The sprite era ends: 3D guests, no minigames
+
+- All four bar minigames — cocktail mixing, beer pong, Split the G and
+  «Настойки в ряд» — are cut from the project, along with their stations
+  and debug launchers. The physical drink purchase at the counter stays.
+  Each bar keeps its
+  distinctive furniture (the stage, the beer pong table) as dressing.
+- The sprite crowds are gone. The bar guests are now the production 3D
+  pedestrians, seated in the booths and standing at the tables on the
+  same authored spots; the bartender's place behind the counter and the
+  supermarket cashier's chair stand empty until their own 3D pass.
+- The F9 debug window survives with its real duties: intoxication
+  adjustment, the City map's test teleport and the F8 diagnostics.
+
+### 2026-08-14 — Street lamps grow to full height
+
+- The street lamps stopped being toy posts: the mast now stands a
+  realistic `5.3 m` with a longer arm, a bigger head and lantern, every
+  base exactly where its lamp always stood.
+- Their luminous power grew with the height by the inverse-square law
+  (`2.6x`), so the pavement below stays as lit as before while the pool
+  of light reaches further along the street.
+
+### 2026-08-14 — Pedestrians rest on the benches
+
+- Every now and then a passer-by near a free bench turns off his way,
+  walks up to it, sits down for fifteen to thirty seconds and moves on —
+  at bus shelters, park benches and the other sittable seats the city
+  carries. At most two rest at once, so it stays a detail, not a crowd.
+- Seats are shared honestly: a bench a walker took loses the hero's sit
+  prompt until he leaves, a bench the hero sits on is never approached,
+  and the hero's private yard bench is off the walkers' map entirely.
+
 ### 2026-08-14 — The hero notices things the Silent Hill way
 
 - The hero now turns his head toward what deserves attention: benches,

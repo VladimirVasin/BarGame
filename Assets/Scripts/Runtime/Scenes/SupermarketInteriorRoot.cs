@@ -137,9 +137,6 @@ namespace BarPromenade
                 camera,
                 Player.GameObject.transform,
                 true);
-            World.CashierDirector.ConfigureDepthSorting(
-                camera,
-                Player.GameObject.transform);
 
             BuildShelfShop(ui);
             BuildStatus(ui, camera);

@@ -62,11 +62,11 @@
     },
     {
       "key": "interaction.board_bus",
-      "value": "E \u2014 board Route 01"
+      "value": "E — board Route 01"
     },
     {
       "key": "interaction.exit_bus",
-      "value": "E \u2014 get off the bus"
+      "value": "E — get off the bus"
     },
     {
       "key": "interaction.enter_bar",
@@ -90,39 +90,39 @@
     },
     {
       "key": "interaction.enter_home",
-      "value": "E \u2014 enter home"
+      "value": "E — enter home"
     },
     {
       "key": "interaction.exit_home",
-      "value": "E \u2014 return to the city"
+      "value": "E — return to the city"
     },
     {
       "key": "interaction.enter_building",
-      "value": "E \u2014 enter the building"
+      "value": "E — enter the building"
     },
     {
       "key": "interaction.exit_building",
-      "value": "E \u2014 go out to the street"
+      "value": "E — go out to the street"
     },
     {
       "key": "interaction.enter_apartment",
-      "value": "E \u2014 enter the apartment"
+      "value": "E — enter the apartment"
     },
     {
       "key": "interaction.exit_apartment",
-      "value": "E \u2014 step onto the landing"
+      "value": "E — step onto the landing"
     },
     {
       "key": "interaction.sleep",
-      "value": "E \u2014 go to sleep"
+      "value": "E — go to sleep"
     },
     {
       "key": "interaction.wake",
-      "value": "E \u2014 wake up"
+      "value": "E — wake up"
     },
     {
       "key": "interaction.smoke",
-      "value": "E \u2014 light a cigarette"
+      "value": "E — light a cigarette"
     },
     {
       "key": "interaction.sit_bench",
@@ -134,11 +134,11 @@
     },
     {
       "key": "interaction.use_phone_booth",
-      "value": "E \u2014 use the phone"
+      "value": "E — use the phone"
     },
     {
       "key": "interaction.search_dumpster",
-      "value": "E \u2014 check the dumpster"
+      "value": "E — check the dumpster"
     },
     {
       "key": "city.phone_booth.placeholder",
@@ -150,15 +150,15 @@
     },
     {
       "key": "interaction.stop_smoking",
-      "value": "E \u2014 stop smoking"
+      "value": "E — stop smoking"
     },
     {
       "key": "interaction.open_refrigerator",
-      "value": "E \u2014 open refrigerator"
+      "value": "E — open refrigerator"
     },
     {
       "key": "interaction.close_refrigerator",
-      "value": "E \u2014 close refrigerator"
+      "value": "E — close refrigerator"
     },
     {
       "key": "home.refrigerator.item.vodka.name",
@@ -217,24 +217,8 @@
       "value": "You look hungry… If only I had something to feed you."
     },
     {
-      "key": "interaction.order_drinks",
-      "value": "E — mix cocktails"
-    },
-    {
       "key": "interaction.buy_drink",
       "value": "E — open the bar menu"
-    },
-    {
-      "key": "interaction.play_beer_pong",
-      "value": "E — play beer pong"
-    },
-    {
-      "key": "interaction.play_split_the_g",
-      "value": "E - play Split the G"
-    },
-    {
-      "key": "interaction.play_tincture_match",
-      "value": "E - play Tinctures in a Row"
     },
     {
       "key": "drinking.intoxication",
@@ -275,418 +259,6 @@
     {
       "key": "drinking.none",
       "value": "nothing"
-    },
-    {
-      "key": "cocktail.title",
-      "value": "Mix Your Cocktail"
-    },
-    {
-      "key": "cocktail.stage",
-      "value": "Cocktail {0}/3"
-    },
-    {
-      "key": "cocktail.choose_base",
-      "value": "Choose a base"
-    },
-    {
-      "key": "cocktail.choose_base_hint",
-      "value": "Your base defines the flavor and compatible ingredients"
-    },
-    {
-      "key": "cocktail.mix_hint",
-      "value": "Add 2 to 4 ingredients without ruining the mix"
-    },
-    {
-      "key": "cocktail.serve",
-      "value": "SERVE"
-    },
-    {
-      "key": "cocktail.finish",
-      "value": "FINISH"
-    },
-    {
-      "key": "cocktail.score.current",
-      "value": "This cocktail: {0}"
-    },
-    {
-      "key": "cocktail.score.total",
-      "value": "Total: {0}"
-    },
-    {
-      "key": "cocktail.feedback.good",
-      "value": "Great match! +{0}"
-    },
-    {
-      "key": "cocktail.feedback.bad",
-      "value": "Bad match! −{0}"
-    },
-    {
-      "key": "cocktail.result.round",
-      "value": "Cocktail served: {0} points"
-    },
-    {
-      "key": "cocktail.result.final",
-      "value": "Final score: {0}/300 — {1}"
-    },
-    {
-      "key": "cocktail.result.max_intoxication",
-      "value": "Maximum intoxication reached!"
-    },
-    {
-      "key": "cocktail.rank.slop",
-      "value": "Bar Slop"
-    },
-    {
-      "key": "cocktail.rank.okay",
-      "value": "Drinkable"
-    },
-    {
-      "key": "cocktail.rank.amateur",
-      "value": "Bar Amateur"
-    },
-    {
-      "key": "cocktail.rank.master",
-      "value": "Mix Master"
-    },
-    {
-      "key": "cocktail.rank.perfect",
-      "value": "Bar Legend"
-    },
-    {
-      "key": "cocktail.ingredient.beer",
-      "value": "Beer"
-    },
-    {
-      "key": "cocktail.ingredient.wine",
-      "value": "Red wine"
-    },
-    {
-      "key": "cocktail.ingredient.vodka",
-      "value": "Vodka"
-    },
-    {
-      "key": "cocktail.ingredient.cognac",
-      "value": "Cognac"
-    },
-    {
-      "key": "cocktail.ingredient.tonic",
-      "value": "Tonic"
-    },
-    {
-      "key": "cocktail.ingredient.soda",
-      "value": "Soda water"
-    },
-    {
-      "key": "cocktail.ingredient.cola",
-      "value": "Cola"
-    },
-    {
-      "key": "cocktail.ingredient.orange",
-      "value": "Orange"
-    },
-    {
-      "key": "cocktail.ingredient.lemon",
-      "value": "Lemon"
-    },
-    {
-      "key": "cocktail.ingredient.ginger_ale",
-      "value": "Ginger ale"
-    },
-    {
-      "key": "cocktail.ingredient.honey",
-      "value": "Honey"
-    },
-    {
-      "key": "cocktail.ingredient.mint",
-      "value": "Mint"
-    },
-    {
-      "key": "cocktail.ingredient.berries",
-      "value": "Berries"
-    },
-    {
-      "key": "cocktail.ingredient.cherry",
-      "value": "Cherry"
-    },
-    {
-      "key": "cocktail.ingredient.ice",
-      "value": "Ice"
-    },
-    {
-      "key": "beerpong.title",
-      "value": "BEER PONG"
-    },
-    {
-      "key": "beerpong.score",
-      "value": "Score: {0}"
-    },
-    {
-      "key": "beerpong.throws",
-      "value": "Throws: {0}/{1}"
-    },
-    {
-      "key": "beerpong.cups",
-      "value": "Cups: {0}/6"
-    },
-    {
-      "key": "beerpong.intoxication",
-      "value": "Intoxication: {0}/100"
-    },
-    {
-      "key": "beerpong.aim",
-      "value": "Aim"
-    },
-    {
-      "key": "beerpong.power",
-      "value": "Power"
-    },
-    {
-      "key": "beerpong.feedback.clean",
-      "value": "+100 — CLEAN SINK!"
-    },
-    {
-      "key": "beerpong.feedback.bank",
-      "value": "+50 — BANK SHOT!"
-    },
-    {
-      "key": "beerpong.feedback.rim",
-      "value": "RIM!"
-    },
-    {
-      "key": "beerpong.feedback.bounce",
-      "value": "BOUNCE"
-    },
-    {
-      "key": "beerpong.feedback.miss",
-      "value": "MISS — DRINK THE PENALTY"
-    },
-    {
-      "key": "beerpong.result.cleared",
-      "value": "Rack cleared!"
-    },
-    {
-      "key": "beerpong.result.out_of_throws",
-      "value": "Out of balls"
-    },
-    {
-      "key": "beerpong.result.max_intoxication",
-      "value": "Maximum intoxication reached!"
-    },
-    {
-      "key": "beerpong.result.final",
-      "value": "Final: {0} points — {1}"
-    },
-    {
-      "key": "beerpong.finish",
-      "value": "FINISH"
-    },
-    {
-      "key": "splitg.title",
-      "value": "SPLIT THE G"
-    },
-    {
-      "key": "splitg.attempt",
-      "value": "Glass {0}/{1}"
-    },
-    {
-      "key": "splitg.best",
-      "value": "Best: {0}"
-    },
-    {
-      "key": "splitg.intoxication",
-      "value": "Intoxication: {0}/100"
-    },
-    {
-      "key": "splitg.target",
-      "value": "TARGET: CENTER OF THE G"
-    },
-    {
-      "key": "splitg.countdown",
-      "value": "{0}"
-    },
-    {
-      "key": "splitg.release_first",
-      "value": "RELEASE THE BUTTON FIRST"
-    },
-    {
-      "key": "splitg.ready",
-      "value": "HOLD TO DRINK"
-    },
-    {
-      "key": "splitg.drinking",
-      "value": "RELEASE WHEN IT FEELS RIGHT"
-    },
-    {
-      "key": "splitg.settling",
-      "value": "LET THE FOAM SETTLE..."
-    },
-    {
-      "key": "splitg.result.score",
-      "value": "Score: {0}"
-    },
-    {
-      "key": "splitg.result.error",
-      "value": "Error: {0:0.0}%"
-    },
-    {
-      "key": "splitg.retry",
-      "value": "ANOTHER GLASS"
-    },
-    {
-      "key": "splitg.continue",
-      "value": "CONTINUE"
-    },
-    {
-      "key": "splitg.final",
-      "value": "BEST RESULT"
-    },
-    {
-      "key": "splitg.rank.perfect",
-      "value": "PERFECT"
-    },
-    {
-      "key": "splitg.rank.excellent",
-      "value": "EXCELLENT"
-    },
-    {
-      "key": "splitg.rank.good",
-      "value": "GOOD"
-    },
-    {
-      "key": "splitg.rank.close",
-      "value": "CLOSE"
-    },
-    {
-      "key": "splitg.rank.miss",
-      "value": "MISS"
-    },
-    {
-      "key": "splitg.direction.under",
-      "value": "NOT ENOUGH - the level is above the target"
-    },
-    {
-      "key": "splitg.direction.over",
-      "value": "TOO MUCH - the level is below the target"
-    },
-    {
-      "key": "splitg.direction.target",
-      "value": "RIGHT ON THE TARGET"
-    },
-    {
-      "key": "tincture.title",
-      "value": "TINCTURES IN A ROW"
-    },
-    {
-      "key": "tincture.moves",
-      "value": "Moves left: {0}"
-    },
-    {
-      "key": "tincture.score",
-      "value": "Score: {0}"
-    },
-    {
-      "key": "tincture.combo",
-      "value": "Combo: x{0}"
-    },
-    {
-      "key": "tincture.intoxication",
-      "value": "Intoxication: {0}/100"
-    },
-    {
-      "key": "tincture.selected",
-      "value": "Selected: {0}"
-    },
-    {
-      "key": "tincture.selected.none",
-      "value": "none"
-    },
-    {
-      "key": "tincture.invalid_swap",
-      "value": "NO MATCH - MOVE RETURNED"
-    },
-    {
-      "key": "tincture.reshuffling",
-      "value": "NO MOVES - SHUFFLING..."
-    },
-    {
-      "key": "tincture.final",
-      "value": "LAST CALL"
-    },
-    {
-      "key": "tincture.result.score",
-      "value": "Final score: {0}"
-    },
-    {
-      "key": "tincture.result.moves",
-      "value": "Accepted moves: {0}"
-    },
-    {
-      "key": "tincture.result.combo",
-      "value": "Best combo: x{0}"
-    },
-    {
-      "key": "tincture.result.moonshine",
-      "value": "XXX moonshine used: {0}"
-    },
-    {
-      "key": "tincture.continue",
-      "value": "CONTINUE"
-    },
-    {
-      "key": "tincture.xxx.warning",
-      "value": "XXX clears every shot of the swapped flavor - and adds 24 intoxication"
-    },
-    {
-      "key": "tincture.flavor.cherry",
-      "value": "Cherry"
-    },
-    {
-      "key": "tincture.flavor.seabuckthorn",
-      "value": "Sea buckthorn"
-    },
-    {
-      "key": "tincture.flavor.blueberry",
-      "value": "Blueberry"
-    },
-    {
-      "key": "tincture.flavor.mint",
-      "value": "Mint"
-    },
-    {
-      "key": "tincture.flavor.horseradish",
-      "value": "Horseradish"
-    },
-    {
-      "key": "tincture.flavor.moonshine",
-      "value": "XXX Moonshine"
-    },
-    {
-      "key": "tincture.rank.miss",
-      "value": "BAR SPILL"
-    },
-    {
-      "key": "tincture.rank.close",
-      "value": "CLOSE"
-    },
-    {
-      "key": "tincture.rank.good",
-      "value": "GOOD"
-    },
-    {
-      "key": "tincture.rank.excellent",
-      "value": "EXCELLENT"
-    },
-    {
-      "key": "tincture.rank.perfect",
-      "value": "PERFECT"
-    },
-    {
-      "key": "debug.minigame.split_the_g",
-      "value": "Split the G"
-    },
-    {
-      "key": "debug.minigame.tincture_match",
-      "value": "Tinctures in a Row"
     },
     {
       "key": "drink.light_beer",
@@ -847,10 +419,6 @@
     {
       "key": "map.clear",
       "value": "Clear route"
-    },
-    {
-      "key": "map.visited_count",
-      "value": "Visited: {0}/{1}"
     },
     {
       "key": "map.distance",
@@ -1137,10 +705,6 @@
       "value": "Minigame launches remain isolated from progress"
     },
     {
-      "key": "debug.minigames.empty",
-      "value": "No registered minigames"
-    },
-    {
       "key": "debug.minigames.unavailable",
       "value": "The minigame could not be launched"
     },
@@ -1151,14 +715,6 @@
     {
       "key": "debug.teleport.enabled",
       "value": "TEST TELEPORT: ON"
-    },
-    {
-      "key": "debug.minigame.cocktail",
-      "value": "Cocktail mixing"
-    },
-    {
-      "key": "debug.minigame.beer_pong",
-      "value": "Beer pong"
     },
     {
       "key": "quest.feed_cat.title",
@@ -1202,7 +758,7 @@
     },
     {
       "key": "journal.hint",
-      "value": "J / Esc \u2014 close"
+      "value": "J / Esc — close"
     }
   ]
 }

@@ -10,8 +10,7 @@ namespace BarPromenade
         internal SupermarketInteriorWorldResult(
             Transform root,
             IList<SupermarketShelfView> shelves,
-            Transform checkoutRoot,
-            BarNpcDirector cashierDirector)
+            Transform checkoutRoot)
         {
             Root = root ?? throw new ArgumentNullException(nameof(root));
             Shelves = new ReadOnlyCollection<SupermarketShelfView>(
@@ -20,14 +19,11 @@ namespace BarPromenade
                         nameof(shelves))));
             CheckoutRoot = checkoutRoot ?? throw new ArgumentNullException(
                 nameof(checkoutRoot));
-            CashierDirector = cashierDirector ??
-                throw new ArgumentNullException(nameof(cashierDirector));
         }
 
         public Transform Root { get; }
         public IReadOnlyList<SupermarketShelfView> Shelves { get; }
         public Transform CheckoutRoot { get; }
-        public BarNpcDirector CashierDirector { get; }
 
         public bool TryGetShelf(
             string shelfId,

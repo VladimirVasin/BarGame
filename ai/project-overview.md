@@ -117,10 +117,9 @@ The vertical slice contains:
   intoxication vignette, ghost/chromatic image, warp, warmth and exposure
   pulse; lower `426x240` and `320x180` presets remain available;
 - a crisp retro IMGUI layer after the world composite: prompts, HUD and city
-  map use a logical `640x360` canvas, while the information-dense cocktail
-  interface keeps responsive sizing; persistent key-binding guides and
-  control-hint footers are intentionally absent from menus, modal inspectors,
-  the map and minigame views; every active contextual prompt is a full pointer
+  map use a logical `640x360` canvas; persistent key-binding guides and
+  control-hint footers are intentionally absent from menus, modal inspectors
+  and the map; every active contextual prompt is a full pointer
   click target routed through the same guarded action as keyboard/gamepad
   interaction;
 - a localized PS1-style pause menu in City, Bar, Supermarket, Home and
@@ -355,8 +354,7 @@ The vertical slice contains:
   switch with a short `0.25 s` wet-tail transition outside the immediate
   DoorTransition blackout;
 - deterministic generated mono retro SFX at `22050 Hz`, including a separate
-  door latch and sustained hinge creak, distinct beer-pong
-  throw/bounce/rim/sink and tincture swap/match/moonshine cues, with bounded
+  door latch and sustained hinge creak, with bounded
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
@@ -451,7 +449,8 @@ The vertical slice contains:
   then the shortest traversable route from the home, without consuming a bar,
   public-place or primary-landmark lot. Every bar pair is at least `120 m`
   apart by traversable graph distance, while stable row-major order assigns
-  cocktail mixing, beer pong, Split the G and Tinctures in a Row;
+  each bar its interior activity flavour (dressing only — the minigames
+  themselves are cut);
 - a default `8.8 m` player-home mass with a recognizable third-floor balcony,
   open door and window; the City facade uses the same balcony geometry as the
   Home interior's exterior opening;
@@ -572,13 +571,13 @@ The vertical slice contains:
   Keep at least `22` logical pixels per map cell; clip overflowing content and
   pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
   or middle/right-button dragging while drawing scroll indicators only for
-  overflowing axes. Bar visits, ordinary ordered route editing and deterministic shortest paths
+  overflowing axes. Ordinary ordered route editing and deterministic shortest paths
   remain unchanged outside this debug mode and are constrained to the generated
   road graph;
 - localized RU/EN interaction prompts whose pointer, keyboard and gamepad
   activation share one action path;
 - guarded asynchronous transitions and persistent blueprint ID,
-  seed/bar/route/visited context for the current city, with an explicit
+  seed/bar/route context for the current city, with an explicit
   bar/home/supermarket return
   kind, a separate stairwell-arrival side and a consumed
   `Normal`/`OpeningSleep` Home arrival value and a resettable one-shot
@@ -657,8 +656,8 @@ The vertical slice contains:
   contract or the fog-free `220 m` bar range;
 - one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
   protected aisles, three shelf sections, a stockroom facade and a decorative
-  checkout staffed by one decorative cashier. The checkout is not a purchase
-  station: activating a shelf opens its authored fixed product view centered on
+  unstaffed checkout awaiting its future 3D cashier. The checkout is not a
+  purchase station: activating a shelf opens its authored fixed product view centered on
   the first available physical product. The modal browser keeps one continuous
   lock while previous/next input cycles through every stocked shelf, skips
   empty shelves and moves the camera to the selected shelf while aiming at the
@@ -887,81 +886,34 @@ The vertical slice contains:
 - while the Home fixed-camera controller is active, the same world-oriented 3D
   hero remains visible in MainRoom, Bathroom and Balcony; the shots no longer
   require camera-plane or yaw-billboard modes to preserve a sprite aspect;
-- a deterministic 12-person bar crowd with bartender, booth patrons,
-  performer, standing groups and one bounded walker; six shared point-filtered
-  pixel characters use lightweight billboards, centralized `8 Hz` decisions,
-  role-specific idle actions and player-relative depth sorting;
+- 3D bar patrons drawn from the same pooled city pedestrian prefabs: guests
+  sit in booths through the shared seated-ride contract and stand at tables on
+  the deterministic layout anchors with per-anchor palette variants, idling
+  through the shared pedestrian presentation; the bartender anchor stays
+  deliberately empty until a dedicated 3D bartender pass;
 - a scene-local spatial crowd bed plus rare glass/chair cues consume their
   layout radius/gain data and coexist with the existing bar music and
   procedural ambience inside a four-source budget;
-- one exit, one activity station and one ordinary-drink counter station remain
-  authoritative; the activity fixture adapts to cocktail mixing, beer pong,
-  Split the G or Tinctures in a Row, while the separate counter point keeps a
-  validated approach in every variant;
-- one explicit `BarMinigameCatalog` whose ordered definitions and factories
-  create both normal and debug minigame instances; cocktail mixing, beer pong
-  Split the G and Tinctures in a Row are registered now, and future
-  registrations appear in the debug list;
-- an `F9` minigame debug window in both `City` and `BarInterior`; opening it
-  closes a conflicting map or minigame before taking the modal lock, while
-  launched debug instances neither complete bar visits nor persist drinking
-  progress; clickable controls or the Left/Right arrow keys change the session
+- one exit and one ordinary-drink counter station remain authoritative; the
+  activity fixture (beer-pong table, stage) survives purely as layout
+  dressing. The bar-visited mechanic is removed entirely: the map route is
+  edited only by hand and entering a bar changes nothing about it;
+- an `F9` debug window in both `City` and `BarInterior`; opening it closes a
+  conflicting map before taking the modal lock; clickable controls or the
+  Left/Right arrow keys change the session
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
-  last-drink or consumed-drink context; an unpaid bar-menu presentation may
-  be replaced immediately, but a committed physical drink service cannot be
-  interrupted through this debug path. In `City` the same window also owns a
+  last-drink or consumed-drink context; a committed physical drink service
+  cannot be interrupted through this debug path. In `City` the same window
+  also owns a
   persistent scene-local test-teleport toggle consumed by the city map. In
   `HomeInterior`, where that window is not installed, F9 instead uses
   `HomeDebugCityMapShortcut` to bypass Home and Stairwell and arrive beside
   the home with the debug-teleport map already open;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
-  route and visit state, minigame runs, drinking and balance outcomes, plus
+  route state, drinking and balance outcomes, plus
   Unity warnings/errors; `F8` writes an immediate state snapshot and
   `Shift+F8` opens the log directory;
-- a same-scene modal cocktail minigame at the counter: exactly three served
-  cocktails unless intoxication reaches 100, each built from one of four bases
-  and 2–4 unique additions chosen from a deterministic seven-item shelf; its
-  accepted final result marks the active bar as visited;
-- explicit cocktail compatibility and scoring up to 100 per round/300 total,
-  with a 15-point penalty for each incompatible addition;
-- a real 4x4 pixel-art ingredient atlas, animated pouring/filling/serving
-  feedback, three-stage progress and a final rank;
-- a same-scene 2D beer-pong minigame at the second bar with six sprite cups,
-  ten aimed throws, deterministic 120 Hz 2.5D ball physics, real table/rim
-  bounces, clean/bank scoring and an early-clear bonus;
-- a dedicated pixel-art beer-pong backdrop and 4x4 gameplay atlas for the
-  ball, shadow, throwing hand, cups, hit reactions and opponent silhouettes;
-- a same-scene Split the G timing minigame at the third bar: hold Space, LMB or
-  gamepad South for one irreversible sip, wait for the foam to settle, and
-  compare the frame-rate-independent remaining level with the center of the G;
-- three fresh dark-beer attempts with immediate proportional drinking
-  persistence, five accuracy bands, a session-best score, an early Continue
-  option and automatic completion after the third glass;
-- a dedicated point-filtered `640x360` Split the G backdrop, transparent 4x4
-  pint/hand/foam/effect atlas and generated retro gulp cue;
-- a same-scene fourth-bar Tinctures in a Row minigame with a `7x7` board, five
-  visually distinct infusion flavors, 15 accepted swaps and at most one
-  `XXX` moonshine shot;
-- deterministic seeded board generation without starting matches and with at
-  least three legal normal swaps, frame-independent match/cascade resolution,
-  invalid-swap rollback and automatic deterministic reshuffling when no
-  normal move remains;
-- long runs and T/L intersections create `XXX` only when none is present;
-  swapping `XXX` with a normal flavor clears every shot of that flavor, while
-  ordinary matches remain customer orders and do not count as drinking;
-- mouse click/drag, keyboard and gamepad controls, a point-filtered `640x360`
-  backdrop, transparent 4x4 shot/effect atlas, interpolated swap/gravity/refill
-  motion, RU/EN interface and generated swap, match and moonshine-burst cues;
-- session-persistent intoxication, stress relief, last-alcohol context and
-  consumed-drink count plus the deterministic balance-check delay/sequence;
-  alcohol value is independent from price and intoxication. Every beer-pong
-  miss consumes a light beer, each Split the G attempt records the actual
-  dark-beer fraction and proportional stress relief, cocktails count only the
-  alcohol actually served, and only an activated `XXX` in Tinctures in a Row
-  immediately consumes `Moonshine` for 24 intoxication; reaching `100`
-  terminates the applicable minigame at maximum intoxication without creating
-  a separate timed status;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
   stock and a localized physical
   nine-item counter menu in every bar. Interaction glides into a seated
@@ -1009,6 +961,8 @@ The vertical slice contains:
   economy, dialogue, quests, combat, save slots, and online features.
 - Final bespoke art and audio masters, accessibility, localization coverage,
   and platform release work.
-- Split the G Easy/Hard profiles, persistent best scores and streaks.
+- Bar minigames: the original four sprite minigames are cut entirely; any
+  future bar activities start from a new design.
+- A dedicated 3D bartender and supermarket cashier (planned next passes).
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

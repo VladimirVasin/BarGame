@@ -91,22 +91,6 @@ namespace BarPromenade
         public BuildingLot PlayerHome => Layout?.PlayerHome;
         public BuildingLot Supermarket => Layout?.Supermarket;
         public IReadOnlyList<string> Route => GameSessionState.PlannedBarRoute;
-        public int VisitedBarCount
-        {
-            get
-            {
-                int count = 0;
-                for (int index = 0; index < bars.Count; index++)
-                {
-                    if (IsBarVisited(bars[index].BarId))
-                    {
-                        count++;
-                    }
-                }
-
-                return count;
-            }
-        }
         public CityRoutePath CurrentPath { get; private set; }
         public int SelectedBarIndex { get; private set; }
         public int SelectedMapObjectIndex { get; private set; } = -1;
@@ -200,9 +184,6 @@ namespace BarPromenade
                 GameLog.Field(
                     "route",
                     FormatRoute()),
-                GameLog.Field(
-                    "visited_count",
-                    VisitedBarCount),
                 GameLog.Field(
                     "path_length",
                     CurrentPath.TotalLength));
@@ -413,11 +394,6 @@ namespace BarPromenade
             }
 
             return -1;
-        }
-
-        public bool IsBarVisited(string barId)
-        {
-            return GameSessionState.IsBarVisited(barId);
         }
 
         public int FindBarIndex(string barId)

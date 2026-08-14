@@ -106,7 +106,7 @@ namespace BarPromenade
             anchor.SetParent(parent, false);
             anchor.localPosition =
                 descriptor.Position +
-                (rotation * new Vector3(0f, 2.92f, 0.67f));
+                (rotation * new Vector3(0f, 4.70f, 1.07f));
             anchor.localRotation = rotation;
             return anchor;
         }
@@ -129,30 +129,33 @@ namespace BarPromenade
                 descriptor.Forward,
                 Vector3.up);
             Vector3 origin = coordinate.Origin;
+            // Full-height street furniture: the base stays exactly on
+            // the planned position, only the mast grew to a realistic
+            // 5.3 m with every part scaled in proportion.
             geometry.FixtureBoxes.Add(CreateLampBox(
                 descriptor.Position,
                 rotation,
                 origin,
-                new Vector3(0f, 1.65f, 0f),
-                new Vector3(0.09f, 3.30f, 0.09f)));
+                new Vector3(0f, 2.65f, 0f),
+                new Vector3(0.14f, 5.30f, 0.14f)));
             geometry.FixtureBoxes.Add(CreateLampBox(
                 descriptor.Position,
                 rotation,
                 origin,
-                new Vector3(0f, 3.24f, 0.30f),
-                new Vector3(0.10f, 0.10f, 0.70f)));
+                new Vector3(0f, 5.22f, 0.48f),
+                new Vector3(0.15f, 0.15f, 1.12f)));
             geometry.FixtureBoxes.Add(CreateLampBox(
                 descriptor.Position,
                 rotation,
                 origin,
-                new Vector3(0f, 3.18f, 0.66f),
-                new Vector3(0.40f, 0.13f, 0.34f)));
+                new Vector3(0f, 5.12f, 1.06f),
+                new Vector3(0.62f, 0.20f, 0.54f)));
             geometry.BulbBoxes.Add(CreateLampBox(
                 descriptor.Position,
                 rotation,
                 origin,
-                new Vector3(0f, 3.10f, 0.67f),
-                new Vector3(0.24f, 0.10f, 0.22f)));
+                new Vector3(0f, 5.00f, 1.07f),
+                new Vector3(0.38f, 0.15f, 0.35f)));
             geometry.CollisionBoxes.Add(
                 CityStaticCollisionBuilder.CreateLowerPoleBounds(
                     descriptor.Position - origin));

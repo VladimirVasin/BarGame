@@ -64,17 +64,6 @@ Assets/
       SmokingMusic/
         smoking_theme.*  optional Home balcony-vignette loop supplied by user
         README.txt
-    Cocktails/
-      CocktailSpriteAtlas.png  4x4 glass/ingredient pixel-art atlas
-    BeerPong/
-      BeerPongBackground.png  empty 640x360 pixel-art table backdrop
-      BeerPongAtlas.png       4x4 ball/hand/cup/effect sprite atlas
-    SplitTheG/
-      SplitTheGBackground.png  640x360 pixel-art bar/counter backdrop
-      SplitTheGAtlas.png       4x4 pint/hand/foam/effect sprite atlas
-    TinctureMatch/
-      TinctureMatchBackground.png  640x360 pixel-art bar backdrop
-      TinctureMatchAtlas.png       4x4 shot/effect sprite atlas
     Player/
       Player3D.prefab                   one production modular hero prefab
       Player3DPortrait.png              transparent inventory portrait from 3D model
@@ -87,9 +76,6 @@ Assets/
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
-    Bar/
-      Npc/
-        BarNpcAtlas.png                 shared 3x2 transparent crowd atlas
     Home/
       Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
         HomeWallpaperAlbedo.png         faded stripes, sprig stamps, picture ghosts, damp
@@ -254,7 +240,7 @@ Assets/
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
-        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, checkout/cashier
+        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, unstaffed checkout
         Supermarket{Shelf,Product}View.cs  registered physical stock and source IDs
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
@@ -267,9 +253,11 @@ Assets/
         StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
         StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
       City/NPC/      local player-relative graph walkers with two reusable slots
+        CityBenchRestPlan.cs           shared seat claims + reachable-bench rest points
+        CityBenchNpcRestController.cs  sends nearby walkers to free benches for 15-30 s
         CityPedestrianPlan.cs          immutable nodes, links and spawn anchors
         CityPedestrianPlanner.cs       height-sampled sidewalks, stairs + zebra connector graph
-        CityPedestrianActor.cs         forward graph walk, seeded zebra choice + Route 01 states
+        CityPedestrianActor.cs         forward graph walk, seeded zebra choice + Route 01 and bench-rest states
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
         CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
@@ -302,7 +290,6 @@ Assets/
         CityBusAssetRegistry.cs    dimensions, bounds, articulation + interior bindings
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
-      Bar/NPC/       deterministic crowd plan, actors, shared sprites and director
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
@@ -358,11 +345,9 @@ Assets/
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
+        BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
+        BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
-      Cocktails/     compatibility, deterministic shelves and 3-round session
-      BeerPong/      120 Hz 2.5D physics, rules, projection, controller and view
-      SplitTheG/     pure timing/scoring session, controller, view and sprites
-      TinctureMatch/ seeded 7x7 board, cascades, controller, view and sprites
       UI/            retro UI, pause/inventory, segmented HUD, district/bus map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
         CityMapBusOverlay.cs        simplified blue loop + ordered localized stop markers
@@ -480,8 +465,6 @@ tools/
   build-player-balcony-smoking-atlas.py   retired player-sprite source tooling
   build-player-cat-feeding-atlas.py       retired player-sprite source tooling
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
-  build-split-the-g-art.py          deterministic minigame background/atlas build
-  build-tincture-match-art.py       deterministic shot background/atlas build
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
@@ -865,19 +848,9 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> seven zones + four clear paths
                                    -> practical light/audio/NPC anchors
        -> BarInteriorAtmosphere -> six shadowless lights + grade + dust
-       -> BarNpcPlanner -> BarNpcDirector -> 12 shared-sprite actors
+       -> BarPatronWorldBuilder -> pooled 3D guests seated/standing on anchors
        -> BarSoundscape -> spatial crowd bed + rare bar cues
        -> BarArrivalPresentation -> skippable Bezier camera reveal
-       -> BarActivityStation -> BarMinigameCatalog -> CocktailMinigame
-                                                  -> CocktailRules + deterministic 7-item shelf
-                                               or -> BeerPongMinigame
-                                                  -> 120 Hz ball physics + six-cup session
-                                               or -> SplitTheGMinigame
-                                                  -> one-sip timer + settling + scoring
-                                               or -> TinctureMatchMinigame
-                                                  -> 7x7 swaps + cascades + XXX
-                             -> drinking progress -> GameSessionState
-                             -> completed visit -> CityMap
         -> BarCounterStation -> BarDrinkShop
                             -> retail catalog + atomic cash/drink transaction
                             -> BarDrinkServicePlan -> nine physical bottle slots
@@ -894,7 +867,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                 -> noodles + day-old loaf
                                                 -> vodka + closed stew
                                                 -> chicken egg
-                                             -> decorative checkout + cashier
+                                             -> decorative unstaffed checkout
        -> SupermarketShelfStation -> product-centered authored shelf camera
                                    -> cyclic stocked-shelf navigation
                                       -> muted clickable arrows beside product
@@ -911,12 +884,11 @@ GameSessionState intoxication -> IntoxicationStageRules
                                  -> success or Fall clip -> bounded ragdoll
                                     -> one 50-frame Rise phase via all fours/crouch
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
-                          -> BarMinigameCatalog -> isolated minigame instance
                           -> City test-teleport toggle -> CityMap all-lot selection
                                                        -> Yes -> PlayerMotor.Teleport
 Home F9 -> HomeDebugCityMapShortcut -> City at home -> open debug-teleport map
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
-state boundaries + scene/minigame correlation -> GameLog -> rotating NDJSON
+state boundaries + scene correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
 scene transition -> preload -> outgoing theme fade-out -> activate destination

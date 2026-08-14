@@ -727,7 +727,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   any owner that sets `timeScale` to zero naturally freezes both.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses
   one fail-safe UTF-8 NDJSON stream with a versioned envelope, monotonic
-  sequence, session/scene/seed context and explicit transition/minigame
+  sequence, session/scene/seed context and explicit transition
   correlation IDs. Only state boundaries and results are instrumented;
   per-frame simulation and ordinary Unity log messages are excluded. Editor
   and development runs default to verbose, release players to basic, and
@@ -861,7 +861,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Separate finite-stock supermarket interior:**
   `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` runtime-composed
   room with protected aisles, three shelf sections, a stockroom facade and a
-  decorative checkout plus cashier. The cashier and register do not process
+  decorative unstaffed checkout. The sprite cashier is removed with the rest
+  of the sprite NPCs; a dedicated 3D cashier arrives in a later pass, and the
+  register does not process
   sales. Each shelf owns an authored fixed camera and one interaction station.
   One continuous modal browser cycles through every available physical product
   in deterministic shelf/slot order, skips empty shelves and never releases its
@@ -1094,11 +1096,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   also clear presentation state, with original shared materials restored when
   the controller is destroyed.
 - **Accepted — Ordered session route:** The current itinerary is a unique
-  ordered list of stable `BarId` values. A separate visited-ID set survives
-  scene loads for the same city. A terminal bar activity reports completion
-  through `IBarMinigame`; the interior root marks that bar visited and removes
-  the stop, while entering, cancelling or leaving early does not.
-  Both route and visited progress reset when the city seed changes.
+  ordered list of stable `BarId` values, edited only by hand on the map.
+  The former bar-visited mechanic is removed entirely: no visit tracking,
+  no map highlight or counter, and entering a bar changes nothing about the
+  route. The route resets when the city seed changes.
 - **Accepted — Road-graph route planning:** Each itinerary leg uses
   deterministic weighted Dijkstra with a binary min-heap over street and park
   path edges; player and bar endpoints are projected onto their segments
@@ -1121,14 +1122,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   hover names use one high-contrast tooltip that flips and clamps inside the
   map. Shop and POI landmark markers remain context for the orange player
   itinerary: POIs independently own nearby Route 01 stop targets, but the
-  landmark markers do not enter the visited set or count and do not change bar
+  landmark markers do not change bar
   selection or player pathfinding.
 - **Accepted — Shared-lock gameplay pause:** City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad
   Start can open it only when no other
   `BarMinigameModalLock` or scene transition owns gameplay; pause therefore
-  never steals Escape from maps, refrigerator inspection or minigames, remains
+  never steals Escape from maps, refrigerator inspection or modal shops, remains
   unavailable during the Home opening, and uses a Bar-specific gate rather
   than skipping the arrival reveal. Opening captures the prior time scale,
   listener-pause flag, motor/interactor/orbit/cinematic/HUD state, then sets
@@ -1204,9 +1205,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
   shared interior are built at runtime. The hero and ambient City pedestrians
-  load as low-poly 3D prefabs; cocktail, beer-pong, Split-the-G, tincture, Bar
-  NPC and stairwell-cat bitmaps still load from `Resources` and are sliced or
-  drawn at runtime.
+  load as low-poly 3D prefabs; the stairwell-cat bitmaps still load from
+  `Resources` and are sliced or drawn at runtime.
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
   the serialized Resources `RuntimePrimitiveLit` URP material so Player builds
@@ -1252,11 +1252,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   renderer integration is deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
-  Prompts, segmented intoxication HUD, overhead balance gauge, map, beer pong,
-  Split the G and Tinctures in a Row use a logical `640x360` canvas; the
-  denser cocktail view remains responsive while sharing the same palette,
-  stepped frames and point-filtered accents. Menus, modal inspectors, the map
-  and minigames omit persistent key-binding guides and control-hint footers.
+  Prompts, segmented intoxication HUD, overhead balance gauge and map use a
+  logical `640x360` canvas with a shared palette,
+  stepped frames and point-filtered accents. Menus, modal inspectors and the
+  map omit persistent key-binding guides and control-hint footers.
   Clickable modal actions keep action-only labels; every active contextual
   prompt is also a full pointer target and invokes the exact same guarded action
   path as E, Enter or gamepad South instead of duplicating interaction logic.
@@ -1385,8 +1384,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   returns indoors. The interaction-local `smoking_theme` retains its separate
   animation-driven envelope.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
-  the mono `22050 Hz` UI, footstep, door latch, sustained hinge creak,
-  cocktail, beer-pong, Split-the-G and tincture clips in memory.
+  the mono `22050 Hz` UI, footstep, door latch and sustained hinge creak
+  clips in memory.
   `RetroAudioService` persists across scene loads, reuses bounded UI/world/bar
   source pools, routes them to dry UI, world SFX or gameplay SFX, and applies
   per-effect cooldown and concurrent-voice limits.
@@ -1426,100 +1425,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone.
-- **Accepted — Activity-specific same-scene minigame:** Every bar carries a
-  stable `BarActivityKind` through the transition. One pure ordinal resolver
-  assigns the first four row-major bars to cocktails, beer pong, Split the G
-  and Tinctures in a Row, then assigns later bars to cocktails. `BarInterior`
-  constructs exactly one matching controller and `BarActivityStation`; all
-  implement one completion/cancellation contract and share a state-preserving
-  modal lock.
-- **Accepted — Explicit shared minigame catalog:** `BarMinigameCatalog` owns
-  the ordered definitions and factories used for both normal interiors and
-  debug instances. Cocktail mixing, beer pong, Split the G and Tinctures in a
-  Row are built-ins; registering a unique future activity definition makes it
-  available to the F9 window without changing that window.
-- **Accepted — Isolated F9 debug launch:** The City and BarInterior runtime
-  roots install the same minigame debug window. Opening it closes a conflicting
-  city map and cancels a scene minigame or prior debug game before capturing
-  the modal state.
-  Debug-created controllers start with fresh drinking state, do not write
-  intoxication or drink progress, and are not subscribed to bar-visit
-  completion; closing either window or game restores the previously captured
-  input/HUD state. The window itself also owns deliberate test controls:
-  the Left/Right arrow keys or clickable buttons change the real session
-  intoxication by `-20/+20`, clamp at `0/100`, and preserve last-drink and
-  consumed-drink context.
-- **Accepted — Three served cocktails:** A complete session contains exactly
-  three rounds unless intoxication reaches 100. Each round selects beer, wine,
-  vodka or cognac as its base, then accepts 2–4 unique additions before serving.
-- **Accepted — Pure cocktail domain:** Compatibility, scoring, deterministic
-  shelves and round/session progression live under `Runtime/Cocktails` without
-  Unity scene dependencies. Every shelf has seven additions: four compatible
-  choices and three traps.
-- **Accepted — Score compatible ingredients:** A round scores at most 100 and a
-  session at most 300; every incompatible addition subtracts 15 points.
-- **Accepted — Atlas-backed IMGUI presentation:** The runtime loads one real
-  4x4 pixel-art atlas from `Resources/Cocktails` and draws its cells by UV.
-  The same-scene view adds a large filling glass, ingredient travel/tilt,
-  pouring, good/bad particles, shaking, three-stage progress and a final rank.
-- **Accepted — Deterministic 2.5D beer pong:** Beer-pong state remains plain
-  runtime data. A fixed `120 Hz` simulation integrates x/y/z ball motion,
-  swept table and cup-mouth contacts, table and rim restitution, settlement,
-  timeout and out-of-bounds results. IMGUI projects that physical state onto
-  one point-filtered 640x360 table backdrop and a 4x4 gameplay sprite atlas.
-- **Accepted — Beer-pong scoring and penalty:** A rack contains six cups and a
-  session allows ten throws. A clean sink awards 100, a bank adds 50, and
-  clearing early awards 50 for each unused throw. Every miss immediately adds
-  8 intoxication and one `LightBeer`; clearing the rack, spending all throws or
-  reaching 100 intoxication ends the activity.
-- **Accepted — Frame-rate-independent Split the G:** The third bar uses a pure
-  normalized-level session with Normal settings: target `0.50`, drain speed
-  `0.22/s`, `4.8 s` maximum sip, `1.4 s` foam settling and at most three fresh
-  glasses. Level derives from total held time rather than repeated subtraction.
-  Releasing is irreversible; error bands are 1/3/6/10 percent and score falls
-  linearly from 100 to zero across the 10-percent scoring window.
-- **Accepted — Hidden-level one-sip presentation:** Space, an in-canvas LMB
-  press or gamepad South starts a tracked hold only after countdown and a fresh
-  press. The tilted pint, hand and foam obscure the exact liquid boundary
-  during Drinking and Settling. World-camera motion remains disabled by the
-  modal lock; the presentation animates only its logical `640x360` canvas.
-- **Accepted — Split the G drinking persistence:** Each non-empty attempt is a
-  new `DarkBeer` drinking event. Its actual consumed fraction is converted to
-  proportional intoxication and committed immediately on release, so Cancel
-  cannot refund it. Best score remains local to the open minigame because the
-  project has no long-term save/high-score subsystem.
-- **Accepted — Deterministic tincture board:** The fourth bar starts from a
-  seeded `7x7` board containing five normal flavors, no existing matches,
-  exactly one `XXX` and at least three legal normal swaps. Only accepted swaps
-  spend one of 15 moves. Unique matched cells clear once, then gravity, seeded
-  refill and subsequent waves resolve completely before new input; cascade
-  score multipliers cap at `x5`, and a stable dead board is deterministically
-  reshuffled while preserving the zero-or-one-`XXX` invariant.
-- **Accepted — Single `XXX` special:** A first-wave run of four or more or an
-  intersecting horizontal/vertical match creates `XXX` only when none remains;
-  the same pattern awards a bonus instead of creating a second special.
-  Swapping `XXX` with a normal flavor is always an accepted move and clears
-  every shot of that flavor plus the special.
-- **Accepted — Tincture input, presentation and persistence:** Mouse click/drag,
-  keyboard navigation/selection and gamepad stick/D-pad/South share one modal
-  controller. The logical `640x360` view uses a deterministic point-filtered
-  backdrop and 4x4 shot/effect atlas, interpolates swap/gravity/refill from
-  immutable domain snapshots, and synchronizes generated swap, match and
-  moonshine-burst SFX. Normal matches are customer orders and do not alter
-  drinking state; only `XXX` activation immediately commits one `Moonshine`,
-  +24 intoxication and one consumed drink, so Cancel cannot refund it. A
-  terminal move remains completed when the modal closes during its cascade.
-  Reaching 100 finishes after that cascade without adding a separate timed
-  state. F9 launches use the same factory with persistence disabled.
-- **Accepted — Session-only drinking persistence:** Intoxication, last alcoholic
-  drink, total consumed-drink count and explicit alcohol-value stress relief
-  are committed through
-  `GameSessionState` after every cocktail serving, beer-pong miss and completed
-  Split the G sip, plus every activated tincture `XXX`; they survive scene
-  loads and reset when the application subsystem restarts. Cocktails sum only
-  alcohol actually served, Split the G scales relief by the consumed fraction,
-  water relieves no stress and bad-mix penalties add no relief. Aggregate debug
-  state changes do not simulate a drink. The remaining
+- **Accepted — Sprite era ends, minigames cut:** All four bar minigames
+  (cocktails, beer pong, Split the G, Tinctures in a Row), their domains,
+  presentations, atlases and localization keys are removed from the project
+  entirely, together with the sprite bar crowd and the sprite supermarket
+  cashier. `BarActivityKind` and its pure ordinal resolver survive purely as
+  interior flavour: the assigned kind still selects layout dressing (beer-pong
+  table, stage) but constructs no controller and no `BarActivityStation`.
+  `BarMinigameModalLock` survives as the generic gameplay modal lock used by
+  maps, shops and inspectors.
+- **Accepted — 3D bar patrons from the city pool:** `BarPatronWorldBuilder`
+  instantiates the pooled city pedestrian prefabs on the deterministic layout
+  NPC anchors, applies each anchor's palette variant and seats `SeatedPatron`
+  roles through the shared `CityPedestrianSeatedRide` contract at `0.46 m`;
+  standing roles idle in place. The `Bartender` anchor is deliberately left
+  empty until a dedicated 3D bartender pass, mirroring the empty supermarket
+  checkout.
+- **Accepted — Debug window without a launcher:** The City and BarInterior
+  roots still install the F9 debug window, but it owns only deliberate test
+  controls: the Left/Right arrow keys or clickable buttons change the real
+  session intoxication by `-20/+20` and clamp at `0/100` while preserving
+  last-drink and consumed-drink context, and City exposes the test-teleport
+  toggle. Opening it still closes a conflicting city map or drink service
+  before capturing the modal state.
+- **Accepted — Session-only drinking persistence:** Intoxication, last
+  alcoholic drink, total consumed-drink count and explicit alcohol-value
+  stress relief are committed through `GameSessionState` by the physical bar
+  counter service and inventory consumption; they survive scene loads and
+  reset when the application subsystem restarts. Water relieves no stress.
+  Aggregate debug state changes do not simulate a drink. The remaining
   balance-check delay and consumed deterministic sequence share that
   scene-persistent session lifetime.
 - **Accepted — Physical first-person bar retail:** Every generated bar derives
@@ -1560,8 +1494,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `GameSessionState` transaction deducts cash and immediately records the
   drink; failures mutate nothing and cash cannot become negative. Water costs
   `$2`, increments consumed drinks, does not sober the player and preserves
-  the last alcoholic drink. `None` and the Tinctures-only `Moonshine` are not
-  sold. Purchased drinks are consumed at the counter instead of being added to
+  the last alcoholic drink. `None` and `Moonshine` (a stable legacy ID kept
+  for persisted state) are not sold. Purchased drinks are consumed at the counter instead of being added to
   the hero inventory. Supermarket purchases use the same wallet but add their
   finite physical item to inventory rather than consuming it. Earnings and
   long-term wallet/save persistence remain deferred, and a purchase never

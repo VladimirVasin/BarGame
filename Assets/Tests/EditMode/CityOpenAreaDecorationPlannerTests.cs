@@ -207,8 +207,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 HomeYardSpotlightPlanner.Intensity,
                 Is.EqualTo(240f),
-                "The yard key must remain twenty times stronger than a " +
-                "12-intensity street practical.");
+                "The yard key must stay far stronger than any ordinary " +
+                "street practical.");
             Assert.That(spotlight.Color.r, Is.GreaterThanOrEqualTo(0.9f));
             Assert.That(spotlight.Color.g, Is.GreaterThanOrEqualTo(0.9f));
             Assert.That(spotlight.Color.b, Is.GreaterThanOrEqualTo(0.9f));

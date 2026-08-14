@@ -23,7 +23,25 @@ namespace BarPromenade
         Riding,
 
         /// <summary>Crossing the doorway back onto a roadside dock.</summary>
-        Alighting
+        Alighting,
+
+        /// <summary>Walking the graph toward a bench's own node.</summary>
+        ApproachingBench,
+
+        /// <summary>
+        /// Scripted off-network walk from the bench's node to the seat
+        /// slot, capsule released like a bus doorway crossing.
+        /// </summary>
+        WalkingToBenchSeat,
+
+        /// <summary>Standing at the bench slot, about to sit down.</summary>
+        WaitingAtBench,
+
+        /// <summary>Seated on a street bench; the rest controller owns it.</summary>
+        SittingOnBench,
+
+        /// <summary>Scripted walk back onto the pavement network.</summary>
+        ReturningFromBench
     }
 
     [RequireComponent(typeof(CharacterController))]
@@ -92,6 +110,7 @@ namespace BarPromenade
         private Vector3 transferDestination;
         private Quaternion transferRotation = Quaternion.identity;
         private bool transferPassedWaypoint;
+        private int benchNodeIndex = -1;
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
@@ -340,10 +359,15 @@ namespace BarPromenade
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
             bool roaming = MotionState == CityPedestrianMotionState.Walking ||
-                MotionState == CityPedestrianMotionState.ApproachingStop;
+                MotionState == CityPedestrianMotionState.ApproachingStop ||
+                MotionState == CityPedestrianMotionState.ApproachingBench;
             bool transferring =
                 MotionState == CityPedestrianMotionState.Boarding ||
-                MotionState == CityPedestrianMotionState.Alighting;
+                MotionState == CityPedestrianMotionState.Alighting ||
+                MotionState ==
+                CityPedestrianMotionState.WalkingToBenchSeat ||
+                MotionState ==
+                CityPedestrianMotionState.ReturningFromBench;
             IsYielding = shouldYield && roaming;
             bool moving = false;
             if (transferring)
@@ -351,6 +375,22 @@ namespace BarPromenade
                 // The passenger controller owns the doorway. Ordinary
                 // avoidance and the walkable area do not apply inside a bus.
                 moving = AdvanceTransfer(safeDeltaTime);
+                if (TransferCompleted &&
+                    MotionState ==
+                    CityPedestrianMotionState.WalkingToBenchSeat)
+                {
+                    MotionState =
+                        CityPedestrianMotionState.WaitingAtBench;
+                    blockedTime = 0f;
+                }
+                else if (TransferCompleted &&
+                         MotionState ==
+                         CityPedestrianMotionState.ReturningFromBench)
+                {
+                    int resumeNode = benchNodeIndex;
+                    benchNodeIndex = -1;
+                    ResumeRoaming(resumeNode);
+                }
             }
             else if (!IsYielding && roaming)
             {
@@ -430,6 +470,166 @@ namespace BarPromenade
             MotionState = targetNodeIndex >= 0
                 ? CityPedestrianMotionState.Walking
                 : CityPedestrianMotionState.RouteEnded;
+        }
+
+        /// <summary>
+        /// Sends this walker to a free bench. It walks the graph toward
+        /// the bench's own node with the same guidance as the Route 01
+        /// stop approach; reaching that node hands over to a short
+        /// scripted off-network walk onto the seat slot, because the
+        /// pavement network ends at the kerb and a bench does not stand
+        /// on it.
+        /// </summary>
+        public bool BeginBenchApproach(
+            int benchNode,
+            Vector3 slotPosition,
+            Vector3 facing,
+            IReadOnlyList<float> benchNodeDistances)
+        {
+            if (!IsSpawned ||
+                MotionState != CityPedestrianMotionState.Walking ||
+                targetNodeIndex < 0 ||
+                plan == null ||
+                benchNode < 0 ||
+                benchNode >= plan.Nodes.Count ||
+                benchNodeDistances == null ||
+                benchNodeDistances.Count != plan.Nodes.Count ||
+                float.IsPositiveInfinity(
+                    benchNodeDistances[targetNodeIndex]))
+            {
+                return false;
+            }
+
+            benchNodeIndex = benchNode;
+            stopApproachNodeDistances = benchNodeDistances;
+            waitSlot = slotPosition;
+            Vector3 planarBenchFacing = facing;
+            planarBenchFacing.y = 0f;
+            waitFacing = planarBenchFacing.sqrMagnitude > 0.0001f
+                ? planarBenchFacing.normalized
+                : transform.forward;
+            MotionState = CityPedestrianMotionState.ApproachingBench;
+            blockedTime = 0f;
+            return true;
+        }
+
+        /// <summary>
+        /// Returns a bench-bound walker to ordinary roaming. A walker
+        /// caught mid-crossing is put back on the bench's own node
+        /// first, so it never resumes outside the walkable network.
+        /// </summary>
+        public void CancelBenchActivity()
+        {
+            if (MotionState ==
+                CityPedestrianMotionState.WalkingToBenchSeat ||
+                MotionState == CityPedestrianMotionState.WaitingAtBench)
+            {
+                if (plan != null &&
+                    benchNodeIndex >= 0 &&
+                    benchNodeIndex < plan.Nodes.Count)
+                {
+                    transform.position =
+                        plan.Nodes[benchNodeIndex].Position;
+                }
+
+                ResumeRoaming(benchNodeIndex);
+                benchNodeIndex = -1;
+                return;
+            }
+
+            if (MotionState !=
+                CityPedestrianMotionState.ApproachingBench)
+            {
+                return;
+            }
+
+            benchNodeIndex = -1;
+            stopApproachNodeDistances = null;
+            waitSlot = null;
+            blockedTime = 0f;
+            MotionState = targetNodeIndex >= 0
+                ? CityPedestrianMotionState.Walking
+                : CityPedestrianMotionState.RouteEnded;
+        }
+
+        /// <summary>
+        /// Drops the arrived walker onto the bench: the presentation
+        /// takes the seated pose on the anchor and the root plants at
+        /// the seat, exactly as a bus seat does.
+        /// </summary>
+        public bool BeginBenchSit(
+            Vector3 seatPosition,
+            Quaternion seatRotation,
+            Transform seatAnchor,
+            CityPedestrianSeatedRide seatedRide)
+        {
+            if (!IsSpawned ||
+                MotionState != CityPedestrianMotionState.WaitingAtBench ||
+                !presentation.TrySeat(seatAnchor, seatedRide))
+            {
+                return false;
+            }
+
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            blockedTime = 0f;
+            transform.SetPositionAndRotation(seatPosition, seatRotation);
+            MotionState = CityPedestrianMotionState.SittingOnBench;
+            return true;
+        }
+
+        /// <summary>
+        /// Stands the sitter up at the bench slot and walks it back to
+        /// the bench's node the same scripted way it came, before
+        /// ordinary roaming resumes on the network.
+        /// </summary>
+        public bool StandUpFromBench(Vector3 standPosition)
+        {
+            if (MotionState != CityPedestrianMotionState.SittingOnBench ||
+                plan == null ||
+                benchNodeIndex < 0 ||
+                benchNodeIndex >= plan.Nodes.Count)
+            {
+                return false;
+            }
+
+            presentation.ClearSeat();
+            transform.position = standPosition;
+            transferWaypoint = standPosition;
+            transferDestination = plan.Nodes[benchNodeIndex].Position;
+            Vector3 back = transferDestination - standPosition;
+            back.y = 0f;
+            transferRotation = back.sqrMagnitude > 0.0001f
+                ? Quaternion.LookRotation(back.normalized, Vector3.up)
+                : transform.rotation;
+            transferPassedWaypoint = false;
+            TransferCompleted = false;
+            blockedTime = 0f;
+            MotionState = CityPedestrianMotionState.ReturningFromBench;
+            return true;
+        }
+
+        private void BeginBenchSeatCrossing()
+        {
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            transferWaypoint = waitSlot ?? transform.position;
+            transferDestination = transferWaypoint;
+            transferRotation = Quaternion.LookRotation(
+                waitFacing,
+                Vector3.up);
+            transferPassedWaypoint = false;
+            TransferCompleted = false;
+            stopApproachNodeDistances = null;
+            waitSlot = null;
+            blockedTime = 0f;
+            MotionState = CityPedestrianMotionState.WalkingToBenchSeat;
         }
 
         /// <summary>
@@ -740,6 +940,13 @@ namespace BarPromenade
         private void ReachTargetNode()
         {
             int reachedNode = targetNodeIndex;
+            if (MotionState == CityPedestrianMotionState.ApproachingBench &&
+                reachedNode == benchNodeIndex)
+            {
+                BeginBenchSeatCrossing();
+                return;
+            }
+
             normalCandidates.Clear();
             crosswalkCandidates.Clear();
             IReadOnlyList<int> linkIndices =
@@ -873,7 +1080,9 @@ namespace BarPromenade
                 }
             }
 
-            if (MotionState == CityPedestrianMotionState.ApproachingStop &&
+            if ((MotionState == CityPedestrianMotionState.ApproachingStop ||
+                 MotionState ==
+                 CityPedestrianMotionState.ApproachingBench) &&
                 stopApproachNodeDistances != null &&
                 waitSlot.HasValue)
             {
@@ -1033,6 +1242,7 @@ namespace BarPromenade
             transferPassedWaypoint = false;
             transferRotation = Quaternion.identity;
             TransferCompleted = false;
+            benchNodeIndex = -1;
             StopWaitNodeIndex = -1;
             SpawnAnchorId = string.Empty;
             MotionState = CityPedestrianMotionState.Dormant;

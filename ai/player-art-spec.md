@@ -126,5 +126,6 @@ The former active hero used
 `PlayerDirectionalBodyExpressionsAtlas`, 16 detailed fall atlases and separate
 bed/smoking/cat-feeding atlases. Their historical cell order, no-mirror rules,
 foot pivots and deterministic builders remain in repository history and source
-art, but they are not the production player presentation. NPC, cat and
-minigame sprites are unaffected by the hero migration.
+art, but they are not the production player presentation. The stairwell-cat
+sprites are unaffected by the hero migration; the former bar-NPC and minigame
+sprites were later removed together with those systems.

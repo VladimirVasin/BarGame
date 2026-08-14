@@ -113,9 +113,6 @@ namespace BarPromenade
                     "next_balance_sequence",
                     GameSessionState.BalanceCheckSequence),
                 GameLog.Field(
-                    "visited_bar_count",
-                    GameSessionState.VisitedBarCount),
-                GameLog.Field(
                     "planned_route",
                     string.Join(
                         ">",
@@ -210,7 +207,6 @@ namespace BarPromenade
                     "debug_window_open",
                     city.DebugWindow != null &&
                     city.DebugWindow.IsOpen));
-            AddDebugMinigameFields(fields, city.DebugWindow);
         }
 
         private static void AddBarFields(
@@ -232,13 +228,8 @@ namespace BarPromenade
                     bar.Layout?.Zones.Count ?? 0));
             fields.Add(
                 GameLog.Field(
-                    "npc_count",
-                    bar.NpcPlan?.Count ?? 0));
-            fields.Add(
-                GameLog.Field(
-                    "minigame_open",
-                    bar.ActiveMinigame != null &&
-                    bar.ActiveMinigame.IsOpen));
+                    "patron_count",
+                    bar.Patrons?.Count ?? 0));
             fields.Add(
                 GameLog.Field(
                     "drink_shop_open",
@@ -249,7 +240,6 @@ namespace BarPromenade
                     "debug_window_open",
                     bar.DebugWindow != null &&
                     bar.DebugWindow.IsOpen));
-            AddDebugMinigameFields(fields, bar.DebugWindow);
         }
 
         private static void AddHomeFields(
@@ -269,22 +259,6 @@ namespace BarPromenade
                 GameLog.Field(
                     "home_exit_present",
                     home.Exit != null));
-        }
-
-        private static void AddDebugMinigameFields(
-            ICollection<GameLogField> fields,
-            MinigameDebugWindow window)
-        {
-            IBarMinigame minigame =
-                window?.ActiveDebugMinigame;
-            fields.Add(
-                GameLog.Field(
-                    "active_debug_minigame_open",
-                    minigame != null && minigame.IsOpen));
-            fields.Add(
-                GameLog.Field(
-                    "active_debug_minigame_type",
-                    minigame?.GetType().Name ?? string.Empty));
         }
 
         private static void AddBalanceFields(

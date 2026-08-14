@@ -2,71 +2,71 @@
   "entries": [
     {
       "key": "opening.title",
-      "value": "\u0411\u0410\u0420\u041d\u042b\u0419 \u041f\u0420\u041e\u041c\u0415\u041d\u0410\u0414"
+      "value": "БАРНЫЙ ПРОМЕНАД"
     },
     {
       "key": "opening.wake_up",
-      "value": "\u041f\u0420\u041e\u0421\u041d\u0423\u0422\u042c\u0421\u042f"
+      "value": "ПРОСНУТЬСЯ"
     },
     {
       "key": "opening.quit",
-      "value": "\u0412\u042b\u0419\u0422\u0418"
+      "value": "ВЫЙТИ"
     },
     {
       "key": "pause.title",
-      "value": "\u041f\u0410\u0423\u0417\u0410"
+      "value": "ПАУЗА"
     },
     {
       "key": "pause.resume",
-      "value": "\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u0422\u042c"
+      "value": "ПРОДОЛЖИТЬ"
     },
     {
       "key": "pause.restart",
-      "value": "\u041d\u0410\u0427\u0410\u0422\u042c \u0417\u0410\u041d\u041e\u0412\u041e"
+      "value": "НАЧАТЬ ЗАНОВО"
     },
     {
       "key": "pause.quit",
-      "value": "\u0412\u042b\u0419\u0422\u0418 \u0418\u0417 \u0418\u0413\u0420\u042b"
+      "value": "ВЫЙТИ ИЗ ИГРЫ"
     },
     {
       "key": "pause.restart_confirm",
-      "value": "\u041d\u0430\u0447\u0430\u0442\u044c \u0437\u0430\u043d\u043e\u0432\u043e? \u041d\u0435\u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d."
+      "value": "Начать заново? Несохранённый прогресс будет потерян."
     },
     {
       "key": "pause.quit_confirm",
-      "value": "\u0412\u044b\u0439\u0442\u0438 \u0438\u0437 \u0438\u0433\u0440\u044b? \u041d\u0435\u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u043d."
+      "value": "Выйти из игры? Несохранённый прогресс будет потерян."
     },
     {
       "key": "pause.yes",
-      "value": "\u0414\u0410"
+      "value": "ДА"
     },
     {
       "key": "pause.no",
-      "value": "\u041d\u0415\u0422"
+      "value": "НЕТ"
     },
     {
       "key": "common.yes",
-      "value": "\u0414\u0430"
+      "value": "Да"
     },
     {
       "key": "common.no",
-      "value": "\u041d\u0435\u0442"
+      "value": "Нет"
     },
     {
       "key": "interaction.choice.talk",
-      "value": "\u041f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c"
+      "value": "Поговорить"
     },
     {
       "key": "interaction.choice.interact",
-      "value": "\u0412\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u043e\u0432\u0430\u0442\u044c"
+      "value": "Взаимодействовать"
     },
     {
       "key": "interaction.board_bus",
-      "value": "E \u2014 \u0441\u0435\u0441\u0442\u044c \u0432 \u0430\u0432\u0442\u043e\u0431\u0443\u0441 01"
+      "value": "E — сесть в автобус 01"
     },
     {
       "key": "interaction.exit_bus",
-      "value": "E \u2014 \u0432\u044b\u0439\u0442\u0438 \u0438\u0437 \u0430\u0432\u0442\u043e\u0431\u0443\u0441\u0430"
+      "value": "E — выйти из автобуса"
     },
     {
       "key": "interaction.enter_bar",
@@ -90,39 +90,39 @@
     },
     {
       "key": "interaction.enter_home",
-      "value": "E \u2014 \u0432\u043e\u0439\u0442\u0438 \u0434\u043e\u043c\u043e\u0439"
+      "value": "E — войти домой"
     },
     {
       "key": "interaction.exit_home",
-      "value": "E \u2014 \u0432\u044b\u0439\u0442\u0438 \u0432 \u0433\u043e\u0440\u043e\u0434"
+      "value": "E — выйти в город"
     },
     {
       "key": "interaction.enter_building",
-      "value": "E \u2014 \u0432\u043e\u0439\u0442\u0438 \u0432 \u043f\u043e\u0434\u044a\u0435\u0437\u0434"
+      "value": "E — войти в подъезд"
     },
     {
       "key": "interaction.exit_building",
-      "value": "E \u2014 \u0432\u044b\u0439\u0442\u0438 \u043d\u0430 \u0443\u043b\u0438\u0446\u0443"
+      "value": "E — выйти на улицу"
     },
     {
       "key": "interaction.enter_apartment",
-      "value": "E \u2014 \u0432\u043e\u0439\u0442\u0438 \u0432 \u043a\u0432\u0430\u0440\u0442\u0438\u0440\u0443"
+      "value": "E — войти в квартиру"
     },
     {
       "key": "interaction.exit_apartment",
-      "value": "E \u2014 \u0432\u044b\u0439\u0442\u0438 \u043d\u0430 \u043b\u0435\u0441\u0442\u043d\u0438\u0447\u043d\u0443\u044e \u043f\u043b\u043e\u0449\u0430\u0434\u043a\u0443"
+      "value": "E — выйти на лестничную площадку"
     },
     {
       "key": "interaction.sleep",
-      "value": "E \u2014 \u043b\u0435\u0447\u044c \u0441\u043f\u0430\u0442\u044c"
+      "value": "E — лечь спать"
     },
     {
       "key": "interaction.wake",
-      "value": "E \u2014 \u043f\u0440\u043e\u0441\u043d\u0443\u0442\u044c\u0441\u044f"
+      "value": "E — проснуться"
     },
     {
       "key": "interaction.smoke",
-      "value": "E \u2014 \u0437\u0430\u043a\u0443\u0440\u0438\u0442\u044c"
+      "value": "E — закурить"
     },
     {
       "key": "interaction.sit_bench",
@@ -134,31 +134,31 @@
     },
     {
       "key": "interaction.use_phone_booth",
-      "value": "E \u2014 \u043f\u043e\u0437\u0432\u043e\u043d\u0438\u0442\u044c"
+      "value": "E — позвонить"
     },
     {
       "key": "interaction.search_dumpster",
-      "value": "E \u2014 \u0437\u0430\u0433\u043b\u044f\u043d\u0443\u0442\u044c \u0432 \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440"
+      "value": "E — заглянуть в контейнер"
     },
     {
       "key": "city.phone_booth.placeholder",
-      "value": "\u0422\u0440\u0443\u0431\u043a\u0430 \u0445\u043e\u043b\u043e\u0434\u043d\u0430\u044f. \u0413\u0443\u0434\u043a\u0430 \u043d\u0435\u0442."
+      "value": "Трубка холодная. Гудка нет."
     },
     {
       "key": "city.dumpster.placeholder",
-      "value": "\u0422\u043e\u043b\u044c\u043a\u043e \u043c\u043e\u043a\u0440\u044b\u0439 \u043a\u0430\u0440\u0442\u043e\u043d \u0438 \u0437\u0430\u043f\u0430\u0445."
+      "value": "Только мокрый картон и запах."
     },
     {
       "key": "interaction.stop_smoking",
-      "value": "E \u2014 \u0437\u0430\u043a\u043e\u043d\u0447\u0438\u0442\u044c \u043a\u0443\u0440\u0438\u0442\u044c"
+      "value": "E — закончить курить"
     },
     {
       "key": "interaction.open_refrigerator",
-      "value": "E \u2014 \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0445\u043e\u043b\u043e\u0434\u0438\u043b\u044c\u043d\u0438\u043a"
+      "value": "E — открыть холодильник"
     },
     {
       "key": "interaction.close_refrigerator",
-      "value": "E \u2014 \u0437\u0430\u043a\u0440\u044b\u0442\u044c \u0445\u043e\u043b\u043e\u0434\u0438\u043b\u044c\u043d\u0438\u043a"
+      "value": "E — закрыть холодильник"
     },
     {
       "key": "home.refrigerator.item.vodka.name",
@@ -217,24 +217,8 @@
       "value": "Ты явно голодный… Было бы у меня чем тебя покормить."
     },
     {
-      "key": "interaction.order_drinks",
-      "value": "E — смешать коктейли"
-    },
-    {
       "key": "interaction.buy_drink",
       "value": "E — открыть барное меню"
-    },
-    {
-      "key": "interaction.play_beer_pong",
-      "value": "E — сыграть в бирпонг"
-    },
-    {
-      "key": "interaction.play_split_the_g",
-      "value": "E — сыграть в Split the G"
-    },
-    {
-      "key": "interaction.play_tincture_match",
-      "value": "E — сыграть в «Настойки в ряд»"
     },
     {
       "key": "drinking.intoxication",
@@ -275,418 +259,6 @@
     {
       "key": "drinking.none",
       "value": "ничего"
-    },
-    {
-      "key": "cocktail.title",
-      "value": "Смешай свой коктейль"
-    },
-    {
-      "key": "cocktail.stage",
-      "value": "Коктейль {0}/3"
-    },
-    {
-      "key": "cocktail.choose_base",
-      "value": "Выберите основу"
-    },
-    {
-      "key": "cocktail.choose_base_hint",
-      "value": "Основа задаёт вкус и подходящие ингредиенты"
-    },
-    {
-      "key": "cocktail.mix_hint",
-      "value": "Добавьте от 2 до 4 ингредиентов и не испортите сочетание"
-    },
-    {
-      "key": "cocktail.serve",
-      "value": "ПОДАТЬ"
-    },
-    {
-      "key": "cocktail.finish",
-      "value": "ЗАВЕРШИТЬ"
-    },
-    {
-      "key": "cocktail.score.current",
-      "value": "Этот коктейль: {0}"
-    },
-    {
-      "key": "cocktail.score.total",
-      "value": "Всего: {0}"
-    },
-    {
-      "key": "cocktail.feedback.good",
-      "value": "Отлично сочетается! +{0}"
-    },
-    {
-      "key": "cocktail.feedback.bad",
-      "value": "Не сочетается! −{0}"
-    },
-    {
-      "key": "cocktail.result.round",
-      "value": "Коктейль готов: {0} очков"
-    },
-    {
-      "key": "cocktail.result.final",
-      "value": "Итог: {0}/300 — {1}"
-    },
-    {
-      "key": "cocktail.result.max_intoxication",
-      "value": "Опьянение достигло 100%!"
-    },
-    {
-      "key": "cocktail.rank.slop",
-      "value": "Барные помои"
-    },
-    {
-      "key": "cocktail.rank.okay",
-      "value": "Можно пить"
-    },
-    {
-      "key": "cocktail.rank.amateur",
-      "value": "Бармен-любитель"
-    },
-    {
-      "key": "cocktail.rank.master",
-      "value": "Мастер микса"
-    },
-    {
-      "key": "cocktail.rank.perfect",
-      "value": "Легенда стойки"
-    },
-    {
-      "key": "cocktail.ingredient.beer",
-      "value": "Пиво"
-    },
-    {
-      "key": "cocktail.ingredient.wine",
-      "value": "Красное вино"
-    },
-    {
-      "key": "cocktail.ingredient.vodka",
-      "value": "Водка"
-    },
-    {
-      "key": "cocktail.ingredient.cognac",
-      "value": "Коньяк"
-    },
-    {
-      "key": "cocktail.ingredient.tonic",
-      "value": "Тоник"
-    },
-    {
-      "key": "cocktail.ingredient.soda",
-      "value": "Содовая"
-    },
-    {
-      "key": "cocktail.ingredient.cola",
-      "value": "Кола"
-    },
-    {
-      "key": "cocktail.ingredient.orange",
-      "value": "Апельсин"
-    },
-    {
-      "key": "cocktail.ingredient.lemon",
-      "value": "Лимон"
-    },
-    {
-      "key": "cocktail.ingredient.ginger_ale",
-      "value": "Имбирный эль"
-    },
-    {
-      "key": "cocktail.ingredient.honey",
-      "value": "Мёд"
-    },
-    {
-      "key": "cocktail.ingredient.mint",
-      "value": "Мята"
-    },
-    {
-      "key": "cocktail.ingredient.berries",
-      "value": "Ягоды"
-    },
-    {
-      "key": "cocktail.ingredient.cherry",
-      "value": "Вишня"
-    },
-    {
-      "key": "cocktail.ingredient.ice",
-      "value": "Лёд"
-    },
-    {
-      "key": "beerpong.title",
-      "value": "БИРПОНГ"
-    },
-    {
-      "key": "beerpong.score",
-      "value": "Очки: {0}"
-    },
-    {
-      "key": "beerpong.throws",
-      "value": "Броски: {0}/{1}"
-    },
-    {
-      "key": "beerpong.cups",
-      "value": "Стаканы: {0}/6"
-    },
-    {
-      "key": "beerpong.intoxication",
-      "value": "Опьянение: {0}/100"
-    },
-    {
-      "key": "beerpong.aim",
-      "value": "Прицел"
-    },
-    {
-      "key": "beerpong.power",
-      "value": "Сила"
-    },
-    {
-      "key": "beerpong.feedback.clean",
-      "value": "+100 — ЧИСТО!"
-    },
-    {
-      "key": "beerpong.feedback.bank",
-      "value": "+50 — С ОТСКОКОМ!"
-    },
-    {
-      "key": "beerpong.feedback.rim",
-      "value": "ПО КРАЮ!"
-    },
-    {
-      "key": "beerpong.feedback.bounce",
-      "value": "ОТСКОК"
-    },
-    {
-      "key": "beerpong.feedback.miss",
-      "value": "МИМО — ВЫПЕЙ ШТРАФНОЕ"
-    },
-    {
-      "key": "beerpong.result.cleared",
-      "value": "Стойка выбита!"
-    },
-    {
-      "key": "beerpong.result.out_of_throws",
-      "value": "Мячи закончились"
-    },
-    {
-      "key": "beerpong.result.max_intoxication",
-      "value": "Опьянение достигло 100%!"
-    },
-    {
-      "key": "beerpong.result.final",
-      "value": "Итог: {0} очков — {1}"
-    },
-    {
-      "key": "beerpong.finish",
-      "value": "ЗАВЕРШИТЬ"
-    },
-    {
-      "key": "splitg.title",
-      "value": "SPLIT THE G"
-    },
-    {
-      "key": "splitg.attempt",
-      "value": "Бокал {0}/{1}"
-    },
-    {
-      "key": "splitg.best",
-      "value": "Лучший: {0}"
-    },
-    {
-      "key": "splitg.intoxication",
-      "value": "Опьянение: {0}/100"
-    },
-    {
-      "key": "splitg.target",
-      "value": "ЦЕЛЬ: ЦЕНТР БУКВЫ G"
-    },
-    {
-      "key": "splitg.countdown",
-      "value": "{0}"
-    },
-    {
-      "key": "splitg.release_first",
-      "value": "СНАЧАЛА ОТПУСТИ КНОПКУ"
-    },
-    {
-      "key": "splitg.ready",
-      "value": "ЗАЖМИ, ЧТОБЫ ПИТЬ"
-    },
-    {
-      "key": "splitg.drinking",
-      "value": "ОТПУСТИ, КОГДА БУДЕТ ДОСТАТОЧНО"
-    },
-    {
-      "key": "splitg.settling",
-      "value": "ПЕНА ОСЕДАЕТ..."
-    },
-    {
-      "key": "splitg.result.score",
-      "value": "Очки: {0}"
-    },
-    {
-      "key": "splitg.result.error",
-      "value": "Ошибка: {0:0.0}%"
-    },
-    {
-      "key": "splitg.retry",
-      "value": "ЕЩЁ БОКАЛ"
-    },
-    {
-      "key": "splitg.continue",
-      "value": "ПРОДОЛЖИТЬ"
-    },
-    {
-      "key": "splitg.final",
-      "value": "ЛУЧШИЙ РЕЗУЛЬТАТ"
-    },
-    {
-      "key": "splitg.rank.perfect",
-      "value": "ИДЕАЛЬНО"
-    },
-    {
-      "key": "splitg.rank.excellent",
-      "value": "ОТЛИЧНО"
-    },
-    {
-      "key": "splitg.rank.good",
-      "value": "ХОРОШО"
-    },
-    {
-      "key": "splitg.rank.close",
-      "value": "БЛИЗКО"
-    },
-    {
-      "key": "splitg.rank.miss",
-      "value": "МИМО"
-    },
-    {
-      "key": "splitg.direction.under",
-      "value": "НЕДОПИЛ — уровень выше цели"
-    },
-    {
-      "key": "splitg.direction.over",
-      "value": "ПЕРЕПИЛ — уровень ниже цели"
-    },
-    {
-      "key": "splitg.direction.target",
-      "value": "ТОЧНО ПО ЦЕЛИ"
-    },
-    {
-      "key": "tincture.title",
-      "value": "НАСТОЙКИ В РЯД"
-    },
-    {
-      "key": "tincture.moves",
-      "value": "Ходов осталось: {0}"
-    },
-    {
-      "key": "tincture.score",
-      "value": "Очки: {0}"
-    },
-    {
-      "key": "tincture.combo",
-      "value": "Цепочка: ×{0}"
-    },
-    {
-      "key": "tincture.intoxication",
-      "value": "Опьянение: {0}/100"
-    },
-    {
-      "key": "tincture.selected",
-      "value": "Выбрано: {0}"
-    },
-    {
-      "key": "tincture.selected.none",
-      "value": "ничего"
-    },
-    {
-      "key": "tincture.invalid_swap",
-      "value": "НЕТ ЛИНИИ — ХОД ВОЗВРАЩЁН"
-    },
-    {
-      "key": "tincture.reshuffling",
-      "value": "НЕТ ХОДОВ — ПЕРЕМЕШИВАЕМ..."
-    },
-    {
-      "key": "tincture.final",
-      "value": "ПОСЛЕДНИЙ ЗАКАЗ"
-    },
-    {
-      "key": "tincture.result.score",
-      "value": "Итоговые очки: {0}"
-    },
-    {
-      "key": "tincture.result.moves",
-      "value": "Принятых ходов: {0}"
-    },
-    {
-      "key": "tincture.result.combo",
-      "value": "Лучшая цепочка: ×{0}"
-    },
-    {
-      "key": "tincture.result.moonshine",
-      "value": "Самогон XXX использован: {0}"
-    },
-    {
-      "key": "tincture.continue",
-      "value": "ПРОДОЛЖИТЬ"
-    },
-    {
-      "key": "tincture.xxx.warning",
-      "value": "XXX уберёт все рюмки выбранного вкуса и добавит 24 опьянения"
-    },
-    {
-      "key": "tincture.flavor.cherry",
-      "value": "Вишнёвая"
-    },
-    {
-      "key": "tincture.flavor.seabuckthorn",
-      "value": "Облепиховая"
-    },
-    {
-      "key": "tincture.flavor.blueberry",
-      "value": "Черничная"
-    },
-    {
-      "key": "tincture.flavor.mint",
-      "value": "Мятная"
-    },
-    {
-      "key": "tincture.flavor.horseradish",
-      "value": "Хреновуха"
-    },
-    {
-      "key": "tincture.flavor.moonshine",
-      "value": "Самогон XXX"
-    },
-    {
-      "key": "tincture.rank.miss",
-      "value": "ПРОЛИЛ МИМО"
-    },
-    {
-      "key": "tincture.rank.close",
-      "value": "БЛИЗКО"
-    },
-    {
-      "key": "tincture.rank.good",
-      "value": "ХОРОШО"
-    },
-    {
-      "key": "tincture.rank.excellent",
-      "value": "ОТЛИЧНО"
-    },
-    {
-      "key": "tincture.rank.perfect",
-      "value": "ИДЕАЛЬНО"
-    },
-    {
-      "key": "debug.minigame.split_the_g",
-      "value": "Split the G"
-    },
-    {
-      "key": "debug.minigame.tincture_match",
-      "value": "Настойки в ряд"
     },
     {
       "key": "drink.light_beer",
@@ -806,51 +378,47 @@
     },
     {
       "key": "map.home",
-      "value": "\u0414\u043e\u043c"
+      "value": "Дом"
     },
     {
       "key": "map.supermarket",
-      "value": "\u041f\u0440\u043e\u0434\u0443\u043a\u0442\u043e\u0432\u044b\u0439 \u043c\u0430\u0433\u0430\u0437\u0438\u043d"
+      "value": "Продуктовый магазин"
     },
     {
       "key": "map.bus.route",
-      "value": "\u041c\u0430\u0440\u0448\u0440\u0443\u0442 01"
+      "value": "Маршрут 01"
     },
     {
       "key": "map.bus.stop",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 {0}"
+      "value": "Остановка {0}"
     },
     {
       "key": "map.bus.stop_legend",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430"
+      "value": "Остановка"
     },
     {
       "key": "bus.stop.default_coastal.industrial",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u00ab\u041f\u0440\u043e\u043c\u0437\u043e\u043d\u0430\u00bb"
+      "value": "Остановка «Промзона»"
     },
     {
       "key": "bus.stop.default_coastal.nightlife",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u00ab\u041d\u043e\u0447\u043d\u043e\u0439 \u0440\u0430\u0439\u043e\u043d\u00bb"
+      "value": "Остановка «Ночной район»"
     },
     {
       "key": "bus.stop.default_coastal.residential",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u00ab\u0416\u0438\u043b\u043e\u0439 \u0440\u0430\u0439\u043e\u043d\u00bb"
+      "value": "Остановка «Жилой район»"
     },
     {
       "key": "bus.stop.default_coastal.old_town",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u00ab\u0421\u0442\u0430\u0440\u044b\u0439 \u0433\u043e\u0440\u043e\u0434\u00bb"
+      "value": "Остановка «Старый город»"
     },
     {
       "key": "bus.stop.default_coastal.home",
-      "value": "\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430 \u00ab\u0414\u043e\u043c\u00bb"
+      "value": "Остановка «Дом»"
     },
     {
       "key": "map.clear",
       "value": "Очистить маршрут"
-    },
-    {
-      "key": "map.visited_count",
-      "value": "\u041f\u043e\u0441\u0435\u0449\u0435\u043d\u043e: {0}/{1}"
     },
     {
       "key": "map.distance",
@@ -858,19 +426,19 @@
     },
     {
       "key": "map.object",
-      "value": "\u041e\u0431\u044a\u0435\u043a\u0442 \u043d\u0430 \u043a\u0430\u0440\u0442\u0435 [{0}, {1}]"
+      "value": "Объект на карте [{0}, {1}]"
     },
     {
       "key": "map.teleport.title",
-      "value": "DEBUG-\u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422"
+      "value": "DEBUG-ТЕЛЕПОРТ"
     },
     {
       "key": "map.teleport.select",
-      "value": "\u0412\u044b\u0434\u0435\u043b\u0438\u0442\u0435 \u043b\u044e\u0431\u043e\u0439 \u043e\u0431\u044a\u0435\u043a\u0442 \u043d\u0430 \u043a\u0430\u0440\u0442\u0435"
+      "value": "Выделите любой объект на карте"
     },
     {
       "key": "map.teleport.question",
-      "value": "\u0422\u0435\u043b\u0435\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f?"
+      "value": "Телепортироваться?"
     },
     {
       "key": "map.poi.title",
@@ -1137,72 +705,60 @@
       "value": "Запуски мини-игр изолированы от прогресса"
     },
     {
-      "key": "debug.minigames.empty",
-      "value": "Нет зарегистрированных мини-игр"
-    },
-    {
       "key": "debug.minigames.unavailable",
       "value": "Не удалось запустить мини-игру"
     },
     {
       "key": "debug.teleport.disabled",
-      "value": "\u0422\u0415\u0421\u0422\u041e\u0412\u0410\u042f \u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422\u0410\u0426\u0418\u042f: \u0412\u042b\u041a\u041b"
+      "value": "ТЕСТОВАЯ ТЕЛЕПОРТАЦИЯ: ВЫКЛ"
     },
     {
       "key": "debug.teleport.enabled",
-      "value": "\u0422\u0415\u0421\u0422\u041e\u0412\u0410\u042f \u0422\u0415\u041b\u0415\u041f\u041e\u0420\u0422\u0410\u0426\u0418\u042f: \u0412\u041a\u041b"
-    },
-    {
-      "key": "debug.minigame.cocktail",
-      "value": "Смешивание коктейлей"
-    },
-    {
-      "key": "debug.minigame.beer_pong",
-      "value": "Бирпонг"
+      "value": "ТЕСТОВАЯ ТЕЛЕПОРТАЦИЯ: ВКЛ"
     },
     {
       "key": "quest.feed_cat.title",
-      "value": "\u041d\u0430\u043a\u043e\u0440\u043c\u0438\u0442\u044c \u043a\u043e\u0442\u0430"
+      "value": "Накормить кота"
     },
     {
       "key": "quest.feed_cat.description.active",
-      "value": "\u041a\u043e\u0442 \u043d\u0430 \u043b\u0435\u0441\u0442\u043d\u0438\u0447\u043d\u043e\u0439 \u043f\u043b\u043e\u0449\u0430\u0434\u043a\u0435 \u0433\u043e\u043b\u043e\u0434\u0435\u043d. \u041d\u0430\u0434\u043e \u043f\u043e\u043a\u043e\u0440\u043c\u0438\u0442\u044c \u0435\u0433\u043e \u0442\u0443\u0448\u0451\u043d\u043a\u043e\u0439."
+      "value": "Кот на лестничной площадке голоден. Надо покормить его тушёнкой."
     },
     {
       "key": "quest.feed_cat.description.completed",
-      "value": "\u041a\u043e\u0442 \u043d\u0430\u043a\u043e\u0440\u043c\u043b\u0435\u043d. \u0422\u0435\u043f\u0435\u0440\u044c \u043c\u043e\u0436\u043d\u043e \u0438\u0434\u0442\u0438 \u043f\u043e \u0441\u0432\u043e\u0438\u043c \u0434\u0435\u043b\u0430\u043c."
+      "value": "Кот накормлен. Теперь можно идти по своим делам."
     },
     {
       "key": "quest.feed_cat.block.descend",
-      "value": "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u044f \u0434\u043e\u043b\u0436\u0435\u043d \u043d\u0430\u043a\u043e\u0440\u043c\u0438\u0442\u044c \u043a\u043e\u0442\u0430."
+      "value": "Сначала я должен накормить кота."
     },
     {
       "key": "inventory.use.failure.reserved_for_quest",
-      "value": "\u042f \u0435\u0449\u0451 \u043d\u0435 \u0433\u043e\u043b\u043e\u0434\u0435\u043d. \u042d\u0442\u043e \u0434\u043b\u044f \u043a\u043e\u0442\u0430."
+      "value": "Я ещё не голоден. Это для кота."
     },
     {
       "key": "inventory.action.eat.reserved",
-      "value": "\u0421\u042a\u0415\u0421\u0422\u042c"
+      "value": "СЪЕСТЬ"
     },
     {
       "key": "journal.title",
-      "value": "\u0416\u0423\u0420\u041d\u0410\u041b"
+      "value": "ЖУРНАЛ"
     },
     {
       "key": "journal.empty",
-      "value": "\u0417\u0430\u043f\u0438\u0441\u0435\u0439 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442."
+      "value": "Записей пока нет."
     },
     {
       "key": "journal.status.active",
-      "value": "\u0412 \u041f\u0420\u041e\u0426\u0415\u0421\u0421\u0415"
+      "value": "В ПРОЦЕССЕ"
     },
     {
       "key": "journal.status.completed",
-      "value": "\u0412\u042b\u041f\u041e\u041b\u041d\u0415\u041d\u041e"
+      "value": "ВЫПОЛНЕНО"
     },
     {
       "key": "journal.hint",
-      "value": "J / Esc \u2014 \u0437\u0430\u043a\u0440\u044b\u0442\u044c"
+      "value": "J / Esc — закрыть"
     }
   ]
 }

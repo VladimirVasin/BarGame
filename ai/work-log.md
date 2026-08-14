@@ -6,6 +6,143 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — Bar-visited mechanic removed entirely
+
+- Cut the visit tracking from `GameSessionState`: the `visitedBars` set,
+  `VisitedBarCount`, `MarkBarVisited`, `IsBarVisited` and
+  `ClearVisitedBars` are gone, together with the `bar_visited` /
+  `visited_bars_cleared` log events and every `visited_count` field in
+  seed/blueprint-change, City-init and F8-snapshot logging. Entering a
+  bar no longer touches the planned route — `RemoveRouteStop` stays as a
+  manual map edit only.
+- The city map lost the green visited marker colour, the visited legend
+  swatch and the «`N`/4 посещено» counter; `CityMapController` lost
+  `VisitedBarCount`/`IsBarVisited`. `map.visited_count` removed from
+  both localization catalogs (190 keys each, still symmetric).
+- Tests reworked: `GameSessionStateTests` dropped the MarkBarVisited
+  fixture and visit asserts (seed/blueprint tests now cover the route
+  only), `SceneFlowSmokeTests` dropped all visit asserts and setup,
+  five Home PlayMode fixtures dropped their `ClearVisitedBars`
+  hygiene calls, `LocalizationCatalogTests` required list updated.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests compile with 0 errors via
+  the bundled dotnet SDK. Focused EditMode batch run:
+  `GameSessionStateTests` + `LocalizationCatalogTests` 51/53 passed.
+  The 2 failures are pre-existing and unrelated:
+  `FoodUse_ClearsFractionalHungerProgress` and
+  `CheapFoodUse_StopsAtFloorAndKeepsUnusedItem` expect a free stew can,
+  but the committed `FeedTheCat` starter quest (cfd4993) reserves
+  `OpenStewCan`, so `TryConsumeInventoryItem` returns
+  `ReservedForQuest`. Recorded, not fixed here — quest-journal area.
+
+## 2026-08-14 — Sprite NPCs and bar minigames cut; 3D guests seated
+
+- Removed the sprite NPC engine (`Bar/NPC`: actor, director, factory,
+  planner, sprite library, types) and both of its populations: the bar
+  crowd with its bartender and the supermarket cashier. The layout data
+  survives — `BarNpcAnchor`/`BarNpcRole` live in the interior layout
+  plan, and `SupermarketCashierPlan` keeps its authored spot for the
+  future dedicated 3D cashier/bartender pass.
+- Added `BarPatronWorldBuilder`: the production 3D pedestrians take the
+  same authored anchors — `SeatedPatron` anchors get a bench-style seat
+  anchor and the archetype's `SeatedRide` pose, everyone else stands on
+  idle; `BarPatronAnimator` advances the loops; bartender anchors stay
+  empty by design. `SceneFlowSmokeTests` now asserts 3D guests and no
+  seated bartender.
+- Cut all four minigames wholesale: `BeerPong`, `Cocktails`,
+  `SplitTheG`, `TinctureMatch` runtime folders, the UI controllers and
+  sprite libraries, `BarMinigameCatalog`/`IBarMinigame`/
+  `BarActivityStation`, their Resources atlases, art generators and
+  every dedicated fixture (about 60 files). `BarActivityKind` survives
+  purely as the interior layout flavour (stage, beer pong table stay as
+  dressing), normalized locally instead of via the catalog.
+  `MarkBarVisited` moved from minigame completion to bar entry.
+- `MinigameDebugWindow` kept its real duties — F9 modal with
+  intoxication adjustment, City-map test-teleport toggle, F8
+  diagnostics, drink-shop modal exclusivity — and lost the launcher
+  list; `BarMinigameModalLock` stays as the generic modal capture.
+- Localization: 114 minigame keys removed from both catalogs and the
+  required list (kept symmetric at 191 keys); stale format assertions
+  dropped.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests all compile with 0 errors
+  via the bundled dotnet SDK; focused bar/supermarket/localization
+  fixtures run recorded below.
+
+## 2026-08-14 — Full-height street lamps with matched luminous power
+
+- Scaled the street lamp assembly `1.6x` in `CityNightWorldBuilder`:
+  a `5.30 m` mast (was `3.30`), thicker pole, longer arm, larger head
+  and lantern. Every part offset is measured from the same planned
+  base position, so no lamp moved; the light anchor rose with the
+  lantern to `4.70 m`.
+- Scaled the luminous power to the new height in
+  `CityNightAtmosphere`: the source sits `1.61x` higher, so the
+  inverse-square law sets intensity `12 -> 31` for the same pavement
+  illuminance, range `10.5 -> 16.5 m`, and the fog halos grew with the
+  lantern (`1.15/3.10`). Spot angles and the bar entrance lights are
+  unchanged; the lower-pole collider already outsizes the thicker
+  mast.
+- Retired the stale "twenty street practicals" phrasing around the
+  yard spotlight ratio; its authored `240` intensity is untouched.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `CityNightFixturePlannerTests` +
+  `CityOpenAreaDecorationPlannerTests` passed `8/8` — lamp placement
+  contracts and the yard-spotlight contracts both hold with the grown
+  masts.
+
+## 2026-08-14 — Pedestrians rest on benches
+
+- Extended `CityPedestrianActor` with a bench lifecycle mirroring the
+  Route 01 machinery. The pavement network ends at the kerb and
+  `Constrain` never lets a walker off it, so the lifecycle is
+  graph-then-crossing: `ApproachingBench` walks the Dijkstra guidance
+  to the bench's own node, `WalkingToBenchSeat` is a short scripted
+  off-network crossing (capsule released, like a bus doorway) onto the
+  slot, `WaitingAtBench` hands to `BeginBenchSit` (presentation seated
+  on an anchor exactly like a bus seat) and `StandUpFromBench` walks
+  the same crossing back before `ResumeRoaming`. Cancellation from any
+  crossing phase re-plants the walker on the bench node first. Bus
+  logic is untouched: its guards key on the stop states.
+- Added `CityBenchRestPlanner`: from the same `CityBenchSitPlan` seats
+  the hero uses, it keeps only benches whose slot is within a `6 m`
+  crossing of a graph node (reusing the bus wait planner's
+  now-internal Dijkstra and nearest-node helpers) — which naturally
+  excludes the hero's yard bench and anything the network cannot
+  honestly reach. Each point carries the stand slot, seat top, sit
+  facing and distance field.
+- Added `CityBenchNpcRestController` in `CityGameRoot`: every `3.5 s`
+  it may (p = `0.4`, xorshift seeded by the city seed) send the nearest
+  eligible walker (walking, seatable archetype, within `30 m` of graph
+  walk) to a free bench; on arrival it seats him for `15-30 s`, then
+  stands him back onto the slot. Approaches time out at `45 s`;
+  recycled walkers release their seats; at most `2` rest at once.
+- Added `CityBenchSeatClaims`, a shared claim registry: the rest
+  controller claims per rest, and `CityBenchSitInteraction` now claims
+  on begin/releases on idle-or-cancel and hides its prompt for a seat
+  claimed by another — the hero and the walkers can never share a
+  plank.
+- Added `CityBenchRestTests` (reachable seats, yard exclusion, claim
+  exclusivity) and re-ran the pedestrian runtime fixture as the state
+  machine regression.
+
+Verification:
+
+- `BarPromenade.EditModeTests` compiles with 0 errors via the bundled
+  dotnet SDK; focused `CityBenchRestTests` passed `2/2` and the full
+  `CityPedestrianRuntimeTests` fixture passed `22/22` as the actor
+  state-machine regression. The first run caught two honest design
+  holes: the pedestrian walkable network never contained the bench
+  slots (which produced the crossing design) and the yard bench
+  qualified through a nearby node (now excluded by id, by decision).
+
 ## 2026-08-14 — Silent Hill attention: the hero's head finds targets
 
 - Added the attention system in `PlayerAttention.cs`. Pure

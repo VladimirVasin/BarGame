@@ -31,7 +31,6 @@ namespace BarPromenade.Tests.PlayMode
             keyboard = InputSystem.AddDevice<Keyboard>();
             GameSessionState.EnterHome();
             GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             GameSessionState.UpdateFatigue(
@@ -72,7 +71,6 @@ namespace BarPromenade.Tests.PlayMode
             inputFixture?.TearDown();
             inputFixture = null;
             GameSessionState.ClearRoute();
-            GameSessionState.ClearVisitedBars();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
             GameSessionState.UpdateFatigue(

@@ -90,8 +90,6 @@ namespace BarPromenade
             new List<string>();
         private static readonly ReadOnlyCollection<string> plannedBarRouteView =
             plannedBarRoute.AsReadOnly();
-        private static readonly HashSet<string> visitedBars =
-            new HashSet<string>(StringComparer.Ordinal);
         private static readonly HashSet<string> collectedWorldItems =
             new HashSet<string>(StringComparer.Ordinal);
         private static readonly InventoryState inventory =
@@ -134,7 +132,6 @@ namespace BarPromenade
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
             plannedBarRouteView;
-        public static int VisitedBarCount => visitedBars.Count;
         public static IReadOnlyList<InventoryItemStack> InventoryItems =>
             inventory.Items;
         public static IReadOnlyList<QuestLogEntry> Quests =>
@@ -232,7 +229,6 @@ namespace BarPromenade
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
             plannedBarRoute.Clear();
-            visitedBars.Clear();
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
             questLog.ResetWithStarterQuests();
@@ -653,11 +649,9 @@ namespace BarPromenade
 
             int previousSeed = CitySeed;
             int clearedRouteCount = plannedBarRoute.Count;
-            int clearedVisitedCount = visitedBars.Count;
             CitySeed = seed;
             GameLog.SetCitySeed(seed);
             ClearRoute();
-            ClearVisitedBars();
             GameLog.Info(
                 "session",
                 "city_seed_changed",
@@ -665,10 +659,7 @@ namespace BarPromenade
                 GameLog.Field("new_seed", CitySeed),
                 GameLog.Field(
                     "cleared_route_count",
-                    clearedRouteCount),
-                GameLog.Field(
-                    "cleared_visited_count",
-                    clearedVisitedCount));
+                    clearedRouteCount));
         }
 
         public static void SetCityBlueprint(string blueprintId)
@@ -686,10 +677,8 @@ namespace BarPromenade
 
             string previousBlueprintId = CityBlueprintId;
             int clearedRouteCount = plannedBarRoute.Count;
-            int clearedVisitedCount = visitedBars.Count;
             CityBlueprintId = resolvedId;
             ClearRoute();
-            ClearVisitedBars();
             GameLog.Info(
                 "session",
                 "city_blueprint_changed",
@@ -701,10 +690,7 @@ namespace BarPromenade
                     CityBlueprintId),
                 GameLog.Field(
                     "cleared_route_count",
-                    clearedRouteCount),
-                GameLog.Field(
-                    "cleared_visited_count",
-                    clearedVisitedCount));
+                    clearedRouteCount));
         }
 
         public static bool TryAddRouteStop(string barId)
@@ -795,54 +781,6 @@ namespace BarPromenade
                 "session",
                 "route_cleared",
                 GameLog.Field("previous_route", previousRoute),
-                GameLog.Field("previous_count", previousCount));
-        }
-
-        public static bool MarkBarVisited(string barId)
-        {
-            if (string.IsNullOrWhiteSpace(barId))
-            {
-                return false;
-            }
-
-            bool firstVisit = visitedBars.Add(barId);
-            bool removedFromRoute = RemoveRouteStop(barId);
-            if (firstVisit || removedFromRoute)
-            {
-                GameLog.Info(
-                    "session",
-                    "bar_visited",
-                    GameLog.Field("bar_id", barId),
-                    GameLog.Field("first_visit", firstVisit),
-                    GameLog.Field(
-                        "removed_from_route",
-                        removedFromRoute),
-                    GameLog.Field(
-                        "visited_count",
-                        visitedBars.Count));
-            }
-
-            return firstVisit;
-        }
-
-        public static bool IsBarVisited(string barId)
-        {
-            return !string.IsNullOrWhiteSpace(barId) &&
-                   visitedBars.Contains(barId);
-        }
-
-        public static void ClearVisitedBars()
-        {
-            if (visitedBars.Count == 0)
-            {
-                return;
-            }
-
-            int previousCount = visitedBars.Count;
-            visitedBars.Clear();
-            GameLog.Info(
-                "session",
-                "visited_bars_cleared",
                 GameLog.Field("previous_count", previousCount));
         }
 
@@ -1387,7 +1325,15 @@ namespace BarPromenade
         private static BarActivityKind NormalizeBarActivity(
             BarActivityKind barActivity)
         {
-            return BarMinigameCatalog.NormalizeActivity(barActivity);
+            // The minigames are gone; the activity only flavours the
+            // interior layout now, so anything undefined falls back to
+            // the ordinary cocktail-bar composition.
+            return System.Enum.IsDefined(
+                       typeof(BarActivityKind),
+                       barActivity) &&
+                   barActivity != BarActivityKind.None
+                ? barActivity
+                : BarActivityKind.Cocktail;
         }
 
         private static InventoryItemUseResult CreateInventoryItemUseResult(

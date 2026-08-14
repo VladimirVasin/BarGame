@@ -473,12 +473,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(map, Is.Not.Null);
             Assert.That(map.Bars, Has.Count.EqualTo(4));
             AssertMapPointsOfInterest(cityRoot, map);
-            string visitedBarId = map.Bars[2].BarId;
-            Assert.That(
-                GameSessionState.MarkBarVisited(visitedBarId),
-                Is.True);
-            Assert.That(map.IsBarVisited(visitedBarId), Is.True);
-            Assert.That(map.VisitedBarCount, Is.EqualTo(1));
             Assert.That(
                 GameSessionState.TryAddRouteStop("bar-from-another-city"),
                 Is.True);
@@ -494,12 +488,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cityRoot.DebugWindow.Open(), Is.True);
             Assert.That(map.IsOpen, Is.False);
             Assert.That(map.Open(), Is.False);
-            Assert.That(
-                cityRoot.DebugWindow.TryLaunch(
-                    BarMinigameCatalog.CocktailId),
-                Is.True);
-            Assert.That(map.Open(), Is.False);
-            cityRoot.DebugWindow.ActiveDebugMinigame.Cancel();
+            Assert.That(cityRoot.DebugWindow.Close(), Is.True);
             Assert.That(cityRoot.Player.Motor.InputEnabled, Is.True);
             Assert.That(cityRoot.Player.Interactor.InputEnabled, Is.True);
             Assert.That(follow.OrbitInputEnabled, Is.True);
@@ -845,14 +834,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.ActiveActivity,
                 Is.EqualTo(BarActivityKind.Cocktail));
-            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
-            Assert.That(
-                interiorRoot.ActiveMinigame,
-                Is.SameAs(interiorRoot.CocktailMinigame));
-            Assert.That(interiorRoot.CocktailMinigame, Is.Not.Null);
-            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
-            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
-            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
             Assert.That(interiorRoot.DebugWindow, Is.Not.Null);
             Assert.That(
                 interiorRoot.DebugWindow.IsInitialized,
@@ -896,15 +877,21 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(LightShadows.None));
             }
 
-            Assert.That(interiorRoot.NpcPlan, Is.Not.Null);
-            Assert.That(interiorRoot.NpcPlan.Count,
-                Is.EqualTo(BarNpcPlanner.TargetNpcCount));
-            Assert.That(interiorRoot.NpcDirector, Is.Not.Null);
-            Assert.That(interiorRoot.NpcDirector.Actors,
-                Has.Count.EqualTo(BarNpcPlanner.TargetNpcCount));
-            Assert.That(interiorRoot.NpcDirector
-                    .GetComponentsInChildren<PlayerMotor>(true),
-                Is.Empty);
+            Assert.That(interiorRoot.Patrons, Is.Not.Null);
+            Assert.That(
+                interiorRoot.Patrons,
+                Is.Not.Empty,
+                "The bar must seat its 3D guests.");
+            foreach (BarPatron patron in interiorRoot.Patrons)
+            {
+                Assert.That(patron.Registry, Is.Not.Null);
+                Assert.That(patron.Presentation, Is.Not.Null);
+                Assert.That(
+                    patron.Anchor.Role,
+                    Is.Not.EqualTo(BarNpcRole.Bartender),
+                    "The bartender's spot stays empty for now.");
+            }
+
             Assert.That(interiorRoot.Soundscape, Is.Not.Null);
             Assert.That(
                 interiorRoot.Soundscape.CrowdSource,
@@ -957,9 +944,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
                 Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
-                Has.Length.EqualTo(1));
             Transform drinkOrderPoint =
                 interiorRoot.transform.Find("Drink Order Point");
             Transform drinkOrderSign =
@@ -996,29 +980,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Empty,
                 "The exterior music player must not survive in BarInterior.");
 
-            Vector3 stationPosition =
-                interiorRoot.ActivityStation.transform.position;
-            stationPosition.y = 0.12f;
-            interiorRoot.Player.Motor.Teleport(stationPosition);
-            yield return null;
-            Assert.That(
-                interiorRoot.Player.Interactor.ActiveInteractable,
-                Is.EqualTo(interiorRoot.ActivityStation));
-
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(interiorRoot.CocktailMinigame.IsOpen, Is.True);
-            Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
-            Assert.That(interiorRoot.Player.Interactor.InputEnabled, Is.False);
             PlayerCameraFollow follow =
                 Camera.main.GetComponent<PlayerCameraFollow>();
-            Assert.That(follow.OrbitInputEnabled, Is.False);
-            interiorRoot.CocktailMinigame.Cancel();
-            Assert.That(interiorRoot.CocktailMinigame.IsOpen, Is.False);
-            Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.True);
-            Assert.That(interiorRoot.Player.Interactor.InputEnabled, Is.True);
-            Assert.That(follow.OrbitInputEnabled, Is.True);
-
             Vector3 counterStationPosition =
                 interiorRoot.CounterStation.transform.position;
             counterStationPosition.y = 0.12f;
@@ -1089,9 +1052,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBefore + 1));
-            Assert.That(
-                GameSessionState.IsBarVisited("bar-smoke-test"),
-                Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(
                 interiorRoot.Player.Interactor.InputEnabled,
@@ -1143,13 +1103,12 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator BeerPongBarInterior_SelectsOnlyBeerPongActivity()
+        public IEnumerator BarInterior_KeepsActivityFlavouredLayoutsWithoutMinigames()
         {
             const string barId = "bar-beer-pong-smoke-test";
             GameSessionState.EnterBar(
                 barId,
                 BarActivityKind.BeerPong);
-            GameSessionState.TryAddRouteStop(barId);
 
             BarInteriorRoot interiorRoot = null;
             yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
@@ -1158,549 +1117,21 @@ namespace BarPromenade.Tests.PlayMode
                 root => interiorRoot = root);
             yield return WaitUntil(
                 () => interiorRoot.IsInitialized,
-                "Beer-pong interior did not finish initialization.");
+                "Beer-pong flavoured interior did not initialize.");
 
+            // The minigames are cut; the activity survives as the
+            // interior's furniture flavour.
             Assert.That(
                 interiorRoot.ActiveActivity,
                 Is.EqualTo(BarActivityKind.BeerPong));
-            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
-            Assert.That(interiorRoot.BeerPongMinigame, Is.Not.Null);
-            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
-            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
             Assert.That(
-                interiorRoot.ActiveMinigame,
-                Is.SameAs(interiorRoot.BeerPongMinigame));
-            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
-            Assert.That(
-                interiorRoot.ActivityStation.PromptKey,
-                Is.EqualTo("interaction.play_beer_pong"));
+                interiorRoot.transform.Find(
+                    $"Interior {barId}/Beer Pong Table"),
+                Is.Not.Null,
+                "The beer pong table survives as dressing.");
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
                 Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
-                Has.Length.EqualTo(1));
-            Transform beerPongTable =
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Beer Pong Table");
-            Assert.That(beerPongTable, Is.Not.Null);
-            BoxCollider stationTrigger =
-                interiorRoot.ActivityStation
-                    .GetComponent<BoxCollider>();
-            Collider tableCollider =
-                beerPongTable.GetComponent<Collider>();
-            Assert.That(stationTrigger, Is.Not.Null);
-            Assert.That(tableCollider, Is.Not.Null);
-            Physics.SyncTransforms();
-            Assert.That(
-                stationTrigger.bounds.Intersects(
-                    tableCollider.bounds),
-                Is.False);
-
-            Vector3 stationPosition =
-                interiorRoot.ActivityStation.transform.position;
-            stationPosition.y = 0.12f;
-            interiorRoot.Player.Motor.Teleport(stationPosition);
-            yield return null;
-            Assert.That(
-                interiorRoot.Player.Interactor.ActiveInteractable,
-                Is.EqualTo(interiorRoot.ActivityStation));
-
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.True);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.False);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.False);
-            PlayerCameraFollow beerPongFollow =
-                Camera.main.GetComponent<PlayerCameraFollow>();
-            Assert.That(
-                beerPongFollow.OrbitInputEnabled,
-                Is.False);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-
-            Assert.That(
-                interiorRoot.BeerPongMinigame.BeginCharging(),
-                Is.True);
-            Assert.That(
-                interiorRoot.BeerPongMinigame.ReleaseThrow(),
-                Is.True);
-            Assert.That(
-                interiorRoot.BeerPongMinigame.ResolveFlightForTests(
-                    BeerPongFlightResult.CreateMiss(
-                        BeerPongMissReason.OutOfBounds)),
-                Is.True);
-            Assert.That(
-                GameSessionState.IntoxicationLevel,
-                Is.EqualTo(BeerPongSession.MissIntoxicationGain));
-            Assert.That(
-                GameSessionState.LastAlcoholicDrink,
-                Is.EqualTo(DrinkId.LightBeer));
-            Assert.That(
-                GameSessionState.DrinksConsumed,
-                Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-
-            interiorRoot.BeerPongMinigame.Cancel();
-            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.False);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(
-                beerPongFollow.OrbitInputEnabled,
-                Is.True);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Contain(barId));
-
-            int completionCount = 0;
-            interiorRoot.BeerPongMinigame.Completed +=
-                () => completionCount++;
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(interiorRoot.BeerPongMinigame.IsOpen, Is.True);
-
-            for (int cupIndex = 0;
-                 cupIndex < BeerPongTableLayout.CupCount;
-                 cupIndex++)
-            {
-                Assert.That(
-                    interiorRoot.BeerPongMinigame.BeginCharging(),
-                    Is.True);
-                Assert.That(
-                    interiorRoot.BeerPongMinigame.ReleaseThrow(),
-                    Is.True);
-                Assert.That(
-                    interiorRoot.BeerPongMinigame.ResolveFlightForTests(
-                        BeerPongFlightResult.CreateSink(cupIndex)),
-                    Is.True);
-                Assert.That(
-                    GameSessionState.IsBarVisited(barId),
-                    Is.False,
-                    "A throw result is not yet the accepted final result.");
-                Assert.That(
-                    interiorRoot.BeerPongMinigame
-                        .ContinueAfterResult(),
-                    Is.True);
-            }
-
-            Assert.That(
-                interiorRoot.BeerPongMinigame.PresentationPhase,
-                Is.EqualTo(
-                    BeerPongPresentationPhase.FinalResult));
-            Assert.That(completionCount, Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.True);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Not.Contain(barId));
-            interiorRoot.BeerPongMinigame.Cancel();
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-        }
-
-        [UnityTest]
-        public IEnumerator SplitTheGBarInterior_CompletesThreeAttempts()
-        {
-            const string barId = "bar-split-the-g-smoke-test";
-            GameSessionState.EnterBar(
-                barId,
-                BarActivityKind.SplitTheG);
-            GameSessionState.TryAddRouteStop(barId);
-
-            BarInteriorRoot interiorRoot = null;
-            yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
-                SceneIds.BarInterior,
-                InteriorRootName,
-                root => interiorRoot = root);
-            yield return WaitUntil(
-                () => interiorRoot.IsInitialized,
-                "Split-the-G interior did not finish initialization.");
-
-            Assert.That(
-                interiorRoot.ActiveActivity,
-                Is.EqualTo(BarActivityKind.SplitTheG));
-            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
-            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
-            Assert.That(interiorRoot.SplitTheGMinigame, Is.Not.Null);
-            Assert.That(interiorRoot.TinctureMatchMinigame, Is.Null);
-            Assert.That(
-                interiorRoot.ActiveMinigame,
-                Is.SameAs(interiorRoot.SplitTheGMinigame));
-            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
-            Assert.That(
-                interiorRoot.ActivityStation.PromptKey,
-                Is.EqualTo("interaction.play_split_the_g"));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<BarActivityStation>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<
-                    SplitTheGMinigameController>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.transform.Find(
-                    "Split the G Minigame Station"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find("Split the G Point"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find("Split the G Point Sign"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Split the G Coaster"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Split the G Pint"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Split the G Foam"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Split the G Target"),
-                Is.Not.Null);
-
-            Vector3 stationPosition =
-                interiorRoot.ActivityStation.transform.position;
-            stationPosition.y = 0.12f;
-            interiorRoot.Player.Motor.Teleport(stationPosition);
-            yield return null;
-            Assert.That(
-                interiorRoot.Player.Interactor.ActiveInteractable,
-                Is.EqualTo(interiorRoot.ActivityStation));
-
-            PlayerCameraFollow splitTheGFollow =
-                Camera.main.GetComponent<PlayerCameraFollow>();
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.True);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.False);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.False);
-            Assert.That(
-                splitTheGFollow.OrbitInputEnabled,
-                Is.False);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-
-            interiorRoot.SplitTheGMinigame.Cancel();
-            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.False);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(
-                splitTheGFollow.OrbitInputEnabled,
-                Is.True);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Contain(barId));
-
-            int completionCount = 0;
-            interiorRoot.SplitTheGMinigame.Completed +=
-                () => completionCount++;
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.True);
-
-            SplitTheGSettings settings =
-                interiorRoot.SplitTheGMinigame.Settings;
-            float countdownStep =
-                (float)settings.CountdownTime + 0.01f;
-            float drinkToTargetStep = (float)(
-                (1d - settings.TargetLevel) /
-                settings.DrinkSpeed);
-            float settlingStep =
-                (float)settings.SettlingTime + 0.01f;
-
-            for (int attempt = 0;
-                 attempt < settings.MaximumAttempts;
-                 attempt++)
-            {
-                interiorRoot.SplitTheGMinigame.AdvancePresentation(
-                    countdownStep);
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.Phase,
-                    Is.EqualTo(SplitTheGPhase.Armed));
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.BeginDrink(),
-                    Is.True);
-                interiorRoot.SplitTheGMinigame.AdvancePresentation(
-                    drinkToTargetStep);
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.Phase,
-                    Is.EqualTo(SplitTheGPhase.Drinking));
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.ReleaseDrink(),
-                    Is.True);
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.Phase,
-                    Is.EqualTo(SplitTheGPhase.Settling));
-                interiorRoot.SplitTheGMinigame.AdvancePresentation(
-                    settlingStep);
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.AttemptsCompleted,
-                    Is.EqualTo(attempt + 1));
-
-                bool isFinalAttempt =
-                    attempt == settings.MaximumAttempts - 1;
-                Assert.That(
-                    interiorRoot.SplitTheGMinigame.Phase,
-                    Is.EqualTo(
-                        isFinalAttempt
-                            ? SplitTheGPhase.FinalResult
-                            : SplitTheGPhase.AttemptResult));
-                Assert.That(
-                    GameSessionState.IsBarVisited(barId),
-                    Is.EqualTo(isFinalAttempt));
-
-                if (!isFinalAttempt)
-                {
-                    Assert.That(
-                        interiorRoot.SplitTheGMinigame.Retry(),
-                        Is.True);
-                }
-            }
-
-            Assert.That(completionCount, Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.True);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Not.Contain(barId));
-            Assert.That(
-                GameSessionState.DrinksConsumed,
-                Is.EqualTo(settings.MaximumAttempts));
-            Assert.That(
-                GameSessionState.LastAlcoholicDrink,
-                Is.EqualTo(DrinkId.DarkBeer));
-
-            interiorRoot.SplitTheGMinigame.Cancel();
-            Assert.That(interiorRoot.SplitTheGMinigame.IsOpen, Is.False);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(
-                splitTheGFollow.OrbitInputEnabled,
-                Is.True);
-        }
-
-        [UnityTest]
-        public IEnumerator TinctureMatchBarInterior_CompletesFifteenMoves()
-        {
-            const string barId = "bar-tincture-match-smoke-test";
-            GameSessionState.EnterBar(
-                barId,
-                BarActivityKind.TinctureMatch);
-            GameSessionState.TryAddRouteStop(barId);
-
-            BarInteriorRoot interiorRoot = null;
-            yield return LoadSceneAndWaitForRoot<BarInteriorRoot>(
-                SceneIds.BarInterior,
-                InteriorRootName,
-                root => interiorRoot = root);
-            yield return WaitUntil(
-                () => interiorRoot.IsInitialized,
-                "Tincture-match interior did not finish initialization.");
-
-            Assert.That(
-                interiorRoot.ActiveActivity,
-                Is.EqualTo(BarActivityKind.TinctureMatch));
-            Assert.That(interiorRoot.CocktailMinigame, Is.Null);
-            Assert.That(interiorRoot.BeerPongMinigame, Is.Null);
-            Assert.That(interiorRoot.SplitTheGMinigame, Is.Null);
-            Assert.That(
-                interiorRoot.TinctureMatchMinigame,
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.ActiveMinigame,
-                Is.SameAs(interiorRoot.TinctureMatchMinigame));
-            Assert.That(interiorRoot.ActivityStation, Is.Not.Null);
-            Assert.That(
-                interiorRoot.ActivityStation.PromptKey,
-                Is.EqualTo("interaction.play_tincture_match"));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<
-                    BarCounterStation>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<
-                    BarActivityStation>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.GetComponentsInChildren<
-                    TinctureMatchMinigameController>(true),
-                Has.Length.EqualTo(1));
-            Assert.That(
-                interiorRoot.transform.Find(
-                    "Tincture Match Minigame Station"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    "Tincture Match Point"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    "Tincture Match Point Sign"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Tincture Match Tray"),
-                Is.Not.Null);
-            for (int shot = 1; shot <= 5; shot++)
-            {
-                Assert.That(
-                    interiorRoot.transform.Find(
-                        $"Interior {barId}/Tincture Shot {shot}"),
-                    Is.Not.Null);
-            }
-
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Tincture XXX Bottle"),
-                Is.Not.Null);
-            Assert.That(
-                interiorRoot.transform.Find(
-                    $"Interior {barId}/Tincture XXX Sign"),
-                Is.Not.Null);
-
-            Vector3 stationPosition =
-                interiorRoot.ActivityStation.transform.position;
-            stationPosition.y = 0.12f;
-            interiorRoot.Player.Motor.Teleport(stationPosition);
-            yield return null;
-            Assert.That(
-                interiorRoot.Player.Interactor.ActiveInteractable,
-                Is.EqualTo(interiorRoot.ActivityStation));
-
-            PlayerCameraFollow follow =
-                Camera.main.GetComponent<PlayerCameraFollow>();
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(
-                interiorRoot.TinctureMatchMinigame.IsOpen,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.False);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.False);
-            Assert.That(follow.OrbitInputEnabled, Is.False);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-
-            interiorRoot.TinctureMatchMinigame.Cancel();
-            Assert.That(
-                interiorRoot.TinctureMatchMinigame.IsOpen,
-                Is.False);
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(follow.OrbitInputEnabled, Is.True);
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.False);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Contain(barId));
-
-            int completionCount = 0;
-            interiorRoot.TinctureMatchMinigame.Completed +=
-                () => completionCount++;
-            interiorRoot.ActivityStation.Interact(
-                interiorRoot.Player.Interactor);
-            Assert.That(
-                interiorRoot.TinctureMatchMinigame.IsOpen,
-                Is.True);
-
-            for (int move = 1;
-                 move <=
-                 interiorRoot.TinctureMatchMinigame.Settings.MoveLimit;
-                 move++)
-            {
-                var swaps =
-                    TinctureMatchResolver.GetLegalNormalSwaps(
-                        interiorRoot.TinctureMatchMinigame.Board);
-                Assert.That(swaps, Is.Not.Empty);
-                TinctureMatchSwap swap = swaps[0];
-                Assert.That(
-                    interiorRoot.TinctureMatchMinigame.TrySwap(
-                        swap.First.Row,
-                        swap.First.Column,
-                        swap.Second.Row,
-                        swap.Second.Column),
-                    Is.True,
-                    $"Move {move}");
-                interiorRoot.TinctureMatchMinigame
-                    .AdvancePresentation(100f);
-            }
-
-            Assert.That(
-                interiorRoot.TinctureMatchMinigame.PresentationPhase,
-                Is.EqualTo(
-                    TinctureMatchPresentationPhase.FinalResult));
-            Assert.That(completionCount, Is.EqualTo(1));
-            Assert.That(
-                GameSessionState.IsBarVisited(barId),
-                Is.True);
-            Assert.That(
-                GameSessionState.PlannedBarRoute,
-                Does.Not.Contain(barId));
-            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
-            Assert.That(
-                GameSessionState.LastAlcoholicDrink,
-                Is.EqualTo(DrinkId.None));
-            Assert.That(GameSessionState.DrinksConsumed, Is.Zero);
-
-            interiorRoot.TinctureMatchMinigame.Cancel();
-            Assert.That(
-                interiorRoot.Player.Motor.InputEnabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-            Assert.That(follow.OrbitInputEnabled, Is.True);
         }
 
         [UnityTest]
@@ -1819,9 +1250,6 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(
                 new[] { expectedBarId, remainingBarId },
                 GameSessionState.PlannedBarRoute);
-            Assert.That(
-                GameSessionState.IsBarVisited(expectedBarId),
-                Is.False);
 
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
             Assert.That(exit, Is.Not.Null);
@@ -1888,10 +1316,6 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(
                 new[] { expectedBarId, remainingBarId },
                 GameSessionState.PlannedBarRoute);
-            Assert.That(
-                GameSessionState.IsBarVisited(expectedBarId),
-                Is.False);
-            Assert.That(returnedCity.Map.VisitedBarCount, Is.Zero);
         }
 
         [UnityTest]
@@ -1912,8 +1336,6 @@ namespace BarPromenade.Tests.PlayMode
             int expectedSeed = firstCity.Layout.Seed;
             string routeBarId =
                 firstCity.World.Bars[0].BarId;
-            string visitedBarId =
-                firstCity.World.Bars[1].BarId;
             RoadEdge[] expectedRoads =
                 new RoadEdge[firstCity.Layout.RoadEdges.Count];
             for (int index = 0;
@@ -1930,9 +1352,6 @@ namespace BarPromenade.Tests.PlayMode
                 2);
             Assert.That(
                 GameSessionState.TryAddRouteStop(routeBarId),
-                Is.True);
-            Assert.That(
-                GameSessionState.MarkBarVisited(visitedBarId),
                 Is.True);
             entrance.Interact(firstCity.Player.Interactor);
 
@@ -2089,9 +1508,6 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(
                 new[] { routeBarId },
                 GameSessionState.PlannedBarRoute);
-            Assert.That(
-                GameSessionState.IsBarVisited(visitedBarId),
-                Is.True);
 
             home.Exit.Interact(home.Player.Interactor);
 
@@ -2189,9 +1605,6 @@ namespace BarPromenade.Tests.PlayMode
             CollectionAssert.AreEqual(
                 new[] { routeBarId },
                 GameSessionState.PlannedBarRoute);
-            Assert.That(
-                GameSessionState.IsBarVisited(visitedBarId),
-                Is.True);
             PlayerCameraFollow returnedFollow =
                 Camera.main.GetComponent<PlayerCameraFollow>();
             Assert.That(returnedFollow, Is.Not.Null);

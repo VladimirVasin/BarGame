@@ -111,6 +111,7 @@ namespace BarPromenade
                 Mathf.Abs(playerRoot.position.y -
                           plan.EntryRootPosition.y) >
                     ApproachVerticalTolerance ||
+                CityBenchSeatClaims.IsClaimedByOther(plan.Id, this) ||
                 SceneTransitionService.IsTransitioning)
             {
                 return false;
@@ -145,6 +146,11 @@ namespace BarPromenade
 
         private void BeginOwnedInteraction()
         {
+            if (!CityBenchSeatClaims.TryClaim(plan.Id, this))
+            {
+                return;
+            }
+
             var dockPose = new PlayerAnimatedInteractionPose(
                 plan.EntryRootPosition,
                 plan.EntryRotation,
@@ -158,6 +164,7 @@ namespace BarPromenade
                 ApproachVerticalTolerance);
             if (!accepted)
             {
+                CityBenchSeatClaims.Release(plan.Id, this);
                 return;
             }
 
@@ -171,6 +178,7 @@ namespace BarPromenade
                 phase == PlayerAnimatedInteractionPhase.Idle)
             {
                 ownsActiveInteraction = false;
+                CityBenchSeatClaims.Release(plan.Id, this);
             }
         }
 
@@ -197,6 +205,7 @@ namespace BarPromenade
 
             controller?.CancelActiveInteraction();
             ownsActiveInteraction = false;
+            CityBenchSeatClaims.Release(plan.Id, this);
         }
     }
 }

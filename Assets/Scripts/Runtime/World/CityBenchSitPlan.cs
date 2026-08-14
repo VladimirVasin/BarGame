@@ -68,6 +68,7 @@ namespace BarPromenade
         // CityOpenAreaDecorationPlan: a 0.10 m timber seat on 0.42 m
         // legs, read back by its stable descriptor id.
         public const string HomeYardSeatId = "home-yard-bench-seat";
+        public const string HomeYardBenchId = "home-yard-bench";
         public const float HomeYardSeatLegHeight = 0.42f;
 
         // Matches the authored park benches in CityWorldBuilder: the
@@ -287,7 +288,7 @@ namespace BarPromenade
             }
 
             seat = new CityBenchSeat(
-                "home-yard-bench",
+                HomeYardBenchId,
                 new Vector3(
                     seatBounds.center.x,
                     seatBounds.max.y,
