@@ -22,6 +22,7 @@ namespace BarPromenade
             GameObject openAreaDecorationRoot,
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
+            GameObject riverRoot,
             Bounds bounds)
         {
             Root = root;
@@ -50,6 +51,7 @@ namespace BarPromenade
             DecorationRoot = decorationRoot != null
                 ? decorationRoot
                 : throw new ArgumentNullException(nameof(decorationRoot));
+            RiverRoot = riverRoot;
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
@@ -73,6 +75,7 @@ namespace BarPromenade
         public GameObject OpenAreaDecorationRoot { get; }
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
+        public GameObject RiverRoot { get; }
         public Bounds Bounds { get; }
 
         public bool TryGetBar(string barId, out BarEntrance entrance)

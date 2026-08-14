@@ -717,7 +717,11 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Null);
             Assert.That(
                 cityRoot.World.ParkRoot.transform.Find(
-                    "Park Central Plaza"),
+                    "Park Plaza 1"),
+                Is.Not.Null);
+            Assert.That(
+                cityRoot.World.ParkRoot.transform.Find(
+                    "Park Plaza 2"),
                 Is.Not.Null);
             Assert.That(
                 cityRoot.World.ParkRoot.transform.Find(
@@ -745,7 +749,7 @@ namespace BarPromenade.Tests.PlayMode
                     cityRoot.Layout.Park.TreePositions.Count +
                     cityRoot.Layout.Park.BenchPositions.Count +
                     hedgeColliders.GetComponents<BoxCollider>().Length +
-                    2));
+                    3));
 
             Camera camera = Camera.main;
             Assert.That(camera, Is.Not.Null);

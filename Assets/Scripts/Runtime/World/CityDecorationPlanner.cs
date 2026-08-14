@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public static class CityDecorationPlanner
+    public static partial class CityDecorationPlanner
     {
         public const float MinimumFrontageDepth = 1.25f;
         public const float MinimumFrontageSpan = 5.2f;
@@ -938,7 +938,8 @@ namespace BarPromenade
                 return false;
             }
 
-            Vector3 forward = layout.Park.Center - position;
+            CityParkRegionPlan region = ResolveParkRegion(layout, xSign);
+            Vector3 forward = region.Center - position;
             forward.y = 0f;
             forward = forward.sqrMagnitude > 0.001f
                 ? forward.normalized
@@ -960,115 +961,6 @@ namespace BarPromenade
                 visibilityTier,
                 collisionTier));
             occupiedGroundPositions.Add(position);
-            return true;
-        }
-
-        private static bool TryFindParkPosition(
-            CityLayout layout,
-            RoadFencePlan fencePlan,
-            CityNightFixturePlan nightPlan,
-            ICollection<Vector3> occupiedGroundPositions,
-            int xSign,
-            int zSign,
-            float radius,
-            out Vector3 position)
-        {
-            Rect bounds = layout.Park.WalkableBounds;
-            float margin = radius + 0.75f;
-            float[] fractions = { 0.30f, 0.38f, 0.22f, 0.44f, 0.16f };
-            for (int xIndex = 0; xIndex < fractions.Length; xIndex++)
-            {
-                for (int zIndex = 0; zIndex < fractions.Length; zIndex++)
-                {
-                    Vector3 candidate = layout.Park.Center + new Vector3(
-                        xSign * bounds.width * fractions[xIndex],
-                        0f,
-                        zSign * bounds.height * fractions[zIndex]);
-                    if (layout.ElevationPlan.TrySampleSurface(
-                            new Vector2(candidate.x, candidate.z),
-                            CitySurfaceRole.GroundDatum,
-                            out float datum,
-                            out _))
-                    {
-                        candidate.y = datum;
-                    }
-
-                    if (candidate.x < bounds.xMin + margin ||
-                        candidate.x > bounds.xMax - margin ||
-                        candidate.z < bounds.yMin + margin ||
-                        candidate.z > bounds.yMax - margin ||
-                        !IsParkCandidateClear(
-                            layout,
-                            candidate,
-                            radius,
-                            fencePlan,
-                            nightPlan,
-                            occupiedGroundPositions))
-                    {
-                        continue;
-                    }
-
-                    position = candidate;
-                    return true;
-                }
-            }
-
-            position = default;
-            return false;
-        }
-
-        private static bool IsParkCandidateClear(
-            CityLayout layout,
-            Vector3 position,
-            float radius,
-            RoadFencePlan fencePlan,
-            CityNightFixturePlan nightPlan,
-            ICollection<Vector3> occupiedGroundPositions)
-        {
-            float pathClearance = Mathf.Min(
-                5.4f + radius,
-                Mathf.Min(
-                    layout.Park.WalkableBounds.width,
-                    layout.Park.WalkableBounds.height) * 0.18f);
-            Vector3 centerOffset = position - layout.Park.Center;
-            if (Mathf.Abs(centerOffset.x) < pathClearance ||
-                Mathf.Abs(centerOffset.z) < pathClearance ||
-                CityDecorationValidator.IsProtectedGroundAnchor(
-                    position,
-                    radius,
-                    fencePlan,
-                    nightPlan) ||
-                !IsSeparated(position, occupiedGroundPositions, radius + 3f))
-            {
-                return false;
-            }
-
-            for (int index = 0;
-                 index < layout.Park.TreePositions.Count;
-                 index++)
-            {
-                if (PlanarSquaredDistance(
-                        position,
-                        layout.Park.TreePositions[index]) <
-                    (radius + 1.8f) * (radius + 1.8f))
-                {
-                    return false;
-                }
-            }
-
-            for (int index = 0;
-                 index < layout.Park.BenchPositions.Count;
-                 index++)
-            {
-                if (PlanarSquaredDistance(
-                        position,
-                        layout.Park.BenchPositions[index]) <
-                    (radius + 1.25f) * (radius + 1.25f))
-                {
-                    return false;
-                }
-            }
-
             return true;
         }
 

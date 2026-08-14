@@ -26,7 +26,7 @@ namespace BarPromenade
         public const float MaximumAgentRadius = 0.35f;
 
         private const float ConnectorMargin = 0.10f;
-        private const float ConnectorReach =
+        internal const float ConnectorReach =
             (MaximumAgentRadius * 2f) + ConnectorMargin;
 
         public static CityGroundTraversalPlan CreatePlan(CityLayout layout)
@@ -50,7 +50,7 @@ namespace BarPromenade
                 }
 
                 eligibleByCell.Add(surface.Cell, surface);
-                ground.Add(surface.WorldBounds);
+                AddRiverClippedGround(layout, surface, ground);
             }
 
             var connectors = new List<Rect>();
@@ -85,6 +85,77 @@ namespace BarPromenade
             }
 
             return new CityGroundTraversalPlan(ground, connectors);
+        }
+
+        private static void AddRiverClippedGround(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            ICollection<Rect> destination)
+        {
+            var patches = new List<Rect> { surface.WorldBounds };
+            if (layout.River.IsEnabled)
+            {
+                for (int segmentIndex = 0;
+                     segmentIndex < layout.River.Segments.Count;
+                     segmentIndex++)
+                {
+                    Rect cut = layout.River.Segments[segmentIndex]
+                        .WaterBounds;
+                    if (!surface.WorldBounds.Overlaps(cut))
+                    {
+                        continue;
+                    }
+
+                    var next = new List<Rect>();
+                    for (int patchIndex = 0;
+                         patchIndex < patches.Count;
+                         patchIndex++)
+                    {
+                        SubtractRectangle(patches[patchIndex], cut, next);
+                    }
+
+                    patches = next;
+                }
+            }
+
+            for (int index = 0; index < patches.Count; index++)
+            {
+                destination.Add(patches[index]);
+            }
+        }
+
+        private static void SubtractRectangle(
+            Rect source,
+            Rect cut,
+            ICollection<Rect> destination)
+        {
+            float xMin = Mathf.Max(source.xMin, cut.xMin);
+            float xMax = Mathf.Min(source.xMax, cut.xMax);
+            float zMin = Mathf.Max(source.yMin, cut.yMin);
+            float zMax = Mathf.Min(source.yMax, cut.yMax);
+            if (xMax <= xMin || zMax <= zMin)
+            {
+                destination.Add(source);
+                return;
+            }
+
+            AddRect(destination, source.xMin, source.yMin, xMin, source.yMax);
+            AddRect(destination, xMax, source.yMin, source.xMax, source.yMax);
+            AddRect(destination, xMin, source.yMin, xMax, zMin);
+            AddRect(destination, xMin, zMax, xMax, source.yMax);
+        }
+
+        private static void AddRect(
+            ICollection<Rect> destination,
+            float xMin,
+            float zMin,
+            float xMax,
+            float zMax)
+        {
+            if (xMax - xMin > 0.001f && zMax - zMin > 0.001f)
+            {
+                destination.Add(Rect.MinMaxRect(xMin, zMin, xMax, zMax));
+            }
         }
 
         private static void AddGroundConnection(
@@ -202,7 +273,45 @@ namespace BarPromenade
 
             if (layout.Park.IsEnabled)
             {
-                area.Add(layout.Park.WalkableBounds);
+                for (int regionIndex = 0;
+                     regionIndex < layout.Park.Regions.Count;
+                     regionIndex++)
+                {
+                    area.Add(
+                        layout.Park.Regions[regionIndex].WalkableBounds);
+                }
+            }
+
+            if (layout.River.IsEnabled)
+            {
+                for (int promenadeIndex = 0;
+                     promenadeIndex < layout.River.Promenades.Count;
+                     promenadeIndex++)
+                {
+                    CityRiverPromenadeDescriptor promenade =
+                        layout.River.Promenades[promenadeIndex];
+                    area.Add(promenade.Bounds);
+                    float seamX = promenade.WestBank
+                        ? promenade.Bounds.xMin
+                        : promenade.Bounds.xMax;
+                    float halfConnector =
+                        CityGroundTraversalPlanner.ConnectorReach;
+                    area.Add(Rect.MinMaxRect(
+                        seamX - halfConnector,
+                        promenade.Bounds.yMin,
+                        seamX + halfConnector,
+                        promenade.Bounds.yMax));
+                }
+
+                for (int landingIndex = 0;
+                     landingIndex < layout.River.Landings.Count;
+                     landingIndex++)
+                {
+                    CityRiverLandingDescriptor landing =
+                        layout.River.Landings[landingIndex];
+                    area.Add(landing.StairBounds);
+                    area.Add(landing.PlatformBounds);
+                }
             }
 
             for (int accessIndex = 0;

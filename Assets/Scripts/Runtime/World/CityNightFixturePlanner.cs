@@ -44,6 +44,11 @@ namespace BarPromenade
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
+                if (layout.IsRiverBridgeEdge(edge))
+                {
+                    continue;
+                }
+
                 uint sideHash = StableHash(
                     layout.Seed,
                     edge.A.x,
@@ -185,9 +190,46 @@ namespace BarPromenade
             Vector3 position)
         {
             return layout.IsWater(position) ||
+                   IntersectsRiverReservation(layout, position) ||
                    IntersectsDistrictPointOfInterestReservation(
                        layout,
                        position);
+        }
+
+        private static bool IntersectsRiverReservation(
+            CityLayout layout,
+            Vector3 position)
+        {
+            if (!layout.River.IsEnabled)
+            {
+                return false;
+            }
+
+            Vector2 point = new Vector2(position.x, position.z);
+            for (int index = 0;
+                 index < layout.River.Promenades.Count;
+                 index++)
+            {
+                if (layout.River.Promenades[index].Bounds.Contains(point))
+                {
+                    return true;
+                }
+            }
+
+            for (int index = 0;
+                 index < layout.River.Landings.Count;
+                 index++)
+            {
+                CityRiverLandingDescriptor landing =
+                    layout.River.Landings[index];
+                if (landing.StairBounds.Contains(point) ||
+                    landing.PlatformBounds.Contains(point))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IntersectsDistrictPointOfInterestReservation(

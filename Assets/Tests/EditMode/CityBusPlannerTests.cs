@@ -98,6 +98,118 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("CityRiver")]
+        public void DefaultRiver_UsesBothRoadBridgesAndNoReservedFurniture()
+        {
+            CreateContext(
+                out CityLayout layout,
+                out CityDecorationPlan decorations);
+            CityBusPlan plan = CityBusPlanner.Create(layout, decorations);
+            CityRiverBridgeDescriptor[] roadBridges = layout.River.Bridges
+                .Where(bridge => bridge.Definition.Role ==
+                    CityBridgeRole.Road)
+                .ToArray();
+            CityRiverBridgeDescriptor footbridge = layout.River.Bridges
+                .Single(bridge => bridge.Definition.Role ==
+                    CityBridgeRole.ParkFootbridge);
+
+            Assert.That(roadBridges, Has.Length.EqualTo(2));
+            Assert.That(
+                plan.Links,
+                Is.Not.Empty,
+                "Route 01 must remain available after inserting the river. " +
+                string.Join(" | ", plan.ClearanceFailures
+                    .Where(failure => roadBridges.Any(bridge =>
+                        failure.FromRoadEdge ==
+                            bridge.Definition.CrossingEdge ||
+                        failure.ToRoadEdge ==
+                            bridge.Definition.CrossingEdge))
+                    .Select(failure => failure.Id + ":" +
+                        failure.Clearance.FailureKind)));
+            for (int bridgeIndex = 0;
+                 bridgeIndex < roadBridges.Length;
+                 bridgeIndex++)
+            {
+                RoadEdge edge =
+                    roadBridges[bridgeIndex].Definition.CrossingEdge;
+                int traversals = plan.Links.Count(link =>
+                    link.Id.StartsWith("bus:road:") &&
+                    plan.Nodes[link.FromNodeIndex].RoadEdge == edge);
+                Assert.That(
+                    traversals,
+                    Is.EqualTo(1),
+                    roadBridges[bridgeIndex].Definition.Id);
+            }
+
+            Assert.That(
+                plan.Nodes.Any(node => node.RoadEdge ==
+                    footbridge.Definition.CrossingEdge),
+                Is.False);
+            Assert.That(
+                plan.Stops.Any(stop =>
+                    layout.IsBusFurnitureExcluded(stop.RoadEdge)),
+                Is.False);
+            Assert.That(
+                plan.SpawnAnchors.Any(anchor =>
+                    layout.IsBusFurnitureExcluded(anchor.RoadEdge)),
+                Is.False);
+            foreach (CityBusStopDescriptor stop in plan.Stops)
+            {
+                IEnumerable<RoadEdge> frontages;
+                float referenceDistance;
+                if (stop.TargetKind == CityBusStopTargetKind.PlayerHome)
+                {
+                    Assert.That(
+                        layout.TryGetFrontageEdge(
+                            layout.PlayerHome,
+                            out RoadEdge homeFrontage),
+                        Is.True);
+                    frontages = new[] { homeFrontage };
+                    referenceDistance = Mathf.Min(
+                        XzDistance(
+                            stop.ShelterPosition,
+                            layout.PlayerHome.ReturnPosition),
+                        XzDistance(
+                            stop.ShelterPosition,
+                            layout.PlayerHome.SidewalkArrivalPosition));
+                }
+                else
+                {
+                    CityDistrictPointOfInterestDescriptor point =
+                        layout.DistrictPointsOfInterest.Single(candidate =>
+                            candidate.Id == stop.TargetId);
+                    frontages = point.Accesses.Select(access =>
+                        access.FrontageEdge);
+                    referenceDistance = point.Accesses
+                        .Select(access => XzDistance(
+                            stop.ShelterPosition,
+                            access.Center))
+                        .Append(XzDistance(
+                            stop.ShelterPosition,
+                            point.Center))
+                        .Min();
+                }
+
+                int maximumHop = stop.TargetKind ==
+                        CityBusStopTargetKind.DistrictPointOfInterest
+                    ? 5
+                    : 1;
+                Assert.That(
+                    RoadEdgeHop(stop.RoadEdge, frontages),
+                    Is.LessThanOrEqualTo(maximumHop),
+                    stop.TargetId);
+                if (stop.TargetKind ==
+                    CityBusStopTargetKind.DistrictPointOfInterest)
+                {
+                    Assert.That(
+                        referenceDistance,
+                        Is.LessThanOrEqualTo(120f),
+                        stop.TargetId);
+                }
+            }
+        }
+
+        [Test]
         public void OrderedRoute_IsStreetOnlyRightHandAndOneInOneOut()
         {
             CreateContext(
@@ -453,7 +565,8 @@ namespace BarPromenade.Tests.EditMode
                         stop.RoadEdge,
                         point.Accesses.Select(access =>
                             access.FrontageEdge)),
-                    Is.LessThanOrEqualTo(1),
+                    Is.LessThanOrEqualTo(
+                        layout.River.IsEnabled ? 5 : 1),
                     stop.Id);
                 Vector2Int roadsideCell = GetRoadsideCell(plan, stop);
                 Assert.That(roadsideCell, Is.Not.EqualTo(point.Cell), stop.Id);
@@ -725,11 +838,24 @@ namespace BarPromenade.Tests.EditMode
                     edge.Contains(frontage.B))
                 {
                     result = 1;
+                    continue;
                 }
+
+                int nodeDistance = Mathf.Min(
+                    ManhattanDistance(edge.A, frontage.A),
+                    ManhattanDistance(edge.A, frontage.B),
+                    ManhattanDistance(edge.B, frontage.A),
+                    ManhattanDistance(edge.B, frontage.B));
+                result = Mathf.Min(result, nodeDistance + 1);
             }
 
             return result;
         }
+
+        private static int ManhattanDistance(
+            Vector2Int left,
+            Vector2Int right) =>
+            Mathf.Abs(left.x - right.x) + Mathf.Abs(left.y - right.y);
 
         private static bool Contains(Rect bounds, Vector3 point)
         {

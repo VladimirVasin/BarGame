@@ -67,15 +67,26 @@ The vertical slice contains:
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
   and inventory Status panel both show its current `HH:MM`;
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
-  the default keeps a connected `12 x 12` road-and-lot core, adds a full-width
-  northern beach and water strip, and anchors the central park at world/map
-  center. Active cells, roads and surfaces may form a connected sparse,
-  non-rectangular footprint inside their map bounds;
+  the default preserves all 144 former road-and-lot cells inside a `13 x 12`
+  urban envelope, using the added central column for a north-south river and
+  shifting the eastern half one cell outward. It retains the full-width
+  northern beach and sea strip. Active cells, roads and surfaces may form a
+  connected sparse, non-rectangular footprint inside their map bounds;
+- one immutable river contract splits that default urban envelope with a
+  `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
+  road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
+  across its south and north edges, while a separate `2.8 m` timber
+  ParkPath bridge reconnects the two `2 x 4` halves of the 16-cell central
+  park. Each road bridge owns one staircase and lower waterside platform per
+  bank, producing four navigable lower landings. Route 01 may use the road
+  bridges but never the timber crossing;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
-  a deterministic `12 m` vertical range, gives every urban district at least
-  `1.5 m` of local terrace variation and keeps sea/lake water on declared
-  datums. Legacy and custom blueprints retain an exact flat fallback. The
+  about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
+  every urban district at least `1.5 m` of local terrace variation, keeps
+  sea/lake water on declared datums and gives the river a monotonic descent
+  into the sea. Legacy and
+  custom blueprints retain an exact flat fallback. The
   sampler is authoritative for node, cell, road, sidewalk, entrance, return,
   open-area and debug-teleport height;
 - one authored home-yard composition in the walkable roadless gap between the
@@ -250,10 +261,12 @@ The vertical slice contains:
   closed winding service loop. Its target planner orders every district point
   of interest that actually exists, followed by `PlayerHome`; the default
   sequence is Industrial, Nightlife, Residential, Old Town and Home. It assigns
-  one safe straight to every target on its frontage or one connected road edge
-  away, keeps the roadside pole on another cell and outside the POI
-  public/access bounds or Home footprint, then connects the selected straights
-  through the deterministic accepted-link graph. Full-body-clear ordinary
+  one safe straight to every target. Home stays on its frontage or one connected
+  road edge away. In the river layout a district POI may use the nearest
+  same-district cyclic Street up to five grid edges and `120 m` from its public
+  access; this bounded fallback keeps the two-bridge service loop closed without
+  moving the Home stop. The roadside pole remains outside the POI public/access
+  bounds or Home footprint. Full-body-clear ordinary
   straights and proven `6 m`-radius left turns enter the loop. At selected Road
   v2.1 nodes only, a clearance-proven two-edge right-turn macro uses a long
   S-merge across the full incoming Street, a `4.5 m` quarter-turn in the clear
@@ -379,10 +392,11 @@ The vertical slice contains:
   explicit compatibility path;
 - a spanning-tree road graph over only the sparse road footprint, with
   deterministic loops, filtered cross-city arterials, required open-area
-  access edges and a connected park-path cross;
+  access edges and exactly three declared river crossings;
 - four readable built areas—Old Town, Residential, Industrial and
-  Nightlife—plus a fixed central `4 x 4`-block park with lawn, plaza, trees,
-  benches, hedges and four continuously walkable gates;
+  Nightlife—plus a fixed 16-cell central park split into two `2 x 4` regions
+  with lawn, plazas, trees, benches and hedges. A dedicated timber footbridge
+  joins their ParkPath graph across the river;
 - one mandatory north-edge waterfront in the default blueprint: its connected
   beach has a deterministic street approach and remains walkable to the water
   line, while the continuous northern water row is rendered and mapped but is
@@ -440,8 +454,8 @@ The vertical slice contains:
   water, unmapped cells and outside space stay excluded, while real building,
   prop, vegetation, pole, fence and pedestrian colliders decide local
   obstruction;
-- 144 land-use lots in the default road-grid core, including 16 park cells and
-  4 open district points of interest, plus 32 northern beach/water surface
+- 144 land-use lots in the default urban core, including 16 park cells and
+  4 open district points of interest, plus 34 northern beach/water surface
   cells, 16 lake cells and 6 cemetery cells. The core still contains exactly 4 reachable bars in four different
   stable urban area IDs and one non-bar player home beside one bar street,
   plus exactly one ordinary
@@ -552,7 +566,9 @@ The vertical slice contains:
   colliders and ordinary contact shadow;
 - a full-screen city map projected from the blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
-  beach, water, lake-shore and cemetery surfaces and paths, player/bar markers,
+  beach, sea, river, promenade, lake-shore and cemetery surfaces and paths,
+  plus separate map treatments for the Works, Mouth and timber bridges,
+  player/bar markers,
   a dedicated labeled home icon, a distinct
   grocery-shop marker and four kind-specific public-place
   markers with a localized legend. Hovering a bar, home, shop or public-place

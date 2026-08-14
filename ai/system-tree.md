@@ -40,6 +40,7 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      CityRiverWater.shader      quantized animated river flow with night/rain response
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
@@ -173,7 +174,9 @@ Assets/
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
-        CityBlueprintCatalog.cs  default coastal city with eastern Lake/Cemetery, five Yards + legacy blueprint
+        CityBlueprintCatalog.cs  default 13x12 river city with eastern Lake/Cemetery, five Yards + legacy blueprint
+        CityRiverPlan.cs         10 m channel, dual promenades, three typed bridges + four lower landings
+        CityRiverResources.cs    shared animated water material and night/rain factors
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
         CityElevationPlanner.cs  default macro profile, local terraces + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
@@ -188,7 +191,7 @@ Assets/
         CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
-        CityWorldBuilder.cs      terrace slabs, graded surfaces, stairs + guarded drops
+        CityWorldBuilder.cs      terraces, river/bridges, graded surfaces, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building home-yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
@@ -220,7 +223,7 @@ Assets/
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
-        RoadWalkableArea.cs      single-layer Buildable/Open/road union + boundary-safe connectors
+        RoadWalkableArea.cs      ground/road/river-promenade union + boundary-safe connectors
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -491,11 +494,14 @@ startup Wake or accepted Home F9 debug skip -> session time 06:00
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles
                                           -> sparse active-cell topology
-                                          -> fixed centered park
+                                          -> north-south river corridor
+                                             -> two road bridges + timber park bridge
+                                             -> two promenades + four lower landings
+                                          -> split 16-cell centered park
                                           -> north-edge beach + water
                                           -> default eastern Lake/Cemetery areas
                                           -> CityLayoutGenerator -> validated CityLayout
-                                           -> 12x12 default road/lot core
+                                           -> 13x12 envelope preserving 144 lots
                                            -> four UrbanBuilt areas + central park
                                            -> typed surfaces + open-area accesses
                                            -> distant bars via CityTravelDistance
@@ -513,6 +519,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                            -> fresh road-node spawn beside the home
                                             -> RoadWalkableArea
                                                -> streets + park + OpenLand
+                                               -> promenades, bridges + lower landings
                                                -> complete BuildableGround regions
                                                -> radius-safe road/ground seams
                                                -> water/unmapped/outside excluded
@@ -545,6 +552,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                            -> CityMap
                                               -> centered sparse blueprint bounds
                                               -> canonical area surfaces and labels
+                                              -> river + three typed bridge styles
                                               -> public-place descriptors + marker legend
                                           -> Home exterior context
                                              -> nearby canonical public places
@@ -603,7 +611,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> symmetric S over outgoing Street
                                -> owns both road edges; cannot bypass a stop edge
                             -> ordinary tight `3 m` rights remain rejected
-                         -> target frontage or one connected edge away
+                         -> Home frontage/one edge; river POI nearest same-district cycle (<=5 edges, <=120 m)
                             -> pole on another roadside cell outside target bounds
                             -> working pole near and outside Last Route Island
                             -> CityBusStopWorldBuilder -> physical blue `01` poles

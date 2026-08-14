@@ -42,8 +42,15 @@ namespace BarPromenade
                  index < roadGroundBoundaries.ProtectedDrops.Count;
                  index++)
             {
+                CityRoadGroundBoundarySpan span =
+                    roadGroundBoundaries.ProtectedDrops[index];
+                if (span.Surface.Kind == CitySurfaceKind.RiverWater)
+                {
+                    continue;
+                }
+
                 AddRoadBoundaryRailSegments(
-                    roadGroundBoundaries.ProtectedDrops[index],
+                    span,
                     rails);
             }
 
@@ -156,6 +163,8 @@ namespace BarPromenade
             if (!byCell.TryGetValue(
                     neighbourCell,
                     out CitySurfaceDescriptor second) ||
+                first.Kind == CitySurfaceKind.RiverWater ||
+                second.Kind == CitySurfaceKind.RiverWater ||
                 layout.HasRoad(
                     RoadEdge.ForCellFrontage(first.Cell, direction)) ||
                 Mathf.Abs(

@@ -31,6 +31,7 @@ namespace BarPromenade
             float roadWidth,
             float minimumBarRouteDistance,
             CityElevationPlan elevationPlan,
+            CityRiverPlan river,
             IList<Vector2Int> nodes,
             IList<RoadEdge> roadEdges,
             IDictionary<RoadEdge, CityPathKind> pathKinds,
@@ -57,6 +58,7 @@ namespace BarPromenade
             MinimumBarRouteDistance = minimumBarRouteDistance;
             ElevationPlan = elevationPlan ??
                 throw new ArgumentNullException(nameof(elevationPlan));
+            River = river ?? throw new ArgumentNullException(nameof(river));
             Nodes = new ReadOnlyCollection<Vector2Int>(
                 new List<Vector2Int>(nodes));
             RoadEdges = new ReadOnlyCollection<RoadEdge>(
@@ -163,6 +165,7 @@ namespace BarPromenade
         public float RoadWidth { get; }
         public float MinimumBarRouteDistance { get; }
         public CityElevationPlan ElevationPlan { get; }
+        public CityRiverPlan River { get; }
         public IReadOnlyList<Vector2Int> Nodes { get; }
         public IReadOnlyList<RoadEdge> RoadEdges { get; }
         public IReadOnlyDictionary<RoadEdge, CityPathKind> PathKinds =>
@@ -273,6 +276,11 @@ namespace BarPromenade
 
         public bool IsWater(Vector3 worldPosition)
         {
+            if (River.IsEnabled && River.ContainsWater(worldPosition))
+            {
+                return true;
+            }
+
             for (int index = 0; index < Surfaces.Count; index++)
             {
                 CitySurfaceDescriptor surface = Surfaces[index];
@@ -282,7 +290,6 @@ namespace BarPromenade
                     return true;
                 }
             }
-
             return false;
         }
 
@@ -313,13 +320,75 @@ namespace BarPromenade
 
             Vector3 first = GetNodeWorldPosition(edge.A);
             Vector3 second = GetNodeWorldPosition(edge.B);
-            float halfWidth = RoadWidth * 0.5f;
+            float halfWidth = GetTravelWidth(edge) * 0.5f;
             return Rect.MinMaxRect(
                 Mathf.Min(first.x, second.x) - halfWidth,
                 Mathf.Min(first.z, second.z) - halfWidth,
                 Mathf.Max(first.x, second.x) + halfWidth,
                 Mathf.Max(first.z, second.z) + halfWidth);
         }
+
+        public float GetTravelWidth(RoadEdge edge)
+        {
+            if (River.TryGetBridge(
+                    edge,
+                    out CityRiverBridgeDescriptor bridge))
+            {
+                return bridge.Definition.DeckWidth;
+            }
+
+            return RoadWidth;
+        }
+
+        public bool TryGetBridge(
+            RoadEdge edge,
+            out CityRiverBridgeDescriptor bridge)
+        {
+            return River.TryGetBridge(edge, out bridge);
+        }
+
+        public bool IsRiverBridgeEdge(RoadEdge edge)
+        {
+            return River.TryGetBridge(edge, out _);
+        }
+
+        public bool IsRoadBridgeEdge(RoadEdge edge)
+        {
+            return River.TryGetBridge(
+                       edge,
+                       out CityRiverBridgeDescriptor bridge) &&
+                   bridge.Definition.CarriesRoadTraffic;
+        }
+
+        public bool IsBusFurnitureExcluded(RoadEdge edge)
+        {
+            if (!River.IsEnabled)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < River.Bridges.Count; index++)
+            {
+                CityBridgeDefinition definition =
+                    River.Bridges[index].Definition;
+                if (!definition.CarriesRoadTraffic)
+                {
+                    continue;
+                }
+                RoadEdge crossing = definition.CrossingEdge;
+                if (edge == crossing ||
+                    edge.Contains(crossing.A) ||
+                    edge.Contains(crossing.B))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool IsRiverPedestrianSpawnExcluded(RoadEdge edge) =>
+            IsBusFurnitureExcluded(edge);
 
         public IReadOnlyList<Rect> CreateRoadRects()
         {
@@ -463,6 +532,8 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The spawn node must belong to one connected road graph.");
             }
+
+            ValidateRiver();
 
             ValidateSurfacesAndOpenAreas();
             CityElevationValidator.ValidateOrThrow(
@@ -893,6 +964,79 @@ namespace BarPromenade
             hasValidated = true;
         }
 
+        private void ValidateRiver()
+        {
+            CityRiverDefinition definition = Blueprint.River;
+            if (definition == null)
+            {
+                if (River.IsEnabled)
+                {
+                    throw new InvalidOperationException(
+                        "A legacy layout cannot contain a river plan.");
+                }
+
+                return;
+            }
+
+            if (!ReferenceEquals(River.Definition, definition) ||
+                River.Bridges.Count != 3 ||
+                River.Landings.Count != 4 ||
+                River.Promenades.Count != 2)
+            {
+                throw new InvalidOperationException(
+                    "The layout river does not match its blueprint contract.");
+            }
+
+            int crossingCount = 0;
+            int roadBridgeCount = 0;
+            int parkBridgeCount = 0;
+            for (int index = 0; index < RoadEdges.Count; index++)
+            {
+                RoadEdge edge = RoadEdges[index];
+                if (!definition.CrossesCorridor(edge))
+                {
+                    continue;
+                }
+
+                crossingCount++;
+                if (!definition.TryGetBridge(
+                        edge,
+                        out CityBridgeDefinition bridge))
+                {
+                    throw new InvalidOperationException(
+                        $"Undeclared river crossing {edge}.");
+                }
+
+                CityPathKind expected =
+                    bridge.Role == CityBridgeRole.ParkFootbridge
+                        ? CityPathKind.ParkPath
+                        : CityPathKind.Street;
+                if (GetPathKind(edge) != expected)
+                {
+                    throw new InvalidOperationException(
+                        $"River crossing {edge} has the wrong mobility.");
+                }
+
+                if (expected == CityPathKind.Street)
+                {
+                    roadBridgeCount++;
+                }
+                else
+                {
+                    parkBridgeCount++;
+                }
+            }
+
+            if (crossingCount != 3 ||
+                roadBridgeCount != 2 ||
+                parkBridgeCount != 1)
+            {
+                throw new InvalidOperationException(
+                    "The river requires exactly two road bridges and one " +
+                    "park footbridge.");
+            }
+        }
+
         private void ValidateSurfacesAndOpenAreas()
         {
             if (!IsFinitePositive(WorldXZBounds) ||
@@ -903,33 +1047,39 @@ namespace BarPromenade
                     "City and map world bounds must be finite and the map " +
                     "must contain the complete active footprint.");
             }
-
-            if (Surfaces.Count != Blueprint.Cells.Count)
+            int riverSurfaceCount = Blueprint.River == null
+                ? 0
+                : Blueprint.River.CoreMaximumZExclusive -
+                  Blueprint.River.CoreMinimumZ;
+            if (Surfaces.Count != Blueprint.Cells.Count + riverSurfaceCount)
             {
                 throw new InvalidOperationException(
-                    "Every mapped blueprint cell requires one surface.");
+                    "Every mapped blueprint cell and river corridor " +
+                    "segment requires one surface.");
             }
-
-            var surfacesByCell =
-                new Dictionary<Vector2Int, CitySurfaceDescriptor>();
+            var surfacesByCell = new Dictionary<
+                Vector2Int, CitySurfaceDescriptor>();
             var waterSurfaces = new List<CitySurfaceDescriptor>();
             var walkableSurfaces = new List<CitySurfaceDescriptor>();
             for (int index = 0; index < Surfaces.Count; index++)
             {
                 CitySurfaceDescriptor surface = Surfaces[index];
+                bool mappedCell = Blueprint.TryGetCell(
+                    surface.Cell,
+                    out CityBlueprintCell blueprintCell);
+                bool matchesSurfaceContract = mappedCell
+                    ? string.Equals(
+                          surface.AreaId,
+                          blueprintCell.Area.Id,
+                          StringComparison.Ordinal) &&
+                      surface.Feature == blueprintCell.Area.Feature &&
+                      surface.IsWater == blueprintCell.IsWater &&
+                      surface.IsWalkable ==
+                          blueprintCell.IsWalkableOpenLand
+                    : IsValidRiverSurface(surface);
                 if (!surfacesByCell.TryAdd(surface.Cell, surface) ||
                     !IsFinitePositive(surface.WorldBounds) ||
-                    !Blueprint.TryGetCell(
-                        surface.Cell,
-                        out CityBlueprintCell blueprintCell) ||
-                    !string.Equals(
-                        surface.AreaId,
-                        blueprintCell.Area.Id,
-                        StringComparison.Ordinal) ||
-                    surface.Feature != blueprintCell.Area.Feature ||
-                    surface.IsWater != blueprintCell.IsWater ||
-                    surface.IsWalkable !=
-                    blueprintCell.IsWalkableOpenLand)
+                    !matchesSurfaceContract)
                 {
                     throw new InvalidOperationException(
                         $"Surface for cell {surface.Cell} does not match " +
@@ -1038,6 +1188,32 @@ namespace BarPromenade
             }
         }
 
+        private bool IsValidRiverSurface(CitySurfaceDescriptor surface)
+        {
+            CityRiverDefinition definition = Blueprint.River;
+            if (definition == null ||
+                surface.Kind != CitySurfaceKind.RiverWater ||
+                surface.IsWalkable ||
+                !string.Equals(surface.AreaId, definition.Id, StringComparison.Ordinal) ||
+                surface.Cell.x != definition.CorridorCellX ||
+                surface.Cell.y < definition.CoreMinimumZ ||
+                surface.Cell.y >= definition.CoreMaximumZExclusive)
+            {
+                return false;
+            }
+            for (int index = 0; index < River.Segments.Count; index++)
+            {
+                CityRiverSegmentDescriptor segment = River.Segments[index];
+                if (segment.Cell != surface.Cell)
+                {
+                    continue;
+                }
+                return surface.WorldBounds.Equals(segment.WaterBounds) &&
+                       Mathf.Abs(surface.DatumY - segment.AverageWaterY) <= 0.001f;
+            }
+
+            return false;
+        }
         private void ValidatePrimaryLandmarkCells(
             IReadOnlyDictionary<Vector2Int, BuildingLot> lotsByCell)
         {

@@ -158,6 +158,11 @@ namespace BarPromenade
                 CityElevationRebaser.RebaseOpenAreaAccesses(
                     elevationPlan,
                     openAreaAccesses);
+            CityRiverPlan riverPlan = CityRiverPlanner.Create(
+                blueprint,
+                snapshot,
+                origin,
+                elevationPlan);
             List<CityDistrictDescriptor> districts =
                 CreateDistricts(snapshot, lots);
             Vector2Int spawnNode =
@@ -172,6 +177,7 @@ namespace BarPromenade
                 snapshot.RoadWidth,
                 snapshot.MinimumBarRouteDistance,
                 elevationPlan,
+                riverPlan,
                 nodes,
                 roads,
                 pathKinds,
@@ -296,6 +302,20 @@ namespace BarPromenade
                 }
             }
 
+            CityRiverDefinition river = settings.Blueprint?.River;
+            if (river != null)
+            {
+                var unique = new HashSet<RoadEdge>(edges);
+                for (int index = 0; index < river.Bridges.Count; index++)
+                {
+                    RoadEdge crossing = river.Bridges[index].CrossingEdge;
+                    if (unique.Add(crossing))
+                    {
+                        edges.Add(crossing);
+                    }
+                }
+            }
+
             return edges;
         }
 
@@ -403,8 +423,41 @@ namespace BarPromenade
                         new Vector2Int(centerX, z + 1)));
             }
 
-            Vector2Int parkCount = settings.EffectiveParkBlockCount;
-            if (parkCount == Vector2Int.zero)
+            CityRiverDefinition river = settings.Blueprint?.River;
+            if (river != null)
+            {
+                for (int index = 0; index < river.Bridges.Count; index++)
+                {
+                    AddRequiredEdge(
+                        required,
+                        unique,
+                        available,
+                        river.Bridges[index].CrossingEdge);
+                }
+
+                for (int z = river.CoreMinimumZ;
+                     z < river.CoreMaximumZExclusive;
+                     z++)
+                {
+                    AddRequiredEdge(
+                        required,
+                        unique,
+                        available,
+                        new RoadEdge(
+                            new Vector2Int(river.CorridorCellX, z),
+                            new Vector2Int(river.CorridorCellX, z + 1)));
+                    AddRequiredEdge(
+                        required,
+                        unique,
+                        available,
+                        new RoadEdge(
+                            new Vector2Int(river.CorridorCellX + 1, z),
+                            new Vector2Int(river.CorridorCellX + 1, z + 1)));
+                }
+            }
+
+            CityAreaPlacement park = settings.Blueprint?.CentralPark;
+            if (park == null)
             {
                 AddRequiredOpenAreaAccessEdges(
                     settings,
@@ -414,42 +467,29 @@ namespace BarPromenade
                 return required;
             }
 
-            Vector2Int minimum = settings.ParkCellMinimum;
-            Vector2Int maximum = minimum + parkCount;
-            for (int x = minimum.x; x < maximum.x; x++)
+            var parkCells = new HashSet<Vector2Int>(park.Cells);
+            for (int cellIndex = 0;
+                 cellIndex < park.Cells.Count;
+                 cellIndex++)
             {
-                AddRequiredEdge(
-                    required,
-                    unique,
-                    available,
-                    new RoadEdge(
-                        new Vector2Int(x, minimum.y),
-                        new Vector2Int(x + 1, minimum.y)));
-                AddRequiredEdge(
-                    required,
-                    unique,
-                    available,
-                    new RoadEdge(
-                        new Vector2Int(x, maximum.y),
-                        new Vector2Int(x + 1, maximum.y)));
-            }
+                Vector2Int cell = park.Cells[cellIndex];
+                for (int directionIndex = 0;
+                     directionIndex < CardinalDirections.Length;
+                     directionIndex++)
+                {
+                    Vector2Int direction =
+                        CardinalDirections[directionIndex];
+                    if (parkCells.Contains(cell + direction))
+                    {
+                        continue;
+                    }
 
-            for (int z = minimum.y; z < maximum.y; z++)
-            {
-                AddRequiredEdge(
-                    required,
-                    unique,
-                    available,
-                    new RoadEdge(
-                        new Vector2Int(minimum.x, z),
-                        new Vector2Int(minimum.x, z + 1)));
-                AddRequiredEdge(
-                    required,
-                    unique,
-                    available,
-                    new RoadEdge(
-                        new Vector2Int(maximum.x, z),
-                        new Vector2Int(maximum.x, z + 1)));
+                    AddRequiredEdge(
+                        required,
+                        unique,
+                        available,
+                        RoadEdge.ForCellFrontage(cell, direction));
+                }
             }
 
             AddRequiredOpenAreaAccessEdges(
@@ -686,6 +726,19 @@ namespace BarPromenade
             for (int index = 0; index < roads.Count; index++)
             {
                 RoadEdge edge = roads[index];
+                if (settings.Blueprint?.River != null &&
+                    settings.Blueprint.River.TryGetBridge(
+                        edge,
+                        out CityBridgeDefinition bridge))
+                {
+                    result.Add(
+                        edge,
+                        bridge.Role == CityBridgeRole.ParkFootbridge
+                            ? CityPathKind.ParkPath
+                            : CityPathKind.Street);
+                    continue;
+                }
+
                 result.Add(
                     edge,
                     IsInteriorParkEdge(settings, edge)
@@ -744,12 +797,31 @@ namespace BarPromenade
                         continue;
                     }
 
-                    frontages[lotIndex] = ChooseFrontage(
+                    Vector2Int frontage = ChooseFrontage(
                         cell,
                         seed,
                         roadSet,
                         pathKinds);
-                    if (frontages[lotIndex] != Vector2Int.zero)
+                    if (TryGetCanonicalRiverHomePair(
+                            settings,
+                            seed,
+                            out Vector2Int canonicalBar,
+                            out _,
+                            out Vector2Int barFrontage) &&
+                        cell == canonicalBar)
+                    {
+                        RoadEdge authoredFrontage =
+                            RoadEdge.ForCellFrontage(cell, barFrontage);
+                        if (roadSet.Contains(authoredFrontage) &&
+                            pathKinds[authoredFrontage] ==
+                            CityPathKind.Street)
+                        {
+                            frontage = barFrontage;
+                        }
+                    }
+
+                    frontages[lotIndex] = frontage;
+                    if (frontage != Vector2Int.zero)
                     {
                         barCandidates.Add(CreateBarCandidate(
                             settings,
@@ -757,7 +829,7 @@ namespace BarPromenade
                             origin,
                             lotIndex,
                             cell,
-                            frontages[lotIndex]));
+                            frontage));
                     }
                 }
             }
@@ -770,6 +842,7 @@ namespace BarPromenade
 
             HashSet<int> barLots = SelectBarLots(
                 settings,
+                seed,
                 origin,
                 nodes,
                 roads,
@@ -1012,6 +1085,33 @@ namespace BarPromenade
                 return -1;
             }
 
+            if (TryGetCanonicalRiverHomePair(
+                    settings,
+                    seed,
+                    out Vector2Int canonicalBar,
+                    out Vector2Int canonicalHome,
+                    out Vector2Int barFrontage))
+            {
+                int barLotIndex = ToLotIndex(
+                    canonicalBar.x,
+                    canonicalBar.y,
+                    settings.BlocksX);
+                RoadEdge sharedRoad = RoadEdge.ForCellFrontage(
+                    canonicalBar,
+                    barFrontage);
+                if (barLots.Contains(barLotIndex) &&
+                    settings.CreatesLot(canonicalHome) &&
+                    roadSet.Contains(sharedRoad) &&
+                    pathKinds[sharedRoad] == CityPathKind.Street)
+                {
+                    homeFrontage = -barFrontage;
+                    return ToLotIndex(
+                        canonicalHome.x,
+                        canonicalHome.y,
+                        settings.BlocksX);
+                }
+            }
+
             bool found = false;
             int bestLotIndex = -1;
             int bestDistrictPenalty = int.MaxValue;
@@ -1190,6 +1290,26 @@ namespace BarPromenade
             return bestLotIndex;
         }
 
+        private static bool TryGetCanonicalRiverHomePair(
+            CityGenerationSettings settings,
+            int seed,
+            out Vector2Int barCell,
+            out Vector2Int homeCell,
+            out Vector2Int barFrontage)
+        {
+            barCell = new Vector2Int(12, 6);
+            homeCell = new Vector2Int(12, 5);
+            barFrontage = Vector2Int.down;
+            return seed == GameSessionState.DefaultCitySeed &&
+                   settings.Blueprint?.River != null &&
+                   string.Equals(
+                       settings.Blueprint.Id,
+                       CityBlueprintCatalog.DefaultBlueprintId,
+                       StringComparison.Ordinal) &&
+                   settings.CreatesLot(barCell) &&
+                   settings.CreatesLot(homeCell);
+        }
+
         private static BarCandidate CreateBarCandidate(
             CityGenerationSettings settings,
             int seed,
@@ -1217,6 +1337,7 @@ namespace BarPromenade
 
         private static HashSet<int> SelectBarLots(
             CityGenerationSettings settings,
+            int seed,
             Vector3 origin,
             IReadOnlyList<Vector2Int> nodes,
             IReadOnlyList<RoadEdge> roads,
@@ -1233,6 +1354,24 @@ namespace BarPromenade
                 settings,
                 origin,
                 centerNode);
+            bool hasAuthoredBar = TryGetCanonicalRiverHomePair(
+                settings,
+                seed,
+                out Vector2Int canonicalBar,
+                out _,
+                out _);
+            string canonicalArea = null;
+            if (hasAuthoredBar)
+            {
+                for (int index = 0; index < candidates.Count; index++)
+                {
+                    if (candidates[index].Cell == canonicalBar)
+                    {
+                        canonicalArea = candidates[index].AreaId;
+                        break;
+                    }
+                }
+            }
 
             for (int ordinal = 0;
                  ordinal < settings.BarCount;
@@ -1256,6 +1395,16 @@ namespace BarPromenade
                              candidate.AreaId,
                              requiredArea,
                              StringComparison.Ordinal)))
+                    {
+                        continue;
+                    }
+
+                    if (canonicalArea != null &&
+                        string.Equals(
+                            requiredArea,
+                            canonicalArea,
+                            StringComparison.Ordinal) &&
+                        candidate.Cell != canonicalBar)
                     {
                         continue;
                     }
@@ -1818,6 +1967,11 @@ namespace BarPromenade
             int seed,
             Vector3 origin)
         {
+            if (settings.Blueprint?.River != null)
+            {
+                return CreateRiverParkPlan(settings, seed, origin);
+            }
+
             Vector2Int count = settings.EffectiveParkBlockCount;
             if (count == Vector2Int.zero)
             {
@@ -1902,6 +2056,172 @@ namespace BarPromenade
                 gates,
                 trees,
                 benches);
+        }
+
+        private static CityParkPlan CreateRiverParkPlan(
+            CityGenerationSettings settings,
+            int seed,
+            Vector3 origin)
+        {
+            CityAreaPlacement park = settings.Blueprint.CentralPark;
+            CityRiverDefinition river = settings.Blueprint.River;
+            var westCells = new List<Vector2Int>();
+            var eastCells = new List<Vector2Int>();
+            for (int index = 0; index < park.Cells.Count; index++)
+            {
+                Vector2Int cell = park.Cells[index];
+                (cell.x < river.CorridorCellX
+                    ? westCells
+                    : eastCells).Add(cell);
+            }
+
+            CityParkRegionPlan west = CreateParkRegion(
+                "central-park-west",
+                westCells,
+                settings,
+                origin);
+            CityParkRegionPlan east = CreateParkRegion(
+                "central-park-east",
+                eastCells,
+                settings,
+                origin);
+            var regions = new[] { west, east };
+            Rect aggregate = Rect.MinMaxRect(
+                Mathf.Min(
+                    west.WalkableBounds.xMin,
+                    east.WalkableBounds.xMin),
+                Mathf.Min(
+                    west.WalkableBounds.yMin,
+                    east.WalkableBounds.yMin),
+                Mathf.Max(
+                    west.WalkableBounds.xMax,
+                    east.WalkableBounds.xMax),
+                Mathf.Max(
+                    west.WalkableBounds.yMax,
+                    east.WalkableBounds.yMax));
+            float bridgeX = origin.x +
+                            (river.CorridorCellX + 0.5f) *
+                            settings.NodeSpacing.x;
+            var center = new Vector3(
+                bridgeX,
+                0f,
+                aggregate.center.y);
+            var gates = new List<CityParkGateDescriptor>();
+            gates.AddRange(west.Gates);
+            gates.AddRange(east.Gates);
+            var trees = new List<Vector3>();
+            trees.AddRange(CreateParkTreePositions(
+                seed,
+                west.WalkableBounds,
+                west.PlazaPosition));
+            trees.AddRange(CreateParkTreePositions(
+                seed ^ 0x51A7,
+                east.WalkableBounds,
+                east.PlazaPosition));
+            var benches = new List<Vector3>();
+            AddRiverParkBenches(benches, west, true);
+            AddRiverParkBenches(benches, east, false);
+            return new CityParkPlan(
+                new List<Vector2Int>(park.Cells),
+                aggregate,
+                center,
+                gates,
+                trees,
+                benches,
+                regions);
+        }
+
+        private static CityParkRegionPlan CreateParkRegion(
+            string id,
+            IList<Vector2Int> cells,
+            CityGenerationSettings settings,
+            Vector3 origin)
+        {
+            int minimumX = int.MaxValue;
+            int minimumZ = int.MaxValue;
+            int maximumX = int.MinValue;
+            int maximumZ = int.MinValue;
+            for (int index = 0; index < cells.Count; index++)
+            {
+                minimumX = Mathf.Min(minimumX, cells[index].x);
+                minimumZ = Mathf.Min(minimumZ, cells[index].y);
+                maximumX = Mathf.Max(maximumX, cells[index].x + 1);
+                maximumZ = Mathf.Max(maximumZ, cells[index].y + 1);
+            }
+
+            Vector3 worldMinimum = GetNodeWorldPosition(
+                settings,
+                origin,
+                new Vector2Int(minimumX, minimumZ));
+            Vector3 worldMaximum = GetNodeWorldPosition(
+                settings,
+                origin,
+                new Vector2Int(maximumX, maximumZ));
+            float inset = settings.RoadWidth * 0.5f + 1.2f;
+            Rect bounds = Rect.MinMaxRect(
+                worldMinimum.x + inset,
+                worldMinimum.z + inset,
+                worldMaximum.x - inset,
+                worldMaximum.z - inset);
+            Vector3 center = new Vector3(
+                bounds.center.x,
+                0f,
+                bounds.center.y);
+            bool west = id.EndsWith("west", StringComparison.Ordinal);
+            Vector3 plaza = center + new Vector3(
+                west ? bounds.width * 0.24f : -bounds.width * 0.24f,
+                0f,
+                0f);
+            float halfRoad = settings.RoadWidth * 0.5f;
+            float gateWidth = settings.RoadWidth + 0.8f;
+            var gates = new[]
+            {
+                new CityParkGateDescriptor(
+                    $"{id}-gate-south",
+                    new Vector3(center.x, 0f, worldMinimum.z + halfRoad),
+                    Vector3.forward,
+                    gateWidth),
+                new CityParkGateDescriptor(
+                    $"{id}-gate-east",
+                    new Vector3(worldMaximum.x - halfRoad, 0f, center.z),
+                    Vector3.left,
+                    gateWidth),
+                new CityParkGateDescriptor(
+                    $"{id}-gate-north",
+                    new Vector3(center.x, 0f, worldMaximum.z - halfRoad),
+                    Vector3.back,
+                    gateWidth),
+                new CityParkGateDescriptor(
+                    $"{id}-gate-west",
+                    new Vector3(worldMinimum.x + halfRoad, 0f, center.z),
+                    Vector3.right,
+                    gateWidth)
+            };
+            return new CityParkRegionPlan(
+                id,
+                cells,
+                bounds,
+                center,
+                gates,
+                plaza);
+        }
+
+        private static void AddRiverParkBenches(
+            ICollection<Vector3> target,
+            CityParkRegionPlan region,
+            bool west)
+        {
+            float inward = west ? 1f : -1f;
+            target.Add(region.PlazaPosition + new Vector3(
+                -inward * 5.5f,
+                0f,
+                -7f));
+            target.Add(region.PlazaPosition + new Vector3(
+                -inward * 5.5f,
+                0f,
+                7f));
+            target.Add(region.Center + new Vector3(0f, 0f, -15f));
+            target.Add(region.Center + new Vector3(0f, 0f, 15f));
         }
 
         private static List<Vector3> CreateParkTreePositions(

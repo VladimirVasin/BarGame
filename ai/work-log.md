@@ -6,6 +6,33 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-14 — North-south river and three bridge hierarchy
+
+- Expanded the default urban envelope from `12 x 12` to `13 x 12` while
+  preserving all 144 land-use cells: the new central column is a declared
+  north-south river corridor and the eastern city shifts one cell outward.
+  `CityRiverDefinition`/`CityRiverPlan` own the `10 m` channel, two `3 m`
+  promenades, three typed crossings and elevation-aware geometry descriptors.
+- Added two distinct Road v2 bridges at the Works and Mouth edges plus one
+  `2.8 m` timber ParkPath footbridge. Central Park remains 16 cells as two
+  `2 x 4` regions connected by that footbridge. Route 01 uses both road
+  bridges exactly once and never the timber bridge; bus furniture and ambient
+  pedestrian spawns stay clear of the reserved crossings. Home keeps its
+  frontage-adjacent stop; river-layout POIs use a same-district cyclic Street
+  bounded to five grid edges and `120 m` from their public access.
+- Built animated night/rain-responsive water, physical upper promenades,
+  retaining edges, bridge decks and parapets. Each road bridge has one
+  physical stair flight and lower platform on each bank, for four waterside
+  landings total. River-proximity audio was not added in this pass.
+- Extended the player and pedestrian walkable plans through the embankments
+  and declared bridge graph. Updated the City map to draw the river and both
+  promenades below roads, then overlay distinct Works, Mouth and planked timber
+  bridge styles from the same layout metadata.
+- Focused EditMode verification passed all `11/11` tests in the `CityRiver`
+  category, covering topology, grades, walkability, physical river geometry,
+  pedestrians, Route 01 and the map. Broad EditMode/PlayMode suites and a
+  player build were intentionally not run in fast mode.
+
 ## 2026-08-14 — Bar-visited mechanic removed entirely
 
 - Cut the visit tracking from `GameSessionState`: the `visitedBars` set,

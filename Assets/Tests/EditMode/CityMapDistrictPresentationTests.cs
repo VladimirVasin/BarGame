@@ -378,6 +378,52 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("CityRiver")]
+        public void RiverBridges_KeepThreeDistinctMapStyles()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                58021);
+            var colors = new HashSet<Color>();
+            int roadBridgeCount = 0;
+            int footbridgeCount = 0;
+
+            for (int index = 0;
+                 index < layout.River.Bridges.Count;
+                 index++)
+            {
+                CityBridgeDefinition bridge =
+                    layout.River.Bridges[index].Definition;
+                Color color = InvokePrivate<Color>(
+                    "GetRiverBridgeMapColor",
+                    bridge.Style);
+                float width = InvokePrivate<float>(
+                    "GetRiverBridgeMapWidth",
+                    bridge,
+                    6f);
+
+                Assert.That(colors.Add(color), Is.True, bridge.Id);
+                Assert.That(color.a, Is.EqualTo(1f).Within(0.001f));
+                if (bridge.Role == CityBridgeRole.Road)
+                {
+                    roadBridgeCount++;
+                    Assert.That(width, Is.EqualTo(6f));
+                }
+                else
+                {
+                    footbridgeCount++;
+                    Assert.That(width, Is.LessThan(6f));
+                    Assert.That(width, Is.GreaterThanOrEqualTo(2f));
+                }
+            }
+
+            Assert.That(roadBridgeCount, Is.EqualTo(2));
+            Assert.That(footbridgeCount, Is.EqualTo(1));
+            Assert.That(colors.Count, Is.EqualTo(3));
+        }
+
+        [Test]
         public void BusRoute_UsesExactOpaqueBlueDistinctFromOtherLines()
         {
             Color bus = CityMapView.BusRouteColor;

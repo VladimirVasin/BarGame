@@ -72,6 +72,9 @@ namespace BarPromenade
                 world,
                 layout);
             BuildRoads(world, layout);
+            GameObject riverRoot = CityRiverWorldBuilder.Build(
+                world,
+                layout);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
             GameObject parkRoot = BuildPark(world, layout);
@@ -121,6 +124,7 @@ namespace BarPromenade
                 openAreaDecorationRoot,
                 decorationPlan,
                 decorationRoot,
+                riverRoot,
                 bounds);
         }
 
@@ -183,6 +187,8 @@ namespace BarPromenade
                             break;
                         case CitySurfaceKind.Water:
                             water.Add(bounds);
+                            break;
+                        case CitySurfaceKind.RiverWater:
                             break;
                         default:
                             buildable.Add(bounds);
@@ -272,6 +278,32 @@ namespace BarPromenade
                 }
 
                 patches = next;
+            }
+
+            if (surface.Kind != CitySurfaceKind.RiverWater &&
+                layout.River.IsEnabled)
+            {
+                for (int segmentIndex = 0;
+                     segmentIndex < layout.River.Segments.Count;
+                     segmentIndex++)
+                {
+                    Rect river =
+                        layout.River.Segments[segmentIndex].WaterBounds;
+                    if (!surface.WorldBounds.Overlaps(river))
+                    {
+                        continue;
+                    }
+
+                    var next = new List<Rect>();
+                    for (int patchIndex = 0;
+                         patchIndex < patches.Count;
+                         patchIndex++)
+                    {
+                        SubtractRectangle(patches[patchIndex], river, next);
+                    }
+
+                    patches = next;
+                }
             }
 
             return patches;
@@ -493,17 +525,23 @@ namespace BarPromenade
                 lawnPatches,
                 ParkGrass,
                 true);
-            GameObject plaza = RuntimePrimitiveFactory.CreateCylinder(
-                "Park Central Plaza",
-                park,
-                plan.Center + (Vector3.up * 0.065f),
-                new Vector3(8.5f, 0.035f, 8.5f),
-                ParkPlaza,
-                false);
-            MeshCollider plazaCollider =
-                plaza.AddComponent<MeshCollider>();
-            plazaCollider.sharedMesh =
-                plaza.GetComponent<MeshFilter>().sharedMesh;
+            for (int regionIndex = 0;
+                 regionIndex < plan.Regions.Count;
+                 regionIndex++)
+            {
+                CityParkRegionPlan region = plan.Regions[regionIndex];
+                GameObject plaza = RuntimePrimitiveFactory.CreateCylinder(
+                    $"Park Plaza {regionIndex + 1}",
+                    park,
+                    region.PlazaPosition + (Vector3.up * 0.065f),
+                    new Vector3(8.5f, 0.035f, 8.5f),
+                    ParkPlaza,
+                    false);
+                MeshCollider plazaCollider =
+                    plaza.AddComponent<MeshCollider>();
+                plazaCollider.sharedMesh =
+                    plaza.GetComponent<MeshFilter>().sharedMesh;
+            }
 
             var trunks = new List<Bounds>(plan.TreePositions.Count);
             var canopies = new List<Bounds>(plan.TreePositions.Count);
@@ -581,44 +619,49 @@ namespace BarPromenade
             Transform parent,
             CityParkPlan plan)
         {
-            Rect bounds = plan.WalkableBounds;
-            float gateWidth = plan.Gates.Count > 0
-                ? plan.Gates[0].Width
-                : 6f;
-            float halfGate = gateWidth * 0.5f;
-            var hedges = new List<Bounds>(8);
-            AddHorizontalBoundaryParts(
-                hedges,
-                bounds.xMin,
-                bounds.xMax,
-                bounds.center.x,
-                bounds.yMin,
-                halfGate,
-                plan.Center.y);
-            AddHorizontalBoundaryParts(
-                hedges,
-                bounds.xMin,
-                bounds.xMax,
-                bounds.center.x,
-                bounds.yMax,
-                halfGate,
-                plan.Center.y);
-            AddVerticalBoundaryParts(
-                hedges,
-                bounds.yMin,
-                bounds.yMax,
-                bounds.center.y,
-                bounds.xMin,
-                halfGate,
-                plan.Center.y);
-            AddVerticalBoundaryParts(
-                hedges,
-                bounds.yMin,
-                bounds.yMax,
-                bounds.center.y,
-                bounds.xMax,
-                halfGate,
-                plan.Center.y);
+            var hedges = new List<Bounds>(plan.Regions.Count * 8);
+            for (int index = 0; index < plan.Regions.Count; index++)
+            {
+                CityParkRegionPlan region = plan.Regions[index];
+                Rect bounds = region.WalkableBounds;
+                float gateWidth = region.Gates.Count > 0
+                    ? region.Gates[0].Width
+                    : 6f;
+                float halfGate = gateWidth * 0.5f;
+                AddHorizontalBoundaryParts(
+                    hedges,
+                    bounds.xMin,
+                    bounds.xMax,
+                    bounds.center.x,
+                    bounds.yMin,
+                    halfGate,
+                    region.Center.y);
+                AddHorizontalBoundaryParts(
+                    hedges,
+                    bounds.xMin,
+                    bounds.xMax,
+                    bounds.center.x,
+                    bounds.yMax,
+                    halfGate,
+                    region.Center.y);
+                AddVerticalBoundaryParts(
+                    hedges,
+                    bounds.yMin,
+                    bounds.yMax,
+                    bounds.center.y,
+                    bounds.xMin,
+                    halfGate,
+                    region.Center.y);
+                AddVerticalBoundaryParts(
+                    hedges,
+                    bounds.yMin,
+                    bounds.yMax,
+                    bounds.center.y,
+                    bounds.xMax,
+                    halfGate,
+                    region.Center.y);
+            }
+
             BuildCombinedBoxesIfAny(
                 "Park Boundary Hedges",
                 parent,

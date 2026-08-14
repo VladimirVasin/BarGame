@@ -133,16 +133,18 @@ namespace BarPromenade.Tests
             Assert.That(
                 layout.Park.Cells,
                 Is.EquivalentTo(blueprint.CentralPark.Cells));
+            Vector3 westCenterNode = layout.GetGridWorldPosition(
+                blueprint.CenterNode);
+            Vector3 eastCenterNode = layout.GetGridWorldPosition(
+                blueprint.CenterNode + Vector2Int.right);
             Assert.That(
                 Vector2.Distance(
                     new Vector2(
                         layout.Park.Center.x,
                         layout.Park.Center.z),
                     new Vector2(
-                        layout.GetGridWorldPosition(
-                            blueprint.CenterNode).x,
-                        layout.GetGridWorldPosition(
-                            blueprint.CenterNode).z)),
+                        (westCenterNode.x + eastCenterNode.x) * 0.5f,
+                        westCenterNode.z)),
                 Is.LessThan(0.001f));
 
             Assert.That(
@@ -321,7 +323,9 @@ namespace BarPromenade.Tests
                 Is.True);
             Assert.That(yard.Cells, Has.Count.EqualTo(24));
             var expectedCells = new List<Vector2Int>();
-            for (int x = settings.BlocksX; x < settings.BlocksX + 4; x++)
+            for (int x = settings.BlocksX + 1;
+                 x < settings.BlocksX + 5;
+                 x++)
             {
                 for (int z = 2; z < 8; z++)
                 {
@@ -338,8 +342,8 @@ namespace BarPromenade.Tests
             Assert.That(
                 yard.Cells.All(cell => !blueprint.CreatesLot(cell)),
                 Is.True);
-            // 198 pre-yard cells + 24 east + 12 south + 12 west.
-            Assert.That(blueprint.Cells, Has.Count.EqualTo(246));
+            // 200 pre-yard cells + 24 east + 12 south + 12 west.
+            Assert.That(blueprint.Cells, Has.Count.EqualTo(248));
             Assert.That(
                 yard.Definition.Feature,
                 Is.EqualTo(CityAreaFeatureKind.Yard));
@@ -564,9 +568,8 @@ namespace BarPromenade.Tests
         [Test]
         public void DefaultSeed_KeepsCanonicalHomePlacement()
         {
-            // Canary against random-stream drift: the yard plumbing must
-            // not move the canonical home, its partner bar or the public
-            // places. These constants match the pre-yard default city.
+            // Canary against random-stream drift: the river shift must keep
+            // the canonical home beside its partner bar and public places.
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
@@ -574,13 +577,13 @@ namespace BarPromenade.Tests
 
             BuildingLot home = layout.BuildingLots.Single(
                 lot => lot.IsPlayerHome);
-            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(11, 5)));
-            Assert.That(home.Center.x, Is.EqualTo(143f).Within(0.001f));
+            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(home.Center.x, Is.EqualTo(169f).Within(0.001f));
             Assert.That(home.Center.z, Is.EqualTo(-13f).Within(0.001f));
             Assert.That(
                 layout.BuildingLots.Any(lot =>
                     lot.IsBar &&
-                    lot.Cell == new Vector2Int(11, 6)),
+                    lot.Cell == new Vector2Int(12, 6)),
                 Is.True);
             Assert.That(
                 layout.DistrictPointsOfInterest,

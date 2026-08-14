@@ -126,6 +126,36 @@ namespace BarPromenade
             IList<CityParkGateDescriptor> gates,
             IList<Vector3> treePositions,
             IList<Vector3> benchPositions)
+            : this(
+                cells,
+                walkableBounds,
+                center,
+                gates,
+                treePositions,
+                benchPositions,
+                cells != null && cells.Count > 0
+                    ? new[]
+                    {
+                        new CityParkRegionPlan(
+                            "central-park",
+                            cells,
+                            walkableBounds,
+                            center,
+                            gates,
+                            center)
+                    }
+                    : Array.Empty<CityParkRegionPlan>())
+        {
+        }
+
+        internal CityParkPlan(
+            IList<Vector2Int> cells,
+            Rect walkableBounds,
+            Vector3 center,
+            IList<CityParkGateDescriptor> gates,
+            IList<Vector3> treePositions,
+            IList<Vector3> benchPositions,
+            IList<CityParkRegionPlan> regions)
         {
             Cells = new ReadOnlyCollection<Vector2Int>(
                 new List<Vector2Int>(
@@ -143,6 +173,9 @@ namespace BarPromenade
                 new List<Vector3>(
                     benchPositions ??
                     throw new ArgumentNullException(nameof(benchPositions))));
+            Regions = new ReadOnlyCollection<CityParkRegionPlan>(
+                new List<CityParkRegionPlan>(
+                    regions ?? throw new ArgumentNullException(nameof(regions))));
             cellSet = new HashSet<Vector2Int>(Cells);
         }
 
@@ -152,7 +185,53 @@ namespace BarPromenade
         public IReadOnlyList<CityParkGateDescriptor> Gates { get; }
         public IReadOnlyList<Vector3> TreePositions { get; }
         public IReadOnlyList<Vector3> BenchPositions { get; }
+        public IReadOnlyList<CityParkRegionPlan> Regions { get; }
         public bool IsEnabled => Cells.Count > 0;
+
+        public bool ContainsCell(Vector2Int cell)
+        {
+            return cellSet.Contains(cell);
+        }
+    }
+
+    public sealed class CityParkRegionPlan
+    {
+        private readonly HashSet<Vector2Int> cellSet;
+
+        internal CityParkRegionPlan(
+            string id,
+            IList<Vector2Int> cells,
+            Rect walkableBounds,
+            Vector3 center,
+            IList<CityParkGateDescriptor> gates,
+            Vector3 plazaPosition)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException(
+                    "A park region requires a stable ID.",
+                    nameof(id));
+            }
+
+            Id = id.Trim();
+            Cells = new ReadOnlyCollection<Vector2Int>(
+                new List<Vector2Int>(
+                    cells ?? throw new ArgumentNullException(nameof(cells))));
+            WalkableBounds = walkableBounds;
+            Center = center;
+            Gates = new ReadOnlyCollection<CityParkGateDescriptor>(
+                new List<CityParkGateDescriptor>(
+                    gates ?? throw new ArgumentNullException(nameof(gates))));
+            PlazaPosition = plazaPosition;
+            cellSet = new HashSet<Vector2Int>(Cells);
+        }
+
+        public string Id { get; }
+        public IReadOnlyList<Vector2Int> Cells { get; }
+        public Rect WalkableBounds { get; }
+        public Vector3 Center { get; }
+        public IReadOnlyList<CityParkGateDescriptor> Gates { get; }
+        public Vector3 PlazaPosition { get; }
 
         public bool ContainsCell(Vector2Int cell)
         {

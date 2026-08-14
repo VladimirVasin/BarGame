@@ -48,8 +48,8 @@ namespace BarPromenade
                 ValidateFinite(elevation, "cell elevation");
                 if (cell.IsWater)
                 {
-                    float expected =
-                        cell.Area.Feature == CityAreaFeatureKind.Lake
+                    float expected = cell.Area.Feature ==
+                                     CityAreaFeatureKind.Lake
                             ? (plan.IsElevated ? 1f : 0f)
                             : 0f;
                     if (Mathf.Abs(elevation - expected) > Tolerance)
@@ -59,6 +59,8 @@ namespace BarPromenade
                     }
                 }
             }
+
+            ValidateRiverValley(plan, blueprint.River);
 
             for (int index = 0; index < roads.Count; index++)
             {
@@ -129,6 +131,44 @@ namespace BarPromenade
             if (plan.IsElevated)
             {
                 ValidateRequiredDistrictStairs(plan, stairDistricts);
+            }
+        }
+
+        private static void ValidateRiverValley(
+            CityElevationPlan plan,
+            CityRiverDefinition river)
+        {
+            if (river == null)
+            {
+                return;
+            }
+
+            float previousWater = float.PositiveInfinity;
+            for (int z = river.CoreMinimumZ;
+                 z <= river.CoreMaximumZExclusive;
+                 z++)
+            {
+                float water = CityRiverPlanner.ResolveWaterY(river, z);
+                if (water > previousWater + Tolerance)
+                {
+                    throw new InvalidOperationException(
+                        "River water must descend monotonically towards " +
+                        "the northern sea.");
+                }
+
+                var westBank = new Vector2Int(river.CorridorCellX, z);
+                var eastBank = new Vector2Int(river.CorridorCellX + 1, z);
+                if (!plan.TryGetNodeElevation(westBank, out float westY) ||
+                    !plan.TryGetNodeElevation(eastBank, out float eastY) ||
+                    Mathf.Abs(westY - eastY) > Tolerance ||
+                    westY <= water + Tolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"River banks at row {z} require a shared safe " +
+                        "promenade datum above the water.");
+                }
+
+                previousWater = water;
             }
         }
 

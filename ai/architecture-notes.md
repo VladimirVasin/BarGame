@@ -28,14 +28,29 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   legacy-system archetype, not canonical area identity. The session persists
   one blueprint ID and seed shared by City and Home.
 - **Accepted — Anchored coastal sparse city:** The default blueprint keeps a
-  connected `12 x 12` road-and-lot core with four urban areas and a fixed
-  central `4 x 4` park, then adds a full-width walkable northern beach and a
-  continuous non-walkable water row. The playable default also extends east
+  connected `13 x 12` urban envelope with four urban areas and 144 land-use
+  cells: an added central river column splits the former `12 x 12` grid while
+  the eastern half shifts outward without losing a lot. The 16-cell central
+  park becomes two `2 x 4` regions joined by its own footbridge. A full-width
+  walkable northern beach and continuous non-walkable water row remain. The
+  playable default also extends east
   with a `4 x 4` lake (walkable shore around blocked water) and a `3 x 2`
   cemetery; both use the shared open-area street-access contract and own
   deterministic runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
+- **Accepted — River as typed infrastructure, not a district:**
+  `CityRiverDefinition` belongs to the immutable blueprint and declares the
+  north-south corridor plus exactly two Road bridges and one ParkPath
+  footbridge. `CityRiverPlan` materializes the same contract as a `10 m`
+  channel, two continuous `3 m` promenades, distinct `8 m` Works and Mouth
+  road decks, a `2.8 m` timber park deck and four lower waterside landings.
+  Each road bridge owns one bank-facing stair on both shores; the park bridge
+  has no vehicle or lower-landing role. Only the two road bridges enter Route
+  01, and bridge-adjacent furniture/spawn exclusions stay derived from the
+  declared crossing metadata. World construction, navigation, pedestrians,
+  bus routing and the City map consume the same validated plan rather than
+  rediscovering the corridor from coordinates.
 - **Accepted — Typed yards instead of boundary voids:** The former unmapped
   gaps behind the eastern, southern and western boundary streets are five
   `Yard` areas: one `4 x 6` pocket east of the player's home and four
@@ -91,21 +106,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   eligible lot remains. Its branded storefront, walkable apron, interaction
   trigger, fence opening and return point derive from the canonical lot and
   frontage data.
-- **Accepted — One deterministic single-layer city elevation plan:** The
+- **Accepted — One deterministic city elevation plan:** The
   existing 2D blueprint and road topology remain the first generation stage,
   but the default coastal blueprint now creates one immutable
   `CityElevationPlan` before lots and surfaces are spatially materialized.
-  Its authored north macro profile plus east bias yields a `12 m` city-wide
-  range and at least `1.5 m` within every urban district; sea water stays at
-  datum `0`, lake water at datum `1`, and legacy/custom blueprints retain the
-  exact flat fallback. Cell terraces are aligned to their canonical building
+  Its river branch replaces the former north-profile/east-bias formula: each
+  bank starts `1.8 m` above the local water and terrain rises `0.98 m` per
+  node away from the channel. Default road nodes therefore span about
+  `8.1 m`, peak near `10.08 m`, and retain at least `1.5 m` within every urban
+  district; sea water stays at datum `0`, lake water at datum `1`, and the
+  river descends monotonically from `2.4 m` in the south to that sea datum.
+  Legacy/custom blueprints retain the exact flat fallback. Cell terraces are aligned to their canonical building
   frontage, open precincts to their one declared access and public places to
   the street approaches that remain usable. All node/cell positions, surface
   datums, doors, returns, stops, waiting slots, pedestrians and debug
   teleports read that plan or its sampler rather than adding an absolute Y.
-  The v1 topology deliberately forbids bridges, tunnels and two walkable
-  levels with the same XZ projection; layer-aware navigation is a separate
-  future architecture change.
+  Declared bridge decks may cross non-walkable water and river stairs may
+  reach their own lower platforms. Tunnels and overlapping walkable levels at
+  the same XZ projection remain outside this navigation architecture.
   Street intersections and stop pads are level. Between their `4 m` setbacks,
   oriented road/sidewalk strips may grade up to `6%` for Street/Route 01 and
   `8.3%` for pedestrian ParkPath. The bus route excludes non-bus transitions,
@@ -181,9 +199,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   a closed loop has no last stop to lose and home is the one stop the hero can
   name. The default is therefore Home, Residential, Old Town, Industrial and
   Nightlife. Each semantic stop is assigned to a safe straight on the
-  target frontage or one connected road edge away. Its roadside cell differs
-  from the target cell, a POI stop remains in that district, and the physical
-  blue `01` pole stays outside POI public/access bounds or the Home footprint.
+  target frontage or one connected road edge away. The river layout preserves
+  that Home rule but lets a POI use the nearest cyclic Street in the same
+  district, bounded to five grid edges and `120 m` from its public access. Its
+  roadside cell differs from the target cell, and the physical blue `01` pole
+  stays outside POI public/access bounds or the Home footprint.
   The selected target straights are connected through one deterministic
   accepted-link graph. Ordinary straights and analytic `6 m`-radius left turns
   are retained after full-body surface and signal-fixture clearance. At selected

@@ -98,13 +98,14 @@ namespace BarPromenade
             }
 
             AddEasternOpenAreas(builder, settings);
+            int urbanWidth = settings.BlocksX + 1;
             CityAreaDefinition waterfront = CreateNorthWaterfront();
             builder.AddRectangle(
                 waterfront,
                 new RectInt(
                     0,
                     settings.BlocksZ,
-                    settings.BlocksX + EasternOpenAreaWidth,
+                    urbanWidth + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.OpenLand);
             builder.AddRectangle(
@@ -112,7 +113,7 @@ namespace BarPromenade
                 new RectInt(
                     0,
                     settings.BlocksZ + 1,
-                    settings.BlocksX + EasternOpenAreaWidth,
+                    urbanWidth + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.Water);
             // The east yard fills the former void between the cemetery and
@@ -122,7 +123,7 @@ namespace BarPromenade
             builder.AddRectangle(
                 CreateYard("yard-east"),
                 new RectInt(
-                    settings.BlocksX,
+                    urbanWidth,
                     DefaultCemeteryDepth,
                     EasternOpenAreaWidth,
                     settings.BlocksZ - DefaultLakeSize - DefaultCemeteryDepth),
@@ -140,7 +141,7 @@ namespace BarPromenade
             builder.AddRectangle(
                 CreateYard("yard-south-east"),
                 new RectInt(
-                    halfBlocksX,
+                    halfBlocksX + 1,
                     -1,
                     settings.BlocksX - halfBlocksX,
                     1),
@@ -252,12 +253,21 @@ namespace BarPromenade
             bool requiresBars,
             out bool hasPark)
         {
+            bool hasRiver = string.Equals(
+                blueprintId,
+                DefaultBlueprintId,
+                StringComparison.Ordinal);
+            int riverCorridorX = settings.BlocksX / 2;
             var centerNode = new Vector2Int(
                 settings.BlocksX / 2,
                 settings.BlocksZ / 2);
             var builder = new CityBlueprintBuilder(
                 blueprintId,
                 centerNode);
+            if (hasRiver)
+            {
+                builder.WithRiver(CreateDefaultRiver(settings));
+            }
             CityAreaDefinition oldTown = CreateUrbanArea(
                 "old-town",
                 CityDistrictKind.OldTown,
@@ -293,8 +303,13 @@ namespace BarPromenade
             {
                 for (int x = 0; x < settings.BlocksX; x++)
                 {
-                    var cell = new Vector2Int(x, z);
-                    if (settings.IsParkCell(cell))
+                    var sourceCell = new Vector2Int(x, z);
+                    var cell = new Vector2Int(
+                        hasRiver && x >= riverCorridorX
+                            ? x + 1
+                            : x,
+                        z);
+                    if (settings.IsParkCell(sourceCell))
                     {
                         parkCells.Add(cell);
                         continue;
@@ -370,14 +385,14 @@ namespace BarPromenade
             builder.AddRectangle(
                 cemetery,
                 new RectInt(
-                    settings.BlocksX,
+                    settings.BlocksX + 1,
                     0,
                     DefaultCemeteryWidth,
                     DefaultCemeteryDepth),
                 CityCellTopologyKind.OpenLand);
 
             CityAreaDefinition lake = CreateLake();
-            int lakeMinimumX = settings.BlocksX;
+            int lakeMinimumX = settings.BlocksX + 1;
             int lakeMinimumZ = settings.BlocksZ - DefaultLakeSize;
             var shoreCells = new List<Vector2Int>();
             for (int z = 0; z < DefaultLakeSize; z++)
@@ -422,6 +437,54 @@ namespace BarPromenade
                 CityAreaPlacementPolicy.CenterAnchor,
                 "map.district.central_park",
                 ParkMapColor);
+        }
+
+        private static CityRiverDefinition CreateDefaultRiver(
+            CityGenerationSettings settings)
+        {
+            return new CityRiverDefinition(
+                "central-river",
+                settings.BlocksX / 2,
+                0,
+                settings.BlocksZ,
+                new[]
+                {
+                    new CityBridgeDefinition(
+                        "works-bridge",
+                        new RoadEdge(
+                            new Vector2Int(settings.BlocksX / 2, 1),
+                            new Vector2Int(settings.BlocksX / 2 + 1, 1)),
+                        CityBridgeRole.Road,
+                        CityBridgeStyle.Works,
+                        CityGenerationSettings.DefaultRoadWidth,
+                        Vector2Int.up),
+                    new CityBridgeDefinition(
+                        "park-footbridge",
+                        new RoadEdge(
+                            new Vector2Int(
+                                settings.BlocksX / 2,
+                                settings.BlocksZ / 2),
+                            new Vector2Int(
+                                settings.BlocksX / 2 + 1,
+                                settings.BlocksZ / 2)),
+                        CityBridgeRole.ParkFootbridge,
+                        CityBridgeStyle.TimberPark,
+                        CityRiverDefinition.ParkFootbridgeWidth,
+                        Vector2Int.zero),
+                    new CityBridgeDefinition(
+                        "mouth-bridge",
+                        new RoadEdge(
+                            new Vector2Int(
+                                settings.BlocksX / 2,
+                                settings.BlocksZ - 1),
+                            new Vector2Int(
+                                settings.BlocksX / 2 + 1,
+                                settings.BlocksZ - 1)),
+                        CityBridgeRole.Road,
+                        CityBridgeStyle.Mouth,
+                        CityGenerationSettings.DefaultRoadWidth,
+                        Vector2Int.down)
+                });
         }
 
         private static CityAreaDefinition CreateNorthWaterfront()

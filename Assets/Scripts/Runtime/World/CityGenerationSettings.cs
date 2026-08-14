@@ -43,6 +43,17 @@ namespace BarPromenade
                 {
                     RectInt bounds = GetCellBounds(
                         Blueprint.CentralPark.Cells);
+                    if (Blueprint.River != null)
+                    {
+                        int height = Mathf.Max(1, bounds.height);
+                        int width = Mathf.CeilToInt(
+                            Blueprint.CentralPark.Cells.Count /
+                            (float)height);
+                        return new Vector2Int(
+                            width,
+                            height);
+                    }
+
                     return new Vector2Int(
                         bounds.width,
                         bounds.height);
@@ -184,7 +195,9 @@ namespace BarPromenade
                 : checked(BlocksX * BlocksZ);
             Vector2Int parkCount = EffectiveParkBlockCount;
             int buildableLotCount =
-                lotCount - checked(parkCount.x * parkCount.y);
+                lotCount - (Blueprint?.CentralPark != null
+                    ? Blueprint.CentralPark.Cells.Count
+                    : checked(parkCount.x * parkCount.y));
             if (BarCount < 0 || BarCount > buildableLotCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(BarCount));

@@ -55,6 +55,7 @@ namespace BarPromenade
             }
 
             nightFactor = clamped;
+            CityRiverResources.SetNightFactor(nightFactor);
             for (int index = entries.Count - 1; index >= 0; index--)
             {
                 if (entries[index].Renderer == null)

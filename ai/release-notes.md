@@ -6,6 +6,18 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-14 — A river now divides the city
+
+- The old 144-block city has grown one column wider so a `10 m` river can run
+  north to the sea without deleting either half. Both banks now have continuous
+  promenades.
+- Two full road bridges reconnect the southern and northern edges and carry
+  Route 01. Central Park is split across the water but keeps all 16 blocks and
+  gains its own narrow wooden footbridge.
+- Both banks of each road bridge have stairs down to a lower waterside
+  platform: four separate embankment descents in all. The City map shows the
+  river, both promenades and three visibly different bridge styles.
+
 ### 2026-08-14 — The «bar visited» mechanic is gone
 
 - The city no longer keeps score of which bars you have been to: no green

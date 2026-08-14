@@ -326,7 +326,9 @@ namespace BarPromenade
                 if (!layout.Park.IsEnabled ||
                     descriptor.District !=
                     CityDistrictKind.CentralPark ||
-                    !Contains(layout.Park.WalkableBounds, descriptor.Position))
+                    !IsInsideParkRegion(
+                        layout.Park,
+                        descriptor.Position))
                 {
                     throw new InvalidOperationException(
                         $"Park decoration '{descriptor.StableId}' lies " +
@@ -345,6 +347,21 @@ namespace BarPromenade
                     $"Decoration '{descriptor.StableId}' has an invalid " +
                     "non-lot anchor.");
             }
+        }
+
+        private static bool IsInsideParkRegion(
+            CityParkPlan park,
+            Vector3 position)
+        {
+            for (int index = 0; index < park.Regions.Count; index++)
+            {
+                if (Contains(park.Regions[index].WalkableBounds, position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void ValidateKindContract(

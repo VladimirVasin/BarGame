@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public static class CityPedestrianPlanner
+    public static partial class CityPedestrianPlanner
     {
         public const int PaletteVariantCount = 4;
         public const float AgentRadius = 0.35f;
@@ -118,6 +118,11 @@ namespace BarPromenade
                     crosswalkLaneNodes,
                     graph);
             }
+
+            BuildRiverPaths(
+                layout,
+                endpointsByNode,
+                graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,
@@ -333,7 +338,8 @@ namespace BarPromenade
                         points[index - 1].NodeIndex,
                         points[index].NodeIndex,
                         CityPedestrianLinkKind.Sidewalk,
-                        !isStair);
+                        !isStair &&
+                        !layout.IsRiverPedestrianSpawnExcluded(edge));
                 }
             }
         }

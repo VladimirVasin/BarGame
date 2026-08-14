@@ -72,6 +72,8 @@ namespace BarPromenade
             CurrentSample = nextSample;
             hasAppliedSample = true;
             rain.SetIntensity(nextSample.RainIntensity);
+            CityRiverResources.SetRainIntensity(
+                nextSample.RainIntensity);
             if (sound != null)
             {
                 sound.SetIntensity(nextSample.RainIntensity);

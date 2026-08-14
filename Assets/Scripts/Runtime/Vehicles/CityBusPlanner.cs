@@ -175,6 +175,7 @@ namespace BarPromenade
                 routeLinkMetadata,
                 finalLinks);
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
+                layout,
                 vehicle,
                 routeLinkMetadata,
                 finalLinks,
@@ -872,6 +873,7 @@ namespace BarPromenade
         }
 
         private static List<CityBusSpawnAnchor> CreateSpawnAnchors(
+            CityLayout layout,
             CityBusDesignVehicle vehicle,
             IList<RouteLinkMetadata> metadata,
             IReadOnlyList<CityBusRouteLink> links,
@@ -890,6 +892,12 @@ namespace BarPromenade
             {
                 RouteLinkMetadata entry = metadata[index];
                 if (!entry.Source.IsRoadSegment)
+                {
+                    continue;
+                }
+
+                if (layout.IsBusFurnitureExcluded(
+                        entry.Source.RoadEdge))
                 {
                     continue;
                 }

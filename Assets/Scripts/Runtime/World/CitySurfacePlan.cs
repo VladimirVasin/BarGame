@@ -12,12 +12,15 @@ namespace BarPromenade
         Beach = 3,
         LakeShore = 4,
         CemeteryGround = 5,
-        Water = 6
+        Water = 6,
+        RiverWater = 7
     }
 
     public readonly struct CitySurfaceDescriptor :
         IEquatable<CitySurfaceDescriptor>
     {
+        public const float WaterTopOffset = -0.12f;
+
         internal CitySurfaceDescriptor(
             string areaId,
             CityAreaFeatureKind feature,
@@ -46,7 +49,8 @@ namespace BarPromenade
         public float DatumY { get; }
         public Color MapColor { get; }
         public bool IsWalkable { get; }
-        public bool IsWater => Kind == CitySurfaceKind.Water;
+        public bool IsWater => Kind == CitySurfaceKind.Water ||
+                               Kind == CitySurfaceKind.RiverWater;
         public float PhysicalTopY
         {
             get
@@ -56,7 +60,8 @@ namespace BarPromenade
                     case CitySurfaceKind.ParkGround:
                         return DatumY;
                     case CitySurfaceKind.Water:
-                        return DatumY - 0.12f;
+                    case CitySurfaceKind.RiverWater:
+                        return DatumY + WaterTopOffset;
                     default:
                         return DatumY +
                                CityElevationPlan.GroundTopOffset;
@@ -307,8 +312,12 @@ namespace BarPromenade
             ISet<RoadEdge> roads,
             IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds)
         {
+            int riverCapacity = blueprint.River == null
+                ? 0
+                : blueprint.River.CoreMaximumZExclusive -
+                  blueprint.River.CoreMinimumZ;
             var result = new List<CitySurfaceDescriptor>(
-                blueprint.Cells.Count);
+                blueprint.Cells.Count + riverCapacity);
             for (int index = 0; index < blueprint.Cells.Count; index++)
             {
                 CityBlueprintCell cell = blueprint.Cells[index];
@@ -330,7 +339,57 @@ namespace BarPromenade
                     cell.Topology == CityCellTopologyKind.OpenLand));
             }
 
+            AppendRiverSurfaces(blueprint, settings, origin, result);
+
             return result;
+        }
+
+        private static void AppendRiverSurfaces(
+            CityBlueprint blueprint,
+            CityGenerationSettings settings,
+            Vector3 origin,
+            ICollection<CitySurfaceDescriptor> target)
+        {
+            CityRiverDefinition river = blueprint.River;
+            if (river == null)
+            {
+                return;
+            }
+
+            float centerX = origin.x +
+                            (river.CorridorCellX + 0.5f) *
+                            settings.NodeSpacing.x;
+            float halfWidth = river.ChannelWidth * 0.5f;
+            Color mapColor = new Color(0.10f, 0.29f, 0.38f, 1f);
+            for (int z = river.CoreMinimumZ;
+                 z < river.CoreMaximumZExclusive;
+                 z++)
+            {
+                var cell = new Vector2Int(river.CorridorCellX, z);
+                if (blueprint.ContainsCell(cell))
+                {
+                    continue;
+                }
+
+                float southZ = origin.z + z * settings.NodeSpacing.y;
+                float northZ = southZ + settings.NodeSpacing.y;
+                float datum = (
+                    CityRiverPlanner.ResolveWaterY(river, z) +
+                    CityRiverPlanner.ResolveWaterY(river, z + 1)) * 0.5f;
+                target.Add(new CitySurfaceDescriptor(
+                    river.Id,
+                    CityAreaFeatureKind.NorthWaterfront,
+                    CitySurfaceKind.RiverWater,
+                    cell,
+                    Rect.MinMaxRect(
+                        centerX - halfWidth,
+                        southZ,
+                        centerX + halfWidth,
+                        northZ),
+                    datum,
+                    mapColor,
+                    false));
+            }
         }
 
         private static List<CityOpenAreaAccessDescriptor> CreateAccesses(

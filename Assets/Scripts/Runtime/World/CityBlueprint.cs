@@ -313,6 +313,7 @@ namespace BarPromenade
             string id,
             Vector2Int centerNode,
             IList<CityAreaPlacement> sourceAreas,
+            CityRiverDefinition river,
             bool requireCentralPark,
             bool requireNorthWaterfront)
         {
@@ -335,6 +336,7 @@ namespace BarPromenade
 
             Id = id.Trim();
             CenterNode = centerNode;
+            River = river;
             RequiresCentralPark = requireCentralPark;
             RequiresNorthWaterfront = requireNorthWaterfront;
             areasById = new Dictionary<string, CityAreaPlacement>(
@@ -448,6 +450,7 @@ namespace BarPromenade
         public IReadOnlyList<CityBlueprintCell> Cells => cells;
         public CityAreaPlacement CentralPark { get; private set; }
         public CityAreaPlacement NorthWaterfront { get; private set; }
+        public CityRiverDefinition River { get; }
         public int LotCellCount { get; private set; }
         internal bool RequiresCentralPark { get; }
         internal bool RequiresNorthWaterfront { get; }
@@ -556,7 +559,11 @@ namespace BarPromenade
                 ValidateTopology(area.Definition, topology);
             }
 
-            if (!IsConnected(area.Cells))
+            bool splitRiverPark =
+                River != null &&
+                area.Definition.Feature == CityAreaFeatureKind.CentralPark &&
+                CountConnectedComponents(area.Cells) == 2;
+            if (!IsConnected(area.Cells) && !splitRiverPark)
             {
                 throw new InvalidOperationException(
                     $"Area '{area.Id}' must be four-neighbour connected.");
@@ -660,10 +667,37 @@ namespace BarPromenade
                 }
             }
 
-            if (roadCells.Count == 0 || !IsConnected(roadCells))
+            int componentCount = CountConnectedComponents(roadCells);
+            int expectedComponents = River == null ? 1 : 2;
+            if (roadCells.Count == 0 || componentCount != expectedComponents)
             {
                 throw new InvalidOperationException(
-                    "Buildable and park cells must form one connected road footprint.");
+                    River == null
+                        ? "Buildable and park cells must form one connected road footprint."
+                        : "River cities require exactly two road-grid banks.");
+            }
+
+            if (River != null)
+            {
+                ValidateRiverCorridor();
+            }
+        }
+
+        private void ValidateRiverCorridor()
+        {
+            for (int z = River.CoreMinimumZ;
+                 z < River.CoreMaximumZExclusive;
+                 z++)
+            {
+                var corridor = new Vector2Int(River.CorridorCellX, z);
+                if (ContainsCell(corridor) ||
+                    !ParticipatesInRoadGrid(corridor + Vector2Int.left) ||
+                    !ParticipatesInRoadGrid(corridor + Vector2Int.right))
+                {
+                    throw new InvalidOperationException(
+                        "The river corridor must be an unmapped column " +
+                        "between two complete road-grid banks.");
+                }
             }
         }
 
@@ -724,22 +758,30 @@ namespace BarPromenade
             if (CentralPark != null)
             {
                 RectInt parkBounds = CalculateCellBounds(CentralPark.Cells);
-                if (parkBounds.width * parkBounds.height !=
-                    CentralPark.Cells.Count)
+                if (River == null &&
+                    parkBounds.width * parkBounds.height !=
+                        CentralPark.Cells.Count)
                 {
                     throw new InvalidOperationException(
                         "The central park must be one solid rectangle.");
                 }
 
-                var parkCenterNode = new Vector2Int(
-                    parkBounds.xMin + parkBounds.width / 2,
-                    parkBounds.yMin + parkBounds.height / 2);
-                if (parkBounds.width % 2 != 0 ||
-                    parkBounds.height % 2 != 0 ||
-                    parkCenterNode != CenterNode)
+                if (River == null)
                 {
-                    throw new InvalidOperationException(
-                        "The central park must be evenly centered on CityCenterAnchor.");
+                    var parkCenterNode = new Vector2Int(
+                        parkBounds.xMin + parkBounds.width / 2,
+                        parkBounds.yMin + parkBounds.height / 2);
+                    if (parkBounds.width % 2 != 0 ||
+                        parkBounds.height % 2 != 0 ||
+                        parkCenterNode != CenterNode)
+                    {
+                        throw new InvalidOperationException(
+                            "The central park must be evenly centered on CityCenterAnchor.");
+                    }
+                }
+                else
+                {
+                    ValidateSplitRiverPark(CentralPark);
                 }
             }
 
@@ -755,6 +797,42 @@ namespace BarPromenade
                     NorthWaterfront,
                     "north waterfront");
                 ValidateNorthWaterfront(NorthWaterfront);
+            }
+        }
+
+        private void ValidateSplitRiverPark(CityAreaPlacement park)
+        {
+            if (park.Cells.Count != 16 ||
+                CountConnectedComponents(park.Cells) != 2)
+            {
+                throw new InvalidOperationException(
+                    "The river park requires two connected eight-cell banks.");
+            }
+
+            int westCount = 0;
+            int eastCount = 0;
+            for (int index = 0; index < park.Cells.Count; index++)
+            {
+                int x = park.Cells[index].x;
+                if (x < River.CorridorCellX)
+                {
+                    westCount++;
+                }
+                else if (x > River.CorridorCellX)
+                {
+                    eastCount++;
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "Park land cannot occupy the river corridor.");
+                }
+            }
+
+            if (westCount != 8 || eastCount != 8)
+            {
+                throw new InvalidOperationException(
+                    "The river park must keep balanced 2x4 sections.");
             }
         }
 
@@ -935,6 +1013,49 @@ namespace BarPromenade
             return visited.Count == all.Count;
         }
 
+        private static int CountConnectedComponents(
+            IReadOnlyList<Vector2Int> source)
+        {
+            var remaining = new HashSet<Vector2Int>();
+            for (int index = 0; index < source.Count; index++)
+            {
+                remaining.Add(source[index]);
+            }
+
+            int count = 0;
+            var pending = new Queue<Vector2Int>();
+            while (remaining.Count > 0)
+            {
+                Vector2Int start = default;
+                foreach (Vector2Int cell in remaining)
+                {
+                    start = cell;
+                    break;
+                }
+
+                count++;
+                remaining.Remove(start);
+                pending.Enqueue(start);
+                while (pending.Count > 0)
+                {
+                    Vector2Int current = pending.Dequeue();
+                    for (int directionIndex = 0;
+                         directionIndex < CardinalDirections.Length;
+                         directionIndex++)
+                    {
+                        Vector2Int neighbour =
+                            current + CardinalDirections[directionIndex];
+                        if (remaining.Remove(neighbour))
+                        {
+                            pending.Enqueue(neighbour);
+                        }
+                    }
+                }
+            }
+
+            return count;
+        }
+
         private static RectInt CalculateCellBounds(
             IReadOnlyList<CityBlueprintCell> source)
         {
@@ -1006,6 +1127,7 @@ namespace BarPromenade
         private readonly Vector2Int centerNode;
         private readonly bool requireCentralPark;
         private readonly bool requireNorthWaterfront;
+        private CityRiverDefinition river;
         private readonly List<MutableArea> orderedAreas =
             new List<MutableArea>();
         private readonly Dictionary<string, MutableArea> areasById =
@@ -1020,12 +1142,14 @@ namespace BarPromenade
             string id,
             Vector2Int centerNode,
             bool requireCentralPark,
-            bool requireNorthWaterfront)
+            bool requireNorthWaterfront,
+            CityRiverDefinition river = null)
         {
             this.id = id;
             this.centerNode = centerNode;
             this.requireCentralPark = requireCentralPark;
             this.requireNorthWaterfront = requireNorthWaterfront;
+            this.river = river;
         }
 
         public static CityBlueprintBuilder From(CityBlueprint source)
@@ -1039,7 +1163,8 @@ namespace BarPromenade
                 source.Id,
                 source.CenterNode,
                 source.RequiresCentralPark,
-                source.RequiresNorthWaterfront);
+                source.RequiresNorthWaterfront,
+                source.River);
             for (int areaIndex = 0;
                  areaIndex < source.Areas.Count;
                  areaIndex++)
@@ -1057,6 +1182,13 @@ namespace BarPromenade
             }
 
             return builder;
+        }
+
+        public CityBlueprintBuilder WithRiver(CityRiverDefinition definition)
+        {
+            river = definition ??
+                throw new ArgumentNullException(nameof(definition));
+            return this;
         }
 
         public CityBlueprintBuilder AddRectangle(
@@ -1255,6 +1387,7 @@ namespace BarPromenade
                 id,
                 centerNode,
                 placements,
+                river,
                 requireCentralPark,
                 requireNorthWaterfront);
         }

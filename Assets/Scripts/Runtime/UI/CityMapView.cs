@@ -108,6 +108,16 @@ namespace BarPromenade
             new Color32(94, 84, 63, 255);
         private static readonly Color WaterLand =
             new Color32(35, 91, 119, 255);
+        private static readonly Color RiverWater =
+            new Color32(26, 77, 103, 255);
+        private static readonly Color RiverPromenade =
+            new Color32(112, 106, 91, 255);
+        private static readonly Color WorksBridge =
+            new Color32(105, 116, 121, 255);
+        private static readonly Color TimberBridge =
+            new Color32(161, 111, 67, 255);
+        private static readonly Color MouthBridge =
+            new Color32(150, 133, 109, 255);
         private static readonly Color PublicPlaceLand =
             new Color32(123, 112, 91, 255);
         private static readonly Color BarBuilding =
@@ -328,8 +338,10 @@ namespace BarPromenade
                 2f,
                 1f);
             DrawSurfaces(projection);
+            DrawRiver(projection);
             DrawBuildings(projection);
             DrawRoads(projection);
+            DrawRiverBridges(projection);
             DrawBusRoute(projection);
             DrawDistrictLabels(projection);
             DrawRoute(projection);
@@ -580,6 +592,36 @@ namespace BarPromenade
             }
         }
 
+        private void DrawRiver(MapProjection projection)
+        {
+            CityRiverPlan river = controller.Layout.River;
+            if (!river.IsEnabled)
+            {
+                return;
+            }
+
+            for (int index = 0; index < river.Segments.Count; index++)
+            {
+                DrawSolidRect(
+                    ProjectWorldRect(
+                        projection,
+                        river.Segments[index].WaterBounds),
+                    RiverWater);
+            }
+
+            for (int index = 0; index < river.Promenades.Count; index++)
+            {
+                Rect promenade = ProjectWorldRect(
+                    projection,
+                    river.Promenades[index].Bounds);
+                DrawSolidRect(promenade, RiverPromenade);
+                RetroUiTheme.StrokeRect(
+                    promenade,
+                    1f,
+                    RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.72f));
+            }
+        }
+
         private void DrawOpenPublicPlaceLot(
             Rect lotRect,
             Color districtColor)
@@ -651,6 +693,74 @@ namespace BarPromenade
                         controller.Layout.GetNodeWorldPosition(edge.B)),
                     GetPathWidth(pathKind, roadWidth),
                     GetPathColor(pathKind));
+            }
+        }
+
+        private void DrawRiverBridges(MapProjection projection)
+        {
+            CityRiverPlan river = controller.Layout.River;
+            if (!river.IsEnabled)
+            {
+                return;
+            }
+
+            float worldWidth =
+                projection.MaximumX - projection.MinimumX;
+            float streetWidth = Mathf.Clamp(
+                Mathf.Round(
+                    controller.Layout.RoadWidth /
+                    Mathf.Max(0.01f, worldWidth) *
+                    projection.ScreenRect.width),
+                2f,
+                8f);
+            for (int index = 0; index < river.Bridges.Count; index++)
+            {
+                CityRiverBridgeDescriptor bridge = river.Bridges[index];
+                Rect bounds = bridge.DeckBounds;
+                Vector2 west = projection.WorldToScreen(
+                    new Vector3(bounds.xMin, 0f, bounds.center.y));
+                Vector2 east = projection.WorldToScreen(
+                    new Vector3(bounds.xMax, 0f, bounds.center.y));
+                float width = GetRiverBridgeMapWidth(
+                    bridge.Definition,
+                    streetWidth);
+                DrawLine(
+                    west,
+                    east,
+                    width + 2f,
+                    RetroUiTheme.Ink);
+                DrawLine(
+                    west,
+                    east,
+                    width,
+                    GetRiverBridgeMapColor(bridge.Definition.Style));
+
+                if (bridge.Definition.Style ==
+                    CityBridgeStyle.TimberPark)
+                {
+                    DrawTimberBridgePlanks(west, east, width);
+                }
+            }
+        }
+
+        private void DrawTimberBridgePlanks(
+            Vector2 west,
+            Vector2 east,
+            float width)
+        {
+            Vector2 across = east - west;
+            Vector2 normal = new Vector2(-across.y, across.x).normalized;
+            for (int index = 1; index <= 4; index++)
+            {
+                Vector2 center = Vector2.Lerp(
+                    west,
+                    east,
+                    index / 5f);
+                DrawLine(
+                    center - normal * width * 0.36f,
+                    center + normal * width * 0.36f,
+                    1f,
+                    RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.72f));
             }
         }
 
@@ -2009,6 +2119,27 @@ namespace BarPromenade
             RetroUiTheme.FillRect(rectangle, color);
         }
 
+        private static Rect ProjectWorldRect(
+            MapProjection projection,
+            Rect worldBounds)
+        {
+            Vector2 topLeft = projection.WorldToScreen(
+                new Vector3(
+                    worldBounds.xMin,
+                    0f,
+                    worldBounds.yMax));
+            Vector2 bottomRight = projection.WorldToScreen(
+                new Vector3(
+                    worldBounds.xMax,
+                    0f,
+                    worldBounds.yMin));
+            return Rect.MinMaxRect(
+                topLeft.x,
+                topLeft.y,
+                bottomRight.x,
+                bottomRight.y);
+        }
+
         private static Color GetLotColor(
             BuildingLot lot,
             bool isPointOfInterest)
@@ -2070,6 +2201,8 @@ namespace BarPromenade
             {
                 case CitySurfaceKind.Water:
                     return WaterLand;
+                case CitySurfaceKind.RiverWater:
+                    return RiverWater;
                 case CitySurfaceKind.Beach:
                     return WaterfrontLand;
                 case CitySurfaceKind.LakeShore:
@@ -2081,6 +2214,34 @@ namespace BarPromenade
                 default:
                     return surface.MapColor;
             }
+        }
+
+        private static Color GetRiverBridgeMapColor(
+            CityBridgeStyle style)
+        {
+            switch (style)
+            {
+                case CityBridgeStyle.Works:
+                    return WorksBridge;
+                case CityBridgeStyle.TimberPark:
+                    return TimberBridge;
+                case CityBridgeStyle.Mouth:
+                    return MouthBridge;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(style),
+                        style,
+                        "Unsupported river bridge style.");
+            }
+        }
+
+        private static float GetRiverBridgeMapWidth(
+            CityBridgeDefinition bridge,
+            float streetWidth)
+        {
+            return bridge.Role == CityBridgeRole.ParkFootbridge
+                ? Mathf.Max(2f, streetWidth * 0.42f)
+                : streetWidth;
         }
 
         private static string GetDistrictLocalizationKey(

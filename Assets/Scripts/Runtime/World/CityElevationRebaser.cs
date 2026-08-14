@@ -117,13 +117,56 @@ namespace BarPromenade
                     SampleGround(elevation, position, centerDatum)));
             }
 
+            var regions = new List<CityParkRegionPlan>(
+                source.Regions.Count);
+            for (int regionIndex = 0;
+                 regionIndex < source.Regions.Count;
+                 regionIndex++)
+            {
+                CityParkRegionPlan region = source.Regions[regionIndex];
+                float regionDatum = SampleRoadOrGround(
+                    elevation,
+                    region.Center,
+                    centerDatum);
+                var regionGates = new List<CityParkGateDescriptor>(
+                    region.Gates.Count);
+                for (int gateIndex = 0;
+                     gateIndex < region.Gates.Count;
+                     gateIndex++)
+                {
+                    CityParkGateDescriptor gate = region.Gates[gateIndex];
+                    regionGates.Add(new CityParkGateDescriptor(
+                        gate.Id,
+                        WithY(
+                            gate.Center,
+                            SampleRoadOrGround(elevation, gate.Center)),
+                        gate.OutwardNormal,
+                        gate.Width));
+                }
+
+                Vector3 plaza = WithY(
+                    region.PlazaPosition,
+                    SampleGround(
+                        elevation,
+                        region.PlazaPosition,
+                        regionDatum));
+                regions.Add(new CityParkRegionPlan(
+                    region.Id,
+                    new List<Vector2Int>(region.Cells),
+                    region.WalkableBounds,
+                    WithY(region.Center, regionDatum),
+                    regionGates,
+                    plaza));
+            }
+
             return new CityParkPlan(
                 new List<Vector2Int>(source.Cells),
                 source.WalkableBounds,
                 center,
                 gates,
                 trees,
-                benches);
+                benches,
+                regions);
         }
 
         internal static List<CityDistrictPointOfInterestDescriptor>
@@ -189,13 +232,18 @@ namespace BarPromenade
             for (int index = 0; index < source.Count; index++)
             {
                 CitySurfaceDescriptor surface = source[index];
+                float datum = elevation.CellElevations.TryGetValue(
+                    surface.Cell,
+                    out float cellElevation)
+                    ? cellElevation
+                    : surface.DatumY;
                 result.Add(new CitySurfaceDescriptor(
                     surface.AreaId,
                     surface.Feature,
                     surface.Kind,
                     surface.Cell,
                     surface.WorldBounds,
-                    elevation.GetCellElevation(surface.Cell),
+                    datum,
                     surface.MapColor,
                     surface.IsWalkable));
             }

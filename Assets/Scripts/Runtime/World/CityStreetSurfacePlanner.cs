@@ -140,10 +140,11 @@ namespace BarPromenade
         {
             var streetNodes = new HashSet<Vector2Int>();
             var parkNodes = new HashSet<Vector2Int>();
-            float halfRoad = layout.RoadWidth * 0.5f;
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
+                float surfaceWidth = layout.GetTravelWidth(edge);
+                float halfSurface = surfaceWidth * 0.5f;
                 Vector3 start = layout.GetNodeWorldPosition(edge.A);
                 Vector3 end = layout.GetNodeWorldPosition(edge.B);
                 Vector3 delta = end - start;
@@ -151,7 +152,7 @@ namespace BarPromenade
                     delta.x,
                     delta.z).magnitude;
                 float insetAmount = planarLength > GeometryTolerance
-                    ? Mathf.Clamp01(halfRoad / planarLength)
+                    ? Mathf.Clamp01(halfSurface / planarLength)
                     : 0f;
                 Vector3 segmentStart = Vector3.Lerp(
                     start,
@@ -169,23 +170,23 @@ namespace BarPromenade
                     layout.ElevationPlan.TryGetSignatureStair(
                         edge,
                         out _);
-                float surfaceWidth = hasSignatureStair
+                float renderedWidth = hasSignatureStair
                     ? layout.RoadWidth - (SidewalkWidth * 2f)
-                    : layout.RoadWidth;
+                    : surfaceWidth;
                 RuntimeOrientedBox geometry = CreateSurfaceBox(
                     segmentStart + Vector3.up * RoadTop,
                     segmentEnd + Vector3.up * RoadTop,
-                    surfaceWidth,
+                    renderedWidth,
                     RoadSurfaceHeight);
                 Vector3 size = edge.IsHorizontal
                     ? new Vector3(
-                        Mathf.Abs(delta.x) + layout.RoadWidth,
+                        Mathf.Abs(delta.x) + surfaceWidth,
                         RoadSurfaceHeight,
-                        surfaceWidth)
+                        renderedWidth)
                     : new Vector3(
-                        surfaceWidth,
+                        renderedWidth,
                         RoadSurfaceHeight,
-                        Mathf.Abs(delta.z) + layout.RoadWidth);
+                        Mathf.Abs(delta.z) + surfaceWidth);
                 var surface = new Bounds((start + end) * 0.5f, size);
                 if (!isStreet)
                 {
@@ -223,13 +224,14 @@ namespace BarPromenade
                 }
 
                 Vector3 center = layout.GetNodeWorldPosition(node);
+                float nodeWidth = layout.RoadWidth;
                 parkPathGeometry.Add(new RuntimeOrientedBox(
                     center,
                     Quaternion.identity,
                     new Vector3(
-                        layout.RoadWidth,
+                        nodeWidth,
                         RoadSurfaceHeight,
-                        layout.RoadWidth)));
+                        nodeWidth)));
             }
         }
 

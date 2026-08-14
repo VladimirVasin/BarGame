@@ -205,7 +205,8 @@ namespace BarPromenade
             for (int index = 0; index < layout.RoadEdges.Count; index++)
             {
                 RoadEdge edge = layout.RoadEdges[index];
-                if (layout.GetPathKind(edge) == CityPathKind.ParkPath)
+                if (layout.GetPathKind(edge) == CityPathKind.ParkPath ||
+                    layout.IsRiverBridgeEdge(edge))
                 {
                     paths.Add(layout.GetRoadRect(edge));
                 }

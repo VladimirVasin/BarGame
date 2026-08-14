@@ -145,6 +145,76 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        [Category("CityRiver")]
+        public void DefaultCity_RiverDescendsToSeaInsideTenMeterChannel()
+        {
+            CityRiverDefinition river = defaultLayout.Blueprint.River;
+            Assert.That(river, Is.Not.Null);
+
+            Assert.That(
+                CityRiverPlanner.ResolveWaterY(
+                    river,
+                    river.CoreMinimumZ),
+                Is.EqualTo(2.4f).Within(Tolerance));
+            Assert.That(
+                CityRiverPlanner.ResolveWaterY(
+                    river,
+                    river.CoreMaximumZExclusive + 1),
+                Is.EqualTo(0f).Within(Tolerance));
+
+            CitySurfaceDescriptor[] riverSurfaces = defaultLayout.Surfaces
+                .Where(surface =>
+                    surface.Kind == CitySurfaceKind.RiverWater)
+                .OrderBy(surface => surface.Cell.y)
+                .ToArray();
+            Assert.That(
+                riverSurfaces,
+                Has.Length.EqualTo(
+                    river.CoreMaximumZExclusive - river.CoreMinimumZ));
+
+            float previousWater = float.PositiveInfinity;
+            for (int index = 0; index < riverSurfaces.Length; index++)
+            {
+                CitySurfaceDescriptor surface = riverSurfaces[index];
+                int z = river.CoreMinimumZ + index;
+                float southWater = CityRiverPlanner.ResolveWaterY(river, z);
+                float northWater = CityRiverPlanner.ResolveWaterY(
+                    river,
+                    z + 1);
+                Assert.That(surface.Cell, Is.EqualTo(new Vector2Int(
+                    river.CorridorCellX,
+                    z)));
+                Assert.That(
+                    surface.WorldBounds.width,
+                    Is.EqualTo(river.ChannelWidth).Within(Tolerance));
+                Assert.That(
+                    surface.DatumY,
+                    Is.EqualTo((southWater + northWater) * 0.5f)
+                        .Within(Tolerance));
+                Assert.That(surface.IsWater, Is.True);
+                Assert.That(surface.IsWalkable, Is.False);
+                Assert.That(southWater, Is.LessThanOrEqualTo(
+                    previousWater + Tolerance));
+
+                float westBank = defaultLayout.ElevationPlan
+                    .GetNodeElevation(new Vector2Int(
+                        river.CorridorCellX,
+                        z));
+                float eastBank = defaultLayout.ElevationPlan
+                    .GetNodeElevation(new Vector2Int(
+                        river.CorridorCellX + 1,
+                        z));
+                Assert.That(
+                    eastBank,
+                    Is.EqualTo(westBank).Within(Tolerance));
+                Assert.That(
+                    westBank - southWater,
+                    Is.EqualTo(1.8f).Within(Tolerance));
+                previousWater = northWater;
+            }
+        }
+
+        [Test]
         public void DefaultCity_ClassifiesEveryRoadWithinBusGrade()
         {
             CityElevationPlan plan = defaultLayout.ElevationPlan;

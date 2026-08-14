@@ -212,6 +212,60 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("CityRiver")]
+        public void DefaultRiver_ConnectsPromenadesAndTimberFootbridge()
+        {
+            CityLayout layout = CreateDefaultLayout(8219);
+            CityPedestrianPlan plan = CityPedestrianPlanner.Create(
+                layout,
+                2027);
+            CityRiverBridgeDescriptor footbridge = layout.River.Bridges
+                .Single(bridge => bridge.Definition.Role ==
+                    CityBridgeRole.ParkFootbridge);
+            CityPedestrianLink crossing = plan.Links.Single(link =>
+                link.Id == "river-footbridge:" +
+                footbridge.Definition.Id);
+
+            Assert.That(
+                plan.Links.Any(link => link.Id.StartsWith(
+                    "river-promenade:river-promenade-west:")),
+                Is.True);
+            Assert.That(
+                plan.Links.Any(link => link.Id.StartsWith(
+                    "river-promenade:river-promenade-east:")),
+                Is.True);
+            Assert.That(
+                footbridge.DeckBounds.Contains(new Vector2(
+                    plan.Nodes[crossing.FirstNodeIndex].Position.x,
+                    plan.Nodes[crossing.FirstNodeIndex].Position.z)),
+                Is.True);
+            Assert.That(
+                footbridge.DeckBounds.Contains(new Vector2(
+                    plan.Nodes[crossing.SecondNodeIndex].Position.x,
+                    plan.Nodes[crossing.SecondNodeIndex].Position.z)),
+                Is.True);
+
+            for (int edgeIndex = 0;
+                 edgeIndex < layout.RoadEdges.Count;
+                 edgeIndex++)
+            {
+                RoadEdge edge = layout.RoadEdges[edgeIndex];
+                if (!layout.IsRiverPedestrianSpawnExcluded(edge))
+                {
+                    continue;
+                }
+
+                string edgeId =
+                    $"{edge.A.x}:{edge.A.y}:{edge.B.x}:{edge.B.y}";
+                Assert.That(
+                    plan.SpawnAnchors.Any(anchor =>
+                        anchor.Id.Contains(edgeId)),
+                    Is.False,
+                    edge.ToString());
+            }
+        }
+
+        [Test]
         public void Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs()
         {
             CityLayout layout = CreateDefaultLayout(481516);

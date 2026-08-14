@@ -560,20 +560,23 @@ namespace BarPromenade.Tests.PlayMode
 
             Transform lawn =
                 city.World.ParkRoot.transform.Find("Park Lawn");
-            Transform plaza = city.World.ParkRoot.transform.Find(
-                "Park Central Plaza");
             Assert.That(lawn, Is.Not.Null);
-            Assert.That(plaza, Is.Not.Null);
             BoxCollider lawnCollider =
                 lawn.GetComponent<BoxCollider>();
-            MeshCollider plazaCollider =
-                plaza.GetComponent<MeshCollider>();
             Assert.That(lawnCollider, Is.Not.Null);
-            Assert.That(plazaCollider, Is.Not.Null);
-            Assert.That(
-                plazaCollider.sharedMesh,
-                Is.SameAs(
-                    plaza.GetComponent<MeshFilter>().sharedMesh));
+            for (int plazaIndex = 1; plazaIndex <= 2; plazaIndex++)
+            {
+                Transform plaza = city.World.ParkRoot.transform.Find(
+                    $"Park Plaza {plazaIndex}");
+                Assert.That(plaza, Is.Not.Null);
+                MeshCollider plazaCollider =
+                    plaza.GetComponent<MeshCollider>();
+                Assert.That(plazaCollider, Is.Not.Null);
+                Assert.That(
+                    plazaCollider.sharedMesh,
+                    Is.SameAs(
+                        plaza.GetComponent<MeshFilter>().sharedMesh));
+            }
 
             CharacterController controller =
                 city.Player.GameObject.GetComponent<

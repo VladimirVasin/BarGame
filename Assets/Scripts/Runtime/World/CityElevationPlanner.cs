@@ -11,6 +11,8 @@ namespace BarPromenade
         private const float SignatureStairWidth = 1.8f;
         private const float SignatureStairTread = 0.32f;
         private const float SignatureStairLanding = 1.5f;
+        private const float RiverBankHeightAboveWater = 1.8f;
+        private const float RiverValleyRisePerNode = 0.98f;
 
         private static readonly float[] DefaultNorthProfile =
         {
@@ -81,7 +83,8 @@ namespace BarPromenade
                     elevated
                         ? ResolveDefaultNodeElevation(
                             node,
-                            settings.BlockCount)
+                            settings.BlockCount,
+                            blueprint.River)
                         : 0f);
             }
 
@@ -156,8 +159,22 @@ namespace BarPromenade
 
         private static float ResolveDefaultNodeElevation(
             Vector2Int node,
-            Vector2Int blockCount)
+            Vector2Int blockCount,
+            CityRiverDefinition river)
         {
+            if (river != null)
+            {
+                float waterY = CityRiverPlanner.ResolveWaterY(
+                    river,
+                    node.y);
+                float distanceToBank = Mathf.Min(
+                    Mathf.Abs(node.x - river.CorridorCellX),
+                    Mathf.Abs(node.x - (river.CorridorCellX + 1)));
+                return waterY +
+                       RiverBankHeightAboveWater +
+                       distanceToBank * RiverValleyRisePerNode;
+            }
+
             float northAmount = blockCount.y > 0
                 ? Mathf.Clamp01(node.y / (float)blockCount.y)
                 : 0f;

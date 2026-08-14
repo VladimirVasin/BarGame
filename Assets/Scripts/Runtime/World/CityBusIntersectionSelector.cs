@@ -37,7 +37,8 @@ namespace BarPromenade
             {
                 Vector2Int node = nodes[index];
                 if (HasTurnCapableStreetIntersection(layout, node) &&
-                    HasSafeCornerSetbacks(layout, node))
+                    (HasSafeCornerSetbacks(layout, node) ||
+                     HasSafeRiverBridgeSetbacks(layout, node)))
                 {
                     selected.Add(node);
                 }
@@ -143,6 +144,90 @@ namespace BarPromenade
             }
 
             return true;
+        }
+
+        private static bool HasSafeRiverBridgeSetbacks(
+            CityLayout layout,
+            Vector2Int node)
+        {
+            if (!layout.River.IsEnabled)
+            {
+                return false;
+            }
+
+            bool isRoadBridgeNode = false;
+            for (int index = 0; index < layout.River.Bridges.Count; index++)
+            {
+                CityRiverBridgeDescriptor bridge =
+                    layout.River.Bridges[index];
+                if (bridge.Definition.CarriesRoadTraffic &&
+                    bridge.Definition.CrossingEdge.Contains(node))
+                {
+                    isRoadBridgeNode = true;
+                    break;
+                }
+            }
+
+            if (!isRoadBridgeNode)
+            {
+                return false;
+            }
+
+            Vector3 center = layout.GetNodeWorldPosition(node);
+            float offset = GetCornerCenterOffset(layout);
+            float halfWidth = CityStreetSurfacePlanner.SidewalkWidth * 0.5f;
+            for (int xSign = -1; xSign <= 1; xSign += 2)
+            {
+                for (int zSign = -1; zSign <= 1; zSign += 2)
+                {
+                    Rect corner = Rect.MinMaxRect(
+                        center.x + xSign * offset - halfWidth,
+                        center.z + zSign * offset - halfWidth,
+                        center.x + xSign * offset + halfWidth,
+                        center.z + zSign * offset + halfWidth);
+                    if (OverlapsAnyBuilding(layout, corner) ||
+                        OverlapsRiverLanding(layout.River, corner) ||
+                        (!HasSupportingGroundSurface(layout, corner) &&
+                         !HasRiverPromenadeSupport(layout.River, corner)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasRiverPromenadeSupport(
+            CityRiverPlan river,
+            Rect corner)
+        {
+            for (int index = 0; index < river.Promenades.Count; index++)
+            {
+                if (Contains(river.Promenades[index].Bounds, corner))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool OverlapsRiverLanding(
+            CityRiverPlan river,
+            Rect corner)
+        {
+            for (int index = 0; index < river.Landings.Count; index++)
+            {
+                CityRiverLandingDescriptor landing = river.Landings[index];
+                if (HasPositiveOverlap(corner, landing.StairBounds) ||
+                    HasPositiveOverlap(corner, landing.PlatformBounds))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasSupportingGroundSurface(

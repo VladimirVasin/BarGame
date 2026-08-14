@@ -7,6 +7,8 @@ namespace BarPromenade
     {
         private const int MaximumRouteAssignmentAttempts = 4096;
         private const float CandidateEndInset = 0.05f;
+        private const int MaximumRiverPointStopRoadEdgeHop = 5;
+        private const float MaximumRiverPointStopDistance = 120f;
 
         private static List<RouteOccurrence> CreateTargetRoute(
             CityLayout layout,
@@ -34,7 +36,6 @@ namespace BarPromenade
                     return new List<RouteOccurrence>();
                 }
             }
-
             List<int>[] outgoing = CreateRouteAdjacency(
                 nodes.Count,
                 acceptedLinks,
@@ -43,6 +44,13 @@ namespace BarPromenade
                 nodes.Count,
                 acceptedLinks,
                 true);
+            if (!KeepCycleCapableCandidates(
+                    candidatesByTarget,
+                    outgoing,
+                    acceptedLinks))
+            {
+                return new List<RouteOccurrence>();
+            }
             List<RouteOccurrence> fallback = null;
             int assignmentAttempts = 0;
             for (int anchorIndex = 0;
@@ -77,6 +85,7 @@ namespace BarPromenade
                     anchor.Source.RoadEdge
                 };
                 if (TryAssignCandidates(
+                        layout,
                         1,
                         compatible,
                         selected,
@@ -131,6 +140,7 @@ namespace BarPromenade
                 var selected = new StopCandidate[targets.Count];
                 selected[0] = anchor;
                 if (TryAssignCandidates(
+                        layout,
                         1,
                         compatible,
                         selected,
@@ -522,6 +532,7 @@ namespace BarPromenade
             {
                 TemporaryLink link = acceptedLinks[linkIndex];
                 if (!link.IsRoadSegment ||
+                    layout.IsBusFurnitureExcluded(link.RoadEdge) ||
                     link.Length <=
                         (safeEndDistance + CandidateEndInset) * 2f)
                 {
@@ -531,7 +542,14 @@ namespace BarPromenade
                 int roadEdgeHop = GetRoadEdgeHop(
                     link.RoadEdge,
                     target.FrontageEdges);
-                if (roadEdgeHop > 1)
+                bool usesRiverPointFallback =
+                    layout.River.IsEnabled &&
+                    target.Kind ==
+                        CityBusStopTargetKind.DistrictPointOfInterest;
+                int maximumRoadEdgeHop = usesRiverPointFallback
+                    ? MaximumRiverPointStopRoadEdgeHop
+                    : 1;
+                if (roadEdgeHop > maximumRoadEdgeHop)
                 {
                     continue;
                 }
@@ -566,6 +584,13 @@ namespace BarPromenade
                         districtPenalty,
                         safeEndDistance,
                         out StopCandidate candidate))
+                {
+                    continue;
+                }
+
+                if (usesRiverPointFallback &&
+                    candidate.ReferenceDistance >
+                    MaximumRiverPointStopDistance)
                 {
                     continue;
                 }
@@ -701,11 +726,24 @@ namespace BarPromenade
                     edge.Contains(frontage.B))
                 {
                     best = 1;
+                    continue;
                 }
+
+                int nodeDistance = Mathf.Min(
+                    ManhattanDistance(edge.A, frontage.A),
+                    ManhattanDistance(edge.A, frontage.B),
+                    ManhattanDistance(edge.B, frontage.A),
+                    ManhattanDistance(edge.B, frontage.B));
+                best = Mathf.Min(best, nodeDistance + 1);
             }
 
             return best;
         }
+
+        private static int ManhattanDistance(
+            Vector2Int left,
+            Vector2Int right) =>
+            Mathf.Abs(left.x - right.x) + Mathf.Abs(left.y - right.y);
 
         private static int GetDistrictPenalty(
             CityLayout layout,
@@ -784,7 +822,44 @@ namespace BarPromenade
             return false;
         }
 
+        private static bool KeepCycleCapableCandidates(
+            IList<List<StopCandidate>> candidatesByTarget,
+            IReadOnlyList<List<int>> outgoing,
+            IList<TemporaryLink> acceptedLinks)
+        {
+            for (int targetIndex = 0;
+                 targetIndex < candidatesByTarget.Count;
+                 targetIndex++)
+            {
+                List<StopCandidate> candidates =
+                    candidatesByTarget[targetIndex];
+                for (int candidateIndex = candidates.Count - 1;
+                     candidateIndex >= 0;
+                     candidateIndex--)
+                {
+                    StopCandidate candidate = candidates[candidateIndex];
+                    bool[] reachable = MarkReachable(
+                        candidate.Source.ToNodeIndex,
+                        outgoing,
+                        acceptedLinks,
+                        false);
+                    if (!reachable[candidate.Source.FromNodeIndex])
+                    {
+                        candidates.RemoveAt(candidateIndex);
+                    }
+                }
+
+                if (candidates.Count == 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static bool TryAssignCandidates(
+            CityLayout layout,
             int targetIndex,
             IReadOnlyList<List<StopCandidate>> candidates,
             StopCandidate[] selected,
@@ -806,6 +881,7 @@ namespace BarPromenade
             {
                 assignmentAttempts++;
                 if (!TryBuildClosedRoute(
+                        layout,
                         selected,
                         !requireUniqueEdges,
                         outgoing,
@@ -845,6 +921,7 @@ namespace BarPromenade
                 bool added = requireUniqueEdges &&
                              usedEdges.Add(option.Source.RoadEdge);
                 if (TryAssignCandidates(
+                        layout,
                         targetIndex + 1,
                         candidates,
                         selected,
@@ -875,12 +952,24 @@ namespace BarPromenade
         }
 
         private static bool TryBuildClosedRoute(
+            CityLayout layout,
             IReadOnlyList<StopCandidate> selected,
             bool allowStopEdgeReuse,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
             out List<RouteOccurrence> route)
         {
+            if (layout.River != null && layout.River.IsEnabled)
+            {
+                return TryBuildRiverClosedRoute(
+                    layout,
+                    selected,
+                    allowStopEdgeReuse,
+                    outgoing,
+                    acceptedLinks,
+                    out route);
+            }
+
             route = new List<RouteOccurrence>();
             var stopEdges = new HashSet<RoadEdge>();
             for (int index = 0; index < selected.Count; index++)
@@ -928,6 +1017,52 @@ namespace BarPromenade
             }
 
             return route.Count > 0;
+        }
+
+        private static bool TraversesRequiredRiverBridges(
+            CityLayout layout,
+            IReadOnlyList<RouteOccurrence> route)
+        {
+            CityRiverPlan river = layout.River;
+            if (river == null || !river.IsEnabled)
+            {
+                return true;
+            }
+
+            var counts = new Dictionary<RoadEdge, int>();
+            for (int index = 0; index < river.Bridges.Count; index++)
+            {
+                CityRiverBridgeDescriptor bridge = river.Bridges[index];
+                if (bridge.Definition.Role == CityBridgeRole.Road)
+                {
+                    counts.Add(bridge.Definition.CrossingEdge, 0);
+                }
+            }
+
+            for (int index = 0; index < route.Count; index++)
+            {
+                TemporaryLink link = route[index].Source;
+                if (link.IsRoadSegment &&
+                    counts.TryGetValue(link.RoadEdge, out int count))
+                {
+                    counts[link.RoadEdge] = count + 1;
+                }
+            }
+
+            if (counts.Count != 2)
+            {
+                return false;
+            }
+
+            foreach (int count in counts.Values)
+            {
+                if (count != 1)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool TryAppendConnector(

@@ -5,9 +5,13 @@ Read this file first, then use [`ai/README.md`](ai/README.md) as the documentati
 ## Reality check
 
 The Unity 6 URP vertical slice is implemented. It generates a finite connected,
-blueprint-driven city with a `12 x 12` urban core, a fixed traversable central
-park, a reachable northern beach and water edge, and four urban districts with
-four graph-separated bars. The default footprint now extends east to a
+blueprint-driven city whose inserted north-south river corridor expands the
+urban envelope to `13 x 12` while preserving all 144 former land-use lots.
+Two road bridges reconnect its outer edges; the 16-cell central park is split
+into two `2 x 4` halves joined by a timber footbridge, and four bank stairs
+reach lower waterside platforms. The city retains a reachable northern beach
+and water edge and four urban districts with four graph-separated bars. The
+default footprint also extends east to a
 reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
 access. The sparse footprint can be non-rectangular, and the same data-first
