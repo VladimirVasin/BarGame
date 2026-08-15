@@ -86,6 +86,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public SupermarketInteriorAtmosphere Atmosphere
+        {
+            get;
+            private set;
+        }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -117,6 +122,10 @@ namespace BarPromenade
                 camera,
                 sourceId =>
                     !GameSessionState.IsWorldItemCollected(sourceId));
+
+            Atmosphere = SupermarketInteriorAtmosphere.Install(
+                transform,
+                Layout);
 
             GameObject musicObject =
                 new GameObject("Supermarket Music");

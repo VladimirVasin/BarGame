@@ -82,6 +82,7 @@ namespace BarPromenade.Tests.EditMode
                     new Color(0.43f, 0.39f, 0.29f),
                     new Color(0.47f, 0.43f, 0.34f),
                     new Color(0.38f, 0.36f, 0.22f),
+                    new Color(0.42f, 0.40f, 0.26f),
                 },
                 [HomeSurfaceKind.BathroomTile] = new[]
                 {
@@ -140,6 +141,12 @@ namespace BarPromenade.Tests.EditMode
                 "Home Sofa Tear",
                 "Home Bathroom Toilet Flush",
                 "Home Bathroom Shower Head",
+                "Home Bathroom Shower Head Neck",
+                "Home Bathroom Shower Head Face",
+                "Home Bathroom Shower Drain",
+                "Home Bathroom Shower Mixer Handle Hot",
+                "Home Bathroom Shower Mixer Handle Cold",
+                "Home Bathroom Shower Soap",
                 "Home Bathroom Sink Hollow",
                 "Home Bathroom Cracked Mirror",
                 "Home Bathroom Mirror Crack",

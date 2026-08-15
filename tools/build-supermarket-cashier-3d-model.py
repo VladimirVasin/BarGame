@@ -51,9 +51,9 @@ NECK_BASE = (0.0, -0.015, 1.335)
 NECK_SEGMENT_COUNT = 5
 NECK_SEGMENT_HEIGHT = 0.11
 NECK_REST_LENGTH = NECK_SEGMENT_COUNT * NECK_SEGMENT_HEIGHT
-# The pursuit solver stretches the chain to reach the hero across the
-# shop: up to 4.5 m of neck from 0.55 m at rest.
-NECK_MAX_STRETCH_RATIO = 8.2
+# The pursuit solver stretches the chain to reach the hero anywhere in
+# the hall: up to 18 m of neck from 0.55 m at rest.
+NECK_MAX_STRETCH_RATIO = 32.7
 NECK_RADIUS_BOTTOM = 0.075
 NECK_RADIUS_TOP = 0.065
 NECK_RING_EXTRA_RADIUS = 0.012

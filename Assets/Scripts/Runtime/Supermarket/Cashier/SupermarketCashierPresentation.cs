@@ -49,10 +49,13 @@ namespace BarPromenade
     {
         public const float NeckSegmentHeight = 0.11f;
         public const float RestNeckLength = 0.55f;
-        public const float MaximumNeckLengthMeters = 4.5f;
+        // Long enough to reach every corner of the 16 x 11 hall from
+        // the register: the face simply always arrives.
+        public const float MaximumNeckLengthMeters = 18f;
         public const float HoverStandoffMeters = 0.85f;
         public const float HoverLiftMeters = 0.25f;
-        public const float ObstacleClearanceMeters = 0.45f;
+        public const float ObstacleClearanceMeters = 0.50f;
+        public const float ObstacleMarginMeters = 0.22f;
         public const float WatcherHeadTiltDegrees = 6f;
         public const float ScanYawDegrees = 4f;
         public const float ScanYawHertz = 0.18f;
@@ -167,9 +170,13 @@ namespace BarPromenade
                 restTip,
                 pursuit,
                 command.Extension);
-            Vector3 control = ResolveCurveControl(chainBase, tip);
+            ResolveCurveControls(
+                chainBase,
+                tip,
+                out Vector3 controlA,
+                out Vector3 controlB);
 
-            ApplyNeckCurve(chainBase, control, tip);
+            ApplyNeckCurve(chainBase, controlA, controlB, tip);
             ApplyHead(command, tip, up);
             ApplyEyes(command, up);
 
@@ -237,51 +244,92 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The quadratic-curve control point. A straight run gets a
-        /// straight neck; any shelf crossing the line lifts the middle
-        /// of the curve above the tallest obstruction, so the chain
-        /// arcs over the aisles instead of clipping through them.
+        /// The staple: a cubic curve whose two controls lift to a
+        /// shared clearance height over every obstacle the run passes,
+        /// so the chain climbs out of the counter fast, travels above
+        /// the aisles and only descends at the hero. The resulting
+        /// curve is re-sampled against the (margin-expanded) obstacle
+        /// boxes and the clearance is raised until nothing clips.
         /// </summary>
-        private Vector3 ResolveCurveControl(Vector3 from, Vector3 to)
+        private void ResolveCurveControls(
+            Vector3 from,
+            Vector3 to,
+            out Vector3 controlA,
+            out Vector3 controlB)
         {
-            Vector3 control = (from + to) * 0.5f;
+            controlA = Vector3.Lerp(from, to, 1f / 3f);
+            controlB = Vector3.Lerp(from, to, 2f / 3f);
             if (!hasPoseContext)
             {
-                return control;
+                return;
             }
 
-            float requiredHeight = float.NegativeInfinity;
+            float clearance = float.NegativeInfinity;
             for (int index = 0; index < obstacles.Count; index++)
             {
-                Bounds obstacle = obstacles[index];
-                if (!SegmentCrossesBounds(from, to, obstacle))
+                Bounds expanded = Expand(obstacles[index]);
+                if (!CurveTouchesBounds(
+                        from, controlA, controlB, to, expanded))
                 {
                     continue;
                 }
 
-                requiredHeight = Mathf.Max(
-                    requiredHeight,
-                    obstacle.max.y + ObstacleClearanceMeters);
+                clearance = Mathf.Max(
+                    clearance,
+                    expanded.max.y + ObstacleClearanceMeters);
             }
 
-            if (requiredHeight > control.y)
+            if (float.IsNegativeInfinity(clearance))
             {
-                // The quadratic only reaches half way to its control
-                // point at t=0.5, so the control climbs twice the
-                // missing height.
-                control.y += (requiredHeight - control.y) * 2f;
+                return;
             }
 
-            if (control.y > headLimits.max.y)
+            for (int attempt = 0; attempt < 4; attempt++)
             {
-                control.y = headLimits.max.y;
-            }
+                float height = Mathf.Min(
+                    clearance,
+                    headLimits.max.y);
+                controlA = Vector3.Lerp(from, to, 0.20f);
+                controlA.y = height;
+                controlB = Vector3.Lerp(from, to, 0.80f);
+                controlB.y = height;
+                if (height >= headLimits.max.y ||
+                    !CurveTouchesAnyObstacle(
+                        from, controlA, controlB, to))
+                {
+                    return;
+                }
 
-            return control;
+                clearance += 0.35f;
+            }
         }
 
-        private static bool SegmentCrossesBounds(
+        private bool CurveTouchesAnyObstacle(
             Vector3 from,
+            Vector3 controlA,
+            Vector3 controlB,
+            Vector3 to)
+        {
+            for (int index = 0; index < obstacles.Count; index++)
+            {
+                if (CurveTouchesBounds(
+                        from,
+                        controlA,
+                        controlB,
+                        to,
+                        Expand(obstacles[index])))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CurveTouchesBounds(
+            Vector3 from,
+            Vector3 controlA,
+            Vector3 controlB,
             Vector3 to,
             Bounds bounds)
         {
@@ -290,13 +338,24 @@ namespace BarPromenade
                  sample++)
             {
                 float t = sample / (float)ObstacleSampleCount;
-                if (bounds.Contains(Vector3.Lerp(from, to, t)))
+                if (bounds.Contains(EvaluateCurve(
+                        from, controlA, controlB, to, t)))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static Bounds Expand(Bounds bounds)
+        {
+            Bounds expanded = bounds;
+            expanded.Expand(new Vector3(
+                ObstacleMarginMeters * 2f,
+                ObstacleMarginMeters,
+                ObstacleMarginMeters * 2f));
+            return expanded;
         }
 
         /// <summary>
@@ -307,7 +366,8 @@ namespace BarPromenade
         /// </summary>
         private void ApplyNeckCurve(
             Vector3 chainBase,
-            Vector3 control,
+            Vector3 controlA,
+            Vector3 controlB,
             Vector3 tip)
         {
             IReadOnlyList<Transform> pivots = registry.NeckPivots;
@@ -315,12 +375,14 @@ namespace BarPromenade
             {
                 Vector3 from = EvaluateCurve(
                     chainBase,
-                    control,
+                    controlA,
+                    controlB,
                     tip,
                     index / (float)ChainSegmentCount);
                 Vector3 to = EvaluateCurve(
                     chainBase,
-                    control,
+                    controlA,
+                    controlB,
                     tip,
                     (index + 1) / (float)ChainSegmentCount);
                 Vector3 direction = to - from;
@@ -347,14 +409,16 @@ namespace BarPromenade
 
         private static Vector3 EvaluateCurve(
             Vector3 from,
-            Vector3 control,
+            Vector3 controlA,
+            Vector3 controlB,
             Vector3 to,
             float t)
         {
             float inverse = 1f - t;
-            return (inverse * inverse * from) +
-                   (2f * inverse * t * control) +
-                   (t * t * to);
+            return (inverse * inverse * inverse * from) +
+                   (3f * inverse * inverse * t * controlA) +
+                   (3f * inverse * t * t * controlB) +
+                   (t * t * t * to);
         }
 
         /// <summary>

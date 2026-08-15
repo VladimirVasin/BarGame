@@ -45,7 +45,7 @@
   "neck_segment_count": 5,
   "neck_rest_length_m": 0.55,
   "neck_segment_height_m": 0.11,
-  "neck_max_stretch_ratio": 8.2,
+  "neck_max_stretch_ratio": 32.7,
   "eye_design": "wide_watcher_asymmetric",
   "bones": [
     {

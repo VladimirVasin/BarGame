@@ -94,8 +94,8 @@ namespace BarPromenade
     {
         public const string RootName = "Supermarket Security Cameras";
         public const int CameraCount = 4;
-        public const float CornerInsetMeters = 0.55f;
-        public const float HeadDropMeters = 0.42f;
+        public const float CornerInsetMeters = 0.62f;
+        public const float HeadDropMeters = 0.50f;
 
         private static readonly Color Housing =
             new Color(0.155f, 0.175f, 0.165f);
@@ -179,13 +179,15 @@ namespace BarPromenade
             unit.transform.SetParent(root, false);
             unit.transform.localPosition = headPosition;
 
+            // Chunky enough to read from the shop floor: a thick
+            // ceiling stem and a fat boxy head, PS1 CCTV.
             float stemHeight =
                 plan.RoomHeight - headPosition.y;
             RuntimePrimitiveFactory.CreateBox(
                 "Camera Ceiling Stem",
                 unit.transform,
                 new Vector3(0f, (stemHeight * 0.5f) + 0.02f, 0f),
-                new Vector3(0.07f, stemHeight, 0.07f),
+                new Vector3(0.13f, stemHeight, 0.13f),
                 Housing,
                 false);
 
@@ -195,29 +197,36 @@ namespace BarPromenade
             RuntimePrimitiveFactory.CreateBox(
                 "Camera Body",
                 head.transform,
-                new Vector3(0f, 0f, 0.10f),
-                new Vector3(0.14f, 0.14f, 0.32f),
+                new Vector3(0f, 0f, 0.19f),
+                new Vector3(0.27f, 0.27f, 0.62f),
                 Body,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Camera Hood",
                 head.transform,
-                new Vector3(0f, 0.085f, 0.14f),
-                new Vector3(0.16f, 0.03f, 0.30f),
+                new Vector3(0f, 0.16f, 0.27f),
+                new Vector3(0.31f, 0.06f, 0.58f),
                 Housing,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Camera Lens",
                 head.transform,
-                new Vector3(0f, 0f, 0.28f),
-                new Vector3(0.10f, 0.10f, 0.05f),
+                new Vector3(0f, 0f, 0.545f),
+                new Vector3(0.19f, 0.19f, 0.10f),
                 Lens,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Camera Lens Iris",
+                head.transform,
+                new Vector3(0f, 0f, 0.60f),
+                new Vector3(0.10f, 0.10f, 0.015f),
+                Body,
                 false);
             GameObject led = RuntimePrimitiveFactory.CreateBox(
                 "Camera Recording Led",
                 head.transform,
-                new Vector3(0.045f, 0.055f, -0.045f),
-                new Vector3(0.025f, 0.025f, 0.025f),
+                new Vector3(0.09f, 0.105f, -0.08f),
+                new Vector3(0.05f, 0.05f, 0.05f),
                 RecordingLed,
                 CityNightResources.EmissiveMaterial,
                 false);

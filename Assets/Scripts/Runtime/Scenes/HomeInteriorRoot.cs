@@ -42,6 +42,21 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeToiletInteraction ToiletScene
+        {
+            get;
+            private set;
+        }
+        public HomeShowerInteraction ShowerScene
+        {
+            get;
+            private set;
+        }
+        public HomeTeethBrushingInteraction TeethBrushing
+        {
+            get;
+            private set;
+        }
         public HomeBalconySmokingInteraction Smoking
         {
             get;
@@ -312,6 +327,7 @@ namespace BarPromenade
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
             BuildBalconySmokingInteraction();
+            BuildBathroomSceneInteractions();
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -587,6 +603,49 @@ namespace BarPromenade
                 this,
                 RefrigeratorPlan,
                 Refrigerator);
+        }
+
+        /// <summary>
+        /// The three bathroom scenes. Each stands on its own trigger;
+        /// the scene components own their modal capture, guided
+        /// walk-in and camera work.
+        /// </summary>
+        private void BuildBathroomSceneInteractions()
+        {
+            ToiletScene = BuildBathroomScene<HomeToiletInteraction>(
+                "Home Toilet Interaction",
+                new Vector3(3.30f, 0.9f, 1.40f),
+                new Vector3(0.9f, 1.8f, 1.1f));
+            ToiletScene.Initialize(this);
+
+            ShowerScene = BuildBathroomScene<HomeShowerInteraction>(
+                "Home Shower Interaction",
+                new Vector3(3.60f, 0.9f, 2.60f),
+                new Vector3(1.2f, 1.8f, 1.2f));
+            ShowerScene.Initialize(this);
+
+            TeethBrushing =
+                BuildBathroomScene<HomeTeethBrushingInteraction>(
+                    "Home Teeth Brushing Interaction",
+                    new Vector3(2.075f, 0.9f, 2.95f),
+                    new Vector3(0.95f, 1.8f, 0.9f));
+            TeethBrushing.Initialize(this);
+        }
+
+        private T BuildBathroomScene<T>(
+            string objectName,
+            Vector3 triggerCenter,
+            Vector3 triggerSize)
+            where T : HomeBathroomSceneInteraction
+        {
+            var interactionObject = new GameObject(objectName);
+            interactionObject.transform.SetParent(transform, false);
+            interactionObject.transform.localPosition = triggerCenter;
+            BoxCollider trigger =
+                interactionObject.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = triggerSize;
+            return interactionObject.AddComponent<T>();
         }
 
         private void BuildBalconySmokingInteraction()

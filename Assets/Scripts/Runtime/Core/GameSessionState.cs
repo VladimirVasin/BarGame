@@ -122,6 +122,11 @@ namespace BarPromenade
             private set;
         } = HomeArrivalKind.Normal;
         public static int IntoxicationLevel { get; private set; }
+        public static int LastTeethBrushingDayIndex
+        {
+            get;
+            private set;
+        } = -1;
         public static int HungerLevel => needsProgression.HungerLevel;
         public static int StressLevel { get; private set; } = DefaultStress;
         public static int FatigueLevel => needsProgression.FatigueLevel;
@@ -229,6 +234,7 @@ namespace BarPromenade
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
             plannedBarRoute.Clear();
+            LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
             questLog.ResetWithStarterQuests();
@@ -389,6 +395,65 @@ namespace BarPromenade
         public static void ResetFatigueAfterSleep()
         {
             UpdateFatigue(DefaultFatigue);
+        }
+
+        /// <summary>
+        /// A completed bathroom ritual (toilet, shower) relieves a
+        /// little stress. Ungated: every completed scene commits.
+        /// </summary>
+        public static void CommitBathroomStressRelief(
+            string sourceId,
+            int relief)
+        {
+            PlayerNeedReliefResult result =
+                PlayerNeedsRules.ApplyStressRelief(
+                    StressLevel,
+                    relief);
+            UpdateNeeds(HungerLevel, result.LevelAfter);
+            GameLog.Info(
+                "needs",
+                "bathroom_stress_relief",
+                GameLog.Field(
+                    "source_id",
+                    sourceId ?? string.Empty),
+                GameLog.Field("requested_relief", relief),
+                GameLog.Field(
+                    "actual_relief",
+                    result.ActualRelief),
+                GameLog.Field("stress_after", result.LevelAfter));
+        }
+
+        /// <summary>
+        /// Teeth brushing relieves stress once per game day; the scene
+        /// stays replayable, only the relief is gated.
+        /// </summary>
+        public static bool TryCommitTeethBrushingRelief(int relief)
+        {
+            if (GameDayIndex == LastTeethBrushingDayIndex)
+            {
+                GameLog.Info(
+                    "needs",
+                    "teeth_brushing_relief_ignored",
+                    GameLog.Field("day_index", GameDayIndex));
+                return false;
+            }
+
+            LastTeethBrushingDayIndex = GameDayIndex;
+            PlayerNeedReliefResult result =
+                PlayerNeedsRules.ApplyStressRelief(
+                    StressLevel,
+                    relief);
+            UpdateNeeds(HungerLevel, result.LevelAfter);
+            GameLog.Info(
+                "needs",
+                "teeth_brushing_relief",
+                GameLog.Field("day_index", GameDayIndex),
+                GameLog.Field("requested_relief", relief),
+                GameLog.Field(
+                    "actual_relief",
+                    result.ActualRelief),
+                GameLog.Field("stress_after", result.LevelAfter));
+            return true;
         }
 
         public static InventoryItemUseResult EvaluateInventoryItemUse(

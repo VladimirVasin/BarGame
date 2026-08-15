@@ -24,6 +24,18 @@ namespace BarPromenade
             new Color(0.40f, 0.17f, 0.075f);
         private static readonly Color Curtain =
             new Color(0.38f, 0.36f, 0.22f);
+        private static readonly Color CurtainLight =
+            new Color(0.42f, 0.40f, 0.26f);
+        private static readonly Color HandleHot =
+            new Color(0.62f, 0.20f, 0.16f);
+        private static readonly Color HandleCold =
+            new Color(0.30f, 0.38f, 0.46f);
+        private static readonly Color HoseColor =
+            new Color(0.30f, 0.31f, 0.27f);
+        private static readonly Color NozzlePlate =
+            new Color(0.10f, 0.10f, 0.09f);
+        private static readonly Color Soap =
+            new Color(0.55f, 0.50f, 0.35f);
         private static readonly Color Mirror =
             new Color(0.22f, 0.28f, 0.27f);
         private static readonly Color Door =
@@ -329,6 +341,14 @@ namespace BarPromenade
                 parts);
         }
 
+        /// <summary>
+        /// The Soviet stall: open toward the sink (-X) and the doorway
+        /// (-Z), an L-rail with a folded curtain that the shower scene
+        /// draws shut by scaling its group, and real plumbing — mixer
+        /// with cross handles, sagging hose, tilted bell head with a
+        /// dark nozzle plate, soap shelf. Only the tray keeps a
+        /// collider so the hero can step in.
+        /// </summary>
         private static void BuildShower(
             Transform room,
             HomeFurnitureFootprint fixture,
@@ -339,6 +359,8 @@ namespace BarPromenade
                 bounds.center.x,
                 0f,
                 bounds.center.y);
+            float frontZ = bounds.yMin + 0.034f;
+            float leftX = bounds.xMin + 0.01f;
             var parts = new List<GameObject>();
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Shower Tray",
@@ -363,57 +385,222 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ,
                 false));
-            GameObject curtain = HomeSurfacePrimitives.CreateBox(
-                "Home Bathroom Shower Curtain",
+            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+                "Home Bathroom Shower Drain",
                 room,
-                center +
-                new Vector3(
-                    -bounds.width * 0.30f,
-                    1.30f,
-                    -bounds.height * 0.47f),
-                new Vector3(
-                    bounds.width * 0.38f,
-                    1.82f,
-                    0.035f),
-                Curtain,
-                HomeSurfaceKind.BedLinen,
+                center + new Vector3(0.10f, 0.215f, 0.10f),
+                new Vector3(0.09f, 0.012f, 0.09f),
+                Rust,
+                false));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
+                "Home Bathroom Shower Rim Front",
+                room,
+                new Vector3(center.x, 0.225f, bounds.yMin + 0.025f),
+                new Vector3(bounds.width, 0.09f, 0.05f),
+                Porcelain,
+                HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXY,
-                false);
-
-            parts.Add(CreatePipe(
-                "Home Bathroom Shower Riser",
+                false));
+            parts.Add(HomeSurfacePrimitives.CreateBox(
+                "Home Bathroom Shower Rim Left",
                 room,
-                center +
-                new Vector3(
-                    -bounds.width * 0.34f,
-                    1.35f,
-                    bounds.height * 0.42f),
-                new Vector3(0.045f, 0.78f, 0.045f),
-                Vector3.zero));
+                new Vector3(bounds.xMin + 0.025f, 0.225f, center.z),
+                new Vector3(0.05f, 0.09f, bounds.height - 0.06f),
+                Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxZY,
+                false));
+
+            // L-shaped curtain rail over both open sides.
             parts.Add(CreatePipe(
                 "Home Bathroom Shower Rail",
                 room,
-                center +
-                new Vector3(
-                    0f,
-                    2.24f,
-                    -bounds.height * 0.47f),
-                new Vector3(
-                    0.035f,
-                    bounds.width * 0.48f,
-                    0.035f),
+                new Vector3(center.x, 2.24f, frontZ),
+                new Vector3(0.035f, bounds.width * 0.5f, 0.035f),
                 new Vector3(0f, 0f, 90f)));
+            parts.Add(CreatePipe(
+                "Home Bathroom Shower Rail Return",
+                room,
+                new Vector3(leftX, 2.24f, center.z),
+                new Vector3(0.035f, bounds.height * 0.5f, 0.035f),
+                new Vector3(90f, 0f, 0f)));
+
+            // The animatable curtain: an empty pivot at the left front
+            // corner; the shower scene stretches localScale.x from the
+            // gathered 0.55 to the drawn 1.0. Four overlapping fold
+            // strips alternate depth and tint so the folds read at PS1
+            // fidelity.
+            var curtainGroup = new GameObject(
+                "Home Bathroom Shower Curtain");
+            curtainGroup.transform.SetParent(room, false);
+            curtainGroup.transform.localPosition =
+                new Vector3(bounds.xMin + 0.05f, 0f, frontZ);
+            float[] foldOffsets = { 0.16f, 0.45f, 0.73f, 0.98f };
+            float[] foldWidths = { 0.32f, 0.30f, 0.31f, 0.27f };
+            var curtainParts = new List<GameObject>();
+            for (int fold = 0; fold < foldOffsets.Length; fold++)
+            {
+                bool deep = (fold & 1) == 0;
+                GameObject strip = HomeSurfacePrimitives.CreateBox(
+                    $"Home Bathroom Shower Curtain Fold {fold + 1}",
+                    curtainGroup.transform,
+                    new Vector3(
+                        foldOffsets[fold],
+                        1.30f,
+                        deep ? -0.012f : 0.012f),
+                    new Vector3(foldWidths[fold], 1.82f, 0.03f),
+                    deep ? Curtain : CurtainLight,
+                    HomeSurfaceKind.BedLinen,
+                    SurfaceProjection.BoxXY,
+                    false);
+                curtainParts.Add(strip);
+            }
+
+            curtainGroup.transform.localScale =
+                new Vector3(0.55f, 1f, 1f);
+
+            // Static folded run along the left rail.
+            for (int side = 0; side < 3; side++)
+            {
+                bool deep = (side & 1) == 0;
+                curtainParts.Add(HomeSurfacePrimitives.CreateBox(
+                    $"Home Bathroom Shower Curtain Side {side + 1}",
+                    room,
+                    new Vector3(
+                        deep ? leftX - 0.012f : leftX + 0.012f,
+                        1.30f,
+                        bounds.yMin + 0.20f + side * 0.30f),
+                    new Vector3(0.03f, 1.82f, 0.32f),
+                    deep ? Curtain : CurtainLight,
+                    HomeSurfaceKind.BedLinen,
+                    SurfaceProjection.BoxZY,
+                    false));
+            }
+
+            // Wall mixer with cross handles, spout and a sagging hose.
+            float backZ = bounds.yMax - 0.16f;
+            parts.Add(HomeSurfacePrimitives.CreateBox(
+                "Home Bathroom Shower Mixer Body",
+                room,
+                new Vector3(bounds.xMax - 0.20f, 1.02f, backZ),
+                new Vector3(0.18f, 0.10f, 0.10f),
+                Rust,
+                HomeSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                false));
             parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+                "Home Bathroom Shower Mixer Handle Hot",
+                room,
+                new Vector3(bounds.xMax - 0.27f, 1.02f, backZ - 0.06f),
+                new Vector3(0.085f, 0.03f, 0.085f),
+                HandleHot,
+                false));
+            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+                "Home Bathroom Shower Mixer Handle Cold",
+                room,
+                new Vector3(bounds.xMax - 0.13f, 1.02f, backZ - 0.06f),
+                new Vector3(0.085f, 0.03f, 0.085f),
+                HandleCold,
+                false));
+            parts.Add(CreatePipe(
+                "Home Bathroom Shower Spout",
+                room,
+                new Vector3(bounds.xMax - 0.20f, 0.93f, backZ - 0.08f),
+                new Vector3(0.035f, 0.16f, 0.035f),
+                new Vector3(90f, 0f, 0f)));
+            Vector3[] hoseCenters =
+            {
+                new Vector3(bounds.xMax - 0.14f, 1.20f, backZ - 0.04f),
+                new Vector3(bounds.xMax - 0.17f, 1.50f, backZ - 0.07f),
+                new Vector3(bounds.xMax - 0.28f, 1.78f, backZ - 0.07f),
+                new Vector3(bounds.xMax - 0.52f, 1.98f, backZ - 0.06f)
+            };
+            Vector3[] hoseAngles =
+            {
+                new Vector3(0f, 0f, 20f),
+                new Vector3(0f, 0f, 8f),
+                new Vector3(0f, 0f, -18f),
+                new Vector3(0f, 0f, -55f)
+            };
+            for (int segment = 0; segment < hoseCenters.Length; segment++)
+            {
+                GameObject hose = HomeSurfacePrimitives.CreateCylinder(
+                    $"Home Bathroom Shower Hose {segment + 1}",
+                    room,
+                    hoseCenters[segment],
+                    new Vector3(0.025f, 0.32f, 0.025f),
+                    HoseColor,
+                    HomeSurfaceKind.PaintedMetal,
+                    SurfaceProjection.CylinderSide,
+                    false);
+                hose.transform.localRotation =
+                    Quaternion.Euler(hoseAngles[segment]);
+                parts.Add(hose);
+            }
+
+            // Riser, arm and a real tilted bell head with the dark
+            // perforated plate, aimed at the tray centre.
+            parts.Add(CreatePipe(
+                "Home Bathroom Shower Riser",
+                room,
+                new Vector3(bounds.xMax - 0.20f, 1.62f, backZ),
+                new Vector3(0.045f, 1.10f, 0.045f),
+                Vector3.zero));
+            parts.Add(CreatePipe(
+                "Home Bathroom Shower Arm",
+                room,
+                new Vector3(bounds.xMax - 0.48f, 2.17f, backZ),
+                new Vector3(0.035f, 0.56f, 0.035f),
+                new Vector3(0f, 0f, 90f)));
+            GameObject headNeck = RuntimePrimitiveFactory.CreateCylinder(
+                "Home Bathroom Shower Head Neck",
+                room,
+                new Vector3(bounds.xMax - 0.76f, 2.11f, backZ - 0.04f),
+                new Vector3(0.04f, 0.10f, 0.04f),
+                Rust,
+                false);
+            headNeck.transform.localRotation =
+                Quaternion.Euler(35f, 0f, 0f);
+            parts.Add(headNeck);
+            GameObject showerHead = RuntimePrimitiveFactory.CreateCylinder(
                 "Home Bathroom Shower Head",
                 room,
-                center +
-                new Vector3(
-                    -bounds.width * 0.22f,
-                    2.08f,
-                    bounds.height * 0.27f),
-                new Vector3(0.17f, 0.045f, 0.17f),
+                new Vector3(bounds.xMax - 0.78f, 2.045f, backZ - 0.08f),
+                new Vector3(0.15f, 0.06f, 0.15f),
                 Rust,
+                false);
+            showerHead.transform.localRotation =
+                Quaternion.Euler(35f, 0f, 0f);
+            parts.Add(showerHead);
+            GameObject headFace = RuntimePrimitiveFactory.CreateCylinder(
+                "Home Bathroom Shower Head Face",
+                room,
+                new Vector3(bounds.xMax - 0.795f, 2.005f, backZ - 0.105f),
+                new Vector3(0.125f, 0.012f, 0.125f),
+                NozzlePlate,
+                false);
+            headFace.transform.localRotation =
+                Quaternion.Euler(35f, 0f, 0f);
+            parts.Add(headFace);
+
+            // Corner soap shelf with the surviving sliver of soap.
+            parts.Add(HomeSurfacePrimitives.CreateBox(
+                "Home Bathroom Shower Shelf",
+                room,
+                new Vector3(bounds.xMax - 0.10f, 1.38f, bounds.yMax - 0.10f),
+                new Vector3(0.22f, 0.03f, 0.22f),
+                Porcelain,
+                HomeSurfaceKind.Enamel,
+                SurfaceProjection.BoxXZ,
                 false));
+            parts.Add(RuntimePrimitiveFactory.CreateBox(
+                "Home Bathroom Shower Soap",
+                room,
+                new Vector3(bounds.xMax - 0.10f, 1.405f, bounds.yMax - 0.10f),
+                new Vector3(0.09f, 0.028f, 0.06f),
+                Soap,
+                false));
+
             RegisterFixture(
                 occlusionRegistry,
                 "home.bathroom.shower",
@@ -422,7 +609,7 @@ namespace BarPromenade
                 "home.bathroom.shower-curtain",
                 HomeOccluderKind.SoftDecoration,
                 SoftMinimumVisibility,
-                curtain);
+                curtainParts.ToArray());
         }
 
         private static void BuildSink(

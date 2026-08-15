@@ -800,10 +800,29 @@ namespace BarPromenade
                 0.16f, 2.66f, 0.32f);
             Add(parts, c, BatchStyle.Street, width * 0.51f, 3.48f, 0.02f,
                 0.16f, 2.66f, 0.32f);
-            Add(parts, c, c.Neon, -width * 0.24f, 3.48f, 0.15f,
-                width * 0.46f, 1.82f, 0.06f);
-            Add(parts, c, c.Neon, width * 0.24f, 3.48f, 0.15f,
-                width * 0.46f, 1.82f, 0.06f);
+            // Two backlit posters, not bare glowing quads: dark glyph
+            // strokes across each pane read as a headline, body text
+            // and a photo block — the phone-booth lightbox idiom.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float paneX = side * width * 0.24f;
+                Add(parts, c, c.Neon, paneX, 3.48f, 0.15f,
+                    width * 0.46f, 1.82f, 0.06f);
+                Add(parts, c, BatchStyle.Street,
+                    paneX - side * width * 0.075f, 4.02f, 0.185f,
+                    width * 0.21f, 0.30f, 0.02f);
+                Add(parts, c, BatchStyle.Street, paneX, 3.56f, 0.185f,
+                    width * 0.36f, 0.10f, 0.02f);
+                Add(parts, c, BatchStyle.Street,
+                    paneX + side * width * 0.02f, 3.34f, 0.185f,
+                    width * 0.30f, 0.09f, 0.02f);
+                Add(parts, c, BatchStyle.Street,
+                    paneX + side * width * 0.12f, 2.95f, 0.185f,
+                    width * 0.17f, 0.46f, 0.02f);
+                Add(parts, c, BatchStyle.Street,
+                    paneX - side * width * 0.14f, 2.86f, 0.185f,
+                    width * 0.15f, 0.09f, 0.02f);
+            }
         }
 
         private static void BuildFireEscape(
@@ -845,8 +864,17 @@ namespace BarPromenade
             {
                 Add(parts, c, BatchStyle.Street, side * 0.72f, 1.02f, -0.35f,
                     1.15f, 2.04f, 0.72f);
+                // The lit machine front is a product window, so dark
+                // grid mullions carve it into a vitrine instead of one
+                // bare glowing rectangle.
                 Add(parts, c, c.Neon, side * 0.72f, 1.32f, 0.03f,
                     0.80f, 0.72f, 0.05f);
+                Add(parts, c, BatchStyle.Street, side * 0.72f, 1.32f,
+                    0.062f, 0.82f, 0.045f, 0.02f);
+                Add(parts, c, BatchStyle.Street, side * 0.72f - 0.135f,
+                    1.32f, 0.062f, 0.045f, 0.74f, 0.02f);
+                Add(parts, c, BatchStyle.Street, side * 0.72f + 0.135f,
+                    1.32f, 0.062f, 0.045f, 0.74f, 0.02f);
                 Add(parts, c, BatchStyle.Industrial, side * 0.72f, 0.62f,
                     0.04f, 0.74f, 0.16f, 0.05f);
             }
@@ -858,9 +886,11 @@ namespace BarPromenade
                     0.16f, 1.00f, 0.16f);
             }
 
-            Add(parts, c, c.Neon, -1.58f, 0.78f, 1.20f,
+            // Queue rails are painted steel, not neon tubes: glowing
+            // handrails read as untextured noise at street level.
+            Add(parts, c, BatchStyle.Street, -1.58f, 0.78f, 1.20f,
                 1.40f, 0.07f, 0.07f);
-            Add(parts, c, c.Neon, 1.52f, 0.78f, 1.20f,
+            Add(parts, c, BatchStyle.Street, 1.52f, 0.78f, 1.20f,
                 1.40f, 0.07f, 0.07f);
         }
 
@@ -890,10 +920,26 @@ namespace BarPromenade
                 1.65f, 2.20f, 0.18f);
             Add(parts, c, BatchStyle.Street, width * 0.18f, 1.35f, 0.22f,
                 1.65f, 2.20f, 0.18f);
-            Add(parts, c, c.Neon, -width * 0.18f, 1.35f, 0.32f,
-                1.28f, 1.75f, 0.05f);
-            Add(parts, c, c.Neon, width * 0.18f, 1.35f, 0.32f,
-                1.28f, 1.75f, 0.05f);
+            // Backlit movie posters carry a dark figure block and
+            // title strokes over the glow, so the lightboxes read as
+            // printed one-sheets instead of bare glowing panes.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float posterX = side * width * 0.18f;
+                Add(parts, c, c.Neon, posterX, 1.35f, 0.32f,
+                    1.28f, 1.75f, 0.05f);
+                Add(parts, c, BatchStyle.Street,
+                    posterX - side * 0.19f, 1.58f, 0.35f,
+                    0.46f, 0.88f, 0.02f);
+                Add(parts, c, BatchStyle.Street,
+                    posterX + side * 0.28f, 1.30f, 0.35f,
+                    0.34f, 0.40f, 0.02f);
+                Add(parts, c, BatchStyle.Street, posterX, 0.86f, 0.35f,
+                    0.96f, 0.10f, 0.02f);
+                Add(parts, c, BatchStyle.Street,
+                    posterX + side * 0.06f, 0.68f, 0.35f,
+                    0.74f, 0.08f, 0.02f);
+            }
             Add(parts, c, BatchStyle.Masonry, 0f, 8.72f, 0f,
                 width * 0.92f, 0.28f, 0.52f);
         }

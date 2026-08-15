@@ -153,6 +153,26 @@
       "value": "E — закончить курить"
     },
     {
+      "key": "interaction.use_toilet",
+      "value": "E — воспользоваться туалетом"
+    },
+    {
+      "key": "interaction.take_shower",
+      "value": "E — принять душ"
+    },
+    {
+      "key": "interaction.stop_shower",
+      "value": "E — закончить мыться"
+    },
+    {
+      "key": "interaction.brush_teeth",
+      "value": "E — почистить зубы"
+    },
+    {
+      "key": "interaction.stop_brushing",
+      "value": "E — закончить чистку"
+    },
+    {
       "key": "interaction.open_refrigerator",
       "value": "E — открыть холодильник"
     },

@@ -153,6 +153,26 @@
       "value": "E — stop smoking"
     },
     {
+      "key": "interaction.use_toilet",
+      "value": "E — use the toilet"
+    },
+    {
+      "key": "interaction.take_shower",
+      "value": "E — take a shower"
+    },
+    {
+      "key": "interaction.stop_shower",
+      "value": "E — finish showering"
+    },
+    {
+      "key": "interaction.brush_teeth",
+      "value": "E — brush your teeth"
+    },
+    {
+      "key": "interaction.stop_brushing",
+      "value": "E — finish brushing"
+    },
+    {
       "key": "interaction.open_refrigerator",
       "value": "E — open refrigerator"
     },

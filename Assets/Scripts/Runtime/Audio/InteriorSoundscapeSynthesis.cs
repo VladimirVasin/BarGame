@@ -276,6 +276,50 @@ namespace BarPromenade
         private const float RadioMurmurDuration = 1.8f;
         private const float BathroomDetailDuration = 0.58f;
 
+        /// <summary>
+        /// The running shower: dense periodic spray noise with a slow
+        /// pressure ripple and a thin high shimmer. Built from
+        /// loop-phase harmonics only, so the 8 s loop is seamless.
+        /// </summary>
+        public static float[] GenerateShowerWaterLoopSamples()
+        {
+            int sampleCount = Mathf.RoundToInt(
+                SampleRate * LoopDuration);
+            var samples = new float[sampleCount];
+            for (int index = 0; index < sampleCount; index++)
+            {
+                float phase = InteriorSoundscapeSynthesis.LoopPhase(
+                    index,
+                    sampleCount);
+                float ripple =
+                    0.80f +
+                    Mathf.Sin(phase * 3f + 0.7f) * 0.10f +
+                    Mathf.Sin(phase * 7f + 2.1f) * 0.05f;
+                float spray =
+                    InteriorSoundscapeSynthesis.PeriodicNoise(
+                        phase,
+                        0.9f,
+                        1490f) *
+                    0.55f +
+                    InteriorSoundscapeSynthesis.PeriodicNoise(
+                        phase,
+                        2.6f,
+                        2333f) *
+                    0.34f;
+                float shimmer =
+                    InteriorSoundscapeSynthesis.PeriodicNoise(
+                        phase,
+                        4.2f,
+                        3877f) *
+                    0.16f;
+                samples[index] =
+                    InteriorSoundscapeSynthesis.Quantize(
+                        (spray + shimmer) * ripple * 0.52f);
+            }
+
+            return samples;
+        }
+
         public static float[] GenerateClosedRefrigeratorLoopSamples()
         {
             int sampleCount = Mathf.RoundToInt(

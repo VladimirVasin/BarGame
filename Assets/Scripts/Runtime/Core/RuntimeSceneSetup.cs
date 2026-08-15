@@ -76,10 +76,13 @@ namespace BarPromenade
             Camera camera = EnsureCamera(
                 new Color(0.055f, 0.070f, 0.060f));
             SetPostProcessing(camera, true);
+            // The directional is only the fill now; the fluorescent
+            // practicals of SupermarketInteriorAtmosphere carry the
+            // hall, so the key steps down to keep exposure in place.
             ConfigureDirectionalLighting(
                 new Color(0.70f, 0.82f, 0.72f),
-                0.48f,
-                new Color(0.070f, 0.090f, 0.075f),
+                0.36f,
+                new Color(0.078f, 0.098f, 0.083f),
                 0.58f);
 
             RenderSettings.fog = false;

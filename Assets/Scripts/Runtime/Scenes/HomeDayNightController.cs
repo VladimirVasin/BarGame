@@ -8,9 +8,34 @@ namespace BarPromenade
     public sealed class HomeDayNightController : MonoBehaviour
     {
         public const float DayWindowLightIntensity = 8.25f;
+        // The apartment lives by its clock: by day the window carries
+        // the room and the bulbs recede; by night the warm lamp pools
+        // take over while the ambient sinks cold. Dusk passes through
+        // a low amber sun on the window before the blue moon arrives.
+        public const float DayMainLampIntensity = 2.30f;
+        public const float NightMainLampIntensity = 4.10f;
+        public const float DayEntryLightIntensity = 8.00f;
+        public const float NightEntryLightIntensity = 9.40f;
+        public const float DuskWindowBlend = 0.65f;
+        public const float DaySunIntensity = 0.44f;
+        public const float NightSunIntensity = 0.22f;
 
         public static readonly Color DayWindowLightColor =
             new Color(1f, 0.82f, 0.61f);
+        public static readonly Color DuskWindowLightColor =
+            new Color(1f, 0.56f, 0.30f);
+        public static readonly Color DayMainLampColor =
+            new Color(0.95f, 0.60f, 0.32f);
+        public static readonly Color NightMainLampColor =
+            new Color(0.95f, 0.50f, 0.20f);
+        public static readonly Color DayAmbientColor =
+            new Color(0.080f, 0.067f, 0.056f);
+        public static readonly Color NightAmbientColor =
+            new Color(0.046f, 0.043f, 0.050f);
+        public static readonly Color DaySunColor =
+            new Color(0.92f, 0.84f, 0.70f);
+        public static readonly Color NightSunColor =
+            new Color(0.60f, 0.66f, 0.82f);
 
         private HomeInteriorAtmosphere interiorAtmosphere;
         private HomeBalconyExteriorAtmosphere exteriorAtmosphere;
@@ -110,6 +135,15 @@ namespace BarPromenade
                 VisualApplicationCount++;
             }
 
+            // The Balcony shot borrows City's ambient and sun; the
+            // indoor mood must not fight it mid-shot and reasserts
+            // itself the moment the camera comes back inside.
+            if ((shouldApplySample || balconyVisibilityChanged) &&
+                !balconyVisibilityActive)
+            {
+                ApplyInteriorMood();
+            }
+
             if (shouldApplySample || balconyVisibilityChanged)
             {
                 exteriorAtmosphere.ApplyExteriorLighting(
@@ -122,19 +156,73 @@ namespace BarPromenade
         {
             WindowDayFactor = 1f - CurrentSample.NightFactor;
 
+            // Zero at both endpoints, peaking mid-transition: dawn and
+            // dusk pass through a low amber sun before day or the blue
+            // moon takes the window.
+            float duskWeight = 1f - Mathf.Abs(
+                (2f * CurrentSample.NightFactor) - 1f);
+
             Light windowLight = interiorAtmosphere.WindowLight;
-            windowLight.color = Color.Lerp(
+            Color windowColor = Color.Lerp(
                 HomeInteriorAtmosphere.NightWindowLightColor,
                 DayWindowLightColor,
                 WindowDayFactor);
+            windowLight.color = Color.Lerp(
+                windowColor,
+                DuskWindowLightColor,
+                duskWeight * DuskWindowBlend);
             windowLight.intensity = Mathf.Lerp(
                 HomeInteriorAtmosphere.NightWindowLightIntensity,
                 DayWindowLightIntensity,
                 WindowDayFactor);
 
+            // By day the bulbs are pale leftovers; after dark they are
+            // the room.
+            if (interiorAtmosphere.PracticalLights.Count > 0)
+            {
+                Light mainLamp = interiorAtmosphere.PracticalLights[0];
+                mainLamp.intensity = Mathf.Lerp(
+                    NightMainLampIntensity,
+                    DayMainLampIntensity,
+                    WindowDayFactor);
+                mainLamp.color = Color.Lerp(
+                    NightMainLampColor,
+                    DayMainLampColor,
+                    WindowDayFactor);
+            }
+
+            Light entryLight = interiorAtmosphere.EntryDoorLight;
+            if (entryLight != null)
+            {
+                entryLight.intensity = Mathf.Lerp(
+                    NightEntryLightIntensity,
+                    DayEntryLightIntensity,
+                    WindowDayFactor);
+            }
+
             exteriorNight.SetNightFactor(
                 CurrentSample.NightFactor,
                 force);
+        }
+
+        private void ApplyInteriorMood()
+        {
+            RenderSettings.ambientLight = Color.Lerp(
+                NightAmbientColor,
+                DayAmbientColor,
+                WindowDayFactor);
+            Light sun = RenderSettings.sun;
+            if (sun != null && sun.type == LightType.Directional)
+            {
+                sun.intensity = Mathf.Lerp(
+                    NightSunIntensity,
+                    DaySunIntensity,
+                    WindowDayFactor);
+                sun.color = Color.Lerp(
+                    NightSunColor,
+                    DaySunColor,
+                    WindowDayFactor);
+            }
         }
 
         private void Update()

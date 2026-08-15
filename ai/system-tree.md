@@ -330,6 +330,10 @@ Assets/
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
+        HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in, camera
+        HomeToiletInteraction.cs       privacy-cut toilet scene + pure timeline
+        HomeShowerInteraction.cs       curtain/water/steam shower scene + timeline + effect
+        HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
       Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
@@ -349,6 +353,7 @@ Assets/
         StairwellFixedCameraController.cs  three height-selected fixed shots
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
+        SupermarketInteriorAtmosphere.cs  six shadowless practicals + flickering row
         BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
         BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
@@ -891,6 +896,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                                 -> caught-looking retract + stare
                                                 -> E talk stub -> placeholder line
                                              -> four corner CCTV heads track the hero
+                                             -> six practicals + one flickering row
        -> SupermarketShelfStation -> product-centered authored shelf camera
                                    -> cyclic stocked-shelf navigation
                                       -> muted clickable arrows beside product

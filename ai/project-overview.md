@@ -677,14 +677,18 @@ The vertical slice contains:
   checkout staffed by the Watcher Cashier — a bespoke animation-free 3D
   clerk on the shared 31-bone Avatar whose five-segment neck lies along a
   pursuit curve: his body never leaves the register, but the head travels
-  up to `4.5 m` of neck to hover beside the hero anywhere in the hall,
-  arcing over any shelf in the way; he snap-retracts with hysteresis when
+  the whole hall — up to `18 m` of neck — to hover beside the hero,
+  the sample-verified curve climbing over any shelf or counter in the
+  way; he snap-retracts with hysteresis when
   the hero turns to look (pupils pinched, blinking suppressed) and
   otherwise blinks once per `6.5 s`; a
-  separate `E — talk` stub answers with a placeholder stare. Four
+  separate `E — talk` stub answers with a placeholder stare. Four chunky
   ceiling-corner CCTV units servo their lenses after the hero from the
   first frame (fake-emissive recording LEDs, no colliders, no real
-  lights). The checkout
+  lights), and the hall runs on a fluorescent light budget: six
+  shadowless practicals under the directional fill — one per tube row, a
+  warm checkout accent, a cool cold-shelf spill — with one row
+  flickering deterministically. The checkout
   is not a purchase station: activating a shelf opens its authored fixed product view centered on
   the first available physical product. The modal browser keeps one continuous
   lock while previous/next input cycles through every stocked shelf, skips
@@ -914,6 +918,13 @@ The vertical slice contains:
 - while the Home fixed-camera controller is active, the same world-oriented 3D
   hero remains visible in MainRoom, Bathroom and Balcony; the shots no longer
   require camera-plane or yaw-billboard modes to preserve a sprite aspect;
+- a lived-in bathroom: a rebuilt shower stall (folded curtain on an
+  L-rail, mixer, hose, tilted head, soap shelf) and three modal scenes on
+  one shared skeleton — a tactful toilet privacy cut with an off-frame
+  flush, a curtained shower with water, steam and a crossfaded hiss loop,
+  and a mirror teeth-brushing close-up shot from the mirror plane with a
+  procedural brushing arm, foam and a rinse; toilet/shower relieve
+  stress on completion, brushing once per game day;
 - 3D bar patrons drawn from the same pooled city pedestrian prefabs: guests
   sit in booths through the shared seated-ride contract and stand at tables on
   the deterministic layout anchors with per-anchor palette variants, idling

@@ -37,8 +37,8 @@ namespace BarPromenade
     {
         public const int SampleRate =
             HomeSoundscapeSynthesis.SampleRate;
-        public const int OwnedSourceCount = 5;
-        public const int RuntimeClipCount = 8;
+        public const int OwnedSourceCount = 6;
+        public const int RuntimeClipCount = 9;
 
         public const float RefrigeratorGain = 1.5848932f;
         public const float ClosedRefrigeratorVolume =
@@ -49,6 +49,9 @@ namespace BarPromenade
         public const float OpenRefrigeratorCutoff = 3850f;
         public const float BathroomLightCrackleVolume = 0.18f;
         public const float BathroomLightCrackleCutoff = 5200f;
+        public const float ShowerWaterVolume = 0.145f;
+        public const float ShowerWaterClosedCutoff = 1400f;
+        public const float ShowerWaterOpenCutoff = 4600f;
 
         private const float BalconyVolume = 0.080f;
         private const float CueVolume = 0.105f;
@@ -63,6 +66,7 @@ namespace BarPromenade
         [SerializeField] private AudioSource balconySource;
         [SerializeField] private AudioSource rareCueSource;
         [SerializeField] private AudioSource bathroomLightCrackleSource;
+        [SerializeField] private AudioSource showerWaterSource;
         [SerializeField] private AudioLowPassFilter refrigeratorFilter;
         [SerializeField]
         private AudioLowPassFilter openRefrigeratorFilter;
@@ -70,6 +74,7 @@ namespace BarPromenade
         [SerializeField] private AudioLowPassFilter rareCueFilter;
         [SerializeField]
         private AudioLowPassFilter bathroomLightCrackleFilter;
+        [SerializeField] private AudioLowPassFilter showerWaterFilter;
 
         private AudioClip refrigeratorClip;
         private AudioClip openRefrigeratorClip;
@@ -79,11 +84,13 @@ namespace BarPromenade
         private AudioClip radioMurmurClip;
         private AudioClip bathroomDetailClip;
         private AudioClip bathroomLightCrackleClip;
+        private AudioClip showerWaterClip;
         private HomeBathroomLightFlicker bathroomFlicker;
         private int deterministicSeed;
         private int cueSequence;
         private float secondsUntilNextCue;
         private float refrigeratorDoorOpenAmount;
+        private float showerWaterAmount;
         private HomeSoundscapeAnchors anchors;
 
         public bool IsInitialized { get; private set; }
@@ -103,6 +110,7 @@ namespace BarPromenade
         public AudioSource RareCueSource => rareCueSource;
         public AudioSource BathroomLightCrackleSource =>
             bathroomLightCrackleSource;
+        public AudioSource ShowerWaterSource => showerWaterSource;
         public AudioClip ClosedRefrigeratorClip => refrigeratorClip;
         public AudioClip OpenRefrigeratorClip =>
             openRefrigeratorClip;
@@ -114,6 +122,8 @@ namespace BarPromenade
         public AudioClip BathroomDetailClip => bathroomDetailClip;
         public AudioClip BathroomLightCrackleClip =>
             bathroomLightCrackleClip;
+        public AudioClip ShowerWaterClip => showerWaterClip;
+        public float ShowerWaterAmount => showerWaterAmount;
         public HomeBathroomLightFlicker BoundBathroomFlicker =>
             bathroomFlicker;
         public int BathroomLightCracklePlayCount { get; private set; }
@@ -139,11 +149,30 @@ namespace BarPromenade
             ApplyRefrigeratorDoorAudio();
         }
 
+        /// <summary>
+        /// The running-shower loop. Zero keeps the source silent and
+        /// stopped; anything above fades the hiss in and opens its
+        /// low-pass, the refrigerator-door crossfade idiom.
+        /// </summary>
+        public void SetShowerWaterAmount(float amount)
+        {
+            if (float.IsNaN(amount) || float.IsInfinity(amount))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount),
+                    "Shower water amount must be finite.");
+            }
+
+            showerWaterAmount = Mathf.Clamp01(amount);
+            ApplyShowerWaterAudio();
+        }
+
         public void Initialize(
             int seed,
             HomeSoundscapeAnchors worldAnchors)
         {
             refrigeratorDoorOpenAmount = 0f;
+            showerWaterAmount = 0f;
             EnsureRuntimeObjects();
             deterministicSeed = seed;
             anchors = worldAnchors;
@@ -156,6 +185,7 @@ namespace BarPromenade
             rareCueSource.transform.position = anchors.SoftWood;
             bathroomLightCrackleSource.transform.position =
                 anchors.BathroomLight;
+            showerWaterSource.transform.position = anchors.Bathroom;
             cueSequence = 0;
             HasPlayedCue = false;
             LastPlayedCue = default;
@@ -172,6 +202,8 @@ namespace BarPromenade
             balconySource.Stop();
             rareCueSource.Stop();
             bathroomLightCrackleSource.Stop();
+            showerWaterSource.Stop();
+            ApplyShowerWaterAudio();
             rareCueSource.clip = null;
             if (isActiveAndEnabled)
             {
@@ -273,6 +305,7 @@ namespace BarPromenade
         {
             refrigeratorSource?.Stop();
             openRefrigeratorSource?.Stop();
+            showerWaterSource?.Stop();
             balconySource?.Stop();
             rareCueSource?.Stop();
             bathroomLightCrackleSource?.Stop();
@@ -391,11 +424,19 @@ namespace BarPromenade
                     out bathroomLightCrackleFilter);
             }
 
+            if (showerWaterSource == null)
+            {
+                showerWaterSource = CreateOwnedSource(
+                    "Spatial Shower Water",
+                    out showerWaterFilter);
+            }
+
             ConfigureRefrigeratorSource();
             ConfigureOpenRefrigeratorSource();
             ConfigureBalconySource();
             ConfigureRareCueSource();
             ConfigureBathroomLightCrackleSource();
+            ConfigureShowerWaterSource();
             EnsureRuntimeClips();
         }
 
@@ -538,6 +579,56 @@ namespace BarPromenade
             bathroomLightCrackleFilter.lowpassResonanceQ = 1f;
         }
 
+        private void ConfigureShowerWaterSource()
+        {
+            ConfigureSpatialSource(
+                showerWaterSource,
+                true,
+                0f,
+                1.20f,
+                8f,
+                172,
+                20f);
+            showerWaterFilter = EnsureFilter(
+                showerWaterSource,
+                showerWaterFilter);
+            showerWaterFilter.cutoffFrequency =
+                ShowerWaterClosedCutoff;
+            showerWaterFilter.lowpassResonanceQ = 1f;
+            ApplyShowerWaterAudio();
+        }
+
+        private void ApplyShowerWaterAudio()
+        {
+            if (showerWaterSource == null)
+            {
+                return;
+            }
+
+            showerWaterSource.volume =
+                ShowerWaterVolume * showerWaterAmount;
+            if (showerWaterFilter != null)
+            {
+                showerWaterFilter.cutoffFrequency = Mathf.Lerp(
+                    ShowerWaterClosedCutoff,
+                    ShowerWaterOpenCutoff,
+                    showerWaterAmount);
+            }
+
+            bool shouldPlay =
+                showerWaterAmount > 0.0001f &&
+                IsInitialized &&
+                isActiveAndEnabled;
+            if (shouldPlay && !showerWaterSource.isPlaying)
+            {
+                showerWaterSource.Play();
+            }
+            else if (!shouldPlay && showerWaterSource.isPlaying)
+            {
+                showerWaterSource.Stop();
+            }
+        }
+
         private static void ConfigureSpatialSource(
             AudioSource source,
             bool loop,
@@ -642,9 +733,18 @@ namespace BarPromenade
                         .GenerateBathroomLightCrackleSamples());
             }
 
+            if (showerWaterClip == null)
+            {
+                showerWaterClip = CreateClip(
+                    "HomeSoundscape_ShowerWater",
+                    HomeSoundscapeSynthesis
+                        .GenerateShowerWaterLoopSamples());
+            }
+
             refrigeratorSource.clip = refrigeratorClip;
             openRefrigeratorSource.clip = openRefrigeratorClip;
             balconySource.clip = balconyClip;
+            showerWaterSource.clip = showerWaterClip;
         }
 
         private void HandleBathroomFlickerFactorChanged(

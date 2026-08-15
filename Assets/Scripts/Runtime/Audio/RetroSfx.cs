@@ -38,6 +38,8 @@ namespace BarPromenade
         RefrigeratorSeal,
         RefrigeratorHinge,
         RefrigeratorThunk,
+        ToiletFlush,
+        TeethBrushScrub,
         Count
     }
 
@@ -390,7 +392,33 @@ namespace BarPromenade
                 1024,
                 4600f,
                 0.015f,
-                68)
+                68),
+            new RetroSfxDefinition(
+                RetroSfxId.ToiletFlush,
+                RetroSfxCategory.World,
+                2.60f,
+                0.50f,
+                0.94f,
+                1,
+                1.00f,
+                3,
+                1024,
+                3600f,
+                0.012f,
+                70),
+            new RetroSfxDefinition(
+                RetroSfxId.TeethBrushScrub,
+                RetroSfxCategory.World,
+                0.45f,
+                0.30f,
+                0.85f,
+                2,
+                0.30f,
+                3,
+                1024,
+                5200f,
+                0.030f,
+                58)
         };
 
         public static int Count => definitions.Length - 1;
@@ -511,6 +539,16 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.RefrigeratorThunk:
                     return GenerateRefrigeratorThunk(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.ToiletFlush:
+                    return GenerateToiletFlush(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.TeethBrushScrub:
+                    return GenerateTeethBrushScrub(
                         time,
                         duration,
                         ref noiseState);
@@ -784,6 +822,53 @@ namespace BarPromenade
                 bubbleGate *
                 0.16f;
             return (stream + bubble) * envelope;
+        }
+
+        private static float GenerateToiletFlush(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            // A hard rush that decays into a descending gurgle, then a
+            // thin cistern-refill hiss rides out the tail.
+            float rush = NextNoise(ref noiseState) *
+                0.55f *
+                Envelope(time, duration * 0.62f, 0.03f, 1.6f);
+            float gurgleGate = Mathf.Max(
+                0f,
+                Mathf.Sin(2f * Mathf.PI * 9f * time));
+            float gurgle = Mathf.Sin(
+                2f *
+                Mathf.PI *
+                (260f - Mathf.Min(time, duration) * 55f) *
+                time) *
+                gurgleGate *
+                0.20f *
+                Envelope(time, duration * 0.75f, 0.05f, 1.2f);
+            float refillStart = duration * 0.55f;
+            float refill = time > refillStart
+                ? NextNoise(ref noiseState) *
+                  0.10f *
+                  Envelope(
+                      time - refillStart,
+                      duration - refillStart,
+                      0.30f,
+                      0.8f)
+                : 0f;
+            return rush + gurgle + refill;
+        }
+
+        private static float GenerateTeethBrushScrub(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            // Band-limited scrub noise pulsing as two brush strokes.
+            float stroke = Mathf.Abs(
+                Mathf.Sin(2f * Mathf.PI * 2.2f * time));
+            float scrub = NextNoise(ref noiseState) *
+                (0.22f + stroke * 0.30f);
+            return scrub * Envelope(time, duration, 0.02f, 1.1f);
         }
 
         private static float GenerateClink(float time, float duration)

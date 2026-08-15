@@ -49,6 +49,187 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   pedestrians, Route 01 and the map. Broad EditMode/PlayMode suites and a
   player build were intentionally not run in fast mode.
 
+## 2026-08-15 — Bathroom: rebuilt shower and three modal scenes
+
+- `HomeBathroomBuilder.BuildShower` rebuilt (~25 new parts, tray
+  collider and pinned names kept): L-rail over both open sides, an
+  animatable four-fold curtain group (pivot at the left front corner,
+  gathered `scale.x 0.55` <-> drawn `1.0`) plus a static side run, wall
+  mixer with red/blue cross handles and a spout, a four-segment sagging
+  hose, riser/arm/neck and a tilted bell head with a dark nozzle plate,
+  tray rims, drain, soap shelf. `HomeSurfaceAppearanceTests` palettes
+  (`BedLinen += CurtainLight`) and exempt list extended.
+- One shared scene skeleton (`HomeBathroomSceneInteraction`): modal
+  capture, guided walk-in via `MoveTowardsInteractionPose` (stall →
+  cancel), settle frame, Bézier camera from the pinned bathroom shot
+  with the smoking drift, debounced stop with release re-arm,
+  idempotent restore + `ReapplyActiveShot`, commit only on completed
+  walk-out. Three recorded exceptions to the animation standard (no
+  new clips — the set is closed): curtained Idle, off-frame Idle,
+  procedural CCD arm.
+- Toilet: privacy cut to the ajar-door frame (FOV 60), cistern hiss on
+  the new shower-water loop at 0.35, one-shot `ToiletFlush` beat at
+  3.6 s with the flush handle dipping, stress −6.
+- Shower: hero walks into the tray, curtain draws shut, water/steam
+  particles (code-built, shared atmosphere material) + crossfaded
+  seamless hiss loop (`SetShowerWaterAmount`, 6th owned source,
+  counts 5→6/8→9), corner frame FOV 54, min 6 s / auto 10 s,
+  stress −12. The bathroom light flicker keeps running through it.
+- Teeth brushing: camera from the mirror plane into the hero's face
+  (FOV 36), `HomeTeethBrushingArmPose` (order 300, capture-solve-slerp
+  CCD of the right arm to the Mouth anchor, 5.5 Hz oscillation, head
+  counter-yaw), RightGrip toothbrush + Mouth foam props with the
+  cigarette inverse-scale correction, scrub cues every 0.55 s, rinse
+  with two Pour beats and a camera dip to the basin, relief gated once
+  per game day (`TryCommitTeethBrushingRelief`, reset on new game).
+- New SFX `ToiletFlush` (rush → gurgle → refill hiss) and
+  `TeethBrushScrub` (two-stroke band noise); +5 localization keys
+  (197 each, symmetric).
+
+- **In-game bug and fix:** the first live test showed `E` doing
+  nothing at all three spots. Root cause: the scene docks are authored
+  at floor level `y = 0`, but the grounded controller root rides at
+  `y ≈ 0.12`, and `PlayerMotor.MoveTowardsInteractionPose` demands a
+  `2 cm` vertical match to complete — the walk-in arrived planar,
+  could never finish, hit the stall timeout and silently cancelled the
+  scene. The shared skeleton now grounds every walk target to the
+  hero's current height (gravity owns the vertical, tray step
+  included) and logs `bathroom_scene_started/rejected/stalled/
+  completed` so the next silent failure reads straight out of
+  `debug.log`. A PlayMode fixture
+  (`HomeBathroomInteractionsPlayModeTests`) replays the exact `E` path
+  for all three scenes.
+
+- **Second live-path bug:** the brushing walk-in stalled 1 cm short of
+  its dock — the capsule (radius `0.32` + skin width) met the sink
+  basin collider at `z 3.25` while the guided walk demands an exact
+  planar arrival. The stall diagnostics (player/target coordinates in
+  `bathroom_scene_stalled`) pinpointed it; the dock moved to
+  `z 2.78`.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests compile with 0 errors.
+- Focused EditMode batch (scene timelines + surfaces + home layout +
+  localization): 71/72 on the first pass — the one failure was a test
+  authoring bug (phase-overshoot in the brushing fixture), fixed;
+  the timeline fixture then passed 7/7.
+- Focused PlayMode `HomeBathroomInteractionsPlayModeTests`: 3/3 —
+  toilet privacy cut commits once, shower draws the curtain, runs
+  water and restores, brushing replays with the day-gated relief.
+
+## 2026-08-15 — Apartment lighting follows the session clock
+
+- `HomeDayNightController` grew from window-only to a full indoor mood
+  pass, all within the existing five-light budget (no new lights):
+  window color gains a dusk amber phase (`1.0/0.56/0.30`, blend `0.65`)
+  peaking mid-transition and exactly zero at the test-pinned day/night
+  poles; the main lamp swings `2.30 -> 4.10` day to night and deepens
+  its orange; the entry spot lifts `8.0 -> 9.4` (the presentation test
+  floor of `>= 8` holds at all hours); `RenderSettings.ambientLight`
+  and the directional fill lerp warm-bright day to cold-dark night
+  (`0.44 -> 0.22`, blue-grey `0.60/0.66/0.82`).
+- Balcony discipline: the ambient/sun mood is skipped while
+  `HomeBalconyExteriorAtmosphere` has the balcony visibility active
+  (the shot borrows City lighting) and reasserts itself on the
+  visibility flip back indoors.
+
+Verification:
+
+- Runtime and PlayModeTests compile with 0 errors. Focused PlayMode
+  batch: `HomeInteriorAtmospherePlayModeTests` fully green, and the
+  balcony test's day-pole lighting assertions (WindowDayFactor `1`,
+  exact day window color/intensity) pass before its failure point.
+- Two `HomeBalconyPresentationPlayModeTests` failures are pre-existing
+  and unrelated to lighting: the collider-free exterior view now
+  contains `Street Lamp Chunk` BoxColliders (lamp chunks from the
+  committed checkpoint `79572db` are not stripped by the exterior view
+  builder), and the balcony pedestrian count is `8` where the test
+  pins `5` (population changes from the committed city batches).
+  Recorded, not fixed in this lighting pass.
+
+## 2026-08-15 — Cashier neck: whole-hall reach, honest counter avoidance
+
+- The neck's `4.5 m` cap still read as a limit in-game — the head
+  stalled short of a hero deep in the aisles. The cap is now `18 m`
+  (`MaximumNeckLengthMeters`), enough for every corner of the
+  `16 x 11` hall: the face simply always arrives. Tool manifest ratio
+  refreshed to `32.7` — geometry untouched, identical signature.
+- Neck segments and the head were still visible through counters: the
+  single-control quadratic sagged near its endpoints and clipped
+  shelf edges the midpoint lift never covered. The solver is now a
+  cubic staple — both controls rise to a shared clearance height at
+  `t = 0.2/0.8`, so the chain climbs out of the register fast, rides
+  above the aisles and descends only at the hero — and the resulting
+  curve is re-sampled against every margin-expanded (`0.22 m`)
+  shelf/fixture AABB, raising the clearance (up to four attempts,
+  ceiling-clamped) until nothing clips.
+
+Verification:
+
+- Runtime compiles with 0 errors; Blender manifest regeneration
+  reproduced the same build signature. Focused supermarket EditMode
+  batch (cashier state/asset, cameras, atmosphere): 19/19 passed.
+
+## 2026-08-15 — Bigger CCTV and a fluorescent light budget
+
+- The corner cameras nearly doubled: thick `0.13 m` stems, a
+  `0.27 x 0.27 x 0.62 m` body with hood, lens and iris, a `0.05 m`
+  recording LED, corner inset widened to `0.62 m` and the head dropped
+  to `0.50 m` below the ceiling — readable from the shop floor.
+- `SupermarketInteriorAtmosphere`: the hall leaves the single flat
+  directional behind. Six shadowless practicals — a cold point under
+  each fluorescent row (`1.05/7.6 m`), one warm accent over the
+  checkout (the only warmth in the hall, pooled on the Watcher
+  Cashier), one cool cold-shelf spill — while the directional key steps
+  down `0.48 -> 0.36` and remains the only shadow caster. Row two
+  flickers on a deterministic `0.11 s` stepped pattern (dips to
+  `0.30`), dimming both its light and its fake-emissive tube tint via
+  MaterialPropertyBlock. Installed by the interior root right after the
+  world build.
+- `SupermarketInteriorAtmosphereTests`: the installed budget is exactly
+  six lights, none directional, all shadowless, flicker present; the
+  flicker pattern visibly dips below `0.9` and returns to `1.0` within
+  bounds.
+
+Verification:
+
+- Runtime, EditModeTests and PlayModeTests compile with 0 errors.
+- Focused EditMode batch (cashier pursuit state + cashier asset
+  contract + CCTV + atmosphere + supermarket layout + open-area
+  decorations): 22/23 passed — every supermarket fixture green,
+  including the reworked pursuit-state tests.
+- The 1 failure is pre-existing and unrelated:
+  `CityOpenAreaDecorationPlannerTests
+  .DefaultCity_DressesOnlyTheHomeYardWithACircuitAndTraces` finds
+  `YardSpotlight.HasValue == false` on the default seed. This batch
+  never touches the yard planner; the planner's last change is the
+  river/envelope commit `8b84db7` (12x12 -> 13x12), which evidently
+  moved the default home yard out of the spotlight condition.
+  Recorded, not fixed here — river area.
+
+## 2026-08-15 — Nightlife neon panes dressed with dark glyphs
+
+- The last bare glowing quads among the misc decorations were the
+  nightlife neon family: the billboard's two poster panes, the cinema's
+  two lightbox one-sheets and the vending machines' front windows, plus
+  the vending queue's glowing handrails. Following the phone-booth
+  lightbox idiom, every pane now carries dark half-embedded strokes over
+  the glow — headline/body/photo blocks on the billboard posters, a
+  figure block and title strokes on the movie posters, vitrine grid
+  mullions on the machine fronts — so they read as printed backlit
+  signage instead of untextured rectangles. The queue handrails became
+  painted steel: a glowing handrail at street level was noise, not
+  signage. Thin marquee and letter strips stay neon — those are tubes by
+  design. Day-night gating is untouched (the glyphs are Street-style
+  batches, only the panes remain registered electric glows).
+
+Verification:
+
+- Runtime and EditModeTests compile with 0 errors; deterministic
+  recipes changed geometry only, no plan or validator contract moved.
+  Focused decoration fixtures pending the editor lock release.
+
 ## 2026-08-15 — Corner CCTV cameras track the hero
 
 - `SupermarketSecurityCameraWorldBuilder` hangs four camera units in the

@@ -26,22 +26,61 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
   platform: four separate embankment descents in all. The City map shows the
   river, both promenades and three visibly different bridge styles.
 
+### 2026-08-15 — The bathroom comes alive
+
+- The shower is finally a shower: a folded curtain on an L-rail, a
+  mixer with red and blue handles, a sagging hose, a tilted head with a
+  dark nozzle plate, rims, a drain and a soap shelf with its last
+  sliver of soap.
+- Three things in the bathroom now answer `E`. The toilet plays a
+  tactful scene — the camera walks away to the ajar door while the
+  cistern works and the flush lands off-frame. The shower draws the
+  curtain over the hero, runs real water and steam under the flickering
+  tube and lets you finish with a second press. Both take a little
+  stress off.
+- The mirror brushes teeth: the camera takes the mirror's place and
+  watches the hero's face up close while his hand works the brush, foam
+  builds and the rinse ends with a spit into the basin. Once per game
+  day the ritual calms you down a little.
+
+### 2026-08-15 — The apartment lights live by the clock
+
+- Daylight now owns the room by day — the bulbs fade to pale leftovers —
+  while dawn and dusk lay a low amber sun through the window, and after
+  dark the warm lamp becomes the heart of the room, the hallway glows a
+  little stronger and the whole apartment sinks into a colder, darker
+  half-light.
+
+### 2026-08-15 — Nightlife neon becomes readable signage
+
+- The bright bare rectangles on the nightlife billboard, the cinema
+  lightboxes and the vending machines are gone: the same glow now shines
+  through dark headline strokes, poster figures and vitrine grids, so
+  every pane reads as a printed backlit sign. The vending queue's
+  handrails no longer glow — they are painted steel like every other
+  rail in the city.
+
 ### 2026-08-14 — The supermarket hires the Watcher Cashier
 
 - Behind the checkout now stands a hunched clerk with a tiny head, enormous
   mismatched eyes and an absurdly long five-vertebra neck. His body never
-  leaves the register, but his face does: the neck stretches out to
-  `4.5 m` and the head literally follows you around the shop, hovering
-  just beside your face — and when a shelf stands in the way, the neck
-  arcs up and over it.
+  leaves the register, but his face does: the neck stretches across the
+  entire hall and the head literally follows you everywhere, hovering
+  just beside your face — and when a shelf or the counter stands in the
+  way, the neck soars up, rides above the aisles and comes down only at
+  you, never through the furniture.
 - Turn to look at him and he flinches: the neck snaps back down, the pupils
   pinch, the eyes go wide — and he stops blinking entirely until you look
   away. Not that he blinks much anyway: once every six and a half seconds.
 - `E` at the register — try to talk to him. For now the answer is a silent,
   unblinking stare; a real conversation comes in a later pass.
-- He is not the only one watching: CCTV cameras with red recording lights
-  now hang in all four corners of the hall, and every lens follows you
-  wherever you walk.
+- He is not the only one watching: chunky CCTV cameras with red recording
+  lights now hang in all four corners of the hall, and every lens follows
+  you wherever you walk.
+- The hall finally lights like a supermarket: cold fluorescent pools
+  under every tube row, one tired section flickering, a cool wash by the
+  cold shelf — and the only warm light in the building pooled over the
+  checkout, right where the cashier waits.
 
 ### 2026-08-14 — The «bar visited» mechanic is gone
 

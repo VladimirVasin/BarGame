@@ -1481,12 +1481,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   catch each other staring.
 - **Accepted — Pursuit-curve neck solve:** The chain is not rotated by
   per-joint shares; each frame the five pivots are laid explicitly along a
-  quadratic curve from the neck base to the head target — the hero's face
-  plus a `0.85 m` standoff and `0.25 m` lift, clamped to the hall box and
-  capped at `4.5 m` of neck. If the straight base-to-tip line crosses any
-  shelf or fixture AABB, the curve's control point lifts above the tallest
-  obstruction plus `0.45 m`, so the neck arcs over the aisles instead of
-  clipping through them. Each pivot turns its rest up-axis onto the local
+  cubic staple from the neck base to the head target — the hero's face
+  plus a `0.85 m` standoff and `0.25 m` lift, clamped to the hall box.
+  The reach is effectively unbounded (`18 m` cap), so the face follows
+  the hero to every corner of the `16 x 11` hall. When the curve touches
+  any margin-expanded (`0.22 m`) shelf or fixture AABB, both cubic
+  controls lift to a shared clearance height (`tallest obstruction +
+  0.5 m`) at `t = 0.2/0.8`, making the chain climb out of the counter
+  fast, travel above the aisles and descend only at the hero; the
+  resulting curve is re-sampled against every obstacle and the clearance
+  raised until nothing clips (up to four attempts, ceiling-clamped).
+  Each pivot turns its rest up-axis onto the local
   curve direction and scales its rigid segment to span the gap; the head is
   pinned to the curve tip by its authored neck-attachment point
   (`InverseTransformPoint` captured at bind), so head rotation happens
@@ -1508,6 +1513,57 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the register carries the booth/dumpster placeholder contract
   (`interaction.talk_cashier` / `supermarket.cashier.placeholder`); the
   passive prefab itself stays collider-free.
+- **Accepted — Bathroom scene skeleton and standard exceptions:** The
+  full-body clip set is closed (adding clips regenerates the production
+  hero FBX), so the three bathroom scenes run on one shared skeleton
+  (`HomeBathroomSceneInteraction`) that keeps the runtime contract of
+  `ai/contextual-animation-standard.md` — constrained visible walk-in via
+  `PlayerMotor.MoveTowardsInteractionPose`, one neutral settle frame,
+  modal `BarMinigameModalLock` capture, Bézier camera from the pinned
+  bathroom shot with the shared smoking drift, debounced stop input,
+  commit only on completion, idempotent restore + `ReapplyActiveShot` —
+  while replacing authored clips with three RECORDED EXCEPTIONS:
+  (a) the shower hides the standing Idle hero behind the drawn curtain
+  group (scale-x animation of the folded panels); (b) the toilet is a
+  privacy cut — the camera retreats to the ajar-door frame and the hero
+  stays off-frame in Idle while the cistern and flush play; (c) teeth
+  brushing poses a procedural additive CCD right arm atop Idle
+  (`HomeTeethBrushingArmPose`, capture-solve-slerp each LateUpdate at
+  order 300 — the bus-driver/cashier idiom) driving a RightGrip
+  toothbrush prop oscillating at the Mouth anchor with a head
+  counter-yaw.
+- **Accepted — Mirror-camera brushing scene:** The close-up shoots from
+  7 cm in front of the mirror plane back into the hero's face (FOV 36) —
+  the PS1 "reflection" without RenderTextures; the pinned bathroom shot
+  is never edited, scene poses are transient. Foam blobs ride the Mouth
+  anchor; the rinse dips the camera look-at to the basin over two Pour
+  beats. Stress relief is gated once per `GameDayIndex`
+  (`TryCommitTeethBrushingRelief`); toilet and shower commit ungated
+  (`CommitBathroomStressRelief`) — always on completion, never on
+  cancel.
+- **Accepted — Shower stall rebuild:** The stall keeps its footprint,
+  tray collider and pinned names while gaining an L-rail, a
+  four-fold animatable curtain group (gathered scale 0.55 <-> drawn 1.0)
+  plus a static side run, a wall mixer with red/blue cross handles, a
+  four-segment sagging hose, a tilted bell head with a dark nozzle
+  plate, tray rims, a drain and a soap shelf. The water is a sixth
+  owned `HomeSoundscape` source with a seamless loop-phase hiss
+  (`SetShowerWaterAmount`, volume + low-pass crossfade) plus code-built
+  stream/steam particles on the shared atmosphere material — no lights,
+  no colliders.
+- **Accepted — Clock-driven apartment mood:** `HomeDayNightController`
+  now modulates the whole indoor mood, not just the window. The window
+  keeps its exact day (`8.25`, warm) and night (`5.25`, blue) poles —
+  test-pinned — and passes through a dusk amber
+  (`1.0/0.56/0.30`, blend `0.65`) that peaks mid-transition and vanishes
+  at both endpoints. The main lamp swings `2.30 (day) -> 4.10 (night)`
+  and deepens its orange, the entry spot lifts `8.0 -> 9.4` (never
+  below the test floor of `8`), and `RenderSettings.ambientLight` plus
+  the directional fill lerp from a warm bright day to a cold dark night
+  (`0.44 -> 0.22`, blue-grey). The Balcony shot is respected: the
+  indoor ambient/sun mood is skipped while the balcony borrows City
+  lighting and reasserts itself the moment the shot returns inside.
+  Light count is unchanged — the five-light budget stands.
 - **Accepted — Corner CCTV heads:** Four camera units hang in the room
   corners, positions resolved purely from the plan
   (`RoomSize/WallThickness/RoomHeight`, inset `0.55 m`, drop `0.42 m`).
@@ -1516,6 +1572,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   him. The units are dressing under the supermarket's one-directional
   light budget: primitive boxes, a fake-emissive recording LED with
   shadows off, no Collider and no Light.
+- **Accepted — Supermarket fluorescent light budget:** The hall moves off
+  the single flat directional onto an explicit six-practical budget
+  (`SupermarketInteriorAtmosphere`): one shadowless cold point under each
+  of the four fluorescent rows (`1.05` intensity, `7.6 m` range), one
+  warm accent over the checkout — deliberately the only warmth in the
+  hall, pooled on the Watcher Cashier — and one cool spill by the cold
+  shelf. The directional key steps down `0.48 -> 0.36` and stays the
+  scene's only shadow caster. Row two flickers on a deterministic
+  stepped pattern (`0.11 s` steps, dips to `0.30`), dimming both its
+  light and its fake-emissive tube tint through a MaterialPropertyBlock.
+  The budget is test-enforced: six lights, none directional, all
+  shadowless.
 - **Accepted — Debug window without a launcher:** The City and BarInterior
   roots still install the F9 debug window, but it owns only deliberate test
   controls: the Left/Right arrow keys or clickable buttons change the real
