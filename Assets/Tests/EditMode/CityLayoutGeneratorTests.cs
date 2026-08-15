@@ -406,7 +406,8 @@ namespace BarPromenade.Tests
                 Is.True);
 
             // The typed fringe precincts stay bare: the dressed yard is
-            // the gap beside the hero's building, not this pocket.
+            // the gap immediately left of the home-frontage bar, not this
+            // pocket.
             CityOpenAreaDecorationPlan decorations =
                 CityOpenAreaDecorationPlanner.Create(layout);
             Rect pocket = layout.Surfaces

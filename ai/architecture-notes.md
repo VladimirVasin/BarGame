@@ -65,16 +65,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   void. Yards are excluded from signature stairs and from bus-stop corner
   eligibility so the canonical city's stairs, Route 01 and home stop do not
   drift.
-- **Accepted — The home yard is an inter-building gap, not a fringe Yard:**
+- **Accepted — The bar-side yard is an inter-building gap, not a fringe Yard:**
   `CityOpenAreaDecorationPlanner` derives the authored composition from the
-  walkable roadless-side gap between `PlayerHome` and its neighbouring
-  building. The dead tree and sparse traces therefore stay beside the hero
-  instead of using the large eastern `Yard` precinct; all five typed fringe
-  yards remain separate bare areas. The rider's circuit is deliberately
+  bar directly across `PlayerHome`'s shared street frontage, then occupies the
+  walkable roadless gap immediately left of that bar, between it and the
+  neighbouring supermarket. The dead tree and sparse traces therefore stay
+  beside the bar instead of using the large eastern `Yard` precinct; all five
+  typed fringe yards remain separate bare areas. The rider's circuit is deliberately
   unmarked — no drawn ring — and lives only in the yard site contract that
   the wheelchair plan, the slot clearances and the leaning utilities share. The same pure plan owns one
   stable wall-light descriptor. `CityOpenAreaWorldBuilder` mounts its static
-  cold near-white Spot on the neighbour at intensity `240`, twenty times the
+  cold near-white Spot on the supermarket's yard-facing wall at intensity `240`, twenty times the
   ordinary `12`-intensity street practical. Range is the greater of `1.5x` the
   sampled throw and sampled throw plus `3 m`; only `6°` of total cone feather
   keeps the full wheelchair circuit inside the bright inner cone. The one

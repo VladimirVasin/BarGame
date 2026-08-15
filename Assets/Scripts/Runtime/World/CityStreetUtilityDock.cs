@@ -57,7 +57,7 @@ namespace BarPromenade
 
         /// <summary>
         /// Collects the dock every phone booth and dumpster in the city
-        /// carries, including the pair leaning on the home yard wall,
+        /// carries, including the pair leaning on the bar-side yard wall,
         /// so a future interaction pass can install triggers the same
         /// way the bench sit pass does.
         /// </summary>

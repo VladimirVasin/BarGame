@@ -431,7 +431,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void HomeYard_LeansPhoneBoothAndDumpsterOnTheHeroWall()
+        public void BarSideYard_LeansPhoneBoothAndDumpsterOnTheBarWall()
         {
             CityDecorationPlan plan = CreatePlan(
                 GameSessionState.DefaultCitySeed,
@@ -477,15 +477,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(dumpsterAnchor.Forward));
             Assert.That(
                 booth.District,
-                Is.EqualTo(site.Home.District));
+                Is.EqualTo(site.Anchor.District));
             Assert.That(
                 dumpster.District,
-                Is.EqualTo(site.Home.District));
+                Is.EqualTo(site.Anchor.District));
 
-            // Both lean on the hero's own wall: the back face sits a
+            // Both lean on the bar wall: the back face sits a
             // whisker proud of the facade plane and the service side
             // opens into the yard.
-            Vector2Int direction = site.DirectionFromHomeToNeighbour;
+            Vector2Int direction = site.DirectionFromAnchorToNeighbour;
             float wallX = direction.x > 0
                 ? site.GroundBounds.xMin - HomeYardSitePlanner.WallMargin
                 : site.GroundBounds.xMax + HomeYardSitePlanner.WallMargin;

@@ -98,11 +98,12 @@ The vertical slice contains:
   `4 m` blended approaches. Buildings and public slabs extend their foundations
   downward without moving their authored tops. The samplers are authoritative for node,
   cell, road, sidewalk, entrance, return, open-area and debug-teleport height;
-- one authored home-yard composition in the walkable roadless gap between the
-  player's home and its neighbouring building, distinct from the five typed
-  fringe `Yard` areas. A worn 24-segment ring surrounds the dead tree and
+- one authored bar-side yard composition in the walkable roadless gap
+  immediately left of the bar across the player's home frontage, between the
+  bar and its neighbouring supermarket and distinct from the five typed fringe
+  `Yard` areas. A worn 24-segment ring surrounds the dead tree and
   carries the pipe-backed wheelchair rider. One fixed cold near-white Spot on
-  the neighbour's wall runs at intensity `240`, twenty times the `12`-intensity
+  the supermarket's yard-facing wall runs at intensity `240`, twenty times the `12`-intensity
   street practical. Its bright inner cone contains the complete circuit with
   only `6°` total feather, while range is the greater of `1.5x` the sampled
   throw and sampled throw plus `3 m`. Hard shadows use `0.95` strength and high

@@ -50,7 +50,7 @@ namespace BarPromenade
     /// <summary>
     /// The seat offer on one city bench: entry dock, seated pelvis and
     /// facing, derived from the authored bench geometry so the
-    /// interaction and the timber can never disagree. The home yard
+    /// interaction and the timber can never disagree. The bar-side yard
     /// bench faces the dead tree, the park benches face each other
     /// across the plaza, the point-of-interest benches keep their
     /// authored orientation.
@@ -64,7 +64,7 @@ namespace BarPromenade
         // park bench colliders reach 0.07 m past the seat front edge.
         public const float EntryEdgeDistance = 0.52f;
 
-        // Matches the authored home yard bench in
+        // Matches the authored bar-side yard bench in
         // CityOpenAreaDecorationPlan: a 0.10 m timber seat on 0.42 m
         // legs, read back by its stable descriptor id.
         public const string HomeYardSeatId = "home-yard-bench-seat";
@@ -157,7 +157,7 @@ namespace BarPromenade
 
         /// <summary>
         /// Collects every sittable seat the generated city carries:
-        /// the repaired home yard bench, the four park benches, the
+        /// the repaired bar-side yard bench, the four park benches, the
         /// two point-of-interest benches, one shelter bench per bus
         /// stop, and the seats hidden in the street decorations — the
         /// chess table benches, the discarded couches and the
@@ -245,7 +245,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Reads the authored home yard bench and dead tree back from
+        /// Reads the authored bar-side yard bench and dead tree back from
         /// the yard decoration, the same way the wheelchair circuit is
         /// derived. The sitter faces the tree.
         /// </summary>

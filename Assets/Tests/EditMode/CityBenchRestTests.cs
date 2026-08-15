@@ -51,7 +51,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     point.BenchId,
                     Is.Not.EqualTo("home-yard-bench"),
-                    "The hero's private yard bench stays his.");
+                    "The bar-side yard bench stays outside the ambient pool.");
                 Assert.That(
                     point.NodeIndex,
                     Is.InRange(0, pedestrianPlan.Nodes.Count - 1));

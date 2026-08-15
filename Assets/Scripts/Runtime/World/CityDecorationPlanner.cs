@@ -539,7 +539,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Leans the yard's phone booth and dumpster on the hero's own
+        /// Leans the yard's phone booth and dumpster on the bar's own
         /// wall, exactly where the shared yard contract reserved their
         /// ground. They are ordinary street-utility descriptors, so the
         /// recipes, collision proxies and future interaction docks all
@@ -619,14 +619,14 @@ namespace BarPromenade
                 CreateHomeYardId(layout.Seed, role),
                 kind,
                 CityDecorationAnchorKind.Roadside,
-                site.Home.District,
+                site.Anchor.District,
                 CityDecorationDescriptor.NoLot,
                 anchor.Position,
                 anchor.Forward,
                 HashToVariant(StableHash(
                     layout.Seed,
-                    site.HomeCell.x,
-                    site.HomeCell.y,
+                    site.AnchorCell.x,
+                    site.AnchorCell.y,
                     HomeYardVariantSalt ^ (uint)kind)),
                 CityDecorationPalette.StreetUtility,
                 CityDecorationVisibilityTier.MidRange,

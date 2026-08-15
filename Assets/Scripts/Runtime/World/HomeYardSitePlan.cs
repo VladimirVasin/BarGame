@@ -4,25 +4,30 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The shared geometry contract for the small yard beside the player's
-    /// home. It keeps decoration, staged actors and facade fixtures on the
-    /// same deterministically selected strip of ground.
+    /// The shared geometry contract for the small yard immediately left of
+    /// the selected bar. It keeps decoration, staged actors and facade
+    /// fixtures on the same deterministically selected strip of ground.
+    /// The historical type name is retained because stable decoration IDs
+    /// and saved scene diagnostics already use the home-yard label.
     /// </summary>
     public readonly struct HomeYardSitePlan : IEquatable<HomeYardSitePlan>
     {
         internal HomeYardSitePlan(
             BuildingLot home,
+            BuildingLot anchor,
             BuildingLot neighbour,
-            Vector2Int directionFromHomeToNeighbour,
+            Vector2Int directionFromAnchorToNeighbour,
             Rect groundBounds,
             float groundY,
             Vector3 ringCenter,
             float ringRadius)
         {
             Home = home ?? throw new ArgumentNullException(nameof(home));
+            Anchor = anchor ??
+                     throw new ArgumentNullException(nameof(anchor));
             Neighbour = neighbour;
-            DirectionFromHomeToNeighbour =
-                directionFromHomeToNeighbour;
+            DirectionFromAnchorToNeighbour =
+                directionFromAnchorToNeighbour;
             GroundBounds = groundBounds;
             GroundY = groundY;
             RingCenter = new Vector3(
@@ -33,15 +38,20 @@ namespace BarPromenade
         }
 
         public BuildingLot Home { get; }
+        public BuildingLot Anchor { get; }
         public BuildingLot Neighbour { get; }
         public Vector2Int HomeCell => Home != null
             ? Home.Cell
             : default;
+        public Vector2Int AnchorCell => Anchor != null
+            ? Anchor.Cell
+            : default;
         public Vector2Int NeighbourCell =>
-            Home != null
-                ? Home.Cell + DirectionFromHomeToNeighbour
+            Anchor != null
+                ? Anchor.Cell + DirectionFromAnchorToNeighbour
                 : default;
-        public Vector2Int DirectionFromHomeToNeighbour { get; }
+        public Vector2Int DirectionFromAnchorToNeighbour { get; }
+
         public Rect GroundBounds { get; }
         public float GroundY { get; }
         public Vector3 RingCenter { get; }
@@ -53,16 +63,17 @@ namespace BarPromenade
         /// Normal from the neighbouring wall into the yard.
         /// </summary>
         public Vector3 NeighbourFacadeNormal => new Vector3(
-            -DirectionFromHomeToNeighbour.x,
+            -DirectionFromAnchorToNeighbour.x,
             0f,
-            -DirectionFromHomeToNeighbour.y);
+            -DirectionFromAnchorToNeighbour.y);
 
         public bool Equals(HomeYardSitePlan other)
         {
             return LotsEqual(Home, other.Home) &&
+                   LotsEqual(Anchor, other.Anchor) &&
                    LotsEqual(Neighbour, other.Neighbour) &&
-                   DirectionFromHomeToNeighbour ==
-                   other.DirectionFromHomeToNeighbour &&
+                   DirectionFromAnchorToNeighbour ==
+                   other.DirectionFromAnchorToNeighbour &&
                    GroundBounds.Equals(other.GroundBounds) &&
                    GroundY.Equals(other.GroundY) &&
                    RingCenter.Equals(other.RingCenter) &&
@@ -79,9 +90,10 @@ namespace BarPromenade
             unchecked
             {
                 int hash = GetLotHashCode(Home);
+                hash = (hash * 397) ^ GetLotHashCode(Anchor);
                 hash = (hash * 397) ^ GetLotHashCode(Neighbour);
                 hash = (hash * 397) ^
-                       DirectionFromHomeToNeighbour.GetHashCode();
+                       DirectionFromAnchorToNeighbour.GetHashCode();
                 hash = (hash * 397) ^ GroundBounds.GetHashCode();
                 hash = (hash * 397) ^ GroundY.GetHashCode();
                 hash = (hash * 397) ^ RingCenter.GetHashCode();
@@ -147,11 +159,7 @@ namespace BarPromenade
         public const float RingBoundsMargin = 1.1f;
         public const float WallMargin = 0.6f;
 
-        private static readonly Vector2Int[] SideDirections =
-        {
-            Vector2Int.left,
-            Vector2Int.right
-        };
+        private static readonly Vector2Int YardDirection = Vector2Int.left;
 
         public static HomeYardSitePlan? Create(CityLayout layout)
         {
@@ -176,30 +184,43 @@ namespace BarPromenade
 
             site = default;
             BuildingLot home = layout.PlayerHome;
-            if (home == null ||
-                !TryGetCellSurface(
-                    layout,
-                    home.Cell,
-                    out CitySurfaceDescriptor homeSurface))
+            if (home == null)
             {
                 return false;
             }
 
             bool found = false;
-            float bestWidth = 0f;
+            float bestRadius = 0f;
             Rect bestGround = default;
+            BuildingLot bestAnchor = null;
             BuildingLot bestNeighbour = null;
-            Vector2Int bestDirection = default;
-            for (int index = 0; index < SideDirections.Length; index++)
+            CitySurfaceDescriptor bestAnchorSurface = default;
+            for (int index = 0;
+                 index < layout.BuildingLots.Count;
+                 index++)
             {
-                Vector2Int direction = SideDirections[index];
-                if (layout.HasRoad(
-                        RoadEdge.ForCellFrontage(home.Cell, direction)))
+                BuildingLot anchor = layout.BuildingLots[index];
+                if (anchor == null ||
+                    !anchor.IsBar ||
+                    !IsBarAcrossHomeFrontage(layout, home, anchor))
                 {
                     continue;
                 }
 
-                Vector2Int neighbourCell = home.Cell + direction;
+                if (layout.HasRoad(
+                        RoadEdge.ForCellFrontage(
+                            anchor.Cell,
+                            YardDirection)) ||
+                    !TryGetCellSurface(
+                        layout,
+                        anchor.Cell,
+                        out CitySurfaceDescriptor anchorSurface))
+                {
+                    continue;
+                }
+
+                Vector2Int neighbourCell =
+                    anchor.Cell + YardDirection;
                 if (!TryGetCellSurface(
                         layout,
                         neighbourCell,
@@ -209,38 +230,39 @@ namespace BarPromenade
                 }
 
                 BuildingLot neighbour = FindLot(layout, neighbourCell);
-                float homeFace = direction.x < 0
-                    ? home.Center.x - home.Size.x * 0.5f
-                    : home.Center.x + home.Size.x * 0.5f;
-                float neighbourFace;
-                if (neighbour != null && neighbour.HasBuilding)
+                if (neighbour == null || !neighbour.HasBuilding)
                 {
-                    neighbourFace = direction.x < 0
-                        ? neighbour.Center.x + neighbour.Size.x * 0.5f
-                        : neighbour.Center.x - neighbour.Size.x * 0.5f;
-                }
-                else
-                {
-                    neighbourFace = direction.x < 0
-                        ? neighbourSurface.WorldBounds.xMin
-                        : neighbourSurface.WorldBounds.xMax;
+                    continue;
                 }
 
-                float minimumX = Mathf.Min(homeFace, neighbourFace) +
+                float anchorFace =
+                    anchor.Center.x - anchor.Size.x * 0.5f;
+                float neighbourFace =
+                    neighbour.Center.x + neighbour.Size.x * 0.5f;
+                float minimumX = Mathf.Min(anchorFace, neighbourFace) +
                                  WallMargin;
-                float maximumX = Mathf.Max(homeFace, neighbourFace) -
+                float maximumX = Mathf.Max(anchorFace, neighbourFace) -
                                  WallMargin;
                 float minimumZ = Mathf.Max(
-                                     homeSurface.WorldBounds.yMin,
+                                     anchorSurface.WorldBounds.yMin,
                                      neighbourSurface.WorldBounds.yMin) +
                                  WallMargin;
                 float maximumZ = Mathf.Min(
-                                     homeSurface.WorldBounds.yMax,
+                                     anchorSurface.WorldBounds.yMax,
                                      neighbourSurface.WorldBounds.yMax) -
                                  WallMargin;
                 float width = maximumX - minimumX;
                 float depth = maximumZ - minimumZ;
-                if (width <= 0f || depth <= 0f || width <= bestWidth)
+                if (width <= 0f || depth <= 0f)
+                {
+                    continue;
+                }
+
+                float radius = Mathf.Min(
+                    PreferredRingRadius,
+                    Mathf.Min(width, depth) * 0.5f - RingBoundsMargin);
+                if (radius < MinimumRingRadius ||
+                    (found && radius <= bestRadius))
                 {
                     continue;
                 }
@@ -250,22 +272,14 @@ namespace BarPromenade
                     minimumZ,
                     maximumX,
                     maximumZ);
+                bestAnchor = anchor;
                 bestNeighbour = neighbour;
-                bestDirection = direction;
-                bestWidth = width;
+                bestAnchorSurface = anchorSurface;
+                bestRadius = radius;
                 found = true;
             }
 
             if (!found)
-            {
-                return false;
-            }
-
-            float radius = Mathf.Min(
-                PreferredRingRadius,
-                Mathf.Min(bestGround.width, bestGround.height) * 0.5f -
-                RingBoundsMargin);
-            if (radius < MinimumRingRadius)
             {
                 return false;
             }
@@ -275,7 +289,7 @@ namespace BarPromenade
                 bestGround.center.y);
             float groundY = CityTerrainSurfacePlan.SampleTop(
                 layout,
-                homeSurface,
+                bestAnchorSurface,
                 centerXZ);
             var center = new Vector3(
                 centerXZ.x,
@@ -283,12 +297,13 @@ namespace BarPromenade
                 centerXZ.y);
             site = new HomeYardSitePlan(
                 home,
+                bestAnchor,
                 bestNeighbour,
-                bestDirection,
+                YardDirection,
                 bestGround,
                 groundY,
                 center,
-                radius);
+                bestRadius);
             return true;
         }
 
@@ -305,6 +320,18 @@ namespace BarPromenade
             }
 
             return null;
+        }
+
+        private static bool IsBarAcrossHomeFrontage(
+            CityLayout layout,
+            BuildingLot home,
+            BuildingLot bar)
+        {
+            Vector2Int direction = bar.Cell - home.Cell;
+            return direction == home.FrontageDirection &&
+                   bar.FrontageDirection == -direction &&
+                   layout.HasRoad(
+                       RoadEdge.ForCellFrontage(home.Cell, direction));
         }
 
         private static bool TryGetCellSurface(
@@ -612,7 +639,7 @@ namespace BarPromenade
 
     /// <summary>
     /// Deterministic placement for the yard's leaning utilities: the
-    /// phone booth against the hero's own wall and the shared dumpster
+    /// phone booth against the bar wall and the shared dumpster
     /// at the far end of the same wall. Both are shared contracts: the
     /// city decoration planner turns them into street-utility
     /// descriptors and the yard dressing keeps its slots off their
@@ -642,14 +669,14 @@ namespace BarPromenade
         public const float CircuitClearance = 1.4f;
 
         /// <summary>
-        /// The booth leans on the home wall toward the yard's north
+        /// The booth leans on the bar wall toward the yard's north
         /// end, door into the yard.
         /// </summary>
         public static bool TryCreatePhoneBooth(
             HomeYardSitePlan site,
             out HomeYardUtilityAnchor anchor)
         {
-            return TryPlaceAgainstHomeWall(
+            return TryPlaceAgainstAnchorWall(
                 site,
                 BoothBackHalfDepth,
                 BoothFrontHalfDepth,
@@ -675,7 +702,7 @@ namespace BarPromenade
                 obstacle = booth.Footprint;
             }
 
-            return TryPlaceAgainstHomeWall(
+            return TryPlaceAgainstAnchorWall(
                 site,
                 DumpsterBackHalfDepth,
                 DumpsterFrontHalfDepth,
@@ -685,7 +712,7 @@ namespace BarPromenade
                 out anchor);
         }
 
-        private static bool TryPlaceAgainstHomeWall(
+        private static bool TryPlaceAgainstAnchorWall(
             HomeYardSitePlan site,
             float backHalfDepth,
             float frontHalfDepth,
@@ -695,7 +722,7 @@ namespace BarPromenade
             out HomeYardUtilityAnchor anchor)
         {
             anchor = default;
-            Vector2Int direction = site.DirectionFromHomeToNeighbour;
+            Vector2Int direction = site.DirectionFromAnchorToNeighbour;
             if (direction.x == 0)
             {
                 return false;

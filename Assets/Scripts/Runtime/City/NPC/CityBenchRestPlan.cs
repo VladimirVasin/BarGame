@@ -118,7 +118,7 @@ namespace BarPromenade
     /// the same seat plans the hero's sit interactions use. The pavement
     /// network ends at the kerb, so the last metres to a seat are a
     /// scripted crossing — a bench only qualifies when that crossing is
-    /// short, which keeps walkers off the hero's private yard bench and
+    /// short, which keeps walkers off the bar-side yard bench and
     /// off anything the network cannot honestly reach.
     /// </summary>
     public static class CityBenchRestPlanner
@@ -154,10 +154,10 @@ namespace BarPromenade
                     continue;
                 }
 
-                // The yard bench is the hero's own: a stranger resting
-                // under his window would break the yard's loneliness,
-                // and the network-to-yard crossing would cut through
-                // the building anyway.
+                // The bar-side yard bench belongs to its authored scene.
+                // An ambient stranger resting beside the circling rider
+                // would break the yard's loneliness, and the graph crossing
+                // into this roadless gap would cut through a building.
                 if (string.Equals(
                         bench.Id,
                         CityBenchSitPlan.HomeYardBenchId,

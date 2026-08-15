@@ -196,7 +196,7 @@ Assets/
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      continuous terrain, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
-        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building home-yard/light descriptors
+        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
@@ -205,7 +205,7 @@ Assets/
         CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
-        CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. home-yard pair
+        CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityDecorationWorldBuilder.cs  six-style visuals, chunked collision proxies + utility dock read-back
         CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
@@ -269,7 +269,7 @@ Assets/
         CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
         CityWheelchairNpcAssetRegistry.cs passive future mechanism-pivot bindings; metadata only
-      Yard/          the authored rider on the home-yard circuit, outside the ambient pool
+      Yard/          the authored rider on the bar-side yard circuit, outside the ambient pool
         YardWheelchairMotion.cs      pure drift pose; computes the reserved wheel differential
         YardWheelchairPlan.cs        circuit read back from the authored ring and dead tree
         YardWheelchairPresentation.cs two-clip skeletal graph; mechanism pivots reserved/future

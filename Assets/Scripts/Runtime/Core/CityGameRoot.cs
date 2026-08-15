@@ -330,15 +330,15 @@ namespace BarPromenade
                 Pedestrians,
                 () => Night.NightFactor);
             // The yard rider is authored, not ambient: one staged NPC on
-            // the invisible circuit beside the player's home, outside
-            // the pedestrian pool and its spawn bands.
+            // the invisible circuit immediately left of the selected bar,
+            // outside the pedestrian pool and its spawn bands.
             YardWheelchair = YardWheelchairFactory.Create(
                 transform,
                 YardWheelchairPlan.Create(
                     World.OpenAreaDecorationPlan,
                     Layout.ElevationPlan));
             // Every authored seat is sittable in the bus ride's seated
-            // pose: the home yard bench faces the dead tree, the park,
+            // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their
             // own centres and every bus stop shelter bench faces its
             // road.

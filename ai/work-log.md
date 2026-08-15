@@ -6,6 +6,67 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-15 — Supermarket surface textures and fluorescent lighting
+
+- The supermarket hall now carries real packaged albedos instead of flat
+  tints. `tools/build-supermarket-textures.py` imports the entire home
+  texture contract (linear luminance rule, wrap-by-construction drawing,
+  compensation solving, validation) from `build-home-textures.py` and
+  adds three market grammars — worn 4x4 linoleum squares with traffic
+  scuffs, suspended ceiling panels over whitewash, corrugated cardboard
+  with a tape band — reusing the home stucco / painted-metal / laminate
+  grammars for walls, shelving and the counter. Six validated 1024
+  sheets live in `Assets/Resources/Supermarket/Textures`, the measured
+  contract in `ArtSource/Supermarket/supermarket-textures.json`.
+- `SupermarketSurfaceAppearance` mirrors the home appearance class
+  (metre-scale projected tiling, compensated display tint, hash salt
+  3000) and the world builder resurfaces every big surface: floor and
+  patches, all five wall segments plus the entrance header, ceiling,
+  gondola frames/backings/tiers, the cold case, the checkout base and
+  trim, and the stockroom cartons. Decals, stripes and small props stay
+  deliberately flat.
+- Lighting got the Home readability treatment: scene ambient rose from
+  `(0.078, 0.098, 0.083)` to `(0.21, 0.25, 0.225)`, the directional
+  fill `0.36 -> 0.72` with shadow strength `0.58 -> 0.45` so the
+  ceiling-shadowed key survives indoors, fluorescent rows
+  `1.05 -> 1.45` (range `8.4`), the checkout warm accent
+  `0.78 -> 1.05` and the cold-shelf spill `0.55 -> 0.75`. The tired
+  ballast flicker row is untouched.
+
+Verification:
+
+- The generator validates all six sheets (seam, mean luminance,
+  compensation cap, contrast, chroma; worst brightness error `4.9%`).
+- Focused EditMode passed `17/17`: the new
+  `SupermarketSurfaceAppearanceTests` contract (recipes vs the
+  generated constants, importer settings, tint compensation against
+  the builder palette measured on the real PNGs, and a world-builder
+  audit that all six sheets land on the hall), plus atmosphere and
+  layout suites. `SupermarketPurchasePersistencePlayModeTests` passed
+  `3/3` end-to-end on the textured scene.
+- A temporary PlayMode capture (removed after use) rendered the live
+  scene from the gameplay camera and an eye-height aisle view: the
+  linoleum grid, wall mottle, ceiling panels, shelf metal, cartons and
+  counter all read, the aisles and the hero stay legible between the
+  fluorescent pools, and the green noir palette survives.
+
+## 2026-08-15 — Returned the wheelchair yard to the bar
+
+- Re-anchored the authored wheelchair yard to the bar directly across the
+  player home's shared street frontage, then selected only its roadless left
+  side. The resulting walkable gap lies between that bar and the neighbouring
+  supermarket; the five typed fringe yards remain unrelated and undecorated.
+- Split the narrative `PlayerHome` owner from the physical bar anchor in the
+  shared site contract. The circuit dressing and leaning phone booth/dumpster
+  now follow the bar, while the existing sampled spotlight mounts flush to the
+  supermarket's yard-facing wall and covers the complete rider circuit.
+
+Verification:
+
+- Focused Unity EditMode regression
+  `DefaultCity_DressesTheRoadlessGapDirectlyLeftOfABar` passed `1/1`.
+  Broad suites and a player build were intentionally not run in fast mode.
+
 ## 2026-08-15 — Continuous city terrain and traversal audit
 
 - Replaced the default city's isolated Buildable/Park/Open/Beach cell slabs
@@ -28,6 +89,103 @@ Verification:
   seed `20260727`. Unity also compiled the shared runtime, EditMode and
   PlayMode assemblies in that invocation; broad suites and a player build were
   intentionally not run in fast mode.
+
+## 2026-08-15 — Bar patrons drink from the bar's own bottles
+
+- Bar guests now visibly drink. `BarPatronDrinkTimeline` (pure,
+  seeded) loops Rest → Raise → Sip → Lower with per-patron randomized
+  rests (`3.5–9.5 s`), sips (`1.1–2.2 s`) and an initial stagger so
+  the crowd never moves in unison. `BarPatronDrinkingArmPose` is the
+  procedural additive layer atop the authored Idle/Sit loops: each
+  LateUpdate it captures the animated right arm, CCD-steers the held
+  bottle's mouth onto the pedestrian `SOCKET_Mouth` anchor, tips the
+  bottle up to `38°` with a `7°` head-back counter-tilt and slerps by
+  the timeline weight — the teeth-brushing/bus-driver idiom.
+- The bottles are the bar's own: `BarDrinkServiceWorldBuilder` exposes
+  `BuildBottleVisual`, rebuilding the exact shelf silhouettes
+  (beer longnecks, vodka, pepper vodka, cognac — picked by seed) as
+  hand-scale props (`0.42×`) riding the canonical `SOCKET_Bottle.R`,
+  gripped at `45 %` of bottle height, neck up. Every third guest stays
+  deliberately empty-handed; a seeded ~30 % of sips play the existing
+  `DrinkGulp` retro SFX at the lips so the room murmurs, not gurgles.
+- `BarPatron` exposes the optional `Drinking` layer; designs missing
+  the canonical sockets log and simply hold nothing.
+
+Verification:
+
+- Focused `BarPatronDrinkTimelineTests` EditMode passed `3/3`
+  (cadence bounds, per-seed determinism plus cross-seed stagger, gulp
+  one-shot discipline). `SceneFlowSmokeTests.BarInteriorScene_…`
+  passed `1/1` with new assertions: some guests drink, some don't,
+  and every held bottle is a visible prop riding the guest's hand.
+- A temporary D3D11 RenderTexture capture (removed after use, per
+  convention) was visually inspected: mid-sip the bottle mouth sits
+  at the lips (asserted `< 0.12 m`), the bottle tips toward the face,
+  the rest pose leaves the authored idle untouched. Batch-mode note:
+  the capture rig must force `AnimatorCullingMode.AlwaysAnimate` —
+  with no live cameras the culling-driven pedestrian animator holds
+  the bind pose.
+
+## 2026-08-15 — Brush-tip contact and interruptible bathroom scenes
+
+- The brushing CCD now steers a `Brush Tip` effector anchored at the
+  toothbrush bristles instead of the RightGrip socket, so the brush head —
+  not the gripping fist — works the mouth in the mirror close-up. The
+  mouth forward offset dropped from `6 cm` to `1.5 cm` to suit the new
+  effector; `HomeTeethBrushingArmPose` falls back to the grip when no
+  effector is assigned.
+- All three bathroom scenes are now interruptible from any pre-wind-down
+  phase via the shared stop input. Timelines keep visual continuity on
+  abort: the teeth/toilet cameras walk home scaled from their actual
+  blend, the shower curtain reverses from its current scale and water
+  fades from its current amount. A stop during brushing still passes the
+  rinse beat; a toilet abort during the camera retreat suppresses the
+  flush. Foam no longer pops in during a rinse that never brushed past
+  the foam threshold.
+- The minimum times (`4 s` brush, `6 s` hold, `2.5 s` privacy) now gate
+  only the stress reward — an early interrupt ends gracefully, commits
+  nothing and leaves the once-per-day teeth gate unconsumed. The base
+  `OnRequestStop` returns acceptance, fixing a latch where a refused stop
+  press set `StopQueued` forever and swallowed all later presses. The
+  toilet gained a visible stop prompt (`interaction.stop_toilet`, en/ru).
+
+Verification:
+
+- Unity `6000.5.5f1` batch compile passed with no compiler errors.
+- Focused EditMode (bathroom timelines + localization catalog) passed
+  `18/18`, including new coverage for aborts before the minimums, camera
+  blend continuity on interrupt and the suppressed abort flush. Focused
+  `HomeBathroomInteractionsPlayModeTests` passed `3/3`.
+
+## 2026-08-15 — Readable home interior lighting floor
+
+- Raised the Home interior readability floor that left most of the flat and
+  the moving player nearly black. `HomeDayNightController` ambient rose about
+  threefold (day `0.26/0.235/0.205`, night `0.145/0.14/0.17`), the interior
+  directional fill went from `0.44/0.22` to `0.85/0.42` (day/night), and
+  `RuntimeSceneSetup.EnsureHomeInterior` now uses shadow strength `0.45`
+  instead of `0.62` so the ceiling-shadowed directional survives indoors as
+  usable fill; its bootstrap ambient matches the new floor.
+- Extended the main practical lamp range from `6 m` to `9 m` so its
+  inverse-square falloff reaches the far walls of the roughly `9 x 7 m` flat,
+  and the entry-door light from `4 m` to `5.5 m`. The day lamp intensity rose
+  `2.30 -> 2.90` and night `4.10 -> 4.40`; the window key light is unchanged
+  so the day/night window hierarchy stays intact.
+- Lifted the interior grade out of compounding darkness: post exposure
+  `-0.08 -> +0.25`, contrast `7 -> 5`, a lighter color filter and vignette
+  `0.24 -> 0.18`. Bloom, grain and saturation are untouched.
+- Fixed a pre-existing `CS0177` in `CityTerrainSurfacePlan` corner-elevation
+  short-circuit that blocked batch compilation.
+
+Verification:
+
+- Unity `6000.5.5f1` batch compile passed with no compiler errors.
+- Focused Home PlayMode: `HomeInteriorAtmospherePlayModeTests` passed `2/2`
+  with updated expectations (lamp range `9`, entry range `5.5`, positive
+  exposure). Three scene tests failed on this branch's unrelated
+  work-in-progress: balcony street-lamp colliders, pedestrian count `8 != 5`,
+  and a bathroom-lamp viewport framing check at `-0.08` — none are affected
+  by light intensity, ambient or grade values.
 
 ## 2026-08-14 — River fence ownership and stair access correction
 

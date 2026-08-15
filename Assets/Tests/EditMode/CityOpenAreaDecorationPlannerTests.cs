@@ -97,7 +97,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCity_DressesOnlyTheHomeYardWithACircuitAndTraces()
+        public void DefaultCity_DressesTheRoadlessGapDirectlyLeftOfABar()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -129,24 +129,56 @@ namespace BarPromenade.Tests.EditMode
             HomeYardSpotlightDescriptor spotlight =
                 first.YardSpotlight.Value;
             Assert.That(site.Home, Is.SameAs(layout.PlayerHome));
+            Assert.That(site.Anchor, Is.Not.Null);
+            Assert.That(site.Anchor.IsBar, Is.True);
+            Assert.That(
+                layout.BuildingLots.Single(lot =>
+                    lot.Cell == site.AnchorCell),
+                Is.SameAs(site.Anchor));
+            Assert.That(layout.PlayerHome, Is.Not.Null);
+            Assert.That(
+                site.AnchorCell,
+                Is.EqualTo(
+                    layout.PlayerHome.Cell +
+                    layout.PlayerHome.FrontageDirection));
+            Assert.That(
+                site.Anchor.FrontageDirection,
+                Is.EqualTo(-layout.PlayerHome.FrontageDirection));
+            Assert.That(
+                layout.HasRoad(RoadEdge.ForCellFrontage(
+                    layout.PlayerHome.Cell,
+                    layout.PlayerHome.FrontageDirection)),
+                Is.True,
+                "The selected bar must share the player's home frontage.");
             Assert.That(site.HasNeighbourBuilding, Is.True);
             Assert.That(site.Neighbour, Is.Not.Null);
             Assert.That(site.Neighbour.Cell, Is.EqualTo(site.NeighbourCell));
             Vector2Int neighbourOffset =
-                site.NeighbourCell - site.HomeCell;
-            Assert.That(
-                Mathf.Abs(neighbourOffset.x) +
-                Mathf.Abs(neighbourOffset.y),
-                Is.EqualTo(1));
+                site.NeighbourCell - site.AnchorCell;
             Assert.That(
                 neighbourOffset,
-                Is.EqualTo(site.DirectionFromHomeToNeighbour));
+                Is.EqualTo(Vector2Int.left));
+            Assert.That(
+                site.DirectionFromAnchorToNeighbour,
+                Is.EqualTo(Vector2Int.left));
             Assert.That(
                 layout.HasRoad(RoadEdge.ForCellFrontage(
-                    site.HomeCell,
-                    site.DirectionFromHomeToNeighbour)),
+                    site.AnchorCell,
+                    site.DirectionFromAnchorToNeighbour)),
                 Is.False,
-                "The authored yard must remain on the roadless side.");
+                "The authored yard must remain directly left of the bar " +
+                "on its roadless side.");
+            Assert.That(
+                site.Neighbour.Center.x,
+                Is.LessThan(site.Anchor.Center.x));
+            float neighbourFace = site.Neighbour.Center.x +
+                                  site.Neighbour.Size.x * 0.5f;
+            float barFace = site.Anchor.Center.x -
+                            site.Anchor.Size.x * 0.5f;
+            Assert.That(
+                site.GroundBounds.xMin,
+                Is.GreaterThan(neighbourFace));
+            Assert.That(site.GroundBounds.xMax, Is.LessThan(barFace));
             Assert.That(
                 site.GroundBounds.Contains(new Vector2(
                     site.RingCenter.x,
@@ -242,7 +274,8 @@ namespace BarPromenade.Tests.EditMode
                         "home-yard-",
                         StringComparison.Ordinal)),
                 Is.True,
-                "Only the yard beside the home is dressed in this pass.");
+                "Only the single authored bar-side yard is dressed in " +
+                "this pass.");
 
             Assert.That(
                 first.GetCount(CityOpenAreaDecorationKind.YardDeadTree),
@@ -271,22 +304,19 @@ namespace BarPromenade.Tests.EditMode
 
             // Nothing may stand inside either building: the yard is the
             // gap between them.
-            Assert.That(layout.PlayerHome, Is.Not.Null);
-            Rect homeFootprint = Rect.MinMaxRect(
-                layout.PlayerHome.Center.x -
-                layout.PlayerHome.Size.x * 0.5f,
-                layout.PlayerHome.Center.z -
-                layout.PlayerHome.Size.y * 0.5f,
-                layout.PlayerHome.Center.x +
-                layout.PlayerHome.Size.x * 0.5f,
-                layout.PlayerHome.Center.z +
-                layout.PlayerHome.Size.y * 0.5f);
+            Rect barFootprint = ToXZRect(site.Anchor);
+            Rect neighbourFootprint = ToXZRect(site.Neighbour);
             foreach (CityOpenAreaDecorationDescriptor part in yardParts)
             {
                 Assert.That(
-                    Overlaps(ToXZRect(part.Bounds), homeFootprint),
+                    Overlaps(ToXZRect(part.Bounds), barFootprint),
                     Is.False,
-                    $"{part.StableId} stands inside the hero's building.");
+                    $"{part.StableId} stands inside the bar.");
+                Assert.That(
+                    Overlaps(ToXZRect(part.Bounds), neighbourFootprint),
+                    Is.False,
+                    $"{part.StableId} stands inside the neighbouring " +
+                    "building.");
             }
 
             // The middle of the circuit stays free for the rider: only the
@@ -315,28 +345,28 @@ namespace BarPromenade.Tests.EditMode
                     $"{part.StableId} stands on the circuit.");
             }
 
-            // This is the yard against the hero's own wall: everything
+            // This is the yard against the bar's left wall: everything
             // must be within a few steps of it.
-            var home = new Vector2(
-                layout.PlayerHome.Center.x,
-                layout.PlayerHome.Center.z);
+            var bar = new Vector2(
+                site.Anchor.Center.x,
+                site.Anchor.Center.z);
             foreach (CityOpenAreaDecorationDescriptor part in yardParts)
             {
                 float distance = Vector2.Distance(
-                    home,
+                    bar,
                     new Vector2(part.Bounds.center.x, part.Bounds.center.z));
                 Assert.That(
                     distance,
                     Is.LessThan(22f),
-                    $"{part.StableId} is not beside the hero's building.");
+                    $"{part.StableId} is not directly left of the bar.");
             }
 
             Assert.That(
                 Vector2.Distance(
-                    home,
+                    bar,
                     new Vector2(trunk.Bounds.center.x, trunk.Bounds.center.z)),
                 Is.LessThan(16f),
-                "The dead tree must stand in the gap beside the house.");
+                "The dead tree must stand directly left of the bar.");
 
             GameObject owner = new GameObject("Home Yard Test World");
             try
@@ -461,7 +491,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void HomeYard_KeepsItsDressingOffTheLeaningUtilities()
+        public void BarSideYard_KeepsItsDressingOffTheLeaningUtilities()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -555,6 +585,15 @@ namespace BarPromenade.Tests.EditMode
                 bounds.min.z,
                 bounds.max.x,
                 bounds.max.z);
+        }
+
+        private static Rect ToXZRect(BuildingLot lot)
+        {
+            return Rect.MinMaxRect(
+                lot.Center.x - lot.Size.x * 0.5f,
+                lot.Center.z - lot.Size.y * 0.5f,
+                lot.Center.x + lot.Size.x * 0.5f,
+                lot.Center.z + lot.Size.y * 0.5f);
         }
 
         private static bool Overlaps(Rect left, Rect right)

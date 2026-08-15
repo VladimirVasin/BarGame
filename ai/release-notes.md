@@ -6,6 +6,15 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-15 — The wheelchair yard is back beside the bar
+
+- The pipe-backed wheelchair rider's yard now occupies the intended walkable
+  gap immediately left of the home-frontage bar, between the bar and the
+  neighbouring supermarket, instead of drifting into the eastern fringe.
+- The dead tree, circuit dressing, phone booth and dumpster share that one
+  site contract. The permanent spotlight is mounted flush to the supermarket's
+  yard-facing wall and keeps the complete circuit inside its bright inner cone.
+
 ### 2026-08-15 — City terrain is walkable again
 
 - Ordinary blocks, the park, yards and beach now form continuous physical

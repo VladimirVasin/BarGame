@@ -169,7 +169,7 @@ namespace BarPromenade
         private const float AccessClearance = 0.45f;
         private const float SpatialChunkSize = 48f;
 
-        // The yard between the hero's building and its neighbour. The
+        // The yard immediately left of the selected bar. The
         // typed fringe precincts are a different thing and stay bare.
         private const string HomeYardId = "home-yard";
         private const float YardRingEdgeMargin = 2.2f;
@@ -324,14 +324,47 @@ namespace BarPromenade
                 site.HomeCell != layout.PlayerHome.Cell)
             {
                 throw new InvalidOperationException(
-                    "The home-yard site must reference the layout's home.");
+                    "The yard site must retain the layout's player home " +
+                    "as its narrative owner.");
             }
 
-            if (site.DirectionFromHomeToNeighbour != Vector2Int.left &&
-                site.DirectionFromHomeToNeighbour != Vector2Int.right)
+            BuildingLot expectedAnchor = null;
+            for (int index = 0;
+                 index < layout.BuildingLots.Count;
+                 index++)
+            {
+                BuildingLot candidate = layout.BuildingLots[index];
+                if (candidate != null &&
+                    candidate.Cell == site.AnchorCell)
+                {
+                    expectedAnchor = candidate;
+                    break;
+                }
+            }
+
+            if (site.Anchor == null ||
+                !site.Anchor.IsBar ||
+                !ReferenceEquals(site.Anchor, expectedAnchor) ||
+                site.AnchorCell != site.Anchor.Cell ||
+                site.AnchorCell !=
+                    site.HomeCell + site.Home.FrontageDirection ||
+                site.Anchor.FrontageDirection !=
+                    -site.Home.FrontageDirection ||
+                !layout.HasRoad(
+                    RoadEdge.ForCellFrontage(
+                        site.HomeCell,
+                        site.Home.FrontageDirection)))
             {
                 throw new InvalidOperationException(
-                    "The home-yard neighbour must lie beside the home.");
+                    "The yard site must reference the bar across the " +
+                    "player home's shared street frontage.");
+            }
+
+            if (site.DirectionFromAnchorToNeighbour != Vector2Int.left)
+            {
+                throw new InvalidOperationException(
+                    "The yard must occupy the roadless ground directly " +
+                    "left of its bar.");
             }
 
             if (!IsPositiveFinite(site.GroundBounds.size) ||
