@@ -76,14 +76,17 @@ namespace BarPromenade
             Camera camera = EnsureCamera(
                 new Color(0.055f, 0.070f, 0.060f));
             SetPostProcessing(camera, true);
-            // The directional is only the fill now; the fluorescent
-            // practicals of SupermarketInteriorAtmosphere carry the
-            // hall, so the key steps down to keep exposure in place.
+            // The fluorescent practicals of the atmosphere carry the
+            // hall; the directional is the fill. The ceiling shadows
+            // the whole floor from it, so only (1 - shadowStrength)
+            // survives indoors — a softer strength and a stronger key
+            // turn it into a usable readability floor, the same rule
+            // the Home interior settled on.
             ConfigureDirectionalLighting(
                 new Color(0.70f, 0.82f, 0.72f),
-                0.36f,
-                new Color(0.078f, 0.098f, 0.083f),
-                0.58f);
+                0.72f,
+                new Color(0.21f, 0.25f, 0.225f),
+                0.45f);
 
             RenderSettings.fog = false;
             RenderSettings.reflectionIntensity = 0.38f;
@@ -95,11 +98,14 @@ namespace BarPromenade
         {
             Camera camera = EnsureCamera(HomeBackgroundColor);
             SetPostProcessing(camera, true);
+            // The ceiling shadows the whole flat from the directional,
+            // so only (1 - shadowStrength) of it survives indoors; a
+            // softer strength turns the sun into usable interior fill.
             ConfigureDirectionalLighting(
                 new Color(0.88f, 0.82f, 0.72f),
-                0.38f,
-                new Color(0.065f, 0.053f, 0.047f),
-                0.62f);
+                0.85f,
+                new Color(0.22f, 0.20f, 0.18f),
+                0.45f);
 
             ApplyHomeInteriorVisibility(camera);
             RenderSettings.reflectionIntensity = 0.55f;

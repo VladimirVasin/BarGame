@@ -102,40 +102,48 @@ namespace BarPromenade
             float halfDepth = depth * 0.5f;
             const float entranceWidth = 2.4f;
 
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Worn Linoleum Floor",
                 root,
                 new Vector3(0f, -0.06f, 0f),
                 new Vector3(width, 0.12f, depth),
                 Floor,
+                SupermarketSurfaceKind.Linoleum,
+                SurfaceProjection.BoxXZ,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Back Wall",
                 root,
                 new Vector3(0f, height * 0.5f, halfDepth),
                 new Vector3(width, height, wall),
                 Wall,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxXY,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Left Wall",
                 root,
                 new Vector3(-halfWidth, height * 0.5f, 0f),
                 new Vector3(wall, height, depth),
                 WallShadow,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxZY,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Right Wall",
                 root,
                 new Vector3(halfWidth, height * 0.5f, 0f),
                 new Vector3(wall, height, depth),
                 Wall,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxZY,
                 true);
 
             float frontSegmentWidth =
                 (width - entranceWidth) * 0.5f;
             float frontCenterOffset =
                 entranceWidth * 0.5f + frontSegmentWidth * 0.5f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Front Wall Left",
                 root,
                 new Vector3(
@@ -144,8 +152,10 @@ namespace BarPromenade
                     -halfDepth),
                 new Vector3(frontSegmentWidth, height, wall),
                 WallShadow,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxXY,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Front Wall Right",
                 root,
                 new Vector3(
@@ -154,8 +164,10 @@ namespace BarPromenade
                     -halfDepth),
                 new Vector3(frontSegmentWidth, height, wall),
                 Wall,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxXY,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Entrance Header",
                 root,
                 new Vector3(
@@ -164,13 +176,17 @@ namespace BarPromenade
                     -halfDepth),
                 new Vector3(entranceWidth, 0.66f, wall),
                 WallShadow,
+                SupermarketSurfaceKind.WallPaint,
+                SurfaceProjection.BoxXY,
                 true);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Supermarket Ceiling",
                 root,
                 new Vector3(0f, height + 0.06f, 0f),
                 new Vector3(width, 0.12f, depth),
                 new Color(0.40f, 0.43f, 0.38f),
+                SupermarketSurfaceKind.Ceiling,
+                SurfaceProjection.BoxXZ,
                 false);
 
             BuildWallStripe(root, plan);
@@ -299,12 +315,14 @@ namespace BarPromenade
             };
             for (int index = 0; index < patches.Length; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfacedBox(
                     $"Supermarket Linoleum Patch {index + 1}",
                     root,
                     patches[index],
                     sizes[index],
                     FloorPatch,
+                    SupermarketSurfaceKind.Linoleum,
+                    SurfaceProjection.BoxXZ,
                     false);
             }
 
@@ -377,29 +395,35 @@ namespace BarPromenade
             Vector3 size = plan.Size;
             float halfWidth = size.x * 0.5f;
             float halfDepth = size.z * 0.5f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Shelf Base",
                 root,
                 new Vector3(0f, 0.10f, 0f),
                 new Vector3(size.x, 0.20f, size.z),
                 ShelfFrame,
+                SupermarketSurfaceKind.ShelfMetal,
+                SurfaceProjection.BoxXZ,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Shelf Backing",
                 root,
                 new Vector3(0f, plan.Height * 0.52f, 0f),
                 new Vector3(0.12f, plan.Height * 0.88f, size.z),
                 WallShadow,
+                SupermarketSurfaceKind.ShelfMetal,
+                SurfaceProjection.BoxZY,
                 false);
 
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfacedBox(
                     $"Shelf End Upright {side}",
                     root,
                     new Vector3(0f, plan.Height * 0.5f, halfDepth * side),
                     new Vector3(size.x, plan.Height, 0.09f),
                     ShelfFrame,
+                    SupermarketSurfaceKind.ShelfMetal,
+                    SurfaceProjection.BoxXY,
                     false);
             }
 
@@ -409,12 +433,14 @@ namespace BarPromenade
                 float y = Mathf.Min(
                     plan.Height - 0.05f,
                     tierHeights[index]);
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfacedBox(
                     $"Shelf Tier {index + 1}",
                     root,
                     new Vector3(0f, y, 0f),
                     new Vector3(size.x, 0.075f, size.z),
                     ShelfSurface,
+                    SupermarketSurfaceKind.ShelfMetal,
+                    SurfaceProjection.BoxXZ,
                     false);
                 BuildPriceRail(root, plan, y - 0.03f, index);
             }
@@ -439,14 +465,16 @@ namespace BarPromenade
             Vector3 size = plan.Size;
             float halfWidth = size.x * 0.5f;
             float halfDepth = size.z * 0.5f;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Cold Shelf Cabinet",
                 root,
                 new Vector3(0f, plan.Height * 0.5f, 0f),
                 new Vector3(size.x, plan.Height, size.z),
                 ColdMetal,
+                SupermarketSurfaceKind.ShelfMetal,
+                SurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Cold Shelf Dark Cavity",
                 root,
                 new Vector3(0f, plan.Height * 0.53f, -halfDepth - 0.012f),
@@ -455,10 +483,12 @@ namespace BarPromenade
                     plan.Height - 0.30f,
                     0.035f),
                 ColdInterior,
+                SupermarketSurfaceKind.ShelfMetal,
+                SurfaceProjection.BoxXY,
                 false);
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfacedBox(
                     $"Cold Shelf Side {side}",
                     root,
                     new Vector3(
@@ -467,18 +497,22 @@ namespace BarPromenade
                         -0.05f),
                     new Vector3(0.10f, plan.Height, size.z + 0.18f),
                     ShelfFrame,
+                    SupermarketSurfaceKind.ShelfMetal,
+                    SurfaceProjection.BoxZY,
                     false);
             }
 
             float[] tiers = { 0.54f, 1.14f, 1.74f };
             for (int index = 0; index < tiers.Length; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
+                CreateSurfacedBox(
                     $"Cold Shelf Tier {index + 1}",
                     root,
                     new Vector3(0f, tiers[index], -0.09f),
                     new Vector3(size.x - 0.18f, 0.065f, size.z + 0.15f),
                     ShelfSurface,
+                    SupermarketSurfaceKind.ShelfMetal,
+                    SurfaceProjection.BoxXZ,
                     false);
             }
 
@@ -620,12 +654,14 @@ namespace BarPromenade
                 0f,
                 checkout.Bounds.center.y);
             Vector3 size = checkout.Size;
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Checkout Base",
                 checkoutRoot,
                 new Vector3(0f, size.y * 0.5f, 0f),
                 size,
                 CheckoutBase,
+                SupermarketSurfaceKind.Counter,
+                SurfaceProjection.BoxXY,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Checkout Conveyor Belt",
@@ -634,12 +670,14 @@ namespace BarPromenade
                 new Vector3(size.x * 0.60f, 0.07f, size.z * 0.78f),
                 Belt,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Checkout Front Trim",
                 checkoutRoot,
                 new Vector3(0f, size.y * 0.67f, -size.z * 0.51f),
                 new Vector3(size.x * 0.94f, 0.12f, 0.035f),
                 CheckoutTrim,
+                SupermarketSurfaceKind.Counter,
+                SurfaceProjection.BoxXY,
                 false);
             BuildCashRegister(checkoutRoot, size);
             BuildBagRack(checkoutRoot, size);
@@ -755,19 +793,23 @@ namespace BarPromenade
                 new Vector3(0.62f, 0.19f, 0.025f),
                 ShelfFrame,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Stockroom Empty Carton Lower",
                 stockRoot,
                 new Vector3(-0.66f, 0.28f, -0.49f),
                 new Vector3(0.62f, 0.56f, 0.46f),
                 Cardboard,
+                SupermarketSurfaceKind.Cardboard,
+                SurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            CreateSurfacedBox(
                 "Stockroom Empty Carton Upper",
                 stockRoot,
                 new Vector3(-0.58f, 0.76f, -0.45f),
                 new Vector3(0.48f, 0.40f, 0.40f),
                 new Color(0.38f, 0.29f, 0.17f),
+                SupermarketSurfaceKind.Cardboard,
+                SurfaceProjection.BoxXY,
                 false);
 
             BoxCollider collider =
@@ -857,6 +899,36 @@ namespace BarPromenade
             }
 
             return combined;
+        }
+
+        /// <summary>
+        /// The primitive with its authored flat colour, resurfaced with
+        /// one of the packaged supermarket sheets so the colour survives
+        /// as the albedo-compensated tint — the home-interior idiom.
+        /// </summary>
+        private static GameObject CreateSurfacedBox(
+            string name,
+            Transform parent,
+            Vector3 localPosition,
+            Vector3 size,
+            Color color,
+            SupermarketSurfaceKind surfaceKind,
+            SurfaceProjection projection,
+            bool collider)
+        {
+            GameObject box = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                localPosition,
+                size,
+                color,
+                collider);
+            SupermarketSurfaceAppearance.Apply(
+                box.GetComponent<Renderer>(),
+                surfaceKind,
+                projection,
+                color);
+            return box;
         }
 
         private static GameObject SetNoShadows(GameObject gameObject)

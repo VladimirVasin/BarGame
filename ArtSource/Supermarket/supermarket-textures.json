@@ -1,0 +1,187 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "SupermarketLinoleumAlbedo",
+      "grammar": "market_linoleum",
+      "resourcePath": "Supermarket/Textures/SupermarketLinoleumAlbedo",
+      "meanLinearLuminance": 0.500253,
+      "albedoCompensation": 1.421,
+      "brightnessError": 0.033491,
+      "metersPerTile": 2.4,
+      "smoothness": 0.16,
+      "metallic": 0.0,
+      "exposure": 0.835322,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.Floor": [
+          0.255,
+          0.285,
+          0.265
+        ],
+        "SupermarketInteriorWorldBuilder.FloorPatch": [
+          0.165,
+          0.185,
+          0.17
+        ]
+      },
+      "edgeDelta": 2.37,
+      "seamRatio": 0.4106,
+      "contrast": 111,
+      "channelRatio": 1.017,
+      "sha256": "CF32A15B1512F129B5F8B6F740C13DECA0E1F9402BD49FBABF39DC045B78BEAA"
+    },
+    {
+      "key": "SupermarketWallPaintAlbedo",
+      "grammar": "stucco",
+      "resourcePath": "Supermarket/Textures/SupermarketWallPaintAlbedo",
+      "meanLinearLuminance": 0.520031,
+      "albedoCompensation": 1.36,
+      "brightnessError": 0.027912,
+      "metersPerTile": 2.6,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.744175,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.Wall": [
+          0.56,
+          0.57,
+          0.47
+        ],
+        "SupermarketInteriorWorldBuilder.WallShadow": [
+          0.275,
+          0.305,
+          0.265
+        ]
+      },
+      "edgeDelta": 1.8459,
+      "seamRatio": 0.9519,
+      "contrast": 57,
+      "channelRatio": 1.0311,
+      "sha256": "69C26138036301B7ADA407C03079C25CD723DBF9664F55C489CCBE7C8122C44A"
+    },
+    {
+      "key": "SupermarketCeilingAlbedo",
+      "grammar": "market_ceiling",
+      "resourcePath": "Supermarket/Textures/SupermarketCeilingAlbedo",
+      "meanLinearLuminance": 0.520131,
+      "albedoCompensation": 1.3555,
+      "brightnessError": 0.004589,
+      "metersPerTile": 3.0,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.650328,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.Ceiling": [
+          0.4,
+          0.43,
+          0.38
+        ]
+      },
+      "edgeDelta": 2.8241,
+      "seamRatio": 1.5892,
+      "contrast": 65,
+      "channelRatio": 1.0133,
+      "sha256": "1FB81201DEC870B9364A2ABD7C66716597B95EB474425EB7D43F85500FEEB0E1"
+    },
+    {
+      "key": "SupermarketShelfMetalAlbedo",
+      "grammar": "painted_metal",
+      "resourcePath": "Supermarket/Textures/SupermarketShelfMetalAlbedo",
+      "meanLinearLuminance": 0.5003,
+      "albedoCompensation": 1.39,
+      "brightnessError": 0.028544,
+      "metersPerTile": 1.3,
+      "smoothness": 0.24,
+      "metallic": 0.25,
+      "exposure": 0.72067,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.ShelfFrame": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "SupermarketInteriorWorldBuilder.ShelfSurface": [
+          0.47,
+          0.48,
+          0.39
+        ],
+        "SupermarketInteriorWorldBuilder.ColdMetal": [
+          0.38,
+          0.47,
+          0.45
+        ],
+        "SupermarketInteriorWorldBuilder.ColdInterior": [
+          0.245,
+          0.315,
+          0.305
+        ]
+      },
+      "edgeDelta": 1.8543,
+      "seamRatio": 0.9603,
+      "contrast": 57,
+      "channelRatio": 1.0078,
+      "sha256": "9908DC9679DB4C9EB52536BED7F34C434AF042A91400E2740B4CBF624F595A4D"
+    },
+    {
+      "key": "SupermarketCounterAlbedo",
+      "grammar": "laminate",
+      "resourcePath": "Supermarket/Textures/SupermarketCounterAlbedo",
+      "meanLinearLuminance": 0.49988,
+      "albedoCompensation": 1.3775,
+      "brightnessError": 0.025617,
+      "metersPerTile": 1.2,
+      "smoothness": 0.2,
+      "metallic": 0.0,
+      "exposure": 0.778375,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.CheckoutBase": [
+          0.31,
+          0.38,
+          0.32
+        ],
+        "SupermarketInteriorWorldBuilder.CheckoutTrim": [
+          0.67,
+          0.61,
+          0.38
+        ]
+      },
+      "edgeDelta": 1.9806,
+      "seamRatio": 1.0272,
+      "contrast": 61,
+      "channelRatio": 1.0483,
+      "sha256": "40066B7D742A9432EE22FD95DA866F2BFE73644D398920F2B089F2CB04B61B0D"
+    },
+    {
+      "key": "SupermarketCardboardAlbedo",
+      "grammar": "market_cardboard",
+      "resourcePath": "Supermarket/Textures/SupermarketCardboardAlbedo",
+      "meanLinearLuminance": 0.49996,
+      "albedoCompensation": 1.407,
+      "brightnessError": 0.049036,
+      "metersPerTile": 0.9,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.677311,
+      "tints": {
+        "SupermarketInteriorWorldBuilder.Cardboard": [
+          0.44,
+          0.34,
+          0.2
+        ],
+        "SupermarketInteriorWorldBuilder.CartonUpper": [
+          0.38,
+          0.29,
+          0.17
+        ]
+      },
+      "edgeDelta": 11.9707,
+      "seamRatio": 1.289,
+      "contrast": 93,
+      "channelRatio": 1.0787,
+      "sha256": "75470B332B4F462E19BD7DCA6274BFF93F47B5ACC071CEEDD65D7816F9AACDBB"
+    }
+  ]
+}

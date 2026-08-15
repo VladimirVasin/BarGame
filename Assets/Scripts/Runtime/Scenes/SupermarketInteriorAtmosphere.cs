@@ -104,10 +104,13 @@ namespace BarPromenade
         public const string RootName = "Supermarket Atmosphere";
         public const int PracticalLightCount = 6;
         public const int FlickerRowIndex = 2;
-        public const float FluorescentIntensity = 1.05f;
-        public const float FluorescentRange = 7.6f;
-        public const float CheckoutIntensity = 0.78f;
-        public const float ColdShelfIntensity = 0.55f;
+        // The rows carry the hall: bright enough that the aisles read
+        // between the pools, while the tired-ballast flicker still
+        // registers as a visible dip.
+        public const float FluorescentIntensity = 1.45f;
+        public const float FluorescentRange = 8.4f;
+        public const float CheckoutIntensity = 1.05f;
+        public const float ColdShelfIntensity = 0.75f;
 
         private static readonly float[] FluorescentRowXs =
         {
