@@ -178,20 +178,23 @@ Assets/
         CityRiverPlan.cs         10 m channel, dual promenades, three typed bridges + four lower landings
         CityRiverResources.cs    shared animated water material and night/rain factors
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
-        CityElevationPlanner.cs  default macro profile, local terraces + flat custom fallback
+        CityElevationPlanner.cs  river-valley node profile, local lake basin + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
+        CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
+        CityTerrainSurfaceWorldBuilder.cs triangulated terrain meshes + matching mesh colliders
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
-        CityRoadGroundBoundaryPlan.cs shared safe-connector/protected-drop seam classification
-        CityTerrainSafetyWorldBuilder.cs physical guards along dangerous terrace drops
+        CityRoadGroundBoundaryPlan.cs endpoint-sampled safe-connector/protected-drop classification
+        CityTerrainSafetyWorldBuilder.cs segmented physical guards along dangerous sampled drops
+        CityVerticalTraversalPlan.cs deterministic seam/frontage audit + spawn-road reachability
         CitySurfacePlan.cs       typed ground/water cells (incl. Yard OpenGround), datum and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
         CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
-        CityWorldBuilder.cs      terraces, river/bridges, graded surfaces, stairs + guarded drops
+        CityWorldBuilder.cs      continuous terrain, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building home-yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
@@ -223,7 +226,7 @@ Assets/
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
-        RoadWalkableArea.cs      ground/road/river-promenade union + boundary-safe connectors
+        RoadWalkableArea.cs      ground/road/river-promenade union + sampled boundary-safe connectors
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -400,6 +403,8 @@ Assets/
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
       Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
+      CityTerrainSurfaceWorldBuilderTests.cs sampled mesh/collider/UV terrain contract
+      CityVerticalTraversalAuditTests.cs     continuous seams + spawn-road reachability
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     production lifecycle + staged Pipeback isolation/bindings
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof

@@ -20,6 +20,7 @@ namespace BarPromenade
 
         private const float ReferencePublicWidth = 15f;
         private const float PublicGroundHeight = 0.12f;
+        private const float MinimumPublicGroundFoundationDepth = 0.14f;
 
         // The two sittable benches, shared between the visual recipes
         // below and <see cref="TryDescribeBenchSeat"/> so the seat the
@@ -116,6 +117,7 @@ namespace BarPromenade
             {
                 BuildCitySite(
                     root,
+                    layout,
                     layout.DistrictPointsOfInterest[index]);
             }
 
@@ -259,6 +261,7 @@ namespace BarPromenade
 
         private static void BuildCitySite(
             Transform parent,
+            CityLayout layout,
             CityDistrictPointOfInterestDescriptor descriptor)
         {
             Transform site = CreateSiteRoot(parent, descriptor);
@@ -274,7 +277,10 @@ namespace BarPromenade
                     publicBounds.height),
                 ResolvePavingColor(descriptor.Kind),
                 true,
-                false);
+                false,
+                ResolvePublicGroundFoundationDepth(
+                    layout,
+                    descriptor));
 
             Vector3 forward = ResolveForward(descriptor);
             Transform recipe = CreateRecipeRoot(
@@ -317,7 +323,8 @@ namespace BarPromenade
                     localBounds.height),
                 ResolvePavingColor(descriptor.Kind),
                 false,
-                true);
+                true,
+                0f);
 
             Vector3 localForward =
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
@@ -369,20 +376,70 @@ namespace BarPromenade
             Vector2 size,
             Color color,
             bool collider,
-            bool homeExterior)
+            bool homeExterior,
+            float foundationDepth)
         {
             GameObject ground = RuntimePrimitiveFactory.CreateBox(
                 PublicGroundName,
                 parent,
-                center,
+                center - Vector3.up * (foundationDepth * 0.5f),
                 new Vector3(
                     size.x,
-                    PublicGroundHeight,
+                    PublicGroundHeight + foundationDepth,
                     size.y),
                 color,
                 RuntimePrimitiveFactory.DefaultMaterial,
                 collider);
             ConfigureRenderer(ground, homeExterior);
+        }
+
+        private static float ResolvePublicGroundFoundationDepth(
+            CityLayout layout,
+            CityDistrictPointOfInterestDescriptor descriptor)
+        {
+            CitySurfaceDescriptor surface = default;
+            bool found = false;
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                if (layout.Surfaces[index].Cell != descriptor.Cell)
+                {
+                    continue;
+                }
+
+                surface = layout.Surfaces[index];
+                found = true;
+                break;
+            }
+
+            if (!found || !CityTerrainSurfacePlan.UsesContinuousTop(surface))
+            {
+                return MinimumPublicGroundFoundationDepth;
+            }
+
+            Rect bounds = descriptor.PublicBounds;
+            Vector2[] samples =
+            {
+                new Vector2(bounds.xMin, bounds.yMin),
+                new Vector2(bounds.xMax, bounds.yMin),
+                new Vector2(bounds.xMin, bounds.yMax),
+                new Vector2(bounds.xMax, bounds.yMax)
+            };
+            float lowestTop = float.PositiveInfinity;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                lowestTop = Mathf.Min(
+                    lowestTop,
+                    CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        surface,
+                        samples[index]));
+            }
+
+            float authoredTop = descriptor.Center.y +
+                                PublicGroundHeight * 0.5f;
+            return Mathf.Max(
+                MinimumPublicGroundFoundationDepth,
+                authoredTop - lowestTop);
         }
 
         private static void BuildRecipe(

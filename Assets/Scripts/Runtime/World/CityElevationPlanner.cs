@@ -13,6 +13,7 @@ namespace BarPromenade
         private const float SignatureStairLanding = 1.5f;
         private const float RiverBankHeightAboveWater = 1.8f;
         private const float RiverValleyRisePerNode = 0.98f;
+        private const float LakeWaterDatumBelowAccess = 0.36f;
 
         private static readonly float[] DefaultNorthProfile =
         {
@@ -288,12 +289,27 @@ namespace BarPromenade
                      cellIndex++)
                 {
                     CityBlueprintCell cell = blueprint.Cells[cellIndex];
-                    if (cell.IsWater ||
-                        !string.Equals(
+                    if (!string.Equals(
                             cell.Area.Id,
                             access.AreaId,
                             StringComparison.Ordinal))
                     {
+                        continue;
+                    }
+
+                    if (cell.IsWater)
+                    {
+                        // The lake is an elevated local basin. Leaving its
+                        // water at a global Y=1 while the only approach is
+                        // eight metres higher creates a sheer artificial pit.
+                        // Keep a small blocked shoreline drop instead; sea
+                        // water remains on the global coastal datum.
+                        if (access.Feature == CityAreaFeatureKind.Lake)
+                        {
+                            cellElevations[cell.Cell] =
+                                accessDatum - LakeWaterDatumBelowAccess;
+                        }
+
                         continue;
                     }
 

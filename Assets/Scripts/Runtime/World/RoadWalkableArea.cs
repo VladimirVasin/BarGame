@@ -172,15 +172,12 @@ namespace BarPromenade
                     neighbourCell,
                 out CitySurfaceDescriptor neighbour) ||
                 layout.HasRoad(
-                    RoadEdge.ForCellFrontage(cell, direction)) ||
-                Mathf.Abs(
-                    eligibleByCell[cell].PhysicalTopY -
-                    neighbour.PhysicalTopY) >
-                CityRoadGroundBoundaryPlanner.MaximumSafeStep)
+                    RoadEdge.ForCellFrontage(cell, direction)))
             {
                 return;
             }
 
+            CitySurfaceDescriptor surface = eligibleByCell[cell];
             Rect other = neighbour.WorldBounds;
             if (direction.x != 0)
             {
@@ -192,6 +189,18 @@ namespace BarPromenade
                 }
 
                 float boundary = (ground.xMax + other.xMin) * 0.5f;
+                if (!CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
+                        layout,
+                        surface,
+                        neighbour,
+                        false,
+                        boundary,
+                        minimum,
+                        maximum))
+                {
+                    return;
+                }
+
                 destination.Add(Rect.MinMaxRect(
                     boundary - ConnectorReach,
                     minimum,
@@ -208,12 +217,25 @@ namespace BarPromenade
             }
 
             float zBoundary = (ground.yMax + other.yMin) * 0.5f;
+            if (!CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
+                    layout,
+                    surface,
+                    neighbour,
+                    true,
+                    zBoundary,
+                    xMinimum,
+                    xMaximum))
+            {
+                return;
+            }
+
             destination.Add(Rect.MinMaxRect(
                 xMinimum,
                 zBoundary - ConnectorReach,
                 xMaximum,
                 zBoundary + ConnectorReach));
         }
+
     }
 
     public sealed class RoadWalkableArea : IWalkableArea

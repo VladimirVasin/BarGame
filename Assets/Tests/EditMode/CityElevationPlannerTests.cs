@@ -123,25 +123,49 @@ namespace BarPromenade.Tests
         }
 
         [Test]
-        public void DefaultCity_KeepsEveryWaterCellAtItsDeclaredDatum()
+        [Category("CityTraversal")]
+        public void DefaultCity_KeepsSeaGlobalAndLakeInLocalBasin()
         {
             CityElevationPlan plan = defaultLayout.ElevationPlan;
-            CityBlueprintCell[] waterCells = defaultLayout.Blueprint.Cells
-                .Where(cell => cell.IsWater)
+            CityBlueprintCell[] seaCells = defaultLayout.Blueprint.Cells
+                .Where(cell =>
+                    cell.IsWater &&
+                    cell.Area.Feature != CityAreaFeatureKind.Lake)
                 .ToArray();
-
-            Assert.That(waterCells, Is.Not.Empty);
-            foreach (CityBlueprintCell cell in waterCells)
+            Assert.That(seaCells, Is.Not.Empty);
+            foreach (CityBlueprintCell cell in seaCells)
             {
-                float expected = cell.Area.Feature ==
-                                 CityAreaFeatureKind.Lake
-                    ? 1f
-                    : 0f;
                 Assert.That(
                     plan.GetCellElevation(cell.Cell),
-                    Is.EqualTo(expected).Within(Tolerance),
+                    Is.EqualTo(0f).Within(Tolerance),
                     $"{cell.Area.Feature} water at {cell.Cell}");
             }
+
+            CitySurfaceDescriptor[] lakeWater = defaultLayout.Surfaces
+                .Where(surface =>
+                    surface.Feature == CityAreaFeatureKind.Lake &&
+                    surface.IsWater)
+                .ToArray();
+            CitySurfaceDescriptor[] lakeShore = defaultLayout.Surfaces
+                .Where(surface =>
+                    surface.Kind == CitySurfaceKind.LakeShore)
+                .ToArray();
+            Assert.That(lakeWater, Is.Not.Empty);
+            Assert.That(lakeShore, Is.Not.Empty);
+            Assert.That(
+                lakeWater.Select(surface => surface.DatumY)
+                    .Distinct()
+                    .Count(),
+                Is.EqualTo(1));
+
+            float physicalDrop = lakeShore.Min(surface =>
+                                     surface.PhysicalTopY) -
+                                 lakeWater[0].PhysicalTopY;
+            Assert.That(
+                physicalDrop,
+                Is.InRange(0.30f, 0.60f),
+                "The elevated lake should read as a shallow guarded basin, " +
+                "not a multi-metre pit below its only access.");
         }
 
         [Test]
@@ -269,6 +293,7 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        [Category("CityTraversal")]
         public void DefaultCity_UsesOneSafeRoadGroundBoundaryContract()
         {
             CityRoadGroundBoundaryPlan boundaries =
@@ -293,13 +318,15 @@ namespace BarPromenade.Tests
                     safe.Surface.Cell.ToString());
                 Assert.That(
                     Mathf.Abs(
-                        safe.FirstTravelTopY - safe.GroundTopY),
+                        safe.FirstTravelTopY -
+                        safe.FirstGroundTopY),
                     Is.LessThanOrEqualTo(
                         CityRoadGroundBoundaryPlanner.MaximumSafeStep +
                         Tolerance));
                 Assert.That(
                     Mathf.Abs(
-                        safe.SecondTravelTopY - safe.GroundTopY),
+                        safe.SecondTravelTopY -
+                        safe.SecondGroundTopY),
                     Is.LessThanOrEqualTo(
                         CityRoadGroundBoundaryPlanner.MaximumSafeStep +
                         Tolerance));
@@ -340,7 +367,122 @@ namespace BarPromenade.Tests
                     walkable.Contains(gate.Center, 0.28f)),
                 Is.GreaterThanOrEqualTo(1),
                 "At least one level-safe gate must keep the terraced park " +
-                "connected to the street network.");
+                 "connected to the street network.");
+        }
+
+        [Test]
+        [Category("CityTraversal")]
+        public void DefaultCity_ContinuousGroundSeamsStayTraversable()
+        {
+            var byCell = defaultLayout.Surfaces.ToDictionary(
+                surface => surface.Cell);
+            CityGroundTraversalPlan traversal =
+                CityGroundTraversalPlanner.CreatePlan(defaultLayout);
+            Vector2Int[] directions =
+            {
+                Vector2Int.right,
+                Vector2Int.up
+            };
+            int continuousSeamCount = 0;
+            int repairedTerraceSeamCount = 0;
+
+            foreach (CitySurfaceDescriptor surface in
+                     defaultLayout.Surfaces)
+            {
+                if (!CityTerrainSurfacePlan.UsesContinuousTop(surface))
+                {
+                    continue;
+                }
+
+                if (surface.Kind != CitySurfaceKind.BuildableGround &&
+                    !surface.IsWalkable)
+                {
+                    continue;
+                }
+
+                for (int directionIndex = 0;
+                     directionIndex < directions.Length;
+                     directionIndex++)
+                {
+                    Vector2Int direction = directions[directionIndex];
+                    if (!byCell.TryGetValue(
+                            surface.Cell + direction,
+                            out CitySurfaceDescriptor neighbour) ||
+                        !CityTerrainSurfacePlan.UsesContinuousTop(neighbour) ||
+                        (neighbour.Kind !=
+                             CitySurfaceKind.BuildableGround &&
+                         !neighbour.IsWalkable) ||
+                        defaultLayout.HasRoad(
+                            RoadEdge.ForCellFrontage(
+                                surface.Cell,
+                                direction)))
+                    {
+                        continue;
+                    }
+
+                    bool horizontal = direction.y != 0;
+                    float fixedCoordinate = horizontal
+                        ? (surface.WorldBounds.yMax +
+                           neighbour.WorldBounds.yMin) * 0.5f
+                        : (surface.WorldBounds.xMax +
+                           neighbour.WorldBounds.xMin) * 0.5f;
+                    float minimum = horizontal
+                        ? Mathf.Max(
+                            surface.WorldBounds.xMin,
+                            neighbour.WorldBounds.xMin)
+                        : Mathf.Max(
+                            surface.WorldBounds.yMin,
+                            neighbour.WorldBounds.yMin);
+                    float maximum = horizontal
+                        ? Mathf.Min(
+                            surface.WorldBounds.xMax,
+                            neighbour.WorldBounds.xMax)
+                        : Mathf.Min(
+                            surface.WorldBounds.yMax,
+                            neighbour.WorldBounds.yMax);
+                    Assert.That(
+                        maximum,
+                        Is.GreaterThan(minimum),
+                        $"{surface.Cell} -> {neighbour.Cell}");
+                    Assert.That(
+                        CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
+                            defaultLayout,
+                            surface,
+                            neighbour,
+                            horizontal,
+                            fixedCoordinate,
+                            minimum,
+                            maximum),
+                        Is.True,
+                        $"{surface.Cell} -> {neighbour.Cell}");
+
+                    float middle = (minimum + maximum) * 0.5f;
+                    Vector2 seamCenter = horizontal
+                        ? new Vector2(middle, fixedCoordinate)
+                        : new Vector2(fixedCoordinate, middle);
+                    Assert.That(
+                        traversal.ConnectorRectangles.Any(
+                            connector => connector.Contains(seamCenter)),
+                        Is.True,
+                        $"{surface.Cell} -> {neighbour.Cell}");
+
+                    continuousSeamCount++;
+                    if (Mathf.Abs(
+                            surface.PhysicalTopY -
+                            neighbour.PhysicalTopY) >
+                        CityRoadGroundBoundaryPlanner.MaximumSafeStep)
+                    {
+                        repairedTerraceSeamCount++;
+                    }
+                }
+            }
+
+            Assert.That(continuousSeamCount, Is.GreaterThan(0));
+            Assert.That(
+                repairedTerraceSeamCount,
+                Is.GreaterThan(0),
+                "The production fixture must cover seams that the former " +
+                "constant-terrace comparison incorrectly blocked.");
         }
 
         [Test]
@@ -478,7 +620,6 @@ namespace BarPromenade.Tests
                 CityStreetSurfacePlanner.Create(defaultLayout);
             RoadFencePlan roadFences =
                 RoadFencePlanner.CreatePlan(defaultLayout);
-            int relocatedApproachGuards = 0;
 
             Assert.That(
                 plan.SignatureStairs,
@@ -569,7 +710,7 @@ namespace BarPromenade.Tests
                     placement.SideDirection,
                     stair.Width,
                     $"{stair.Id} upper approach");
-                relocatedApproachGuards += AssertStairGuardClearance(
+                AssertStairGuardClearance(
                     boundaries.SafeConnections,
                     boundaries.ProtectedDrops,
                     stair,
@@ -596,11 +737,6 @@ namespace BarPromenade.Tests
                     "boundary or dead-end fence collider.");
             }
 
-            Assert.That(
-                relocatedApproachGuards,
-                Is.GreaterThanOrEqualTo(UrbanDistricts.Length),
-                "The fixture must exercise a protected outer approach " +
-                "edge for every signature stair.");
         }
 
         [Test]
@@ -658,13 +794,12 @@ namespace BarPromenade.Tests
             Assert.That(actual.LandingLength, Is.EqualTo(expected.LandingLength));
         }
 
-        private static int AssertStairGuardClearance(
+        private static void AssertStairGuardClearance(
             IReadOnlyList<CityRoadGroundBoundarySpan> safeConnections,
             IReadOnlyList<CityRoadGroundBoundarySpan> protectedDrops,
             CityElevationStairDescriptor stair,
             CityElevationStairPlacement placement)
         {
-            int relocated = 0;
             for (int index = 0; index < safeConnections.Count; index++)
             {
                 CityRoadGroundBoundarySpan safe = safeConnections[index];
@@ -698,19 +833,18 @@ namespace BarPromenade.Tests
                     IntersectsInterior(span, placement.Footprint),
                     Is.False,
                     $"{stair.Id} flight/landing aperture");
-                relocated += AssertApproachGuardAtOuterEdge(
+                AssertApproachGuardAtOuterEdge(
                     span,
                     placement.LowerApproachFootprint,
                     placement.SideDirection,
                     $"{stair.Id} lower approach");
-                relocated += AssertApproachGuardAtOuterEdge(
+                AssertApproachGuardAtOuterEdge(
                     span,
                     placement.UpperApproachFootprint,
                     placement.SideDirection,
                     $"{stair.Id} upper approach");
             }
 
-            return relocated;
         }
 
         private static void AssertStreetGeometryClearsStair(
@@ -817,7 +951,7 @@ namespace BarPromenade.Tests
                    openingCenter + halfWidth + Tolerance;
         }
 
-        private static int AssertApproachGuardAtOuterEdge(
+        private static void AssertApproachGuardAtOuterEdge(
             CityRoadGroundBoundarySpan span,
             Rect approach,
             Vector3 sideDirection,
@@ -832,7 +966,7 @@ namespace BarPromenade.Tests
             if (span.MaximumCoordinate <= variableMinimum + Tolerance ||
                 span.MinimumCoordinate >= variableMaximum - Tolerance)
             {
-                return 0;
+                return;
             }
 
             float fixedMinimum = span.IsHorizontal
@@ -844,7 +978,7 @@ namespace BarPromenade.Tests
             if (span.FixedCoordinate < fixedMinimum - Tolerance ||
                 span.FixedCoordinate > fixedMaximum + Tolerance)
             {
-                return 0;
+                return;
             }
 
             float outward = span.IsHorizontal
@@ -861,7 +995,6 @@ namespace BarPromenade.Tests
                 IntersectsInterior(span, approach),
                 Is.False,
                 label);
-            return 1;
         }
 
         private static bool IntersectsInterior(

@@ -321,13 +321,26 @@ namespace BarPromenade
             Vector3 position,
             float fallback)
         {
-            return elevation.TrySampleSurface(
-                new Vector2(position.x, position.z),
-                CitySurfaceRole.GroundDatum,
-                out float ground,
-                out _)
+            var worldXZ = new Vector2(position.x, position.z);
+            float flatDatum = elevation.TrySampleSurface(
+                    worldXZ,
+                    CitySurfaceRole.GroundDatum,
+                    out float ground,
+                    out _)
                 ? ground
                 : fallback;
+            var cell = new Vector2Int(
+                Mathf.FloorToInt(
+                    (worldXZ.x - elevation.WorldOrigin.x) /
+                    elevation.NodeSpacing.x),
+                Mathf.FloorToInt(
+                    (worldXZ.y - elevation.WorldOrigin.z) /
+                    elevation.NodeSpacing.y));
+            return CityTerrainSurfacePlan.SampleContinuousDatum(
+                elevation,
+                cell,
+                worldXZ,
+                flatDatum);
         }
 
         private static float AverageCellElevation(

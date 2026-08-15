@@ -561,8 +561,8 @@ namespace BarPromenade.Tests.PlayMode
             Transform lawn =
                 city.World.ParkRoot.transform.Find("Park Lawn");
             Assert.That(lawn, Is.Not.Null);
-            BoxCollider lawnCollider =
-                lawn.GetComponent<BoxCollider>();
+            MeshCollider lawnCollider =
+                lawn.GetComponent<MeshCollider>();
             Assert.That(lawnCollider, Is.Not.Null);
             for (int plazaIndex = 1; plazaIndex <= 2; plazaIndex++)
             {
@@ -658,7 +658,25 @@ namespace BarPromenade.Tests.PlayMode
                     controller.radius),
                 Is.True);
             Assert.That(
-                0.08f - lawnCollider.bounds.max.y,
+                CityTerrainSurfacePlan.TrySampleGroundTop(
+                    city.Layout,
+                    new Vector2(lawnStart.x, lawnStart.z),
+                    out float plannedLawnTopY,
+                    out CitySurfaceDescriptor lawnSurface),
+                Is.True);
+            Assert.That(
+                lawnSurface.Kind,
+                Is.EqualTo(CitySurfaceKind.ParkGround));
+            float plannedPathTopY =
+                city.Layout.ElevationPlan.SampleRoadDatum(
+                    sampleEdge,
+                    0.5f) +
+                CityStreetSurfacePlanner.RoadTop;
+            Assert.That(
+                plannedPathTopY - plannedLawnTopY,
+                Is.GreaterThanOrEqualTo(-0.001f));
+            Assert.That(
+                plannedPathTopY - plannedLawnTopY,
                 Is.LessThan(controller.stepOffset));
 
             Physics.SyncTransforms();
@@ -666,41 +684,51 @@ namespace BarPromenade.Tests.PlayMode
                 lawnStart + Vector3.up * 3f,
                 Vector3.down,
                 6f);
-            Collider topSurface = null;
-            float topSurfaceY = float.NegativeInfinity;
+            RaycastHit topSurfaceHit = default;
+            bool foundTopSurface = false;
             for (int index = 0;
                  index < lawnHits.Length;
                  index++)
             {
-                Collider hitCollider = lawnHits[index].collider;
+                RaycastHit hit = lawnHits[index];
+                Collider hitCollider = hit.collider;
                 if (hitCollider == null ||
                     hitCollider.isTrigger ||
                     hitCollider == controller ||
-                    hitCollider.bounds.max.y <= topSurfaceY)
+                    (foundTopSurface &&
+                     hit.point.y <= topSurfaceHit.point.y))
                 {
                     continue;
                 }
 
-                topSurface = hitCollider;
-                topSurfaceY = hitCollider.bounds.max.y;
+                topSurfaceHit = hit;
+                foundTopSurface = true;
             }
 
+            Assert.That(foundTopSurface, Is.True);
             Assert.That(
-                topSurface,
+                topSurfaceHit.collider,
                 Is.SameAs(lawnCollider),
                 $"Expected a lawn start, but the highest surface was " +
-                $"'{topSurface?.name}' at y={topSurfaceY:0.###}.");
+                $"'{topSurfaceHit.collider?.name}' at " +
+                $"y={topSurfaceHit.point.y:0.###}.");
+            Assert.That(
+                topSurfaceHit.point.y,
+                Is.EqualTo(plannedLawnTopY).Within(0.01f));
 
             city.Player.Motor.enabled = false;
             city.Player.Motor.Teleport(
-                lawnStart + Vector3.up);
+                new Vector3(
+                    lawnStart.x,
+                    topSurfaceHit.point.y + 1f,
+                    lawnStart.z));
             Physics.SyncTransforms();
             controller.Move(Vector3.down * 2f);
             Physics.SyncTransforms();
             Assert.That(
                 controller.transform.position.y,
                 Is.EqualTo(
-                    lawnCollider.bounds.max.y +
+                    topSurfaceHit.point.y +
                     controller.skinWidth)
                     .Within(0.02f),
                 "The controller must first settle on the park lawn.");
@@ -715,7 +743,7 @@ namespace BarPromenade.Tests.PlayMode
             Physics.SyncTransforms();
             Assert.That(
                 controller.transform.position.y,
-                Is.EqualTo(0.08f + controller.skinWidth)
+                Is.EqualTo(plannedPathTopY + controller.skinWidth)
                     .Within(0.02f),
                 "The controller must climb onto the raised park path " +
                 "instead of passing through it.");

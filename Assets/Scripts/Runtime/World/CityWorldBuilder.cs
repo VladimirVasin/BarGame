@@ -7,6 +7,10 @@ namespace BarPromenade
     public static class CityWorldBuilder
     {
         private const float WorldChunkSize = 48f;
+        private const float MinimumBuildingFoundationDepth = 0.32f;
+        private const float ParkPlazaRadius = 4.25f;
+        private const float ParkPlazaTopOffset = 0.10f;
+        private const float ParkPlazaThickness = 0.16f;
 
         private static readonly Color ParkGrass =
             new Color(0.16f, 0.30f, 0.18f);
@@ -67,7 +71,11 @@ namespace BarPromenade
                     layout,
                     fencePlan,
                     nightPlan);
-            Bounds bounds = BuildGround(world, layout, settings);
+            Bounds bounds = BuildGround(
+                world,
+                layout,
+                settings,
+                out GameObject parkLawn);
             CityTerrainSafetyWorldBuilder.Build(
                 world,
                 layout);
@@ -77,7 +85,10 @@ namespace BarPromenade
                 layout);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
-            GameObject parkRoot = BuildPark(world, layout);
+            GameObject parkRoot = BuildPark(
+                world,
+                layout,
+                parkLawn);
             GameObject districtPointOfInterestRoot =
                 CityDistrictPointOfInterestWorldBuilder.Build(
                     world,
@@ -96,6 +107,7 @@ namespace BarPromenade
             {
                 BuildBuilding(
                     world,
+                    layout,
                     layout.BuildingLots[i],
                     layout.Seed,
                     emissiveMaterial,
@@ -131,21 +143,24 @@ namespace BarPromenade
         private static Bounds BuildGround(
             Transform parent,
             CityLayout layout,
-            CityGenerationSettings settings)
+            CityGenerationSettings settings,
+            out GameObject parkLawn)
         {
             Transform surfaces = new GameObject("City Surfaces").transform;
             surfaces.SetParent(parent, false);
-            var buildable = new List<Bounds>();
-            var beach = new List<Bounds>();
             var lakeShore = new List<Bounds>();
             var cemetery = new List<Bounds>();
-            var yard = new List<Bounds>();
             var water = new List<Bounds>();
             float terrainBottom =
                 layout.ElevationPlan.MinimumElevation - 0.32f;
             for (int index = 0; index < layout.Surfaces.Count; index++)
             {
                 CitySurfaceDescriptor surface = layout.Surfaces[index];
+                if (CityTerrainSurfacePlan.UsesContinuousTop(surface))
+                {
+                    continue;
+                }
+
                 bool isWater = surface.IsWater;
                 float topY = surface.PhysicalTopY;
                 float height = isWater
@@ -173,41 +188,49 @@ namespace BarPromenade
                             patch.height));
                     switch (surface.Kind)
                     {
-                        case CitySurfaceKind.Beach:
-                            beach.Add(bounds);
-                            break;
                         case CitySurfaceKind.LakeShore:
                             lakeShore.Add(bounds);
                             break;
                         case CitySurfaceKind.CemeteryGround:
                             cemetery.Add(bounds);
                             break;
-                        case CitySurfaceKind.OpenGround:
-                            yard.Add(bounds);
-                            break;
                         case CitySurfaceKind.Water:
                             water.Add(bounds);
                             break;
                         case CitySurfaceKind.RiverWater:
                             break;
-                        default:
-                            buildable.Add(bounds);
-                            break;
                     }
                 }
             }
 
-            BuildGroundSurfaceBoxesIfAny(
+            CityTerrainSurfaceWorldBuilder.Build(
                 "Active Land",
                 surfaces,
-                buildable,
+                layout,
+                CitySurfaceKind.BuildableGround,
+                Color.white,
                 true);
-            BuildCombinedBoxesIfAny(
+            parkLawn = CityTerrainSurfaceWorldBuilder.Build(
+                "Park Lawn",
+                surfaces,
+                layout,
+                CitySurfaceKind.ParkGround,
+                ParkGrass,
+                false);
+            CityTerrainSurfaceWorldBuilder.Build(
+                "Yard Ground",
+                surfaces,
+                layout,
+                CitySurfaceKind.OpenGround,
+                CityExteriorAppearance.YardGround,
+                false);
+            CityTerrainSurfaceWorldBuilder.Build(
                 "Beach",
                 surfaces,
-                beach,
+                layout,
+                CitySurfaceKind.Beach,
                 CityExteriorAppearance.BeachSand,
-                true);
+                false);
             BuildCombinedBoxesIfAny(
                 "Lake Shore",
                 surfaces,
@@ -219,12 +242,6 @@ namespace BarPromenade
                 surfaces,
                 cemetery,
                 CityExteriorAppearance.CemeteryGround,
-                true);
-            BuildCombinedBoxesIfAny(
-                "Yard Ground",
-                surfaces,
-                yard,
-                CityExteriorAppearance.YardGround,
                 true);
             BuildCombinedBoxesIfAny(
                 "Water",
@@ -251,118 +268,9 @@ namespace BarPromenade
             CityLayout layout,
             CitySurfaceDescriptor surface)
         {
-            var patches = new List<Rect> { surface.WorldBounds };
-            for (int stairIndex = 0;
-                 stairIndex < layout.ElevationPlan.SignatureStairs.Count;
-                 stairIndex++)
-            {
-                CityElevationStairPlacement placement =
-                    CityElevationStairPlacementPlanner.Create(
-                        layout,
-                        layout.ElevationPlan.SignatureStairs[stairIndex]);
-                if (!surface.WorldBounds.Overlaps(
-                        placement.GroundCutFootprint))
-                {
-                    continue;
-                }
-
-                var next = new List<Rect>();
-                for (int patchIndex = 0;
-                     patchIndex < patches.Count;
-                     patchIndex++)
-                {
-                    SubtractRectangle(
-                        patches[patchIndex],
-                        placement.GroundCutFootprint,
-                        next);
-                }
-
-                patches = next;
-            }
-
-            if (surface.Kind != CitySurfaceKind.RiverWater &&
-                layout.River.IsEnabled)
-            {
-                for (int segmentIndex = 0;
-                     segmentIndex < layout.River.Segments.Count;
-                     segmentIndex++)
-                {
-                    Rect river =
-                        layout.River.Segments[segmentIndex].WaterBounds;
-                    if (!surface.WorldBounds.Overlaps(river))
-                    {
-                        continue;
-                    }
-
-                    var next = new List<Rect>();
-                    for (int patchIndex = 0;
-                         patchIndex < patches.Count;
-                         patchIndex++)
-                    {
-                        SubtractRectangle(patches[patchIndex], river, next);
-                    }
-
-                    patches = next;
-                }
-            }
-
-            return patches;
-        }
-
-        private static void SubtractRectangle(
-            Rect source,
-            Rect cut,
-            ICollection<Rect> destination)
-        {
-            float xMin = Mathf.Max(source.xMin, cut.xMin);
-            float xMax = Mathf.Min(source.xMax, cut.xMax);
-            float zMin = Mathf.Max(source.yMin, cut.yMin);
-            float zMax = Mathf.Min(source.yMax, cut.yMax);
-            if (xMax <= xMin || zMax <= zMin)
-            {
-                destination.Add(source);
-                return;
-            }
-
-            AddRectIfPositive(
-                destination,
-                source.xMin,
-                source.yMin,
-                xMin,
-                source.yMax);
-            AddRectIfPositive(
-                destination,
-                xMax,
-                source.yMin,
-                source.xMax,
-                source.yMax);
-            AddRectIfPositive(
-                destination,
-                xMin,
-                source.yMin,
-                xMax,
-                zMin);
-            AddRectIfPositive(
-                destination,
-                xMin,
-                zMax,
-                xMax,
-                source.yMax);
-        }
-
-        private static void AddRectIfPositive(
-            ICollection<Rect> destination,
-            float xMin,
-            float zMin,
-            float xMax,
-            float zMax)
-        {
-            if (xMax - xMin <= 0.001f || zMax - zMin <= 0.001f)
-            {
-                return;
-            }
-
-            destination.Add(Rect.MinMaxRect(xMin, zMin, xMax, zMax));
+            return CityTerrainSurfaceWorldBuilder.CreateSurfacePatches(
+                layout,
+                surface);
         }
 
         private static void BuildRoads(
@@ -475,7 +383,8 @@ namespace BarPromenade
 
         private static GameObject BuildPark(
             Transform parent,
-            CityLayout layout)
+            CityLayout layout,
+            GameObject parkLawn)
         {
             CityParkPlan plan = layout?.Park;
             if (plan == null || !plan.IsEnabled)
@@ -485,62 +394,30 @@ namespace BarPromenade
 
             Transform park = new GameObject("Central Park").transform;
             park.SetParent(parent, false);
+            if (parkLawn != null)
+            {
+                parkLawn.transform.SetParent(park, false);
+            }
+
             Rect bounds = plan.WalkableBounds;
             Vector3 center = new Vector3(
                 bounds.center.x,
                 plan.Center.y,
                 bounds.center.y);
-            var lawnPatches = new List<Bounds>();
-            for (int index = 0; index < layout.Surfaces.Count; index++)
-            {
-                CitySurfaceDescriptor surface = layout.Surfaces[index];
-                if (surface.Kind != CitySurfaceKind.ParkGround)
-                {
-                    continue;
-                }
-
-                List<Rect> patches = CreateSurfacePatches(
-                    layout,
-                    surface);
-                for (int patchIndex = 0;
-                     patchIndex < patches.Count;
-                     patchIndex++)
-                {
-                    Rect patch = patches[patchIndex];
-                    lawnPatches.Add(new Bounds(
-                        new Vector3(
-                            patch.center.x,
-                            surface.PhysicalTopY - 0.04f,
-                            patch.center.y),
-                        new Vector3(
-                            patch.width,
-                            0.08f,
-                            patch.height)));
-                }
-            }
-
-            BuildCombinedBoxesIfAny(
-                "Park Lawn",
-                park,
-                lawnPatches,
-                ParkGrass,
-                true);
             for (int regionIndex = 0;
                  regionIndex < plan.Regions.Count;
                  regionIndex++)
             {
                 CityParkRegionPlan region = plan.Regions[regionIndex];
-                GameObject plaza = RuntimePrimitiveFactory.CreateCylinder(
+                CityTerrainSurfaceWorldBuilder.BuildConformingDisc(
                     $"Park Plaza {regionIndex + 1}",
                     park,
-                    region.PlazaPosition + (Vector3.up * 0.065f),
-                    new Vector3(8.5f, 0.035f, 8.5f),
-                    ParkPlaza,
-                    false);
-                MeshCollider plazaCollider =
-                    plaza.AddComponent<MeshCollider>();
-                plazaCollider.sharedMesh =
-                    plaza.GetComponent<MeshFilter>().sharedMesh;
+                    layout,
+                    region.PlazaPosition,
+                    ParkPlazaRadius,
+                    ParkPlazaTopOffset,
+                    ParkPlazaThickness,
+                    ParkPlaza);
             }
 
             var trunks = new List<Bounds>(plan.TreePositions.Count);
@@ -761,6 +638,7 @@ namespace BarPromenade
 
         private static void BuildBuilding(
             Transform parent,
+            CityLayout layout,
             BuildingLot lot,
             int citySeed,
             Material emissiveMaterial,
@@ -786,13 +664,21 @@ namespace BarPromenade
 
             Color facadeColor =
                 CityExteriorAppearance.CreateNightFacadeColor(lot);
+            float foundationDepth = ResolveBuildingFoundationDepth(
+                layout,
+                lot);
             GameObject mass = RuntimePrimitiveFactory.CreateBox(
                 "Building Mass",
                 building,
                 lot.Center +
                 (Vector3.up *
-                 (lot.Height * 0.5f + CityFacadeGrid.MassBaseElevation)),
-                new Vector3(lot.Size.x, lot.Height, lot.Size.y),
+                 (lot.Height * 0.5f +
+                  CityFacadeGrid.MassBaseElevation -
+                  foundationDepth * 0.5f)),
+                new Vector3(
+                    lot.Size.x,
+                    lot.Height + foundationDepth,
+                    lot.Size.y),
                 facadeColor);
             CityFacadeAppearance.Apply(
                 mass.GetComponent<Renderer>(),
@@ -847,6 +733,64 @@ namespace BarPromenade
             }
 
             BuildBarFront(building, lot, walkableArea, bars);
+        }
+
+        private static float ResolveBuildingFoundationDepth(
+            CityLayout layout,
+            BuildingLot lot)
+        {
+            CitySurfaceDescriptor surface = default;
+            bool found = false;
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                if (layout.Surfaces[index].Cell != lot.Cell)
+                {
+                    continue;
+                }
+
+                surface = layout.Surfaces[index];
+                found = true;
+                break;
+            }
+
+            if (!found || !CityTerrainSurfacePlan.UsesContinuousTop(surface))
+            {
+                return MinimumBuildingFoundationDepth;
+            }
+
+            float halfWidth = lot.Size.x * 0.5f;
+            float halfDepth = lot.Size.y * 0.5f;
+            Vector2[] samples =
+            {
+                new Vector2(
+                    lot.Center.x - halfWidth,
+                    lot.Center.z - halfDepth),
+                new Vector2(
+                    lot.Center.x + halfWidth,
+                    lot.Center.z - halfDepth),
+                new Vector2(
+                    lot.Center.x - halfWidth,
+                    lot.Center.z + halfDepth),
+                new Vector2(
+                    lot.Center.x + halfWidth,
+                    lot.Center.z + halfDepth)
+            };
+            float lowestTop = float.PositiveInfinity;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                lowestTop = Mathf.Min(
+                    lowestTop,
+                    CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        surface,
+                        samples[index]));
+            }
+
+            float authoredBase = lot.Center.y +
+                                 CityFacadeGrid.MassBaseElevation;
+            return Mathf.Max(
+                MinimumBuildingFoundationDepth,
+                authoredBase - lowestTop + 0.16f);
         }
 
         private static void BuildWindowBands(
@@ -1688,29 +1632,6 @@ namespace BarPromenade
                     0f,
                     lot.FrontageDirection.y)
                 : Vector3.back;
-        }
-
-        private static void BuildGroundSurfaceBoxesIfAny(
-            string name,
-            Transform parent,
-            IReadOnlyList<Bounds> boxes,
-            bool collider)
-        {
-            if (boxes.Count == 0)
-            {
-                return;
-            }
-
-            GameObject surface =
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    name,
-                    parent,
-                    boxes,
-                    Color.white,
-                    collider,
-                    CityExteriorAppearance.GroundTextureTileSize);
-            CityExteriorAppearance.ApplyGroundSurface(
-                surface.GetComponent<Renderer>());
         }
 
         private static void BuildOrientedSurfaceBoxesIfAny(

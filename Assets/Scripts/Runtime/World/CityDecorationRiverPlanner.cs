@@ -27,13 +27,13 @@ namespace BarPromenade
                         xSign * bounds.width * fractions[xIndex],
                         0f,
                         zSign * bounds.height * fractions[zIndex]);
-                    if (layout.ElevationPlan.TrySampleSurface(
+                    if (CityTerrainSurfacePlan.TrySampleGroundTop(
+                            layout,
                             new Vector2(candidate.x, candidate.z),
-                            CitySurfaceRole.GroundDatum,
-                            out float datum,
+                            out float groundTop,
                             out _))
                     {
-                        candidate.y = datum;
+                        candidate.y = groundTop;
                     }
 
                     if (candidate.x < bounds.xMin + margin ||
@@ -83,13 +83,13 @@ namespace BarPromenade
                         Mathf.Lerp(xMinimum, xMaximum, xAmount),
                         0f,
                         Mathf.Lerp(zMinimum, zMaximum, zAmount));
-                    if (layout.ElevationPlan.TrySampleSurface(
+                    if (CityTerrainSurfacePlan.TrySampleGroundTop(
+                            layout,
                             new Vector2(candidate.x, candidate.z),
-                            CitySurfaceRole.GroundDatum,
-                            out float datum,
+                            out float groundTop,
                             out _))
                     {
-                        candidate.y = datum;
+                        candidate.y = groundTop;
                     }
 
                     if (IsParkCandidateClear(

@@ -119,13 +119,23 @@ namespace BarPromenade
                     span.FirstTravelTopY,
                     span.SecondTravelTopY,
                     secondAmount);
+                float firstGroundTop = Mathf.Lerp(
+                    span.FirstGroundTopY,
+                    span.SecondGroundTopY,
+                    firstAmount);
+                float secondGroundTop = Mathf.Lerp(
+                    span.FirstGroundTopY,
+                    span.SecondGroundTopY,
+                    secondAmount);
 
                 float minimumBase = Mathf.Min(
-                    span.GroundTopY,
+                    firstGroundTop,
+                    secondGroundTop,
                     firstRoadTop,
                     secondRoadTop);
                 float maximumBase = Mathf.Max(
-                    span.GroundTopY,
+                    firstGroundTop,
+                    secondGroundTop,
                     firstRoadTop,
                     secondRoadTop);
                 float height = RailHeight +
@@ -166,17 +176,11 @@ namespace BarPromenade
                 first.Kind == CitySurfaceKind.RiverWater ||
                 second.Kind == CitySurfaceKind.RiverWater ||
                 layout.HasRoad(
-                    RoadEdge.ForCellFrontage(first.Cell, direction)) ||
-                Mathf.Abs(
-                    first.PhysicalTopY - second.PhysicalTopY) <=
-                CityRoadGroundBoundaryPlanner.MaximumSafeStep + 0.001f)
+                    RoadEdge.ForCellFrontage(first.Cell, direction)))
             {
                 return;
             }
 
-            float highTop = Mathf.Max(
-                first.PhysicalTopY,
-                second.PhysicalTopY);
             if (direction == Vector2Int.right)
             {
                 float zMin = Mathf.Max(
@@ -190,16 +194,16 @@ namespace BarPromenade
                     return;
                 }
 
-                destination.Add(new Bounds(
-                    new Vector3(
-                        (first.WorldBounds.xMax +
-                         second.WorldBounds.xMin) * 0.5f,
-                        highTop + RailHeight * 0.5f,
-                        (zMin + zMax) * 0.5f),
-                    new Vector3(
-                        RailThickness,
-                        RailHeight,
-                        zMax - zMin)));
+                AddGroundBoundaryRailSegments(
+                    layout,
+                    first,
+                    second,
+                    false,
+                    (first.WorldBounds.xMax +
+                     second.WorldBounds.xMin) * 0.5f,
+                    zMin,
+                    zMax,
+                    destination);
                 return;
             }
 
@@ -214,16 +218,184 @@ namespace BarPromenade
                 return;
             }
 
-            destination.Add(new Bounds(
-                new Vector3(
-                    (xMin + xMax) * 0.5f,
-                    highTop + RailHeight * 0.5f,
-                    (first.WorldBounds.yMax +
-                     second.WorldBounds.yMin) * 0.5f),
-                new Vector3(
-                    xMax - xMin,
-                    RailHeight,
-                    RailThickness)));
+            AddGroundBoundaryRailSegments(
+                layout,
+                first,
+                second,
+                true,
+                (first.WorldBounds.yMax +
+                 second.WorldBounds.yMin) * 0.5f,
+                xMin,
+                xMax,
+                destination);
+        }
+
+        private static void AddGroundBoundaryRailSegments(
+            CityLayout layout,
+            CitySurfaceDescriptor firstSurface,
+            CitySurfaceDescriptor secondSurface,
+            bool isHorizontal,
+            float fixedCoordinate,
+            float minimumCoordinate,
+            float maximumCoordinate,
+            ICollection<Bounds> destination)
+        {
+            if (CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    minimumCoordinate,
+                    maximumCoordinate))
+            {
+                return;
+            }
+
+            int segmentCount = Mathf.Max(
+                1,
+                Mathf.CeilToInt(
+                    (maximumCoordinate - minimumCoordinate) /
+                    RoadRailSegmentLength));
+            for (int index = 0; index < segmentCount; index++)
+            {
+                float segmentMinimum = Mathf.Lerp(
+                    minimumCoordinate,
+                    maximumCoordinate,
+                    index / (float)segmentCount);
+                float segmentMaximum = Mathf.Lerp(
+                    minimumCoordinate,
+                    maximumCoordinate,
+                    (index + 1f) / segmentCount);
+                float segmentMiddle =
+                    (segmentMinimum + segmentMaximum) * 0.5f;
+                if (CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
+                        layout,
+                        firstSurface,
+                        secondSurface,
+                        isHorizontal,
+                        fixedCoordinate,
+                        segmentMinimum,
+                        segmentMaximum))
+                {
+                    continue;
+                }
+
+                float firstBase = SampleHigherTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMinimum);
+                float middleBase = SampleHigherTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMiddle);
+                float secondBase = SampleHigherTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMaximum);
+                float firstLowerBase = SampleLowerTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMinimum);
+                float middleLowerBase = SampleLowerTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMiddle);
+                float secondLowerBase = SampleLowerTop(
+                    layout,
+                    firstSurface,
+                    secondSurface,
+                    isHorizontal,
+                    fixedCoordinate,
+                    segmentMaximum);
+                float minimumBase = Mathf.Min(
+                    firstLowerBase,
+                    middleLowerBase,
+                    secondLowerBase);
+                float maximumBase = Mathf.Max(
+                    firstBase,
+                    middleBase,
+                    secondBase);
+                float height = RailHeight + maximumBase - minimumBase;
+                Vector3 center = isHorizontal
+                    ? new Vector3(
+                        segmentMiddle,
+                        minimumBase + height * 0.5f,
+                        fixedCoordinate)
+                    : new Vector3(
+                        fixedCoordinate,
+                        minimumBase + height * 0.5f,
+                        segmentMiddle);
+                Vector3 size = isHorizontal
+                    ? new Vector3(
+                        segmentMaximum - segmentMinimum,
+                        height,
+                        RailThickness)
+                    : new Vector3(
+                        RailThickness,
+                        height,
+                        segmentMaximum - segmentMinimum);
+                destination.Add(new Bounds(center, size));
+            }
+        }
+
+        private static float SampleHigherTop(
+            CityLayout layout,
+            CitySurfaceDescriptor firstSurface,
+            CitySurfaceDescriptor secondSurface,
+            bool isHorizontal,
+            float fixedCoordinate,
+            float variableCoordinate)
+        {
+            Vector2 point = isHorizontal
+                ? new Vector2(variableCoordinate, fixedCoordinate)
+                : new Vector2(fixedCoordinate, variableCoordinate);
+            return Mathf.Max(
+                CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    firstSurface,
+                    point),
+                CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    secondSurface,
+                    point));
+        }
+
+        private static float SampleLowerTop(
+            CityLayout layout,
+            CitySurfaceDescriptor firstSurface,
+            CitySurfaceDescriptor secondSurface,
+            bool isHorizontal,
+            float fixedCoordinate,
+            float variableCoordinate)
+        {
+            Vector2 point = isHorizontal
+                ? new Vector2(variableCoordinate, fixedCoordinate)
+                : new Vector2(fixedCoordinate, variableCoordinate);
+            return Mathf.Min(
+                CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    firstSurface,
+                    point),
+                CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    secondSurface,
+                    point));
         }
 
     }

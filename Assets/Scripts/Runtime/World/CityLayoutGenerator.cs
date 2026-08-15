@@ -2174,26 +2174,62 @@ namespace BarPromenade
                 0f);
             float halfRoad = settings.RoadWidth * 0.5f;
             float gateWidth = settings.RoadWidth + 0.8f;
+            int lowerMiddleX =
+                minimumX + ((maximumX - minimumX - 1) / 2);
+            int upperMiddleX =
+                minimumX + ((maximumX - minimumX) / 2);
+            int lowerMiddleZ =
+                minimumZ + ((maximumZ - minimumZ - 1) / 2);
+            int upperMiddleZ =
+                minimumZ + ((maximumZ - minimumZ) / 2);
+            float southGateX = GetLotCenter(
+                settings,
+                origin,
+                new Vector2Int(lowerMiddleX, minimumZ)).x;
+            float northGateX = GetLotCenter(
+                settings,
+                origin,
+                new Vector2Int(upperMiddleX, maximumZ - 1)).x;
+            float westGateZ = GetLotCenter(
+                settings,
+                origin,
+                new Vector2Int(minimumX, lowerMiddleZ)).z;
+            float eastGateZ = GetLotCenter(
+                settings,
+                origin,
+                new Vector2Int(maximumX - 1, upperMiddleZ)).z;
             var gates = new[]
             {
                 new CityParkGateDescriptor(
                     $"{id}-gate-south",
-                    new Vector3(center.x, 0f, worldMinimum.z + halfRoad),
+                    new Vector3(
+                        southGateX,
+                        0f,
+                        worldMinimum.z + halfRoad),
                     Vector3.forward,
                     gateWidth),
                 new CityParkGateDescriptor(
                     $"{id}-gate-east",
-                    new Vector3(worldMaximum.x - halfRoad, 0f, center.z),
+                    new Vector3(
+                        worldMaximum.x - halfRoad,
+                        0f,
+                        eastGateZ),
                     Vector3.left,
                     gateWidth),
                 new CityParkGateDescriptor(
                     $"{id}-gate-north",
-                    new Vector3(center.x, 0f, worldMaximum.z - halfRoad),
+                    new Vector3(
+                        northGateX,
+                        0f,
+                        worldMaximum.z - halfRoad),
                     Vector3.back,
                     gateWidth),
                 new CityParkGateDescriptor(
                     $"{id}-gate-west",
-                    new Vector3(worldMinimum.x + halfRoad, 0f, center.z),
+                    new Vector3(
+                        worldMinimum.x + halfRoad,
+                        0f,
+                        westGateZ),
                     Vector3.right,
                     gateWidth)
             };

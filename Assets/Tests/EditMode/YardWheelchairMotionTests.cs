@@ -7,6 +7,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class YardWheelchairMotionTests
     {
         [Test]
+        [Category("CityTraversal")]
         public void Plan_ReadsTheAuthoredCircuitFromTheYardDressing()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -70,18 +71,16 @@ namespace BarPromenade.Tests.EditMode
                     site.RingCenter.z +
                     Mathf.Sin(angle) * site.RingRadius);
                 Assert.That(
-                    layout.ElevationPlan.TrySampleSurface(
+                    CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout,
                         point,
-                        CitySurfaceRole.GroundDatum,
-                        out float datum,
+                        out float groundTop,
                         out _),
                     Is.True,
                     $"probe {probe}");
                 Assert.That(
                     elevated.SampleGroundHeight(angle),
-                    Is.EqualTo(
-                        datum + CityElevationPlan.GroundTopOffset)
-                        .Within(0.001f),
+                    Is.EqualTo(groundTop).Within(0.001f),
                     $"probe {probe}");
             }
         }

@@ -140,13 +140,27 @@ namespace BarPromenade
                     Mathf.Cos(angle) * site.RingRadius,
                     site.RingCenter.z +
                     Mathf.Sin(angle) * site.RingRadius);
-                heights[index] = elevation.TrySampleSurface(
-                    probe,
-                    CitySurfaceRole.GroundDatum,
-                    out float datum,
-                    out _)
-                    ? datum + CityElevationPlan.GroundTopOffset
-                    : site.GroundY;
+                float fallbackDatum = elevation.TrySampleSurface(
+                        probe,
+                        CitySurfaceRole.GroundDatum,
+                        out float datum,
+                        out _)
+                    ? datum
+                    : site.GroundY - CityElevationPlan.GroundTopOffset;
+                var cell = new Vector2Int(
+                    Mathf.FloorToInt(
+                        (probe.x - elevation.WorldOrigin.x) /
+                        elevation.NodeSpacing.x),
+                    Mathf.FloorToInt(
+                        (probe.y - elevation.WorldOrigin.z) /
+                        elevation.NodeSpacing.y));
+                heights[index] =
+                    CityTerrainSurfacePlan.SampleContinuousDatum(
+                        elevation,
+                        cell,
+                        probe,
+                        fallbackDatum) +
+                    CityElevationPlan.GroundTopOffset;
             }
 
             return heights;

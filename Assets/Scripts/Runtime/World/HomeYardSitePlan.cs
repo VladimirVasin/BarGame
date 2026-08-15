@@ -270,12 +270,17 @@ namespace BarPromenade
                 return false;
             }
 
-            float groundY = homeSurface.DatumY +
-                            CityElevationPlan.GroundTopOffset;
-            var center = new Vector3(
+            var centerXZ = new Vector2(
                 bestGround.center.x,
-                groundY,
                 bestGround.center.y);
+            float groundY = CityTerrainSurfacePlan.SampleTop(
+                layout,
+                homeSurface,
+                centerXZ);
+            var center = new Vector3(
+                centerXZ.x,
+                groundY,
+                centerXZ.y);
             site = new HomeYardSitePlan(
                 home,
                 bestNeighbour,

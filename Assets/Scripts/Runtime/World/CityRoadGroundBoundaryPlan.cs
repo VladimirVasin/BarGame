@@ -14,7 +14,8 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimumCoordinate,
             float maximumCoordinate,
-            float groundTopY,
+            float firstGroundTopY,
+            float secondGroundTopY,
             float firstTravelTopY,
             float secondTravelTopY)
         {
@@ -24,7 +25,8 @@ namespace BarPromenade
             FixedCoordinate = fixedCoordinate;
             MinimumCoordinate = minimumCoordinate;
             MaximumCoordinate = maximumCoordinate;
-            GroundTopY = groundTopY;
+            FirstGroundTopY = firstGroundTopY;
+            SecondGroundTopY = secondGroundTopY;
             FirstTravelTopY = firstTravelTopY;
             SecondTravelTopY = secondTravelTopY;
         }
@@ -35,7 +37,10 @@ namespace BarPromenade
         internal float FixedCoordinate { get; }
         internal float MinimumCoordinate { get; }
         internal float MaximumCoordinate { get; }
-        internal float GroundTopY { get; }
+        internal float FirstGroundTopY { get; }
+        internal float SecondGroundTopY { get; }
+        internal float GroundTopY =>
+            (FirstGroundTopY + SecondGroundTopY) * 0.5f;
         internal float FirstTravelTopY { get; }
         internal float SecondTravelTopY { get; }
         internal float Length => MaximumCoordinate - MinimumCoordinate;
@@ -151,6 +156,64 @@ namespace BarPromenade
                    surface.IsWalkable;
         }
 
+        internal static bool IsGroundBoundarySafe(
+            CityLayout layout,
+            CitySurfaceDescriptor firstSurface,
+            CitySurfaceDescriptor secondSurface,
+            bool isHorizontal,
+            float fixedCoordinate,
+            float minimumCoordinate,
+            float maximumCoordinate)
+        {
+            float middleCoordinate =
+                (minimumCoordinate + maximumCoordinate) * 0.5f;
+            return IsGroundBoundarySampleSafe(
+                       layout,
+                       firstSurface,
+                       secondSurface,
+                       isHorizontal,
+                       fixedCoordinate,
+                       minimumCoordinate) &&
+                   IsGroundBoundarySampleSafe(
+                       layout,
+                       firstSurface,
+                       secondSurface,
+                       isHorizontal,
+                       fixedCoordinate,
+                       middleCoordinate) &&
+                   IsGroundBoundarySampleSafe(
+                       layout,
+                       firstSurface,
+                       secondSurface,
+                       isHorizontal,
+                       fixedCoordinate,
+                       maximumCoordinate);
+        }
+
+        private static bool IsGroundBoundarySampleSafe(
+            CityLayout layout,
+            CitySurfaceDescriptor firstSurface,
+            CitySurfaceDescriptor secondSurface,
+            bool isHorizontal,
+            float fixedCoordinate,
+            float variableCoordinate)
+        {
+            float firstTop = SampleGroundTop(
+                layout,
+                firstSurface,
+                isHorizontal,
+                fixedCoordinate,
+                variableCoordinate);
+            float secondTop = SampleGroundTop(
+                layout,
+                secondSurface,
+                isHorizontal,
+                fixedCoordinate,
+                variableCoordinate);
+            return Mathf.Abs(firstTop - secondTop) <=
+                   MaximumSafeStep + GeometryTolerance;
+        }
+
         private static void CreateBoundarySpans(
             CityLayout layout,
             CitySurfaceDescriptor surface,
@@ -173,7 +236,6 @@ namespace BarPromenade
             float maximum = horizontal
                 ? surface.WorldBounds.xMax
                 : surface.WorldBounds.yMax;
-            float groundTop = surface.PhysicalTopY;
             if (!SupportsGroundTraversal(surface))
             {
                 AddSpan(
@@ -184,7 +246,6 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    groundTop,
                     protectedDrops);
                 return;
             }
@@ -207,7 +268,7 @@ namespace BarPromenade
                     fixedCoordinate,
                     first,
                     second,
-                    groundTop,
+                    surface,
                     classified);
             }
 
@@ -225,7 +286,6 @@ namespace BarPromenade
                         fixedCoordinate,
                         interval.Minimum,
                         interval.Maximum,
-                        groundTop,
                         protectedDrops);
                     continue;
                 }
@@ -239,8 +299,8 @@ namespace BarPromenade
                     fixedCoordinate,
                     interval.Minimum,
                     interval.Maximum,
-                    groundTop,
-                    safeConnections);
+                    safeConnections,
+                    protectedDrops);
             }
         }
 
@@ -253,8 +313,8 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
-            ICollection<CityRoadGroundBoundarySpan> destination)
+            ICollection<CityRoadGroundBoundarySpan> safeConnections,
+            ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
             if (!RequiresAuthoredAccess(layout, surface, edge))
             {
@@ -266,8 +326,8 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    groundTop,
-                    destination);
+                    safeConnections,
+                    protectedDrops);
                 return;
             }
 
@@ -282,8 +342,8 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    groundTop,
-                    destination);
+                    safeConnections,
+                    protectedDrops);
                 return;
             }
 
@@ -314,10 +374,10 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    groundTop,
                     horizontal ? access.Center.x : access.Center.z,
                     access.Width,
-                    destination);
+                    safeConnections,
+                    protectedDrops);
             }
         }
 
@@ -346,8 +406,8 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
-            ICollection<CityRoadGroundBoundarySpan> destination)
+            ICollection<CityRoadGroundBoundarySpan> safeConnections,
+            ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
             Vector3 expectedOutward = new Vector3(
                 -direction.x,
@@ -375,10 +435,10 @@ namespace BarPromenade
                     fixedCoordinate,
                     minimum,
                     maximum,
-                    groundTop,
                     horizontal ? gate.Center.x : gate.Center.z,
                     gate.Width,
-                    destination);
+                    safeConnections,
+                    protectedDrops);
             }
         }
 
@@ -390,10 +450,10 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
             float openingCenter,
             float openingWidth,
-            ICollection<CityRoadGroundBoundarySpan> destination)
+            ICollection<CityRoadGroundBoundarySpan> safeConnections,
+            ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
             float halfWidth = openingWidth * 0.5f;
             AddSafeSpanIfWideEnough(
@@ -404,8 +464,8 @@ namespace BarPromenade
                 fixedCoordinate,
                 Mathf.Max(minimum, openingCenter - halfWidth),
                 Mathf.Min(maximum, openingCenter + halfWidth),
-                groundTop,
-                destination);
+                safeConnections,
+                protectedDrops);
         }
 
         private static void AddSafeSpanIfWideEnough(
@@ -416,14 +476,18 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
-            ICollection<CityRoadGroundBoundarySpan> destination)
+            ICollection<CityRoadGroundBoundarySpan> safeConnections,
+            ICollection<CityRoadGroundBoundarySpan> protectedDrops)
         {
-            if (maximum - minimum < MinimumPassageWidth)
+            if (maximum - minimum <= GeometryTolerance)
             {
                 return;
             }
 
+            ICollection<CityRoadGroundBoundarySpan> destination =
+                maximum - minimum < MinimumPassageWidth
+                    ? protectedDrops
+                    : safeConnections;
             AddSpan(
                 layout,
                 surface,
@@ -432,7 +496,6 @@ namespace BarPromenade
                 fixedCoordinate,
                 minimum,
                 maximum,
-                groundTop,
                 destination);
         }
 
@@ -488,7 +551,7 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
+            CitySurfaceDescriptor surface,
             ICollection<ClassifiedInterval> destination)
         {
             float firstDifference = SampleTravelTop(
@@ -496,13 +559,23 @@ namespace BarPromenade
                 edge,
                 horizontal,
                 fixedCoordinate,
-                minimum) - groundTop;
+                minimum) - SampleGroundTop(
+                layout,
+                surface,
+                horizontal,
+                fixedCoordinate,
+                minimum);
             float secondDifference = SampleTravelTop(
                 layout,
                 edge,
                 horizontal,
                 fixedCoordinate,
-                maximum) - groundTop;
+                maximum) - SampleGroundTop(
+                layout,
+                surface,
+                horizontal,
+                fixedCoordinate,
+                maximum);
             float slope = secondDifference - firstDifference;
             if (Mathf.Abs(slope) <= GeometryTolerance)
             {
@@ -619,7 +692,6 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimum,
             float maximum,
-            float groundTop,
             ICollection<CityRoadGroundBoundarySpan> destination)
         {
             if (maximum - minimum <= GeometryTolerance)
@@ -634,7 +706,18 @@ namespace BarPromenade
                 fixedCoordinate,
                 minimum,
                 maximum,
-                groundTop,
+                SampleGroundTop(
+                    layout,
+                    surface,
+                    horizontal,
+                    fixedCoordinate,
+                    minimum),
+                SampleGroundTop(
+                    layout,
+                    surface,
+                    horizontal,
+                    fixedCoordinate,
+                    maximum),
                 SampleTravelTop(
                     layout,
                     edge,
@@ -647,6 +730,22 @@ namespace BarPromenade
                     horizontal,
                     fixedCoordinate,
                     maximum)));
+        }
+
+        private static float SampleGroundTop(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            bool horizontal,
+            float fixedCoordinate,
+            float variableCoordinate)
+        {
+            Vector2 point = horizontal
+                ? new Vector2(variableCoordinate, fixedCoordinate)
+                : new Vector2(fixedCoordinate, variableCoordinate);
+            return CityTerrainSurfacePlan.SampleTop(
+                layout,
+                surface,
+                point);
         }
 
         private static float SampleTravelTop(
@@ -715,12 +814,14 @@ namespace BarPromenade
                 }
 
                 AddApproachGuardIfRequired(
+                    layout,
                     owner,
                     placement,
                     placement.LowerApproachFootprint,
                     placement.LowerApproachStart.y,
                     protectedDrops);
                 AddApproachGuardIfRequired(
+                    layout,
                     owner,
                     placement,
                     placement.UpperApproachFootprint,
@@ -860,19 +961,13 @@ namespace BarPromenade
         }
 
         private static void AddApproachGuardIfRequired(
+            CityLayout layout,
             StairOwnerBoundary owner,
             CityElevationStairPlacement placement,
             Rect approach,
             float approachTopY,
             ICollection<CityRoadGroundBoundarySpan> destination)
         {
-            if (Mathf.Abs(
-                    approachTopY - owner.Surface.PhysicalTopY) <=
-                MaximumSafeStep + GeometryTolerance)
-            {
-                return;
-            }
-
             float minimum = Mathf.Max(
                 owner.MinimumCoordinate,
                 owner.IsHorizontal ? approach.xMin : approach.yMin);
@@ -901,6 +996,34 @@ namespace BarPromenade
                     : approach.xMin;
             }
 
+            float firstGroundTop = SampleGroundTop(
+                layout,
+                owner.Surface,
+                owner.IsHorizontal,
+                fixedCoordinate,
+                minimum);
+            float secondGroundTop = SampleGroundTop(
+                layout,
+                owner.Surface,
+                owner.IsHorizontal,
+                fixedCoordinate,
+                maximum);
+            float middleGroundTop = SampleGroundTop(
+                layout,
+                owner.Surface,
+                owner.IsHorizontal,
+                fixedCoordinate,
+                (minimum + maximum) * 0.5f);
+            if (Mathf.Abs(approachTopY - firstGroundTop) <=
+                    MaximumSafeStep + GeometryTolerance &&
+                Mathf.Abs(approachTopY - middleGroundTop) <=
+                    MaximumSafeStep + GeometryTolerance &&
+                Mathf.Abs(approachTopY - secondGroundTop) <=
+                    MaximumSafeStep + GeometryTolerance)
+            {
+                return;
+            }
+
             destination.Add(new CityRoadGroundBoundarySpan(
                 owner.Surface,
                 owner.Edge,
@@ -908,7 +1031,8 @@ namespace BarPromenade
                 fixedCoordinate,
                 minimum,
                 maximum,
-                owner.Surface.PhysicalTopY,
+                firstGroundTop,
+                secondGroundTop,
                 approachTopY,
                 approachTopY));
         }
@@ -952,7 +1076,6 @@ namespace BarPromenade
                 source.FixedCoordinate,
                 minimum,
                 maximum,
-                source.GroundTopY,
                 destination);
         }
 

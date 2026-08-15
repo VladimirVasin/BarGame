@@ -6,6 +6,29 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-15 — Continuous city terrain and traversal audit
+
+- Replaced the default city's isolated Buildable/Park/Open/Beach cell slabs
+  with one sampled continuous-top contract and triangulated mesh colliders.
+  Beach cells now share a canonical waterward profile; the lake is a local
+  elevated basin instead of a deep pit to the global water datum.
+- Road/ground and ground/ground connectors and guards now classify the same
+  sampled physical edge. Unsafe guards follow the slope in segments and own
+  retaining collision; park plazas conform to the terrain, district public
+  places receive flat pads with `4 m` blends, and building foundations extend
+  down without moving their authored tops.
+- Added the deterministic `CityVerticalTraversalPlan` seam/frontage audit and
+  fixed all eight river-park gates: their former centers sat over internal
+  `ParkPath` corridors and left only `0.4 m` lawn slivers, so they now occupy
+  capsule-wide, step-safe cell frontages.
+
+Verification:
+
+- Focused Unity EditMode category `CityTraversal` passed `7/7` on production
+  seed `20260727`. Unity also compiled the shared runtime, EditMode and
+  PlayMode assemblies in that invocation; broad suites and a player build were
+  intentionally not run in fast mode.
+
 ## 2026-08-14 — River fence ownership and stair access correction
 
 - Corrected the post-river collision conflict between `RoadFencePlanner` and

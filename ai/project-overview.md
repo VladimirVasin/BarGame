@@ -85,12 +85,19 @@ The vertical slice contains:
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
-  every urban district at least `1.5 m` of local terrace variation, keeps
-  sea/lake water on declared datums and gives the river a monotonic descent
-  into the sea. Legacy and
-  custom blueprints retain an exact flat fallback. The
-  sampler is authoritative for node, cell, road, sidewalk, entrance, return,
-  open-area and debug-teleport height;
+  every urban district at least `1.5 m` of local elevation variation, keeps
+  the sea at datum `0`, gives the river a monotonic descent into it and places
+  the lake in a local elevated basin whose blocked physical shoreline drop is
+  about `0.4 m`. `CityTerrainSurfacePlan` is the authoritative sampled top for
+  `BuildableGround`, `ParkGround`, `OpenGround` and `Beach`;
+  `CityTerrainSurfaceWorldBuilder` turns it into triangulated render meshes and
+  matching mesh colliders, eliminating vertical cell-slab seams and giving the
+  beach a continuous waterward slope. Declared flat special surfaces and
+  legacy/custom blueprints retain their flat fallbacks. Park plazas conform to
+  the lawn/path profile, while district public places keep exact flat pads with
+  `4 m` blended approaches. Buildings and public slabs extend their foundations
+  downward without moving their authored tops. The samplers are authoritative for node,
+  cell, road, sidewalk, entrance, return, open-area and debug-teleport height;
 - one authored home-yard composition in the walkable roadless gap between the
   player's home and its neighbouring building, distinct from the five typed
   fringe `Yard` areas. A worn 24-segment ring surrounds the dead tree and
@@ -107,9 +114,12 @@ The vertical slice contains:
   Industrial and Nightlife. Each owns `6-12` visible collider-free steps at
   `0.15-0.17 m` rise and `0.30-0.34 m` tread, two `1.5 m` landings, physical
   rails/retaining walls and exactly one hidden seam-free ramp collider per
-  flight. Terrace sides extend to a common terrain base and drops of `0.6 m`
-  or more receive physical guards. The first version deliberately permits
-  only one walkable surface at any XZ projection;
+  flight. Road-to-ground and ground-to-ground transitions use sampled endpoint
+  heights for the same step-safe decision, and segmented guards follow every
+  unsafe physical edge. `CityVerticalTraversalPlan` inventories those seams
+  and authored road frontages and proves their authorized component from the
+  spawn road. The first version deliberately permits only one walkable surface
+  at any XZ projection;
 - one shared MVP day/night lighting cycle for City, the Home window and the
   Home balcony exterior: night before `06:00`, smooth dawn from `06:00` to
   `07:00`, day until `18:00`, smooth dusk until `19:00`, then night again.

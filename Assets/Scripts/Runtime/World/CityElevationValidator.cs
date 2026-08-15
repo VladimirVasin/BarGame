@@ -48,11 +48,11 @@ namespace BarPromenade
                 ValidateFinite(elevation, "cell elevation");
                 if (cell.IsWater)
                 {
-                    float expected = cell.Area.Feature ==
-                                     CityAreaFeatureKind.Lake
-                            ? (plan.IsElevated ? 1f : 0f)
-                            : 0f;
-                    if (Mathf.Abs(elevation - expected) > Tolerance)
+                    bool elevatedLake = plan.IsElevated &&
+                                        cell.Area.Feature ==
+                                        CityAreaFeatureKind.Lake;
+                    if (!elevatedLake &&
+                        Mathf.Abs(elevation) > Tolerance)
                     {
                         throw new InvalidOperationException(
                             $"Water cell {cell.Cell} drifted from its datum.");
@@ -60,6 +60,7 @@ namespace BarPromenade
                 }
             }
 
+            ValidateLakeBasin(plan, blueprint);
             ValidateRiverValley(plan, blueprint.River);
 
             for (int index = 0; index < roads.Count; index++)
@@ -131,6 +132,56 @@ namespace BarPromenade
             if (plan.IsElevated)
             {
                 ValidateRequiredDistrictStairs(plan, stairDistricts);
+            }
+        }
+
+        private static void ValidateLakeBasin(
+            CityElevationPlan plan,
+            CityBlueprint blueprint)
+        {
+            if (!plan.IsElevated)
+            {
+                return;
+            }
+
+            bool foundWater = false;
+            float waterDatum = 0f;
+            float lowestShore = float.PositiveInfinity;
+            for (int index = 0; index < blueprint.Cells.Count; index++)
+            {
+                CityBlueprintCell cell = blueprint.Cells[index];
+                if (cell.Area.Feature != CityAreaFeatureKind.Lake)
+                {
+                    continue;
+                }
+
+                float elevation = plan.GetCellElevation(cell.Cell);
+                if (cell.IsWater)
+                {
+                    if (foundWater &&
+                        Mathf.Abs(elevation - waterDatum) > Tolerance)
+                    {
+                        throw new InvalidOperationException(
+                            "Lake water cells require one shared datum.");
+                    }
+
+                    foundWater = true;
+                    waterDatum = elevation;
+                }
+                else
+                {
+                    lowestShore = Mathf.Min(lowestShore, elevation);
+                }
+            }
+
+            if (foundWater &&
+                (!IsFinite(lowestShore) ||
+                 lowestShore - waterDatum <=
+                 CityRoadGroundBoundaryPlanner.MaximumSafeStep))
+            {
+                throw new InvalidOperationException(
+                    "The elevated lake needs a bounded blocked shoreline " +
+                    "drop below its street-access terrace.");
             }
         }
 

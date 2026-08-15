@@ -114,13 +114,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bank starts `1.8 m` above the local water and terrain rises `0.98 m` per
   node away from the channel. Default road nodes therefore span about
   `8.1 m`, peak near `10.08 m`, and retain at least `1.5 m` within every urban
-  district; sea water stays at datum `0`, lake water at datum `1`, and the
-  river descends monotonically from `2.4 m` in the south to that sea datum.
-  Legacy/custom blueprints retain the exact flat fallback. Cell terraces are aligned to their canonical building
-  frontage, open precincts to their one declared access and public places to
-  the street approaches that remain usable. All node/cell positions, surface
-  datums, doors, returns, stops, waiting slots, pedestrians and debug
-  teleports read that plan or its sampler rather than adding an absolute Y.
+  district. Sea water stays at datum `0`; the lake is one local elevated basin
+  set from its access rather than from a global datum, with an intentionally
+  blocked physical shore-to-water drop of about `0.4 m`. The river descends
+  monotonically from `2.4 m` in the south to the sea datum. Legacy/custom
+  blueprints retain the exact flat fallback.
+  `CityTerrainSurfacePlan` is the authoritative top sampler for
+  `BuildableGround`, `ParkGround`, `OpenGround` and `Beach`. It interpolates
+  the surrounding road-node datums across each cell and keeps the road-edge
+  plateaus, so adjacent cells form one continuous terrain surface instead of
+  stacked slabs with vertical seams; the beach has its own continuous descent
+  to the waterline. `CityTerrainSurfaceWorldBuilder` materializes that contract
+  as triangulated render meshes with matching mesh colliders, while declared
+  special-purpose flat surfaces keep their flat contracts. Building and public
+  place foundations extend downward without moving their authored tops. Park
+  plazas use closed terrain-conforming meshes; each district public place owns
+  an exact flat terrain pad under its slab and a `4 m` smooth blend back to the
+  continuous cell, so neither feature is pierced by the surrounding slope.
+  All node/cell positions, surface datums, doors, returns, stops, waiting
+  slots, pedestrians and debug teleports read the elevation or terrain sampler
+  rather than adding an absolute Y.
   Declared bridge decks may cross non-walkable water and river stairs may
   reach their own lower platforms. Tunnels and overlapping walkable levels at
   the same XZ projection remain outside this navigation architecture.
@@ -132,11 +145,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stair: `6-12` visible collider-free steps, `0.15-0.17 m` rise,
   `0.30-0.34 m` tread, two `1.5 m` landings, physical rails/retaining walls
   and exactly one continuous hidden ramp collider. A grade-safe roadway stays
-  beside it for Route 01. Terrace slabs extend to a common base. One shared
-  `CityRoadGroundBoundaryPlan` classifies every road-to-ground seam: a span
-  becomes a radius-safe walkable connector only while its sampled top delta
-  stays within the `0.28 m` controller step, otherwise the same span receives
-  a physical guard. Signature stair footprints are the explicit guarded-cut
+  beside it for Route 01. One shared `CityRoadGroundBoundaryPlan` classifies
+  every road-to-ground seam from its sampled endpoint heights: a span becomes
+  a radius-safe walkable connector only while the complete edge stays within
+  the `0.28 m` controller step, otherwise segmented physical guards follow the
+  actual terrain slope. Ground-to-ground connectors use the same sampled-edge
+  predicate. Signature stair footprints are the explicit guarded-cut
   exception. The player
   contact patch raycasts to the live surface normal, and balance checks refuse
   to start above a `12°` surface angle so a stair flight cannot begin a fall
@@ -144,14 +158,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Data-driven indexed walkable mask:** Player motion is
   constrained to a spatially indexed union of XZ streets, park lawn,
   blueprint `OpenLand` and the complete logical `BuildableGround` regions.
-  Radius-safe connector rectangles overlap only the road-to-ground spans that
-  the shared boundary plan classifies as step-safe; every other span is
-  physically guarded. Ground-to-ground connectors are emitted only when both
-  terraces share a datum; the graded physical road and one hidden ramp per
-  stair flight own all climbing. Water, unmapped cells and space outside the active footprint
-  remain excluded; buildings and other visible obstacles are governed by
-  their physical colliders instead of being carved out of the macro walkable
-  mask.
+  Radius-safe connector rectangles overlap only road-to-ground and
+  ground-to-ground spans whose sampled physical edge is step-safe; every other
+  span is physically guarded. The graded physical road, continuous terrain and
+  one hidden ramp per stair flight own all climbing. `CityVerticalTraversalAudit`
+  inventories every ground seam and authored road frontage, classifies it as
+  authorized, unsafe or unclassified, and records deterministic reachability
+  from the spawn road component in `CityVerticalTraversalPlan`. Water,
+  unmapped cells and space outside the active footprint remain excluded;
+  buildings and other visible obstacles are governed by their physical
+  colliders instead of being carved out of the macro walkable mask.
 - **Accepted — Road v2 deterministic street corridor:** The canonical default
   street footprint is `8 m`, so `CityStreetSurfacePlanner` partitions every
   ordinary street into a dark `6 m` carriageway and two `1 m` sidewalks raised

@@ -6,6 +6,22 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-15 — City terrain is walkable again
+
+- Ordinary blocks, the park, yards and beach now form continuous physical
+  terrain instead of stacked cell slabs. Roads meet the real ground height at
+  their edges. Park plazas follow the slope; district public places sit on
+  flat pads with smooth approaches; buildings and slabs extend their
+  foundations down without changing their authored tops.
+- Walkable openings and protective rails now make the same decision from the
+  sampled height along each boundary. Safe seams stay open; guards follow the
+  actual slope at unsafe drops instead of cutting across the route. All eight
+  river-park gates now sit on full-width lawn frontages instead of internal
+  park paths, restoring their physical approaches.
+- The beach slopes into the water, the sea remains at datum `0`, and the lake
+  is now a local elevated basin with a blocked shoreline drop of about `0.4 m`
+  instead of a deep pit to the global water level.
+
 ### 2026-08-14 — River stairs and bank roads are clear
 
 - Removed the duplicate road-edge rails that crossed the river bridges and
