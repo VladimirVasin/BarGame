@@ -13,18 +13,26 @@ namespace BarPromenade
             BarNpcAnchor anchor,
             CityPedestrianAssetRegistry registry,
             CityPedestrianPresentation presentation,
-            bool isSeated)
+            bool isSeated,
+            BarPatronDrinkingArmPose drinking)
         {
             Anchor = anchor;
             Registry = registry;
             Presentation = presentation;
             IsSeated = isSeated;
+            Drinking = drinking;
         }
 
         public BarNpcAnchor Anchor { get; }
         public CityPedestrianAssetRegistry Registry { get; }
         public CityPedestrianPresentation Presentation { get; }
         public bool IsSeated { get; }
+
+        /// <summary>
+        /// The guest's procedural drinking layer, or <c>null</c> for
+        /// the deliberate empty-handed minority.
+        /// </summary>
+        public BarPatronDrinkingArmPose Drinking { get; }
     }
 
     /// <summary>
@@ -70,6 +78,38 @@ namespace BarPromenade
 
         /// <summary>Booth and stool seat height under a guest.</summary>
         public const float SeatHeight = 0.46f;
+
+        /// <summary>
+        /// Shelf bottles are counter-scale showpieces; the same
+        /// silhouette shrinks to a hand-sized prop in a guest's fist.
+        /// </summary>
+        public const float BottlePropScale = 0.42f;
+
+        /// <summary>The fist wraps the bottle at this height share.</summary>
+        public const float BottleGripHeightShare = 0.45f;
+
+        /// <summary>Every Nth guest keeps their hands empty.</summary>
+        public const int EmptyHandedEvery = 3;
+
+        public const string BottleSocketName = "SOCKET_Bottle.R";
+        public const string MouthSocketName = "SOCKET_Mouth";
+        public const string RightUpperArmBoneName = "upper_arm.R";
+        public const string RightForearmBoneName = "forearm.R";
+        public const string HeadBoneName = "head";
+
+        // A dim bar crowd drinks what the shelf actually sells: mostly
+        // beer, the odd vodka and cognac. Water stays behind the bar.
+        private static readonly DrinkId[] PatronDrinks =
+        {
+            DrinkId.LightBeer,
+            DrinkId.DarkBeer,
+            DrinkId.LightBeer,
+            DrinkId.Vodka,
+            DrinkId.DarkBeer,
+            DrinkId.CognacVs,
+            DrinkId.PepperVodka,
+            DrinkId.LightBeer
+        };
 
         public static IReadOnlyList<BarPatron> Build(
             Transform parent,
@@ -137,11 +177,19 @@ namespace BarPromenade
 
                 bool seated = anchor.Role == BarNpcRole.SeatedPatron &&
                               TrySeat(root, anchor, registry, presentation);
+                BarPatronDrinkingArmPose drinking =
+                    patronIndex % EmptyHandedEvery == 0
+                        ? null
+                        : TryAttachDrinking(
+                            anchor,
+                            registry,
+                            patronIndex);
                 patrons.Add(new BarPatron(
                     anchor,
                     registry,
                     presentation,
-                    seated));
+                    seated,
+                    drinking));
             }
 
             var animator = root.gameObject.AddComponent<BarPatronAnimator>();
@@ -180,6 +228,140 @@ namespace BarPromenade
             return presentation.TrySeat(
                 seatAnchor.transform,
                 archetype.SeatedRide);
+        }
+
+        /// <summary>
+        /// Puts one of the bar's own bottle designs into the guest's
+        /// right hand and starts their seeded drinking cadence. A
+        /// design without the canonical sockets simply drinks nothing.
+        /// </summary>
+        public static BarPatronDrinkingArmPose TryAttachDrinking(
+            BarNpcAnchor anchor,
+            CityPedestrianAssetRegistry registry,
+            int patronIndex)
+        {
+            Transform socket = FindDeep(
+                registry.transform,
+                BottleSocketName);
+            Transform mouth = FindDeep(
+                registry.transform,
+                MouthSocketName);
+            Transform upperArm = FindDeep(
+                registry.transform,
+                RightUpperArmBoneName);
+            Transform forearm = FindDeep(
+                registry.transform,
+                RightForearmBoneName);
+            Transform headBone = FindDeep(
+                registry.transform,
+                HeadBoneName);
+            if (socket == null ||
+                mouth == null ||
+                upperArm == null ||
+                forearm == null ||
+                headBone == null)
+            {
+                GameLog.Warning(
+                    "bar",
+                    "patron_drink_sockets_missing",
+                    GameLog.Field("design", registry.DesignId));
+                return null;
+            }
+
+            int seed = StableSeed(anchor.Id, patronIndex);
+            BarDrinkPresentation presentation =
+                BarDrinkPresentationCatalog.Get(
+                    PatronDrinks[Mathf.Abs(seed) %
+                                 PatronDrinks.Length]);
+
+            var bottleObject = new GameObject(
+                $"Patron Bottle {presentation.StableId}");
+            Transform bottleRoot = bottleObject.transform;
+            bottleRoot.SetParent(socket, false);
+            bottleRoot.localScale = InverseScale(socket.lossyScale);
+
+            // The socket bone's +Y runs from the palm toward the
+            // ground at rest, so the rig flips it: the bottle stands
+            // neck-up out of the fist, gripped at its body.
+            var rigObject = new GameObject("Bottle Rig");
+            Transform rig = rigObject.transform;
+            rig.SetParent(bottleRoot, false);
+            rig.localRotation = Quaternion.Euler(180f, 0f, 0f);
+            rig.localScale = Vector3.one * BottlePropScale;
+            float bottleHeight =
+                BarDrinkServiceWorldBuilder.BuildBottleVisual(
+                    rig,
+                    presentation);
+            rig.localPosition = Vector3.up *
+                (bottleHeight *
+                 BottlePropScale *
+                 BottleGripHeightShare);
+
+            var mouthAnchor = new GameObject("Bottle Mouth Anchor");
+            mouthAnchor.transform.SetParent(rig, false);
+            mouthAnchor.transform.localPosition =
+                Vector3.up * bottleHeight;
+
+            BarPatronDrinkingArmPose pose =
+                registry.gameObject.AddComponent<
+                    BarPatronDrinkingArmPose>();
+            pose.Initialize(
+                new BarPatronDrinkTimeline(seed),
+                upperArm,
+                forearm,
+                headBone,
+                mouth,
+                bottleRoot,
+                mouthAnchor.transform);
+            return pose;
+        }
+
+        private static Transform FindDeep(
+            Transform root,
+            string childName)
+        {
+            Transform[] children =
+                root.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < children.Length; index++)
+            {
+                if (string.Equals(
+                        children[index].name,
+                        childName,
+                        StringComparison.Ordinal))
+                {
+                    return children[index];
+                }
+            }
+
+            return null;
+        }
+
+        private static int StableSeed(string anchorId, int patronIndex)
+        {
+            unchecked
+            {
+                int hash = 17;
+                string id = anchorId ?? string.Empty;
+                for (int index = 0; index < id.Length; index++)
+                {
+                    hash = (hash * 31) + id[index];
+                }
+
+                return (hash * 397) ^ patronIndex;
+            }
+        }
+
+        private static Vector3 InverseScale(Vector3 scale)
+        {
+            const float minimumAxis = 0.0001f;
+
+            // Unity's Blender/FBX bone hierarchy carries a 100x
+            // transform scale even though the skinned character
+            // renders in metres; cancel it at the prop root.
+            return new Vector3(
+                Mathf.Abs(scale.x) < minimumAxis ? 1f : 1f / scale.x,
+                Mathf.Abs(scale.y) < minimumAxis ? 1f : 1f / scale.y,
+                Mathf.Abs(scale.z) < minimumAxis ? 1f : 1f / scale.z);
         }
 
         private static int CountSeated(IReadOnlyList<BarPatron> patrons)

@@ -193,6 +193,26 @@ namespace BarPromenade
             return bottleView;
         }
 
+        /// <summary>
+        /// Builds the same authored bottle silhouette the service
+        /// shelf uses, visuals only — no colliders, physics or view
+        /// state — for props such as the patrons' hand-held bottles.
+        /// Returns the bottle's total local height.
+        /// </summary>
+        internal static float BuildBottleVisual(
+            Transform root,
+            BarDrinkPresentation presentation)
+        {
+            var renderers = new List<Renderer>();
+            var colors = new List<Color>();
+            BottleDimensions dimensions = BuildBottleGeometry(
+                root,
+                presentation,
+                renderers,
+                colors);
+            return dimensions.TotalHeight;
+        }
+
         private static BottleDimensions BuildBottleGeometry(
             Transform root,
             BarDrinkPresentation presentation,

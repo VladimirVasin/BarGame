@@ -886,6 +886,7 @@ namespace BarPromenade.Tests.PlayMode
                 interiorRoot.Patrons,
                 Is.Not.Empty,
                 "The bar must seat its 3D guests.");
+            int drinkingPatrons = 0;
             foreach (BarPatron patron in interiorRoot.Patrons)
             {
                 Assert.That(patron.Registry, Is.Not.Null);
@@ -894,7 +895,36 @@ namespace BarPromenade.Tests.PlayMode
                     patron.Anchor.Role,
                     Is.Not.EqualTo(BarNpcRole.Bartender),
                     "The bartender's spot stays empty for now.");
+                if (patron.Drinking == null)
+                {
+                    continue;
+                }
+
+                drinkingPatrons++;
+                Assert.That(
+                    patron.Drinking.BottleRoot,
+                    Is.Not.Null);
+                Assert.That(
+                    patron.Drinking.BottleRoot.IsChildOf(
+                        patron.Registry.transform),
+                    Is.True,
+                    "The held bottle must ride the guest's hand " +
+                    "socket.");
+                Assert.That(
+                    patron.Drinking.BottleRoot
+                        .GetComponentsInChildren<Renderer>(true),
+                    Is.Not.Empty,
+                    "The held bottle must be a visible prop.");
             }
+
+            Assert.That(
+                drinkingPatrons,
+                Is.GreaterThan(0),
+                "A bar crowd without a single drink is no bar crowd.");
+            Assert.That(
+                drinkingPatrons,
+                Is.LessThan(interiorRoot.Patrons.Count),
+                "The deliberate empty-handed minority must survive.");
 
             Assert.That(interiorRoot.Soundscape, Is.Not.Null);
             Assert.That(
