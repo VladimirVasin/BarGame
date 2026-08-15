@@ -37,9 +37,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
             Assert.That(timeline.ConsumeFlushCue(), Is.False);
 
-            // The stop request is refused before the minimum hold.
-            Assert.That(timeline.RequestFinish(), Is.False);
-
             Advance(
                 timeline.Advance,
                 HomeToiletSceneTimeline.FlushTimeSeconds + 0.05f);
@@ -77,11 +74,64 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 timeline.Phase,
                 Is.EqualTo(HomeToiletScenePhase.CameraReturn));
+            Assert.That(timeline.ReachedMinimumPrivacy, Is.True);
             Assert.That(
                 timeline.ConsumeFlushCue(),
                 Is.True,
                 "An early finish still flushes before the camera " +
                 "turns back.");
+        }
+
+        [Test]
+        public void Toilet_InterruptsBeforeMinimumWithoutReward()
+        {
+            var timeline = new HomeToiletSceneTimeline();
+            timeline.Begin();
+            Advance(
+                timeline.Advance,
+                HomeToiletSceneTimeline.CameraAwaySeconds + 0.05f);
+            Advance(timeline.Advance, 0.5f);
+            Assert.That(timeline.RequestFinish(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
+            Assert.That(timeline.ReachedMinimumPrivacy, Is.False);
+            Assert.That(
+                timeline.RequestFinish(),
+                Is.False,
+                "A second stop during the wind-down is refused.");
+            Advance(
+                timeline.Advance,
+                HomeToiletSceneTimeline.CameraReturnSeconds + 0.05f);
+            Assert.That(timeline.IsCompleted, Is.True);
+        }
+
+        [Test]
+        public void Toilet_AbortDuringCameraAwayKeepsBlendAndFlush()
+        {
+            var timeline = new HomeToiletSceneTimeline();
+            timeline.Begin();
+            Advance(timeline.Advance, 1.2f);
+            float blendBefore = timeline.CameraBlend;
+            Assert.That(
+                blendBefore,
+                Is.GreaterThan(0f).And.LessThan(1f));
+            Assert.That(timeline.RequestFinish(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
+            Assert.That(
+                timeline.CameraBlend,
+                Is.EqualTo(blendBefore).Within(0.001f),
+                "An abort mid-retreat must not snap the camera.");
+            Advance(
+                timeline.Advance,
+                HomeToiletSceneTimeline.CameraReturnSeconds + 0.05f);
+            Assert.That(timeline.IsCompleted, Is.True);
+            Assert.That(
+                timeline.ConsumeFlushCue(),
+                Is.False,
+                "Nothing happened yet — the abort must not flush.");
         }
 
         [Test]
@@ -126,14 +176,24 @@ namespace BarPromenade.Tests.EditMode
                 HomeShowerSceneTimeline.CameraArrivalSeconds);
             Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
 
-            // Refused before the minimum, honoured after it.
+            // An early stop is honoured too, but forfeits the reward.
             var early = new HomeShowerSceneTimeline();
             early.Begin();
             Advance(
                 early.Advance,
                 HomeShowerSceneTimeline.CurtainCloseSeconds +
                 HomeShowerSceneTimeline.WaterStartSeconds + 0.1f);
-            Assert.That(early.RequestFinish(), Is.False);
+            Assert.That(early.RequestFinish(), Is.True);
+            Assert.That(
+                early.Phase,
+                Is.EqualTo(HomeShowerScenePhase.WaterStop));
+            Assert.That(early.ReachedMinimumHold, Is.False);
+            Advance(early.Advance, 4f);
+            Assert.That(early.IsCompleted, Is.True);
+            Assert.That(
+                early.CurtainScale,
+                Is.EqualTo(
+                    HomeShowerSceneTimeline.GatheredCurtainScale));
 
             Advance(
                 timeline.Advance,
@@ -142,6 +202,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 timeline.Phase,
                 Is.EqualTo(HomeShowerScenePhase.WaterStop));
+            Assert.That(timeline.ReachedMinimumHold, Is.True);
 
             Advance(timeline.Advance, 4f);
             Assert.That(timeline.IsCompleted, Is.True);
@@ -259,7 +320,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Brushing_StopRefusedBeforeMinimum()
+        public void Brushing_InterruptsBeforeMinimumWithoutReward()
         {
             var timeline = new HomeTeethBrushingTimeline();
             timeline.Begin();
@@ -267,7 +328,45 @@ namespace BarPromenade.Tests.EditMode
                 timeline.Advance,
                 HomeTeethBrushingTimeline.CameraToMirrorSeconds +
                 1f);
-            Assert.That(timeline.RequestFinish(), Is.False);
+            Assert.That(timeline.RequestFinish(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(HomeTeethBrushingPhase.Rinse),
+                "A stop mid-brushing still passes the rinse beat.");
+            Assert.That(timeline.ReachedMinimumBrush, Is.False);
+            Advance(
+                timeline.Advance,
+                HomeTeethBrushingTimeline.RinseSeconds +
+                HomeTeethBrushingTimeline.CameraReturnSeconds +
+                0.2f);
+            Assert.That(timeline.IsCompleted, Is.True);
+        }
+
+        [Test]
+        public void Brushing_AbortDuringCameraPushKeepsBlend()
+        {
+            var timeline = new HomeTeethBrushingTimeline();
+            timeline.Begin();
+            Advance(timeline.Advance, 1.6f);
+            float blendBefore = timeline.CameraBlend;
+            Assert.That(
+                blendBefore,
+                Is.GreaterThan(0f).And.LessThan(1f));
+            Assert.That(timeline.RequestFinish(), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(
+                timeline.CameraBlend,
+                Is.EqualTo(blendBefore).Within(0.001f),
+                "An abort mid-push must not snap the camera.");
+            Assert.That(timeline.ReachedMinimumBrush, Is.False);
+            Advance(
+                timeline.Advance,
+                HomeTeethBrushingTimeline.CameraReturnSeconds +
+                0.1f);
+            Assert.That(timeline.IsCompleted, Is.True);
+            Assert.That(timeline.ArmWeight, Is.Zero);
         }
 
         [Test]

@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector3(-2.35f, 2.00f, 0.45f),
                 new Color(0.95f, 0.52f, 0.22f),
                 3.50f,
-                6.0f);
+                9.0f);
             AssertPracticalLight(
                 bathroomLight,
                 new Vector3(3.15f, 2.04f, 3.38f),
@@ -176,7 +176,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(8.0f).Within(0.001f));
             Assert.That(
                 entryDoorLight.range,
-                Is.EqualTo(4.0f).Within(0.001f));
+                Is.EqualTo(5.5f).Within(0.001f));
             Assert.That(
                 entryDoorLight.innerSpotAngle,
                 Is.EqualTo(72f).Within(0.001f));
@@ -332,7 +332,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 color.postExposure.value,
-                Is.InRange(-0.5f, 0f));
+                Is.InRange(0f, 0.5f));
             Assert.That(
                 color.saturation.value,
                 Is.InRange(-25f, -5f));

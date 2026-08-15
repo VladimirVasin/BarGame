@@ -131,13 +131,16 @@ namespace BarPromenade
                     "Home practical-light positions must be finite.");
             }
 
+            // The main lamp's range must reach the far walls of the
+            // ~9x7 m flat, or its inverse-square falloff leaves the
+            // corners pitch black.
             practicalLights.Add(
                 CreatePracticalLight(
                     "Home Main Practical Light",
                     mainLightPosition,
                     new Color(0.95f, 0.52f, 0.22f),
                     3.50f,
-                    6.0f));
+                    9.0f));
             Light bathroomLight = CreatePracticalLight(
                 "Home Bathroom Practical Light",
                 bathroomLightPosition,
@@ -256,7 +259,7 @@ namespace BarPromenade
             light.type = LightType.Spot;
             light.color = new Color(1.0f, 0.46f, 0.16f);
             light.intensity = 8.0f;
-            light.range = 4.0f;
+            light.range = 5.5f;
             light.spotAngle = 100f;
             light.innerSpotAngle = 72f;
             light.shadows = LightShadows.None;
@@ -288,14 +291,14 @@ namespace BarPromenade
 
             ColorAdjustments color =
                 runtimeProfile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(-0.08f);
-            color.contrast.Override(7f);
+            color.postExposure.Override(0.25f);
+            color.contrast.Override(5f);
             color.saturation.Override(-16f);
             color.colorFilter.Override(
-                new Color(0.88f, 0.84f, 0.72f, 1f));
+                new Color(0.93f, 0.90f, 0.82f, 1f));
 
             Vignette vignette = runtimeProfile.Add<Vignette>(true);
-            vignette.intensity.Override(0.24f);
+            vignette.intensity.Override(0.18f);
             vignette.smoothness.Override(0.52f);
 
             FilmGrain grain = runtimeProfile.Add<FilmGrain>(true);

@@ -25,6 +25,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.smoke",
             "interaction.stop_smoking",
             "interaction.use_toilet",
+            "interaction.stop_toilet",
             "interaction.take_shower",
             "interaction.stop_shower",
             "interaction.brush_teeth",

@@ -40,10 +40,15 @@ namespace BarPromenade
         private float phaseElapsed;
         private float nextScrubCue;
         private int pourCuesConsumed;
+        private float returnStartBlend = 1f;
+        private float returnStartArm;
 
         public HomeTeethBrushingPhase Phase { get; private set; } =
             HomeTeethBrushingPhase.Idle;
         public float PhaseElapsed => phaseElapsed;
+        public float BrushedSeconds { get; private set; }
+        public bool ReachedMinimumBrush =>
+            BrushedSeconds >= MinimumBrushSeconds;
 
         public float CameraBlend
         {
@@ -61,8 +66,11 @@ namespace BarPromenade
                     case HomeTeethBrushingPhase.Rinse:
                         return 1f;
                     case HomeTeethBrushingPhase.CameraReturn:
-                        return 1f - SmoothStep01(
-                            phaseElapsed / CameraReturnSeconds);
+                        // Scaled by where the interrupted camera
+                        // actually was, so an abort mid-push never
+                        // snaps to the mirror before walking home.
+                        return returnStartBlend * (1f - SmoothStep01(
+                            phaseElapsed / CameraReturnSeconds));
                     default:
                         return 0f;
                 }
@@ -85,6 +93,9 @@ namespace BarPromenade
                     case HomeTeethBrushingPhase.Rinse:
                         return 1f - Mathf.Clamp01(
                             phaseElapsed / ArmLowerSeconds);
+                    case HomeTeethBrushingPhase.CameraReturn:
+                        return returnStartArm * (1f - Mathf.Clamp01(
+                            phaseElapsed / ArmLowerSeconds));
                     default:
                         return 0f;
                 }
@@ -95,6 +106,7 @@ namespace BarPromenade
             (Phase == HomeTeethBrushingPhase.Brushing &&
              phaseElapsed >= FoamStartSeconds) ||
             (Phase == HomeTeethBrushingPhase.Rinse &&
+             BrushedSeconds >= FoamStartSeconds &&
              phaseElapsed < RinseDipUpSeconds);
 
         /// <summary>0..1 camera look-dip toward the basin on rinse.</summary>
@@ -133,6 +145,9 @@ namespace BarPromenade
             phaseElapsed = 0f;
             nextScrubCue = ScrubCueIntervalSeconds;
             pourCuesConsumed = 0;
+            returnStartBlend = 1f;
+            returnStartArm = 0f;
+            BrushedSeconds = 0f;
         }
 
         public void Advance(float deltaTime)
@@ -150,7 +165,8 @@ namespace BarPromenade
                 return;
             }
 
-            phaseElapsed += Mathf.Max(0f, deltaTime);
+            float safeDelta = Mathf.Max(0f, deltaTime);
+            phaseElapsed += safeDelta;
             switch (Phase)
             {
                 case HomeTeethBrushingPhase.CameraToMirror:
@@ -162,6 +178,7 @@ namespace BarPromenade
 
                     break;
                 case HomeTeethBrushingPhase.Brushing:
+                    BrushedSeconds += safeDelta;
                     if (phaseElapsed >= AutomaticBrushSeconds)
                     {
                         SetPhase(HomeTeethBrushingPhase.Rinse);
@@ -185,16 +202,28 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Interrupts the ritual from any pre-wind-down phase: an
+        /// abort during the camera push walks straight home, a stop
+        /// during brushing still passes through the rinse beat. The
+        /// minimum brush time gates only the stress reward, never the
+        /// exit itself.
+        /// </summary>
         public bool RequestFinish()
         {
-            if (Phase != HomeTeethBrushingPhase.Brushing ||
-                phaseElapsed < MinimumBrushSeconds)
+            switch (Phase)
             {
-                return false;
+                case HomeTeethBrushingPhase.CameraToMirror:
+                    returnStartBlend = CameraBlend;
+                    returnStartArm = ArmWeight;
+                    SetPhase(HomeTeethBrushingPhase.CameraReturn);
+                    return true;
+                case HomeTeethBrushingPhase.Brushing:
+                    SetPhase(HomeTeethBrushingPhase.Rinse);
+                    return true;
+                default:
+                    return false;
             }
-
-            SetPhase(HomeTeethBrushingPhase.Rinse);
-            return true;
         }
 
         /// <summary>One-shot: a scrub cue is due during brushing.</summary>
@@ -241,10 +270,20 @@ namespace BarPromenade
             phaseElapsed = 0f;
             nextScrubCue = ScrubCueIntervalSeconds;
             pourCuesConsumed = 0;
+            returnStartBlend = 1f;
+            returnStartArm = 0f;
+            BrushedSeconds = 0f;
         }
 
         private void SetPhase(HomeTeethBrushingPhase phase)
         {
+            if (phase == HomeTeethBrushingPhase.CameraReturn &&
+                Phase == HomeTeethBrushingPhase.Rinse)
+            {
+                returnStartBlend = 1f;
+                returnStartArm = 0f;
+            }
+
             Phase = phase;
             phaseElapsed = 0f;
         }
@@ -271,7 +310,7 @@ namespace BarPromenade
         public const float OscillationHertz = 5.5f;
         public const float LateralAmplitudeMeters = 0.020f;
         public const float VerticalAmplitudeMeters = 0.008f;
-        public const float ForwardOffsetMeters = 0.06f;
+        public const float ForwardOffsetMeters = 0.015f;
         public const float HeadCounterYawDegrees = 2.0f;
         private const int SolveIterations = 3;
 
@@ -284,6 +323,13 @@ namespace BarPromenade
         private bool isInitialized;
 
         public float Weight { get; set; }
+
+        /// <summary>
+        /// The CCD end effector — the toothbrush bristles, so the
+        /// brush head works the mouth instead of the gripping fist.
+        /// Falls back to the RightGrip socket when unset.
+        /// </summary>
+        public Transform Effector { get; set; }
 
         public void Initialize(
             Player3DAssetRegistry playerRegistry)
@@ -345,13 +391,15 @@ namespace BarPromenade
             Quaternion upperBase = upperArm.rotation;
             Quaternion forearmBase = forearm.rotation;
             Quaternion headBase = head.rotation;
-            Transform grip = registry.Anchors.RightGrip;
+            Transform end = Effector != null
+                ? Effector
+                : registry.Anchors.RightGrip;
             for (int iteration = 0;
                  iteration < SolveIterations;
                  iteration++)
             {
-                RotateTowards(forearm, grip, target);
-                RotateTowards(upperArm, grip, target);
+                RotateTowards(forearm, end, target);
+                RotateTowards(upperArm, end, target);
             }
 
             float clamped = Mathf.Clamp01(Weight);
@@ -421,6 +469,7 @@ namespace BarPromenade
 
         private HomeTeethBrushingArmPose armPose;
         private GameObject toothbrush;
+        private Transform brushTip;
         private GameObject foam;
         private bool committed;
 
@@ -484,6 +533,7 @@ namespace BarPromenade
             }
 
             EnsureProps(visual.Registry);
+            armPose.Effector = brushTip;
             committed = false;
             timeline.Begin();
         }
@@ -524,14 +574,17 @@ namespace BarPromenade
             }
         }
 
-        protected override void OnRequestStop()
+        protected override bool OnRequestStop()
         {
-            timeline.RequestFinish();
+            return timeline.RequestFinish();
         }
 
         protected override void OnSceneCommit()
         {
-            if (committed)
+            // An aborted ritual (interrupted before the minimum
+            // brush time) ends gracefully but earns nothing and does
+            // not consume the daily gate.
+            if (committed || !timeline.ReachedMinimumBrush)
             {
                 return;
             }
@@ -588,6 +641,11 @@ namespace BarPromenade
                     new Vector3(0.014f, 0.025f, 0.010f),
                     new Color(0.75f, 0.75f, 0.68f),
                     false);
+                var tip = new GameObject("Brush Tip");
+                tip.transform.SetParent(toothbrush.transform, false);
+                tip.transform.localPosition =
+                    new Vector3(0f, 0.115f, 0.008f);
+                brushTip = tip.transform;
                 toothbrush.SetActive(false);
             }
 

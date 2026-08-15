@@ -31,10 +31,14 @@ namespace BarPromenade
 
         private float phaseElapsed;
         private bool flushConsumed;
+        private float returnStartBlend = 1f;
 
         public HomeToiletScenePhase Phase { get; private set; } =
             HomeToiletScenePhase.Idle;
         public float PhaseElapsed => phaseElapsed;
+        public float TotalPrivacySeconds { get; private set; }
+        public bool ReachedMinimumPrivacy =>
+            TotalPrivacySeconds >= MinimumPrivacySeconds;
 
         public float CameraBlend
         {
@@ -51,8 +55,11 @@ namespace BarPromenade
                     case HomeToiletScenePhase.Privacy:
                         return 1f;
                     case HomeToiletScenePhase.CameraReturn:
-                        return 1f - SmoothStep01(
-                            phaseElapsed / CameraReturnSeconds);
+                        // Scaled by where the interrupted camera
+                        // actually was, so an abort mid-retreat never
+                        // snaps to the door frame first.
+                        return returnStartBlend * (1f - SmoothStep01(
+                            phaseElapsed / CameraReturnSeconds));
                     default:
                         return 0f;
                 }
@@ -86,6 +93,8 @@ namespace BarPromenade
             Phase = HomeToiletScenePhase.CameraAway;
             phaseElapsed = 0f;
             flushConsumed = false;
+            returnStartBlend = 1f;
+            TotalPrivacySeconds = 0f;
         }
 
         public void Advance(float deltaTime)
@@ -103,7 +112,8 @@ namespace BarPromenade
                 return;
             }
 
-            phaseElapsed += Mathf.Max(0f, deltaTime);
+            float safeDelta = Mathf.Max(0f, deltaTime);
+            phaseElapsed += safeDelta;
             switch (Phase)
             {
                 case HomeToiletScenePhase.CameraAway:
@@ -114,6 +124,7 @@ namespace BarPromenade
 
                     break;
                 case HomeToiletScenePhase.Privacy:
+                    TotalPrivacySeconds += safeDelta;
                     if (phaseElapsed >= PrivacySeconds)
                     {
                         SetPhase(HomeToiletScenePhase.CameraReturn);
@@ -131,19 +142,28 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A stop request shortens the privacy hold once the minimum
-        /// has passed; the flush still lands before the camera turns.
+        /// Interrupts the visit from any pre-return phase. Aborting
+        /// while the camera is still retreating walks it home from
+        /// its actual blend and suppresses the flush — nothing
+        /// happened yet; a stop during privacy still flushes before
+        /// the camera turns. The minimum privacy hold gates only the
+        /// stress reward.
         /// </summary>
         public bool RequestFinish()
         {
-            if (Phase != HomeToiletScenePhase.Privacy ||
-                phaseElapsed < MinimumPrivacySeconds)
+            switch (Phase)
             {
-                return false;
+                case HomeToiletScenePhase.CameraAway:
+                    returnStartBlend = CameraBlend;
+                    flushConsumed = true;
+                    SetPhase(HomeToiletScenePhase.CameraReturn);
+                    return true;
+                case HomeToiletScenePhase.Privacy:
+                    SetPhase(HomeToiletScenePhase.CameraReturn);
+                    return true;
+                default:
+                    return false;
             }
-
-            SetPhase(HomeToiletScenePhase.CameraReturn);
-            return true;
         }
 
         /// <summary>One-shot: true exactly once, at the flush beat.</summary>
@@ -168,6 +188,8 @@ namespace BarPromenade
             Phase = HomeToiletScenePhase.Idle;
             phaseElapsed = 0f;
             flushConsumed = false;
+            returnStartBlend = 1f;
+            TotalPrivacySeconds = 0f;
         }
 
         private void SetPhase(HomeToiletScenePhase phase)
@@ -194,6 +216,8 @@ namespace BarPromenade
         HomeBathroomSceneInteraction
     {
         public const string UsePromptKey = "interaction.use_toilet";
+        public const string StopPromptKeyName =
+            "interaction.stop_toilet";
         public const int StressRelief = 6;
         public const float FlushHandlePressDepth = 0.03f;
 
@@ -213,7 +237,7 @@ namespace BarPromenade
         public override string PromptKey =>
             OwnsScene ? string.Empty : UsePromptKey;
 
-        protected override string StopPromptKey => string.Empty;
+        protected override string StopPromptKey => StopPromptKeyName;
         protected override Vector3 CameraLocalPosition =>
             CameraPosition;
         protected override Vector3 CameraLocalLookAt => CameraLookAt;
@@ -222,7 +246,8 @@ namespace BarPromenade
         protected override float CameraDriftWeight => 0.6f;
         protected override bool SceneCompleted =>
             timeline.IsCompleted;
-        protected override bool StopPromptVisible => false;
+        protected override bool StopPromptVisible =>
+            timeline.Phase == HomeToiletScenePhase.Privacy;
 
         public void Initialize(HomeInteriorRoot homeRoot)
         {
@@ -284,13 +309,20 @@ namespace BarPromenade
             }
         }
 
-        protected override void OnRequestStop()
+        protected override bool OnRequestStop()
         {
-            timeline.RequestFinish();
+            return timeline.RequestFinish();
         }
 
         protected override void OnSceneCommit()
         {
+            // An interrupted visit that never reached the minimum
+            // privacy hold ends gracefully but relieves nothing.
+            if (!timeline.ReachedMinimumPrivacy)
+            {
+                return;
+            }
+
             GameSessionState.CommitBathroomStressRelief(
                 "toilet",
                 StressRelief);

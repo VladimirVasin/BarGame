@@ -12,13 +12,13 @@ namespace BarPromenade
         // the room and the bulbs recede; by night the warm lamp pools
         // take over while the ambient sinks cold. Dusk passes through
         // a low amber sun on the window before the blue moon arrives.
-        public const float DayMainLampIntensity = 2.30f;
-        public const float NightMainLampIntensity = 4.10f;
+        public const float DayMainLampIntensity = 2.90f;
+        public const float NightMainLampIntensity = 4.40f;
         public const float DayEntryLightIntensity = 8.00f;
         public const float NightEntryLightIntensity = 9.40f;
         public const float DuskWindowBlend = 0.65f;
-        public const float DaySunIntensity = 0.44f;
-        public const float NightSunIntensity = 0.22f;
+        public const float DaySunIntensity = 0.85f;
+        public const float NightSunIntensity = 0.42f;
 
         public static readonly Color DayWindowLightColor =
             new Color(1f, 0.82f, 0.61f);
@@ -28,10 +28,13 @@ namespace BarPromenade
             new Color(0.95f, 0.60f, 0.32f);
         public static readonly Color NightMainLampColor =
             new Color(0.95f, 0.50f, 0.20f);
+        // The ambient floor keeps the whole flat and the player
+        // readable between the lamp pools; the mood lives in the
+        // color contrast of the practicals, not in raw darkness.
         public static readonly Color DayAmbientColor =
-            new Color(0.080f, 0.067f, 0.056f);
+            new Color(0.260f, 0.235f, 0.205f);
         public static readonly Color NightAmbientColor =
-            new Color(0.046f, 0.043f, 0.050f);
+            new Color(0.145f, 0.140f, 0.170f);
         public static readonly Color DaySunColor =
             new Color(0.92f, 0.84f, 0.70f);
         public static readonly Color NightSunColor =

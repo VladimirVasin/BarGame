@@ -64,7 +64,14 @@ namespace BarPromenade
 
         protected abstract void OnSceneBegin();
         protected abstract void OnSceneAdvance(float deltaTime);
-        protected abstract void OnRequestStop();
+
+        /// <summary>
+        /// Asks the scene to wind down; returns whether the request
+        /// was accepted. A refusal (e.g. the timeline is already in
+        /// its wind-down) keeps the stop input armed for later.
+        /// </summary>
+        protected abstract bool OnRequestStop();
+
         protected abstract void OnSceneCommit();
         protected abstract void OnSceneRestore();
 
@@ -128,8 +135,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (!OnRequestStop())
+            {
+                return;
+            }
+
             StopQueued = true;
-            OnRequestStop();
             ApplyStopPrompt();
         }
 

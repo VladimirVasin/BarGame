@@ -157,6 +157,10 @@
       "value": "E — воспользоваться туалетом"
     },
     {
+      "key": "interaction.stop_toilet",
+      "value": "E — закончить"
+    },
+    {
       "key": "interaction.take_shower",
       "value": "E — принять душ"
     },

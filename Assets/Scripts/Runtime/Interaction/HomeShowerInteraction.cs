@@ -33,10 +33,14 @@ namespace BarPromenade
 
         private float phaseElapsed;
         private float cameraElapsed;
+        private float openStartScale = 1f;
+        private float openStartBlend = 1f;
+        private float stopStartWater = 1f;
 
         public HomeShowerScenePhase Phase { get; private set; } =
             HomeShowerScenePhase.Idle;
         public float PhaseElapsed => phaseElapsed;
+        public bool ReachedMinimumHold { get; private set; }
 
         /// <summary>Curtain group scale.x between gathered and drawn.</summary>
         public float CurtainScale
@@ -56,8 +60,11 @@ namespace BarPromenade
                     case HomeShowerScenePhase.WaterStop:
                         return 1f;
                     case HomeShowerScenePhase.CurtainOpening:
+                        // Starts from wherever the curtain actually
+                        // was, so an abort mid-close never snaps it
+                        // fully drawn first.
                         return Mathf.Lerp(
-                            1f,
+                            openStartScale,
                             GatheredCurtainScale,
                             SmoothStep01(
                                 phaseElapsed / CurtainOpenSeconds));
@@ -79,8 +86,8 @@ namespace BarPromenade
                     case HomeShowerScenePhase.Hold:
                         return 1f;
                     case HomeShowerScenePhase.WaterStop:
-                        return 1f - Mathf.Clamp01(
-                            phaseElapsed / WaterStopSeconds);
+                        return stopStartWater * (1f - Mathf.Clamp01(
+                            phaseElapsed / WaterStopSeconds));
                     default:
                         return 0f;
                 }
@@ -99,8 +106,8 @@ namespace BarPromenade
                         return SmoothStep01(
                             cameraElapsed / CameraArrivalSeconds);
                     case HomeShowerScenePhase.CurtainOpening:
-                        return 1f - SmoothStep01(
-                            phaseElapsed / CurtainOpenSeconds);
+                        return openStartBlend * (1f - SmoothStep01(
+                            phaseElapsed / CurtainOpenSeconds));
                     default:
                         return 0f;
                 }
@@ -115,6 +122,10 @@ namespace BarPromenade
             Phase = HomeShowerScenePhase.CurtainClosing;
             phaseElapsed = 0f;
             cameraElapsed = 0f;
+            openStartScale = 1f;
+            openStartBlend = 1f;
+            stopStartWater = 1f;
+            ReachedMinimumHold = false;
         }
 
         public void Advance(float deltaTime)
@@ -158,6 +169,11 @@ namespace BarPromenade
 
                     break;
                 case HomeShowerScenePhase.Hold:
+                    if (phaseElapsed >= MinimumHoldSeconds)
+                    {
+                        ReachedMinimumHold = true;
+                    }
+
                     if (phaseElapsed >= AutomaticHoldSeconds)
                     {
                         SetPhase(HomeShowerScenePhase.WaterStop);
@@ -167,7 +183,7 @@ namespace BarPromenade
                 case HomeShowerScenePhase.WaterStop:
                     if (phaseElapsed >= WaterStopSeconds)
                     {
-                        SetPhase(HomeShowerScenePhase.CurtainOpening);
+                        BeginCurtainOpening();
                     }
 
                     break;
@@ -181,16 +197,27 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Interrupts the wash from any pre-wind-down phase: the
+        /// curtain reverses from wherever it is, water fades from its
+        /// current amount and the camera walks home from its actual
+        /// blend. The minimum hold gates only the stress reward.
+        /// </summary>
         public bool RequestFinish()
         {
-            if (Phase != HomeShowerScenePhase.Hold ||
-                phaseElapsed < MinimumHoldSeconds)
+            switch (Phase)
             {
-                return false;
+                case HomeShowerScenePhase.CurtainClosing:
+                    BeginCurtainOpening();
+                    return true;
+                case HomeShowerScenePhase.WaterStart:
+                case HomeShowerScenePhase.Hold:
+                    stopStartWater = WaterAmount;
+                    SetPhase(HomeShowerScenePhase.WaterStop);
+                    return true;
+                default:
+                    return false;
             }
-
-            SetPhase(HomeShowerScenePhase.WaterStop);
-            return true;
         }
 
         public void Reset()
@@ -198,6 +225,17 @@ namespace BarPromenade
             Phase = HomeShowerScenePhase.Idle;
             phaseElapsed = 0f;
             cameraElapsed = 0f;
+            openStartScale = 1f;
+            openStartBlend = 1f;
+            stopStartWater = 1f;
+            ReachedMinimumHold = false;
+        }
+
+        private void BeginCurtainOpening()
+        {
+            openStartScale = CurtainScale;
+            openStartBlend = CameraBlend;
+            SetPhase(HomeShowerScenePhase.CurtainOpening);
         }
 
         private void SetPhase(HomeShowerScenePhase phase)
@@ -464,13 +502,20 @@ namespace BarPromenade
             waterEffect?.SetEmitting(water > 0.05f);
         }
 
-        protected override void OnRequestStop()
+        protected override bool OnRequestStop()
         {
-            timeline.RequestFinish();
+            return timeline.RequestFinish();
         }
 
         protected override void OnSceneCommit()
         {
+            // An interrupted wash that never reached the minimum
+            // hold ends gracefully but relieves nothing.
+            if (!timeline.ReachedMinimumHold)
+            {
+                return;
+            }
+
             GameSessionState.CommitBathroomStressRelief(
                 "shower",
                 StressRelief);

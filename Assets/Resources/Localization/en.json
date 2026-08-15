@@ -157,6 +157,10 @@
       "value": "E — use the toilet"
     },
     {
+      "key": "interaction.stop_toilet",
+      "value": "E — finish up"
+    },
+    {
       "key": "interaction.take_shower",
       "value": "E — take a shower"
     },
