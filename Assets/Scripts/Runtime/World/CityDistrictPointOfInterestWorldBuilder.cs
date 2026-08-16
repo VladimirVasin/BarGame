@@ -614,14 +614,46 @@ namespace BarPromenade
                 }
             }
 
-            AddBox(parent, "Large Faded Blanket", 1.15f, 1.55f, 0f,
-                3.20f, 1.45f, 0.075f, ResidentialCloth, false, homeExterior);
-            AddBox(parent, "Blanket Repair Patch", 1.72f, 1.66f, -0.045f,
-                0.72f, 0.52f, 0.035f, ResidentialPatch, false, homeExterior);
-            AddBox(parent, "Cold Sheet", -2.75f, 1.78f, -3f,
-                1.70f, 0.94f, 0.065f, ResidentialClothCold, false, homeExterior);
-            AddBox(parent, "Small Towel", 2.75f, 1.94f, 3f,
-                0.90f, 0.58f, 0.065f, ResidentialPatch, false, homeExterior);
+            if (homeExterior)
+            {
+                // The balcony vista keeps the wash as cheap static
+                // boxes: at that distance the pieces are a few pixels
+                // and the exterior scene runs no wind driver.
+                AddBox(parent, "Large Faded Blanket", 1.15f, 1.55f, 0f,
+                    3.20f, 1.45f, 0.075f, ResidentialCloth, false, homeExterior);
+                AddBox(parent, "Blanket Repair Patch", 1.72f, 1.66f, -0.045f,
+                    0.72f, 0.52f, 0.035f, ResidentialPatch, false, homeExterior);
+                AddBox(parent, "Cold Sheet", -2.75f, 1.78f, -3f,
+                    1.70f, 0.94f, 0.065f, ResidentialClothCold, false, homeExterior);
+                AddBox(parent, "Small Towel", 2.75f, 1.94f, 3f,
+                    0.90f, 0.58f, 0.065f, ResidentialPatch, false, homeExterior);
+            }
+            else
+            {
+                // In the city the wash is real cloth pinned to the
+                // lines — front line at y 2.34 / z-0.16, back line at
+                // y 2.20 / z+0.16 per frame row — and the weather wind
+                // sways it. The repair patch dries as its own ragged
+                // offcut on the back line instead of floating rigidly
+                // over the moving blanket.
+                AddLaundryCloth(parent, "Large Faded Blanket",
+                    1.15f, 2.34f, -0.16f,
+                    3.20f, 1.45f, ResidentialCloth,
+                    tornVariant: 0, columns: 9, rows: 7);
+                AddLaundryCloth(parent, "Blanket Repair Patch",
+                    -1.35f, 2.20f, 0.16f,
+                    0.72f, 0.52f, ResidentialPatch,
+                    tornVariant: 3, columns: 4, rows: 4);
+                AddLaundryCloth(parent, "Cold Sheet",
+                    -2.75f, 2.20f, -2.84f,
+                    1.70f, 0.94f, ResidentialClothCold,
+                    tornVariant: 0, columns: 6, rows: 5);
+                AddLaundryCloth(parent, "Small Towel",
+                    2.75f, 2.34f, 2.84f,
+                    0.90f, 0.58f, ResidentialPatch,
+                    tornVariant: 0, columns: 4, rows: 4);
+            }
+
             AddBox(parent, "Shared Bench Seat",
                 DryingBenchX, DryingBenchSeatCenterY, DryingBenchZ,
                 DryingBenchWidth, DryingBenchSeatThickness,
@@ -631,13 +663,11 @@ namespace BarPromenade
             AddBox(parent, "Shared Bench Leg B", -2.48f, 0.28f, 4.45f,
                 0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior);
 
+            // The blanket used to carry an obstacle collider from its
+            // static-box days; simulated cloth is something the hero
+            // walks through, so only the timber keeps its collider.
             if (colliders)
             {
-                AddObstacleCollider(
-                    parent,
-                    "Faded Blanket Collider",
-                    new Vector3(1.15f, 1.55f, 0f),
-                    new Vector3(3.20f, 1.45f, 0.12f));
                 AddObstacleCollider(
                     parent,
                     "Shared Bench Collider",
@@ -919,6 +949,44 @@ namespace BarPromenade
                 CityClothWindRegistry.Register(
                     rag.GetComponent<Cloth>());
             }
+        }
+
+        /// <summary>
+        /// One washed piece pinned to a drying line: a simulated cloth
+        /// panel hanging down from the line height, facing the frame's
+        /// ±Z, swayed by the deterministic weather wind.
+        /// </summary>
+        private static void AddLaundryCloth(
+            Transform parent,
+            string name,
+            float x,
+            float lineHeight,
+            float z,
+            float width,
+            float height,
+            Color color,
+            int tornVariant,
+            int columns,
+            int rows)
+        {
+            GameObject rag = ClothPanelFactory.CreateHangingRag(
+                name,
+                parent,
+                new Vector3(x, lineHeight, z),
+                0f,
+                width,
+                height,
+                color,
+                tornVariant,
+                columns,
+                rows);
+            Cloth cloth = rag.GetComponent<Cloth>();
+            CityClothWindRegistry.Register(cloth);
+
+            // Laundry hangs at body height and the yard is walkable
+            // right through it: the hero's capsule parts the cloth
+            // instead of clipping.
+            CityClothBodyRegistry.RegisterCloth(cloth);
         }
 
         private readonly struct CanopyRagRecipe

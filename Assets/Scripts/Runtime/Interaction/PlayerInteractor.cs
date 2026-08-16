@@ -94,7 +94,8 @@ namespace BarPromenade
             for (int i = 0; i < count; i++)
             {
                 Collider candidateCollider = overlapBuffer[i];
-                if (candidateCollider == null)
+                if (candidateCollider == null ||
+                    candidateCollider.transform.IsChildOf(transform))
                 {
                     continue;
                 }

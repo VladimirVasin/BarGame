@@ -77,4 +77,75 @@ namespace BarPromenade
             lastWind = new WindSample(0f, 0f);
         }
     }
+
+    /// <summary>
+    /// Every runtime cloth a walking body should part instead of clip
+    /// through. PhysX cloth ignores scene collision entirely and only
+    /// presses against the capsules listed on each Cloth, so this
+    /// registry is the second bridge beside the wind one: builders
+    /// register each walk-through cloth once, bodies register their
+    /// capsule once, and either arrival rewrites the cloth's capsule
+    /// list.
+    /// </summary>
+    internal static class CityClothBodyRegistry
+    {
+        private static readonly List<Cloth> cloths = new List<Cloth>();
+        private static readonly List<CapsuleCollider> bodies =
+            new List<CapsuleCollider>();
+
+        public static int ClothCount => cloths.Count;
+        public static int BodyCount => bodies.Count;
+
+        public static void RegisterCloth(Cloth cloth)
+        {
+            if (cloth == null)
+            {
+                throw new ArgumentNullException(nameof(cloth));
+            }
+
+            cloths.Add(cloth);
+            Apply(cloth);
+        }
+
+        public static void RegisterBody(CapsuleCollider body)
+        {
+            if (body == null)
+            {
+                throw new ArgumentNullException(nameof(body));
+            }
+
+            bodies.Add(body);
+            for (int index = cloths.Count - 1; index >= 0; index--)
+            {
+                if (cloths[index] == null)
+                {
+                    cloths.RemoveAt(index);
+                    continue;
+                }
+
+                Apply(cloths[index]);
+            }
+        }
+
+        private static void Apply(Cloth cloth)
+        {
+            for (int index = bodies.Count - 1; index >= 0; index--)
+            {
+                if (bodies[index] == null)
+                {
+                    bodies.RemoveAt(index);
+                }
+            }
+
+            cloth.capsuleColliders = bodies.ToArray();
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetEntries()
+        {
+            cloths.Clear();
+            bodies.Clear();
+        }
+    }
 }

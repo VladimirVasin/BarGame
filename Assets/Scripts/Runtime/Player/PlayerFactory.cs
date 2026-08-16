@@ -60,6 +60,23 @@ namespace BarPromenade
             controller.slopeLimit = 45f;
             controller.skinWidth = GroundedRootOffset;
 
+            // Cloth only presses against capsules listed per Cloth and a
+            // CharacterController is not a CapsuleCollider, so the hero
+            // carries a passive trigger capsule — slightly wider than
+            // the controller so hanging laundry drapes over the body
+            // instead of slicing into it. A trigger blocks nothing and
+            // every player query either ignores triggers or skips the
+            // hero's own children.
+            GameObject clothBody = new GameObject("Cloth Body Capsule");
+            clothBody.transform.SetParent(player.transform, false);
+            CapsuleCollider clothCapsule =
+                clothBody.AddComponent<CapsuleCollider>();
+            clothCapsule.isTrigger = true;
+            clothCapsule.height = 1.7f;
+            clothCapsule.radius = 0.36f;
+            clothCapsule.center = new Vector3(0f, 0.85f, 0f);
+            CityClothBodyRegistry.RegisterBody(clothCapsule);
+
             Player3DAssetRegistry registry =
                 Player3DResources.Instantiate(player.transform);
             Player3DCharacterPresentation visual =
