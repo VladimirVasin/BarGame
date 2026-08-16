@@ -7,6 +7,11 @@ namespace BarPromenade
         public string BarId { get; private set; } = string.Empty;
         public BarActivityKind BarActivity { get; private set; } =
             BarActivityKind.None;
+
+        /// <summary>The district whose identity this bar carries.</summary>
+        public CityDistrictKind BarDistrict { get; private set; } =
+            BarDistrictIdentityCatalog.FallbackDistrict;
+
         public Vector3 ReturnPosition { get; private set; }
         public string PromptKey => "interaction.enter_bar";
         public Vector3 InteractionPosition => transform.position;
@@ -24,10 +29,25 @@ namespace BarPromenade
             BarActivityKind barActivity,
             Vector3 returnPosition)
         {
+            Configure(
+                barId,
+                barActivity,
+                BarDistrictIdentityCatalog.FallbackDistrict,
+                returnPosition);
+        }
+
+        public void Configure(
+            string barId,
+            BarActivityKind barActivity,
+            CityDistrictKind barDistrict,
+            Vector3 returnPosition)
+        {
             BarId = barId ?? string.Empty;
             BarActivity = string.IsNullOrEmpty(BarId)
                 ? BarActivityKind.None
                 : barActivity;
+            BarDistrict =
+                BarDistrictIdentityCatalog.Normalize(barDistrict);
             ReturnPosition = returnPosition;
         }
 
@@ -76,7 +96,10 @@ namespace BarPromenade
                     out string operationId);
             if (accepted)
             {
-                GameSessionState.EnterBar(BarId, BarActivity);
+                GameSessionState.EnterBar(
+                    BarId,
+                    BarActivity,
+                    BarDistrict);
             }
             else
             {

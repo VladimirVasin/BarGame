@@ -23,6 +23,14 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            if (BarDistrictIdentityCatalog.Normalize(plan.District) !=
+                plan.District)
+            {
+                throw new InvalidOperationException(
+                    "A bar interior must wear one of the four bar " +
+                    $"district identities, got {plan.District}.");
+            }
+
             ValidateRoom(plan);
             ValidateZones(plan);
             ValidatePaths(plan);

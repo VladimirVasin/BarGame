@@ -108,6 +108,18 @@ namespace BarPromenade
         public static string ActiveBarId { get; private set; } = string.Empty;
         public static BarActivityKind ActiveBarActivity { get; private set; } =
             BarActivityKind.None;
+
+        /// <summary>
+        /// Which district's bar the hero is in (or entering) — the
+        /// key the interior reads its district identity by. Falls
+        /// back to Nightlife for direct scene loads, the character
+        /// the shared bar has always effectively worn.
+        /// </summary>
+        public static CityDistrictKind ActiveBarDistrict
+        {
+            get;
+            private set;
+        } = BarDistrictIdentityCatalog.FallbackDistrict;
         public static CityReturnKind ReturnKind { get; private set; }
         public static bool IsReturningToCity =>
             ReturnKind != CityReturnKind.None;
@@ -219,6 +231,8 @@ namespace BarPromenade
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
+            ActiveBarDistrict =
+                BarDistrictIdentityCatalog.FallbackDistrict;
             ReturnKind = CityReturnKind.None;
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
@@ -858,16 +872,30 @@ namespace BarPromenade
             string barId,
             BarActivityKind barActivity)
         {
+            EnterBar(
+                barId,
+                barActivity,
+                BarDistrictIdentityCatalog.FallbackDistrict);
+        }
+
+        public static void EnterBar(
+            string barId,
+            BarActivityKind barActivity,
+            CityDistrictKind barDistrict)
+        {
             string nextBarId = barId ?? string.Empty;
             BarActivityKind nextActivity =
                 string.IsNullOrEmpty(nextBarId)
                 ? BarActivityKind.None
                 : NormalizeBarActivity(barActivity);
+            CityDistrictKind nextDistrict =
+                BarDistrictIdentityCatalog.Normalize(barDistrict);
             if (string.Equals(
                     ActiveBarId,
                     nextBarId,
                     StringComparison.Ordinal) &&
                 ActiveBarActivity == nextActivity &&
+                ActiveBarDistrict == nextDistrict &&
                 ReturnKind == CityReturnKind.None)
             {
                 return;
@@ -875,6 +903,7 @@ namespace BarPromenade
 
             ActiveBarId = nextBarId;
             ActiveBarActivity = nextActivity;
+            ActiveBarDistrict = nextDistrict;
             ReturnKind = CityReturnKind.None;
             GameLog.Info(
                 "session",
@@ -882,7 +911,10 @@ namespace BarPromenade
                 GameLog.Field("bar_id", ActiveBarId),
                 GameLog.Field(
                     "activity",
-                    ActiveBarActivity.ToString()));
+                    ActiveBarActivity.ToString()),
+                GameLog.Field(
+                    "district",
+                    ActiveBarDistrict.ToString()));
         }
 
         public static void PrepareCityReturn()
@@ -916,6 +948,8 @@ namespace BarPromenade
         {
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
+            ActiveBarDistrict =
+                BarDistrictIdentityCatalog.FallbackDistrict;
             ReturnKind = CityReturnKind.None;
             GameLog.Info(
                 "session",
@@ -926,6 +960,8 @@ namespace BarPromenade
         {
             ActiveBarId = string.Empty;
             ActiveBarActivity = BarActivityKind.None;
+            ActiveBarDistrict =
+                BarDistrictIdentityCatalog.FallbackDistrict;
             ReturnKind = CityReturnKind.None;
             GameLog.Info(
                 "session",

@@ -17,6 +17,19 @@ namespace BarPromenade
             string barId,
             BarActivityKind activity)
         {
+            return Generate(
+                citySeed,
+                barId,
+                activity,
+                BarDistrictIdentityCatalog.FallbackDistrict);
+        }
+
+        public static BarInteriorLayoutPlan Generate(
+            int citySeed,
+            string barId,
+            BarActivityKind activity,
+            CityDistrictKind district)
+        {
             BarActivityKind normalizedActivity =
                 NormalizeActivity(activity);
             uint stableSeed = ComputeStableSeed(citySeed, barId);
@@ -62,6 +75,7 @@ namespace BarPromenade
                 npcAnchors,
                 lightAnchors,
                 audioAnchors);
+            plan.AssignDistrict(district);
             BarInteriorLayoutValidator.ValidateOrThrow(plan);
             return plan;
         }
@@ -290,9 +304,12 @@ namespace BarPromenade
                 180f,
                 "bar-service",
                 0.12f);
-            AddSeatedPair(anchors, stableSeed, 1, -4.35f);
-            AddSeatedPair(anchors, stableSeed, 2, -1.3f);
-            AddSeatedPair(anchors, stableSeed, 3, 1.85f);
+            // Pairs share each booth's single wall bench, aligned to
+            // the authored booth centers and the bench geometry the
+            // interior actually builds.
+            AddSeatedPair(anchors, stableSeed, 1, -3.9f);
+            AddSeatedPair(anchors, stableSeed, 2, -0.35f);
+            AddSeatedPair(anchors, stableSeed, 3, 3.15f);
 
             AddNpc(
                 anchors,
@@ -346,15 +363,17 @@ namespace BarPromenade
             List<BarNpcAnchor> anchors,
             uint stableSeed,
             int booth,
-            float z)
+            float boothCenterZ)
         {
+            // Both guests sit ON the bench slab (x ~ -9.7), knees
+            // toward the table, facing east into the room.
             AddNpc(
                 anchors,
                 stableSeed,
                 $"booth-{booth}-near",
                 BarNpcRole.SeatedPatron,
-                new Vector3(-8.25f, 0f, z),
-                270f,
+                new Vector3(-9.7f, 0f, boothCenterZ - 0.55f),
+                90f,
                 string.Empty,
                 0.04f);
             AddNpc(
@@ -362,7 +381,7 @@ namespace BarPromenade
                 stableSeed,
                 $"booth-{booth}-far",
                 BarNpcRole.SeatedPatron,
-                new Vector3(-8.75f, 0f, z + 0.55f),
+                new Vector3(-9.7f, 0f, boothCenterZ + 0.55f),
                 90f,
                 string.Empty,
                 0.04f);

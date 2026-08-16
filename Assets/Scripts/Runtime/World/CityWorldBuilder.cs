@@ -1034,6 +1034,7 @@ namespace BarPromenade
             entrance.Configure(
                 lot.BarId,
                 lot.BarActivity,
+                lot.District,
                 lot.SidewalkArrivalPosition +
                 (Vector3.up *
                  (CityStreetSurfacePlanner.SidewalkTop +

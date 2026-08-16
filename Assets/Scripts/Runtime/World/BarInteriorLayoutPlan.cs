@@ -280,6 +280,23 @@ namespace BarPromenade
         public uint StableSeed { get; }
         public string BarId { get; }
         public BarActivityKind Activity { get; }
+
+        /// <summary>
+        /// The district whose identity this interior wears. Assigned
+        /// after construction by the planner (the ctor predates the
+        /// district split); always normalized to a bar district.
+        /// </summary>
+        public CityDistrictKind District { get; private set; } =
+            BarDistrictIdentityCatalog.FallbackDistrict;
+
+        /// <summary>The resolved per-district character sheet.</summary>
+        public BarDistrictIdentity DistrictIdentity =>
+            BarDistrictIdentityCatalog.Get(District);
+
+        internal void AssignDistrict(CityDistrictKind district)
+        {
+            District = BarDistrictIdentityCatalog.Normalize(district);
+        }
         public Vector2 RoomSize { get; }
         public float RoomHeight { get; }
         public float WallThickness { get; }
