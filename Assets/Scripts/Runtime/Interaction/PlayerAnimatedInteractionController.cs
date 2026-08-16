@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -155,6 +156,16 @@ namespace BarPromenade
     public sealed class PlayerAnimatedInteractionController :
         MonoBehaviour
     {
+        /// <summary>
+        /// How close a walked approach corner counts as passed. Loose on
+        /// purpose: corners route the walk around furniture and are cut,
+        /// not posed at.
+        /// </summary>
+        public const float ApproachWaypointArrivalRadius = 0.35f;
+
+        private readonly List<Vector3> approachWaypoints =
+            new List<Vector3>(capacity: 4);
+        private int approachWaypointIndex;
         private PlayerRuntime player;
         private IPlayerClipPresentation clipPresentation;
         private PlayerAnimatedInteractionTimeline timeline;
@@ -334,6 +345,27 @@ namespace BarPromenade
                 initialVerticalTolerance);
         }
 
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            PlayerAnimatedInteractionPelvisTransition transition,
+            float initialVerticalTolerance,
+            IReadOnlyList<Vector3> entryApproachWaypoints,
+            int entryApproachWaypointCount)
+        {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                transition,
+                initialVerticalTolerance,
+                entryApproachWaypoints,
+                entryApproachWaypointCount);
+        }
+
         private bool BeginPositionedInternal(
             PlayerAnimatedInteractionDefinition definition,
             PlayerAnimatedInteractionPose authoredEntryPose,
@@ -341,7 +373,9 @@ namespace BarPromenade
             PlayerAnimatedInteractionPose authoredExitPose,
             PlayerAnimatedInteractionPelvisTransition? transition,
             float initialVerticalTolerance =
-                PlayerMotor.InteractionVerticalTolerance)
+                PlayerMotor.InteractionVerticalTolerance,
+            IReadOnlyList<Vector3> entryApproachWaypoints = null,
+            int entryApproachWaypointCount = 0)
         {
             authoredEntryPose.Validate(nameof(authoredEntryPose));
             authoredExitPose.Validate(nameof(authoredExitPose));
@@ -354,6 +388,9 @@ namespace BarPromenade
                     nameof(initialVerticalTolerance));
             }
 
+            ValidateApproachWaypoints(
+                entryApproachWaypoints,
+                entryApproachWaypointCount);
             if (!TryPrepareInternal(
                     definition,
                     authoredEntryPose.HipPosition,
@@ -376,6 +413,15 @@ namespace BarPromenade
             actionHip = actionHipPosition;
             exitHip = authoredExitPose.HipPosition;
             SetPelvisTransition(transition);
+            approachWaypoints.Clear();
+            approachWaypointIndex = 0;
+            for (int index = 0;
+                 index < entryApproachWaypointCount;
+                 index++)
+            {
+                approachWaypoints.Add(
+                    entryApproachWaypoints[index]);
+            }
             timeline =
                 new PlayerAnimatedInteractionTimeline(definition);
             placeAtExitOnCompletion = true;
@@ -655,6 +701,23 @@ namespace BarPromenade
                 return;
             }
 
+            if (approachWaypointIndex < approachWaypoints.Count)
+            {
+                Vector3 corner =
+                    approachWaypoints[approachWaypointIndex];
+                if (player.Motor.MoveTowardsApproachWaypoint(
+                        corner,
+                        ApproachWaypointArrivalRadius,
+                        Time.deltaTime))
+                {
+                    approachWaypointIndex++;
+                    return;
+                }
+
+                AbortPositioningIfStalled(corner);
+                return;
+            }
+
             if (player.Motor.MoveTowardsInteractionPose(
                     entryPose.RootPosition,
                     entryPose.RootRotation,
@@ -664,6 +727,11 @@ namespace BarPromenade
                 return;
             }
 
+            AbortPositioningIfStalled(entryPose.RootPosition);
+        }
+
+        private void AbortPositioningIfStalled(Vector3 target)
+        {
             if (!player.Motor.InteractionPoseMoveStalled)
             {
                 return;
@@ -672,7 +740,7 @@ namespace BarPromenade
             Debug.LogWarning(
                 $"Animated interaction entry was blocked; " +
                 $"current={player.GameObject.transform.position}, " +
-                $"target={entryPose.RootPosition}.",
+                $"target={target}.",
                 this);
             CompleteInteraction();
         }
@@ -794,6 +862,8 @@ namespace BarPromenade
             isPositioning = false;
             entryPoseSettled = false;
             entryPoseSettledFrame = -1;
+            approachWaypoints.Clear();
+            approachWaypointIndex = 0;
             timeline?.Reset();
 
             if (shouldPlaceAtExit)
@@ -1023,6 +1093,32 @@ namespace BarPromenade
                 throw new ArgumentException(
                     "The action hip position must be finite.",
                     nameof(actionHipPosition));
+            }
+        }
+
+        private static void ValidateApproachWaypoints(
+            IReadOnlyList<Vector3> waypoints,
+            int count)
+        {
+            if (count < 0 ||
+                (count > 0 && waypoints == null) ||
+                (waypoints != null && count > waypoints.Count))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(count),
+                    count,
+                    "The approach waypoint count must address the " +
+                    "supplied waypoints.");
+            }
+
+            for (int index = 0; index < count; index++)
+            {
+                if (!IsFinite(waypoints[index]))
+                {
+                    throw new ArgumentException(
+                        "Approach waypoints must be finite.",
+                        nameof(waypoints));
+                }
             }
         }
 

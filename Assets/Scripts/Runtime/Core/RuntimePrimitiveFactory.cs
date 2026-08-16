@@ -21,6 +21,35 @@ namespace BarPromenade
         public Vector3 Center { get; }
         public Quaternion Rotation { get; }
         public Vector3 Size { get; }
+
+        /// <summary>
+        /// Samples the world height of this box's upper face under a
+        /// world position. False when the position falls outside the
+        /// face's footprint or the box lies on its side.
+        /// </summary>
+        public bool TrySampleTop(Vector3 worldPosition, out float topY)
+        {
+            const float tolerance = 0.0001f;
+            Vector3 normal = Rotation * Vector3.up;
+            if (Mathf.Abs(normal.y) <= tolerance)
+            {
+                topY = 0f;
+                return false;
+            }
+
+            Vector3 planePoint = Center + normal * (Size.y * 0.5f);
+            topY = planePoint.y -
+                ((normal.x * (worldPosition.x - planePoint.x) +
+                  normal.z * (worldPosition.z - planePoint.z)) /
+                 normal.y);
+            Vector3 local = Quaternion.Inverse(Rotation) *
+                (new Vector3(worldPosition.x, topY, worldPosition.z) -
+                 Center);
+            return Mathf.Abs(local.x) <=
+                       Size.x * 0.5f + tolerance &&
+                   Mathf.Abs(local.z) <=
+                       Size.z * 0.5f + tolerance;
+        }
     }
 
     public static class RuntimePrimitiveFactory

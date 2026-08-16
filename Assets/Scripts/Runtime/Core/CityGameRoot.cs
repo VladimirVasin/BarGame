@@ -347,7 +347,8 @@ namespace BarPromenade
                     Layout,
                     World.OpenAreaDecorationPlan,
                     BusPlan,
-                    World.DecorationPlan);
+                    World.DecorationPlan,
+                    pedestrianStreetSurfacePlan);
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
                 benchPlans,

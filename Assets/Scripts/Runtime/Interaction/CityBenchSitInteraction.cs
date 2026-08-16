@@ -13,6 +13,9 @@ namespace BarPromenade
         MonoBehaviour,
         IInteractable
     {
+        private readonly Vector3[] approachWaypointBuffer =
+            new Vector3[CityBenchSitPlan.MaximumApproachWaypoints];
+
         public const string SitPromptKey = "interaction.sit_bench";
         public const string StandPromptKey = "interaction.stand_up";
         public const string EnterClipName = "BusBoardEnter";
@@ -155,13 +158,22 @@ namespace BarPromenade
                 plan.EntryRootPosition,
                 plan.EntryRotation,
                 plan.EntryHipPosition);
+
+            // A sitter standing behind or beside the timber first walks
+            // around the nearer plank end; head-on approaches keep the
+            // straight walk.
+            int approachWaypointCount = plan.BuildApproachWaypoints(
+                playerRoot.position,
+                approachWaypointBuffer);
             bool accepted = controller.BeginPositioned(
                 definition,
                 dockPose,
                 plan.ActionHipPosition,
                 dockPose,
                 plan.PelvisTransition,
-                ApproachVerticalTolerance);
+                ApproachVerticalTolerance,
+                approachWaypointBuffer,
+                approachWaypointCount);
             if (!accepted)
             {
                 CityBenchSeatClaims.Release(plan.Id, this);

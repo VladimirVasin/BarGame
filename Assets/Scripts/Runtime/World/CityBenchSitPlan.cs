@@ -11,19 +11,30 @@ namespace BarPromenade
     /// </summary>
     public readonly struct CityBenchSeat
     {
+        /// <summary>
+        /// How far a walked detour swings past the plank ends when the
+        /// sitter approaches from the wrong side. Covers the capsule,
+        /// its skin and a little authored trim around the timber.
+        /// </summary>
+        public const float DefaultApproachClearance = 0.55f;
+
         public CityBenchSeat(
             string id,
             Vector3 seatTopCenter,
             float seatWidth,
             float seatDepth,
             float groundY,
-            Vector3 faceDirection)
+            Vector3 faceDirection,
+            float approachClearance = DefaultApproachClearance)
         {
             faceDirection.y = 0f;
             if (string.IsNullOrEmpty(id) ||
                 faceDirection.sqrMagnitude <= 0.0001f ||
                 seatWidth <= 0f ||
-                seatDepth <= 0f)
+                seatDepth <= 0f ||
+                float.IsNaN(approachClearance) ||
+                float.IsInfinity(approachClearance) ||
+                approachClearance <= 0f)
             {
                 this = default;
                 return;
@@ -35,6 +46,7 @@ namespace BarPromenade
             SeatDepth = seatDepth;
             GroundY = groundY;
             FaceDirection = faceDirection.normalized;
+            ApproachClearance = approachClearance;
             IsPresent = true;
         }
 
@@ -44,6 +56,7 @@ namespace BarPromenade
         public float SeatDepth { get; }
         public float GroundY { get; }
         public Vector3 FaceDirection { get; }
+        public float ApproachClearance { get; }
         public bool IsPresent { get; }
     }
 
@@ -88,6 +101,9 @@ namespace BarPromenade
             }
 
             Id = seat.Id;
+            SeatWidth = seat.SeatWidth;
+            SeatDepth = seat.SeatDepth;
+            ApproachClearance = seat.ApproachClearance;
             Vector3 faceDirection = seat.FaceDirection;
             var seatGround = new Vector3(
                 seat.SeatTopCenter.x,
@@ -141,6 +157,9 @@ namespace BarPromenade
 
         public bool IsPresent { get; }
         public string Id { get; }
+        public float SeatWidth { get; }
+        public float SeatDepth { get; }
+        public float ApproachClearance { get; }
         public Vector3 EntryRootPosition { get; }
         public Quaternion EntryRotation { get; }
         public Vector3 EntryHipPosition { get; }
@@ -155,6 +174,68 @@ namespace BarPromenade
         public Quaternion TriggerRotation { get; }
         public Vector3 TriggerSize { get; }
 
+        public const int MaximumApproachWaypoints = 2;
+
+        /// <summary>
+        /// Plans the walked detour a sitter takes when he stands on the
+        /// wrong side of the timber: around the nearer plank end, hugging
+        /// the seat's approach clearance, to the front where the entry
+        /// dock waits. Fills up to <see cref="MaximumApproachWaypoints"/>
+        /// corners into the buffer and returns how many are needed —
+        /// zero when the sitter already stands on the dock side.
+        /// </summary>
+        public int BuildApproachWaypoints(
+            Vector3 fromPosition,
+            Vector3[] buffer)
+        {
+            if (buffer == null ||
+                buffer.Length < MaximumApproachWaypoints)
+            {
+                throw new ArgumentException(
+                    "The approach waypoint buffer must hold " +
+                    $"{MaximumApproachWaypoints} corners.",
+                    nameof(buffer));
+            }
+
+            if (!IsPresent)
+            {
+                return 0;
+            }
+
+            Vector3 face = EntryRotation * Vector3.forward;
+            var tangent = new Vector3(face.z, 0f, -face.x);
+            var center = new Vector3(
+                InteractionPosition.x,
+                EntryRootPosition.y,
+                InteractionPosition.z);
+            Vector3 offset = fromPosition - center;
+            offset.y = 0f;
+            float longitudinal = Vector3.Dot(offset, face);
+            float frontEdge = SeatDepth * 0.5f;
+            if (longitudinal >= frontEdge)
+            {
+                return 0;
+            }
+
+            float side = Vector3.Dot(offset, tangent) >= 0f ? 1f : -1f;
+            Vector3 corridor = tangent *
+                (side * (SeatWidth * 0.5f + ApproachClearance));
+            float frontDistance = frontEdge + EntryEdgeDistance;
+            int count = 0;
+            if (longitudinal <= -frontEdge)
+            {
+                // Starting behind the backrest: first clear the rear
+                // corner, deep enough that a shelter's back wall stays
+                // outside the capsule.
+                buffer[count++] = center + corridor - face *
+                    (frontEdge +
+                     Mathf.Max(EntryEdgeDistance, ApproachClearance));
+            }
+
+            buffer[count++] = center + corridor + face * frontDistance;
+            return count;
+        }
+
         /// <summary>
         /// Collects every sittable seat the generated city carries:
         /// the repaired bar-side yard bench, the four park benches, the
@@ -167,7 +248,8 @@ namespace BarPromenade
             CityLayout layout,
             CityOpenAreaDecorationPlan decorations,
             CityBusPlan busPlan,
-            CityDecorationPlan streetDecorations)
+            CityDecorationPlan streetDecorations,
+            CityStreetSurfacePlan streetSurfacePlan)
         {
             if (layout == null)
             {
@@ -188,6 +270,12 @@ namespace BarPromenade
             {
                 throw new ArgumentNullException(
                     nameof(streetDecorations));
+            }
+
+            if (streetSurfacePlan == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(streetSurfacePlan));
             }
 
             var plans = new List<CityBenchSitPlan>(
@@ -219,8 +307,11 @@ namespace BarPromenade
             {
                 Add(
                     plans,
-                    CityBusStopWorldBuilder.DescribeShelterBenchSeat(
-                        busPlan.Stops[index]));
+                    ResolveSeatDockGround(
+                        layout,
+                        streetSurfacePlan,
+                        CityBusStopWorldBuilder.DescribeShelterBenchSeat(
+                            busPlan.Stops[index])));
             }
 
             var decorationSeats = new List<CityBenchSeat>(4);
@@ -237,7 +328,10 @@ namespace BarPromenade
                      seatIndex < decorationSeats.Count;
                      seatIndex++)
                 {
-                    Add(plans, decorationSeats[seatIndex]);
+                    Add(plans, ResolveSeatDockGround(
+                        layout,
+                        streetSurfacePlan,
+                        decorationSeats[seatIndex]));
                 }
             }
 
@@ -331,6 +425,85 @@ namespace BarPromenade
                         park.Center.z >= position.z ? 1f : -1f));
                 Add(plans, seat);
             }
+        }
+
+        /// <summary>
+        /// A seat description reports one flat ground height, but the
+        /// sitter docks half a seat plus <see cref="EntryEdgeDistance"/>
+        /// in front of the seat, where the walkable surface can differ:
+        /// district ground slopes continuously across a lot, a
+        /// street-facing couch docks onto the kerb-high sidewalk strip,
+        /// and a shelter bench on a graded edge docks onto the sidewalk
+        /// ramp below or above the stop's own sample point. The dock
+        /// ground is therefore resampled at the dock itself, so the
+        /// approach settles inside the motor's strict vertical tolerance
+        /// instead of stalling against an unreachable height.
+        /// </summary>
+        private static CityBenchSeat ResolveSeatDockGround(
+            CityLayout layout,
+            CityStreetSurfacePlan streetSurfacePlan,
+            CityBenchSeat seat)
+        {
+            if (!seat.IsPresent)
+            {
+                return seat;
+            }
+
+            // The same planar offset the plan constructor walks from the
+            // seat centre to the entry dock.
+            Vector3 dock = seat.SeatTopCenter + seat.FaceDirection *
+                (seat.SeatDepth * 0.5f + EntryEdgeDistance);
+            float groundY = seat.GroundY;
+            if (CityTerrainSurfacePlan.TrySampleGroundTop(
+                    layout,
+                    new Vector2(dock.x, dock.z),
+                    out float terrainTop,
+                    out _))
+            {
+                groundY = terrainTop;
+            }
+
+            groundY = RaiseToWalkwayTops(
+                streetSurfacePlan.SidewalkGeometry,
+                dock,
+                groundY);
+            groundY = RaiseToWalkwayTops(
+                streetSurfacePlan.ParkPathGeometry,
+                dock,
+                groundY);
+
+            // A dock that overhangs the kerb stands its sitter on the
+            // carriageway surface rather than the strip behind him.
+            groundY = RaiseToWalkwayTops(
+                streetSurfacePlan.StreetGeometry,
+                dock,
+                groundY);
+            return new CityBenchSeat(
+                seat.Id,
+                seat.SeatTopCenter,
+                seat.SeatWidth,
+                seat.SeatDepth,
+                groundY,
+                seat.FaceDirection,
+                seat.ApproachClearance);
+        }
+
+        private static float RaiseToWalkwayTops(
+            IReadOnlyList<RuntimeOrientedBox> walkways,
+            Vector3 position,
+            float groundY)
+        {
+            for (int index = 0; index < walkways.Count; index++)
+            {
+                if (walkways[index].TrySampleTop(
+                        position,
+                        out float walkwayTop))
+                {
+                    groundY = Mathf.Max(groundY, walkwayTop);
+                }
+            }
+
+            return groundY;
         }
 
         private static void Add(

@@ -141,48 +141,7 @@ namespace BarPromenade
             float distance = toTarget.magnitude;
             if (distance > 0.000001f)
             {
-                if (deltaTime <= 0f)
-                {
-                    StopPlanarMotion();
-                    RecordInteractionPoseProgress(deltaTime);
-                    return false;
-                }
-
-                float step = Mathf.Min(
-                    distance,
-                    MoveSpeed * deltaTime);
-                Vector3 desired =
-                    current + (toTarget / distance) * step;
-                desired.y = current.y;
-                Vector3 constrained = walkableArea == null
-                    ? desired
-                    : walkableArea.Constrain(
-                        current,
-                        desired,
-                        controller != null ? controller.radius : 0f);
-                Vector3 planarDelta = constrained - current;
-                planarDelta.y = 0f;
-                Vector3 before = transform.position;
-                if (controller != null && controller.enabled)
-                {
-                    controller.Move(planarDelta);
-                }
-                else
-                {
-                    transform.position += planarDelta;
-                }
-
-                Vector3 displacement = transform.position - before;
-                displacement.y = 0f;
-                PlanarVelocity = deltaTime > 0.0001f
-                    ? displacement / deltaTime
-                    : Vector3.zero;
-                FaceMovementDirection(PlanarVelocity);
-                presentation?.SetMotion(PlanarVelocity);
-                UpdateFootsteps(
-                    displacement,
-                    allowWhenInputDisabled: true);
-                RecordInteractionPoseProgress(deltaTime);
+                WalkPlanarStep(targetPosition, deltaTime);
                 return false;
             }
 
@@ -223,6 +182,104 @@ namespace BarPromenade
             }
 
             return completed;
+        }
+
+        /// <summary>
+        /// Walks the rig towards an intermediate approach corner with the
+        /// same constrained, visible gait as the pose move, completing as
+        /// soon as the planar distance drops inside the arrival radius.
+        /// Facing and height stay free: corners are passed through, not
+        /// posed at, so the walk flows on into the next leg.
+        /// </summary>
+        public bool MoveTowardsApproachWaypoint(
+            Vector3 targetPosition,
+            float arrivalRadius,
+            float deltaTime)
+        {
+            ValidateInteractionPose(
+                targetPosition,
+                Quaternion.identity,
+                deltaTime);
+            if (float.IsNaN(arrivalRadius) ||
+                float.IsInfinity(arrivalRadius) ||
+                arrivalRadius <= 0f)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(arrivalRadius),
+                    arrivalRadius,
+                    "The arrival radius must be positive.");
+            }
+
+            if (!interactionPoseMoveActive)
+            {
+                interactionPoseStallSeconds = 0f;
+                InteractionPoseMoveStalled = false;
+                lastInteractionPosePosition = transform.position;
+                lastInteractionPoseRotation = transform.rotation;
+            }
+
+            interactionPoseMoveActive = true;
+            if (PlanarDistance(transform.position, targetPosition) <=
+                arrivalRadius)
+            {
+                interactionPoseStallSeconds = 0f;
+                return true;
+            }
+
+            WalkPlanarStep(targetPosition, deltaTime);
+            return false;
+        }
+
+        private void WalkPlanarStep(
+            Vector3 targetPosition,
+            float deltaTime)
+        {
+            Vector3 current = transform.position;
+            Vector3 toTarget = targetPosition - current;
+            toTarget.y = 0f;
+            float distance = toTarget.magnitude;
+            if (deltaTime <= 0f || distance <= 0.000001f)
+            {
+                StopPlanarMotion();
+                RecordInteractionPoseProgress(deltaTime);
+                return;
+            }
+
+            float step = Mathf.Min(
+                distance,
+                MoveSpeed * deltaTime);
+            Vector3 desired =
+                current + (toTarget / distance) * step;
+            desired.y = current.y;
+            Vector3 constrained = walkableArea == null
+                ? desired
+                : walkableArea.Constrain(
+                    current,
+                    desired,
+                    controller != null ? controller.radius : 0f);
+            Vector3 planarDelta = constrained - current;
+            planarDelta.y = 0f;
+            Vector3 before = transform.position;
+            if (controller != null && controller.enabled)
+            {
+                controller.Move(planarDelta);
+            }
+            else
+            {
+                transform.position += planarDelta;
+            }
+
+            Vector3 displacement = transform.position - before;
+            displacement.y = 0f;
+            PlanarVelocity = deltaTime > 0.0001f
+                ? displacement / deltaTime
+                : Vector3.zero;
+            FaceMovementDirection(PlanarVelocity);
+            presentation?.SetMotion(PlanarVelocity);
+            UpdateFootsteps(
+                displacement,
+                allowWhenInputDisabled: true);
+            RecordInteractionPoseProgress(deltaTime);
         }
 
         private void Update()

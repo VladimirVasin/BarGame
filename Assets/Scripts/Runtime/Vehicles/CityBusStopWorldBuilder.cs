@@ -21,6 +21,11 @@ namespace BarPromenade
         public const float ShelterBenchSeatDepth = 0.62f;
         public const float ShelterBenchSeatForwardOffset = 0.05f;
 
+        // A wrong-side walk to this bench must round the whole shelter:
+        // the corner posts stand 2.05 m out and the back wall spans
+        // 4.25 m, so the detour swings wider than around open timber.
+        public const float ShelterApproachClearance = 1.30f;
+
         private static readonly Color PoleColor =
             new Color32(45, 49, 54, 255);
         private static readonly Color RouteColor =
@@ -159,7 +164,8 @@ namespace BarPromenade
                 ShelterBenchSeatWidth,
                 ShelterBenchSeatDepth,
                 stop.ShelterPosition.y,
-                rotation * Vector3.forward);
+                rotation * Vector3.forward,
+                ShelterApproachClearance);
         }
 
         private static void BuildStopVisual(

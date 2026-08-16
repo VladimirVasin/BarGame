@@ -823,42 +823,14 @@ namespace BarPromenade
                  index < streetSurfacePlan.SidewalkGeometry.Count;
                  index++)
             {
-                if (TrySampleSurfaceTop(
-                        streetSurfacePlan.SidewalkGeometry[index],
-                        position,
-                        out float sidewalkTop))
+                if (streetSurfacePlan.SidewalkGeometry[index]
+                        .TrySampleTop(position, out float sidewalkTop))
                 {
                     height = Mathf.Max(height, sidewalkTop);
                 }
             }
 
             return height;
-        }
-
-        private static bool TrySampleSurfaceTop(
-            RuntimeOrientedBox box,
-            Vector3 position,
-            out float top)
-        {
-            Vector3 normal = box.Rotation * Vector3.up;
-            if (Mathf.Abs(normal.y) <= GeometryTolerance)
-            {
-                top = 0f;
-                return false;
-            }
-
-            Vector3 planePoint = box.Center +
-                                 normal * (box.Size.y * 0.5f);
-            top = planePoint.y -
-                ((normal.x * (position.x - planePoint.x) +
-                  normal.z * (position.z - planePoint.z)) /
-                 normal.y);
-            Vector3 local = Quaternion.Inverse(box.Rotation) *
-                (new Vector3(position.x, top, position.z) - box.Center);
-            return Mathf.Abs(local.x) <=
-                       box.Size.x * 0.5f + GeometryTolerance &&
-                   Mathf.Abs(local.z) <=
-                       box.Size.z * 0.5f + GeometryTolerance;
         }
 
         private static float PlanarDistance(
