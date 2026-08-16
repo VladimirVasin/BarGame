@@ -294,6 +294,113 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void EvaluateWind_IsDeterministicForSeedAndTime()
+        {
+            for (int slot = 0; slot < 12; slot++)
+            {
+                double minutes =
+                    slot * GameWeatherRules.SlotMinutes + 41d;
+                WindSample first =
+                    GameWeatherRules.EvaluateWind(Seed, minutes);
+                WindSample second =
+                    GameWeatherRules.EvaluateWind(Seed, minutes);
+
+                Assert.That(
+                    second.DirectionDegrees,
+                    Is.EqualTo(first.DirectionDegrees));
+                Assert.That(
+                    second.Strength01,
+                    Is.EqualTo(first.Strength01));
+            }
+        }
+
+        [Test]
+        public void EvaluateWind_StrengthStaysInUnitRangeAcrossDays()
+        {
+            for (double minute = 0d;
+                 minute < 3d * 24d * 60d;
+                 minute += 0.25d)
+            {
+                WindSample sample =
+                    GameWeatherRules.EvaluateWind(Seed, minute);
+                Assert.That(
+                    sample.Strength01,
+                    Is.GreaterThanOrEqualTo(0f)
+                        .And.LessThanOrEqualTo(1f));
+                Assert.That(
+                    sample.HorizontalDirection.magnitude,
+                    Is.EqualTo(1f).Within(Tolerance));
+                Assert.That(
+                    sample.HorizontalDirection.y,
+                    Is.EqualTo(0f));
+            }
+        }
+
+        [Test]
+        public void EvaluateWind_StormSlotBlowsHarderThanClearSlot()
+        {
+            long clearSlot = FindFirstSlot(WeatherKind.Clear);
+            long stormSlot = FindFirstSlot(WeatherKind.Thunderstorm);
+            Assert.That(clearSlot, Is.GreaterThanOrEqualTo(0));
+            Assert.That(stormSlot, Is.GreaterThanOrEqualTo(0));
+
+            Assert.That(
+                MeanPlateauWindStrength(stormSlot),
+                Is.GreaterThan(MeanPlateauWindStrength(clearSlot) * 2f));
+        }
+
+        [Test]
+        public void EvaluateWind_DirectionRampsSmoothlyAcrossSlots()
+        {
+            for (int slot = 1; slot <= 12; slot++)
+            {
+                double boundary =
+                    slot * GameWeatherRules.SlotMinutes;
+                float previousDirection = GameWeatherRules
+                    .EvaluateWind(Seed, boundary - 0.1d)
+                    .DirectionDegrees;
+                for (double minute = boundary;
+                     minute <
+                     boundary + GameWeatherRules.TransitionMinutes;
+                     minute += 0.1d)
+                {
+                    float direction = GameWeatherRules
+                        .EvaluateWind(Seed, minute)
+                        .DirectionDegrees;
+                    Assert.That(
+                        Mathf.Abs(Mathf.DeltaAngle(
+                            previousDirection,
+                            direction)),
+                        Is.LessThan(10f),
+                        $"Wind bearing jumped at minute {minute}.");
+                    previousDirection = direction;
+                }
+            }
+        }
+
+        private static float MeanPlateauWindStrength(long slot)
+        {
+            double plateauStart =
+                slot * GameWeatherRules.SlotMinutes +
+                GameWeatherRules.TransitionMinutes;
+            double plateauEnd =
+                (slot + 1) * GameWeatherRules.SlotMinutes;
+            float sum = 0f;
+            int samples = 0;
+            for (double minute = plateauStart;
+                 minute < plateauEnd;
+                 minute += 0.5d)
+            {
+                sum += GameWeatherRules
+                    .EvaluateWind(Seed, minute)
+                    .Strength01;
+                samples++;
+            }
+
+            return sum / samples;
+        }
+
+        [Test]
         public void Evaluate_WithNonFiniteMinutes_Throws()
         {
             Assert.That(

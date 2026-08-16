@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-16 — Cloth and wind: torn rags on the broken canopy
+
+- Unity's built-in cloth entered the project the honest way: the
+  `cloth`/`wind`/`physics` modules were already in the manifest, and
+  since PhysX cloth ignores `WindZone` entirely, the wind is our own
+  deterministic schedule instead. `GameWeatherRules` grew a pure
+  `WindSample` path (slot-hashed bearing with the same smoothstep
+  transitions as rain, strength from the slot's weather kind
+  `0.15/0.40/0.65/0.95`, continuous seeded gusts at `7.3/1.9` game
+  minutes and a `±9°` sway at `3.1`), sampled by
+  `CityWeatherController` every frame before the visual-equivalence
+  early-out, exactly like lightning.
+- `ClothPanelFactory` builds skinned cloth panels at runtime — the
+  project's first runtime `SkinnedMeshRenderer`: terrain-idiom mesh,
+  one root bone, top row pinned through `ClothSkinningCoefficient`
+  (`maxDistance` capped at `0.35 x height` as the explosion clamp)
+  and torn hems as a pure hash of the variant.
+  `CityClothWindRegistry` (glow-registry pattern) turns the wind
+  sample into `externalAcceleration` (`7.5 m/s²` at full strength)
+  plus gust/lift `randomAcceleration`.
+- Double-siding was rebuilt after an in-game report of sparkling
+  rags: the first cut duplicated reversed triangles over the same
+  vertices, but cloth recomputes particle normals from EVERY
+  triangle each frame, so the opposing windings cancelled the
+  normals into glinting garbage. The simulated topology is now
+  strictly single-sided; the back face renders through one shared
+  cull-off clone of the primitive material (per-panel colour still
+  on the MPB, smoothness/metallic zeroed so live cloth normals never
+  catch specular).
+- Six authored rags now hang from the Last Route island's broken
+  canopy (city build only — the home-exterior vista stays
+  cloth-free), and `CityRainField.SetWindDrift` replaces the
+  hardcoded `x = 0.4..1.0` drift so rain in City and on the balcony
+  leans the same way the rags blow.
+- Two batch-mode traps burned and documented: cloth pauses while its
+  renderer is culled, and in `-batchmode` a camera only truly renders
+  into a `RenderTexture` — the simulation PlayMode test needs both;
+  and `cloth.vertices` reports authored particle rest poses, so live
+  deformation must be read via `SkinnedMeshRenderer.BakeMesh`.
+- Verification: EditMode `19/19` (wind rules determinism/range/
+  storm-vs-clear/boundary smoothness, factory mesh/pinning/torn
+  variants, island rag presence + vista exclusion + registry count,
+  rain drift alignment); PlayMode `2/2` — free hem moves, pinned row
+  holds, all vertices finite. Storm-strength captures (removed after
+  use) show five canopy segments with crumpled, wind-thrown rags and
+  no geometry explosions.
+
 ## 2026-08-16 — Booth seating, booth scale and the jukebox move
 
 - Three placement bugs fixed together. The seated-pair anchors sat

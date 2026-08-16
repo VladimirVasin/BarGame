@@ -94,6 +94,41 @@ namespace BarPromenade
             new Color(0.145f, 0.245f, 0.295f);
         private static readonly Color NightlifeWaste =
             new Color(0.115f, 0.135f, 0.145f);
+        private static readonly Color NightlifeRagCanvas =
+            new Color(0.335f, 0.305f, 0.245f);
+        private static readonly Color NightlifeRagFadedRed =
+            new Color(0.295f, 0.140f, 0.150f);
+        private static readonly Color NightlifeRagFadedBlue =
+            new Color(0.140f, 0.205f, 0.245f);
+
+        /// <summary>Underside of the broken canopy roof slabs, where
+        /// the torn rags hang from.</summary>
+        private const float CanopyRagHangHeight = 3.49f;
+
+        // Authored like the rest of the island: the POI recipes take
+        // no seed, so the rag set is a fixed dressing rather than a
+        // new randomization pattern.
+        private static readonly CanopyRagRecipe[] CanopyRagRecipes =
+        {
+            new CanopyRagRecipe(
+                0, -1.20f, 0.52f, 0.55f, 1.15f,
+                NightlifeRagCanvas, 1, -6f),
+            new CanopyRagRecipe(
+                0, 0.85f, -0.48f, 0.42f, 0.90f,
+                NightlifeRagFadedRed, 2, 8f),
+            new CanopyRagRecipe(
+                1, 0.30f, 0.50f, 0.62f, 1.05f,
+                NightlifeRagFadedBlue, 3, -4f),
+            new CanopyRagRecipe(
+                2, -1.35f, -0.55f, 0.72f, 1.40f,
+                NightlifeRagCanvas, 4, 5f),
+            new CanopyRagRecipe(
+                2, 1.10f, 0.45f, 0.38f, 0.85f,
+                NightlifeRagFadedBlue, 5, -9f),
+            new CanopyRagRecipe(
+                4, -0.40f, 0.55f, 0.50f, 1.25f,
+                NightlifeRagFadedRed, 6, 10f),
+        };
 
         public static GameObject Build(
             Transform parent,
@@ -700,6 +735,14 @@ namespace BarPromenade
                     3.25f, 0.26f, 0.42f, NightlifeFrame, false, homeExterior, angle);
                 AddBox(parent, name + " Roof", x, 3.58f, z,
                     3.45f, 0.18f, 1.25f, NightlifeFrame, false, homeExterior, angle);
+                if (!homeExterior)
+                {
+                    // Cloth is a city-only dressing: at vista distance
+                    // the rags are subpixel and the balcony scene has
+                    // no wind driver.
+                    BuildCanopyRags(parent, name, index, x, z, angle);
+                }
+
                 if (index == 1 || index == 4)
                 {
                     float plateOffset = 0.18f;
@@ -827,6 +870,87 @@ namespace BarPromenade
                     new Vector3(0.78f, 1.00f, 0.78f),
                     8f);
             }
+        }
+
+        private static void BuildCanopyRags(
+            Transform parent,
+            string segmentName,
+            int segmentIndex,
+            float x,
+            float z,
+            float angleDegrees)
+        {
+            float radians = angleDegrees * Mathf.Deg2Rad;
+            // The roof and beam are yawed by the segment angle: their
+            // long axis is the rotated +X, their depth the rotated +Z.
+            Vector3 along = new Vector3(
+                Mathf.Cos(radians),
+                0f,
+                -Mathf.Sin(radians));
+            Vector3 outward = new Vector3(
+                Mathf.Sin(radians),
+                0f,
+                Mathf.Cos(radians));
+            int ragNumber = 0;
+            for (int index = 0;
+                 index < CanopyRagRecipes.Length;
+                 index++)
+            {
+                CanopyRagRecipe recipe = CanopyRagRecipes[index];
+                if (recipe.SegmentIndex != segmentIndex)
+                {
+                    continue;
+                }
+
+                ragNumber++;
+                Vector3 position =
+                    new Vector3(x, CanopyRagHangHeight, z) +
+                    (along * recipe.AlongOffset) +
+                    (outward * recipe.OutOffset);
+                GameObject rag = ClothPanelFactory.CreateHangingRag(
+                    $"{segmentName} Rag {ragNumber}",
+                    parent,
+                    position,
+                    angleDegrees + recipe.ExtraYawDegrees,
+                    recipe.Width,
+                    recipe.Height,
+                    recipe.Color,
+                    recipe.TornVariant);
+                CityClothWindRegistry.Register(
+                    rag.GetComponent<Cloth>());
+            }
+        }
+
+        private readonly struct CanopyRagRecipe
+        {
+            public CanopyRagRecipe(
+                int segmentIndex,
+                float alongOffset,
+                float outOffset,
+                float width,
+                float height,
+                Color color,
+                int tornVariant,
+                float extraYawDegrees)
+            {
+                SegmentIndex = segmentIndex;
+                AlongOffset = alongOffset;
+                OutOffset = outOffset;
+                Width = width;
+                Height = height;
+                Color = color;
+                TornVariant = tornVariant;
+                ExtraYawDegrees = extraYawDegrees;
+            }
+
+            public int SegmentIndex { get; }
+            public float AlongOffset { get; }
+            public float OutOffset { get; }
+            public float Width { get; }
+            public float Height { get; }
+            public Color Color { get; }
+            public int TornVariant { get; }
+            public float ExtraYawDegrees { get; }
         }
 
         private static void AddBox(

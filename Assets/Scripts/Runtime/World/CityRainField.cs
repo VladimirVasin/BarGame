@@ -23,9 +23,20 @@ namespace BarPromenade
         /// </summary>
         public const float ShelterHoleRadius = 10f;
 
+        /// <summary>
+        /// Streak drift spans this range of the wind velocity, so rain
+        /// and cloth agree on one wind without every drop matching it
+        /// exactly.
+        /// </summary>
+        public const float DriftScaleMin = 0.55f;
+
+        public const float DriftScaleMax = 1.05f;
+
         private const string ParticleObjectName = "City Rain Particles";
         private const float InitialFillSeconds = 2.5f;
         private const float MinimumVisibleIntensity = 0.005f;
+        private const float DriftChangeThreshold = 0.05f;
+        private const float DriftJitter = 0.2f;
         private static readonly int EdgePowerId =
             Shader.PropertyToID("_EdgePower");
         private static readonly int NoiseStrengthId =
@@ -39,6 +50,7 @@ namespace BarPromenade
         private Transform followTarget;
         private float appliedIntensity = -1f;
         private bool appliedSheltered;
+        private Vector2 appliedWindDrift;
 
         public bool IsInitialized { get; private set; }
         public Transform FollowTarget => followTarget;
@@ -47,6 +59,7 @@ namespace BarPromenade
         public float Intensity =>
             appliedIntensity < 0f ? 0f : appliedIntensity;
         public bool IsSheltered => appliedSheltered;
+        public Vector2 AppliedWindDrift => appliedWindDrift;
 
         public void Initialize(
             Transform target,
@@ -86,6 +99,27 @@ namespace BarPromenade
 
             appliedIntensity = clamped;
             ApplyIntensity(clamped);
+        }
+
+        /// <summary>
+        /// Aligns the streak drift with the horizontal wind velocity
+        /// (meters per second, XZ).
+        /// </summary>
+        public void SetWindDrift(Vector2 horizontalMetersPerSecond)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            if ((horizontalMetersPerSecond - appliedWindDrift)
+                .magnitude < DriftChangeThreshold)
+            {
+                return;
+            }
+
+            appliedWindDrift = horizontalMetersPerSecond;
+            ApplyWindDrift(horizontalMetersPerSecond);
         }
 
         public void SetSheltered(bool sheltered)
@@ -176,9 +210,9 @@ namespace BarPromenade
                 particles.velocityOverLifetime;
             velocity.enabled = true;
             velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.x = new ParticleSystem.MinMaxCurve(0.4f, 1.0f);
             velocity.y = new ParticleSystem.MinMaxCurve(-16.5f, -12.5f);
-            velocity.z = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f);
+            appliedWindDrift = Vector2.zero;
+            ApplyWindDrift(appliedWindDrift);
 
             DisableUnusedModules();
             ConfigureRenderer(rainMaterial);
@@ -187,6 +221,24 @@ namespace BarPromenade
 
             particles.Simulate(InitialFillSeconds, true, true, true);
             particles.Play(true);
+        }
+
+        private void ApplyWindDrift(Vector2 wind)
+        {
+            ParticleSystem.VelocityOverLifetimeModule velocity =
+                particles.velocityOverLifetime;
+            velocity.x = CreateDriftCurve(wind.x);
+            velocity.z = CreateDriftCurve(wind.y);
+        }
+
+        private static ParticleSystem.MinMaxCurve CreateDriftCurve(
+            float windComponent)
+        {
+            float near = windComponent * DriftScaleMin;
+            float far = windComponent * DriftScaleMax;
+            return new ParticleSystem.MinMaxCurve(
+                Mathf.Min(near, far) - DriftJitter,
+                Mathf.Max(near, far) + DriftJitter);
         }
 
         private void ApplyShape(bool sheltered)

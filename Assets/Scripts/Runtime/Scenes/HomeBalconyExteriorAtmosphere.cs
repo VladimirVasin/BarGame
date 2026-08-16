@@ -166,6 +166,11 @@ namespace BarPromenade
             WeatherVisualSample weather =
                 GameWeatherRules.EvaluateCurrent();
             RainField.SetIntensity(weather.RainIntensity);
+            Vector3 windVelocity = GameWeatherRules
+                .EvaluateCurrentWind()
+                .Velocity(GameWeatherRules.WindSpeedAtFullStrength);
+            RainField.SetWindDrift(
+                new Vector2(windVelocity.x, windVelocity.z));
             RainSound.SetIntensity(
                 IsBalconyVisibilityActive
                     ? weather.RainIntensity

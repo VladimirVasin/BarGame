@@ -56,6 +56,7 @@ namespace BarPromenade
             }
 
             ApplyLightning();
+            ApplyWind();
             WeatherVisualSample nextSample =
                 GameWeatherRules.EvaluateCurrent();
             bool kindChanged =
@@ -99,6 +100,19 @@ namespace BarPromenade
                         "minute_of_day",
                         GameSessionState.GameMinuteOfDay));
             }
+        }
+
+        private void ApplyWind()
+        {
+            // Gusts vary while the weather sample stays constant, so
+            // wind runs before the visual-equivalence early-out, like
+            // lightning.
+            WindSample wind = GameWeatherRules.EvaluateCurrentWind();
+            CityClothWindRegistry.SetWind(wind);
+            Vector3 velocity = wind.Velocity(
+                GameWeatherRules.WindSpeedAtFullStrength);
+            rain.SetWindDrift(
+                new Vector2(velocity.x, velocity.z));
         }
 
         private void ApplyLightning()

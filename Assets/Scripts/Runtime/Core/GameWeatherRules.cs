@@ -39,6 +39,38 @@ namespace BarPromenade
             StrikeId >= 0L && FlashIntensity > 0f;
     }
 
+    public readonly struct WindSample
+    {
+        public WindSample(float directionDegrees, float strength01)
+        {
+            DirectionDegrees = directionDegrees;
+            Strength01 = Mathf.Clamp01(strength01);
+        }
+
+        /// <summary>World yaw: `0` blows toward +Z, `90` toward +X.</summary>
+        public float DirectionDegrees { get; }
+
+        public float Strength01 { get; }
+
+        public Vector3 HorizontalDirection
+        {
+            get
+            {
+                float radians = DirectionDegrees * Mathf.Deg2Rad;
+                return new Vector3(
+                    Mathf.Sin(radians),
+                    0f,
+                    Mathf.Cos(radians));
+            }
+        }
+
+        public Vector3 Velocity(float speedAtFullStrength)
+        {
+            return HorizontalDirection *
+                   (Strength01 * speedAtFullStrength);
+        }
+    }
+
     public readonly struct WeatherVisualSample
     {
         public WeatherVisualSample(
@@ -103,6 +135,28 @@ namespace BarPromenade
         public const int LightningStrikePercent = 70;
 
         public const double LightningFlashMinutes = 0.5d;
+
+        public const float ClearWindStrength = 0.15f;
+        public const float LightRainWindStrength = 0.40f;
+        public const float HeavyRainWindStrength = 0.65f;
+        public const float ThunderstormWindStrength = 0.95f;
+
+        /// <summary>
+        /// Gust periods in game minutes; at one game minute per real
+        /// second the primary gust swells roughly every seven seconds.
+        /// </summary>
+        public const double WindGustPrimaryPeriodMinutes = 7.3d;
+
+        public const double WindGustSecondaryPeriodMinutes = 1.9d;
+        public const double WindSwayPeriodMinutes = 3.1d;
+        public const float WindSwayDegrees = 9f;
+
+        /// <summary>
+        /// Horizontal speed in meters per second at full wind strength;
+        /// shared by the rain drift and any other wind consumer so the
+        /// whole exterior agrees on one wind.
+        /// </summary>
+        public const float WindSpeedAtFullStrength = 3.2f;
 
         public static WeatherKind EvaluateSlotKind(
             int seed,
@@ -244,6 +298,94 @@ namespace BarPromenade
                 CurrentAbsoluteGameMinutes());
         }
 
+        public static float GetTargetWindStrength(WeatherKind kind)
+        {
+            switch (kind)
+            {
+                case WeatherKind.Clear:
+                    return ClearWindStrength;
+                case WeatherKind.LightRain:
+                    return LightRainWindStrength;
+                case WeatherKind.HeavyRain:
+                    return HeavyRainWindStrength;
+                case WeatherKind.Thunderstorm:
+                    return ThunderstormWindStrength;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
+        /// <summary>
+        /// Wind is the same pure schedule as rain: each slot hashes a
+        /// base bearing and takes its base strength from the slot's
+        /// weather kind, both smoothed across the slot transition; on
+        /// top of the base ride continuous deterministic gusts and a
+        /// slow directional sway, so every scene shakes to the
+        /// identical wind.
+        /// </summary>
+        public static WindSample EvaluateWind(
+            int seed,
+            double absoluteGameMinutes)
+        {
+            ValidateMinutes(absoluteGameMinutes);
+
+            long slotIndex = (long)Math.Floor(
+                absoluteGameMinutes / SlotMinutes);
+            float targetDirection =
+                HashWind(seed, slotIndex) % 360u;
+            float targetStrength = GetTargetWindStrength(
+                EvaluateSlotKind(seed, slotIndex));
+            float baseDirection = targetDirection;
+            float baseStrength = targetStrength;
+            double minutesIntoSlot =
+                absoluteGameMinutes - slotIndex * SlotMinutes;
+            if (minutesIntoSlot < TransitionMinutes)
+            {
+                float previousDirection =
+                    HashWind(seed, slotIndex - 1) % 360u;
+                float previousStrength = GetTargetWindStrength(
+                    EvaluateSlotKind(seed, slotIndex - 1));
+                float linear = Mathf.Clamp01(
+                    (float)(minutesIntoSlot / TransitionMinutes));
+                float progress = linear * linear * (3f - (2f * linear));
+                baseDirection = Mathf.LerpAngle(
+                    previousDirection,
+                    targetDirection,
+                    progress);
+                baseStrength = Mathf.Lerp(
+                    previousStrength,
+                    targetStrength,
+                    progress);
+            }
+
+            uint phaseHash = HashWind(seed, -1L);
+            double tau = 2d * Math.PI;
+            double phaseA = (phaseHash & 0xFFu) / 255d * tau;
+            double phaseB = ((phaseHash >> 8) & 0xFFu) / 255d * tau;
+            double phaseC = ((phaseHash >> 16) & 0xFFu) / 255d * tau;
+            float gust = (float)(
+                0.62d +
+                0.24d * Math.Sin(
+                    tau * absoluteGameMinutes /
+                    WindGustPrimaryPeriodMinutes + phaseA) +
+                0.14d * Math.Sin(
+                    tau * absoluteGameMinutes /
+                    WindGustSecondaryPeriodMinutes + phaseB));
+            float sway = WindSwayDegrees * (float)Math.Sin(
+                tau * absoluteGameMinutes /
+                WindSwayPeriodMinutes + phaseC);
+            return new WindSample(
+                baseDirection + sway,
+                Mathf.Clamp01(baseStrength * gust));
+        }
+
+        public static WindSample EvaluateCurrentWind()
+        {
+            return EvaluateWind(
+                GameSessionState.CitySeed,
+                CurrentAbsoluteGameMinutes());
+        }
+
         private static double CurrentAbsoluteGameMinutes()
         {
             return GameSessionState.GameDayIndex *
@@ -269,6 +411,19 @@ namespace BarPromenade
             value ^= value >> 16;
             value *= 0x7FEB352Du;
             value ^= unchecked((uint)(windowIndex >> 32));
+            value ^= value >> 15;
+            value *= 0x846CA68Bu;
+            value ^= value >> 16;
+            return value;
+        }
+
+        private static uint HashWind(int seed, long slotIndex)
+        {
+            uint value = unchecked((uint)seed) ^ 0x57494E44u;
+            value ^= unchecked((uint)slotIndex);
+            value ^= value >> 16;
+            value *= 0x7FEB352Du;
+            value ^= unchecked((uint)(slotIndex >> 32));
             value ^= value >> 15;
             value *= 0x846CA68Bu;
             value ^= value >> 16;
