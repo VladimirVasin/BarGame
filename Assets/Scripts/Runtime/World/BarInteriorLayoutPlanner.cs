@@ -277,12 +277,16 @@ namespace BarPromenade
             uint stableSeed)
         {
             var anchors = new List<BarNpcAnchor>(12);
+            // The 3D publican stands between the hero's counter
+            // station (x -1.15) and the center pendant (x 0), tight
+            // to the counter's inner edge, so his lit head and
+            // shoulders read across the 1.4 m top from the hall.
             AddNpc(
                 anchors,
                 stableSeed,
                 "bartender-left",
                 BarNpcRole.Bartender,
-                new Vector3(-2.35f, 0f, 6.55f),
+                new Vector3(-0.55f, 0f, 6.50f),
                 180f,
                 "bar-service",
                 0.12f);
@@ -419,10 +423,13 @@ namespace BarPromenade
                     5.2f,
                     5.5f,
                     82f),
+                // The center pendant hangs over the bartender's
+                // duckboard so his head and shoulders read warm
+                // against the dark backbar from anywhere in the hall.
                 CreateLight(
                     "counter-pendant-center",
                     BarInteriorLightKind.CounterPendant,
-                    new Vector3(0f, 3.75f, 5f),
+                    new Vector3(-0.55f, 3.75f, 6.05f),
                     Vector3.down,
                     amber,
                     5.5f,

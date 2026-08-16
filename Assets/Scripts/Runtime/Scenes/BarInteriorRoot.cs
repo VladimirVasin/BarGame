@@ -50,6 +50,16 @@ namespace BarPromenade
         public BarSoundscape Soundscape { get; private set; }
         public BarInteriorAtmosphere Atmosphere { get; private set; }
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
+
+        /// <summary>
+        /// The Six-Armed Bartender behind the counter, or <c>null</c>
+        /// when his prefab or anchor is unavailable.
+        /// </summary>
+        public BarBartenderPresentation Bartender
+        {
+            get;
+            private set;
+        }
         public BarArrivalPresentation ArrivalPresentation
         {
             get;
@@ -342,9 +352,19 @@ namespace BarPromenade
         private void BuildNpcCrowd(Camera camera)
         {
             // The sprite crowd is retired: the production 3D
-            // pedestrians take the same authored anchors. The
-            // bartender's spot stays empty until his own pass.
+            // pedestrians take the same authored anchors, and the
+            // dedicated pass finally fills the bartender's spot.
             Patrons = BarPatronWorldBuilder.Build(transform, Layout);
+            Bartender = BarBartenderWorldBuilder.TryBuild(
+                transform,
+                Layout);
+            if (Bartender != null && DrinkShop != null)
+            {
+                BarBartenderServiceChoreography choreography =
+                    Bartender.gameObject.AddComponent<
+                        BarBartenderServiceChoreography>();
+                choreography.Initialize(Bartender, DrinkShop);
+            }
         }
 
         private void BuildArrivalPresentation(

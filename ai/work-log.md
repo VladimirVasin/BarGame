@@ -6,6 +6,140 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-16 — The bartender pours: service pass landed
+
+- Pass 3 of the bartender spec. The bottle never flies to the hero's
+  hand anymore: `BarDrinkShopController` retires the first-person
+  right-arm grip (the hero keeps only the left-hand drink lift) and
+  carries the committed bottle from its shelf to the authored
+  `BottlePourPose` with a small lift arc — the same timeline
+  channels, a different destination. The vessel no longer scale-pops
+  at the counter: it slides in flat along the brass from past the
+  left edge of the seated frame (`VesselSlideEntryOffset`,
+  `VesselVisibility` is the slide) before the pour fills it.
+- `BarBartenderServiceChoreography` puts his hands on all of it:
+  the brass-banded mid-right chain CCD-rides the carried bottle,
+  the mid-left chain rides the sliding vessel and steadies it
+  through the pour, and while the hero merely browses, the lower
+  pair reaches back and fingers whichever bottle is hovered —
+  arms as readers of the authored motion, never drivers. Idle
+  amplitudes roughly doubled after the first pass proved invisible
+  at hall distance.
+- Verification: drink-service integration and the bar smoke passed
+  `2/2`; the three `BarDrinkPhysicalShopPlayModeTests` failures were
+  proven pre-existing by rerunning them on a clean stashed HEAD
+  (NUnit `Has.Count` against the array-backed
+  `player.Visual.Renderers` — unrelated to this pass). Temporary
+  captures (removed after use) show the vessel mid-slide down the
+  counter and the filled wine glass with the bartender's arm on it
+  at mid-pour.
+
+## 2026-08-16 — Bartender reads from the hall
+
+- The two-metre rebuild alone was not enough: behind the ~1.56 m
+  brass counter top only his pale head cleared the line and, point
+  for point, read as one more backbar bottle (an isolation render
+  proved the prefab itself was fine — the camouflage was the bug).
+  Three coordinated fixes make him legible from anywhere in the
+  hall: the model grew to a cashier-class 2.0 m with the long neck
+  stub, he now works from a 0.42 m service duckboard so the
+  shoulders and the whole extra-arm fan clear the counter, and the
+  center counter pendant re-hung directly over his board so the
+  head and moustache catch warm light against the dark backbar. The
+  waistcoat palette brightened a step, the anchor moved beside the
+  hero's counter station, and the canonical hands now rest ON the
+  counter top (root-local rest points ride the duckboard height).
+- Verification: bartender asset contract `1/1`, bar layout planner
+  `17/17` with the moved anchor and pendant, bar smoke `1/1`;
+  iterative temporary captures (removed after use) confirmed the
+  hall sightline finally shows a lit face, cap and moustache above
+  the counter instead of an anonymous bottle.
+
+## 2026-08-15 — Six-Armed Bartender: model pass and bar presence
+
+- Passes 1–2 of [`ai/bartender-spec.md`](bartender-spec.md) landed.
+  `tools/build-bartender-3d-model.py` (Blender, subclassing the
+  shared `PedestrianBuilder` like the cashier tool) builds the
+  publican on the exact canonical 31-bone skeleton: broad torso,
+  waistcoat/apron/flat cap/moustache, and two extra arm pairs as
+  twelve rigid segments on sixteen `PIVOT_Arm{2,3}.{L,R}.*` empties
+  (the cashier-neck/wheelchair mechanism) plus the brass band on the
+  mid-right pouring arm. 50 meshes, 1436 triangles of the 3400
+  budget; FBX + manifest + preview under `Assets/Bar/Bartender` and
+  `ArtSource/Bar/Bartender`.
+- The C# pipeline mirrors the cashier end to end:
+  `BarBartenderModelImporter`, `BarBartenderAssetSetup` (manifest
+  contract validation, prefab build, provider binding),
+  `BarBartenderAssetRegistry` with the four serialized arm chains,
+  and the addressable `BarBartenderProvider`.
+- `BarBartenderPresentation` re-parents the chains under their
+  pivots beneath the chest, folds the canonical pair to a counter
+  rest via world-space two-bone solving (imported FBX bone axes are
+  not trustworthy for local Euler folds — the first capture proved
+  it), runs desynchronized per-chain idle business and head sway,
+  and already exposes `SetChainTarget` CCD reaching for the service
+  pass. `BarBartenderWorldBuilder` stands him on the authored
+  Bartender anchor facing the hall (the sprite-era anchor yaw runs
+  along the service alley); `BarInteriorRoot.Bartender` exposes him.
+
+Verification:
+
+- The Blender build validates the full contract (canonical skeleton,
+  16 pivots, part markers, budget, grounding) and the Unity batch
+  `BuildOrThrow` build passed including its own post-build
+  validation. `BarBartenderAssetTests` EditMode passed `1/1`;
+  the bar smoke test with new bartender assertions passed `1/1`.
+- Temporary D3D11 captures (removed after use) were visually
+  inspected across compass views: he stands the service alley at
+  the counter, faces the guests, the canonical hands meet over the
+  counter and the extra-arm fan reads at PS1 resolution.
+- Remaining per the spec: pass 3 (service choreography — hover
+  touch, carry, steady) and pass 4 (cocktails).
+
+## 2026-08-15 — Six-armed bartender spec authored
+
+- Wrote [`ai/bartender-spec.md`](bartender-spec.md): the design for
+  the dedicated 3D bartender pass — a three-pair-armed figure on the
+  cashier model pipeline, six independent CCD arm layers over a
+  manually-advanced idle, service choreography where the authored
+  `BarDrinkServiceTimeline` channels keep driving the bottles while
+  the bartender's hands visibly touch, carry and steady them, and a
+  2–3 ingredient cocktail order model with per-ingredient arms and a
+  simultaneous bottle-return finale. Four independently-green build
+  passes; nothing implemented yet.
+
+## 2026-08-15 — Grocery lettering and the hero home anchor
+
+- The supermarket signs now spell. `CitySignLettering` is a pure
+  blocky segment font (П Р О Д У К Т Ы plus the house digit) laid out
+  on a facade plane; the storefront band replaces its five anonymous
+  glowing blocks with the word `ПРОДУКТЫ`, and a new vertical blade
+  sign hangs off the storefront corner — one glyph per row, lettered
+  on both street faces with per-face mirroring so the asymmetric
+  glyphs always read forward. Both signs ride the shared glow
+  registry and the home-exterior clipping path.
+- The hero's building is now findable: a warm entrance lamp under a
+  small canopy, the lit deep-blue house-number plaque (`7`) beside
+  the door, and a rooftop antenna mast with a `0.3 m` red beacon
+  (`2.3` HDR red, `~3.5 m` above the roof) that survives the city fog
+  from blocks away. Everything registers with the night glow
+  registry, so it dims by day with the rest of the city.
+
+Verification:
+
+- `CitySignLetteringTests` EditMode passed `3/3` (word layout bounds
+  and centering, per-cell scaling determinism, glyph coverage
+  including the house digit, unknown-glyph rejection).
+- A temporary City-scene capture (removed after use) was visually
+  inspected across four street viewpoints: the storefront word reads
+  head-on, the blade sign reads top-down through fog from down the
+  block, the entrance lamp and plaque mark the door, and the red
+  beacon shows above the roofline from `26 m` away.
+- Sign/anchor object assertions were added to the City smoke test;
+  the suite currently fails earlier on the pre-existing `12x12`
+  envelope expectation, which the in-flight `17x14` city expansion
+  on this branch has not yet updated — unrelated to the signage.
+
 ## 2026-08-15 — Supermarket surface textures and fluorescent lighting
 
 - The supermarket hall now carries real packaged albedos instead of flat

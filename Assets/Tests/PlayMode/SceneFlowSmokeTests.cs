@@ -78,6 +78,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<HomeEntrance>(true),
                 Has.Length.EqualTo(1));
+            Assert.That(
+                GameObject.Find("Supermarket Blade Sign Housing"),
+                Is.Not.Null,
+                "The grocery must hang its vertical street sign.");
+            Assert.That(
+                GameObject.Find("Supermarket Sign Letter"),
+                Is.Not.Null,
+                "The grocery sign must carry real lettering.");
+            Assert.That(
+                GameObject.Find("Home Roof Beacon"),
+                Is.Not.Null,
+                "The hero's roof beacon must mark the home block.");
+            Assert.That(
+                GameObject.Find("Home Number Plaque"),
+                Is.Not.Null,
+                "The hero's door must carry its lit house number.");
             var barDistricts = new HashSet<CityDistrictKind>();
             var barLots = new List<BuildingLot>();
             for (int index = 0;
@@ -925,6 +941,27 @@ namespace BarPromenade.Tests.PlayMode
                 drinkingPatrons,
                 Is.LessThan(interiorRoot.Patrons.Count),
                 "The deliberate empty-handed minority must survive.");
+
+            Assert.That(
+                interiorRoot.Bartender,
+                Is.Not.Null,
+                "The Six-Armed Bartender must stand his anchor.");
+            Assert.That(
+                interiorRoot.Bartender.IsInitialized,
+                Is.True);
+            Assert.That(
+                interiorRoot.Bartender.ChainCount,
+                Is.EqualTo(
+                    BarBartenderAssetRegistry.ExtraArmChainCount));
+            for (int chain = 0;
+                 chain < interiorRoot.Bartender.ChainCount;
+                 chain++)
+            {
+                Assert.That(
+                    interiorRoot.Bartender.GetChainGrip(chain),
+                    Is.Not.Null,
+                    "Every extra arm must expose its grip pivot.");
+            }
 
             Assert.That(interiorRoot.Soundscape, Is.Not.Null);
             Assert.That(

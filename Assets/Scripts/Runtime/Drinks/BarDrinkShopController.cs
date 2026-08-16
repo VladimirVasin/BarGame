@@ -51,6 +51,14 @@ namespace BarPromenade
         private Vector3 bottleStartPosition;
         private Quaternion bottleStartRotation;
         private Vector3 vesselBaseScale = Vector3.one;
+
+        /// <summary>
+        /// Where the vessel enters from, in service-plan local space:
+        /// down the counter past the left edge of the seated frame,
+        /// flat on the brass — the bartender's slide, not a spawn.
+        /// </summary>
+        public static readonly Vector3 VesselSlideEntryOffset =
+            new Vector3(-1.9f, 0f, 0f);
         private int inputUnlockFrame;
         private bool hasPhysicalPresentation;
         private bool playerVisualStateCaptured;
@@ -669,11 +677,11 @@ namespace BarPromenade
 
             BarDrinkServiceFrame frame = timeline.CurrentFrame;
             ApplyCamera(frame.CameraBlend);
-            float rightGrip =
-                Mathf.Clamp01(frame.BottleTravel + frame.BottleTilt);
+            // The bartender owns the bottle now; the hero's right arm
+            // never grips, only the left-hand drink lift remains his.
             firstPersonArms.ApplyPresentation(
                 frame.ArmsVisibility,
-                rightGrip,
+                0f,
                 frame.DrinkLift);
             ApplyPlayerVisualForFrame(frame);
             ApplyBottlePresentation(frame);
@@ -724,31 +732,28 @@ namespace BarPromenade
                 return;
             }
 
-            Transform grip = firstPersonArms.RightBottleGripAnchor;
-            Vector3 handPosition = grip.position;
-            Quaternion handRotation = grip.rotation;
+            // The bottle never flies to the hero: the bartender's arm
+            // carries it from the shelf to the pour spot over the
+            // counter, with a small lift arc so the pickup reads as a
+            // grab rather than a slide.
             BarDrinkServicePose pourLocal = servicePlan.BottlePourPose;
             Vector3 pourPosition =
                 serviceView.transform.TransformPoint(pourLocal.Position);
             Quaternion pourRotation =
                 serviceView.transform.rotation * pourLocal.Rotation;
-            Vector3 targetPosition = Vector3.Lerp(
-                handPosition,
+            Vector3 travelPosition = Vector3.Lerp(
+                bottleStartPosition,
                 pourPosition,
-                frame.BottleTilt);
-            Quaternion targetRotation = Quaternion.Slerp(
-                handRotation,
-                pourRotation,
-                frame.BottleTilt);
+                frame.BottleTravel);
+            travelPosition.y +=
+                Mathf.Sin(Mathf.Clamp01(frame.BottleTravel) *
+                          Mathf.PI) * 0.10f;
             serviceView.SetSelectedBottleWorldPose(
-                Vector3.Lerp(
-                    bottleStartPosition,
-                    targetPosition,
-                    frame.BottleTravel),
+                travelPosition,
                 Quaternion.Slerp(
                     bottleStartRotation,
-                    targetRotation,
-                    frame.BottleTravel));
+                    pourRotation,
+                    frame.BottleTilt));
         }
 
         private void ApplyVesselPresentation(BarDrinkServiceFrame frame)
@@ -765,8 +770,7 @@ namespace BarPromenade
             vessel.gameObject.SetActive(visible);
             if (visible)
             {
-                vessel.transform.localScale =
-                    vesselBaseScale * Mathf.Max(0.02f, visibility);
+                vessel.transform.localScale = vesselBaseScale;
                 if (frame.DrinkLift > 0f)
                 {
                     BarDrinkServicePose counter =
@@ -790,7 +794,23 @@ namespace BarPromenade
                 }
                 else
                 {
-                    serviceView.SetActiveVesselAtCounter();
+                    // The bartender slides the vessel in flat along
+                    // the counter from past the left edge of the
+                    // seated frame; VesselVisibility is the slide.
+                    BarDrinkServicePose counter =
+                        servicePlan.VesselCounterPose;
+                    float slide = Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        visibility);
+                    serviceView.SetActiveVesselLocalPose(
+                        new BarDrinkServicePose(
+                            Vector3.Lerp(
+                                counter.Position +
+                                VesselSlideEntryOffset,
+                                counter.Position,
+                                slide),
+                            counter.Rotation));
                 }
 
                 serviceView.SetFillProgress(frame.VesselFill);
