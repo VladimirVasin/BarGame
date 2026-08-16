@@ -177,6 +177,26 @@
       "value": "E — закончить чистку"
     },
     {
+      "key": "bar.district.oldtown",
+      "value": "Бар Старого города"
+    },
+    {
+      "key": "bar.district.residential",
+      "value": "«Огонёк»"
+    },
+    {
+      "key": "interaction.jukebox",
+      "value": "E — музыкальный автомат"
+    },
+    {
+      "key": "bar.district.industrial",
+      "value": "Бар после смены"
+    },
+    {
+      "key": "bar.district.nightlife",
+      "value": "Бар Ночного района"
+    },
+    {
       "key": "interaction.open_refrigerator",
       "value": "E — открыть холодильник"
     },

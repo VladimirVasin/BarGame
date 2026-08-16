@@ -59,11 +59,15 @@ namespace BarPromenade
         {
             Camera camera = EnsureCamera(new Color(0.09f, 0.045f, 0.035f));
             SetPostProcessing(camera, true);
+            // The Home readability rule, tuned darker: the bar stays
+            // the moodiest interior, but the ambient floor keeps the
+            // hall and its guests legible between the lamp pools and
+            // a softer shadow lets the directional act as fill.
             ConfigureDirectionalLighting(
                 new Color(0.92f, 0.82f, 0.72f),
-                0.72f,
-                new Color(0.11f, 0.055f, 0.045f),
-                0.72f);
+                0.95f,
+                new Color(0.28f, 0.20f, 0.17f),
+                0.42f);
 
             RenderSettings.fog = false;
             RenderSettings.reflectionIntensity = 0.65f;

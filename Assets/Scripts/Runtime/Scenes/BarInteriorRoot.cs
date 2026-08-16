@@ -149,7 +149,8 @@ namespace BarPromenade
             Layout = BarInteriorLayoutPlanner.Generate(
                 GameSessionState.CitySeed,
                 layoutBarId,
-                ActiveActivity);
+                ActiveActivity,
+                GameSessionState.ActiveBarDistrict);
             ReportPhase("layout_generation", phaseTimer);
             ReportLayout(Layout);
 
@@ -283,6 +284,11 @@ namespace BarPromenade
             Atmosphere =
                 atmosphereObject.AddComponent<BarInteriorAtmosphere>();
 
+            // The district identity owns how the pendants burn: the
+            // Residential bar runs a step warmer and dimmer — the
+            // cheap incandescent bulbs of a bar for people without
+            // money — while the other identities keep today's amber.
+            BarDistrictIdentity identity = Layout.DistrictIdentity;
             var lights = new List<BarPracticalLightSpec>(
                 Layout.LightAnchors.Count);
             for (int index = 0;
@@ -291,13 +297,23 @@ namespace BarPromenade
             {
                 BarInteriorLightAnchor anchor =
                     Layout.LightAnchors[index];
+                bool pendant =
+                    anchor.Kind ==
+                    BarInteriorLightKind.CounterPendant;
+                Color color = pendant
+                    ? identity.PendantColor
+                    : anchor.Color;
+                float intensity = pendant
+                    ? anchor.Intensity *
+                      identity.PendantIntensityScale
+                    : anchor.Intensity;
                 lights.Add(new BarPracticalLightSpec(
                     anchor.Id,
                     anchor.Position,
                     anchor.Direction,
-                    anchor.Color,
+                    color,
                     anchor.IsSpot ? LightType.Spot : LightType.Point,
-                    anchor.Intensity,
+                    intensity,
                     anchor.Range,
                     anchor.SpotAngle));
             }

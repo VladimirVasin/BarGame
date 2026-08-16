@@ -6,6 +6,99 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-16 — Booth seating, booth scale and the jukebox move
+
+- Three placement bugs fixed together. The seated-pair anchors sat
+  at x −8.25/−8.75 — inside the booth tables (−8.77..−7.59) or the
+  gap beside the bench (−10.64..−8.92) — and their z values missed
+  the authored booth centers by up to 1.3 m; the pairs now sit ON
+  the bench (x −9.7, z = booth center ± 0.55) facing the table.
+- The booths themselves were furniture for giants: seat depth
+  1.72 m and a 1.55 m back, with the cushion topping out at 0.77
+  against the guests' 0.46 seat height. Now: one-seat-deep bench
+  (0.78), banquette back (0.95), cushion top at ~0.47 so seated
+  pelvises actually rest on it.
+- The jukebox had been planted at (−9.72, 3.15) — the center of
+  booth-3's footprint, unreachable inside the bench. It moved to
+  the front wall east of the entrance (6.4, −6.78), rotated to face
+  the hall, with its approach asserted inside walkable bounds.
+- Verification: bar layout planner + surface suites `22/22`, bar
+  smoke `1/1`; captures (removed after use) show pairs seated on
+  the cushions at the tables and the glowing jukebox free-standing
+  and approachable by the entrance.
+
+## 2026-08-16 — Bar hall relight: the readability pass
+
+- The first relight was too timid; the hall floor still sank to
+  black. Three compounding causes fixed decisively: the bar's own
+  post grade ran the same trap the Home grade once did (negative
+  exposure −0.05 under contrast +9 — now +0.30 over contrast 5,
+  vignette eased), the scene ambient/fill was shy (ambient to
+  `(0.28, 0.20, 0.17)`, directional `0.72 → 0.95` at shadow
+  strength `0.42`), and the floor albedo was a 5% mirror of nothing
+  (`0.095 → 0.14` red-brown, worn-plank sheet regenerated with the
+  new tint, compensation `1.485 → 1.4575`).
+- Verification: bar surface + identity EditMode `9/9`, bar smoke
+  and drink-service integration green, and the Home atmosphere
+  fixture re-proved `2/2` standalone (its two batch failures were
+  audio-listener log leakage between scene loads, not lighting).
+  Before/after captures (removed after use): the plank floor now
+  carries the pendant pools, wallpaper walls and every guest read
+  across the hall, and the noir palette survives.
+
+## 2026-08-16 — «Огонёк»: the Residential bar authored
+
+- The bar by the hero's home has a name: «Огонёк» ("The Ogonyok"),
+  replacing the literal placeholder. It is the first fully authored
+  district identity — a bar for people without money.
+- Texturing: `tools/build-bar-textures.py` emits four validated
+  sheets entirely on existing home grammars (trodden planks, old
+  wallpaper, tired dark veneer, upholstery rubbed to the weave);
+  `BarSurfaceAppearance` (salt 4000) applies them and
+  `BarInteriorWorldBuilder` dresses the floor, all five walls, the
+  counter and its panels, the backbar, booth bases/cushions/backs
+  and the stage — but only when the identity asks for the Worn
+  surface set. Other bars keep flat tints untouched (asserted).
+- Lighting: the bar scene gets the Home readability rule tuned
+  darker (ambient floor ~×1.8, shadow strength 0.72 → 0.52) and the
+  counter pendants now burn through the district identity — the
+  «Огонёк» runs its bulbs a step warmer and 10% dimmer; the other
+  identities keep the exact authored amber.
+- New furniture: the coin jukebox by the stage in every bar — arched
+  corpus, glowing amber panel, two glow tubes, speaker grille and a
+  key row, with `BarJukeboxInteraction` as the interactive stub
+  (prompt, use counter, panel flash, confirm cue; track selection
+  over `BarMusicPlayer` is a later pass).
+- Verification: bar surface contract, district identity and
+  localization suites `16/16`; bar smoke + drink service
+  integration `2/2`; temporary captures (removed after use) show
+  the wallpaper walls, warm dim pendants, seated booth guests and
+  the glowing jukebox with a patron standing at it.
+
+## 2026-08-16 — Bar district split: the technical base
+
+- The plumbing for per-district bar identities, values deliberately
+  unchanged until the art passes author real differences.
+  `BarDistrictIdentityCatalog` serves a `BarDistrictIdentity` per
+  bar district (mood per the zone art bible — Memory / Household /
+  AfterShift / Escape — display-name localization key, palette and
+  light hooks, crowd density scale); every other district
+  normalizes to the Nightlife fallback the direct-loaded bar has
+  always effectively been.
+- The district flows the whole way: `BuildingLot.District` →
+  `BarEntrance.Configure` → `GameSessionState.EnterBar` (new
+  `ActiveBarDistrict`, reset with the other bar state on
+  home/supermarket entry and new game) →
+  `BarInteriorLayoutPlanner.Generate(..., district)` →
+  `BarInteriorLayoutPlan.District` / `.DistrictIdentity`, with the
+  layout validator refusing non-bar districts. Four
+  `bar.district.*` name keys landed in both localization catalogs.
+- Verification: `BarDistrictIdentityTests` (catalog coverage and
+  distinctness, normalization, plan threading incl. the legacy
+  entry point, session lifecycle) plus localization and bar layout
+  suites passed `28/28`; the bar smoke passed `1/1` on the
+  fallback path.
+
 ## 2026-08-16 — The bartender pours: service pass landed
 
 - Pass 3 of the bartender spec. The bottle never flies to the hero's

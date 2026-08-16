@@ -171,16 +171,19 @@ namespace BarPromenade
             bloom.threshold.Override(1.05f);
             bloom.scatter.Override(0.56f);
 
+            // The Home lesson again: negative exposure over heavy
+            // contrast crushed the hall floor to black. The grade now
+            // lifts, and darkness stays the job of the palette.
             ColorAdjustments color =
                 runtimeProfile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(-0.05f);
-            color.contrast.Override(9f);
+            color.postExposure.Override(0.30f);
+            color.contrast.Override(5f);
             color.saturation.Override(-4f);
             color.colorFilter.Override(
                 new Color(1f, 0.94f, 0.88f, 1f));
 
             Vignette vignette = runtimeProfile.Add<Vignette>(true);
-            vignette.intensity.Override(0.17f);
+            vignette.intensity.Override(0.14f);
             vignette.smoothness.Override(0.45f);
 
             FilmGrain grain = runtimeProfile.Add<FilmGrain>(true);

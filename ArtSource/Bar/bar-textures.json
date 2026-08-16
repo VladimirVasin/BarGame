@@ -1,0 +1,119 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "BarWornPlankAlbedo",
+      "grammar": "planks",
+      "resourcePath": "Bar/Textures/BarWornPlankAlbedo",
+      "meanLinearLuminance": 0.500272,
+      "albedoCompensation": 1.4575,
+      "brightnessError": 0.010892,
+      "metersPerTile": 1.5,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "exposure": 0.786747,
+      "tints": {
+        "BarInteriorWorldBuilder.Floor": [
+          0.14,
+          0.06,
+          0.042
+        ],
+        "BarInteriorWorldBuilder.Wood": [
+          0.16,
+          0.055,
+          0.028
+        ]
+      },
+      "edgeDelta": 2.3662,
+      "seamRatio": 1.0939,
+      "contrast": 68,
+      "channelRatio": 1.0657,
+      "sha256": "249583B161D6EC5D98E4AF2B204195560984F3042AF9380F3F56C83B62E81F6E"
+    },
+    {
+      "key": "BarWallpaperAlbedo",
+      "grammar": "wallpaper",
+      "resourcePath": "Bar/Textures/BarWallpaperAlbedo",
+      "meanLinearLuminance": 0.500304,
+      "albedoCompensation": 1.433,
+      "brightnessError": 0.053819,
+      "metersPerTile": 1.8,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.773395,
+      "tints": {
+        "BarInteriorWorldBuilder.Wall": [
+          0.29,
+          0.075,
+          0.075
+        ],
+        "BarInteriorWorldBuilder.WallPanel": [
+          0.13,
+          0.042,
+          0.032
+        ]
+      },
+      "edgeDelta": 3.5454,
+      "seamRatio": 1.7125,
+      "contrast": 61,
+      "channelRatio": 1.0559,
+      "sha256": "CF7E3B56F4CB63E8129E7110179F750CD2088DD94579151335B3EF85F4AABAD6"
+    },
+    {
+      "key": "BarDarkWoodAlbedo",
+      "grammar": "veneer",
+      "resourcePath": "Bar/Textures/BarDarkWoodAlbedo",
+      "meanLinearLuminance": 0.500232,
+      "albedoCompensation": 1.4495,
+      "brightnessError": 0.000126,
+      "metersPerTile": 1.1,
+      "smoothness": 0.12,
+      "metallic": 0.0,
+      "exposure": 0.668671,
+      "tints": {
+        "BarInteriorWorldBuilder.DarkWood": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "BarInteriorWorldBuilder.Wood": [
+          0.16,
+          0.055,
+          0.028
+        ]
+      },
+      "edgeDelta": 1.7954,
+      "seamRatio": 0.971,
+      "contrast": 57,
+      "channelRatio": 1.0414,
+      "sha256": "BD9E8CE2AFAD65AB469D6EE5702D161C67C2231D5E1AA97A146BB4E228217CDC"
+    },
+    {
+      "key": "BarWornLeatherAlbedo",
+      "grammar": "weave",
+      "resourcePath": "Bar/Textures/BarWornLeatherAlbedo",
+      "meanLinearLuminance": 0.500343,
+      "albedoCompensation": 1.396,
+      "brightnessError": 0.000341,
+      "metersPerTile": 0.9,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.803762,
+      "tints": {
+        "BarInteriorWorldBuilder.Leather": [
+          0.3,
+          0.035,
+          0.045
+        ]
+      },
+      "edgeDelta": 4.5252,
+      "seamRatio": 1.0228,
+      "contrast": 60,
+      "channelRatio": 1.0412,
+      "sha256": "4AF39B259ED3B13BD314F8A679217292EECF7588E5E731BD20262865FD8D37DE"
+    }
+  ]
+}

@@ -177,6 +177,26 @@
       "value": "E — finish brushing"
     },
     {
+      "key": "bar.district.oldtown",
+      "value": "Old Town bar"
+    },
+    {
+      "key": "bar.district.residential",
+      "value": "The Ogonyok"
+    },
+    {
+      "key": "interaction.jukebox",
+      "value": "E — jukebox"
+    },
+    {
+      "key": "bar.district.industrial",
+      "value": "After-shift bar"
+    },
+    {
+      "key": "bar.district.nightlife",
+      "value": "Night district bar"
+    },
+    {
       "key": "interaction.open_refrigerator",
       "value": "E — open refrigerator"
     },

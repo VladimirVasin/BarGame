@@ -7,8 +7,10 @@ namespace BarPromenade
 {
     public static class BarInteriorWorldBuilder
     {
+        // Reflective enough to catch the pendant pools: the old
+        // 0.095 floor was a 5% mirror of nothing.
         private static readonly Color FloorColor =
-            new Color(0.095f, 0.035f, 0.024f);
+            new Color(0.14f, 0.06f, 0.042f);
         private static readonly Color WallColor =
             new Color(0.29f, 0.075f, 0.075f);
         private static readonly Color WallPanelColor =
@@ -23,6 +25,33 @@ namespace BarPromenade
             new Color(0.86f, 0.46f, 0.14f);
         private static readonly Color TealGlassColor =
             new Color(0.055f, 0.18f, 0.19f);
+
+        /// <summary>
+        /// Resurfaces one primitive with a packaged worn sheet when
+        /// the plan's district identity asks for the worn set — the
+        /// Residential bar for people without money. Other identities
+        /// keep their flat tints untouched.
+        /// </summary>
+        private static GameObject ApplyWornSurface(
+            GameObject part,
+            BarInteriorLayoutPlan plan,
+            BarSurfaceKind kind,
+            SurfaceProjection projection,
+            Color sourceTint)
+        {
+            if (part != null &&
+                plan.DistrictIdentity.SurfaceSet ==
+                BarSurfaceSetKind.Worn)
+            {
+                BarSurfaceAppearance.Apply(
+                    part.GetComponent<Renderer>(),
+                    kind,
+                    projection,
+                    sourceTint);
+            }
+
+            return part;
+        }
 
         public static Transform Build(
             Transform parent,
@@ -48,6 +77,7 @@ namespace BarPromenade
             BuildBackbar(room, plan);
             BuildBooths(room, plan);
             BuildStage(room, plan);
+            BuildJukebox(room);
             BuildActivityBay(room);
             BuildSocialTables(room, plan);
             BuildEntranceDress(room, plan);
@@ -71,11 +101,16 @@ namespace BarPromenade
             float frontSegmentOffset =
                 doorWidth * 0.5f + frontSegmentWidth * 0.5f;
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Floor",
-                room,
-                new Vector3(0f, -0.12f, 0f),
-                new Vector3(width, 0.24f, depth),
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Floor",
+                    room,
+                    new Vector3(0f, -0.12f, 0f),
+                    new Vector3(width, 0.24f, depth),
+                    FloorColor),
+                plan,
+                BarSurfaceKind.WornPlank,
+                SurfaceProjection.BoxXZ,
                 FloorColor);
             RuntimePrimitiveFactory.CreateBox(
                 "Ceiling",
@@ -84,23 +119,38 @@ namespace BarPromenade
                 new Vector3(width, 0.20f, depth),
                 new Color(0.045f, 0.021f, 0.020f),
                 false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Back Wall",
-                room,
-                new Vector3(0f, height * 0.5f, depth * 0.5f),
-                new Vector3(width, height, wall),
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Back Wall",
+                    room,
+                    new Vector3(0f, height * 0.5f, depth * 0.5f),
+                    new Vector3(width, height, wall),
+                    WallColor),
+                plan,
+                BarSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY,
                 WallColor);
-            RuntimePrimitiveFactory.CreateBox(
-                "Left Wall",
-                room,
-                new Vector3(-width * 0.5f, height * 0.5f, 0f),
-                new Vector3(wall, height, depth),
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Left Wall",
+                    room,
+                    new Vector3(-width * 0.5f, height * 0.5f, 0f),
+                    new Vector3(wall, height, depth),
+                    WallColor),
+                plan,
+                BarSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY,
                 WallColor);
-            RuntimePrimitiveFactory.CreateBox(
-                "Right Wall",
-                room,
-                new Vector3(width * 0.5f, height * 0.5f, 0f),
-                new Vector3(wall, height, depth),
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Right Wall",
+                    room,
+                    new Vector3(width * 0.5f, height * 0.5f, 0f),
+                    new Vector3(wall, height, depth),
+                    WallColor),
+                plan,
+                BarSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxZY,
                 WallColor);
             RuntimePrimitiveFactory.CreateBox(
                 "Front Wall Left",
@@ -111,14 +161,25 @@ namespace BarPromenade
                     -depth * 0.5f),
                 new Vector3(frontSegmentWidth, height, wall),
                 WallColor);
-            RuntimePrimitiveFactory.CreateBox(
-                "Front Wall Right",
-                room,
-                new Vector3(
-                    frontSegmentOffset,
-                    height * 0.5f,
-                    -depth * 0.5f),
-                new Vector3(frontSegmentWidth, height, wall),
+            ApplyWornSurface(
+                room.Find("Front Wall Left").gameObject,
+                plan,
+                BarSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY,
+                WallColor);
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Front Wall Right",
+                    room,
+                    new Vector3(
+                        frontSegmentOffset,
+                        height * 0.5f,
+                        -depth * 0.5f),
+                    new Vector3(frontSegmentWidth, height, wall),
+                    WallColor),
+                plan,
+                BarSurfaceKind.Wallpaper,
+                SurfaceProjection.BoxXY,
                 WallColor);
 
             RuntimePrimitiveFactory.CreateBox(
@@ -222,11 +283,16 @@ namespace BarPromenade
         {
             Vector3 counter = plan.CounterPosition;
             Vector3 size = plan.CounterSize;
-            RuntimePrimitiveFactory.CreateBox(
-                "Bar Counter",
-                room,
-                counter,
-                size,
+            ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Bar Counter",
+                    room,
+                    counter,
+                    size,
+                    DarkWoodColor),
+                plan,
+                BarSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 DarkWoodColor);
             RuntimePrimitiveFactory.CreateBox(
                 "Counter Top",
@@ -262,10 +328,15 @@ namespace BarPromenade
                     new Vector3(panelWidth - 0.11f, size.y - 0.20f, 0.08f)));
             }
 
-            SetNoShadows(RuntimePrimitiveFactory.CreateCombinedBoxes(
-                "Counter Front Panels",
-                room,
-                panels,
+            SetNoShadows(ApplyWornSurface(
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Counter Front Panels",
+                    room,
+                    panels,
+                    WoodColor),
+                plan,
+                BarSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 WoodColor));
 
             float[] stoolXs = { -4.25f, -2.55f, -0.85f, 0.85f, 2.55f, 4.25f };
@@ -335,6 +406,12 @@ namespace BarPromenade
                     footprint.Bounds.width,
                     footprint.Height,
                     footprint.Bounds.height),
+                DarkWoodColor);
+            ApplyWornSurface(
+                room.Find("Backbar Cabinet").gameObject,
+                plan,
+                BarSurfaceKind.DarkWood,
+                SurfaceProjection.BoxXY,
                 DarkWoodColor);
 
             var mirrorPanels = new List<Bounds>();
@@ -473,28 +550,48 @@ namespace BarPromenade
                 boothIndex++;
                 Rect bounds = footprint.Bounds;
                 float z = bounds.center.y;
-                float baseX = bounds.xMin + 0.88f;
+                // Human proportions on the guest seat height: the
+                // cushion tops out at ~0.47 so a seated patron's
+                // pelvis (SeatHeight 0.46) actually rests on it, the
+                // bench is one seat deep and the back is a banquette,
+                // not a wall.
+                float baseX = -9.86f;
                 float tableX = bounds.xMax - 0.59f;
-                float backX = bounds.xMin + 0.12f;
+                float backX = -10.32f;
                 float depth = bounds.height - 0.02f;
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Booth Base {boothIndex}",
-                    room,
-                    new Vector3(baseX, 0.31f, z),
-                    new Vector3(1.72f, 0.62f, depth),
+                ApplyWornSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        $"Booth Base {boothIndex}",
+                        room,
+                        new Vector3(baseX, 0.20f, z),
+                        new Vector3(0.78f, 0.40f, depth),
+                        DarkWoodColor),
+                    plan,
+                    BarSurfaceKind.DarkWood,
+                    SurfaceProjection.BoxXY,
                     DarkWoodColor);
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Booth Cushion {boothIndex}",
-                    room,
-                    new Vector3(baseX + 0.10f, 0.68f, z),
-                    new Vector3(1.70f, 0.18f, depth - 0.10f),
-                    LeatherColor,
-                    false);
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Booth Back {boothIndex}",
-                    room,
-                    new Vector3(backX, 1.32f, z),
-                    new Vector3(0.24f, 1.55f, bounds.height),
+                ApplyWornSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        $"Booth Cushion {boothIndex}",
+                        room,
+                        new Vector3(baseX + 0.02f, 0.435f, z),
+                        new Vector3(0.76f, 0.09f, depth - 0.10f),
+                        LeatherColor,
+                        false),
+                    plan,
+                    BarSurfaceKind.WornLeather,
+                    SurfaceProjection.BoxXZ,
+                    LeatherColor);
+                ApplyWornSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        $"Booth Back {boothIndex}",
+                        room,
+                        new Vector3(backX, 0.90f, z),
+                        new Vector3(0.18f, 0.95f, bounds.height),
+                        LeatherColor),
+                    plan,
+                    BarSurfaceKind.WornLeather,
+                    SurfaceProjection.BoxZY,
                     LeatherColor);
                 RuntimePrimitiveFactory.CreateBox(
                     $"Booth Table Top {boothIndex}",
@@ -534,6 +631,12 @@ namespace BarPromenade
                     bounds.width,
                     footprint.Height,
                     bounds.height),
+                DarkWoodColor);
+            ApplyWornSurface(
+                room.Find("Small Stage").gameObject,
+                plan,
+                BarSurfaceKind.WornPlank,
+                SurfaceProjection.BoxXZ,
                 DarkWoodColor);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Left Curtain",
@@ -1075,6 +1178,104 @@ namespace BarPromenade
                     CityNightResources.EmissiveMaterial,
                     false);
             }
+        }
+
+        /// <summary>
+        /// The coin jukebox against the west wall south of the stage:
+        /// arched corpus, warm glowing front, two glow tubes and a
+        /// speaker grille — with the interactive stub wired to a
+        /// station trigger the way the counter station is.
+        /// </summary>
+        private static void BuildJukebox(Transform room)
+        {
+            // Against the front wall east of the entrance — open
+            // floor on the walkable side, glowing face turned into
+            // the hall. (The first placement sat inside booth-3's
+            // bench and could not be reached.)
+            var jukebox = new GameObject("Bar Jukebox");
+            jukebox.transform.SetParent(room, false);
+            jukebox.transform.localPosition =
+                new Vector3(6.4f, 0f, -6.78f);
+            jukebox.transform.localRotation =
+                Quaternion.Euler(0f, -90f, 0f);
+
+            Vector3 origin = Vector3.zero;
+            RuntimePrimitiveFactory.CreateBox(
+                "Jukebox Corpus",
+                jukebox.transform,
+                origin + new Vector3(0f, 0.72f, 0f),
+                new Vector3(0.56f, 1.44f, 0.92f),
+                new Color(0.24f, 0.075f, 0.045f));
+            RuntimePrimitiveFactory.CreateBox(
+                "Jukebox Crown",
+                jukebox.transform,
+                origin + new Vector3(-0.03f, 1.56f, 0f),
+                new Vector3(0.50f, 0.26f, 0.78f),
+                new Color(0.30f, 0.10f, 0.055f),
+                false);
+            Color panelColor = new Color(1.35f, 0.78f, 0.30f, 1f);
+            GameObject panel = RuntimePrimitiveFactory.CreateBox(
+                "Jukebox Glow Panel",
+                jukebox.transform,
+                origin + new Vector3(0.285f, 1.12f, 0f),
+                new Vector3(0.035f, 0.34f, 0.62f),
+                panelColor,
+                CityNightResources.EmissiveMaterial,
+                false);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    $"Jukebox Glow Tube {side}",
+                    jukebox.transform,
+                    origin + new Vector3(
+                        0.27f,
+                        0.86f,
+                        side * 0.40f),
+                    new Vector3(0.03f, 1.15f, 0.05f),
+                    new Color(1.30f, 0.34f, 0.42f, 1f),
+                    CityNightResources.EmissiveMaterial,
+                    false);
+            }
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Jukebox Grille",
+                jukebox.transform,
+                origin + new Vector3(0.275f, 0.42f, 0f),
+                new Vector3(0.03f, 0.42f, 0.60f),
+                new Color(0.055f, 0.035f, 0.030f),
+                false);
+            for (int index = 0; index < 4; index++)
+            {
+                RuntimePrimitiveFactory.CreateBox(
+                    $"Jukebox Key {index + 1}",
+                    jukebox.transform,
+                    origin + new Vector3(
+                        0.29f,
+                        0.78f,
+                        -0.21f + index * 0.14f),
+                    new Vector3(0.025f, 0.05f, 0.09f),
+                    new Color(0.62f, 0.58f, 0.48f),
+                    false);
+            }
+
+            BoxCollider solid =
+                jukebox.AddComponent<BoxCollider>();
+            solid.center = new Vector3(0f, 0.85f, 0f);
+            solid.size = new Vector3(0.62f, 1.75f, 0.98f);
+
+            var trigger = new GameObject("Jukebox Trigger");
+            trigger.transform.SetParent(jukebox.transform, false);
+            trigger.transform.localPosition =
+                new Vector3(0.75f, 0.9f, 0f);
+            BoxCollider triggerCollider =
+                trigger.AddComponent<BoxCollider>();
+            triggerCollider.isTrigger = true;
+            triggerCollider.size = new Vector3(1.2f, 1.8f, 1.5f);
+            BarJukeboxInteraction interaction =
+                trigger.AddComponent<BarJukeboxInteraction>();
+            interaction.Initialize(
+                panel.GetComponent<Renderer>(),
+                panelColor);
         }
 
         private static void BuildStool(
