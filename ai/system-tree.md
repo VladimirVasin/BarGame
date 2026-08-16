@@ -202,7 +202,7 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
-        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard floodlight
+        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard floodlight, carpet rack and babushka stances
         CityPointOfInterestSurfaceAppearance.cs  four scripted POI albedos (paving/metal/cloth/timber) via MPBs
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
@@ -278,6 +278,10 @@ Assets/
         YardWheelchairActor.cs       owns distance along the ring and applies the pose
         YardWheelchairFactory.cs     one instance, passivity re-checked at instantiation
         YardWheelchairProvider.cs    the only serialized reference to the staged prefab
+        DryingYardBabushkaPlan.cs    three authored stances off the drying yard descriptor
+        DryingYardBabushkaPresentation.cs  one-clip manual PlayableGraph + role prop enabling
+        DryingYardBabushkaFactory.cs three instances, passivity re-checked at instantiation
+        DryingYardBabushkaProvider.cs  the only serialized reference to the staged prefab
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

@@ -27,7 +27,9 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
         private const string PipebackRollerDesignId =
             "pipeback_roller_v1";
-        private const int StagedLocomotionClipCount = 2;
+        // The Pipeback Roller and the Yard Babushka contribute two
+        // staged loops each.
+        private const int StagedLocomotionClipCount = 4;
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -154,6 +156,8 @@ namespace BarPromenade.Tests.EditMode
                     "HelmetLampHop",
                     "PipebackIdle",
                     "PipebackRoll",
+                    "BabushkaSmoke",
+                    "BabushkaBeat",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",
@@ -162,7 +166,8 @@ namespace BarPromenade.Tests.EditMode
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
             // Production owns two clips per catalog design and its declared
-            // seated loops; the isolated Pipeback contributes two more.
+            // seated loops; the isolated Pipeback and Yard Babushka
+            // contribute two more each.
             int seatedCount = CityPedestrianResources.Archetypes
                 .Count(archetype => archetype.CanRideBus);
             Assert.That(

@@ -25,6 +25,7 @@ namespace BarPromenade.Tests.EditMode
                 Cloth[] cloths =
                     root.GetComponentsInChildren<Cloth>(true);
                 int canopyRagCount = 0;
+                int carpetCount = 0;
                 for (int index = 0; index < cloths.Length; index++)
                 {
                     Assert.That(
@@ -45,6 +46,12 @@ namespace BarPromenade.Tests.EditMode
                             Is.EqualTo("Residential Drying Yard"),
                             "Unexpected cloth outside the canopy and " +
                             "the drying yard.");
+                        if (cloths[index].name.StartsWith(
+                                "Beaten Carpet"))
+                        {
+                            carpetCount++;
+                        }
+
                         continue;
                     }
 
@@ -60,10 +67,14 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThanOrEqualTo(1),
                     "The broken canopy must hang cloth rags.");
 
+                // The heavy hung carpets are simulated but deliberately
+                // outside the weather wind; everything else registers.
                 Assert.That(
                     CityClothWindRegistry.Count - registeredBefore,
-                    Is.EqualTo(cloths.Length),
-                    "Every rag registers for the weather wind.");
+                    Is.EqualTo(cloths.Length - carpetCount),
+                    "Every rag and laundry piece registers for the " +
+                    "weather wind.");
+                Assert.That(carpetCount, Is.EqualTo(2));
             }
             finally
             {

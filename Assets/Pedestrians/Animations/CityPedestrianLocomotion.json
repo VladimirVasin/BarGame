@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 16,
+  "clip_count": 18,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -346,7 +346,47 @@
       "footrest_min_clearance_m": 0.268367,
       "rim_hand_max_distance_m": 0.085905,
       "seat_contact_max_gap_m": 0.022731
+    },
+    {
+      "name": "BabushkaSmoke",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 4.0,
+      "frame_start": 0,
+      "frame_end": 96,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "hunched strolling stance, cigarette held ready in the right hand",
+      "gait": "four shuffling steps under emphatic left-arm talk, one drag per lap",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "BabushkaBeat",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "hunched working stance squared to the hung carpet",
+      "gait": "overhead wind-up, sharp forward beater strike and a rocking recovery",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "a9241ae176b48862934211ed7f399aee469000a60bb1c7eb0c867e7865062cbd"
+  "build_signature": "e2a96c3d5f641bfd08c7e1d2cae8a8e944c6c80f33fbf0e383540869b6084ac6"
 }

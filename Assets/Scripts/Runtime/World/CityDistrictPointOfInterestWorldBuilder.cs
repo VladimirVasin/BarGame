@@ -31,6 +31,31 @@ namespace BarPromenade
         private const float DryingBenchWidth = 2.40f;
         private const float DryingBenchSeatThickness = 0.18f;
         private const float DryingBenchDepth = 0.58f;
+        // The Soviet carpet-beating rack on the drying yard's west
+        // strip, upwind of the hanging wash. The two carpet-beating
+        // babushkas stand on opposite sides of it, each squared to her
+        // own hung carpet; the smoking one watches from the east edge.
+        // Shared between the visual recipe and
+        // <see cref="TryDescribeBabushkaStances"/> so the NPCs always
+        // face the carpets that were actually drawn.
+        private const float CarpetRackX = -6.05f;
+        private const float CarpetRackBarHeight = 1.62f;
+        private const float CarpetRackZSouth = -1.35f;
+        private const float CarpetRackZNorth = 1.55f;
+        private const float CarpetSouthZ = -0.55f;
+        private const float CarpetNorthZ = 0.75f;
+        private static readonly Vector3 BeaterSouthStanceLocal =
+            new Vector3(-5.28f, 0f, CarpetSouthZ);
+        private static readonly Vector3 BeaterNorthStanceLocal =
+            new Vector3(-6.82f, 0f, CarpetNorthZ);
+        // The smoker's stroll corridor: between the rack and the west
+        // drying-frame posts, clear of every hung cloth row, passing
+        // both beaters. She walks it back and forth, gesturing.
+        private static readonly Vector3 SmokerPathStartLocal =
+            new Vector3(-3.95f, 0f, -2.40f);
+        private static readonly Vector3 SmokerPathEndLocal =
+            new Vector3(-3.95f, 0f, 2.60f);
+
         private const float IslandBenchX = 2.85f;
         private const float IslandBenchSeatCenterY = 0.66f;
         private const float IslandBenchZ = 2.55f;
@@ -62,6 +87,10 @@ namespace BarPromenade
             new Color(0.225f, 0.350f, 0.375f);
         private static readonly Color ResidentialPatch =
             new Color(0.600f, 0.500f, 0.285f);
+        private static readonly Color CarpetOxblood =
+            new Color(0.360f, 0.135f, 0.120f);
+        private static readonly Color CarpetTeal =
+            new Color(0.140f, 0.230f, 0.220f);
 
         // The drying yard's pole floodlight: a cold near-white communal
         // fixture on the Residential cool axis, scaled by the shared
@@ -318,6 +347,110 @@ namespace BarPromenade
                 descriptor.Center.y + PublicGroundHeight * 0.5f,
                 faceDirection);
             return true;
+        }
+
+        /// <summary>
+        /// Describes the three authored babushka stances the drying
+        /// yard carries, in world space, mirroring the same recipe
+        /// transform the city build applies — exactly like
+        /// <see cref="TryDescribeBenchSeat"/>. The two beater stances
+        /// face their own hung carpet across the rack; the smoker's
+        /// stance is the start of her stroll corridor and
+        /// <paramref name="smokerPathEnd"/> its far end. Every other
+        /// kind reports none.
+        /// </summary>
+        public static bool TryDescribeBabushkaStances(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityDryingYardNpcStance beaterSouth,
+            out CityDryingYardNpcStance beaterNorth,
+            out CityDryingYardNpcStance smoker,
+            out Vector3 smokerPathEnd)
+        {
+            if (descriptor.Kind !=
+                CityDistrictPointOfInterestKind.ResidentialDryingYard)
+            {
+                beaterSouth = default;
+                beaterNorth = default;
+                smoker = default;
+                smokerPathEnd = default;
+                return false;
+            }
+
+            Quaternion recipeRotation = Quaternion.LookRotation(
+                ResolveForward(descriptor),
+                Vector3.up);
+            float horizontalScale =
+                ResolveHorizontalScale(descriptor.PublicBounds);
+            float groundY = descriptor.Center.y +
+                PublicGroundHeight * 0.5f;
+            beaterSouth = CreateStance(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                groundY,
+                BeaterSouthStanceLocal,
+                Vector3.left);
+            beaterNorth = CreateStance(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                groundY,
+                BeaterNorthStanceLocal,
+                Vector3.right);
+            smokerPathEnd = ToStanceWorld(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                groundY,
+                SmokerPathEndLocal);
+            Vector3 smokerStart = ToStanceWorld(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                groundY,
+                SmokerPathStartLocal);
+            Vector3 towardEnd = smokerPathEnd - smokerStart;
+            towardEnd.y = 0f;
+            smoker = new CityDryingYardNpcStance(
+                smokerStart,
+                towardEnd.normalized);
+            return true;
+        }
+
+        private static CityDryingYardNpcStance CreateStance(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            Quaternion recipeRotation,
+            float horizontalScale,
+            float groundY,
+            Vector3 localPosition,
+            Vector3 localFacing)
+        {
+            return new CityDryingYardNpcStance(
+                ToStanceWorld(
+                    descriptor,
+                    recipeRotation,
+                    horizontalScale,
+                    groundY,
+                    localPosition),
+                (recipeRotation * localFacing).normalized);
+        }
+
+        private static Vector3 ToStanceWorld(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            Quaternion recipeRotation,
+            float horizontalScale,
+            float groundY,
+            Vector3 localPosition)
+        {
+            Vector3 worldPosition = descriptor.Center + recipeRotation *
+                new Vector3(
+                    localPosition.x * horizontalScale,
+                    0f,
+                    localPosition.z * horizontalScale);
+            return new Vector3(
+                worldPosition.x,
+                groundY,
+                worldPosition.z);
         }
 
         private static void BuildCitySite(
@@ -708,6 +841,7 @@ namespace BarPromenade
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);
 
             BuildDryingYardFloodlight(parent, colliders, homeExterior);
+            BuildDryingYardCarpetRack(parent, colliders, homeExterior);
 
             // The blanket used to carry an obstacle collider from its
             // static-box days; simulated cloth is something the hero
@@ -720,6 +854,224 @@ namespace BarPromenade
                     new Vector3(DryingBenchX, 0.38f, DryingBenchZ),
                     new Vector3(DryingBenchWidth, 0.76f, 0.62f));
             }
+        }
+
+        /// <summary>
+        /// The Soviet carpet-beating rack: two galvanized posts, one
+        /// crossbar and two carpets hung over it, on the west strip so
+        /// the beaten dust stays away from the drying wash. The rug
+        /// albedo comes from the shared Home pipeline — a hung carpet
+        /// is the same object indoors and out.
+        /// </summary>
+        private static void BuildDryingYardCarpetRack(
+            Transform parent,
+            bool colliders,
+            bool homeExterior)
+        {
+            AddBox(parent, "Carpet Rack Post South",
+                CarpetRackX, CarpetRackBarHeight * 0.5f, CarpetRackZSouth,
+                0.14f, CarpetRackBarHeight, 0.14f,
+                ResidentialFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            AddBox(parent, "Carpet Rack Post North",
+                CarpetRackX, CarpetRackBarHeight * 0.5f, CarpetRackZNorth,
+                0.14f, CarpetRackBarHeight, 0.14f,
+                ResidentialFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            AddBox(parent, "Carpet Rack Bar",
+                CarpetRackX, CarpetRackBarHeight,
+                (CarpetRackZSouth + CarpetRackZNorth) * 0.5f,
+                0.10f, 0.10f,
+                CarpetRackZNorth - CarpetRackZSouth + 0.14f,
+                ResidentialFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            if (homeExterior)
+            {
+                // The balcony vista keeps the carpets as cheap static
+                // boxes: at that distance they are a few pixels and
+                // the exterior scene runs no strike driver.
+                AddCarpet(parent, "Beaten Carpet South",
+                    CarpetSouthZ, 1.28f, 1.10f, CarpetOxblood,
+                    homeExterior);
+                AddCarpet(parent, "Beaten Carpet North",
+                    CarpetNorthZ, 1.12f, 0.92f, CarpetTeal,
+                    homeExterior);
+            }
+            else
+            {
+                // In the city each carpet is real simulated cloth
+                // pinned over the bar, so the babushka strikes ripple
+                // through it. Heavy pile: stiff, damped, deliberately
+                // outside the laundry's weather-wind registry.
+                AddCarpetCloth(parent, "Beaten Carpet South",
+                    CarpetSouthZ, 1.24f, 1.10f, CarpetOxblood,
+                    CityDryingYardCarpetRegistry.SouthCarpetId);
+                AddCarpetCloth(parent, "Beaten Carpet North",
+                    CarpetNorthZ, 1.08f, 0.92f, CarpetTeal,
+                    CityDryingYardCarpetRegistry.NorthCarpetId);
+            }
+
+            if (colliders)
+            {
+                AddObstacleCollider(
+                    parent,
+                    "Carpet Rack Post South Collider",
+                    new Vector3(
+                        CarpetRackX,
+                        CarpetRackBarHeight * 0.5f,
+                        CarpetRackZSouth),
+                    new Vector3(0.20f, CarpetRackBarHeight, 0.20f));
+                AddObstacleCollider(
+                    parent,
+                    "Carpet Rack Post North Collider",
+                    new Vector3(
+                        CarpetRackX,
+                        CarpetRackBarHeight * 0.5f,
+                        CarpetRackZNorth),
+                    new Vector3(0.20f, CarpetRackBarHeight, 0.20f));
+                AddObstacleCollider(
+                    parent,
+                    "Beaten Carpet South Collider",
+                    new Vector3(
+                        CarpetRackX,
+                        CarpetRackBarHeight - 0.60f,
+                        CarpetSouthZ),
+                    new Vector3(0.16f, 1.24f, 1.10f));
+                AddObstacleCollider(
+                    parent,
+                    "Beaten Carpet North Collider",
+                    new Vector3(
+                        CarpetRackX,
+                        CarpetRackBarHeight - 0.52f,
+                        CarpetNorthZ),
+                    new Vector3(0.16f, 1.08f, 0.92f));
+            }
+        }
+
+        /// <summary>
+        /// One simulated carpet: a heavy cloth panel pinned just over
+        /// the bar, textured with the shared Home rug albedo, plus a
+        /// small static fold cap over the bar itself. Registered so
+        /// the babushka strike driver can find it; deliberately not
+        /// wind-registered — a heavy pile carpet does not flap like
+        /// the laundry.
+        /// </summary>
+        private static void AddCarpetCloth(
+            Transform parent,
+            string name,
+            float z,
+            float height,
+            float width,
+            Color tint,
+            string carpetId)
+        {
+            GameObject panel = ClothPanelFactory.CreateHangingRag(
+                name,
+                parent,
+                new Vector3(CarpetRackX, CarpetRackBarHeight + 0.04f, z),
+                90f,
+                width,
+                height,
+                tint,
+                tornVariant: 0,
+                columns: 6,
+                rows: 6);
+            var renderer =
+                panel.GetComponent<SkinnedMeshRenderer>();
+            ApplyCarpetRugAppearance(renderer, tint, width, height);
+
+            Cloth cloth = panel.GetComponent<Cloth>();
+            cloth.stretchingStiffness = 1f;
+            cloth.bendingStiffness = 0.85f;
+            cloth.damping = 0.82f;
+            CityDryingYardCarpetRegistry.Register(carpetId, cloth);
+
+            GameObject foldCap = RuntimePrimitiveFactory.CreateBox(
+                name + " Fold",
+                parent,
+                new Vector3(CarpetRackX, CarpetRackBarHeight + 0.05f, z),
+                new Vector3(0.16f, 0.10f, width),
+                tint,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            HomeSurfaceAppearance.Apply(
+                foldCap.GetComponent<Renderer>(),
+                HomeSurfaceKind.Rug,
+                SurfaceProjection.BoxZY,
+                tint);
+        }
+
+        /// <summary>Rug albedo over a cloth panel's plain 0..1 UVs,
+        /// keeping the panel's shared two-sided material and matte
+        /// specular.</summary>
+        private static void ApplyCarpetRugAppearance(
+            Renderer renderer,
+            Color tint,
+            float widthMeters,
+            float heightMeters)
+        {
+            HomeSurfaceRecipe recipe =
+                HomeSurfaceAppearance.GetRecipe(HomeSurfaceKind.Rug);
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture(
+                Shader.PropertyToID("_BaseMap"),
+                HomeSurfaceAppearance.GetTexture(HomeSurfaceKind.Rug));
+            Color displayTint = HomeSurfaceAppearance.CreateDisplayTint(
+                tint,
+                HomeSurfaceKind.Rug);
+            properties.SetColor(
+                Shader.PropertyToID("_BaseColor"),
+                displayTint);
+            properties.SetColor(
+                Shader.PropertyToID("_Color"),
+                displayTint);
+            properties.SetVector(
+                Shader.PropertyToID("_BaseMap_ST"),
+                SurfaceAppearanceCore.CreateBaseMapTransform(
+                    renderer.transform,
+                    widthMeters,
+                    heightMeters,
+                    recipe.MetersPerTile,
+                    0.35f,
+                    6000));
+            properties.SetFloat(
+                Shader.PropertyToID("_Smoothness"),
+                0f);
+            properties.SetFloat(
+                Shader.PropertyToID("_Metallic"),
+                0f);
+            renderer.SetPropertyBlock(properties);
+        }
+
+        /// <summary>One carpet hung over the rack bar, textured with
+        /// the shared Home rug albedo.</summary>
+        private static void AddCarpet(
+            Transform parent,
+            string name,
+            float z,
+            float height,
+            float width,
+            Color tint,
+            bool homeExterior)
+        {
+            GameObject carpet = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                new Vector3(
+                    CarpetRackX,
+                    CarpetRackBarHeight + 0.04f - height * 0.5f,
+                    z),
+                new Vector3(0.07f, height, width),
+                tint,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            ConfigureRenderer(carpet, homeExterior);
+            HomeSurfaceAppearance.Apply(
+                carpet.GetComponent<Renderer>(),
+                HomeSurfaceKind.Rug,
+                SurfaceProjection.BoxZY,
+                tint);
         }
 
         /// <summary>

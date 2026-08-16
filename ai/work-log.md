@@ -6,6 +6,119 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-16 — The swing is probed, not guessed: backswing over the shoulder
+
+- Two in-game reviews in a row caught the beat swinging wrong — first
+  into her own skirt, then "chopping" — because the arm keys were
+  authored by analogy with other designs' poses, and the analogies
+  lied: the pipeback "rim reach" actually puts hands down-back on the
+  wheel rims, not forward. The fix was to stop guessing: a scratch
+  Blender probe now loads the real generator, applies candidate
+  `BonePose` keys to the built babushka rig and prints the world
+  position of `hand.R` plus the rigid beater's world direction and
+  tip. Six probe rounds established the rig's actual upper-arm axes
+  (local X raises the sideways A-pose arm, local Z swings it forward,
+  local Y twists the paddle) and produced verified keys, now recorded
+  as coordinates in the pose comments.
+- The final cycle: backswing `(70, -70, 12)` with a `-30°` wrist twist
+  — hand beside the ear at `(-0.55, -0.36, 1.32)`, paddle swept back
+  over the shoulder (direction `+0.90` on +Y, tip behind the back at
+  height `1.29`) — then the forward whack `(18, 35, 60)` landing the
+  hand at `(-0.59, -0.41, 1.31)` with the paddle pointing almost
+  straight forward (`-0.96` on -Y), tip `0.94 m` in front at carpet
+  height `1.16`; recoil bounces off the cloth and the lift arcs back
+  up through the front. Art, prefab and tests re-verified
+  (EditMode `26/26`).
+
+## 2026-08-16 — The beat lands on the carpet, the carpet answers
+
+- In-game review caught the first babushka cut whipping herself: the
+  beater was authored hanging straight down (the A-pose width gate),
+  so the strike folded it back into her own skirt. The carry
+  direction is now forward-biased `(0, -0.6, -0.8)` — still inside
+  the `1.65 m` envelope because it leans into -Y, not X — and the
+  beat keys gained a real wrist snap (`hand.R` X `-42° -> +34°`), so
+  the extended paddle lands out in front, on the carpet. Verified on
+  the regenerated contact sheet.
+- The carpets now answer the blows: in the city each is a simulated
+  cloth panel pinned over the rack bar (6x6, stiff, damping `0.82`,
+  textured with the Home rug albedo over its plain panel UVs, plus a
+  static fold cap on the bar), registered in the new named-slot
+  `CityDryingYardCarpetRegistry` and deliberately outside the
+  weather-wind registry — heavy pile does not flap like laundry. Each
+  beater's presentation fires a `0.16 s` decaying
+  `externalAcceleration` pulse away from her whenever her loop
+  crosses the authored strike moment (`0.28`), so the exact carpet
+  she faces shudders under every whack, in her own rhythm. The
+  balcony vista keeps cheap static carpet boxes.
+- The third babushka no longer stands far off at the east edge: she
+  strolls a cloth-free corridor between the rack and the west
+  drying-frame posts, back and forth past both beaters at `0.36 m/s`
+  with a smooth `220°/s` turn at each end. `BabushkaSmoke` was
+  re-authored from a stationary `8.5 s` watch into a `4 s` four-step
+  shuffle under emphatic left-arm talk — palm-open sweep, inward
+  chop, open again — with the cigarette held ready at chest height
+  and one drag per lap. The stance API now emits her corridor
+  (`TryDescribeBabushkaStances` gained the path end), the plan
+  carries per-stance path/speed/carpet wiring, and the stance tests
+  sample the whole corridor against every yard obstacle.
+
+## 2026-08-16 — Three babushkas populate the drying yard
+
+- The drying yard gained its authored population: two grandmothers
+  beat hung carpets with the classic Soviet plastic beater and a
+  third stands apart at the east edge, smoking and watching. They
+  are staged NPCs in the rider's mould — outside the pedestrian
+  pool, colliderless with `PlayerAttentionMagnet`s, always present
+  while the City lives.
+- Art: one new `yard_babushka` archetype in
+  `tools/build-city-pedestrian-3d-model.py` (seed `715233`, staged,
+  38 meshes / 928 triangles, budget `900-2000`): housecoat, apron,
+  skirt, rust headscarf whose folded crown owns the exact `1.75 m`
+  envelope, felt boots — and both hand props on `hand.R`: the bright
+  plastic beater (authored hanging straight down, because the A-pose
+  envelope allows barely 5 cm past the fingertips on X) and a
+  cigarette along the canonical `SOCKET_Cigarette.R` axis. The
+  runtime enables exactly one prop per role.
+- Two new authored loops join the shared locomotion FBX (16 -> 18
+  Actions): `BabushkaBeat` (`1.5 s` — ear-height wind-up, forward
+  rim-reach strike into the carpet, rocking recovery) and
+  `BabushkaSmoke` (`8.5 s` — left arm folded under the right elbow,
+  raise, held drag, chin-up exhale, weight shift). Both keep the
+  feet planted and ride the ordinary walker sole bake. The first
+  strike cut swung sideways out of the A-pose; the corrected keys
+  reuse the pipeback rim-reach fold that provably lands hands
+  forward. Verified on the regenerated locomotion contact sheet.
+- The recipe grew the Soviet carpet-beating rack on the west strip,
+  upwind of the wash: two painted-metal posts, a crossbar and two
+  hung carpets textured with the shared Home rug albedo
+  (`HomeSurfaceKind.Rug` — a hung carpet is the same object indoors
+  and out), all with obstacle colliders proven outside every access
+  approach. New `TryDescribeBabushkaStances` mirrors the bench-seat
+  contract so the NPC plan and the drawn carpets can never drift.
+- Runtime: `DryingYardBabushka{Provider,Plan,Presentation,Factory}`
+  under `City/Yard` — pure stance plan off the POI descriptor
+  (safe-absent for custom blueprints), one-clip manual PlayableGraph
+  per instance with per-instance palette variant, playback speed
+  (`1.0/0.91`) and phase offsets so the two beaters never strike in
+  lockstep; spawn from `CityGameRoot` after the rider. Editor:
+  staged descriptor + importer registration + `Rebuild Staged Yard
+  Babushka` menu whose build also creates/rewires
+  `Resources/City/DryingYardBabushkaProvider.asset`, closing the
+  rider pipeline's manual provider-binding gap. The staged manifest
+  validation was split from the wheelchair-specific checks it
+  wrongly bundled.
+- Verification pending Unity access (the editor was open through
+  this session): the Blender build validates and is deterministic;
+  runtime/editor/test assemblies compile; `DryingYardBabushkaTests`
+  (stances inside the yard, opposed desynchronized beaters, watching
+  smoker, rack presence + rug texture, approach- and stance-clear
+  colliders, provider contract) plus the updated
+  `CityPedestrianRuntimeTests` clip census (`16 -> 18`) need one
+  EditMode run after the editor closes, and the editor must build
+  the staged prefab (auto-queued or via the menu) before the
+  provider test passes.
+
 ## 2026-08-16 — POI surface textures and the drying yard floodlight
 
 - Four scripted opaque POI albedos join the facade/home/supermarket

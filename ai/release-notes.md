@@ -6,6 +6,20 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-16 — Three babushkas move into the drying yard
+
+- The Residential drying yard is no longer empty. At a proper Soviet
+  carpet-beating rack on its west side — two posts, a crossbar and two
+  hung carpets, kept upwind of the drying wash — two grandmothers in
+  headscarves beat the carpets with the bright plastic beaters every
+  Soviet yard remembers, each from her own side of the rack and never
+  in step with each other. The carpets are real hanging cloth and
+  shudder under every whack.
+- A third babushka paces the corridor beside them, back and forth past
+  both workers, gesturing emphatically as she goes — palm out, a chop,
+  palm out again — cigarette always in her right hand, one drag per
+  lap, a smooth about-turn at each end of her route.
+
 ### 2026-08-16 — Textured public places and a floodlit drying yard
 
 - The four district public places lost their flat-colour look: every public

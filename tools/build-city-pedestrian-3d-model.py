@@ -141,6 +141,20 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
     ),
+    # The drying-yard grandmother. One model serves all three authored
+    # instances: two beat carpets with the Soviet plastic beater in the
+    # right hand, one stands apart smoking. Both hand props ship on the
+    # model and the runtime enables exactly one per role. The idle slot
+    # carries the smoking loop and the walk slot carries the beating
+    # loop, mirroring how the rider maps Idle/Roll onto the same pair.
+    "yard_babushka": ArchetypeSpec(
+        "yard_babushka", "yard_babushka_v1", "Yard Babushka", 715233,
+        "YardBabushka3D.blend", "YardBabushka3D",
+        "YardBabushka3D.png", "BabushkaSmoke", "BabushkaBeat",
+        (900, 2000),
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -282,6 +296,19 @@ PALETTE = {
     "pipe_brass_dark": (0.155, 0.105, 0.042, 1.0),
     "pipe_ivory": (0.585, 0.555, 0.465, 1.0),
     "bellows": (0.170, 0.075, 0.055, 1.0),
+    # Yard Babushka. A muted mauve housecoat over a dark skirt, a rust
+    # headscarf, and the one loud note every Soviet yard remembers: the
+    # bright plastic carpet beater in her right hand.
+    "gran_robe": (0.150, 0.090, 0.125, 1.0),
+    "gran_robe_light": (0.215, 0.135, 0.170, 1.0),
+    "gran_robe_dark": (0.075, 0.045, 0.065, 1.0),
+    "gran_skirt": (0.085, 0.060, 0.085, 1.0),
+    "gran_apron": (0.320, 0.300, 0.250, 1.0),
+    "gran_scarf": (0.400, 0.135, 0.085, 1.0),
+    "gran_scarf_dark": (0.210, 0.070, 0.048, 1.0),
+    "gran_wool": (0.100, 0.095, 0.090, 1.0),
+    "beater_plastic": (0.560, 0.165, 0.105, 1.0),
+    "beater_plastic_dark": (0.300, 0.085, 0.055, 1.0),
 }
 
 
@@ -623,6 +650,10 @@ class PedestrianBuilder:
             "pipeback_roller": (
                 self.build_pipeback_roller_body,
                 self.build_pipeback_roller_chair,
+            ),
+            "yard_babushka": (
+                self.build_yard_babushka_body,
+                self.build_yard_babushka_details,
             ),
         }
         if self.spec.key not in builders:
@@ -2156,6 +2187,217 @@ class PedestrianBuilder:
             "head", "face_detail", "void",
         )
 
+    def build_yard_babushka_body(self) -> None:
+        """Stout grandmother in a housecoat; the stoop lives in the clips.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the hunched silhouette, the beating swing
+        and the smoking stance are all authored in BabushkaBeat and
+        BabushkaSmoke rather than in the geometry.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.038, 1.545), (0.104, 0.096, 0.128), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.320), (0, -0.026, 1.450), 0.075, 0.062, 10),
+            "neck", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Bust",
+            make_tapered_box((0, 0.010, 1.075), (0, -0.008, 1.340), (0.400, 0.270, 0), (0.440, 0.300, 0)),
+            "chest", "body", "gran_robe",
+        )
+        self.add_part(
+            "GEO_Waist",
+            make_tapered_box((0, 0.026, 0.870), (0, 0.012, 1.095), (0.430, 0.310, 0), (0.405, 0.275, 0)),
+            "spine", "body", "gran_robe",
+        )
+        self.add_part(
+            "CLO_Skirt",
+            make_tapered_box((0, 0.020, 0.360), (0, 0.024, 0.890), (0.530, 0.430, 0), (0.440, 0.330, 0)),
+            "pelvis", "clothing", "gran_skirt",
+        )
+        self.add_part(
+            "CLO_Apron",
+            make_tapered_box((0, -0.212, 0.400), (0, -0.165, 0.860), (0.300, 0.024, 0), (0.250, 0.022, 0)),
+            "pelvis", "clothing", "gran_apron",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.074, 0.060, 10),
+                f"upper_arm.{side}", "clothing", "gran_robe",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(elbow, wrist, 0.048, 0.038, 8),
+                f"forearm.{side}", "body", "skin",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.436, -0.009, 1.190),
+                    (sign * 0.504, -0.011, 1.160),
+                    0.064, 0.058, 8,
+                ),
+                f"forearm.{side}", "clothing", "gran_robe_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.718, -0.020, 1.055), (0.085, 0.070, 0.058)),
+                f"hand.{side}", "body", "skin",
+            )
+            knee = (sign * 0.103, sign * -0.012, 0.354)
+            ankle = (sign * 0.112, sign * -0.022, 0.095)
+            self.add_part(
+                f"CLO_Stocking.{side}",
+                make_frustum_between(knee, ankle, 0.058, 0.047, 8),
+                f"shin.{side}", "clothing", "gran_wool",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.085, 0.030),
+                    (sign * 0.112, -0.052, 0.145),
+                    (0.104, 0.260, 0),
+                    (0.092, 0.190, 0),
+                ),
+                f"foot.{side}", "body", "shoe",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+        # The headscarf shell sits behind the face plane and owns the
+        # silhouette; the wrap and knot close it under the chin.
+        self.add_part(
+            "CLO_Scarf",
+            make_ellipsoid((0, 0.004, 1.555), (0.126, 0.132, 0.150), 12, 6),
+            "head", "signature_silhouette", "gran_scarf",
+        )
+        # The folded crest of the headscarf owns the exact 1.75 m envelope.
+        self.add_part(
+            "CLO_ScarfCrown",
+            make_tapered_box((0, 0.004, 1.688), (0, 0.008, 1.750), (0.152, 0.162, 0), (0.056, 0.060, 0)),
+            "head", "signature_silhouette", "gran_scarf",
+        )
+        self.add_part(
+            "CLO_ScarfWrap",
+            make_frustum_between((0, -0.072, 1.438), (0, -0.030, 1.318), 0.076, 0.056, 8),
+            "head", "clothing", "gran_scarf_dark",
+        )
+        self.add_part(
+            "CLO_ScarfKnot",
+            make_box((0, -0.118, 1.396), (0.056, 0.046, 0.066)),
+            "head", "clothing", "gran_scarf_dark",
+        )
+        self.add_part(
+            "CLO_ScarfTail",
+            make_tapered_box((0, -0.124, 1.296), (0, -0.112, 1.382), (0.088, 0.030, 0), (0.054, 0.026, 0)),
+            "head", "clothing", "gran_scarf",
+        )
+        for side, x in (("L", 0.045), ("R", -0.045)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.128, 1.548), (0.034, 0.018, 0.022)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.146, 1.494), (0, -0.130, 1.534), (0.040, 0.048, 0), (0.030, 0.040, 0)),
+            "head", "face_detail", "skin",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.132, 1.462), (0.058, 0.020, 0.014)),
+            "head", "face_detail", "void",
+        )
+
+    def build_yard_babushka_details(self) -> None:
+        """Both authored hand props, enabled per role by the runtime.
+
+        The beater is the classic bright Soviet plastic: a handle
+        continuing the right hand's axis into a flattened teardrop
+        paddle. The cigarette rides the same hand along the canonical
+        SOCKET_Cigarette.R direction; a beating babushka shows only the
+        beater and the smoking one only the cigarette.
+        """
+
+        self.add_part(
+            "ACC_RobeButton.01",
+            make_box((0, -0.158, 1.270), (0.024, 0.018, 0.024)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_RobeButton.02",
+            make_box((0, -0.150, 1.150), (0.024, 0.018, 0.024)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_RobeButton.03",
+            make_box((0, -0.152, 1.020), (0.024, 0.018, 0.024)),
+            "spine", "surface_detail", "button",
+        )
+
+        # The beater points forward-down out of the fist: the A-pose
+        # envelope allows barely 5 cm past the fingertips on X, so the
+        # carry direction leans into -Y (the model's forward) instead
+        # of along the arm. With the strike key extending the forearm
+        # toward the carpet, this forward bias is what lands the paddle
+        # on the hung carpet instead of folding it back into the skirt.
+        direction = (0.0, -0.600, -0.800)
+        grip = (-0.720, -0.021, 1.048)
+
+        def along(distance: float) -> tuple[float, float, float]:
+            return (
+                grip[0] + direction[0] * distance,
+                grip[1] + direction[1] * distance,
+                grip[2] + direction[2] * distance,
+            )
+
+        self.add_part(
+            "ACC_BeaterHandle",
+            make_frustum_between(along(-0.050), along(0.240), 0.015, 0.013, 8, 0.95),
+            "hand.R", "signature_silhouette", "beater_plastic_dark",
+        )
+        self.add_part(
+            "ACC_BeaterNeck",
+            make_frustum_between(along(0.240), along(0.320), 0.013, 0.011, 8, 0.95),
+            "hand.R", "signature_silhouette", "beater_plastic",
+        )
+        self.add_part(
+            "ACC_BeaterPaddleRise",
+            make_frustum_between(along(0.320), along(0.440), 0.018, 0.085, 8, 0.26),
+            "hand.R", "signature_silhouette", "beater_plastic",
+        )
+        self.add_part(
+            "ACC_BeaterPaddleTip",
+            make_frustum_between(along(0.440), along(0.580), 0.085, 0.012, 8, 0.26),
+            "hand.R", "signature_silhouette", "beater_plastic",
+        )
+        self.add_part(
+            "ACC_Cigarette",
+            make_frustum_between(
+                (-0.744, -0.052, 1.052),
+                (-0.748, -0.126, 1.055),
+                0.0068, 0.0060, 6, 1.0,
+            ),
+            "hand.R", "surface_detail", "pipe_ivory",
+        )
+        self.add_part(
+            "ACC_CigaretteEmber",
+            make_box((-0.748, -0.132, 1.055), (0.015, 0.014, 0.015)),
+            "hand.R", "surface_detail", "amber",
+        )
+
     def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
         scene["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
@@ -2591,6 +2833,16 @@ ACTION_SPECS = (
         "self-propelled seated posture, hands following both raised push levers",
         "two-handed lever push, release and recovery under a swaying pipe load",
     ),
+    ActionSpec(
+        "BabushkaSmoke", "yard_babushka_v1", 4.0, 96,
+        "hunched strolling stance, cigarette held ready in the right hand",
+        "four shuffling steps under emphatic left-arm talk, one drag per lap",
+    ),
+    ActionSpec(
+        "BabushkaBeat", "yard_babushka_v1", 1.5, 36,
+        "hunched working stance squared to the hung carpet",
+        "overhead wind-up, sharp forward beater strike and a rocking recovery",
+    ),
 )
 
 
@@ -2917,6 +3169,37 @@ def pipeback_base_pose() -> dict[str, BonePose]:
         "shin.R": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
     }, 0.345, -0.345, 0.090, 0.515)
+
+
+def babushka_base_pose() -> dict[str, BonePose]:
+    """Hunched standing stance shared by the beating and smoking loops.
+
+    Both loops keep the feet planted, so the ordinary walker sole bake
+    grounds them; the age lives in the rounded spine, the sunk neck and
+    the slightly bent knees.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(6.0, 0.0, 0.0), location_m=(0, 0.012, -0.045)),
+        "spine": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -3.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 3.0, -6.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(10.0, 6.0, 34.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(10.0, -6.0, -34.0)),
+        "forearm.L": BonePose(rotation_degrees=(-24.0, 4.0, -10.0)),
+        "forearm.R": BonePose(rotation_degrees=(-24.0, -4.0, 10.0)),
+        "hand.L": BonePose(rotation_degrees=(4.0, -3.0, 2.0)),
+        "hand.R": BonePose(rotation_degrees=(4.0, 3.0, -2.0)),
+        "thigh.L": BonePose(rotation_degrees=(-5.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    }
 
 
 def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
@@ -3283,7 +3566,165 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "forearm.L": BonePose(rotation_degrees=(-64.0, 0.0, -18.0)),
         "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, 18.0)),
     })
+    babushka = babushka_base_pose()
+    # The strolling smoker: a slow four-step shuffle carried by the
+    # legs while the left arm talks — palm-open sweep, inward chop,
+    # open again — and the right hand keeps the cigarette ready at
+    # chest height, taking one drag on the last two steps of the lap.
+    def babushka_stroll_legs(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        # Shuffle gait: barely lifted feet, short stride, the pelvis
+        # rocking over the planted side.
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(7.0, lean * 2.0, -lean * 2.5),
+                location_m=(0, 0.012, -0.052)),
+            "thigh.L": BonePose(
+                rotation_degrees=(-5.0 - left_forward * 13.0, 0.0, 3.0)),
+            "shin.L": BonePose(
+                rotation_degrees=(10.0 + max(0.0, -left_forward) * 14.0, 0.0, 0.0)),
+            "foot.L": BonePose(
+                rotation_degrees=(-5.0 + left_forward * 4.0, 0.0, 0.0)),
+            "thigh.R": BonePose(
+                rotation_degrees=(-5.0 + left_forward * 13.0, 0.0, -3.0)),
+            "shin.R": BonePose(
+                rotation_degrees=(10.0 + max(0.0, left_forward) * 14.0, 0.0, 0.0)),
+            "foot.R": BonePose(
+                rotation_degrees=(-5.0 - left_forward * 4.0, 0.0, 0.0)),
+        }
+
+    babushka_cig_hold = {
+        "upper_arm.R": BonePose(rotation_degrees=(16.0, -8.0, -22.0)),
+        "forearm.R": BonePose(rotation_degrees=(-88.0, -8.0, 14.0)),
+        "hand.R": BonePose(rotation_degrees=(-6.0, 4.0, -4.0)),
+    }
+    babushka_cig_drag = {
+        "upper_arm.R": BonePose(rotation_degrees=(26.0, -12.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-128.0, -12.0, 20.0)),
+        "hand.R": BonePose(rotation_degrees=(-16.0, 8.0, -8.0)),
+        "neck": BonePose(rotation_degrees=(-13.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+    }
+    babushka_gesture_open = {
+        "upper_arm.L": BonePose(rotation_degrees=(28.0, 12.0, 8.0)),
+        "forearm.L": BonePose(rotation_degrees=(-64.0, 10.0, -22.0)),
+        "hand.L": BonePose(rotation_degrees=(-22.0, -8.0, 6.0)),
+        "chest": BonePose(rotation_degrees=(7.0, 0.0, 5.0)),
+        "head": BonePose(rotation_degrees=(7.0, 0.0, -4.0)),
+    }
+    babushka_gesture_chop = {
+        "upper_arm.L": BonePose(rotation_degrees=(40.0, 6.0, 26.0)),
+        "forearm.L": BonePose(rotation_degrees=(-98.0, 6.0, -30.0)),
+        "hand.L": BonePose(rotation_degrees=(10.0, -6.0, 4.0)),
+        "chest": BonePose(rotation_degrees=(9.0, 0.0, -4.0)),
+        "head": BonePose(rotation_degrees=(8.0, 0.0, 3.0)),
+    }
+    babushka_stroll_l1 = merge_pose(
+        babushka, babushka_stroll_legs(1.0, 1.0),
+        babushka_cig_hold, babushka_gesture_open)
+    babushka_stroll_p1 = merge_pose(
+        babushka, babushka_stroll_legs(0.0, -0.4),
+        babushka_cig_hold, babushka_gesture_open)
+    babushka_stroll_r1 = merge_pose(
+        babushka, babushka_stroll_legs(-1.0, -1.0),
+        babushka_cig_hold, babushka_gesture_chop)
+    babushka_stroll_p2 = merge_pose(
+        babushka, babushka_stroll_legs(0.0, 0.4),
+        babushka_cig_hold, babushka_gesture_chop)
+    babushka_stroll_l2 = merge_pose(
+        babushka, babushka_stroll_legs(1.0, 1.0),
+        babushka_gesture_open, babushka_cig_drag)
+    babushka_stroll_p3 = merge_pose(
+        babushka, babushka_stroll_legs(0.0, -0.4),
+        babushka_gesture_open, babushka_cig_drag)
+    babushka_stroll_r2 = merge_pose(
+        babushka, babushka_stroll_legs(-1.0, -1.0),
+        babushka_gesture_open, babushka_cig_hold)
+    babushka_stroll_p4 = merge_pose(
+        babushka, babushka_stroll_legs(0.0, 0.4),
+        babushka_cig_hold, babushka_gesture_open)
+    # The carpet strike: wind the beater up over the right shoulder,
+    # whip it forward into the hung carpet, recoil and lift again. The
+    # left hand steadies the carpet edge at chest height throughout.
+    babushka_beat_brace = {
+        "upper_arm.L": BonePose(rotation_degrees=(26.0, 10.0, 30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-62.0, 6.0, -16.0)),
+        "hand.L": BonePose(rotation_degrees=(-8.0, -4.0, 4.0)),
+    }
+    babushka_beat_windup = merge_pose(babushka, babushka_beat_brace, {
+        # The body opens upward with the raised arm: the hunch eases,
+        # the chest lifts, the weight rocks back an inch.
+        "pelvis": BonePose(rotation_degrees=(2.0, 1.0, 2.0), location_m=(0, 0.020, -0.028)),
+        "spine": BonePose(rotation_degrees=(2.0, 0.0, 3.0)),
+        "chest": BonePose(rotation_degrees=(0.0, 0.0, 4.0)),
+        "neck": BonePose(rotation_degrees=(-6.0, 0.0, -1.0)),
+        "head": BonePose(rotation_degrees=(2.0, 0.0, -2.0)),
+        # The backswing, probed on the real rig: the hand rises beside
+        # the ear at (-0.55, -0.36, +1.32) and the paddle sweeps back
+        # over the shoulder — direction (+0.43, +0.90, -0.05), tip
+        # behind the back at (-0.31, +0.14, +1.29) — before whipping
+        # forward. On this rig local X raises the sideways A-pose arm,
+        # local Z swings it forward and local Y twists the paddle.
+        "upper_arm.R": BonePose(rotation_degrees=(70.0, -70.0, 12.0)),
+        "forearm.R": BonePose(rotation_degrees=(-60.0, 0.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(-55.0, -30.0, -4.0)),
+    })
+    babushka_beat_strike = merge_pose(babushka, babushka_beat_brace, {
+        "pelvis": BonePose(rotation_degrees=(9.0, -1.0, -3.0), location_m=(0, -0.026, -0.055)),
+        "spine": BonePose(rotation_degrees=(13.0, 0.0, -5.0)),
+        "chest": BonePose(rotation_degrees=(11.0, 0.0, -7.0)),
+        "neck": BonePose(rotation_degrees=(-12.0, 0.0, 2.0)),
+        "head": BonePose(rotation_degrees=(9.0, 0.0, 3.0)),
+        # The forward whack, probed on the real rig: the hand lands at
+        # (-0.59, -0.41, +1.31) — forward and down out of the overhead
+        # wind-up — and the paddle points almost straight forward
+        # (direction y -0.96), its tip 0.94 m in front at carpet
+        # height, into the hung cloth.
+        "upper_arm.R": BonePose(rotation_degrees=(18.0, 35.0, 60.0)),
+        "forearm.R": BonePose(rotation_degrees=(-15.0, 0.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(24.0, 3.0, -5.0)),
+    })
+    babushka_beat_recoil = merge_pose(babushka, babushka_beat_brace, {
+        "pelvis": BonePose(rotation_degrees=(7.0, 0.0, -1.0), location_m=(0, -0.010, -0.050)),
+        "spine": BonePose(rotation_degrees=(11.0, 0.0, -2.0)),
+        "chest": BonePose(rotation_degrees=(9.0, 0.0, -3.0)),
+        # The paddle bounces a little way back up off the carpet
+        # (probed: tip just off the cloth at (-0.48, -0.76, +0.95)).
+        "upper_arm.R": BonePose(rotation_degrees=(22.0, 22.0, 48.0)),
+        "forearm.R": BonePose(rotation_degrees=(-28.0, 0.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(6.0, 3.0, -5.0)),
+    })
+    babushka_beat_lift = merge_pose(babushka, babushka_beat_brace, {
+        "pelvis": BonePose(rotation_degrees=(5.0, 1.0, 1.0), location_m=(0, 0.010, -0.040)),
+        "spine": BonePose(rotation_degrees=(6.0, 0.0, 2.0)),
+        "chest": BonePose(rotation_degrees=(4.0, 0.0, 4.0)),
+        # Halfway back up toward the backswing: the arm rises through
+        # the front while the paddle already starts rotating rearward.
+        "upper_arm.R": BonePose(rotation_degrees=(50.0, -25.0, 22.0)),
+        "forearm.R": BonePose(rotation_degrees=(-45.0, 0.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(-25.0, -10.0, -4.0)),
+    })
     return {
+        "BabushkaSmoke": (
+            (0.0, babushka_stroll_l1),
+            (0.125, babushka_stroll_p1),
+            (0.25, babushka_stroll_r1),
+            (0.375, babushka_stroll_p2),
+            (0.5, babushka_stroll_l2),
+            (0.625, babushka_stroll_p3),
+            (0.75, babushka_stroll_r2),
+            (0.875, babushka_stroll_p4),
+            (1.0, babushka_stroll_l1),
+        ),
+        "BabushkaBeat": (
+            (0.0, babushka_beat_windup),
+            (0.28, babushka_beat_strike),
+            (0.42, babushka_beat_recoil),
+            (0.66, babushka_beat_lift),
+            (1.0, babushka_beat_windup),
+        ),
         "PipebackIdle": (
             (0.0, pipeback),
             (0.25, pipeback_idle_inhale),

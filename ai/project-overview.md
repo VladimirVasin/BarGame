@@ -457,7 +457,27 @@ The vertical slice contains:
   fog halo and a dead-by-day emissive lens; `CityNightSiteLightRegistry`
   scales and disables it with the shared night factor, its lower pole
   owns a focused collider outside every access approach, and the Home
-  vista rebuilds only the pole/head/lens geometry without a light. These
+  vista rebuilds only the pole/head/lens geometry without a light. On the
+  yard's west strip, upwind of the wash, stands the Soviet carpet-beating
+  rack — painted-metal posts and crossbar with two hung carpets textured
+  by the shared Home rug albedo. In the city each carpet is real
+  simulated cloth pinned over the bar (heavy: stiff and damped,
+  deliberately outside the laundry's weather-wind registry; the vista
+  keeps static boxes), and the yard's three authored staged NPCs work
+  around it: two babushka grandmothers beat those carpets from opposite
+  sides with the forward-biased bright plastic beater (one shared
+  `yard_babushka_v1` model, desynchronized `BabushkaBeat` loops at
+  different speeds and phases), each strike driving a short
+  deterministic acceleration pulse through exactly the carpet she
+  faces via `CityDryingYardCarpetRegistry`; the third strolls a
+  cloth-free corridor between the rack and the drying frames back and
+  forth past the beaters at `0.36 m/s`, gesturing emphatically on the
+  four-step `4 s` `BabushkaSmoke` loop with one cigarette drag per
+  lap, turning smoothly at the corridor ends. They follow the rider's
+  staged contract: authored with the shared pedestrian art library,
+  outside Resources and the pool, colliderless with attention magnets,
+  spawned from the same POI descriptor transform as the drawn carpets
+  so they land inside the drying yard of any generated city. These
   authored recipes require both
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller

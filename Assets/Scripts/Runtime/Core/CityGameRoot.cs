@@ -36,6 +36,8 @@ namespace BarPromenade
             private set;
         }
         public YardWheelchairActor YardWheelchair { get; private set; }
+        public IReadOnlyList<DryingYardBabushkaPresentation>
+            DryingYardBabushkas { get; private set; }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -337,6 +339,12 @@ namespace BarPromenade
                 YardWheelchairPlan.Create(
                     World.OpenAreaDecorationPlan,
                     Layout.ElevationPlan));
+            // The drying yard's three authored grandmothers: two beat
+            // the hung carpets at the rack, one smokes apart watching.
+            // Staged NPCs outside the pedestrian pool, like the rider.
+            DryingYardBabushkas = DryingYardBabushkaFactory.Create(
+                transform,
+                DryingYardBabushkaPlan.Create(Layout));
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their

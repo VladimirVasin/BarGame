@@ -204,6 +204,14 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
+                        CityPedestrianAssetSetup.YardBabushkaModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.YardBabushkaManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
                         CityPedestrianAssetSetup.AnimationPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
@@ -246,6 +254,10 @@ namespace BarPromenade.Editor
                    string.Equals(
                        path,
                        CityPedestrianAssetSetup.PipebackRollerModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.YardBabushkaModelPath,
                        StringComparison.OrdinalIgnoreCase);
         }
 

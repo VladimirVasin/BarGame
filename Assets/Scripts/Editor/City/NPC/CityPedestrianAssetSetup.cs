@@ -36,6 +36,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/PipebackRoller3D.fbx";
         public const string PipebackRollerManifestPath =
             "Assets/Pedestrians/Staged/Models/PipebackRoller3D.json";
+        public const string YardBabushkaModelPath =
+            "Assets/Pedestrians/Staged/Models/YardBabushka3D.fbx";
+        public const string YardBabushkaManifestPath =
+            "Assets/Pedestrians/Staged/Models/YardBabushka3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -58,6 +62,10 @@ namespace BarPromenade.Editor
             "Assets/Resources/Pedestrians/HelmetLampPedestrian3D.prefab";
         public const string PipebackRollerPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
+        public const string YardBabushkaPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/YardBabushka3D.prefab";
+        public const string YardBabushkaProviderPath =
+            "Assets/Resources/City/DryingYardBabushkaProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -201,7 +209,25 @@ namespace BarPromenade.Editor
                 1400,
                 2400,
                 isStaged: true,
-                isWheelchair: true)
+                isWheelchair: true),
+            // The drying-yard babushka: the idle slot carries the
+            // smoking loop and the walk slot the carpet-beating loop.
+            // Staged like the rider — authored with the shared art
+            // library, outside Resources and the runtime catalog.
+            new PedestrianDescriptor(
+                "Yard Babushka",
+                "YardBabushka3D",
+                "yard_babushka_v1",
+                YardBabushkaModelPath,
+                YardBabushkaManifestPath,
+                YardBabushkaPrefabPath,
+                "BabushkaSmoke",
+                "BabushkaBeat",
+                4f,
+                1.5f,
+                900,
+                2000,
+                isStaged: true)
         };
 
         private static bool isBuilding;
@@ -240,6 +266,14 @@ namespace BarPromenade.Editor
         {
             BuildPipebackRollerOrThrow();
             Debug.Log("Staged Pipeback Roller prefab rebuilt.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Yard Babushka")]
+        public static void RunYardBabushka()
+        {
+            BuildYardBabushkaOrThrow();
+            Debug.Log("Staged Yard Babushka prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -694,6 +728,11 @@ namespace BarPromenade.Editor
                         sharedMaterial);
                 }
 
+                BindYardBabushkaProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        DryingYardBabushkaProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -771,6 +810,124 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
+        }
+
+        public static void BuildYardBabushkaOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Yard Babushka build requires its model, " +
+                    "manifest, locomotion library, production Player " +
+                    "model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    DryingYardBabushkaProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindYardBabushkaProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged babushka prefab into a build. The rider's
+        /// provider was authored by hand once; automating the binding
+        /// here protects the reference across prefab rebuilds.
+        /// </summary>
+        private static void BindYardBabushkaProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the babushka provider before its " +
+                    "prefab exists.");
+            }
+
+            DryingYardBabushkaProvider provider =
+                AssetDatabase.LoadAssetAtPath<DryingYardBabushkaProvider>(
+                    YardBabushkaProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(YardBabushkaProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<DryingYardBabushkaProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    YardBabushkaProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "DryingYardBabushkaProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
         }
 
         private static void BuildDescriptor(
@@ -1216,9 +1373,15 @@ namespace BarPromenade.Editor
             }
 
             if (descriptor.IsStaged &&
-                (!manifest.staged ||
-                 manifest.pool_eligible ||
-                 Mathf.Abs(manifest.wheel_radius_m - 0.30f) > 0.0001f ||
+                (!manifest.staged || manifest.pool_eligible))
+            {
+                throw new InvalidOperationException(
+                    "A staged pedestrian manifest must declare its " +
+                    "staged, non-pool status.");
+            }
+
+            if (descriptor.IsWheelchair &&
+                (Mathf.Abs(manifest.wheel_radius_m - 0.30f) > 0.0001f ||
                  manifest.pivot_names == null ||
                  !manifest.pivot_names.SequenceEqual(new[]
                  {
@@ -1232,8 +1395,8 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The staged wheelchair manifest must declare its " +
-                    "non-pool status, 0.30 m wheels and six mechanism " +
-                    "pivots in stable order.");
+                    "0.30 m wheels and six mechanism pivots in stable " +
+                    "order.");
             }
 
             HashSet<string> partNames =
