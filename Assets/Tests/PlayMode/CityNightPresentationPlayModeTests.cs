@@ -1083,14 +1083,33 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.GetComponentsInChildren<Collider>(true).Length,
                 Is.GreaterThan(4));
+            // The one authored exception to the light-free public
+            // places: the drying yard's night-scaled pole floodlight
+            // with its fog halo.
+            Light[] siteLights =
+                root.GetComponentsInChildren<Light>(true);
+            Assert.That(siteLights, Has.Length.EqualTo(1));
+            Light floodlight = siteLights[0];
             Assert.That(
-                root.GetComponentsInChildren<Light>(true),
-                Is.Empty);
+                floodlight.name,
+                Is.EqualTo("Drying Yard Floodlight Light"));
+            Assert.That(floodlight.type, Is.EqualTo(LightType.Spot));
+            Assert.That(
+                floodlight.shadows,
+                Is.EqualTo(LightShadows.None));
+            CityLightHalo floodlightHalo =
+                floodlight.GetComponentInChildren<CityLightHalo>(true);
+            Assert.That(floodlightHalo, Is.Not.Null);
+            ParticleSystem[] siteParticles =
+                root.GetComponentsInChildren<ParticleSystem>(true);
+            Assert.That(siteParticles, Has.Length.EqualTo(1));
+            Assert.That(
+                siteParticles[0].GetComponent<CityLightHalo>(),
+                Is.SameAs(floodlightHalo),
+                "Only the floodlight's fog halo particles live under " +
+                "the public places.");
             Assert.That(
                 root.GetComponentsInChildren<AudioSource>(true),
-                Is.Empty);
-            Assert.That(
-                root.GetComponentsInChildren<ParticleSystem>(true),
                 Is.Empty);
         }
 

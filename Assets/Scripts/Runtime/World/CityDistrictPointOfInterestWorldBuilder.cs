@@ -63,6 +63,32 @@ namespace BarPromenade
         private static readonly Color ResidentialPatch =
             new Color(0.600f, 0.500f, 0.285f);
 
+        // The drying yard's pole floodlight: a cold near-white communal
+        // fixture on the Residential cool axis, scaled by the shared
+        // night factor rather than burning by day like the bar-side
+        // yard spotlight.
+        private static readonly Color FloodlightLightColor =
+            new Color(0.72f, 0.84f, 0.92f);
+        // The lens follows the bar-side yard spotlight's recipe: the
+        // light colour boosted well past 1 so the source reads as a
+        // burning fixture through the PS1 composite, not a pale plate.
+        private static readonly Color FloodlightGlow =
+            new Color(3.17f, 3.70f, 4.05f);
+        // Street practicals run at 31 over a short drop; this beam
+        // throws 7-12 m across the whole yard, so it needs floodlight
+        // wattage (the always-on bar-side yard spot needs 240) for the
+        // far drying row to reach street-lamp brightness through the
+        // night grade and fog.
+        private const float FloodlightNightIntensity = 150f;
+        private const float FloodlightRange = 16f;
+        private const float FloodlightSpotAngle = 72f;
+        private const float FloodlightInnerSpotAngle = 40f;
+        private const float FloodlightPoleX = 4.10f;
+        private const float FloodlightPoleZ = 4.55f;
+        private const float FloodlightHeadHeight = 4.28f;
+        private static readonly Vector3 FloodlightAimTarget =
+            new Vector3(0f, 1.30f, 0.20f);
+
         private static readonly Color IndustrialPaving =
             new Color(0.200f, 0.220f, 0.210f);
         private static readonly Color IndustrialSteel =
@@ -426,6 +452,11 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.DefaultMaterial,
                 collider);
             ConfigureRenderer(ground, homeExterior);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                ground.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.Paving,
+                SurfaceProjection.BoxXZ,
+                color);
         }
 
         private static float ResolvePublicGroundFoundationDepth(
@@ -589,15 +620,20 @@ namespace BarPromenade
                 float z = rows[row];
                 string rowName = $"Drying Frame {row + 1}";
                 AddBox(parent, rowName + " West Post", -4.55f, 1.35f, z,
-                    0.20f, 2.70f, 0.20f, ResidentialFrame, false, homeExterior);
+                    0.20f, 2.70f, 0.20f, ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, rowName + " East Post", 4.55f, 1.35f, z,
-                    0.20f, 2.70f, 0.20f, ResidentialFrame, false, homeExterior);
+                    0.20f, 2.70f, 0.20f, ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, rowName + " Header", 0f, 2.66f, z,
-                    9.30f, 0.18f, 0.20f, ResidentialFrame, false, homeExterior);
+                    9.30f, 0.18f, 0.20f, ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, rowName + " Front Line", 0f, 2.34f, z - 0.16f,
-                    9.05f, 0.045f, 0.045f, ResidentialFrame, false, homeExterior);
+                    9.05f, 0.045f, 0.045f, ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, rowName + " Back Line", 0f, 2.20f, z + 0.16f,
-                    9.05f, 0.045f, 0.045f, ResidentialFrame, false, homeExterior);
+                    9.05f, 0.045f, 0.045f, ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
 
                 if (colliders)
                 {
@@ -620,13 +656,17 @@ namespace BarPromenade
                 // boxes: at that distance the pieces are a few pixels
                 // and the exterior scene runs no wind driver.
                 AddBox(parent, "Large Faded Blanket", 1.15f, 1.55f, 0f,
-                    3.20f, 1.45f, 0.075f, ResidentialCloth, false, homeExterior);
+                    3.20f, 1.45f, 0.075f, ResidentialCloth, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.Cloth);
                 AddBox(parent, "Blanket Repair Patch", 1.72f, 1.66f, -0.045f,
-                    0.72f, 0.52f, 0.035f, ResidentialPatch, false, homeExterior);
+                    0.72f, 0.52f, 0.035f, ResidentialPatch, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.Cloth);
                 AddBox(parent, "Cold Sheet", -2.75f, 1.78f, -3f,
-                    1.70f, 0.94f, 0.065f, ResidentialClothCold, false, homeExterior);
+                    1.70f, 0.94f, 0.065f, ResidentialClothCold, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.Cloth);
                 AddBox(parent, "Small Towel", 2.75f, 1.94f, 3f,
-                    0.90f, 0.58f, 0.065f, ResidentialPatch, false, homeExterior);
+                    0.90f, 0.58f, 0.065f, ResidentialPatch, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.Cloth);
             }
             else
             {
@@ -657,11 +697,17 @@ namespace BarPromenade
             AddBox(parent, "Shared Bench Seat",
                 DryingBenchX, DryingBenchSeatCenterY, DryingBenchZ,
                 DryingBenchWidth, DryingBenchSeatThickness,
-                DryingBenchDepth, ResidentialCloth, false, homeExterior);
+                DryingBenchDepth, ResidentialCloth, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.Timber,
+                projection: SurfaceProjection.BoxXZ);
             AddBox(parent, "Shared Bench Leg A", -4.02f, 0.28f, 4.45f,
-                0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior);
+                0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Shared Bench Leg B", -2.48f, 0.28f, 4.45f,
-                0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior);
+                0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+
+            BuildDryingYardFloodlight(parent, colliders, homeExterior);
 
             // The blanket used to carry an obstacle collider from its
             // static-box days; simulated cloth is something the hero
@@ -673,6 +719,121 @@ namespace BarPromenade
                     "Shared Bench Collider",
                     new Vector3(DryingBenchX, 0.38f, DryingBenchZ),
                     new Vector3(DryingBenchWidth, 0.76f, 0.62f));
+            }
+        }
+
+        /// <summary>
+        /// The communal floodlight on its own pole at the street-side
+        /// corner opposite the shared bench, washing all three drying
+        /// frames and their hanging laundry. The city build carries one
+        /// real shadowless night-scaled Spot plus a fog halo; the home
+        /// exterior vista keeps only the pole, head and dead-by-day
+        /// lens geometry.
+        /// </summary>
+        private static void BuildDryingYardFloodlight(
+            Transform parent,
+            bool colliders,
+            bool homeExterior)
+        {
+            AddCylinder(parent, "Drying Yard Floodlight Pole",
+                FloodlightPoleX, FloodlightHeadHeight * 0.5f,
+                FloodlightPoleZ,
+                0.22f, FloodlightHeadHeight * 0.5f, 0.22f,
+                ResidentialFrame, false, homeExterior,
+                CityPointOfInterestSurfaceKind.PaintedMetal);
+
+            var headPosition = new Vector3(
+                FloodlightPoleX,
+                FloodlightHeadHeight,
+                FloodlightPoleZ);
+            Transform head = new GameObject("Floodlight Head").transform;
+            head.SetParent(parent, false);
+            head.localPosition = headPosition;
+            head.localRotation = Quaternion.LookRotation(
+                (FloodlightAimTarget - headPosition).normalized,
+                Vector3.up);
+
+            GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                "Floodlight Housing",
+                head,
+                new Vector3(0f, 0f, -0.16f),
+                new Vector3(0.46f, 0.30f, 0.38f),
+                ResidentialFrame,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            ConfigureRenderer(housing, homeExterior);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                housing.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                ResidentialFrame);
+
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Floodlight Lens",
+                head,
+                new Vector3(0f, 0f, 0.04f),
+                new Vector3(0.36f, 0.22f, 0.03f),
+                FloodlightGlow,
+                CityNightResources.EmissiveMaterial,
+                false);
+            ConfigureRenderer(lens, homeExterior);
+            CityNightGlowRegistry.Register(
+                lens.GetComponent<Renderer>(),
+                FloodlightGlow);
+
+            if (!homeExterior)
+            {
+                GameObject emitter = new GameObject(
+                    "Drying Yard Floodlight Light");
+                emitter.transform.SetParent(head, false);
+                Light light = emitter.AddComponent<Light>();
+                light.type = LightType.Spot;
+                light.color = FloodlightLightColor;
+                light.intensity = FloodlightNightIntensity;
+                light.range = FloodlightRange;
+                light.spotAngle = FloodlightSpotAngle;
+                light.innerSpotAngle = FloodlightInnerSpotAngle;
+                light.shadows = LightShadows.None;
+                light.renderMode = LightRenderMode.ForcePixel;
+                light.lightmapBakeType = LightmapBakeType.Realtime;
+
+                GameObject haloObject = new GameObject(
+                    "Floodlight Source Halo");
+                haloObject.transform.SetParent(
+                    emitter.transform,
+                    false);
+                CityLightHalo halo =
+                    haloObject.AddComponent<CityLightHalo>();
+                halo.Initialize(
+                    CityNightResources.AtmosphereMaterial,
+                    0.70f,
+                    1.95f,
+                    new Color(
+                        FloodlightLightColor.r * 4.2f,
+                        FloodlightLightColor.g * 4.2f,
+                        FloodlightLightColor.b * 4.2f,
+                        0.18f),
+                    new Color(
+                        FloodlightLightColor.r * 2.1f,
+                        FloodlightLightColor.g * 2.1f,
+                        FloodlightLightColor.b * 2.1f,
+                        0.05f));
+                CityNightSiteLightRegistry.Register(
+                    light,
+                    FloodlightNightIntensity,
+                    halo);
+            }
+
+            if (colliders)
+            {
+                AddObstacleCollider(
+                    parent,
+                    "Drying Yard Floodlight Pole Collider",
+                    new Vector3(
+                        FloodlightPoleX,
+                        FloodlightHeadHeight * 0.5f,
+                        FloodlightPoleZ),
+                    new Vector3(0.30f, FloodlightHeadHeight, 0.30f));
             }
         }
 
@@ -980,6 +1141,11 @@ namespace BarPromenade
                 tornVariant,
                 columns,
                 rows);
+            CityPointOfInterestSurfaceAppearance.ApplyClothPanel(
+                rag.GetComponent<SkinnedMeshRenderer>(),
+                color,
+                width,
+                height);
             Cloth cloth = rag.GetComponent<Cloth>();
             CityClothWindRegistry.Register(cloth);
 
@@ -1034,7 +1200,9 @@ namespace BarPromenade
             bool emissive,
             bool homeExterior,
             float yaw = 0f,
-            bool alwaysLit = false)
+            bool alwaysLit = false,
+            CityPointOfInterestSurfaceKind? surface = null,
+            SurfaceProjection projection = SurfaceProjection.BoxXY)
         {
             Material material = emissive
                 ? CityNightResources.EmissiveMaterial
@@ -1049,6 +1217,14 @@ namespace BarPromenade
                 false);
             part.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             ConfigureRenderer(part, homeExterior);
+            if (surface.HasValue && !emissive)
+            {
+                CityPointOfInterestSurfaceAppearance.Apply(
+                    part.GetComponent<Renderer>(),
+                    surface.Value,
+                    projection,
+                    color);
+            }
 
             // Site lamps die by day with every other electric glow;
             // only a working instrument face may stay always lit.
@@ -1071,7 +1247,10 @@ namespace BarPromenade
             float depth,
             Color color,
             bool collider,
-            bool homeExterior)
+            bool homeExterior,
+            CityPointOfInterestSurfaceKind? surfaceKind = null,
+            SurfaceProjection projection =
+                SurfaceProjection.CylinderSide)
         {
             Material material =
                 RuntimePrimitiveFactory.DefaultMaterial;
@@ -1091,6 +1270,14 @@ namespace BarPromenade
                     part.GetComponent<MeshFilter>().sharedMesh;
             }
             ConfigureRenderer(part, homeExterior);
+            if (surfaceKind.HasValue)
+            {
+                CityPointOfInterestSurfaceAppearance.Apply(
+                    part.GetComponent<Renderer>(),
+                    surfaceKind.Value,
+                    projection,
+                    color);
+            }
         }
 
         private static void AddObstacleCollider(

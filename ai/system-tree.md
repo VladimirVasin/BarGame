@@ -202,7 +202,8 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
-        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes
+        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard floodlight
+        CityPointOfInterestSurfaceAppearance.cs  four scripted POI albedos (paving/metal/cloth/timber) via MPBs
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
@@ -214,6 +215,7 @@ Assets/
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
         CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
         CityNightGlowRegistry.cs     registered electric glows (neon/signs/lamps) that die by day
+        CityNightSiteLightRegistry.cs  authored site realtime lights scaled/disabled by the night factor
         CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
         CityFacadeAppearance.cs      district wall albedos tiled by that grid, not by metres
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign
@@ -489,6 +491,7 @@ tools/
   build-player-cat-feeding-atlas.py       retired player-sprite source tooling
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
   build-city-facade-textures.py     deterministic district wall albedos + validator
+  build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/

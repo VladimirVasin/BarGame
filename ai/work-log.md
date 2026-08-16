@@ -6,6 +6,62 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-16 — POI surface textures and the drying yard floodlight
+
+- Four scripted opaque POI albedos join the facade/home/supermarket
+  texture family: `tools/build-city-poi-textures.py` (importing the
+  shared home pipeline) emits yard paving slabs (new `poi_paving`
+  grammar), painted metal, laundry cloth (`linen`) and worn timber
+  (`planks`) into `Assets/Resources/Textures/CityPoi*Albedo.png`,
+  with the measured contract in `ArtSource/City/poi-textures.json`
+  (compensations `1.422/1.4465/1.396/1.433`).
+- `CityPointOfInterestSurfaceAppearance` (hash salt `5000`) applies
+  them through property blocks on the shared primitive material. All
+  four public grounds are paved with their district tints; the drying
+  yard is textured end to end — frames, lines, posts, bench legs and
+  floodlight metalwork on painted metal, the bench seat on timber,
+  and the simulated laundry through a new `ApplyClothPanel` path that
+  keeps the shared two-sided cloth material, matte specular and
+  metre-tiles the panel's authored width/height (a new
+  dimension-explicit `SurfaceAppearanceCore.CreateBaseMapTransform`
+  overload, since skinned panels have no `MeshFilter`).
+- The drying yard gained the one authored POI realtime light: a
+  communal floodlight on its own `4.3 m` pole at the street-side
+  corner opposite the shared bench (recipe-local `4.10, 4.55`),
+  aimed across all three drying frames — a cold near-white
+  shadowless `72°` Spot, range `16`, night intensity `150`, with fog
+  halo and a boosted HDR lens that dies by day. The first cut ran at
+  street-practical intensity `34` and read as unlit in game: spread
+  over a `72°` cone with a `7-12 m` throw that is under half a street
+  lamp's pavement level, invisible through the night grade, fog and
+  PS1 composite (the always-on bar-side yard spot needs `240` for the
+  same reason). Floodlight wattage is the honest unit for a beam this
+  long. New
+  `CityNightSiteLightRegistry` (glow-registry pattern, wired into
+  `CityNightWorldResult.SetNightFactor`) scales the light and halo
+  with the shared night factor and disables them below `0.02`, so
+  nothing electric burns by day; the always-on bar-side yard
+  spotlight deliberately stays outside it. The lower pole owns a
+  focused obstacle collider proven outside every access approach;
+  the Home vista rebuilds pole/head/lens geometry only. Documented
+  worst-case realtime light budget moves `18 -> 19` (night only).
+- `LastRouteCanopyRagTests` was stale from the laundry-cloth commit
+  (it required every POI cloth to be a canopy rag, but the drying
+  yard has hung simulated laundry since then and the test was not
+  re-run); it now admits exactly the two cloth families.
+- Verification: EditMode `14/14`
+  (`CityPointOfInterestSurfaceAppearanceTests` — recipe/import/PNG
+  contract incl. compensation-vs-builder-tints, apply path, salt
+  separation from supermarket, per-site paving + drying-yard
+  coverage counts, floodlight contract with night-factor
+  scaling/disable and approach-clear pole collider, light- and
+  collider-free vista + `LastRouteCanopyRagTests`).
+  `CityNightPresentationPlayModeTests` POI assertions updated (the
+  public places now carry exactly one Light — the floodlight — and
+  only its halo particles) and re-run green `4/4`. The full EditMode
+  suite's 14 unrelated failures reproduce identically on a clean
+  HEAD stash and predate this change.
+
 ## 2026-08-16 — Cloth and wind: torn rags on the broken canopy
 
 - Unity's built-in cloth entered the project the honest way: the

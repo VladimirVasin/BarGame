@@ -38,6 +38,33 @@ namespace BarPromenade
                 projection,
                 out float uMeters,
                 out float vMeters);
+            return CreateBaseMapTransform(
+                renderer.transform,
+                uMeters,
+                vMeters,
+                metersPerTile,
+                minimumUvScale,
+                hashSalt);
+        }
+
+        /// <summary>
+        /// The dimension-explicit variant for renderers whose metre size
+        /// cannot be read from a MeshFilter — the skinned cloth panels
+        /// carry plain 0..1 UVs over their authored width and height.
+        /// </summary>
+        public static Vector4 CreateBaseMapTransform(
+            Transform transform,
+            float uMeters,
+            float vMeters,
+            float metersPerTile,
+            float minimumUvScale,
+            int hashSalt)
+        {
+            if (transform == null)
+            {
+                throw new ArgumentNullException(nameof(transform));
+            }
+
             float uScale = Mathf.Max(
                 minimumUvScale,
                 uMeters / metersPerTile);
@@ -45,7 +72,7 @@ namespace BarPromenade
                 minimumUvScale,
                 vMeters / metersPerTile);
 
-            uint hash = StableHash(renderer.transform, hashSalt);
+            uint hash = StableHash(transform, hashSalt);
             float uOffset = (hash & 0xFFFFu) / 65536f;
             hash = Mix(hash, 0x9E3779B9u);
             float vOffset = (hash & 0xFFFFu) / 65536f;

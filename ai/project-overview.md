@@ -128,8 +128,9 @@ The vertical slice contains:
   exterior night fixtures; the fixed neighbour-wall yard Spot is deliberately
   outside `NightFactor` and stays on. The atmosphere pool remains capped at
   `12` local realtime lights. One active bus may add `4`, the single pooled
-  helmet-lamp pedestrian `1` and the yard `1`, for a bounded worst case of
-  `18`; the scene Directional and transient lightning Directional are counted
+  helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
+  pole floodlight `1`, for a bounded worst case of
+  `19`; the scene Directional and transient lightning Directional are counted
   separately. Bar, Supermarket and Stairwell lighting remain unchanged. The
   `0.070` exponential-squared luminous gray-green fog,
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
@@ -439,7 +440,25 @@ The vertical slice contains:
   canopy ring but uses no emissive strips: the old departure board is visibly
   grounded on two supports and weathered route plates, layered posters, a
   waste bin, bottles, a discarded timetable and a lost scarf replace the
-  repeated neon. These authored recipes require both
+  repeated neon. Four scripted opaque POI albedos from
+  `tools/build-city-poi-textures.py` (yard paving slabs, painted metal,
+  laundry cloth, worn timber) ride the shared `RuntimePrimitiveLit`
+  through `CityPointOfInterestSurfaceAppearance` property blocks with the
+  same linear albedo compensation as the facade/home/supermarket sheets:
+  all four public grounds are paved, and the drying yard's frames, lines,
+  hanging simulated wash (which keeps its shared two-sided cloth material
+  and matte specular), bench and fixtures are fully textured. The drying
+  yard also carries the one authored POI realtime light: a communal
+  floodlight on its own `4.3 m` pole at the street-side corner opposite
+  the shared bench, washing all three drying frames with a cold
+  near-white shadowless `72°` Spot (range `16`, night intensity `150` — the
+  7-12 m throw needs floodlight wattage for the far row to reach
+  street-lamp brightness through the night grade and fog) plus a
+  fog halo and a dead-by-day emissive lens; `CityNightSiteLightRegistry`
+  scales and disables it with the shared night factor, its lower pole
+  owns a focused collider outside every access approach, and the Home
+  vista rebuilds only the pole/head/lens geometry without a light. These
+  authored recipes require both
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;

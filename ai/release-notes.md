@@ -6,6 +6,18 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-16 — Textured public places and a floodlit drying yard
+
+- The four district public places lost their flat-colour look: every public
+  ground is paved with weathered concrete slabs, and the Residential drying
+  yard is textured end to end — painted-metal frames, posts and lines, a
+  worn-timber bench and woven cloth on the hanging wash, which keeps swaying
+  in the weather wind and still parts around the hero.
+- A communal floodlight now stands on its own pole at the drying yard's
+  street-side corner, opposite the shared bench. At night it washes all
+  three drying lines with a cold near-white beam and a soft fog halo; by
+  day it goes dark with the rest of the city's electric fixtures.
+
 ### 2026-08-15 — The wheelchair yard is back beside the bar
 
 - The pipe-backed wheelchair rider's yard now occupies the intended walkable

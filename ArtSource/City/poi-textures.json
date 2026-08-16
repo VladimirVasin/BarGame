@@ -1,0 +1,129 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityPoiPavingAlbedo",
+      "grammar": "poi_paving",
+      "resourcePath": "Textures/CityPoiPavingAlbedo",
+      "meanLinearLuminance": 0.49963,
+      "albedoCompensation": 1.422,
+      "brightnessError": 0.029758,
+      "metersPerTile": 3.0,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.689005,
+      "tints": {
+        "CityDistrictPointOfInterestWorldBuilder.OldTownPaving": [
+          0.255,
+          0.235,
+          0.19
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialPaving": [
+          0.235,
+          0.275,
+          0.27
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.IndustrialPaving": [
+          0.2,
+          0.22,
+          0.21
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifePaving": [
+          0.17,
+          0.175,
+          0.215
+        ]
+      },
+      "edgeDelta": 2.3797,
+      "seamRatio": 0.3989,
+      "contrast": 105,
+      "channelRatio": 1.007,
+      "sha256": "A0C20D201D6A5E6761A2ED497566F6A2C03B657489C75EA1D50B03525B74657A"
+    },
+    {
+      "key": "CityPoiPaintedMetalAlbedo",
+      "grammar": "painted_metal",
+      "resourcePath": "Textures/CityPoiPaintedMetalAlbedo",
+      "meanLinearLuminance": 0.49986,
+      "albedoCompensation": 1.4465,
+      "brightnessError": 0.020379,
+      "metersPerTile": 1.4,
+      "smoothness": 0.22,
+      "metallic": 0.25,
+      "exposure": 0.773395,
+      "tints": {
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialFrame": [
+          0.145,
+          0.19,
+          0.185
+        ]
+      },
+      "edgeDelta": 2.1761,
+      "seamRatio": 1.0541,
+      "contrast": 65,
+      "channelRatio": 1.0165,
+      "sha256": "E81E2713DDCAA1A85984A94510EC417A4B1B2D178084DE3D3D14F9E795E95D18"
+    },
+    {
+      "key": "CityPoiClothAlbedo",
+      "grammar": "linen",
+      "resourcePath": "Textures/CityPoiClothAlbedo",
+      "meanLinearLuminance": 0.500166,
+      "albedoCompensation": 1.396,
+      "brightnessError": 0.052065,
+      "metersPerTile": 1.6,
+      "smoothness": 0.0,
+      "metallic": 0.0,
+      "exposure": 0.716058,
+      "tints": {
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialCloth": [
+          0.405,
+          0.245,
+          0.185
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialClothCold": [
+          0.225,
+          0.35,
+          0.375
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialPatch": [
+          0.6,
+          0.5,
+          0.285
+        ]
+      },
+      "edgeDelta": 3.103,
+      "seamRatio": 1.6134,
+      "contrast": 58,
+      "channelRatio": 1.0223,
+      "sha256": "957A2617243BEF4C19AC77382037BD66F7397D795B302842158C2A4DE521D11C"
+    },
+    {
+      "key": "CityPoiTimberAlbedo",
+      "grammar": "planks",
+      "resourcePath": "Textures/CityPoiTimberAlbedo",
+      "meanLinearLuminance": 0.479822,
+      "albedoCompensation": 1.433,
+      "brightnessError": 0.0422,
+      "metersPerTile": 1.6,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "exposure": 0.911912,
+      "tints": {
+        "CityDistrictPointOfInterestWorldBuilder.ResidentialCloth": [
+          0.405,
+          0.245,
+          0.185
+        ]
+      },
+      "edgeDelta": 2.7101,
+      "seamRatio": 1.2006,
+      "contrast": 69,
+      "channelRatio": 1.0965,
+      "sha256": "199DB79C483E37266AAFBAB5B9586B3E1FE828BA162C479876A3377B20BC5075"
+    }
+  ]
+}

@@ -76,6 +76,7 @@ namespace BarPromenade
             // follow it too.
             CityWindowAppearance.SetNightFactor(nightFactor);
             CityNightGlowRegistry.SetNightFactor(nightFactor);
+            CityNightSiteLightRegistry.SetNightFactor(nightFactor);
             Color displayedBulbColor = new Color(
                 streetLampBulbNightColor.r * nightFactor,
                 streetLampBulbNightColor.g * nightFactor,

@@ -24,25 +24,41 @@ namespace BarPromenade.Tests.EditMode
 
                 Cloth[] cloths =
                     root.GetComponentsInChildren<Cloth>(true);
-                Assert.That(
-                    cloths.Length,
-                    Is.GreaterThanOrEqualTo(1),
-                    "The broken canopy must hang cloth rags.");
+                int canopyRagCount = 0;
                 for (int index = 0; index < cloths.Length; index++)
                 {
-                    Assert.That(
-                        cloths[index].name,
-                        Does.Contain("Broken Canopy Segment")
-                            .And.Contain("Rag"));
                     Assert.That(
                         cloths[index]
                             .GetComponent<SkinnedMeshRenderer>(),
                         Is.Not.Null);
+                    // The city hangs two cloth families: the island's
+                    // torn canopy rags and the drying yard's pinned
+                    // laundry.
+                    bool isCanopyRag =
+                        cloths[index].name.Contains(
+                            "Broken Canopy Segment") &&
+                        cloths[index].name.Contains("Rag");
+                    if (!isCanopyRag)
+                    {
+                        Assert.That(
+                            cloths[index].transform.parent.name,
+                            Is.EqualTo("Residential Drying Yard"),
+                            "Unexpected cloth outside the canopy and " +
+                            "the drying yard.");
+                        continue;
+                    }
+
+                    canopyRagCount++;
                     Assert.That(
                         cloths[index].transform.localPosition.y,
                         Is.GreaterThan(2f),
                         "Rags hang from the canopy underside.");
                 }
+
+                Assert.That(
+                    canopyRagCount,
+                    Is.GreaterThanOrEqualTo(1),
+                    "The broken canopy must hang cloth rags.");
 
                 Assert.That(
                     CityClothWindRegistry.Count - registeredBefore,
