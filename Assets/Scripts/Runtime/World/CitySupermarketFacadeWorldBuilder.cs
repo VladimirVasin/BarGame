@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -21,6 +22,13 @@ namespace BarPromenade
             new Color(1.40f, 0.24f, 0.12f);
         private static readonly Color LetterColor =
             new Color(1.20f, 1.05f, 0.64f);
+
+        /// <summary>The word both supermarket signs spell.</summary>
+        public const string SignWord = "ПРОДУКТЫ";
+
+        private const float BladeCenterY = 4.05f;
+        private const float BladeHeight = 3.05f;
+        private const float BladeRowStep = 0.36f;
 
         public static void BuildCity(
             Transform parent,
@@ -218,23 +226,130 @@ namespace BarPromenade
                 emissiveMaterial,
                 clipToHomeExterior);
 
-            for (int letter = -2; letter <= 2; letter++)
+            // The sign spells the word: blocky segment glyphs bright
+            // enough to read down the street, the recognisable Soviet
+            // grocery lettering rather than anonymous glowing blocks.
+            IReadOnlyList<SignSegmentRect> lettering =
+                CitySignLettering.Layout(
+                    SignWord,
+                    0.62f,
+                    0.42f,
+                    0.90f);
+            for (int index = 0; index < lettering.Count; index++)
             {
+                SignSegmentRect segment = lettering[index];
                 CreateGlowBox(
                     "Supermarket Sign Letter",
                     parent,
                     doorPosition +
                     direction * 0.275f +
-                    tangent * (letter * 0.92f) +
-                    Vector3.up * 3.48f,
+                    tangent * segment.Center.x +
+                    Vector3.up * (3.48f + segment.Center.y),
                     CreateFacadeSize(
                         frontageIsX,
                         0.045f,
-                        0.28f,
-                        0.58f),
+                        segment.Size.y,
+                        segment.Size.x),
                     LetterColor,
                     emissiveMaterial,
                     clipToHomeExterior);
+            }
+
+            BuildBladeSign(
+                parent,
+                doorPosition,
+                direction,
+                tangent,
+                frontageIsX,
+                emissiveMaterial,
+                clipToHomeExterior);
+        }
+
+        /// <summary>
+        /// The vertical corner box: one glyph per row reading down,
+        /// lettered on both street-facing sides — the classic Soviet
+        /// blade sign that marks the grocery from far along the block.
+        /// </summary>
+        private static void BuildBladeSign(
+            Transform parent,
+            Vector3 doorPosition,
+            Vector3 direction,
+            Vector3 tangent,
+            bool frontageIsX,
+            Material emissiveMaterial,
+            bool clipToHomeExterior)
+        {
+            Vector3 bladeCenter =
+                doorPosition +
+                direction * 0.62f +
+                tangent *
+                (SupermarketEntranceGeometry.StorefrontWidth * 0.5f +
+                 0.42f) +
+                Vector3.up * BladeCenterY;
+
+            CreateBox(
+                "Supermarket Blade Sign Housing",
+                parent,
+                bladeCenter,
+                frontageIsX
+                    ? new Vector3(1.02f, BladeHeight, 0.18f)
+                    : new Vector3(0.18f, BladeHeight, 1.02f),
+                SignHousingColor,
+                null,
+                clipToHomeExterior);
+            CreateBox(
+                "Supermarket Blade Sign Bracket",
+                parent,
+                bladeCenter -
+                direction * 0.44f +
+                Vector3.up * (BladeHeight * 0.5f - 0.14f),
+                frontageIsX
+                    ? new Vector3(0.42f, 0.10f, 0.10f)
+                    : new Vector3(0.10f, 0.10f, 0.42f),
+                SignHousingColor,
+                null,
+                clipToHomeExterior);
+
+            float top = (SignWord.Length - 1) * 0.5f * BladeRowStep;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 faceOffset = tangent * (side * 0.115f);
+                for (int row = 0; row < SignWord.Length; row++)
+                {
+                    IReadOnlyList<SignSegmentRect> glyph =
+                        CitySignLettering.Layout(
+                            SignWord[row].ToString(),
+                            0.46f,
+                            0.30f,
+                            1f);
+                    float rowY = top - row * BladeRowStep;
+                    for (int index = 0; index < glyph.Count; index++)
+                    {
+                        SignSegmentRect segment = glyph[index];
+                        // Each face flips the glyphs along the read
+                        // axis so both approaches read forward — the
+                        // asymmetric Р and К must never mirror.
+                        CreateGlowBox(
+                            "Supermarket Blade Sign Letter",
+                            parent,
+                            bladeCenter +
+                            faceOffset +
+                            direction * (segment.Center.x * side) +
+                            Vector3.up * (rowY + segment.Center.y),
+                            frontageIsX
+                                ? new Vector3(
+                                    segment.Size.x,
+                                    segment.Size.y,
+                                    0.04f)
+                                : new Vector3(
+                                    0.04f,
+                                    segment.Size.y,
+                                    segment.Size.x),
+                            LetterColor,
+                            emissiveMaterial,
+                            clipToHomeExterior);
+                    }
+                }
             }
         }
 

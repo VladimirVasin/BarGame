@@ -1220,6 +1220,14 @@ namespace BarPromenade
                 new Color(0.24f, 0.19f, 0.17f),
                 false);
 
+            BuildHomeAnchor(
+                parent,
+                lot,
+                direction,
+                tangent,
+                frontageIsX,
+                emissiveMaterial);
+
             GameObject entranceObject =
                 new GameObject("Interactive Home Entrance");
             entranceObject.transform.SetParent(parent, false);
@@ -1238,6 +1246,146 @@ namespace BarPromenade
                 (Vector3.up *
                  (CityStreetSurfacePlanner.SidewalkTop +
                   PlayerFactory.GroundedRootOffset)));
+        }
+
+        /// <summary>The digit on the hero's lit house-number plaque.</summary>
+        public const string HomeHouseNumber = "7";
+
+        /// <summary>
+        /// The landmarks that make the hero's building findable: a warm
+        /// entrance lamp under a small canopy with the lit blue house
+        /// number beside the door for street level, and a rooftop
+        /// antenna mast with a red beacon for anywhere in the city.
+        /// Every glow rides the night registry, so it dims by day with
+        /// the rest of the city's electricity.
+        /// </summary>
+        private static void BuildHomeAnchor(
+            Transform parent,
+            BuildingLot lot,
+            Vector3 direction,
+            Vector3 tangent,
+            bool frontageIsX,
+            Material emissiveMaterial)
+        {
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entrance Canopy",
+                parent,
+                lot.DoorPosition +
+                (direction * 0.44f) +
+                (Vector3.up * 2.46f),
+                frontageIsX
+                    ? new Vector3(0.85f, 0.10f, 2.05f)
+                    : new Vector3(2.05f, 0.10f, 0.85f),
+                HomeTrim,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Entrance Lamp Housing",
+                parent,
+                lot.DoorPosition +
+                (direction * 0.50f) +
+                (Vector3.up * 2.36f),
+                new Vector3(0.16f, 0.10f, 0.16f),
+                HomeDoor,
+                false);
+            Color lampColor = new Color(1.35f, 0.95f, 0.55f);
+            GameObject lamp = RuntimePrimitiveFactory.CreateBox(
+                "Home Entrance Lamp",
+                parent,
+                lot.DoorPosition +
+                (direction * 0.50f) +
+                (Vector3.up * 2.27f),
+                new Vector3(0.12f, 0.09f, 0.12f),
+                lampColor,
+                emissiveMaterial,
+                false);
+            CityNightGlowRegistry.Register(
+                lamp.GetComponent<Renderer>(),
+                lampColor);
+
+            // The Soviet enamel plaque: deep blue, lit from within.
+            Vector3 plaqueCenter =
+                lot.DoorPosition +
+                (direction * 0.10f) +
+                (tangent * 1.18f) +
+                (Vector3.up * 2.32f);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Number Plaque",
+                parent,
+                plaqueCenter,
+                frontageIsX
+                    ? new Vector3(0.07f, 0.52f, 0.42f)
+                    : new Vector3(0.42f, 0.52f, 0.07f),
+                new Color(0.07f, 0.11f, 0.30f),
+                false);
+            Color digitColor = new Color(1.05f, 1.12f, 1.30f);
+            IReadOnlyList<SignSegmentRect> digit =
+                CitySignLettering.Layout(
+                    HomeHouseNumber,
+                    0.24f,
+                    0.34f,
+                    1f);
+            for (int index = 0; index < digit.Count; index++)
+            {
+                SignSegmentRect segment = digit[index];
+                GameObject stroke = RuntimePrimitiveFactory.CreateBox(
+                    "Home Number Digit Segment",
+                    parent,
+                    plaqueCenter +
+                    (direction * 0.045f) +
+                    (tangent * segment.Center.x) +
+                    (Vector3.up * segment.Center.y),
+                    frontageIsX
+                        ? new Vector3(
+                            0.03f,
+                            segment.Size.y,
+                            segment.Size.x)
+                        : new Vector3(
+                            segment.Size.x,
+                            segment.Size.y,
+                            0.03f),
+                    digitColor,
+                    emissiveMaterial,
+                    false);
+                CityNightGlowRegistry.Register(
+                    stroke.GetComponent<Renderer>(),
+                    digitColor);
+            }
+
+            // The rooftop beacon: a thin antenna mast with a red
+            // aircraft lamp, readable from any street in the city.
+            Vector3 mastBase = lot.Center + new Vector3(
+                lot.Size.x * 0.30f,
+                lot.Height + 0.62f,
+                -lot.Size.y * 0.22f);
+            RuntimePrimitiveFactory.CreateCylinder(
+                "Home Beacon Mast",
+                parent,
+                mastBase + (Vector3.up * 1.70f),
+                new Vector3(0.08f, 1.70f, 0.08f),
+                HomeDoor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Beacon Crossarm",
+                parent,
+                mastBase + (Vector3.up * 2.42f),
+                new Vector3(0.66f, 0.05f, 0.05f),
+                HomeDoor,
+                false);
+
+            // Big and hot enough to survive the city fog from blocks
+            // away — the one red point on the skyline is the hero's.
+            Color beaconColor = new Color(2.30f, 0.26f, 0.18f);
+            GameObject beacon = RuntimePrimitiveFactory.CreateBox(
+                "Home Roof Beacon",
+                parent,
+                mastBase + (Vector3.up * 3.52f),
+                new Vector3(0.30f, 0.30f, 0.30f),
+                beaconColor,
+                emissiveMaterial,
+                false);
+            CityNightGlowRegistry.Register(
+                beacon.GetComponent<Renderer>(),
+                beaconColor);
         }
 
         internal static void BuildHomeBalconyFacade(
