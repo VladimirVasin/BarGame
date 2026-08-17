@@ -45,6 +45,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CityCemeteryMournerController CemeteryMourner
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -367,6 +372,18 @@ namespace BarPromenade
                 Layout,
                 Player.GameObject.transform,
                 WeighbridgeAttendants);
+            // The cemetery's one scripted visitor: while the hero is
+            // near the grounds a mourner spawns out of sight, walks
+            // through the gate to a deterministic random grave, lays
+            // her bouquet, cries for thirty seconds, wipes her eyes
+            // and leaves. Spawned per visit, not staged forever.
+            CemeteryMourner = CityCemeteryMournerController.Create(
+                transform,
+                Layout,
+                World.CemeteryPlan,
+                Player.GameObject.transform,
+                camera,
+                GameSessionState.CitySeed);
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their

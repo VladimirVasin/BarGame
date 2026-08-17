@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 20,
+  "clip_count": 22,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -426,7 +426,47 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "MournerWalk",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "bowed mourning stance, both hands cradling the bouquet at the chest",
+      "gait": "short heavy grieving steps with no arm swing",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "MournerMourn",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 36.5,
+      "frame_start": 0,
+      "frame_end": 876,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "graveside grief from a standing bow",
+      "gait": "lay the bouquet low, thirty seconds of shoulder-shaking sobs behind raised hands, wipe each eye and straighten",
+      "keyed_bone_count": 31,
+      "loop_max_error": 3e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "10309b8d9d56076b47f0de97b0bfc5632dde14cf1cc00aa3fc37a8082f249c71"
+  "build_signature": "e476627285468c0bed67e273bf1670518b911f5823a24b28fe3f8ef6079bca99"
 }

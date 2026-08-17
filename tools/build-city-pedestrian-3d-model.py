@@ -169,6 +169,21 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
     ),
+    # The cemetery mourner. One staged model for the scripted graveside
+    # visit: a woman in deep mourning enters the gate with a bouquet
+    # clasped to her chest, lays it on the chosen grave, cries and
+    # leaves. The idle slot carries the whole graveside rite (lay the
+    # flowers, thirty seconds of sobbing, wipe the eyes) and the walk
+    # slot carries the grieving gait, mirroring how the babushka and
+    # the attendant map their scripted loops onto the same pair.
+    "cemetery_mourner": ArchetypeSpec(
+        "cemetery_mourner", "cemetery_mourner_v1", "Cemetery Mourner", 918477,
+        "CemeteryMourner3D.blend", "CemeteryMourner3D",
+        "CemeteryMourner3D.png", "MournerMourn", "MournerWalk",
+        (900, 2000),
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -333,6 +348,19 @@ PALETTE = {
     "weigh_trousers": (0.072, 0.082, 0.088, 1.0),
     "weigh_cap": (0.098, 0.110, 0.120, 1.0),
     "chalk": (0.620, 0.635, 0.615, 1.0),
+    # Cemetery Mourner. Deep mourning on purpose: a near-black coat and
+    # veil separated only by cold charcoal steps, pale grieving skin,
+    # and the one muted colour note the whole figure exists around —
+    # the bouquet clasped to her chest.
+    "mourner_coat": (0.052, 0.050, 0.058, 1.0),
+    "mourner_coat_light": (0.082, 0.080, 0.090, 1.0),
+    "mourner_coat_dark": (0.028, 0.027, 0.032, 1.0),
+    "mourner_veil": (0.038, 0.036, 0.044, 1.0),
+    "mourner_veil_dark": (0.020, 0.019, 0.024, 1.0),
+    "mourner_stocking": (0.045, 0.044, 0.048, 1.0),
+    "bouquet_stem": (0.055, 0.110, 0.060, 1.0),
+    "bouquet_bloom": (0.290, 0.060, 0.075, 1.0),
+    "bouquet_wrap": (0.330, 0.300, 0.240, 1.0),
 }
 
 
@@ -682,6 +710,10 @@ class PedestrianBuilder:
             "weigh_attendant": (
                 self.build_weigh_attendant_body,
                 self.build_weigh_attendant_details,
+            ),
+            "cemetery_mourner": (
+                self.build_cemetery_mourner_body,
+                self.build_cemetery_mourner_details,
             ),
         }
         if self.spec.key not in builders:
@@ -2426,6 +2458,226 @@ class PedestrianBuilder:
             "hand.R", "surface_detail", "amber",
         )
 
+    def build_cemetery_mourner_body(self) -> None:
+        """Woman in deep mourning; the grief itself lives in the clips.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the bowed head, the clasped bouquet and
+        the graveside rite are all authored in MournerWalk and
+        MournerMourn rather than in the geometry. The silhouette is a
+        long near-black coat under a heavy veil that falls onto the
+        shoulders — everything the babushka's housecoat is not.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.038, 1.545), (0.102, 0.094, 0.126), 12, 6),
+            "head", "body", "pale_skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.320), (0, -0.026, 1.450), 0.070, 0.058, 10),
+            "neck", "body", "pale_skin",
+        )
+        self.add_part(
+            "GEO_Bust",
+            make_tapered_box((0, 0.010, 1.075), (0, -0.008, 1.340), (0.380, 0.255, 0), (0.410, 0.280, 0)),
+            "chest", "body", "mourner_coat",
+        )
+        self.add_part(
+            "GEO_Waist",
+            make_tapered_box((0, 0.026, 0.870), (0, 0.012, 1.095), (0.400, 0.290, 0), (0.385, 0.260, 0)),
+            "spine", "body", "mourner_coat",
+        )
+        # The long mourning coat: one dark fall from the waist to the
+        # boot shafts, with a near-void hem band closing it.
+        self.add_part(
+            "CLO_Coat",
+            make_tapered_box((0, 0.020, 0.310), (0, 0.024, 0.890), (0.500, 0.400, 0), (0.420, 0.310, 0)),
+            "pelvis", "clothing", "mourner_coat",
+        )
+        self.add_part(
+            "CLO_CoatHem",
+            make_tapered_box((0, 0.020, 0.256), (0, 0.020, 0.316), (0.512, 0.410, 0), (0.502, 0.402, 0)),
+            "pelvis", "clothing", "mourner_coat_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.072, 0.058, 10),
+                f"upper_arm.{side}", "clothing", "mourner_coat",
+            )
+            # Long sleeves down to the wrist: a mourner shows no bare
+            # forearm, only the pale hands stay uncovered.
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.056, 0.044, 8),
+                f"forearm.{side}", "clothing", "mourner_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.628, -0.016, 1.100),
+                    (sign * 0.676, -0.018, 1.078),
+                    0.048, 0.044, 8,
+                ),
+                f"forearm.{side}", "clothing", "mourner_coat_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
+                f"hand.{side}", "body", "pale_skin",
+            )
+            knee = (sign * 0.103, sign * -0.012, 0.354)
+            ankle = (sign * 0.112, sign * -0.022, 0.095)
+            self.add_part(
+                f"CLO_Stocking.{side}",
+                make_frustum_between(knee, ankle, 0.056, 0.045, 8),
+                f"shin.{side}", "clothing", "mourner_stocking",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.085, 0.030),
+                    (sign * 0.112, -0.052, 0.145),
+                    (0.102, 0.255, 0),
+                    (0.090, 0.185, 0),
+                ),
+                f"foot.{side}", "body", "shoe",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.085, 0.012), (0.106, 0.262, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+        # The heavy veil owns the silhouette: a shell behind the face
+        # plane, a folded crest carrying the exact 1.75 m envelope, a
+        # wrap closing under the chin and two drapes falling toward the
+        # shoulders.
+        self.add_part(
+            "CLO_Veil",
+            make_ellipsoid((0, 0.008, 1.550), (0.132, 0.140, 0.156), 12, 6),
+            "head", "signature_silhouette", "mourner_veil",
+        )
+        self.add_part(
+            "CLO_VeilCrown",
+            make_tapered_box((0, 0.006, 1.690), (0, 0.010, 1.750), (0.150, 0.160, 0), (0.052, 0.056, 0)),
+            "head", "signature_silhouette", "mourner_veil",
+        )
+        self.add_part(
+            "CLO_VeilWrap",
+            make_frustum_between((0, -0.072, 1.438), (0, -0.030, 1.318), 0.078, 0.058, 8),
+            "head", "clothing", "mourner_veil_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_VeilDrape.{side}",
+                make_tapered_box(
+                    (sign * 0.150, 0.052, 1.300),
+                    (sign * 0.108, 0.030, 1.520),
+                    (0.062, 0.150, 0),
+                    (0.088, 0.190, 0),
+                ),
+                "head", "signature_silhouette", "mourner_veil",
+            )
+        self.add_part(
+            "CLO_VeilTail",
+            make_tapered_box((0, 0.118, 1.240), (0, 0.096, 1.470), (0.120, 0.036, 0), (0.170, 0.052, 0)),
+            "head", "clothing", "mourner_veil_dark",
+        )
+        for side, x in (("L", 0.045), ("R", -0.045)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.126, 1.548), (0.034, 0.018, 0.020)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.144, 1.494), (0, -0.128, 1.532), (0.038, 0.046, 0), (0.028, 0.038, 0)),
+            "head", "face_detail", "pale_skin",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.130, 1.462), (0.052, 0.020, 0.012)),
+            "head", "face_detail", "void",
+        )
+
+    def build_cemetery_mourner_details(self) -> None:
+        """Coat buttons and the clasped funeral bouquet.
+
+        The bouquet rides the right hand the way the babushka's beater
+        does: authored at the A-pose fist and pointing up-forward out
+        of it, so the clasp pose of MournerWalk carries it against the
+        chest. The runtime hides these ACC_Bouquet* renderers at the
+        lay cue and places its own bouquet on the grave slab.
+        """
+
+        self.add_part(
+            "ACC_CoatButton.01",
+            make_box((0, -0.148, 1.250), (0.022, 0.016, 0.022)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_CoatButton.02",
+            make_box((0, -0.142, 1.130), (0.022, 0.016, 0.022)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_CoatButton.03",
+            make_box((0, -0.144, 1.000), (0.022, 0.016, 0.022)),
+            "spine", "surface_detail", "button",
+        )
+
+        # Up and slightly forward out of the fist: with both forearms
+        # folded to the chest in the authored clips, this direction
+        # stands the blooms upright against the collarbone.
+        direction = (0.0, -0.280, 0.960)
+        grip = (-0.720, -0.021, 1.048)
+
+        def along(distance: float) -> tuple[float, float, float]:
+            return (
+                grip[0] + direction[0] * distance,
+                grip[1] + direction[1] * distance,
+                grip[2] + direction[2] * distance,
+            )
+
+        self.add_part(
+            "ACC_BouquetStems",
+            make_frustum_between(along(-0.070), along(0.020), 0.011, 0.015, 6, 1.0),
+            "hand.R", "surface_detail", "bouquet_stem",
+        )
+        self.add_part(
+            "ACC_BouquetWrap",
+            make_frustum_between(along(0.000), along(0.165), 0.028, 0.056, 8, 1.0),
+            "hand.R", "signature_silhouette", "bouquet_wrap",
+        )
+        self.add_part(
+            "ACC_BouquetBloomA",
+            make_ellipsoid(along(0.210), (0.056, 0.052, 0.044), 8, 4),
+            "hand.R", "signature_silhouette", "bouquet_bloom",
+        )
+        bloom_b = along(0.240)
+        self.add_part(
+            "ACC_BouquetBloomB",
+            make_ellipsoid(
+                (bloom_b[0] + 0.040, bloom_b[1] - 0.012, bloom_b[2] - 0.018),
+                (0.040, 0.038, 0.034), 8, 4,
+            ),
+            "hand.R", "signature_silhouette", "bouquet_bloom",
+        )
+        bloom_c = along(0.228)
+        self.add_part(
+            "ACC_BouquetGreens",
+            make_ellipsoid(
+                (bloom_c[0] - 0.042, bloom_c[1] + 0.010, bloom_c[2] - 0.008),
+                (0.036, 0.034, 0.040), 8, 4,
+            ),
+            "hand.R", "surface_detail", "bouquet_stem",
+        )
+
     def build_weigh_attendant_body(self) -> None:
         """Tired industrial worker in a quilted jacket and a knit cap.
 
@@ -3070,6 +3322,20 @@ ACTION_SPECS = (
         "burdened walk down the deck axis with free hands",
         "shuffling steps, a square standstill at centre while the scale settles, steps resume",
     ),
+    ActionSpec(
+        "MournerWalk", "cemetery_mourner_v1", 1.5, 36,
+        "bowed mourning stance, both hands cradling the bouquet at the chest",
+        "short heavy grieving steps with no arm swing",
+    ),
+    # The phase boundaries (lay 0-3.5 s, sob 3.5-33.5 s, wipe to the
+    # end) must match CemeteryMournerTimeline.Lay/Cry/WipeSeconds: the
+    # runtime hides the hand bouquet on the lay cue and walks her out
+    # exactly when this rite completes its single playback.
+    ActionSpec(
+        "MournerMourn", "cemetery_mourner_v1", 36.5, 876,
+        "graveside grief from a standing bow",
+        "lay the bouquet low, thirty seconds of shoulder-shaking sobs behind raised hands, wipe each eye and straighten",
+    ),
 )
 
 
@@ -3457,6 +3723,37 @@ def weigh_attendant_base_pose() -> dict[str, BonePose]:
         "thigh.R": BonePose(rotation_degrees=(-3.0, 0.0, -2.0)),
         "shin.R": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+    }
+
+
+def mourner_base_pose() -> dict[str, BonePose]:
+    """Bowed mourning stance shared by the walk and the graveside rite.
+
+    Both clips keep the feet planted, so the ordinary walker sole bake
+    grounds them; the grief lives in the sunk head, the rounded back
+    and the two forearms folded up to the chest around the bouquet.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(7.0, 0.0, 0.0), location_m=(0, 0.010, -0.050)),
+        "spine": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -3.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 3.0, -6.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(16.0, 8.0, 22.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(16.0, -8.0, -22.0)),
+        "forearm.L": BonePose(rotation_degrees=(-88.0, 8.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-88.0, -8.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(-6.0, -4.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(-6.0, 4.0, -4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-5.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
     }
 
 
@@ -4087,7 +4384,202 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "head": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
     })
 
+    mourner = mourner_base_pose()
+
+    # The mourner's grieving gait: short heavy steps with no arm swing,
+    # both forearms staying folded to the chest around the bouquet.
+    def mourner_walk_legs(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(8.0, lean * 1.5, -lean * 2.0),
+                location_m=(0, 0.008, -0.055)),
+            "thigh.L": BonePose(
+                rotation_degrees=(-6.0 - left_forward * 14.0, 0.0, 3.0)),
+            "shin.L": BonePose(
+                rotation_degrees=(10.0 + max(0.0, -left_forward) * 14.0, 0.0, 0.0)),
+            "foot.L": BonePose(
+                rotation_degrees=(-5.0 + left_forward * 4.0, 0.0, 0.0)),
+            "thigh.R": BonePose(
+                rotation_degrees=(-6.0 + left_forward * 14.0, 0.0, -3.0)),
+            "shin.R": BonePose(
+                rotation_degrees=(10.0 + max(0.0, left_forward) * 14.0, 0.0, 0.0)),
+            "foot.R": BonePose(
+                rotation_degrees=(-5.0 - left_forward * 4.0, 0.0, 0.0)),
+        }
+
+    mourner_walk_l = merge_pose(mourner, mourner_walk_legs(1.0, 1.0))
+    mourner_walk_pr = merge_pose(mourner, mourner_walk_legs(0.0, -0.4))
+    mourner_walk_r = merge_pose(mourner, mourner_walk_legs(-1.0, -1.0))
+    mourner_walk_pl = merge_pose(mourner, mourner_walk_legs(0.0, 0.4))
+
+    # The graveside rite, one authored pass: lay the bouquet low over
+    # 3.5 s, sob for exactly 30 s behind raised hands, wipe each eye
+    # with the veil edge over the last 3 s and fold the empty hands
+    # back to the chest — the last key equals the first so the shared
+    # library's loop contract holds even though the runtime plays the
+    # rite exactly once per visit.
+    mourner_lay_bow = merge_pose(mourner, {
+        # Deep bow at the grave foot, both hands lowering the bouquet
+        # toward the slab; the soles stay planted for the ordinary
+        # grounding bake and the knees take the depth.
+        "pelvis": BonePose(rotation_degrees=(26.0, 0.0, 0.0), location_m=(0, -0.030, -0.140)),
+        "spine": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(22.0, 26.0, 58.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(22.0, -26.0, -58.0)),
+        "forearm.L": BonePose(rotation_degrees=(-24.0, 4.0, -8.0)),
+        "forearm.R": BonePose(rotation_degrees=(-24.0, -4.0, 8.0)),
+        "hand.L": BonePose(rotation_degrees=(6.0, -3.0, 3.0)),
+        "hand.R": BonePose(rotation_degrees=(6.0, 3.0, -3.0)),
+        "thigh.L": BonePose(rotation_degrees=(-26.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-26.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+    })
+    mourner_lay_rise = merge_pose(mourner, {
+        # Straightening with the hands returning empty, hanging for a
+        # breath before the grief pulls them up to the face.
+        "pelvis": BonePose(rotation_degrees=(12.0, 0.0, 0.0), location_m=(0, -0.010, -0.070)),
+        "spine": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(8.0, 5.0, 40.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(8.0, -5.0, -40.0)),
+        "forearm.L": BonePose(rotation_degrees=(-12.0, 3.0, -6.0)),
+        "forearm.R": BonePose(rotation_degrees=(-12.0, -3.0, 6.0)),
+        "hand.L": BonePose(rotation_degrees=(2.0, -2.0, 2.0)),
+        "hand.R": BonePose(rotation_degrees=(2.0, 2.0, -2.0)),
+        "thigh.L": BonePose(rotation_degrees=(-12.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-12.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+    })
+    mourner_cry_a = merge_pose(mourner, {
+        # Hunched standing grief, both hands raised to the face, the
+        # shoulders carried high on the caught breath.
+        "pelvis": BonePose(rotation_degrees=(8.0, 0.0, 0.0), location_m=(0, 0.006, -0.052)),
+        "spine": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(10.0, 0.0, 1.0)),
+        "neck": BonePose(rotation_degrees=(-16.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(7.0, -5.0, 9.0)),
+        "clavicle.R": BonePose(rotation_degrees=(7.0, 5.0, -9.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(26.0, 10.0, 30.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(26.0, -10.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-122.0, 10.0, -22.0)),
+        "forearm.R": BonePose(rotation_degrees=(-122.0, -10.0, 22.0)),
+        "hand.L": BonePose(rotation_degrees=(-14.0, -6.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(-14.0, 6.0, -5.0)),
+    })
+    mourner_cry_b = merge_pose(mourner_cry_a, {
+        # The exhale of the sob: the shoulders drop and the torso
+        # sinks a touch — alternating with the high key shakes the
+        # shoulders in the uneven rhythm of real crying.
+        "pelvis": BonePose(rotation_degrees=(8.0, 0.0, 0.0), location_m=(0, 0.002, -0.058)),
+        "spine": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(8.0, 0.0, -1.0)),
+        "clavicle.L": BonePose(rotation_degrees=(1.0, -2.0, 4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(1.0, 2.0, -4.0)),
+        "head": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+    })
+    mourner_cry_deep = merge_pose(mourner_cry_a, {
+        # Twice in the thirty seconds the grief folds her further
+        # down — the deep drop that keeps the loop from reading as a
+        # metronome.
+        "pelvis": BonePose(rotation_degrees=(10.0, 0.0, 0.0), location_m=(0, -0.006, -0.070)),
+        "spine": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-9.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-9.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+    })
+    mourner_wipe_r = merge_pose(mourner_cry_a, {
+        # The right hand wipes the eyes with the veil edge while the
+        # left settles to the chest; the head tips into the wipe.
+        "head": BonePose(rotation_degrees=(10.0, 0.0, -4.0)),
+        "neck": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(28.0, -12.0, -26.0)),
+        "forearm.R": BonePose(rotation_degrees=(-128.0, -12.0, 20.0)),
+        "hand.R": BonePose(rotation_degrees=(-18.0, 8.0, -8.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(14.0, 6.0, 26.0)),
+        "forearm.L": BonePose(rotation_degrees=(-70.0, 6.0, -12.0)),
+        "hand.L": BonePose(rotation_degrees=(-6.0, -4.0, 4.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -3.0, 6.0)),
+        "clavicle.R": BonePose(rotation_degrees=(4.0, 4.0, -7.0)),
+    })
+    mourner_wipe_l = merge_pose(mourner_cry_a, {
+        "head": BonePose(rotation_degrees=(10.0, 0.0, 4.0)),
+        "neck": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(28.0, 12.0, 26.0)),
+        "forearm.L": BonePose(rotation_degrees=(-128.0, 12.0, -20.0)),
+        "hand.L": BonePose(rotation_degrees=(-18.0, -8.0, 8.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(14.0, -6.0, -26.0)),
+        "forearm.R": BonePose(rotation_degrees=(-70.0, -6.0, 12.0)),
+        "hand.R": BonePose(rotation_degrees=(-6.0, 4.0, -4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 3.0, -6.0)),
+        "clavicle.L": BonePose(rotation_degrees=(4.0, -4.0, 7.0)),
+    })
+    mourner_compose = merge_pose(mourner, {
+        # The composed straightening before she turns to leave: taller
+        # than any grieving key, the hands halfway back to the chest.
+        "pelvis": BonePose(rotation_degrees=(6.0, 0.0, 0.0), location_m=(0, 0.010, -0.045)),
+        "spine": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(14.0, 7.0, 26.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(14.0, -7.0, -26.0)),
+        "forearm.L": BonePose(rotation_degrees=(-70.0, 7.0, -13.0)),
+        "forearm.R": BonePose(rotation_degrees=(-70.0, -7.0, 13.0)),
+    })
+
+    # 36.5 s total: lay over 0-3.5 s, sob over 3.5-33.5 s at a slow
+    # three-second breath with two authored deep drops, wipe and
+    # compose over the last three seconds.
+    mourner_total_seconds = 36.5
+    mourner_mourn_keys: list[tuple[float, dict[str, BonePose]]] = [
+        (0.0, mourner),
+        (1.75 / mourner_total_seconds, mourner_lay_bow),
+        (3.0 / mourner_total_seconds, mourner_lay_rise),
+    ]
+    for sob in range(21):
+        seconds = 3.5 + sob * 1.5
+        if sob in (10, 18):
+            pose = mourner_cry_deep
+        elif sob % 2 == 1:
+            pose = mourner_cry_b
+        else:
+            pose = mourner_cry_a
+        mourner_mourn_keys.append((seconds / mourner_total_seconds, pose))
+    mourner_mourn_keys.extend((
+        (34.0 / mourner_total_seconds, mourner_wipe_r),
+        (35.0 / mourner_total_seconds, mourner_wipe_l),
+        (35.7 / mourner_total_seconds, mourner_compose),
+        (1.0, mourner),
+    ))
+
     return {
+        "MournerWalk": (
+            (0.0, mourner_walk_l),
+            (0.25, mourner_walk_pr),
+            (0.5, mourner_walk_r),
+            (0.75, mourner_walk_pl),
+            (1.0, mourner_walk_l),
+        ),
+        "MournerMourn": tuple(mourner_mourn_keys),
         "WeigherCheck": (
             (0.0, weigh_check_read),
             (0.18, weigh_check_shift),

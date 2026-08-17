@@ -292,6 +292,13 @@ Assets/
         WeighbridgeAttendantFactory.cs two instances, passivity re-checked at instantiation
         WeighbridgeAttendantProvider.cs  the only serialized reference to the staged prefab
         CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
+      Cemetery/      the scripted graveside visitor summoned by the hero's presence
+        CemeteryMournerPlan.cs   pure grave candidates, foot-side stand, gate route, unseen spawn + trigger band
+        CemeteryMournerTimeline.cs  approach/lay/cry(30 s)/wipe/depart clock with the one-shot lay cue
+        CemeteryMournerPresentation.cs  two-clip manual PlayableGraph + hand-bouquet hiding
+        CemeteryMournerFactory.cs  one transient instance per visit, passivity re-checked
+        CemeteryMournerProvider.cs  the only serialized reference to the staged prefab
+        CityCemeteryMournerController.cs  City-root proximity trigger, spawn/route/cooldown + the laid bouquet
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

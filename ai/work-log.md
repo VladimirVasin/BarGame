@@ -6,6 +6,54 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — The cemetery mourner: a scripted graveside visit
+
+- New scripted transient staged NPC, the fourth staged archetype
+  (`cemetery_mourner_v1`, seed 918477, 38 meshes / 988 triangles):
+  babushka-derived geometry with a long near-black coat, wrist-length
+  sleeves, a heavy veil with shoulder drapes, pale skin and five
+  `ACC_Bouquet*` meshes on `hand.R`. Two clips instead of four —
+  the shared library's validators require exactly idle+walk looping
+  clips per design — so `MournerWalk` (1.5 s cradle-armed gait) plus
+  one `MournerMourn` rite (36.5 s = lay 3.5 + sob 30 + wipe 3, keys
+  built in a loop, first == last for the loop contract, played once
+  per visit). Grounding bake handled the 876-frame clip fine.
+- Runtime quartet in `Runtime/City/Cemetery/` plus
+  `CityCemeteryMournerController` (weighbridge-needle polling mould,
+  created in `CityGameRoot` after the needle): trigger = hero within
+  28 m of `CemeteryPlan.Grounds` + 180 s cooldown, one mourner at a
+  time. Spawn honours the director's spirit by hand: street-axis
+  candidates 26-90 m from the gate, accepted at >= 76 m from the hero
+  or outside the camera's ~80° half-cone, most-behind-camera far
+  fallback. Route = spawn → gate threshold (terrain-sampled street
+  heights) → main-alley spine (planner's own lateral clamp mirrored,
+  2.9 m) → sideways to the stand point 1.75 m before the slab
+  (clears enclosure rails; enclosed ordinals are excluded outright
+  via `GraveEnclosure` parts). Grave choice is xorshift over
+  `Hash(citySeed, visitIndex)`. Lay cue at 1.9 s hides the hand
+  bouquet and stands a four-box shared-material bouquet at the
+  authored offering offset mirrored to (-0.22, 0.17, -0.45); it
+  despawns with her. She finishes the rite even if the hero leaves
+  (early despawn only past 88 m and unseen).
+- Pipeline gotcha worth remembering: `CityPedestrianModelImporter`
+  whitelists model paths — a new staged FBX imports with default
+  settings (no axis bake, no copied Avatar) until added to
+  `IsPedestrianModel`, failing prefab validation with "Bone 'root'
+  rest transform differs".
+- Pre-existing breakage repaired in passing: the weighbridge pass
+  never taught `CityPedestrianRuntimeTests` its two clips, so its
+  hardcoded locomotion list and `StagedLocomotionClipCount = 4` had
+  been failing since that commit; the list now carries the weigh and
+  mourner pairs and the constant is `8`.
+- Verification: Blender rebuild green first run (22 actions,
+  determinism check passed); bundled-dotnet compiles green; one
+  batchmode `RunCemeteryMourner` build+bind; focused EditMode run of
+  `CemeteryMournerTests` (8 new tests: candidates/enclosures, the
+  OutwardNormal sign guard, deterministic grave choice, gate route
+  containment, spawn rule, 30 s cry timeline with one-shot lay cue,
+  hitch remainder carry, trigger band) plus the babushka, attendant,
+  cemetery-planner and pedestrian-runtime regressions.
+
 ## 2026-08-17 — Cemetery: grounded оградки and truly sittable benches
 
 - User-reported: the grave enclosures visually hovered — the rail band

@@ -27,9 +27,9 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
         private const string PipebackRollerDesignId =
             "pipeback_roller_v1";
-        // The Pipeback Roller and the Yard Babushka contribute two
-        // staged loops each.
-        private const int StagedLocomotionClipCount = 4;
+        // The Pipeback Roller, the Yard Babushka, the Weigh Attendant
+        // and the Cemetery Mourner contribute two staged loops each.
+        private const int StagedLocomotionClipCount = 8;
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -158,6 +158,10 @@ namespace BarPromenade.Tests.EditMode
                     "PipebackRoll",
                     "BabushkaSmoke",
                     "BabushkaBeat",
+                    "WeigherCheck",
+                    "WeighedPace",
+                    "MournerMourn",
+                    "MournerWalk",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",

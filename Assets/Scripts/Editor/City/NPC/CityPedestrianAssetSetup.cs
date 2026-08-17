@@ -44,6 +44,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/WeighbridgeAttendant3D.fbx";
         public const string WeighAttendantManifestPath =
             "Assets/Pedestrians/Staged/Models/WeighbridgeAttendant3D.json";
+        public const string CemeteryMournerModelPath =
+            "Assets/Pedestrians/Staged/Models/CemeteryMourner3D.fbx";
+        public const string CemeteryMournerManifestPath =
+            "Assets/Pedestrians/Staged/Models/CemeteryMourner3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -74,6 +78,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/WeighbridgeAttendant3D.prefab";
         public const string WeighAttendantProviderPath =
             "Assets/Resources/City/WeighbridgeAttendantProvider.asset";
+        public const string CemeteryMournerPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/CemeteryMourner3D.prefab";
+        public const string CemeteryMournerProviderPath =
+            "Assets/Resources/City/CemeteryMournerProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -254,6 +262,26 @@ namespace BarPromenade.Editor
                 12f,
                 900,
                 2000,
+                isStaged: true),
+            // The cemetery mourner: the idle slot carries the whole
+            // graveside rite (lay, thirty seconds of sobbing, wipe)
+            // and the walk slot the grieving gait. Staged like the
+            // babushka — authored with the shared art library,
+            // outside Resources and the runtime catalog; spawned per
+            // visit by the mourner controller, never staged forever.
+            new PedestrianDescriptor(
+                "Cemetery Mourner",
+                "CemeteryMourner3D",
+                "cemetery_mourner_v1",
+                CemeteryMournerModelPath,
+                CemeteryMournerManifestPath,
+                CemeteryMournerPrefabPath,
+                "MournerMourn",
+                "MournerWalk",
+                36.5f,
+                1.5f,
+                900,
+                2000,
                 isStaged: true)
         };
 
@@ -309,6 +337,14 @@ namespace BarPromenade.Editor
         {
             BuildWeighAttendantOrThrow();
             Debug.Log("Staged Weigh Attendant prefab rebuilt and bound.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Cemetery Mourner")]
+        public static void RunCemeteryMourner()
+        {
+            BuildCemeteryMournerOrThrow();
+            Debug.Log("Staged Cemetery Mourner prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -773,6 +809,11 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         WeighbridgeAttendantProvider.DesignId,
                         StringComparison.Ordinal)));
+                BindCemeteryMournerProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        CemeteryMournerProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -992,6 +1033,123 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
+        }
+
+        public static void BuildCemeteryMournerOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Cemetery Mourner build requires its " +
+                    "model, manifest, locomotion library, production " +
+                    "Player model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    CemeteryMournerProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindCemeteryMournerProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged cemetery mourner prefab into a build —
+        /// the automated binding the babushka pass established.
+        /// </summary>
+        private static void BindCemeteryMournerProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the cemetery mourner provider before " +
+                    "its prefab exists.");
+            }
+
+            CemeteryMournerProvider provider =
+                AssetDatabase.LoadAssetAtPath<CemeteryMournerProvider>(
+                    CemeteryMournerProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(CemeteryMournerProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<CemeteryMournerProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    CemeteryMournerProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "CemeteryMournerProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
         }
 
         /// <summary>

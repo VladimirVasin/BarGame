@@ -6,6 +6,24 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — A mourner visits the cemetery
+
+- The cemetery gained its one visitor. Come near the grounds and
+  somewhere out of sight on the street a woman in deep mourning
+  appears — a long near-black coat, a heavy veil over her brow and
+  shoulders, a small bouquet clasped to her chest — and walks in
+  through the gate at a slow grieving pace.
+- She stops at the foot of a grave of her own (a different one on
+  each visit, never inside an оградка), bows low to lay the flowers
+  on the slab, and cries for thirty seconds — shoulders shaking
+  behind raised hands, twice folding further down — then wipes each
+  eye with the edge of her veil, straightens, and leaves the way she
+  came. The bouquet stays on the grave until she is gone.
+- Her clothing is dark in all four palette variants; only the
+  bouquet carries colour — dark red, whitish, violet or marigold.
+  She finishes the rite even if nobody stays to watch, and the next
+  mourner will not come sooner than a few minutes after the last.
+
 ### 2026-08-17 — The cemetery becomes a real place
 
 - The eastern cemetery is no longer a stamped grid of identical grey
