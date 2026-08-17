@@ -500,9 +500,9 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                // The island platform and the empty centre disc; the
-                // inner ring stays a flat painted marking.
-                Assert.That(pavingCount, Is.EqualTo(2));
+                // The island platform, the inner route ring (paint
+                // over the same paving) and the empty centre disc.
+                Assert.That(pavingCount, Is.EqualTo(3));
                 // Five canopy segments of post, beam and roof, the
                 // mast group, the departure board frame, the bench
                 // base, the waste bin and the floodlight metalwork.

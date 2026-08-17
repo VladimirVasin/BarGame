@@ -6,6 +6,18 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — Last route island: the inner route ring joins the paving
+
+- Reversed the one texturing exception on the island: the `7.2 m` inner
+  route ring was left a flat painted marking band, but between the
+  textured platform and the textured centre disc it read in-game as a
+  missing texture rather than as paint. It now carries the paving sheet
+  (`CylinderCapXZ`) under its existing dark `NightlifeFrame` tint —
+  paint over the same paving — so the island is textured with no
+  exceptions. `Build_TexturesTheLastRouteIsland` paving count `2 -> 3`.
+- Verification: headless runtime and EditMode-test compiles green; the
+  EditMode run itself was blocked by an open editor session.
+
 ## 2026-08-17 — The weighbridge is attended, and the scale answers weight
 
 - The Industrial cold weighbridge received its authored pair — the last

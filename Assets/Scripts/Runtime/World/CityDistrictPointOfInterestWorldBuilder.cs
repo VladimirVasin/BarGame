@@ -1413,10 +1413,14 @@ namespace BarPromenade
                 colliders, homeExterior,
                 CityPointOfInterestSurfaceKind.Paving,
                 SurfaceProjection.CylinderCapXZ);
-            // The inner ring stays a flat painted marking band, like
-            // the street lane paint it once matched.
+            // The inner ring is paint over the same paving, so it
+            // carries the paving grain under its dark marking tint;
+            // a flat untextured disc read as a missing texture next
+            // to the textured platform and centre.
             AddCylinder(parent, "Inner Route Ring", 0f, 0.225f, 0f,
-                7.20f, 0.025f, 7.20f, NightlifeFrame, false, homeExterior);
+                7.20f, 0.025f, 7.20f, NightlifeFrame, false, homeExterior,
+                CityPointOfInterestSurfaceKind.Paving,
+                SurfaceProjection.CylinderCapXZ);
             AddCylinder(parent, "Empty Island Centre", 0f, 0.255f, 0f,
                 4.20f, 0.02f, 4.20f, NightlifePaving, false, homeExterior,
                 CityPointOfInterestSurfaceKind.Paving,
