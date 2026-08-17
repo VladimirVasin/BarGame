@@ -6,6 +6,22 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The cold weighbridge is attended
+
+- The industrial weighbridge is no longer unmanned. A weigher in a
+  quilted work jacket keeps her post beside the tall mechanical
+  indicator — craning up at the dial, leaning in to the linkage, and
+  crouching now and then to pull a fresh chalk line along the deck
+  edge. She watches the procedure from beside the platform, never
+  standing across it: this is a shift, not a checkpoint.
+- A worker slowly paces the full length of the steel deck, back and
+  forth along its axis, and halts square and still at the very centre
+  each pass — as if the weighbridge were weighing him.
+- The scale answers weight underfoot. While anyone stands on the deck
+  — the worker in his pause, or you — the indicator needle eases off
+  its rest mark and settles back once the platform is empty. Step on,
+  and the cold weighbridge weighs you too.
+
 ### 2026-08-16 — Three babushkas move into the drying yard
 
 - The Residential drying yard is no longer empty. At a proper Soviet

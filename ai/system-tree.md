@@ -282,6 +282,12 @@ Assets/
         DryingYardBabushkaPresentation.cs  one-clip manual PlayableGraph + role prop enabling
         DryingYardBabushkaFactory.cs three instances, passivity re-checked at instantiation
         DryingYardBabushkaProvider.cs  the only serialized reference to the staged prefab
+      Weighbridge/   the authored pair on the Industrial cold weighbridge + the answering needle
+        WeighbridgeAttendantPlan.cs  two authored stances + the deck rect off the weighbridge descriptor
+        WeighbridgeAttendantPresentation.cs  one-clip manual PlayableGraph; corridor travel slaved to clip time
+        WeighbridgeAttendantFactory.cs two instances, passivity re-checked at instantiation
+        WeighbridgeAttendantProvider.cs  the only serialized reference to the staged prefab
+        CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

@@ -56,6 +56,28 @@ namespace BarPromenade
         private static readonly Vector3 SmokerPathEndLocal =
             new Vector3(-3.95f, 0f, 2.60f);
 
+        // The weighbridge's authored pair. The weigher stands north
+        // of the scale mechanism, east of the deck, facing the
+        // indicator face — beside the axis, never across it, so the
+        // site keeps reading as a working instrument and not a
+        // checkpoint. The weighed worker paces the deck's long axis
+        // and stands still at its centre as if being weighed. Shared
+        // between the visual recipe and
+        // <see cref="TryDescribeWeighbridgeStances"/> so the NPCs
+        // always match the deck and mechanism that were drawn.
+        private static readonly Vector3 WeigherStanceLocal =
+            new Vector3(3.05f, 0f, 1.60f);
+        private static readonly Vector3 WeighedPathStartLocal =
+            new Vector3(0f, 0f, -4.60f);
+        private static readonly Vector3 WeighedPathEndLocal =
+            new Vector3(0f, 0f, 4.60f);
+        // Top of the walkable deck above the recipe root: box centre
+        // 0.16 plus half its 0.22 height. Vertical, so never
+        // multiplied by the horizontal recipe scale.
+        private const float WeighbridgeDeckTopLocalY = 0.27f;
+        private const float WeighbridgeDeckHalfWidth = 1.80f;
+        private const float WeighbridgeDeckHalfLength = 5.80f;
+
         private const float IslandBenchX = 2.85f;
         private const float IslandBenchSeatCenterY = 0.66f;
         private const float IslandBenchZ = 2.55f;
@@ -438,6 +460,102 @@ namespace BarPromenade
             smoker = new CityDryingYardNpcStance(
                 smokerStart,
                 towardEnd.normalized);
+            return true;
+        }
+
+        /// <summary>
+        /// Describes the two authored weighbridge stances, in world
+        /// space, mirroring the same recipe transform the city build
+        /// applies — exactly like
+        /// <see cref="TryDescribeBabushkaStances"/>. The weigher
+        /// stands beside the mechanism facing the indicator; the
+        /// weighed worker's stance is the near end of the deck-axis
+        /// corridor and <paramref name="weighedPathEnd"/> its far
+        /// end, both on the deck top. Every other kind reports none.
+        /// </summary>
+        public static bool TryDescribeWeighbridgeStances(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityDryingYardNpcStance weigher,
+            out CityDryingYardNpcStance weighedWorker,
+            out Vector3 weighedPathEnd)
+        {
+            if (descriptor.Kind !=
+                CityDistrictPointOfInterestKind.IndustrialWeighbridge)
+            {
+                weigher = default;
+                weighedWorker = default;
+                weighedPathEnd = default;
+                return false;
+            }
+
+            Quaternion recipeRotation = Quaternion.LookRotation(
+                ResolveForward(descriptor),
+                Vector3.up);
+            float horizontalScale =
+                ResolveHorizontalScale(descriptor.PublicBounds);
+            float groundY = descriptor.Center.y +
+                PublicGroundHeight * 0.5f;
+            // The indicator face looks down local +Z, so its reader
+            // stands north of it looking local -Z.
+            weigher = CreateStance(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                groundY,
+                WeigherStanceLocal,
+                Vector3.back);
+            // The worker walks the deck top, not the public ground.
+            float deckTopY = descriptor.Center.y +
+                WeighbridgeDeckTopLocalY;
+            weighedPathEnd = ToStanceWorld(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                deckTopY,
+                WeighedPathEndLocal);
+            Vector3 workerStart = ToStanceWorld(
+                descriptor,
+                recipeRotation,
+                horizontalScale,
+                deckTopY,
+                WeighedPathStartLocal);
+            Vector3 towardEnd = weighedPathEnd - workerStart;
+            towardEnd.y = 0f;
+            weighedWorker = new CityDryingYardNpcStance(
+                workerStart,
+                towardEnd.normalized);
+            return true;
+        }
+
+        /// <summary>
+        /// Describes the weighbridge's walkable deck as a world-space
+        /// oriented rectangle at deck-top height, for the needle
+        /// controller's weight test. Every other kind reports none.
+        /// </summary>
+        public static bool TryDescribeWeighbridgeDeck(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityWeighbridgeDeckRect deck)
+        {
+            if (descriptor.Kind !=
+                CityDistrictPointOfInterestKind.IndustrialWeighbridge)
+            {
+                deck = default;
+                return false;
+            }
+
+            Quaternion recipeRotation = Quaternion.LookRotation(
+                ResolveForward(descriptor),
+                Vector3.up);
+            float horizontalScale =
+                ResolveHorizontalScale(descriptor.PublicBounds);
+            deck = new CityWeighbridgeDeckRect(
+                new Vector3(
+                    descriptor.Center.x,
+                    descriptor.Center.y + WeighbridgeDeckTopLocalY,
+                    descriptor.Center.z),
+                recipeRotation,
+                WeighbridgeDeckHalfWidth * horizontalScale,
+                WeighbridgeDeckHalfLength * horizontalScale);
             return true;
         }
 
@@ -1240,8 +1358,18 @@ namespace BarPromenade
             AddBox(parent, "Scale Indicator Face", 3.25f, 4.66f, 0.525f,
                 1.78f, 0.52f, 0.035f, IndustrialGlow, true, homeExterior,
                 alwaysLit: true);
-            AddBox(parent, "Scale Needle", 3.25f, 4.66f, 0.55f,
+            GameObject needle = AddBox(parent, "Scale Needle",
+                3.25f, 4.66f, 0.55f,
                 0.10f, 0.42f, 0.035f, IndustrialDark, false, homeExterior, 28f);
+            if (!homeExterior)
+            {
+                // The bounded Home view never runs the needle
+                // controller; only the City build's needle answers
+                // weight, so only it may claim the registry slot.
+                CityWeighbridgeIndicatorRegistry.Register(
+                    CityWeighbridgeIndicatorRegistry.NeedleId,
+                    needle.transform);
+            }
             AddBox(parent, "Mechanical Linkage", 2.65f, 1.10f, 0.20f,
                 1.08f, 0.20f, 0.22f, IndustrialRust, false, homeExterior);
             AddBox(parent, "Cold Service Lamp", 3.25f, 5.34f, 0.20f,
@@ -1707,7 +1835,7 @@ namespace BarPromenade
             public float ExtraYawDegrees { get; }
         }
 
-        private static void AddBox(
+        private static GameObject AddBox(
             Transform parent,
             string name,
             float x,
@@ -1754,6 +1882,8 @@ namespace BarPromenade
                     part.GetComponent<Renderer>(),
                     color);
             }
+
+            return part;
         }
 
         private static void AddCylinder(

@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — The weighbridge is attended, and the scale answers weight
+
+- The Industrial cold weighbridge received its authored pair — the last
+  of the four canonical POIs to get residents — built strictly on the
+  babushka mould (`Plan`/`Presentation`/`Factory`/`Provider` in a new
+  `City/Weighbridge/`, staged model outside `Resources`, passivity
+  guard, attention magnets at `1.60 m`). The weigher (palette 0) stands
+  beside the mechanism at recipe-local `(3.05, 1.60)` — beside the
+  axis, never across it, per the art bible's not-a-checkpoint rule,
+  now also a guardrail test — looping a `6 s` check: crane up at the
+  dial, lean to the linkage, crouch and chalk the deck edge (the chalk
+  marks get their author; `ACC_Chalk` is role-enabled like the
+  babushka props). The weighed worker (palette 2, `0.97x`, `+0.85 s`)
+  paces the deck's long axis on the deck top with his corridor
+  position slaved to his clip's normalized time
+  (`EvaluateCorridorProgress`, pure), so pose and travel cannot drift:
+  one `12 s` loop = one half round trip, direction flips on iteration
+  parity, and normalized `0.36-0.64` holds him square and still at the
+  deck centre — cross-commented on both sides of the python/runtime
+  boundary like `StrikeNormalizedTime`.
+- The scale answers weight. `BuildWeighbridge` registers the `Scale
+  Needle` transform in `CityWeighbridgeIndicatorRegistry` (carpet
+  registry pattern; City build only — the Home vista never claims the
+  slot), and `CityWeighbridgeNeedleController` on the City root eases
+  the needle off its captured authored `28°` rest by up to `34°` local
+  roll while the worker's pause or the hero stands on the walkable
+  deck (`TryDescribeWeighbridgeDeck` rect + foot band), exponential
+  `0.45 s` attack / `0.90 s` release, and settles it back when the
+  deck empties. Needle logic lives outside the NPC prefab: the
+  attendants stay passive and are only polled (`IsWeighingNow`).
+- Art: new staged `weigh_attendant` archetype (`842519`, `960` tris,
+  exact `1.75 m` cap crown) — quilted grey-green jacket with seams,
+  buttons and hip pockets, deliberately no authority markers — plus
+  `WeigherCheck`/`WeighedPace` in the shared locomotion library
+  (`18 -> 20` clips). `CityPedestrianModelImporter` taught the new
+  model path (the miss surfaced as a real import failure: without
+  `bakeAxisConversion` + avatar copy the root rest transform diverged
+  and `ValidateDescriptor` threw — the explicit-list contract worked).
+  `Rebuild Staged Weigh Attendant` menu builds prefab + provider.
+- Verification: headless runtime/editor compiles green;
+  `WeighbridgeAttendantTests` (stances in bounds, axis guardrail,
+  needle registration, `0.30 m` obstacle sweep, deck-rect point tests,
+  monotone attack/release easing, pause-window hold, provider binding)
+  green; `DryingYardBabushkaTests` re-run green after the shared
+  library regeneration; Blender build `CITY PEDESTRIAN ART BUILD OK`,
+  determinism check passing, existing model manifests byte-identical.
+
 ## 2026-08-17 — Last route island: textured end to end, mast floodlight
 
 - The island joins the drying yard as a fully textured public place. A

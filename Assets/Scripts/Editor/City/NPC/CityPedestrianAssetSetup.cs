@@ -40,6 +40,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/YardBabushka3D.fbx";
         public const string YardBabushkaManifestPath =
             "Assets/Pedestrians/Staged/Models/YardBabushka3D.json";
+        public const string WeighAttendantModelPath =
+            "Assets/Pedestrians/Staged/Models/WeighbridgeAttendant3D.fbx";
+        public const string WeighAttendantManifestPath =
+            "Assets/Pedestrians/Staged/Models/WeighbridgeAttendant3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -66,6 +70,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/YardBabushka3D.prefab";
         public const string YardBabushkaProviderPath =
             "Assets/Resources/City/DryingYardBabushkaProvider.asset";
+        public const string WeighAttendantPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/WeighbridgeAttendant3D.prefab";
+        public const string WeighAttendantProviderPath =
+            "Assets/Resources/City/WeighbridgeAttendantProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -227,6 +235,25 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
+                isStaged: true),
+            // The cold-weighbridge attendant: the idle slot carries
+            // the weigher's check loop and the walk slot the weighed
+            // worker's deck pace. Staged like the babushka — authored
+            // with the shared art library, outside Resources and the
+            // runtime catalog.
+            new PedestrianDescriptor(
+                "Weigh Attendant",
+                "WeighbridgeAttendant3D",
+                "weigh_attendant_v1",
+                WeighAttendantModelPath,
+                WeighAttendantManifestPath,
+                WeighAttendantPrefabPath,
+                "WeigherCheck",
+                "WeighedPace",
+                6f,
+                12f,
+                900,
+                2000,
                 isStaged: true)
         };
 
@@ -274,6 +301,14 @@ namespace BarPromenade.Editor
         {
             BuildYardBabushkaOrThrow();
             Debug.Log("Staged Yard Babushka prefab rebuilt and bound.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Weigh Attendant")]
+        public static void RunWeighAttendant()
+        {
+            BuildWeighAttendantOrThrow();
+            Debug.Log("Staged Weigh Attendant prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -733,6 +768,11 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         DryingYardBabushkaProvider.DesignId,
                         StringComparison.Ordinal)));
+                BindWeighAttendantProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        WeighbridgeAttendantProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -881,6 +921,123 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
+        }
+
+        public static void BuildWeighAttendantOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Weigh Attendant build requires its " +
+                    "model, manifest, locomotion library, production " +
+                    "Player model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    WeighbridgeAttendantProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindWeighAttendantProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged weigh attendant prefab into a build —
+        /// the automated binding the babushka pass established.
+        /// </summary>
+        private static void BindWeighAttendantProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the weigh attendant provider before " +
+                    "its prefab exists.");
+            }
+
+            WeighbridgeAttendantProvider provider =
+                AssetDatabase.LoadAssetAtPath<WeighbridgeAttendantProvider>(
+                    WeighAttendantProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(WeighAttendantProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<WeighbridgeAttendantProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    WeighAttendantProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "WeighbridgeAttendantProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
         }
 
         /// <summary>

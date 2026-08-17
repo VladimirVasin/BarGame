@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 18,
+  "clip_count": 20,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -386,7 +386,47 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "WeigherCheck",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 6.0,
+      "frame_start": 0,
+      "frame_end": 144,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "planted stance beside the mechanism, chalk ready in the right hand",
+      "gait": "look up at the dial, lean in to the linkage, crouch to chalk the deck edge",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "WeighedPace",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 12.0,
+      "frame_start": 0,
+      "frame_end": 288,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "burdened walk down the deck axis with free hands",
+      "gait": "shuffling steps, a square standstill at centre while the scale settles, steps resume",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "e2a96c3d5f641bfd08c7e1d2cae8a8e944c6c80f33fbf0e383540869b6084ac6"
+  "build_signature": "10309b8d9d56076b47f0de97b0bfc5632dde14cf1cc00aa3fc37a8082f249c71"
 }

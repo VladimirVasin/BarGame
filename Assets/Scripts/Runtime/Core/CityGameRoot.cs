@@ -38,6 +38,13 @@ namespace BarPromenade
         public YardWheelchairActor YardWheelchair { get; private set; }
         public IReadOnlyList<DryingYardBabushkaPresentation>
             DryingYardBabushkas { get; private set; }
+        public IReadOnlyList<WeighbridgeAttendantPresentation>
+            WeighbridgeAttendants { get; private set; }
+        public CityWeighbridgeNeedleController WeighbridgeNeedle
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -345,6 +352,21 @@ namespace BarPromenade
             DryingYardBabushkas = DryingYardBabushkaFactory.Create(
                 transform,
                 DryingYardBabushkaPlan.Create(Layout));
+            // The cold weighbridge's authored pair: the weigher reads
+            // her instrument beside the mechanism while the worker
+            // paces the deck axis, standing still at its centre as if
+            // being weighed. Staged NPCs, like the babushkas.
+            WeighbridgeAttendants = WeighbridgeAttendantFactory.Create(
+                transform,
+                WeighbridgeAttendantPlan.Create(Layout));
+            // The scale answers weight: the indicator needle eases
+            // off its rest mark while the worker's pause or the hero
+            // stands on the deck, and settles back once it is empty.
+            WeighbridgeNeedle = CityWeighbridgeNeedleController.Create(
+                transform,
+                Layout,
+                Player.GameObject.transform,
+                WeighbridgeAttendants);
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their

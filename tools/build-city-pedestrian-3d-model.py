@@ -155,6 +155,20 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
     ),
+    # The cold-weighbridge attendant. One model serves both authored
+    # instances: the weigher reads the tall indicator with a chalk
+    # stub in the right hand, the weighed worker paces the deck with
+    # free hands. The idle slot carries the weigher's check loop and
+    # the walk slot carries the worker's pace, mirroring how the
+    # babushka maps Smoke/Beat onto the same pair.
+    "weigh_attendant": ArchetypeSpec(
+        "weigh_attendant", "weigh_attendant_v1", "Weigh Attendant", 842519,
+        "WeighbridgeAttendant3D.blend", "WeighbridgeAttendant3D",
+        "WeighbridgeAttendant3D.png", "WeigherCheck", "WeighedPace",
+        (900, 2000),
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -309,6 +323,16 @@ PALETTE = {
     "gran_wool": (0.100, 0.095, 0.090, 1.0),
     "beater_plastic": (0.560, 0.165, 0.105, 1.0),
     "beater_plastic_dark": (0.300, 0.085, 0.055, 1.0),
+    # Weigh Attendant. A quilted grey-green work jacket on the
+    # Industrial cold axis: nothing bright, no authority markers —
+    # the one near-white note is the chalk stub in the weigher's
+    # right hand, the site's ongoing measurement given its author.
+    "weigh_jacket": (0.130, 0.152, 0.138, 1.0),
+    "weigh_jacket_light": (0.185, 0.212, 0.192, 1.0),
+    "weigh_jacket_dark": (0.062, 0.076, 0.068, 1.0),
+    "weigh_trousers": (0.072, 0.082, 0.088, 1.0),
+    "weigh_cap": (0.098, 0.110, 0.120, 1.0),
+    "chalk": (0.620, 0.635, 0.615, 1.0),
 }
 
 
@@ -654,6 +678,10 @@ class PedestrianBuilder:
             "yard_babushka": (
                 self.build_yard_babushka_body,
                 self.build_yard_babushka_details,
+            ),
+            "weigh_attendant": (
+                self.build_weigh_attendant_body,
+                self.build_weigh_attendant_details,
             ),
         }
         if self.spec.key not in builders:
@@ -2398,6 +2426,191 @@ class PedestrianBuilder:
             "hand.R", "surface_detail", "amber",
         )
 
+    def build_weigh_attendant_body(self) -> None:
+        """Tired industrial worker in a quilted jacket and a knit cap.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the dial-reading gaze, the chalk crouch
+        and the weighing standstill are all authored in WeigherCheck
+        and WeighedPace rather than in the geometry. Deliberately no
+        authority markers — no armband, no hi-vis, no baton — so the
+        weighbridge never reads as a checkpoint.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.036, 1.560), (0.100, 0.094, 0.124), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.320), (0, -0.024, 1.470), 0.068, 0.058, 10),
+            "neck", "body", "skin",
+        )
+        # The quilted torso: boxy, widest at the chest, hem at the hips.
+        self.add_part(
+            "CLO_JacketChest",
+            make_tapered_box((0, 0.006, 1.070), (0, -0.006, 1.345), (0.410, 0.250, 0), (0.430, 0.270, 0)),
+            "chest", "body", "weigh_jacket",
+        )
+        self.add_part(
+            "CLO_JacketWaist",
+            make_tapered_box((0, 0.014, 0.870), (0, 0.008, 1.090), (0.400, 0.255, 0), (0.415, 0.255, 0)),
+            "spine", "body", "weigh_jacket",
+        )
+        self.add_part(
+            "CLO_JacketHem",
+            make_tapered_box((0, 0.016, 0.700), (0, 0.014, 0.890), (0.420, 0.272, 0), (0.405, 0.258, 0)),
+            "pelvis", "clothing", "weigh_jacket_dark",
+        )
+        self.add_part(
+            "CLO_Collar",
+            make_frustum_between((0, -0.008, 1.330), (0, -0.014, 1.395), 0.105, 0.088, 10),
+            "neck", "clothing", "weigh_jacket_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.078, 0.064, 10),
+                f"upper_arm.{side}", "clothing", "weigh_jacket",
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
+                f"forearm.{side}", "clothing", "weigh_jacket",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.630, -0.016, 1.100),
+                    (sign * 0.694, -0.019, 1.068),
+                    0.050, 0.044, 8,
+                ),
+                f"forearm.{side}", "clothing", "weigh_jacket_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
+                f"hand.{side}", "body", "skin",
+            )
+            hip = (sign * 0.096, 0.004, 0.730)
+            knee = (sign * 0.103, -0.012, 0.354)
+            ankle = (sign * 0.112, -0.022, 0.095)
+            self.add_part(
+                f"CLO_TrouserUpper.{side}",
+                make_frustum_between(hip, knee, 0.086, 0.062, 8),
+                f"thigh.{side}", "clothing", "weigh_trousers",
+            )
+            self.add_part(
+                f"CLO_TrouserLower.{side}",
+                make_frustum_between(knee, ankle, 0.060, 0.050, 8),
+                f"shin.{side}", "clothing", "weigh_trousers",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.085, 0.030),
+                    (sign * 0.112, -0.052, 0.145),
+                    (0.104, 0.260, 0),
+                    (0.092, 0.190, 0),
+                ),
+                f"foot.{side}", "body", "shoe",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+        # The knit cap owns the silhouette and the exact 1.75 m envelope.
+        self.add_part(
+            "CLO_Cap",
+            make_ellipsoid((0, -0.012, 1.638), (0.112, 0.108, 0.100), 12, 6),
+            "head", "signature_silhouette", "weigh_cap",
+        )
+        self.add_part(
+            "CLO_CapBand",
+            make_frustum_between((0, -0.012, 1.556), (0, -0.012, 1.616), 0.118, 0.112, 12),
+            "head", "clothing", "weigh_cap",
+        )
+        self.add_part(
+            "CLO_CapCrown",
+            make_tapered_box((0, -0.010, 1.700), (0, -0.008, 1.750), (0.074, 0.076, 0), (0.032, 0.034, 0)),
+            "head", "signature_silhouette", "weigh_cap",
+        )
+        for side, x in (("L", 0.045), ("R", -0.045)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((x, -0.124, 1.566), (0.034, 0.018, 0.022)),
+                "head", "face_detail", "void",
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.142, 1.508), (0, -0.126, 1.548), (0.038, 0.046, 0), (0.028, 0.038, 0)),
+            "head", "face_detail", "skin",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.128, 1.476), (0.056, 0.020, 0.014)),
+            "head", "face_detail", "void",
+        )
+
+    def build_weigh_attendant_details(self) -> None:
+        """Quilt seams, buttons and the one working prop: the chalk.
+
+        The chalk stub rides the right fist along the canonical
+        cigarette direction; the runtime shows it only on the weigher
+        and hides it for the worker's free hands.
+        """
+
+        # Horizontal quilt seams read as the padded jacket's stitching.
+        for index, height in enumerate((1.290, 1.190, 1.090), start=1):
+            self.add_part(
+                f"ACC_QuiltSeam.{index:02d}",
+                make_box((0, -0.148, height), (0.380, 0.014, 0.016)),
+                "chest" if height > 1.1 else "spine",
+                "surface_detail", "weigh_jacket_dark",
+            )
+        for index, height in enumerate((0.990, 0.905), start=4):
+            self.add_part(
+                f"ACC_QuiltSeam.{index:02d}",
+                make_box((0, -0.142, height), (0.370, 0.014, 0.016)),
+                "spine", "surface_detail", "weigh_jacket_dark",
+            )
+        self.add_part(
+            "ACC_JacketButton.01",
+            make_box((0.062, -0.152, 1.240), (0.024, 0.018, 0.024)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_JacketButton.02",
+            make_box((0.062, -0.148, 1.120), (0.024, 0.018, 0.024)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_JacketButton.03",
+            make_box((0.062, -0.146, 1.000), (0.024, 0.018, 0.024)),
+            "spine", "surface_detail", "button",
+        )
+        # One patch pocket per hip: a working jacket, not a uniform.
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_HipPocket.{side}",
+                make_box((sign * 0.130, -0.146, 0.790), (0.110, 0.018, 0.120)),
+                "pelvis", "surface_detail", "weigh_jacket_dark",
+            )
+        self.add_part(
+            "ACC_Chalk",
+            make_frustum_between(
+                (-0.740, -0.048, 1.050),
+                (-0.744, -0.108, 1.053),
+                0.012, 0.010, 6, 1.0,
+            ),
+            "hand.R", "surface_detail", "chalk",
+        )
+
     def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
         scene["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
@@ -2843,6 +3056,20 @@ ACTION_SPECS = (
         "hunched working stance squared to the hung carpet",
         "overhead wind-up, sharp forward beater strike and a rocking recovery",
     ),
+    ActionSpec(
+        "WeigherCheck", "weigh_attendant_v1", 6.0, 144,
+        "planted stance beside the mechanism, chalk ready in the right hand",
+        "look up at the dial, lean in to the linkage, crouch to chalk the deck edge",
+    ),
+    # The standstill window (normalized 0.36-0.64) must match
+    # WeighbridgeAttendantPresentation.PauseStart/EndNormalized: the
+    # runtime freezes the worker's corridor travel over exactly that
+    # window, so the pose has to stand square through it.
+    ActionSpec(
+        "WeighedPace", "weigh_attendant_v1", 12.0, 288,
+        "burdened walk down the deck axis with free hands",
+        "shuffling steps, a square standstill at centre while the scale settles, steps resume",
+    ),
 )
 
 
@@ -3199,6 +3426,37 @@ def babushka_base_pose() -> dict[str, BonePose]:
         "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
         "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    }
+
+
+def weigh_attendant_base_pose() -> dict[str, BonePose]:
+    """Upright but tired working stance shared by both weighbridge loops.
+
+    Less hunched than the babushka — a worker mid-shift, not an
+    elder — with the heavy arms hanging at the sides of the quilted
+    jacket and both feet planted for the ordinary sole bake.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(3.0, 0.0, 0.0), location_m=(0, 0.008, -0.030)),
+        "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(1.0, -2.0, 4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(1.0, 2.0, -4.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(8.0, 5.0, 40.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(8.0, -5.0, -40.0)),
+        "forearm.L": BonePose(rotation_degrees=(-16.0, 3.0, -8.0)),
+        "forearm.R": BonePose(rotation_degrees=(-16.0, -3.0, 8.0)),
+        "hand.L": BonePose(rotation_degrees=(3.0, -2.0, 2.0)),
+        "hand.R": BonePose(rotation_degrees=(3.0, 2.0, -2.0)),
+        "thigh.L": BonePose(rotation_degrees=(-3.0, 0.0, 2.0)),
+        "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-3.0, 0.0, -2.0)),
+        "shin.R": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
     }
 
 
@@ -3706,7 +3964,156 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "forearm.R": BonePose(rotation_degrees=(-45.0, 0.0, 5.0)),
         "hand.R": BonePose(rotation_degrees=(-25.0, -10.0, -4.0)),
     })
+    weigh = weigh_attendant_base_pose()
+    # The weigher's check: crane up at the dial four metres overhead,
+    # lean toward the chest-height linkage, then crouch to pull one
+    # chalk line along the deck edge and straighten back to the dial.
+    weigh_check_read = merge_pose(weigh, {
+        "neck": BonePose(rotation_degrees=(-16.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-18.0, 0.0, 2.0)),
+        "spine": BonePose(rotation_degrees=(1.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+    })
+    weigh_check_shift = merge_pose(weigh_check_read, {
+        "pelvis": BonePose(rotation_degrees=(3.0, -1.0, 1.5), location_m=(0, 0.008, -0.034)),
+        "head": BonePose(rotation_degrees=(-18.0, 0.0, -2.0)),
+    })
+    weigh_check_lean = merge_pose(weigh, {
+        # Bent toward the linkage, the right hand reaching for it at
+        # chest height while the eyes stay on the mechanism.
+        "pelvis": BonePose(rotation_degrees=(8.0, 0.0, -1.0), location_m=(0, -0.010, -0.045)),
+        "spine": BonePose(rotation_degrees=(14.0, 0.0, -2.0)),
+        "chest": BonePose(rotation_degrees=(10.0, 0.0, -2.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(20.0, 15.0, 30.0)),
+        "forearm.R": BonePose(rotation_degrees=(-30.0, 0.0, 6.0)),
+        "hand.R": BonePose(rotation_degrees=(8.0, 3.0, -4.0)),
+    })
+    weigh_check_crouch = merge_pose(weigh, {
+        # A half squat at the deck edge; both soles stay planted so
+        # the ordinary grounding bake holds, the pelvis drops and the
+        # chalk hand reaches down in front of the boots.
+        "pelvis": BonePose(rotation_degrees=(14.0, 0.0, -2.0), location_m=(0, -0.030, -0.250)),
+        "spine": BonePose(rotation_degrees=(20.0, 0.0, -3.0)),
+        "chest": BonePose(rotation_degrees=(14.0, 0.0, -3.0)),
+        "neck": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-58.0, 0.0, 6.0)),
+        "shin.L": BonePose(rotation_degrees=(72.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-58.0, 0.0, -6.0)),
+        "shin.R": BonePose(rotation_degrees=(72.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(30.0, 25.0, 52.0)),
+        "forearm.R": BonePose(rotation_degrees=(-10.0, 0.0, 6.0)),
+        "hand.R": BonePose(rotation_degrees=(16.0, 4.0, -4.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(14.0, 8.0, 44.0)),
+        "forearm.L": BonePose(rotation_degrees=(-34.0, 4.0, -10.0)),
+    })
+    weigh_check_stroke = merge_pose(weigh_check_crouch, {
+        # The chalk line itself: the crouch holds while the right
+        # hand sweeps a hand-span sideways along the deck edge.
+        "upper_arm.R": BonePose(rotation_degrees=(26.0, 34.0, 56.0)),
+        "hand.R": BonePose(rotation_degrees=(20.0, -6.0, -8.0)),
+        "chest": BonePose(rotation_degrees=(14.0, -3.0, -3.0)),
+    })
+    weigh_check_rise = merge_pose(weigh, {
+        "pelvis": BonePose(rotation_degrees=(7.0, 0.0, 0.0), location_m=(0, -0.004, -0.090)),
+        "spine": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-16.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-16.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+    })
+
+    # The weighed worker's pace: heavy shuffling steps carried by the
+    # legs with a tired counter-swing in the arms, and the square
+    # standstill at the deck centre while the scale settles.
+    def weigh_pace_step(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(5.0, lean * 1.5, -lean * 2.0),
+                location_m=(0, 0.006, -0.040)),
+            "thigh.L": BonePose(
+                rotation_degrees=(-3.0 - left_forward * 16.0, 0.0, 2.0)),
+            "shin.L": BonePose(
+                rotation_degrees=(6.0 + max(0.0, -left_forward) * 18.0, 0.0, 0.0)),
+            "foot.L": BonePose(
+                rotation_degrees=(-3.0 + left_forward * 5.0, 0.0, 0.0)),
+            "thigh.R": BonePose(
+                rotation_degrees=(-3.0 + left_forward * 16.0, 0.0, -2.0)),
+            "shin.R": BonePose(
+                rotation_degrees=(6.0 + max(0.0, left_forward) * 18.0, 0.0, 0.0)),
+            "foot.R": BonePose(
+                rotation_degrees=(-3.0 - left_forward * 5.0, 0.0, 0.0)),
+            "upper_arm.L": BonePose(
+                rotation_degrees=(8.0 - left_forward * 6.0, 5.0, 40.0)),
+            "upper_arm.R": BonePose(
+                rotation_degrees=(8.0 + left_forward * 6.0, -5.0, -40.0)),
+        }
+
+    weigh_pace_l = merge_pose(weigh, weigh_pace_step(1.0, 1.0))
+    weigh_pace_pr = merge_pose(weigh, weigh_pace_step(0.0, -0.4))
+    weigh_pace_r = merge_pose(weigh, weigh_pace_step(-1.0, -1.0))
+    weigh_pace_pl = merge_pose(weigh, weigh_pace_step(0.0, 0.4))
+    weigh_stand = merge_pose(weigh, {
+        # Square and still at the deck centre, as if the platform
+        # itself asked him to hold while the needle settles.
+        "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0), location_m=(0, 0.004, -0.024)),
+        "spine": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+        "thigh.L": BonePose(rotation_degrees=(-2.0, 0.0, 2.0)),
+        "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-2.0, 0.0, -2.0)),
+        "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+    })
+    weigh_stand_breath = merge_pose(weigh_stand, {
+        "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.5)),
+        "clavicle.L": BonePose(rotation_degrees=(2.5, -2.0, 4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.5, 2.0, -4.0)),
+        "head": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+    })
+
     return {
+        "WeigherCheck": (
+            (0.0, weigh_check_read),
+            (0.18, weigh_check_shift),
+            (0.34, weigh_check_lean),
+            (0.52, weigh_check_crouch),
+            (0.62, weigh_check_stroke),
+            (0.80, weigh_check_rise),
+            (1.0, weigh_check_read),
+        ),
+        # The standstill keys at 0.36 and 0.64 mirror
+        # WeighbridgeAttendantPresentation.PauseStart/EndNormalized:
+        # the runtime holds the corridor position over exactly this
+        # window, so the pose stands square through it.
+        "WeighedPace": (
+            (0.0, weigh_pace_l),
+            (0.09, weigh_pace_pr),
+            (0.18, weigh_pace_r),
+            (0.27, weigh_pace_pl),
+            (0.36, weigh_stand),
+            (0.50, weigh_stand_breath),
+            (0.64, weigh_stand),
+            (0.71, weigh_pace_pr),
+            (0.79, weigh_pace_r),
+            (0.86, weigh_pace_pl),
+            (1.0, weigh_pace_l),
+        ),
         "BabushkaSmoke": (
             (0.0, babushka_stroll_l1),
             (0.125, babushka_stroll_p1),
