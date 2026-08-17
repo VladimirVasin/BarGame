@@ -129,6 +129,15 @@ namespace BarPromenade
                     layout,
                     decorationPlan);
 
+            // The playground's seats hang outside the batched decoration
+            // layer on purpose: they are the one piece of it that moves.
+            CityPlaygroundSwingBuilder.Build(
+                world,
+                layout,
+                decorationPlan,
+                CityDecorationWorldBuilder.MasonryBatchColor,
+                CityDecorationWorldBuilder.StreetBatchColor);
+
             return new CityWorldResult(
                 world.gameObject,
                 walkableArea,

@@ -6,6 +6,59 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — Swings that swing
+
+- Three complaints about the park playground, all correct: the swings
+  sat almost on top of the bench, the frame was four legs under one
+  bar with nothing bracing it, and the seats were baked boxes.
+- `CityPlaygroundGeometry` is now the single set of numbers the frame,
+  the proxies, the bench seat offer and the seats all read, so those
+  three cannot drift apart again. The bench moves from `z = 2.25` to
+  `3.60`; the protection radius follows, `3.3 -> 3.9`, because what
+  needs the room is the bench, not the frame.
+- Each A-frame gets its own cross beam (`CrossBeamY = 2.85`) along the
+  frame depth, and the long beam moves on top of both (`3.06`), which
+  is also where the ropes are now tied (`RopeAnchorY = 2.95`).
+- The two seats leave the batched decoration layer. `CityWorldBuilder`
+  builds them through `CityPlaygroundSwingBuilder` as a sibling root:
+  one hinged rigid body per seat, hinge axis along the beam, limits
+  `±50°`, centre of mass at the plank, and two taut rope boxes drawn
+  in the pivot's own space so the timber sheet rides the arc instead
+  of swimming over it. PhysX cloth was considered for the ropes and
+  rejected — cloth is driven and drives nothing back, so it cannot
+  carry a seat, let alone be pushed.
+- `CityPlaygroundSwing` is the push: while anything with a
+  `CharacterController` walks into the plank, the seat is accelerated
+  towards that walker's own pace along the swing plane and never past
+  it, so it leaves his hands at walking speed. The body never sleeps,
+  because a sleeping body reports no trigger stay and a resting swing
+  is exactly the one he walks up to.
+- The blocking proxy was one box across the whole frame, so the bay
+  was unreachable; it is now one proxy per A-frame plus the bench,
+  three in all, and the bay between them is open ground.
+- Verified: EditMode `CityPlaygroundSwingTests` +
+  `CityDecorationPlannerTests` + `CityParkSurfaceAppearanceTests` +
+  `CityBenchRestTests`, 44/45. The new tests read the recipe's own
+  parts back (both cross beams present, the bay empty), the built
+  rig (two hinged non-kinematic pendulums under the beam, one solid
+  plank collider and one push volume each), the bench clearance
+  (bench front and the hero's sit dock both outside the swept arc)
+  and the proxies (frames solid, bay open). The single failure,
+  `BarSideYard_LeansPhoneBoothAndDumpsterOnTheBarWall`, fails
+  identically on the clean branch and is about the home-yard site
+  planner.
+- The push itself is physics, so it is proved in PlayMode:
+  `CityPlaygroundSwingPlayModeTests` walks a bare hero-sized controller
+  into a seat for `60` fixed steps and reads `57` contact steps, `21`
+  push steps, `0.80 m` of travel along the push axis and a rising
+  plank; the walker himself only advances `1.27 m` in that time,
+  because the swing is what gives way. It then teleports him clear and
+  waits for the seat to come back past its rest. First run failed at
+  zero movement — the test's own walker, not the swing: a live
+  `CharacterController` owns its pose and dragged the transform back to
+  where the object was created, which is the same trap
+  `PlayerMotor.Teleport` works around.
+
 ## 2026-08-17 — The park's invisible wall
 
 - Bug: the player could not walk off the street into Central Park

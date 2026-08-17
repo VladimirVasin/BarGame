@@ -463,6 +463,9 @@ The vertical slice contains:
   tanks, pipe racks, billboards, fire escapes, markets, discarded furniture,
   cargo, vending queues, a legacy shelter recipe, phone booths, roadworks, a
   fountain/statue, bandstand, chess tables and playground equipment. The
+  playground's two swing seats are the one decoration that is not baked
+  into a batch: each hangs from the top beam as a hinged rigid body the
+  hero pushes by walking into it. The
   ordinary random roadside pool deliberately omits bus shelters because
   Route 01 owns its target-derived physical stop poles;
 - four first-class open district points of interest on their own full-block

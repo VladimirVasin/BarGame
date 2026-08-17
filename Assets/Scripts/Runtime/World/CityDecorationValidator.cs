@@ -575,7 +575,9 @@ namespace BarPromenade
                 case CityDecorationKind.ParkChessTables:
                     return 2.8f;
                 case CityDecorationKind.ParkPlayground:
-                    return 3.3f;
+                    // The frame is small; what needs the room is the
+                    // bench pushed clear of the swing arc behind it.
+                    return 3.9f;
                 default:
                     return 0.75f;
             }

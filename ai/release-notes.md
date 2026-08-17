@@ -6,6 +6,19 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The swings work
+
+- The playground swings hang on ropes now and actually swing. Walk
+  into a seat and it goes with you, at your pace, then comes back and
+  keeps going on its own until it slowly settles. Two seats, either
+  one, any time.
+- The frame is a frame at last: each pair of legs is capped by its own
+  cross beam, with the long beam resting across both.
+- The bench moved back. It used to stand close enough that a swing
+  would have gone through whoever was sitting on it; now there is a
+  clear stretch of ground between the arc and the seat, and you can
+  walk in between the legs to reach a swing at all.
+
 ### 2026-08-17 — The park stops pushing you back
 
 - Central Park held you out. Nothing stood at its edge — no fence, no

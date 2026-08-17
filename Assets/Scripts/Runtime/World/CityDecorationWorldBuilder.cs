@@ -27,6 +27,15 @@ namespace BarPromenade
         private static readonly Color BacklitSignGlow =
             new Color(1.22f, 1.36f, 1.18f);
 
+        /// <summary>The batch brown the playground's own timber is
+        /// drawn in, for the swing seats hanging outside the batch.
+        /// </summary>
+        internal static Color MasonryBatchColor => MasonryColor;
+
+        /// <summary>The batch near-black the park's small metalwork is
+        /// drawn in, for the swing ropes.</summary>
+        internal static Color StreetBatchColor => StreetColor;
+
         public static GameObject Build(
             Transform parent,
             CityLayout layout,
@@ -430,7 +439,8 @@ namespace BarPromenade
         private const float ChessBenchZ = 1.02f;
         private const float ChessBenchWidth = 0.90f;
         private const float ChessBenchDepth = 0.38f;
-        private const float PlaygroundBenchZ = 2.25f;
+        private const float PlaygroundBenchZ =
+            CityPlaygroundGeometry.BenchZ;
         private const float PlaygroundBenchSeatCenterY = 0.62f;
         private const float PlaygroundBenchSeatThickness = 0.18f;
         private const float PlaygroundBenchWidth = 3.75f;
@@ -510,6 +520,59 @@ namespace BarPromenade
                     return;
                 default:
                     return;
+            }
+        }
+
+        /// <summary>
+        /// The transform one decoration recipe is drawn in: where its
+        /// origin is and which way it faces after the recipe's own axis
+        /// snap. Anything that has to stand in the same frame as the
+        /// baked parts — the playground's hanging swings, above all —
+        /// reads the basis from here rather than repeating the snap.
+        /// </summary>
+        internal static bool TryDescribeRecipeBasis(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            out Vector3 origin,
+            out Vector3 forward)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            descriptor.TryResolveLot(layout, out BuildingLot lot);
+            var context = new RecipeContext(descriptor, lot);
+            origin = context.Origin;
+            forward = context.Forward;
+            return forward.sqrMagnitude > 0.0001f;
+        }
+
+        /// <summary>
+        /// The boxes one decoration expands to, in world space. The
+        /// builder batches them away immediately, so this is the only
+        /// way to state what a recipe actually draws.
+        /// </summary>
+        internal static void AppendPartBounds(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            ICollection<Bounds> target)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            var parts = new List<DecorationPart>(15);
+            Expand(layout, descriptor, parts);
+            for (int index = 0; index < parts.Count; index++)
+            {
+                target.Add(parts[index].Bounds);
             }
         }
 
@@ -1184,6 +1247,13 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// The swing frame and its bench only. Two A-frames, each capped
+        /// by its own cross beam, carry the long beam that spans them;
+        /// the seats and their ropes are deliberately absent here,
+        /// because <see cref="CityPlaygroundSwingBuilder"/> hangs them as
+        /// moving pendulums instead of baking them into the batch.
+        /// </summary>
         private static void BuildPlayground(
             RecipeContext c,
             ICollection<DecorationPart> parts)
@@ -1196,23 +1266,28 @@ namespace BarPromenade
                 for (int zSide = -1; zSide <= 1; zSide += 2)
                 {
                     Add(parts, c, BatchStyle.Residential, metal,
-                        xSide * 2.05f, 1.45f, zSide * 0.72f,
-                        0.18f, 2.90f, 0.18f);
+                        xSide * CityPlaygroundGeometry.PostOffsetX,
+                        CityPlaygroundGeometry.PostHeight * 0.5f,
+                        zSide * CityPlaygroundGeometry.PostOffsetZ,
+                        CityPlaygroundGeometry.PostThickness,
+                        CityPlaygroundGeometry.PostHeight,
+                        CityPlaygroundGeometry.PostThickness);
                 }
+
+                Add(parts, c, BatchStyle.Residential, metal,
+                    xSide * CityPlaygroundGeometry.PostOffsetX,
+                    CityPlaygroundGeometry.CrossBeamY,
+                    0f,
+                    CityPlaygroundGeometry.CrossBeamThickness,
+                    CityPlaygroundGeometry.CrossBeamThickness,
+                    CityPlaygroundGeometry.CrossBeamDepth);
             }
 
-            Add(parts, c, BatchStyle.Residential, metal, 0f, 2.82f, 0f,
-                4.35f, 0.22f, 0.22f);
-            for (int swing = -1; swing <= 1; swing += 2)
-            {
-                float x = swing * 0.86f;
-                Add(parts, c, BatchStyle.Street, metal, x - 0.28f,
-                    1.82f, 0f, 0.07f, 1.84f, 0.07f);
-                Add(parts, c, BatchStyle.Street, metal, x + 0.28f,
-                    1.82f, 0f, 0.07f, 1.84f, 0.07f);
-                Add(parts, c, BatchStyle.Masonry, timber, x, 0.90f, 0f,
-                    0.72f, 0.12f, 0.34f);
-            }
+            Add(parts, c, BatchStyle.Residential, metal, 0f,
+                CityPlaygroundGeometry.TopBeamY, 0f,
+                CityPlaygroundGeometry.TopBeamWidth,
+                CityPlaygroundGeometry.TopBeamThickness,
+                CityPlaygroundGeometry.TopBeamThickness);
 
             Add(parts, c, BatchStyle.Masonry, timber, 0f,
                 PlaygroundBenchSeatCenterY, PlaygroundBenchZ,

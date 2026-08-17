@@ -121,8 +121,7 @@ namespace BarPromenade
                     context.Add(target, 1.85f, 0.55f, 0f, 1.28f, 1.10f, 2.45f);
                     break;
                 case CityDecorationKind.ParkPlayground:
-                    context.Add(target, 0f, 1.45f, 0f, 4.45f, 2.90f, 1.65f);
-                    context.Add(target, 0f, 0.52f, 2.25f, 3.80f, 1.04f, 0.52f);
+                    AddPlayground(context, target);
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -301,6 +300,42 @@ namespace BarPromenade
                 2.55f, 1.40f, 1.45f);
             context.Add(target, 1.35f, 0.92f, -0.22f,
                 1.20f, 1.84f, 0.78f);
+        }
+
+        /// <summary>
+        /// One proxy per A-frame plus the bench. The bay between them
+        /// is deliberately open: the swings hanging there are real
+        /// bodies the hero has to be able to walk into and push, and a
+        /// proxy across the whole frame would have him bounce off thin
+        /// air a metre short of the plank.
+        /// </summary>
+        private static void AddPlayground(
+            ProxyContext context,
+            ICollection<Bounds> target)
+        {
+            float frameDepth =
+                (CityPlaygroundGeometry.PostOffsetZ * 2f) +
+                CityPlaygroundGeometry.PostThickness;
+            for (int xSide = -1; xSide <= 1; xSide += 2)
+            {
+                context.Add(
+                    target,
+                    xSide * CityPlaygroundGeometry.PostOffsetX,
+                    CityPlaygroundGeometry.PostHeight * 0.5f,
+                    0f,
+                    CityPlaygroundGeometry.PostThickness + 0.34f,
+                    CityPlaygroundGeometry.PostHeight,
+                    frameDepth);
+            }
+
+            context.Add(
+                target,
+                0f,
+                0.52f,
+                CityPlaygroundGeometry.BenchZ,
+                3.80f,
+                1.04f,
+                0.52f);
         }
 
         private static void AddBusShelter(
