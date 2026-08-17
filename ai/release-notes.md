@@ -6,6 +6,24 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-18 — The river runs
+
+- The water moves. It falls from the south of the city towards the sea
+  and it looks like it: the surface lifts and drops under a swell, ripples
+  drift downstream across it, and the light off it breaks up and reforms
+  instead of sitting there in flat bands.
+- You can see into it. Near the granite the water is clear enough to show
+  the silt and gravel of the channel floor, and it darkens to the river's
+  own colour as it deepens. What is behind it bends as the surface passes
+  over — lean on the parapet and the far wall wavers.
+- Foam gathers where the water runs out: a pale broken line along the foot
+  of both quay walls, around each bridge pier, and at the lower landings
+  where the stairs meet the river. In the rain there is more of it.
+- The bridges stand in the water now rather than on it. Their piers reach
+  the bottom.
+- The sea and the lake are unchanged for now, so the river still meets the
+  sea at a visible step at its mouth.
+
 ### 2026-08-18 — The crossings meet the embankment properly
 
 - Step off the park footbridge and you landed on a strip of park path

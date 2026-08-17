@@ -10,14 +10,20 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// The embankment's three sheets, checked along the chain that can
-    /// actually drift: the PNG on disk is pinned to
+    /// The river's sheets, checked along the chain that can actually
+    /// drift: the PNG on disk is pinned to
     /// `ArtSource/City/river-textures.json` by hash, the manifest's
     /// measured numbers are pinned to `CityRiverSurfaceAppearance`'s
     /// recipes, and the compensation rule is evaluated against the tints
     /// the built embankment really passes. Regenerating the sheets
     /// without updating the recipes, or editing the river palette without
     /// regenerating, fails here rather than in a screenshot.
+    ///
+    /// The four albedos and the two water sheets are checked separately
+    /// because they are different contracts. An albedo is a tinted
+    /// diffuse colour and answers to the linear compensation rule; the
+    /// water sheets are a derivative map and a mask, which answer only
+    /// for their hash and their import.
     /// </summary>
     public sealed class CityRiverSurfaceAppearanceTests
     {
@@ -58,6 +64,8 @@ namespace BarPromenade.Tests.EditMode
                         new Color(0.250f, 0.280f, 0.270f),
                     [CityRiverSurfaceKind.Iron] =
                         new Color(0.075f, 0.100f, 0.105f),
+                    [CityRiverSurfaceKind.Bed] =
+                        new Color(0.185f, 0.190f, 0.155f),
                 };
 
         private static SheetManifest manifest;
@@ -78,7 +86,8 @@ namespace BarPromenade.Tests.EditMode
             manifest = JsonUtility.FromJson<SheetManifest>(
                 File.ReadAllText(path));
             Assert.That(manifest, Is.Not.Null);
-            Assert.That(manifest.sheets, Has.Length.EqualTo(3));
+            Assert.That(manifest.sheets, Has.Length.EqualTo(4));
+            Assert.That(manifest.waterSheets, Has.Length.EqualTo(2));
         }
 
         [TestCase(
@@ -90,6 +99,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             (int)CityRiverSurfaceKind.Iron,
             "CityRiverIronAlbedo")]
+        [TestCase(
+            (int)CityRiverSurfaceKind.Bed,
+            "CityRiverBedAlbedo")]
         public void Recipe_MatchesTheMeasuredContractAndItsImport(
             int kindValue,
             string expectedKey)
@@ -295,7 +307,8 @@ namespace BarPromenade.Tests.EditMode
         /// <summary>
         /// Every renderer the river builds carries the sheet its material
         /// names: the banks and the two road bridges take the embankment's
-        /// three, the park footbridge takes the park's timber, and only
+        /// three, the channel floor and its submerged sides take the bed
+        /// sheet, the park footbridge takes the park's timber, and only
         /// the water and the lamp glow stay flat. A new quay object or
         /// bridge member that ships untextured fails here.
         /// </summary>
@@ -409,6 +422,7 @@ namespace BarPromenade.Tests.EditMode
                             CityRiverSurfaceKind.Paving,
                             CityRiverSurfaceKind.Quay,
                             CityRiverSurfaceKind.Iron,
+                            CityRiverSurfaceKind.Bed,
                         }));
             }
             finally
@@ -419,10 +433,11 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// Granite underfoot, coursed blocks in the wall that holds the
-        /// river, and iron everywhere a hand can reach. A road bridge is
-        /// read from its own style: the works crossing is steel, the
-        /// mouth crossing is quay stone. Null means the renderer has
-        /// nothing to sample - the water, or the lamp glow that owns an
+        /// river, silt below the waterline, and iron everywhere a hand
+        /// can reach. A road bridge is read from its own style: the works
+        /// crossing is steel, the mouth crossing is quay stone. Null
+        /// means the renderer has nothing to sample - the water, whose
+        /// sheets live on its own material, or the lamp glow that owns an
         /// emissive material.
         /// </summary>
         private static CityRiverSurfaceKind? ResolveExpectedKind(
@@ -435,6 +450,11 @@ namespace BarPromenade.Tests.EditMode
                 if (current.name == "Flowing Water")
                 {
                     return null;
+                }
+
+                if (current.name == "Channel Floor")
+                {
+                    return CityRiverSurfaceKind.Bed;
                 }
 
                 if (current.name.EndsWith(
@@ -503,6 +523,93 @@ namespace BarPromenade.Tests.EditMode
             return false;
         }
 
+        /// <summary>
+        /// The two sheets the water shader samples itself. They never
+        /// reach `CityRiverSurfaceAppearance`, so nothing else pins them:
+        /// the hash keeps the PNG honest, the pitch keeps
+        /// `CityRiverResources` honest, and the sRGB flag is the one that
+        /// matters most. The ripple sheet stores signed derivatives, not
+        /// colour; imported through the sRGB curve its neutral 128 stops
+        /// being neutral and the whole river lights as if lit from one
+        /// corner.
+        /// </summary>
+        [TestCase("CityRiverWaterNormal", false, 4.0f)]
+        [TestCase("CityRiverWaterFoam", true, 3.0f)]
+        public void WaterSheet_MatchesTheContractAndItsImport(
+            string expectedKey,
+            bool expectedSrgb,
+            float expectedMetersPerTile)
+        {
+            WaterSheetRecord record = FindWaterRecord(expectedKey);
+            Assert.That(
+                record.linear,
+                Is.EqualTo(!expectedSrgb),
+                $"{expectedKey}'s contract disagrees with the import the " +
+                "shader needs.");
+            Assert.That(
+                record.metersPerTile,
+                Is.EqualTo(expectedMetersPerTile).Within(0.0001f));
+
+            string resourcePath = expectedKey == "CityRiverWaterNormal"
+                ? CityRiverResources.RippleTextureResourcePath
+                : CityRiverResources.FoamTextureResourcePath;
+            float declaredPitch = expectedKey == "CityRiverWaterNormal"
+                ? CityRiverResources.RippleMetersPerTile
+                : CityRiverResources.FoamMetersPerTile;
+            Assert.That(resourcePath, Is.EqualTo(record.resourcePath));
+            Assert.That(
+                declaredPitch,
+                Is.EqualTo(record.metersPerTile).Within(0.0001f),
+                $"{expectedKey} was regenerated at a different pitch than " +
+                "CityRiverResources hands the shader.");
+
+            var resource = Resources.Load<Texture2D>(resourcePath);
+            Assert.That(resource, Is.Not.Null);
+            Assert.That(resource.width, Is.EqualTo(512));
+            Assert.That(resource.height, Is.EqualTo(512));
+
+            string assetPath = AssetDatabase.GetAssetPath(resource);
+            var importer =
+                AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            Assert.That(importer, Is.Not.Null);
+            Assert.That(
+                importer.sRGBTexture,
+                Is.EqualTo(expectedSrgb),
+                $"{expectedKey} must be imported " +
+                $"{(expectedSrgb ? "sRGB" : "linear")}.");
+            Assert.That(
+                importer.wrapMode,
+                Is.EqualTo(TextureWrapMode.Repeat),
+                "The shader scrolls these far past 0..1.");
+            Assert.That(importer.mipmapEnabled, Is.True);
+            Assert.That(importer.maxTextureSize, Is.EqualTo(512));
+            Assert.That(
+                importer.textureCompression,
+                Is.EqualTo(TextureImporterCompression.Uncompressed));
+
+            byte[] pngBytes = File.ReadAllBytes(
+                Path.GetFullPath(assetPath));
+            Assert.That(
+                Sha256(pngBytes),
+                Is.EqualTo(record.sha256),
+                $"{expectedKey} on disk is not the sheet the contract " +
+                "was measured from.");
+        }
+
+        private static WaterSheetRecord FindWaterRecord(string key)
+        {
+            foreach (WaterSheetRecord record in manifest.waterSheets)
+            {
+                if (string.Equals(record.key, key, StringComparison.Ordinal))
+                {
+                    return record;
+                }
+            }
+
+            Assert.Fail($"The river contract has no water sheet '{key}'.");
+            return null;
+        }
+
         private static SheetRecord FindRecord(string key)
         {
             foreach (SheetRecord record in manifest.sheets)
@@ -549,6 +656,17 @@ namespace BarPromenade.Tests.EditMode
         {
             public int sheetSize;
             public SheetRecord[] sheets;
+            public WaterSheetRecord[] waterSheets;
+        }
+
+        [Serializable]
+        private sealed class WaterSheetRecord
+        {
+            public string key;
+            public string resourcePath;
+            public float metersPerTile;
+            public bool linear;
+            public string sha256;
         }
 
         [Serializable]

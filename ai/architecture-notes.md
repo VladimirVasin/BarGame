@@ -39,6 +39,54 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   deterministic runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
+- **Accepted — Water is a surface the engine does not ship:** Unity has a
+  full water system, but only in HDRP; URP 17 has no official water package
+  and Unity's own URP samples author water as an ordinary Shader Graph.
+  `Assets/Resources/Shaders/CityRiverWater.shader` is therefore hand-written
+  HLSL like the project's seven others, and is written as *the* water shader
+  rather than the river's: every quantity is derived from world position, and
+  `_FlowDirection` is a parameter, so the sea and the lake can adopt it
+  without a second shader. Deriving from world position rather than UV is
+  also what makes a segment boundary invisible — two adjacent sheets agree on
+  the wave and the ripple because both are functions of where they are.
+- **Accepted — The water blends itself:** The surface is queued at
+  `Transparent-100` but writes opaque pixels with `ZWrite On` and `Blend Off`,
+  compositing against `_CameraOpaqueTexture` and `_CameraDepthTexture` in the
+  fragment. Both are already required by `PC_RPAsset`. Blending by hand costs
+  one texture read over alpha blending and buys three things: the water never
+  sorts against anything, it stays a correct depth occluder for the
+  `CityLightHalo` particles that draw at 3000, and absorption can be a
+  function of measured water thickness rather than a constant alpha. The
+  refracted sample is rejected when it lands nearer than the surface,
+  otherwise anything standing in front of the river bleeds into it. Banding
+  is applied to the specular, foam and rain terms rather than to the whole
+  colour, so the sheets still read through the PS1 composite. One consequence
+  is easy to get wrong: because the shader composites its own colour rather
+  than being lit, `_BaseColor` and `_DeepColor` are **rendered tones, not
+  albedos**. Reusing a flat surface's authored albedo here emits at full
+  value what that surface reaches the screen at a fraction of, and the water
+  ends up the brightest thing in the city. The same correction is owed to the
+  sea and the lake when they adopt this shader.
+- **Accepted — The channel has a floor:** The city deliberately emits no
+  terrain under a river cell, so while the water was an opaque lid the
+  channel was a hole with a lid on it. `CityRiverWorldBuilder.BuildRiverbed`
+  now lays a silt floor `RiverBedDepth = 1.10 m` under the water top plus two
+  submerged sides starting `SubmergedSideTop = 0.08 m` down, which laps the
+  full quay wall's underside at `0.12 m` by four centimetres. The alternative
+  — extending the quay wall skirt — would have re-pinned wall geometry that
+  was corrected twice in the same week. Bridge piers now bottom out on that
+  floor; they used to stop at the plan datum, a hand's width *above* the
+  waterline, which only an opaque surface was hiding.
+- **Accepted — The water sheets are not albedos:** `CityRiverWaterNormal` is
+  a derivative map stored as `(-dH/du, -dH/dv, 1)` and imported **linear**
+  (`sRGBTexture: 0`, the project's first such texture); `CityRiverWaterFoam`
+  is a mask. Neither answers to the mean-luminance rule, the compensation
+  solve or the channel-ratio bound, all of which describe a diffuse colour
+  multiplied by a builder tint, so both live in a separate `waterSheets`
+  block of `ArtSource/City/river-textures.json` and bypass
+  `CityRiverSurfaceAppearance` entirely — they are set on the water material
+  itself. They are still validated for wrap, the one contract they share.
+  The fourth albedo, `CityRiverBedAlbedo`, goes through the ordinary path.
 - **Accepted — River as typed infrastructure, not a district:**
   `CityRiverDefinition` belongs to the immutable blueprint and declares the
   north-south corridor plus exactly two Road bridges and one ParkPath

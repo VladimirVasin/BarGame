@@ -75,6 +75,54 @@
       "contrast": 76,
       "channelRatio": 1.0161,
       "sha256": "17372FA5E8508ECFFBCF92E61DEA14F385792072026347892760BF6D8582C680"
+    },
+    {
+      "key": "CityRiverBedAlbedo",
+      "grammar": "river_bed",
+      "resourcePath": "Textures/CityRiverBedAlbedo",
+      "meanLinearLuminance": 0.500015,
+      "albedoCompensation": 1.4425,
+      "brightnessError": 0.015061,
+      "metersPerTile": 2.0,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.717592,
+      "tints": {
+        "CityRiverWorldBuilder.Riverbed": [
+          0.185,
+          0.19,
+          0.155
+        ]
+      },
+      "edgeDelta": 7.0439,
+      "seamRatio": 1.0367,
+      "contrast": 83,
+      "channelRatio": 1.0367,
+      "sha256": "FFC5437AD0BE1526C2CE9E2D1C4886BEE02C25F7EEA904324011094DA95247CA"
+    }
+  ],
+  "waterSheets": [
+    {
+      "key": "CityRiverWaterNormal",
+      "grammar": "river_water_normal",
+      "resourcePath": "Textures/CityRiverWaterNormal",
+      "metersPerTile": 4.0,
+      "linear": true,
+      "slopeSpan": 94,
+      "edgeDelta": 1.7633,
+      "seamRatio": 0.6909,
+      "sha256": "BD6B6915C4112663B83550729B8B4E6FFAADBEDD3A22D22EBE8B45AE993C6355"
+    },
+    {
+      "key": "CityRiverWaterFoam",
+      "grammar": "river_water_foam",
+      "resourcePath": "Textures/CityRiverWaterFoam",
+      "metersPerTile": 3.0,
+      "linear": false,
+      "coverage": 0.071651,
+      "edgeDelta": 5.6299,
+      "seamRatio": 0.8541,
+      "sha256": "E121C7F1680220B560B9FC71CCA21431F660456C37583E02FCCA4C3BD5576B57"
     }
   ]
 }

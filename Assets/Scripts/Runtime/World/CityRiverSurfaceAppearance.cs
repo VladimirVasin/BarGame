@@ -7,12 +7,16 @@ namespace BarPromenade
     {
         Paving,
         Quay,
-        Iron
+        Iron,
+        Bed
     }
 
     /// <summary>
-    /// Owns the packaged embankment surface recipes and applies them
-    /// without cloning the shared runtime primitive material. The recipe
+    /// Owns the packaged embankment and channel-floor surface recipes and
+    /// applies them without cloning the shared runtime primitive
+    /// material. The water itself is not here: it carries its own
+    /// material and its own sheets, because it is the one river surface
+    /// that is not a tinted albedo. The recipe
     /// constants are the measured contract emitted by
     /// `tools/build-city-river-textures.py` into
     /// `ArtSource/City/river-textures.json`: compensation follows the
@@ -41,9 +45,11 @@ namespace BarPromenade
             "Textures/CityRiverQuayAlbedo";
         public const string IronTextureResourcePath =
             "Textures/CityRiverIronAlbedo";
+        public const string BedTextureResourcePath =
+            "Textures/CityRiverBedAlbedo";
 
         private const int SurfaceCount =
-            (int)CityRiverSurfaceKind.Iron + 1;
+            (int)CityRiverSurfaceKind.Bed + 1;
         private const float MinimumUvScale = 0.35f;
 
         // Salts the deterministic UV offset hash away from the home
@@ -94,6 +100,13 @@ namespace BarPromenade
                         0.18f,
                         0.20f,
                         1.5145f);
+                case CityRiverSurfaceKind.Bed:
+                    return new HomeSurfaceRecipe(
+                        BedTextureResourcePath,
+                        2.0f,
+                        0.04f,
+                        0f,
+                        1.4425f);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),

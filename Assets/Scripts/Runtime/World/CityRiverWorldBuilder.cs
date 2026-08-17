@@ -8,7 +8,36 @@ namespace BarPromenade
     {
         internal const string RootName = "City River";
 
-        private const float WaterThickness = 0.10f;
+        /// <summary>
+        /// How far the channel floor sits below the water top. The water
+        /// is transparent now, so this is the distance the depth fade,
+        /// the refraction and the bank foam all read against; it is also
+        /// the only reason the river does not show the skybox through
+        /// itself, the terrain having been cut away under the channel.
+        /// </summary>
+        internal const float RiverBedDepth = 1.10f;
+
+        /// <summary>
+        /// Where the submerged sides of the channel start, below the
+        /// water top. A full quay wall's underside lands at
+        /// <c>waterTop - 0.12</c>, so starting at <c>0.08</c> laps the
+        /// two by four centimetres. Any positive overlap will do; what
+        /// is not allowed is a gap, because a gap at the foot of the
+        /// granite is a hole straight through the world once the water
+        /// stops being opaque.
+        /// </summary>
+        internal const float SubmergedSideTop = 0.08f;
+
+        private const float SubmergedSideThickness = 0.44f;
+
+        /// <summary>
+        /// How far the water sheet runs past the channel and into the
+        /// quay walls on each side. A wave trough at the very edge would
+        /// otherwise pull the surface back off the granite and show the
+        /// seam behind it.
+        /// </summary>
+        private const float WaterWallOverlap = 0.15f;
+
         private const float PromenadeThickness = 0.18f;
         private const float RailHeight = 1.05f;
         private const float RailThickness = 0.14f;
@@ -21,6 +50,8 @@ namespace BarPromenade
             new Color(0.25f, 0.28f, 0.27f);
         private static readonly Color Iron =
             new Color(0.075f, 0.10f, 0.105f);
+        private static readonly Color Riverbed =
+            new Color(0.185f, 0.19f, 0.155f);
         private static readonly Color WorksSteel =
             new Color(0.17f, 0.20f, 0.20f);
         private static readonly Color WorksAccent =
@@ -60,6 +91,7 @@ namespace BarPromenade
             CityRiverResources.SetRainIntensity(
                 GameWeatherRules.EvaluateCurrent().RainIntensity);
 
+            BuildRiverbed(root, layout.River);
             BuildWater(root, layout.River);
             BuildPromenades(root, layout);
             BuildRetainingWalls(root, layout);
@@ -79,19 +111,118 @@ namespace BarPromenade
             for (int index = 0; index < plan.Segments.Count; index++)
             {
                 CityRiverSegmentDescriptor segment = plan.Segments[index];
-                CreateSlopedSurface(
+                Rect bounds = segment.WaterBounds;
+                CityWaterSurfaceFactory.CreateSlopedSurface(
                     $"River Water {segment.Cell.y}",
                     water,
-                    segment.WaterBounds,
-                    segment.SouthWaterY +
-                    CitySurfaceDescriptor.WaterTopOffset,
-                    segment.NorthWaterY +
-                    CitySurfaceDescriptor.WaterTopOffset,
-                    WaterThickness,
-                    Color.white,
-                    CityRiverResources.WaterMaterial,
-                    false);
+                    Rect.MinMaxRect(
+                        bounds.xMin - WaterWallOverlap,
+                        bounds.yMin,
+                        bounds.xMax + WaterWallOverlap,
+                        bounds.yMax),
+                    ResolveWaterTopY(segment, bounds.yMin),
+                    ResolveWaterTopY(segment, bounds.yMax),
+                    CityRiverResources.WaterMaterial);
             }
+        }
+
+        /// <summary>
+        /// The channel floor and the two submerged sides that close it
+        /// against the quay walls.
+        ///
+        /// None of this existed while the water was opaque: the city
+        /// deliberately emits no terrain under a river cell, so the
+        /// channel was a hole with a lid on it. The lid is now glass.
+        /// The floor is what the water's depth fade measures against and
+        /// what its refraction shows, and the sides are what stops the
+        /// world showing through the four-centimetre band between the
+        /// underside of the granite and the floor.
+        /// </summary>
+        private static void BuildRiverbed(
+            Transform parent,
+            CityRiverPlan plan)
+        {
+            Transform bed = new GameObject("Channel Floor").transform;
+            bed.SetParent(parent, false);
+            for (int index = 0; index < plan.Segments.Count; index++)
+            {
+                CityRiverSegmentDescriptor segment = plan.Segments[index];
+                Rect bounds = segment.WaterBounds;
+                float southFloorY =
+                    ResolveWaterTopY(segment, bounds.yMin) - RiverBedDepth;
+                float northFloorY =
+                    ResolveWaterTopY(segment, bounds.yMax) - RiverBedDepth;
+
+                // Wider than the channel, so its edges run under the
+                // submerged sides rather than meeting them at a line.
+                CreateSlopedSurface(
+                    $"River Floor {segment.Cell.y}",
+                    bed,
+                    Rect.MinMaxRect(
+                        bounds.xMin - SubmergedSideThickness,
+                        bounds.yMin,
+                        bounds.xMax + SubmergedSideThickness,
+                        bounds.yMax),
+                    southFloorY,
+                    northFloorY,
+                    0.30f,
+                    Riverbed,
+                    null,
+                    false,
+                    CityRiverSurfaceKind.Bed);
+
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float x = side < 0
+                        ? bounds.xMin - SubmergedSideThickness * 0.5f
+                        : bounds.xMax + SubmergedSideThickness * 0.5f;
+                    float southTopY =
+                        ResolveWaterTopY(segment, bounds.yMin) -
+                        SubmergedSideTop;
+                    float northTopY =
+                        ResolveWaterTopY(segment, bounds.yMax) -
+                        SubmergedSideTop;
+                    float height = Mathf.Max(
+                        southTopY - southFloorY,
+                        northTopY - northFloorY);
+                    CreateBeamBetween(
+                        $"River Submerged Side " +
+                        $"{(side < 0 ? "West" : "East")} {segment.Cell.y}",
+                        bed,
+                        new Vector3(
+                            x,
+                            southTopY - height * 0.5f,
+                            bounds.yMin),
+                        new Vector3(
+                            x,
+                            northTopY - height * 0.5f,
+                            bounds.yMax),
+                        SubmergedSideThickness,
+                        height,
+                        Riverbed,
+                        false,
+                        CityRiverSurfaceKind.Bed);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The water surface elevation at a point along a segment. The
+        /// plan's per-node values are the datum; the visible top sits
+        /// <see cref="CitySurfaceDescriptor.WaterTopOffset"/> under it.
+        /// </summary>
+        private static float ResolveWaterTopY(
+            CityRiverSegmentDescriptor segment,
+            float z)
+        {
+            float amount = Mathf.InverseLerp(
+                segment.WaterBounds.yMin,
+                segment.WaterBounds.yMax,
+                z);
+            return Mathf.Lerp(
+                segment.SouthWaterY,
+                segment.NorthWaterY,
+                amount) + CitySurfaceDescriptor.WaterTopOffset;
         }
 
         private static void BuildPromenades(
@@ -380,8 +511,17 @@ namespace BarPromenade
                 false,
                 surface);
 
+            // A pier stops on the channel floor, not on the waterline.
+            // It used to end at the datum, which is 12 cm clear of the
+            // water top - hidden while the surface was opaque, and a pier
+            // hanging in mid-air the moment it stopped being.
             float waterY = ResolveBridgeWaterY(layout, bridge);
-            float pierHeight = Mathf.Max(0.5f, deckY - waterY - 0.42f);
+            float pierBottomY = waterY +
+                                CitySurfaceDescriptor.WaterTopOffset -
+                                RiverBedDepth;
+            float pierHeight = Mathf.Max(
+                0.5f,
+                deckY - 0.42f - pierBottomY);
             for (int pier = -1; pier <= 1; pier += 2)
             {
                 CreateBox(
@@ -389,7 +529,7 @@ namespace BarPromenade
                     root,
                     new Vector3(
                         span.center.x + pier * span.width * 0.30f,
-                        waterY + pierHeight * 0.5f,
+                        pierBottomY + pierHeight * 0.5f,
                         span.center.y),
                     new Vector3(0.82f, pierHeight, span.height - 1.2f),
                     structure,
