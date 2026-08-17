@@ -6,6 +6,121 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — Cemetery: grounded оградки and truly sittable benches
+
+- User-reported: the grave enclosures visually hovered — the rail band
+  sits at knee height (0.24-0.66 m) with nothing carrying it. Each
+  enclosure now stands on four grounded corner posts
+  (`0.07 x 0.68 m`, ids `rail-post-{a..d}`), and the planner test
+  asserts exactly four posts per enclosure with bottoms on
+  `GroundTopY`. Part budget re-derived `480 -> 560`.
+- The alley benches joined the shared bench-sit system instead of
+  being scenery: `CityWorldResult` now carries the nullable
+  `CemeteryPlan`, `CityBenchSitPlan.CreateAll` takes it as a required
+  parameter and reads one `CityBenchSeat` per `cemetery-bench-*-seat`
+  part (top centre, plank size, `GroundTopY`, facing from the part's
+  own rotation) — the same read-back-from-the-plan contract as the
+  bar-side yard bench, docked through `ResolveSeatDockGround` onto the
+  alley edge. `CityGameRoot` passes `World.CemeteryPlan`; the NPC
+  bench-rest planner sees the seats too but graph reach naturally
+  keeps roamers out of the cemetery.
+- Tests: `CityBenchRestTests` call sites updated to the new signature;
+  `CityCemeteryPlannerTests` gained the enclosure-post assertions and
+  `DefaultCity_CemeteryBenchesJoinTheSittableSeats` (one sit offer per
+  drawn seat plank, inside the grounds, pelvis on the plank at
+  `0.49 m + SeatClearance`).
+- Verification: bundled-dotnet compiles green; one focused batchmode
+  run of `CityCemeteryPlannerTests` + `CityBenchRestTests`.
+
+## 2026-08-17 — Cemetery follow-up: the lamp chain and alley benches
+
+- The three fixed lamps became a chain along the whole main alley: the
+  symmetric gate pair stays, then one lamp per `LampSpacing = 15.4 m`
+  on alternating sides, plus a far-end lamp when the chain stops more
+  than half a spacing short of the fence (default city: 6 lamps on the
+  long orientation, 4-5 on the short one). `TryAddLamp` now also
+  rejects spots on the gravel itself (alley-overlap check) and lamp
+  IDs are `D2`-padded so ordinal order stays lexical.
+- New `Bench` part kind + `Timber` style: a painted-plank bench with
+  iron legs (4 parts) beside the main alley just before each cross
+  alley and one near the far fence, facing the gravel. Benches prefer
+  alternating sides and flip across the alley when a lamp already
+  holds theirs; their footprints join the lamp footprints in one
+  `reserved` list that graves and trees now avoid (renamed from
+  `lampFootprints`).
+- Validator: a full cemetery now expects `3-9` lamps.
+  `CityCemeteryPlannerTests` asserts `4-9` lamps, a `> 12 m` lamp
+  spread along the alley (not clustered at the gate) and `>= 8` bench
+  parts. Art bible §10c, README, overview, systems map and release
+  notes updated to the chain-plus-benches picture.
+- Verification: bundled-dotnet compiles of Runtime + EditModeTests
+  green, then the focused `CityCemeteryPlannerTests` batchmode run
+  (deferred behind a lockfile watch until the interactive editor
+  closed). The first run caught a real defect: the new lamp-vs-alley
+  overlap guard rejected every lamp, because at the old
+  `half + 0.45 m` edge offset the lamp footprint grazed the expanded
+  alley band exactly at the seam. Lamps moved to `half + 0.65 m` off
+  the gravel; second run all green (7/7).
+
+## 2026-08-17 — The cemetery gets its own module, variety and light
+
+- Extracted the cemetery out of `CityOpenAreaDecorationPlan` (which
+  kept the lake and bar-side yard; its budget dropped `420 -> 260`)
+  into a dedicated conventional triad: `CityCemeteryPlan` (oriented
+  part descriptors with rotation — the open-area AABB descriptor could
+  not carry tilted crosses or swung gate leaves), `CityCemeteryPlanner`
+  (pure, `StableHash`-seeded, `ValidateOrThrow`), and
+  `CityCemeteryWorldBuilder` (48 m chunk × style batches via
+  `CreateCombinedOrientedBoxes`). Budget `480` parts; the default city
+  plans ~`420`.
+- The planner works in a gate-relative depth/lateral frame so one
+  algorithm serves all four gate orientations: main gravel alley from
+  the gate plus cross alleys every `20 m` (chunk-split slabs); a
+  jittered grave grid (`4.0 x 5.0 m` pitch, `48%` hash acceptance)
+  with six monument variants — the first six accepted plots cycle all
+  variants so the gate row is a showcase and the contract is testable —
+  three stone tints, back-tilt up to `6°` in the rows deepest from the
+  gate, `35%` оградка enclosures and `25%` offerings; fence ported
+  intact plus four corner pillars; the gate gained a `2.4 m` pillar
+  pair, an iron arch with plaque (overhead parts are exempt from the
+  approach-clearance rule by a `2.1 m` bottom-height test) and two
+  nearly-open lattice leaves whose `8°` opening angle keeps their
+  lateral reach inside the `0.35 m` margin to the expanded approach;
+  hash-thinned perimeter/interior birches and firs and grave-side
+  bushes; lamps are planned first so graves and trees avoid them.
+- Trap fixed along the way: `CityOpenAreaAccessDescriptor.
+  OutwardNormal` points from the street *into* the grounds despite its
+  name (the lake and the original cemetery pass both read it that
+  way); the first draft inverted it, which put the gate on the far
+  side and walled off the real approach — caught by `ValidateOrThrow`
+  in the first test run.
+- Three alley lamps follow the island-floodlight recipe (emissive
+  mantle + `CityNightGlowRegistry`, `CityLightHalo`, point light
+  `LightShadows.None` + `CityNightSiteLightRegistry`), so they die by
+  day; the pole is the only collider.
+- New deterministic texture pass `tools/build-cemetery-textures.py`
+  (engine-imported from `build-home-textures.py`): four validated
+  1024² sheets — low-contrast speckled granite (planar-XZ UVs smear
+  vertically on monument faces; the quiet sheet reads as weathering),
+  cracked/lichened stone, pebble gravel, leaf-litter soil — with
+  manifest `ArtSource/City/cemetery-textures.json`.
+  `CityCemeterySurfaceAppearance` transcribes the solved recipes
+  (compensations `1.398/1.397/1.4055/1.4755`) and applies them to
+  combined meshes over `RuntimePrimitiveFactory`'s world-planar UVs
+  (no per-renderer UV offset needed — world position decorrelates).
+  "Cemetery Ground" in `CityWorldBuilder` now carries the soil sheet
+  the way roads carry asphalt. Hand-authored the four texture `.meta`
+  files from the POI template (512 import, Repeat).
+- Art bible gained §10c «Кладбище — город, который никуда не спешит»;
+  release notes, project overview, systems map and system tree
+  updated.
+- Verification: bundled-dotnet compiles of Runtime + EditModeTests,
+  then one focused batchmode EditMode run —
+  `CityCemeteryPlannerTests` (determinism, `>= 30` graves, all six
+  variants and three tints, gate dressing counts, slab non-overlap,
+  approach clearance, textured build, day-dead lamps) plus the
+  trimmed `CityOpenAreaDecorationPlannerTests` — all 10 green.
+
 ## 2026-08-17 — Last route island: the inner route ring joins the paving
 
 - Reversed the one texturing exception on the island: the `7.2 m` inner

@@ -16,16 +16,8 @@ namespace BarPromenade
             new Color(0.25f, 0.34f, 0.16f);
         private static readonly Color WeatheredWood =
             new Color(0.27f, 0.20f, 0.13f);
-        private static readonly Color CemeteryIron =
-            new Color(0.08f, 0.10f, 0.10f);
-        private static readonly Color CemeteryPath =
-            new Color(0.27f, 0.26f, 0.21f);
-        private static readonly Color GraveStone =
-            new Color(0.31f, 0.32f, 0.29f);
         private static readonly Color TreeTrunk =
             new Color(0.13f, 0.10f, 0.07f);
-        private static readonly Color DarkFoliage =
-            new Color(0.08f, 0.16f, 0.10f);
         private static readonly Color YardTimber =
             new Color(0.24f, 0.19f, 0.14f);
         private static readonly Color YardPipe =
@@ -258,12 +250,6 @@ namespace BarPromenade
                     return Reeds;
                 case CityOpenAreaDecorationStyle.WeatheredWood:
                     return WeatheredWood;
-                case CityOpenAreaDecorationStyle.CemeteryIron:
-                    return CemeteryIron;
-                case CityOpenAreaDecorationStyle.CemeteryPath:
-                    return CemeteryPath;
-                case CityOpenAreaDecorationStyle.GraveStone:
-                    return GraveStone;
                 case CityOpenAreaDecorationStyle.TreeTrunk:
                     return TreeTrunk;
                 case CityOpenAreaDecorationStyle.YardTimber:
@@ -272,8 +258,6 @@ namespace BarPromenade
                     return YardPipe;
                 case CityOpenAreaDecorationStyle.YardPaint:
                     return YardPaint;
-                case CityOpenAreaDecorationStyle.DarkFoliage:
-                    return DarkFoliage;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }

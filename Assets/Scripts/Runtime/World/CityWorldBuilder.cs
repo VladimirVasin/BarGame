@@ -99,6 +99,12 @@ namespace BarPromenade
                 CityOpenAreaWorldBuilder.Build(
                     world,
                     openAreaDecorationPlan);
+            CityCemeteryPlan cemeteryPlan =
+                CityCemeteryPlanner.Create(layout);
+            if (cemeteryPlan != null)
+            {
+                CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
+            }
 
             var bars = new List<BarEntrance>(settings.BarCount);
             HomeEntrance playerHome = null;
@@ -134,6 +140,7 @@ namespace BarPromenade
                 districtPointOfInterestRoot,
                 openAreaDecorationPlan,
                 openAreaDecorationRoot,
+                cemeteryPlan,
                 decorationPlan,
                 decorationRoot,
                 riverRoot,
@@ -237,12 +244,25 @@ namespace BarPromenade
                 lakeShore,
                 CityExteriorAppearance.LakeShore,
                 true);
-            BuildCombinedBoxesIfAny(
-                "Cemetery Ground",
-                surfaces,
-                cemetery,
-                CityExteriorAppearance.CemeteryGround,
-                true);
+            if (cemetery.Count > 0)
+            {
+                // The cemetery slab gets the leaf-litter soil sheet the
+                // way roads get asphalt: planar world UVs at the soil
+                // pitch, tinted with the same colour it always had.
+                GameObject cemeteryGround =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Cemetery Ground",
+                        surfaces,
+                        cemetery,
+                        CityExteriorAppearance.CemeteryGround,
+                        true,
+                        CityCemeterySurfaceAppearance.GetRecipe(
+                            CityCemeterySurfaceKind.Soil).MetersPerTile);
+                CityCemeterySurfaceAppearance.ApplyCombined(
+                    cemeteryGround.GetComponent<Renderer>(),
+                    CityCemeterySurfaceKind.Soil,
+                    CityExteriorAppearance.CemeteryGround);
+            }
             BuildCombinedBoxesIfAny(
                 "Water",
                 surfaces,

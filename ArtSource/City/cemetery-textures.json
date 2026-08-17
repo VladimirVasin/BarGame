@@ -1,0 +1,114 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityCemeteryGraniteAlbedo",
+      "grammar": "cemetery_granite",
+      "resourcePath": "Textures/CityCemeteryGraniteAlbedo",
+      "meanLinearLuminance": 0.500224,
+      "albedoCompensation": 1.398,
+      "brightnessError": 0.034852,
+      "metersPerTile": 1.4,
+      "smoothness": 0.18,
+      "metallic": 0.0,
+      "exposure": 0.748967,
+      "tints": {
+        "CityCemeteryWorldBuilder.GraniteDark": [
+          0.21,
+          0.22,
+          0.24
+        ],
+        "CityCemeteryWorldBuilder.MarbleLight": [
+          0.44,
+          0.44,
+          0.41
+        ]
+      },
+      "edgeDelta": 11.8433,
+      "seamRatio": 1.0252,
+      "contrast": 90,
+      "channelRatio": 1.0302,
+      "sha256": "B015B19D09097336E658CCA3BFE116B848B90D1A50C36396254B97699E302557"
+    },
+    {
+      "key": "CityCemeteryStoneAlbedo",
+      "grammar": "cemetery_stone",
+      "resourcePath": "Textures/CityCemeteryStoneAlbedo",
+      "meanLinearLuminance": 0.500132,
+      "albedoCompensation": 1.397,
+      "brightnessError": 0.005156,
+      "metersPerTile": 1.8,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.763529,
+      "tints": {
+        "CityCemeteryWorldBuilder.WeatheredConcrete": [
+          0.3,
+          0.31,
+          0.28
+        ]
+      },
+      "edgeDelta": 5.4873,
+      "seamRatio": 0.8754,
+      "contrast": 92,
+      "channelRatio": 1.0155,
+      "sha256": "017B419ED023850ED76C1A04FA3BC9D65A793B762F829179DE3958E577A1ACB1"
+    },
+    {
+      "key": "CityCemeteryGravelAlbedo",
+      "grammar": "cemetery_gravel",
+      "resourcePath": "Textures/CityCemeteryGravelAlbedo",
+      "meanLinearLuminance": 0.499934,
+      "albedoCompensation": 1.4055,
+      "brightnessError": 0.014014,
+      "metersPerTile": 1.6,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.765165,
+      "tints": {
+        "CityCemeteryWorldBuilder.Gravel": [
+          0.3,
+          0.28,
+          0.23
+        ]
+      },
+      "edgeDelta": 6.6828,
+      "seamRatio": 1.127,
+      "contrast": 83,
+      "channelRatio": 1.0474,
+      "sha256": "DEE448053D7D5DEBF6D35A311D57784B913C8ECE7FE5B3D88461FD840B32A4B3"
+    },
+    {
+      "key": "CityCemeterySoilAlbedo",
+      "grammar": "cemetery_soil",
+      "resourcePath": "Textures/CityCemeterySoilAlbedo",
+      "meanLinearLuminance": 0.499956,
+      "albedoCompensation": 1.4755,
+      "brightnessError": 0.069984,
+      "metersPerTile": 3.0,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.821145,
+      "tints": {
+        "CityCemeteryWorldBuilder.Soil": [
+          0.16,
+          0.13,
+          0.09
+        ],
+        "CityExteriorAppearance.CemeteryGround": [
+          0.15,
+          0.2,
+          0.16
+        ]
+      },
+      "edgeDelta": 5.0448,
+      "seamRatio": 1.0241,
+      "contrast": 98,
+      "channelRatio": 1.0695,
+      "sha256": "50F72E349E47209C200C62D114650A7D2B467A0BD3DFE1FB9AE87341C0EB5A65"
+    }
+  ]
+}

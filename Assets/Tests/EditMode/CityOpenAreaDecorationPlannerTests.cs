@@ -11,7 +11,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CityOpenAreaDecorationPlannerTests
     {
         [Test]
-        public void DefaultCity_CreatesDeterministicClearLakeAndCemeteryLandmarks()
+        public void DefaultCity_CreatesDeterministicClearLakeLandmarks()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -40,21 +40,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.GetCount(CityOpenAreaDecorationKind.LakeBoat),
                 Is.EqualTo(1));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.CemeteryFence),
-                Is.GreaterThan(12));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.CemeteryGate),
-                Is.EqualTo(2));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.CemeteryPath),
-                Is.EqualTo(1));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.CemeteryGrave),
-                Is.GreaterThan(20));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.CemeteryTree),
-                Is.GreaterThan(0));
 
             Rect[] lakeWater = layout.Surfaces
                 .Where(surface =>

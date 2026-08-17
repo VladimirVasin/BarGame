@@ -376,6 +376,7 @@ namespace BarPromenade
                 CityBenchSitPlan.CreateAll(
                     Layout,
                     World.OpenAreaDecorationPlan,
+                    World.CemeteryPlan,
                     BusPlan,
                     World.DecorationPlan,
                     pedestrianStreetSurfacePlan);

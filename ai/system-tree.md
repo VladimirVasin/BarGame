@@ -196,8 +196,12 @@ Assets/
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      continuous terrain, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
-        CityOpenAreaDecorationPlan.cs  deterministic Lake/Cemetery + inter-building bar-side yard/light descriptors
+        CityOpenAreaDecorationPlan.cs  deterministic Lake + inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
+        CityCemeteryPlan.cs      oriented cemetery part/lamp descriptors, six grave variants + bounded budget
+        CityCemeteryPlanner.cs   gate-framed alleys, hash-varied graves/оградки, trees, lamps + validation
+        CityCemeteryWorldBuilder.cs  chunked oriented batches with cemetery sheets + night-scaled alley lamps
+        CityCemeterySurfaceAppearance.cs  four cemetery albedos (granite/stone/gravel/soil) via MPBs
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
@@ -428,7 +432,8 @@ Assets/
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
-      CityOpenAreaDecorationPlannerTests.cs  Lake/Cemetery identity, clearance and determinism
+      CityOpenAreaDecorationPlannerTests.cs  Lake identity, clearance and determinism
+      CityCemeteryPlannerTests.cs         cemetery variety/clearance/determinism, textured build, night lamps + sittable benches
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
@@ -502,6 +507,7 @@ tools/
   build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
+  build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/

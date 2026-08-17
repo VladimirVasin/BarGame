@@ -6,6 +6,43 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The cemetery becomes a real place
+
+- The eastern cemetery is no longer a stamped grid of identical grey
+  boxes. Its graves now come in six silhouettes — a classic stele on a
+  plinth, an arch-topped stone, an eight-pointed Orthodox cross with
+  the slanted lower bar, an obelisk with a pyramid cap, a wide family
+  monument on twin columns, and a sunken overgrown mound — mixed
+  across dark granite, pale marble and weathered concrete. Every grave
+  is slightly shifted and turned; the rows deepest from the gate lean
+  back with age. A third of the plots stand inside low wrought-iron
+  оградки, and here and there a dark-red wreath rests on the slab.
+- A gravel main alley now leads from the gate through the grounds,
+  crossed by side alleys that cut the field into quarters. The gate
+  itself grew into the cemetery's far-off marker: stone pillars under
+  an iron arch with a name plaque, its two lattice leaves standing
+  open into the grounds.
+- Pale-trunked birches and dark firs grew up along the fence and
+  between the quarters, with bushes pressing against some of the
+  enclosures — the four lonely corner trees are gone.
+- Cast-iron gas lamps light the whole main alley at night: a pair
+  frames the gate, then the chain walks the alley on alternating sides
+  roughly every fifteen metres down to its far end — a cold pale
+  mantle glow with fog halos, dimmer than any street light. Like every
+  honest fixture in town, they die completely by day.
+- Timber benches with iron legs wait beside the main alley — one just
+  before each cross alley and one near the far fence, each facing the
+  gravel. They are real city benches: walk up and sit down on any of
+  them the same way you sit anywhere else in town, and stay with the
+  dead a while.
+- The wrought-iron оградки stand honestly on the ground now: each
+  enclosure's knee-high rail band rests on four cast corner posts
+  instead of hovering over the plot.
+- The whole precinct is textured now: dark leaf-litter soil under
+  everything, packed gravel on the alleys, speckled granite and
+  weathered stone on the monuments — where before there was only flat
+  colour.
+
 ### 2026-08-17 — The cold weighbridge is attended
 
 - The industrial weighbridge is no longer unmanned. A weigher in a

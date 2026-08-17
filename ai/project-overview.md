@@ -419,7 +419,18 @@ The vertical slice contains:
   default city's eastern edge. The `4 x 4` lake has a walkable shore around a
   blocked `2 x 2` water center, while the `3 x 2` cemetery is walkable ground;
   each requires one street-linked open-area approach and exposes the same data
-  to world, fence, navigation, map and deterministic landmark consumers;
+  to world, fence, navigation, map and deterministic landmark consumers. The
+  cemetery is dressed by its own dedicated plan: a textured gravel alley
+  network from an arched, leaf-open iron gate, hash-varied graves in six
+  monument silhouettes (stele, arched stone, Orthodox cross, obelisk, family
+  monument, overgrown mound) over three stone tints with оградка enclosures
+  on grounded corner posts and offerings, perimeter birches and firs,
+  sittable timber benches beside the main alley at the cross alleys and its
+  far end (they join the shared bench-sit pass through the world result's
+  cemetery plan), and a chain of night-scaled gas lamps walking the whole
+  main alley on alternating sides (a pair at the gate, one roughly every
+  `15 m`, one at the far end); ground, alleys, mounds and stone carry
+  dedicated `CityCemetery*Albedo` sheets;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24

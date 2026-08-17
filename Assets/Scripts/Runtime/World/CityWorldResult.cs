@@ -20,6 +20,7 @@ namespace BarPromenade
             GameObject districtPointOfInterestRoot,
             CityOpenAreaDecorationPlan openAreaDecorationPlan,
             GameObject openAreaDecorationRoot,
+            CityCemeteryPlan cemeteryPlan,
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
             GameObject riverRoot,
@@ -46,6 +47,8 @@ namespace BarPromenade
                 ? openAreaDecorationRoot
                 : throw new ArgumentNullException(
                     nameof(openAreaDecorationRoot));
+            // Null when the blueprint carries no dressable cemetery.
+            CemeteryPlan = cemeteryPlan;
             DecorationPlan = decorationPlan ??
                 throw new ArgumentNullException(nameof(decorationPlan));
             DecorationRoot = decorationRoot != null
@@ -73,6 +76,7 @@ namespace BarPromenade
         public GameObject DistrictPointOfInterestRoot { get; }
         public CityOpenAreaDecorationPlan OpenAreaDecorationPlan { get; }
         public GameObject OpenAreaDecorationRoot { get; }
+        public CityCemeteryPlan CemeteryPlan { get; }
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public GameObject RiverRoot { get; }

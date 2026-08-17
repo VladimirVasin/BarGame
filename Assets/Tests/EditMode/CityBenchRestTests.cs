@@ -33,6 +33,7 @@ namespace BarPromenade.Tests.EditMode
                 CityBenchSitPlan.CreateAll(
                     layout,
                     openArea,
+                    CityCemeteryPlanner.Create(layout),
                     busPlan,
                     decorations,
                     streetSurface);
@@ -104,6 +105,7 @@ namespace BarPromenade.Tests.EditMode
                 CityBenchSitPlan.CreateAll(
                     layout,
                     openArea,
+                    CityCemeteryPlanner.Create(layout),
                     busPlan,
                     decorations,
                     streetSurface);

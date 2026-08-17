@@ -239,14 +239,15 @@ namespace BarPromenade
         /// <summary>
         /// Collects every sittable seat the generated city carries:
         /// the repaired bar-side yard bench, the four park benches, the
-        /// two point-of-interest benches, one shelter bench per bus
-        /// stop, and the seats hidden in the street decorations — the
-        /// chess table benches, the discarded couches and the
-        /// playground bench.
+        /// two point-of-interest benches, the cemetery alley benches,
+        /// one shelter bench per bus stop, and the seats hidden in the
+        /// street decorations — the chess table benches, the discarded
+        /// couches and the playground bench.
         /// </summary>
         public static List<CityBenchSitPlan> CreateAll(
             CityLayout layout,
             CityOpenAreaDecorationPlan decorations,
+            CityCemeteryPlan cemeteryPlan,
             CityBusPlan busPlan,
             CityDecorationPlan streetDecorations,
             CityStreetSurfacePlan streetSurfacePlan)
@@ -288,6 +289,11 @@ namespace BarPromenade
             }
 
             AddParkSeats(plans, layout.Park);
+            AddCemeterySeats(
+                plans,
+                layout,
+                streetSurfacePlan,
+                cemeteryPlan);
             for (int index = 0;
                  index < layout.DistrictPointsOfInterest.Count;
                  index++)
@@ -392,6 +398,56 @@ namespace BarPromenade
                 seatBounds.min.y - HomeYardSeatLegHeight,
                 treeCenter - seatBounds.center);
             return true;
+        }
+
+        /// <summary>
+        /// The cemetery alley benches, read back from the cemetery
+        /// plan's seat parts the same way the yard bench is read from
+        /// the yard decoration, so the interaction and the drawn
+        /// timber can never disagree. Each bench already faces the
+        /// gravel it stands beside; the sitter docks on the alley
+        /// edge.
+        /// </summary>
+        private static void AddCemeterySeats(
+            List<CityBenchSitPlan> plans,
+            CityLayout layout,
+            CityStreetSurfacePlan streetSurfacePlan,
+            CityCemeteryPlan cemeteryPlan)
+        {
+            if (cemeteryPlan == null)
+            {
+                return;
+            }
+
+            const string seatSuffix = "-seat";
+            for (int index = 0;
+                 index < cemeteryPlan.Parts.Count;
+                 index++)
+            {
+                CityCemeteryPartDescriptor part =
+                    cemeteryPlan.Parts[index];
+                if (part.Kind != CityCemeteryPartKind.Bench ||
+                    !part.StableId.EndsWith(
+                        seatSuffix,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var seat = new CityBenchSeat(
+                    part.StableId.Substring(
+                        0,
+                        part.StableId.Length - seatSuffix.Length),
+                    part.Center + Vector3.up * (part.Size.y * 0.5f),
+                    part.Size.x,
+                    part.Size.z,
+                    cemeteryPlan.GroundTopY,
+                    part.Rotation * Vector3.forward);
+                Add(plans, ResolveSeatDockGround(
+                    layout,
+                    streetSurfacePlan,
+                    seat));
+            }
         }
 
         /// <summary>
