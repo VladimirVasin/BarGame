@@ -228,6 +228,23 @@ namespace BarPromenade.Tests
                     bridge.DeckBounds.center.y);
                 Assert.That(layout.IsWater(center), Is.False);
                 Assert.That(walkable.Contains(center, 0.2f), Is.True);
+                Assert.That(
+                    bridge.SpanBounds.xMin,
+                    Is.LessThanOrEqualTo(water.WaterBounds.xMin),
+                    bridge.Definition.Id);
+                Assert.That(
+                    bridge.SpanBounds.xMax,
+                    Is.GreaterThanOrEqualTo(water.WaterBounds.xMax),
+                    bridge.Definition.Id);
+                foreach (CityRiverPromenadeDescriptor promenade in
+                         layout.River.Promenades)
+                {
+                    Assert.That(
+                        bridge.SpanBounds.Overlaps(promenade.Bounds),
+                        Is.False,
+                        $"{bridge.Definition.Id} spans over " +
+                        promenade.Id);
+                }
             }
         }
 
@@ -394,7 +411,15 @@ namespace BarPromenade.Tests
                     timber.bounds.max.y,
                     Is.EqualTo(
                         footbridge.AverageY +
-                        CityStreetSurfacePlanner.RoadTop).Within(0.01f));
+                        CityStreetSurfacePlanner.RoadTop +
+                        CityRiverWorldBuilder.SurfaceClearance)
+                        .Within(0.01f),
+                    "The timber deck must clear the park path top plane " +
+                    "it is laid on.");
+                Assert.That(
+                    timber.bounds.size.z,
+                    Is.GreaterThan(footbridge.Definition.DeckWidth),
+                    "The timber deck must overhang the park path sides.");
                 MeshFilter timberStructure = timberRoot.Find(
                         "Timber Bridge Structure")
                     .GetComponent<MeshFilter>();
@@ -409,13 +434,11 @@ namespace BarPromenade.Tests
                 Assert.That(
                     elevatedTimberVertices.Min(vertex => vertex.x),
                     Is.GreaterThanOrEqualTo(
-                        footbridge.DeckBounds.xMin +
-                        layout.RoadWidth * 0.5f - 0.001f));
+                        footbridge.SpanBounds.xMin - 0.001f));
                 Assert.That(
                     elevatedTimberVertices.Max(vertex => vertex.x),
                     Is.LessThanOrEqualTo(
-                        footbridge.DeckBounds.xMax -
-                        layout.RoadWidth * 0.5f + 0.001f));
+                        footbridge.SpanBounds.xMax + 0.001f));
                 Assert.That(rails, Is.Not.Null);
                 Assert.That(
                     rails.Find("West Quay South End Rail"),
@@ -451,10 +474,15 @@ namespace BarPromenade.Tests
                     Transform bridgeRoot = bridges.Find(
                         $"{bridge.Definition.Id} Road Bridge");
                     Assert.That(bridgeRoot, Is.Not.Null);
-                    float minimum = bridge.DeckBounds.xMin +
-                                    layout.RoadWidth * 0.5f;
-                    float maximum = bridge.DeckBounds.xMax -
-                                    layout.RoadWidth * 0.5f;
+                    Renderer underside = bridgeRoot.Find("Bridge Underside")
+                        .GetComponent<Renderer>();
+                    Assert.That(
+                        underside.bounds.size.z,
+                        Is.LessThan(bridge.Definition.DeckWidth),
+                        $"{bridge.Definition.Id}: the underside must stay " +
+                        "clear of the road surface side planes.");
+                    float minimum = bridge.SpanBounds.xMin;
+                    float maximum = bridge.SpanBounds.xMax;
                     foreach (string parapetName in new[]
                              {
                                  "Outer Parapet",

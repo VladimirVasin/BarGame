@@ -6,6 +6,115 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — The embankment gets its stone and iron
+
+- The banks were three flat colours: `Granite` underfoot, `GraniteEdge` in
+  the retaining wall, `Iron` in every rail. So three sheets, one per thing
+  the embankment is actually made of, rather than a generic stone set.
+- `tools/build-city-river-textures.py` adds three grammars over the shared
+  home machinery. Paving: 0.8 m flags in a running bond, tight recessed
+  joints, chamfer arrises, oval worn centres, granite grain and hairline
+  cracks. Quay: 0.55 m courses of rusticated blocks, deep mortar, lit top
+  arris against a shadowed bottom, tooled pitting, runoff and efflorescence.
+  Iron: brushed paint over castings, chipped to bright lips around darker
+  pits, rust freckling out of the chips.
+- Deliberately no waterline band on the quay sheet. The runtime picks each
+  span's UV offset from a transform hash, so a band would sit at a
+  different height on every wall; the damp reads as vertical runoff, which
+  is offset-agnostic.
+- Pitches are metre-true: paving `3.2 m` (four flags), quay `2.2 m` (four
+  courses, about one wall span tall), iron `1.2 m` along a rail. Measured
+  contract in `ArtSource/City/river-textures.json`: compensations
+  `1.3875 / 1.404 / 1.5145`, brightness error `0.24 / 0.59 / 0.53 %`, edge
+  `3.5 / 2.9 / 6.3`, contrast `68 / 72 / 76`.
+- First run failed its own seam check: joints were laid to the right of each
+  grid line, which makes column 0 mortar and column 1023 flag. Centring both
+  joint and mortar on the line fixed it - `edge=17.97` to `3.53`.
+- `CityRiverSurfaceAppearance` owns the recipes and both application paths,
+  because the embankment is built both ways: slabs, walls, rails and posts
+  are separate primitives taking `_BaseMap_ST` metre tiling, while the stair
+  flights and lamp posts are combined batches taking world UVs baked at the
+  recipe pitch.
+- The projection is resolved from the mesh, not passed in:
+  `SurfaceAppearanceCore.ResolveBoxProjection` drops the thinnest local axis.
+  The embankment is three kinds in four orientations across some thirty call
+  sites, and naming a plane at each is how a five-metre rail ends up
+  sampling one stretched patch of its sheet. The bollards pass
+  `CylinderSide` explicitly, being the one non-box surface.
+- The river builder's private `CreateBox`/`CreateBeamBetween`/
+  `CreateSlopedSurface` take an optional surface kind. The bridges pass
+  none and stay flat, which is also what the new test pins.
+- Verified: EditMode `CityRiverSurfaceAppearanceTests` 7/7 and
+  `CityRiverPlannerTests` 7/7, both after the sheets were regenerated once
+  for quality (the flags' polish was a scored rectangle, the iron had no
+  brush direction). Runtime and EditModeTests compile with 0 errors. The
+  appearance test pins the PNG to the manifest by sha256, the manifest's
+  measured numbers to the recipes, and the compensation rule to the tints
+  the built river really applies - so regenerating without updating the
+  recipes, or editing the palette without regenerating, fails there.
+- Not run: PlayMode, and the rest of the EditMode suite.
+
+## 2026-08-18 — Bridges end at the water
+
+- Reported at the park footbridge and suspected on the other two; both
+  correct, and one cause. Every bridge was built on `DeckBounds`, which
+  runs bank node to bank node — `26 m` at default spacing for a `10 m`
+  channel. The `8 m` of overshoot per bank is exactly the embankment.
+- So the timber planks, the undersides, the girders and the parapets all
+  lay across the granite promenade slab, `3 cm` into its top face, and the
+  guard rails — inset only by half the road width — started at the
+  promenade's landward edge and ran its full `4 m` to the water.
+- `CityRiverBridgeDescriptor` now carries a second footprint. `DeckBounds`
+  keeps its meaning, the crossing that pedestrian links, the map line and
+  the furniture exclusions read; the new `SpanBounds` is the structure: the
+  channel plus one `CityRiverPlanner.QuayEdgeOffset` (`0.48 m`) seat on each
+  quay wall, which is the same plane the quay guard rails stand on. Planks,
+  underside, girders, piers and both parapets are built on the span.
+- The span, not the road width, now sets the guard range; the old
+  `RailThickness * 0.5` inset stays, because `AddRailPostsAlongX` centres its
+  end posts on the range ends and they would otherwise overhang the seat.
+- The road surface across the crossing is unchanged — it is the street plan's,
+  not the bridge's — so the approaches still carry road over the embankment
+  and nothing lost its walking surface.
+- Landing stairs sit landward of the quay, so their parapet openings now clip
+  to `0.6 m` — a hole at the water's edge rather than a way through.
+  `CreateBridgeLandingGaps` drops any opening under `MinimumParapetOpening`
+  (`1.2 m`); the landing parapet runs unbroken over the water and the stairs
+  are reached by walking round its end, which the promenade already allows.
+- Piers moved from `0.18` to `0.30` of the footprint half-width, which keeps
+  them near the banks as before now that the footprint is the channel.
+- Shortening left the reported flicker, because it was a second fault with the
+  same shape: the bridges shared planes with the travel surface the street plan
+  draws across the crossing. Both banks of a crossing resolve to the same
+  height — `ResolveDefaultNodeElevation` gives `distanceToBank = 0` on each and
+  `waterY` depends only on `z` — so `WestY == EastY`, the crossing is flat, and
+  the park path's top plane is exactly `AverageY + RoadTop`, which is exactly
+  where the timber planks were topped. The planks were also exactly `2.8 m`
+  wide, the path's own width, so the side faces coincided as well; on the road
+  bridges the underside is `8 m` wide against an `8 m` road, coincident over
+  the `8 cm` band where they overlap.
+- `SurfaceClearance` (`3 cm`) now holds structure off those planes. The timber
+  deck is topped at `deckY + SurfaceClearance` and widened by `2x` it, so it
+  stands proud of the path and overhangs its sides; the planks still sink
+  `8 cm` into the path, so nothing floats and no seam opens. The road underside
+  goes the other way and is *narrowed* by `2x` it: widening it past the
+  carriageway would have exposed the parapet posts' base plane, which sits at
+  `AverageY` — the same height as the underside top — and was until now hidden
+  inside the asphalt slab. Recessed, the slab overhangs its girders, which is
+  the right silhouette anyway.
+- Verified: EditMode `CityRiverPlannerTests` 7/7 for the shortening, including
+  a new plan-level check that every `SpanBounds` covers the water and overlaps
+  neither promenade. `BarPromenade.Runtime.csproj` and
+  `BarPromenade.EditModeTests.csproj` compile with 0 errors, the clearance
+  change included. `CityPedestrianPlannerTests` passed 7/8; the failure
+  (`Create_ElevatedCity_UsesLocalSurfacesAndSignatureStairs`,
+  `city-stair-oldtown` empty) reproduces on the unmodified branch and is not
+  from this change. `RoadFencePlannerTests` was not run — it reads only
+  `DeckBounds` and `IsRiverBridgeEdge`, both unchanged.
+- **Not re-run after the clearance change:** the editor was reopened, so
+  `CityRiverPlannerTests` still needs one batchmode pass to confirm the two
+  updated deck assertions and the new underside-overhang check.
+
 ## 2026-08-17 — Swings that swing
 
 - Three complaints about the park playground, all correct: the swings

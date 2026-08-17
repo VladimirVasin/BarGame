@@ -12,6 +12,8 @@ namespace BarPromenade
         private const float PromenadeThickness = 0.18f;
         private const float RailHeight = 1.05f;
         private const float RailThickness = 0.14f;
+        private const float MinimumParapetOpening = 1.2f;
+        internal const float SurfaceClearance = 0.03f;
 
         private static readonly Color Granite =
             new Color(0.34f, 0.36f, 0.34f);
@@ -152,7 +154,8 @@ namespace BarPromenade
                             PromenadeThickness,
                             Granite,
                             null,
-                            true);
+                            true,
+                            CityRiverSurfaceKind.Paving);
                     }
                 }
             }
@@ -264,8 +267,10 @@ namespace BarPromenade
                     layout.River,
                     promenade);
                 float railX = promenade.WestBank
-                    ? layout.River.Segments[0].WaterBounds.xMin - 0.48f
-                    : layout.River.Segments[0].WaterBounds.xMax + 0.48f;
+                    ? layout.River.Segments[0].WaterBounds.xMin -
+                      CityRiverPlanner.QuayEdgeOffset
+                    : layout.River.Segments[0].WaterBounds.xMax +
+                      CityRiverPlanner.QuayEdgeOffset;
                 List<AxisRange> openings = CreateQuayOpeningRanges(
                     layout.River,
                     promenade.WestBank);
@@ -322,7 +327,7 @@ namespace BarPromenade
                 if (bridge.Definition.Role ==
                     CityBridgeRole.ParkFootbridge)
                 {
-                    BuildTimberFootbridge(bridges, layout, bridge);
+                    BuildTimberFootbridge(bridges, bridge);
                 }
                 else
                 {
@@ -339,7 +344,7 @@ namespace BarPromenade
             Transform root = new GameObject(
                 $"{bridge.Definition.Id} Road Bridge").transform;
             root.SetParent(parent, false);
-            Rect deck = bridge.DeckBounds;
+            Rect span = bridge.SpanBounds;
             float deckY = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
             Color structure = bridge.Definition.Style == CityBridgeStyle.Works
                 ? WorksSteel
@@ -351,22 +356,25 @@ namespace BarPromenade
             CreateBox(
                 "Bridge Underside",
                 root,
-                new Vector3(deck.center.x, deckY - 0.34f, deck.center.y),
-                new Vector3(deck.width, 0.52f, deck.height),
+                new Vector3(span.center.x, deckY - 0.34f, span.center.y),
+                new Vector3(
+                    span.width,
+                    0.52f,
+                    span.height - SurfaceClearance * 2f),
                 structure,
                 true);
             CreateBox(
                 "North Girder",
                 root,
-                new Vector3(deck.center.x, deckY - 0.68f, deck.yMax - 0.22f),
-                new Vector3(deck.width, 0.72f, 0.34f),
+                new Vector3(span.center.x, deckY - 0.68f, span.yMax - 0.22f),
+                new Vector3(span.width, 0.72f, 0.34f),
                 accent,
                 false);
             CreateBox(
                 "South Girder",
                 root,
-                new Vector3(deck.center.x, deckY - 0.68f, deck.yMin + 0.22f),
-                new Vector3(deck.width, 0.72f, 0.34f),
+                new Vector3(span.center.x, deckY - 0.68f, span.yMin + 0.22f),
+                new Vector3(span.width, 0.72f, 0.34f),
                 accent,
                 false);
 
@@ -378,20 +386,18 @@ namespace BarPromenade
                     $"Bridge Pier {(pier < 0 ? "West" : "East")}",
                     root,
                     new Vector3(
-                        deck.center.x + pier * deck.width * 0.18f,
+                        span.center.x + pier * span.width * 0.30f,
                         waterY + pierHeight * 0.5f,
-                        deck.center.y),
-                    new Vector3(0.82f, pierHeight, deck.height - 1.2f),
+                        span.center.y),
+                    new Vector3(0.82f, pierHeight, span.height - 1.2f),
                     structure,
                     true);
             }
 
             bool innerNorth = bridge.Definition.InteriorDirection.y > 0;
-            float innerZ = innerNorth ? deck.yMax : deck.yMin;
-            float outerZ = innerNorth ? deck.yMin : deck.yMax;
-            AxisRange guardRange = CreateBridgeGuardRange(
-                layout,
-                bridge);
+            float innerZ = innerNorth ? span.yMax : span.yMin;
+            float outerZ = innerNorth ? span.yMin : span.yMax;
+            AxisRange guardRange = CreateBridgeGuardRange(bridge);
             List<AxisRange> landingGaps = CreateBridgeLandingGaps(
                 layout.River,
                 bridge.Definition.Id,
@@ -481,29 +487,29 @@ namespace BarPromenade
 
         private static void BuildTimberFootbridge(
             Transform parent,
-            CityLayout layout,
             CityRiverBridgeDescriptor bridge)
         {
             Transform root = new GameObject(
                 "Central Park Timber Footbridge").transform;
             root.SetParent(parent, false);
-            Rect deck = bridge.DeckBounds;
+            Rect span = bridge.SpanBounds;
             float deckY = bridge.AverageY +
                           CityStreetSurfacePlanner.RoadTop;
-            int plankCount = Mathf.CeilToInt(deck.width / 0.78f);
-            float plankWidth = deck.width / plankCount;
+            float plankTopY = deckY + SurfaceClearance;
+            int plankCount = Mathf.CeilToInt(span.width / 0.78f);
+            float plankWidth = span.width / plankCount;
             var planks = new List<Bounds>(plankCount);
             for (int index = 0; index < plankCount; index++)
             {
                 planks.Add(new Bounds(
                     new Vector3(
-                        deck.xMin + (index + 0.5f) * plankWidth,
-                        deckY - 0.055f,
-                        deck.center.y),
+                        span.xMin + (index + 0.5f) * plankWidth,
+                        plankTopY - 0.055f,
+                        span.center.y),
                     new Vector3(
                         Mathf.Max(0.08f, plankWidth - 0.045f),
                         0.11f,
-                        deck.height)));
+                        span.height + SurfaceClearance * 2f)));
             }
 
             RuntimePrimitiveFactory.CreateCombinedBoxes(
@@ -515,27 +521,25 @@ namespace BarPromenade
             {
                 new Bounds(
                     new Vector3(
-                        deck.center.x,
+                        span.center.x,
                         deckY - 0.30f,
-                        deck.center.y - deck.height * 0.30f),
-                    new Vector3(deck.width, 0.38f, 0.22f)),
+                        span.center.y - span.height * 0.30f),
+                    new Vector3(span.width, 0.38f, 0.22f)),
                 new Bounds(
                     new Vector3(
-                        deck.center.x,
+                        span.center.x,
                         deckY - 0.30f,
-                        deck.center.y + deck.height * 0.30f),
-                    new Vector3(deck.width, 0.38f, 0.22f))
+                        span.center.y + span.height * 0.30f),
+                    new Vector3(span.width, 0.38f, 0.22f))
             };
-            AxisRange guardRange = CreateBridgeGuardRange(
-                layout,
-                bridge);
+            AxisRange guardRange = CreateBridgeGuardRange(bridge);
             float guardCenter =
                 (guardRange.Minimum + guardRange.Maximum) * 0.5f;
             float guardLength =
                 guardRange.Maximum - guardRange.Minimum;
             for (int side = -1; side <= 1; side += 2)
             {
-                float z = deck.center.y + side * (deck.height * 0.5f - 0.10f);
+                float z = span.center.y + side * (span.height * 0.5f - 0.10f);
                 structure.Add(new Bounds(
                     new Vector3(guardCenter, deckY + RailHeight, z),
                     new Vector3(guardLength, 0.13f, 0.13f)));
@@ -556,14 +560,12 @@ namespace BarPromenade
         }
 
         private static AxisRange CreateBridgeGuardRange(
-            CityLayout layout,
             CityRiverBridgeDescriptor bridge)
         {
-            float inset = layout.RoadWidth * 0.5f +
-                          RailThickness * 0.5f;
+            float inset = RailThickness * 0.5f;
             return new AxisRange(
-                bridge.DeckBounds.xMin + inset,
-                bridge.DeckBounds.xMax - inset);
+                bridge.SpanBounds.xMin + inset,
+                bridge.SpanBounds.xMax - inset);
         }
 
         private static void BuildLandings(
@@ -612,12 +614,20 @@ namespace BarPromenade
                         tread + 0.025f)));
             }
 
-            RuntimePrimitiveFactory.CreateCombinedBoxes(
+            GameObject flight = RuntimePrimitiveFactory.CreateCombinedBoxes(
                 "Granite Stair Flight",
                 root,
                 steps,
                 Granite,
-                true);
+                true,
+                CityRiverSurfaceAppearance
+                    .GetRecipe(CityRiverSurfaceKind.Paving)
+                    .MetersPerTile,
+                RuntimeWorldUvMode.BoxProjected);
+            CityRiverSurfaceAppearance.ApplyCombined(
+                flight.GetComponent<Renderer>(),
+                CityRiverSurfaceKind.Paving,
+                Granite);
             CreateBox(
                 "Lower Waterside Platform",
                 root,
@@ -630,7 +640,8 @@ namespace BarPromenade
                     0.24f,
                     landing.PlatformBounds.height),
                 Granite,
-                true);
+                true,
+                CityRiverSurfaceKind.Paving);
 
             float lowerEdgeZ = landing.StairBounds.center.y +
                                direction * landing.StairBounds.height * 0.5f;
@@ -646,21 +657,24 @@ namespace BarPromenade
                     RailThickness,
                     RailThickness,
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
                 CreateBox(
                     $"Upper Rail Post {side}",
                     root,
                     new Vector3(x, landing.UpperY + RailHeight * 0.5f, upperEdgeZ),
                     new Vector3(RailThickness, RailHeight, RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
                 CreateBox(
                     $"Lower Rail Post {side}",
                     root,
                     new Vector3(x, landing.LowerY + RailHeight * 0.5f, lowerEdgeZ),
                     new Vector3(RailThickness, RailHeight, RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
 
             float waterEdgeX = landing.WestBank
@@ -678,7 +692,8 @@ namespace BarPromenade
                     RailThickness,
                     landing.PlatformBounds.height),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             for (int post = -1; post <= 1; post++)
             {
                 CreateBox(
@@ -691,7 +706,8 @@ namespace BarPromenade
                         post * landing.PlatformBounds.height * 0.42f),
                     new Vector3(RailThickness, RailHeight, RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
 
             float landwardEdgeX = landing.WestBank
@@ -709,7 +725,8 @@ namespace BarPromenade
                     RailThickness,
                     landing.PlatformBounds.height),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             float terminalZ = landing.PlatformBounds.center.y +
                               direction *
                               landing.PlatformBounds.height * 0.5f;
@@ -725,7 +742,8 @@ namespace BarPromenade
                     RailThickness,
                     RailThickness),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             for (int post = -1; post <= 1; post++)
             {
                 float z = landing.PlatformBounds.center.y +
@@ -742,7 +760,8 @@ namespace BarPromenade
                         RailHeight,
                         RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
                 float x = landing.PlatformBounds.center.x +
                           post * landing.PlatformBounds.width * 0.42f;
                 CreateBox(
@@ -757,7 +776,8 @@ namespace BarPromenade
                         RailHeight,
                         RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
 
             BuildUpperPlatformCutGuards(
@@ -768,7 +788,7 @@ namespace BarPromenade
 
             for (int bollard = -1; bollard <= 1; bollard += 2)
             {
-                RuntimePrimitiveFactory.CreateCylinder(
+                GameObject post = RuntimePrimitiveFactory.CreateCylinder(
                     $"Mooring Bollard {bollard}",
                     root,
                     new Vector3(
@@ -779,6 +799,11 @@ namespace BarPromenade
                     new Vector3(0.22f, 0.26f, 0.22f),
                     Iron,
                     true);
+                CityRiverSurfaceAppearance.Apply(
+                    post.GetComponent<Renderer>(),
+                    CityRiverSurfaceKind.Iron,
+                    SurfaceProjection.CylinderSide,
+                    Iron);
             }
         }
 
@@ -809,12 +834,21 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimePrimitiveFactory.CreateCombinedBoxes(
-                "Embankment Lamp Posts",
-                lights,
-                posts,
-                Iron,
-                true);
+            GameObject lampPosts =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Embankment Lamp Posts",
+                    lights,
+                    posts,
+                    Iron,
+                    true,
+                    CityRiverSurfaceAppearance
+                        .GetRecipe(CityRiverSurfaceKind.Iron)
+                        .MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            CityRiverSurfaceAppearance.ApplyCombined(
+                lampPosts.GetComponent<Renderer>(),
+                CityRiverSurfaceKind.Iron,
+                Iron);
             GameObject glow = RuntimePrimitiveFactory.CreateCombinedBoxes(
                 "Embankment Lamp Glow",
                 lights,
@@ -910,7 +944,8 @@ namespace BarPromenade
                 0.44f,
                 height,
                 GraniteEdge,
-                true);
+                true,
+                CityRiverSurfaceKind.Quay);
         }
 
         private static void BuildLoweredQuayWallSpan(
@@ -952,7 +987,8 @@ namespace BarPromenade
                 0.44f,
                 Mathf.Max(0.16f, height),
                 GraniteEdge,
-                true);
+                true,
+                CityRiverSurfaceKind.Quay);
         }
 
         private static void BuildTransverseQuayRail(
@@ -973,14 +1009,16 @@ namespace BarPromenade
                 new Vector3(centerX, baseY + RailHeight, z),
                 new Vector3(width, RailThickness, RailThickness),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             CreateBox(
                 "Middle Rail",
                 root,
                 new Vector3(centerX, baseY + 0.55f, z),
                 new Vector3(width, 0.11f, 0.11f),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             int postCount = Mathf.Max(1, Mathf.CeilToInt(width / 2.8f));
             for (int index = 0; index <= postCount; index++)
             {
@@ -991,7 +1029,8 @@ namespace BarPromenade
                     new Vector3(x, baseY + RailHeight * 0.5f, z),
                     new Vector3(RailThickness, RailHeight, RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
         }
 
@@ -1016,7 +1055,8 @@ namespace BarPromenade
                     RailThickness,
                     landing.PlatformBounds.height),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             CreateBox(
                 "Upper Landward Middle Rail",
                 root,
@@ -1029,7 +1069,8 @@ namespace BarPromenade
                     0.11f,
                     landing.PlatformBounds.height),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             CreateBox(
                 "Upper Terminal Top Rail",
                 root,
@@ -1042,7 +1083,8 @@ namespace BarPromenade
                     RailThickness,
                     RailThickness),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             CreateBox(
                 "Upper Terminal Middle Rail",
                 root,
@@ -1055,7 +1097,8 @@ namespace BarPromenade
                     0.11f,
                     0.11f),
                 Iron,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             for (int post = -1; post <= 1; post++)
             {
                 float z = landing.PlatformBounds.center.y +
@@ -1072,7 +1115,8 @@ namespace BarPromenade
                         RailHeight,
                         RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
                 float x = landing.PlatformBounds.center.x +
                           post * landing.PlatformBounds.width * 0.42f;
                 CreateBox(
@@ -1087,7 +1131,8 @@ namespace BarPromenade
                         RailHeight,
                         RailThickness),
                     Iron,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
         }
 
@@ -1134,7 +1179,8 @@ namespace BarPromenade
                 RailThickness,
                 RailThickness,
                 color,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             CreateBeamBetween(
                 "Middle Rail",
                 root,
@@ -1143,7 +1189,8 @@ namespace BarPromenade
                 0.11f,
                 0.11f,
                 color,
-                true);
+                true,
+                CityRiverSurfaceKind.Iron);
             int postCount = Mathf.Max(1, Mathf.CeilToInt((zMax - zMin) / 2.8f));
             for (int index = 0; index <= postCount; index++)
             {
@@ -1156,7 +1203,8 @@ namespace BarPromenade
                     new Vector3(x, y + RailHeight * 0.5f, z),
                     new Vector3(RailThickness, RailHeight, RailThickness),
                     color,
-                    true);
+                    true,
+                    CityRiverSurfaceKind.Iron);
             }
         }
 
@@ -1243,14 +1291,23 @@ namespace BarPromenade
             for (int index = 0; index < plan.Landings.Count; index++)
             {
                 CityRiverLandingDescriptor landing = plan.Landings[index];
-                if (string.Equals(
+                if (!string.Equals(
                         landing.BridgeId,
                         bridgeId,
                         StringComparison.Ordinal))
                 {
-                    result.Add(new AxisRange(
-                        Mathf.Max(minimum, landing.StairBounds.xMin - 0.12f),
-                        Mathf.Min(maximum, landing.StairBounds.xMax + 0.12f)));
+                    continue;
+                }
+
+                float gapMinimum = Mathf.Max(
+                    minimum,
+                    landing.StairBounds.xMin - 0.12f);
+                float gapMaximum = Mathf.Min(
+                    maximum,
+                    landing.StairBounds.xMax + 0.12f);
+                if (gapMaximum - gapMinimum >= MinimumParapetOpening)
+                {
+                    result.Add(new AxisRange(gapMinimum, gapMaximum));
                 }
             }
 
@@ -1414,7 +1471,8 @@ namespace BarPromenade
             float thickness,
             Color color,
             Material material,
-            bool collider)
+            bool collider,
+            CityRiverSurfaceKind? surface = null)
         {
             return CreateBeamBetween(
                 name,
@@ -1431,7 +1489,8 @@ namespace BarPromenade
                 thickness,
                 color,
                 material,
-                collider);
+                collider,
+                surface);
         }
 
         private static GameObject CreateBeamBetween(
@@ -1442,7 +1501,8 @@ namespace BarPromenade
             float width,
             float height,
             Color color,
-            bool collider)
+            bool collider,
+            CityRiverSurfaceKind? surface = null)
         {
             return CreateBeamBetween(
                 name,
@@ -1453,7 +1513,8 @@ namespace BarPromenade
                 height,
                 color,
                 null,
-                collider);
+                collider,
+                surface);
         }
 
         private static GameObject CreateBeamBetween(
@@ -1465,7 +1526,8 @@ namespace BarPromenade
             float height,
             Color color,
             Material material,
-            bool collider)
+            bool collider,
+            CityRiverSurfaceKind? surface = null)
         {
             Vector3 delta = end - start;
             float length = delta.magnitude;
@@ -1492,6 +1554,7 @@ namespace BarPromenade
             result.transform.localRotation = Quaternion.LookRotation(
                 delta.normalized,
                 Vector3.up);
+            TextureSurface(result, surface, color);
             return result;
         }
 
@@ -1501,15 +1564,39 @@ namespace BarPromenade
             Vector3 position,
             Vector3 size,
             Color color,
-            bool collider)
+            bool collider,
+            CityRiverSurfaceKind? surface = null)
         {
-            return RuntimePrimitiveFactory.CreateBox(
+            GameObject result = RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
                 position,
                 size,
                 color,
                 collider);
+            TextureSurface(result, surface, color);
+            return result;
+        }
+
+        /// <summary>
+        /// Gives one embankment primitive its sheet. The bridges pass no
+        /// surface: their steel, stone and timber are their own styles,
+        /// and the granite and iron sheets belong to the banks.
+        /// </summary>
+        private static void TextureSurface(
+            GameObject instance,
+            CityRiverSurfaceKind? surface,
+            Color tint)
+        {
+            if (instance == null || !surface.HasValue)
+            {
+                return;
+            }
+
+            CityRiverSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface.Value,
+                tint);
         }
 
         private readonly struct AxisRange

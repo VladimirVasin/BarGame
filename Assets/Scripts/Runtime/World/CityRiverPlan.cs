@@ -271,17 +271,20 @@ namespace BarPromenade
         internal CityRiverBridgeDescriptor(
             CityBridgeDefinition definition,
             Rect deckBounds,
+            Rect spanBounds,
             float westY,
             float eastY)
         {
             Definition = definition;
             DeckBounds = deckBounds;
+            SpanBounds = spanBounds;
             WestY = westY;
             EastY = eastY;
         }
 
         public CityBridgeDefinition Definition { get; }
         public Rect DeckBounds { get; }
+        public Rect SpanBounds { get; }
         public float WestY { get; }
         public float EastY { get; }
         public float AverageY => (WestY + EastY) * 0.5f;
@@ -410,6 +413,8 @@ namespace BarPromenade
 
     public static class CityRiverPlanner
     {
+        public const float QuayEdgeOffset = 0.48f;
+
         private const float SouthWaterY = 2.4f;
         private const float SeaWaterY = 0f;
         private const float LowerPlatformOffset = 0.4f;
@@ -527,6 +532,11 @@ namespace BarPromenade
                         westNodeX,
                         centerZ - halfWidth,
                         eastNodeX,
+                        centerZ + halfWidth),
+                    Rect.MinMaxRect(
+                        channelXMin - QuayEdgeOffset,
+                        centerZ - halfWidth,
+                        channelXMax + QuayEdgeOffset,
                         centerZ + halfWidth),
                     westY,
                     eastY));

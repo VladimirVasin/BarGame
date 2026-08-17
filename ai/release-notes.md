@@ -6,6 +6,39 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-18 — The embankment is stone now
+
+- The riverside used to be three flat greys. Now you walk on big
+  granite flags, laid in a running bond, rubbed smooth in the middle
+  and dark in the joints, and the same stone carries down the stairs to
+  the platforms at the water.
+- The wall holding the river back is coursed rusticated block with deep
+  mortar, streaked where the rain runs off and blooming pale where the
+  damp comes through.
+- Every railing, post, mooring bollard and lamp stem is painted cast
+  iron, chipped back to bare metal in the places a hand or a hip would
+  find.
+- The bridges are untouched: their steel, stone and timber are their
+  own.
+
+### 2026-08-18 — The bridges stop at the riverbank
+
+- All three bridges reached too far. Their railings began out on the
+  embankment, a good four metres inland, and ran across the granite
+  towards the water — you walked the promenade with a bridge parapet
+  standing in it. The park footbridge laid its planks over the same
+  stone, one sunk into the other.
+- Now a bridge is only as long as the water it crosses. It sits on the
+  quay wall at each end, its railings begin there, and the embankment
+  runs on underneath, clear.
+- The bridges have also stopped shimmering. Their surfaces lay exactly
+  level with the road and path surfaces underneath them, so the two
+  fought over every pixel; the timber deck now rests a finger's width
+  above the path, and on the road bridges the asphalt carries just past
+  the ironwork beneath it.
+- Getting down to the landings is unchanged, and the roads and the park
+  path still carry you across as before.
+
 ### 2026-08-17 — The swings work
 
 - The playground swings hang on ropes now and actually swing. Walk

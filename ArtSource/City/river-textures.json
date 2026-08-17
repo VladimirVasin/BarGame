@@ -1,0 +1,80 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityRiverPavingAlbedo",
+      "grammar": "river_paving",
+      "resourcePath": "Textures/CityRiverPavingAlbedo",
+      "meanLinearLuminance": 0.499828,
+      "albedoCompensation": 1.3875,
+      "brightnessError": 0.002671,
+      "metersPerTile": 3.2,
+      "smoothness": 0.1,
+      "metallic": 0.0,
+      "exposure": 0.734682,
+      "tints": {
+        "CityRiverWorldBuilder.Granite": [
+          0.34,
+          0.36,
+          0.34
+        ]
+      },
+      "edgeDelta": 3.5308,
+      "seamRatio": 1.5414,
+      "contrast": 68,
+      "channelRatio": 1.0157,
+      "sha256": "3E2CF80893374D6483F4D6DCC6A5138B010FA2D227DDC0D0C6A1648ECE5FC2CC"
+    },
+    {
+      "key": "CityRiverQuayAlbedo",
+      "grammar": "river_quay",
+      "resourcePath": "Textures/CityRiverQuayAlbedo",
+      "meanLinearLuminance": 0.500365,
+      "albedoCompensation": 1.404,
+      "brightnessError": 0.0059,
+      "metersPerTile": 2.2,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.807209,
+      "tints": {
+        "CityRiverWorldBuilder.GraniteEdge": [
+          0.25,
+          0.28,
+          0.27
+        ]
+      },
+      "edgeDelta": 2.918,
+      "seamRatio": 1.2234,
+      "contrast": 72,
+      "channelRatio": 1.0173,
+      "sha256": "F2409909175B69425EB533103EFBEE7FB85D2B9EB3C1117A7ECB11049B5481E9"
+    },
+    {
+      "key": "CityRiverIronAlbedo",
+      "grammar": "river_iron",
+      "resourcePath": "Textures/CityRiverIronAlbedo",
+      "meanLinearLuminance": 0.500167,
+      "albedoCompensation": 1.5145,
+      "brightnessError": 0.00538,
+      "metersPerTile": 1.2,
+      "smoothness": 0.18,
+      "metallic": 0.2,
+      "exposure": 0.808938,
+      "tints": {
+        "CityRiverWorldBuilder.Iron": [
+          0.075,
+          0.1,
+          0.105
+        ]
+      },
+      "edgeDelta": 6.263,
+      "seamRatio": 0.9696,
+      "contrast": 76,
+      "channelRatio": 1.0161,
+      "sha256": "17372FA5E8508ECFFBCF92E61DEA14F385792072026347892760BF6D8582C680"
+    }
+  ]
+}

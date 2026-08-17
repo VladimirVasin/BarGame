@@ -45,6 +45,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   footbridge. `CityRiverPlan` materializes the same contract as a `10 m`
   channel, two continuous `3 m` promenades, distinct `8 m` Works and Mouth
   road decks, a `2.8 m` timber park deck and four lower waterside landings.
+  Every bridge carries two footprints: `DeckBounds` is the bank-road to
+  bank-road crossing that pedestrians, the map and furniture exclusions read,
+  while `SpanBounds` is the structure itself — the channel plus one
+  `CityRiverPlanner.QuayEdgeOffset` seat on each quay wall. Deck planks,
+  undersides, girders, piers and parapets are built on the span, so no part
+  of a bridge stands on an embankment. A crossing is flat by construction —
+  both bank nodes resolve to the same elevation — so the street plan's road
+  or park path across it tops out at exactly `AverageY + RoadTop`. Bridge
+  structure must never share that plane or those side planes:
+  `CityRiverWorldBuilder.SurfaceClearance` lifts the timber deck above the path
+  and widens it past the path sides, and recesses the road underside inside the
+  carriageway sides rather than past them, which would expose the parapet post
+  bases that sit on the underside's own top plane.
   Each road bridge owns one bank-facing stair on both shores; the park bridge
   has no vehicle or lower-landing role. Only the two road bridges enter Route
   01, and bridge-adjacent furniture/spawn exclusions stay derived from the

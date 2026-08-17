@@ -79,6 +79,38 @@ namespace BarPromenade
             return new Vector4(uScale, vScale, uOffset, vOffset);
         }
 
+        /// <summary>
+        /// The box plane a primitive's own proportions choose: drop the
+        /// thinnest local axis and project onto the two that remain, so a
+        /// slab takes its top, a wall its face and a bar its length. For
+        /// batches of one shape in many orientations this beats naming a
+        /// plane per call site, which is how a bar ends up sampling one
+        /// stretched patch of its sheet.
+        /// </summary>
+        public static SurfaceProjection ResolveBoxProjection(
+            Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            Vector3 dimensions = GetLocalMeshDimensions(renderer);
+            if (dimensions.x <= dimensions.y &&
+                dimensions.x <= dimensions.z)
+            {
+                return SurfaceProjection.BoxZY;
+            }
+
+            if (dimensions.y <= dimensions.x &&
+                dimensions.y <= dimensions.z)
+            {
+                return SurfaceProjection.BoxXZ;
+            }
+
+            return SurfaceProjection.BoxXY;
+        }
+
         public static Color CreateDisplayTint(
             Color sourceTint,
             float albedoCompensation)
