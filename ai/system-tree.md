@@ -202,8 +202,8 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
-        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard floodlight, carpet rack and babushka stances
-        CityPointOfInterestSurfaceAppearance.cs  four scripted POI albedos (paving/metal/cloth/timber) via MPBs
+        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard and island mast floodlights, carpet rack and babushka stances
+        CityPointOfInterestSurfaceAppearance.cs  five scripted POI albedos (paving/metal/cloth/timber/paper) via MPBs
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair

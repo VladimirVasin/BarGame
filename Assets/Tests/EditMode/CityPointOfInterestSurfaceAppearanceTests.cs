@@ -47,20 +47,34 @@ namespace BarPromenade.Tests.EditMode
                         new Color(0.235f, 0.275f, 0.270f),
                         new Color(0.200f, 0.220f, 0.210f),
                         new Color(0.170f, 0.175f, 0.215f),
+                        new Color(0.245f, 0.235f, 0.285f),
                     },
                     [CityPointOfInterestSurfaceKind.PaintedMetal] = new[]
                     {
                         new Color(0.145f, 0.190f, 0.185f),
+                        new Color(0.085f, 0.090f, 0.125f),
+                        new Color(0.115f, 0.135f, 0.145f),
                     },
                     [CityPointOfInterestSurfaceKind.Cloth] = new[]
                     {
                         new Color(0.405f, 0.245f, 0.185f),
                         new Color(0.225f, 0.350f, 0.375f),
                         new Color(0.600f, 0.500f, 0.285f),
+                        new Color(0.335f, 0.305f, 0.245f),
+                        new Color(0.295f, 0.140f, 0.150f),
+                        new Color(0.140f, 0.205f, 0.245f),
+                        new Color(0.355f, 0.135f, 0.165f),
                     },
                     [CityPointOfInterestSurfaceKind.Timber] = new[]
                     {
                         new Color(0.405f, 0.245f, 0.185f),
+                        new Color(0.225f, 0.145f, 0.245f),
+                    },
+                    [CityPointOfInterestSurfaceKind.Paper] = new[]
+                    {
+                        new Color(0.385f, 0.335f, 0.255f),
+                        new Color(0.355f, 0.135f, 0.165f),
+                        new Color(0.145f, 0.245f, 0.295f),
                     },
                 };
 
@@ -70,28 +84,35 @@ namespace BarPromenade.Tests.EditMode
             3.0f,
             0.06f,
             0f,
-            1.422f)]
+            1.4205f)]
         [TestCase(
             (int)CityPointOfInterestSurfaceKind.PaintedMetal,
             "Textures/CityPoiPaintedMetalAlbedo",
             1.4f,
             0.22f,
             0.25f,
-            1.4465f)]
+            1.479f)]
         [TestCase(
             (int)CityPointOfInterestSurfaceKind.Cloth,
             "Textures/CityPoiClothAlbedo",
             1.6f,
             0f,
             0f,
-            1.396f)]
+            1.4105f)]
         [TestCase(
             (int)CityPointOfInterestSurfaceKind.Timber,
             "Textures/CityPoiTimberAlbedo",
             1.6f,
             0.08f,
             0f,
-            1.433f)]
+            1.445f)]
+        [TestCase(
+            (int)CityPointOfInterestSurfaceKind.Paper,
+            "Textures/CityPoiPaperAlbedo",
+            0.9f,
+            0.02f,
+            0f,
+            1.4215f)]
         public void Recipe_LoadsConfiguredRepeatTexture(
             int kindValue,
             string expectedResourcePath,
@@ -388,6 +409,124 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Build_TexturesTheLastRouteIsland()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                Seed);
+            var parent = new GameObject("Poi Island Surface Test");
+            try
+            {
+                GameObject root =
+                    CityDistrictPointOfInterestWorldBuilder.Build(
+                        parent.transform,
+                        layout);
+
+                Transform island = FindRecipe(
+                    root,
+                    CityDistrictPointOfInterestKind
+                        .NightlifeLastRouteIsland);
+                Texture pavingTexture =
+                    CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.Paving);
+                Texture metalTexture =
+                    CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.PaintedMetal);
+                Texture paperTexture =
+                    CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.Paper);
+                Texture timberTexture =
+                    CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.Timber);
+                Texture clothTexture =
+                    CityPointOfInterestSurfaceAppearance.GetTexture(
+                        CityPointOfInterestSurfaceKind.Cloth);
+                int pavingCount = 0;
+                int metalCount = 0;
+                int paperCount = 0;
+                int timberCount = 0;
+                int clothCount = 0;
+                int skinnedClothCount = 0;
+                foreach (Renderer renderer in
+                         island.GetComponentsInChildren<Renderer>(true))
+                {
+                    var properties = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(properties);
+                    Texture texture = properties.GetTexture(BaseMapId);
+                    if (texture == null)
+                    {
+                        continue;
+                    }
+
+                    Vector4 transform =
+                        properties.GetVector(BaseMapTransformId);
+                    Assert.That(
+                        transform.x,
+                        Is.GreaterThan(0f),
+                        $"Invalid U tiling on {renderer.name}.");
+                    Assert.That(
+                        transform.y,
+                        Is.GreaterThan(0f),
+                        $"Invalid V tiling on {renderer.name}.");
+                    if (texture == pavingTexture)
+                    {
+                        pavingCount++;
+                    }
+                    else if (texture == metalTexture)
+                    {
+                        metalCount++;
+                    }
+                    else if (texture == paperTexture)
+                    {
+                        paperCount++;
+                    }
+                    else if (texture == timberTexture)
+                    {
+                        timberCount++;
+                    }
+                    else if (texture == clothTexture)
+                    {
+                        clothCount++;
+                        if (renderer is SkinnedMeshRenderer)
+                        {
+                            skinnedClothCount++;
+                            Assert.That(
+                                renderer.sharedMaterial,
+                                Is.SameAs(
+                                    ClothPanelFactory.TwoSidedMaterial),
+                                "Canopy rags keep the shared two-sided " +
+                                "panel material.");
+                        }
+                    }
+                }
+
+                // The island platform and the empty centre disc; the
+                // inner ring stays a flat painted marking.
+                Assert.That(pavingCount, Is.EqualTo(2));
+                // Five canopy segments of post, beam and roof, the
+                // mast group, the departure board frame, the bench
+                // base, the waste bin and the floodlight metalwork.
+                Assert.That(
+                    metalCount,
+                    Is.GreaterThanOrEqualTo(26),
+                    "The island fixtures must carry the painted-metal " +
+                    "sheet.");
+                // Two route plates, the totem map backing, two torn
+                // posters, three schedule rows and the discarded
+                // timetable.
+                Assert.That(paperCount, Is.EqualTo(9));
+                Assert.That(timberCount, Is.EqualTo(1));
+                // Six simulated canopy rags plus the lost scarf.
+                Assert.That(clothCount, Is.EqualTo(7));
+                Assert.That(skinnedClothCount, Is.EqualTo(6));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void Build_DryingYardCarriesNightScaledPoleFloodlight()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -401,17 +540,9 @@ namespace BarPromenade.Tests.EditMode
                         parent.transform,
                         layout);
 
-                Light[] lights =
-                    root.GetComponentsInChildren<Light>(true);
-                Assert.That(
-                    lights,
-                    Has.Length.EqualTo(1),
-                    "The drying yard floodlight is the only realtime " +
-                    "light a district point of interest carries.");
-                Light light = lights[0];
-                Assert.That(
-                    light.name,
-                    Is.EqualTo("Drying Yard Floodlight Light"));
+                Light light = FindSiteLight(
+                    root,
+                    "Drying Yard Floodlight Light");
                 Assert.That(light.type, Is.EqualTo(LightType.Spot));
                 Assert.That(
                     light.shadows,
@@ -468,6 +599,98 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Build_IslandMastCarriesNightScaledFloodlight()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                Seed);
+            var parent = new GameObject("Poi Island Floodlight Test");
+            try
+            {
+                GameObject root =
+                    CityDistrictPointOfInterestWorldBuilder.Build(
+                        parent.transform,
+                        layout);
+
+                Assert.That(
+                    root.GetComponentsInChildren<Light>(true),
+                    Has.Length.EqualTo(2),
+                    "The district points of interest carry exactly " +
+                    "two realtime lights: the drying yard and island " +
+                    "floodlights.");
+                Light light = FindSiteLight(
+                    root,
+                    "Island Mast Floodlight Light");
+                Assert.That(light.type, Is.EqualTo(LightType.Spot));
+                Assert.That(
+                    light.shadows,
+                    Is.EqualTo(LightShadows.None));
+                Assert.That(light.range, Is.EqualTo(16f).Within(0.001f));
+                Assert.That(
+                    light.spotAngle,
+                    Is.EqualTo(72f).Within(0.001f));
+                Assert.That(
+                    light.GetComponentInChildren<CityLightHalo>(true),
+                    Is.Not.Null,
+                    "Every city realtime light owns a fog halo.");
+                Transform island = FindRecipe(
+                    root,
+                    CityDistrictPointOfInterestKind
+                        .NightlifeLastRouteIsland);
+                Assert.That(
+                    light.transform.IsChildOf(island),
+                    Is.True);
+                Assert.That(
+                    light.transform.position.y,
+                    Is.GreaterThan(4.0f),
+                    "The floodlight hangs from the route mast under " +
+                    "the broken totem.");
+
+                float nightIntensity = light.intensity /
+                    Mathf.Max(
+                        0.0001f,
+                        CityNightSiteLightRegistry.NightFactor);
+                try
+                {
+                    CityNightSiteLightRegistry.SetNightFactor(0.5f);
+                    Assert.That(
+                        light.intensity,
+                        Is.EqualTo(nightIntensity * 0.5f)
+                            .Within(0.001f));
+                    Assert.That(light.enabled, Is.True);
+
+                    CityNightSiteLightRegistry.SetNightFactor(0f);
+                    Assert.That(
+                        light.enabled,
+                        Is.False,
+                        "Nothing electric burns under the day sky.");
+                }
+                finally
+                {
+                    CityNightSiteLightRegistry.SetNightFactor(1f);
+                }
+
+                Assert.That(light.enabled, Is.True);
+
+                // The floodlight adds no collider of its own: the
+                // mast base already owns the island's obstacle.
+                foreach (Collider collider in
+                         island.GetComponentsInChildren<Collider>(true))
+                {
+                    Assert.That(
+                        collider.name.Contains("Floodlight"),
+                        Is.False,
+                        "The island floodlight must reuse the mast " +
+                        "collider instead of adding its own.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void BuildHomeExterior_KeepsFloodlightGeometryOnly()
         {
             HomeExteriorContextPlan context =
@@ -496,10 +719,18 @@ namespace BarPromenade.Tests.EditMode
 
         private static Transform FindDryingYardRecipe(GameObject root)
         {
+            return FindRecipe(
+                root,
+                CityDistrictPointOfInterestKind.ResidentialDryingYard);
+        }
+
+        private static Transform FindRecipe(
+            GameObject root,
+            CityDistrictPointOfInterestKind kind)
+        {
             string recipeName =
                 CityDistrictPointOfInterestWorldBuilder.GetRecipeName(
-                    CityDistrictPointOfInterestKind
-                        .ResidentialDryingYard);
+                    kind);
             foreach (Transform transform in
                      root.GetComponentsInChildren<Transform>(true))
             {
@@ -509,7 +740,24 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.Fail("The default city builds a drying yard.");
+            Assert.Fail($"The default city builds a {recipeName}.");
+            return null;
+        }
+
+        private static Light FindSiteLight(
+            GameObject root,
+            string lightName)
+        {
+            foreach (Light light in
+                     root.GetComponentsInChildren<Light>(true))
+            {
+                if (light.name == lightName)
+                {
+                    return light;
+                }
+            }
+
+            Assert.Fail($"Missing site light '{lightName}'.");
             return null;
         }
 

@@ -8,7 +8,8 @@ namespace BarPromenade
         Paving,
         PaintedMetal,
         Cloth,
-        Timber
+        Timber,
+        Paper
     }
 
     /// <summary>
@@ -33,9 +34,11 @@ namespace BarPromenade
             "Textures/CityPoiClothAlbedo";
         public const string TimberTextureResourcePath =
             "Textures/CityPoiTimberAlbedo";
+        public const string PaperTextureResourcePath =
+            "Textures/CityPoiPaperAlbedo";
 
         private const int SurfaceCount =
-            (int)CityPointOfInterestSurfaceKind.Timber + 1;
+            (int)CityPointOfInterestSurfaceKind.Paper + 1;
         private const float MinimumUvScale = 0.35f;
 
         // Salts the deterministic UV offset hash away from the home
@@ -71,28 +74,35 @@ namespace BarPromenade
                         3.0f,
                         0.06f,
                         0f,
-                        1.422f);
+                        1.4205f);
                 case CityPointOfInterestSurfaceKind.PaintedMetal:
                     return new HomeSurfaceRecipe(
                         PaintedMetalTextureResourcePath,
                         1.4f,
                         0.22f,
                         0.25f,
-                        1.4465f);
+                        1.479f);
                 case CityPointOfInterestSurfaceKind.Cloth:
                     return new HomeSurfaceRecipe(
                         ClothTextureResourcePath,
                         1.6f,
                         0f,
                         0f,
-                        1.396f);
+                        1.4105f);
                 case CityPointOfInterestSurfaceKind.Timber:
                     return new HomeSurfaceRecipe(
                         TimberTextureResourcePath,
                         1.6f,
                         0.08f,
                         0f,
-                        1.433f);
+                        1.445f);
+                case CityPointOfInterestSurfaceKind.Paper:
+                    return new HomeSurfaceRecipe(
+                        PaperTextureResourcePath,
+                        0.9f,
+                        0.02f,
+                        0f,
+                        1.4215f);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),

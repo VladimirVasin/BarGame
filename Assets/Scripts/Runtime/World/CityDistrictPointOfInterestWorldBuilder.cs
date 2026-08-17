@@ -156,6 +156,30 @@ namespace BarPromenade
         private static readonly Color NightlifeRagFadedBlue =
             new Color(0.140f, 0.205f, 0.245f);
 
+        // The last route island's service floodlight on the route
+        // mast, under the broken totem: the one electric fixture the
+        // abandoned island still runs. The district's magenta/cyan
+        // stay in paint and paper; the light itself is a cold
+        // violet-grey service white aimed at the empty centre and the
+        // empty bench — it serves the emptiness, not a stage. Like
+        // the drying yard's communal floodlight it is night-scaled,
+        // shadowless and needs floodlight wattage for a 7-9 m throw
+        // to survive the night grade, fog and PS1 composite.
+        private static readonly Color IslandFloodlightLightColor =
+            new Color(0.80f, 0.74f, 0.92f);
+        private static readonly Color IslandFloodlightGlow =
+            new Color(3.52f, 3.26f, 4.05f);
+        private const float IslandFloodlightNightIntensity = 150f;
+        private const float IslandFloodlightRange = 16f;
+        private const float IslandFloodlightSpotAngle = 72f;
+        private const float IslandFloodlightInnerSpotAngle = 40f;
+        // Bracketed off the mast at (-2.75, -1.25) below the totem's
+        // underside (y 4.78), reaching toward the island interior.
+        private static readonly Vector3 IslandFloodlightHeadLocal =
+            new Vector3(-2.40f, 4.42f, -1.05f);
+        private static readonly Vector3 IslandFloodlightAimTarget =
+            new Vector3(1.60f, 0.60f, 1.30f);
+
         /// <summary>Underside of the broken canopy roof slabs, where
         /// the torn rags hang from.</summary>
         private const float CanopyRagHangHeight = 3.49f;
@@ -1258,11 +1282,17 @@ namespace BarPromenade
         {
             AddCylinder(parent, "Last Route Island", 0f, 0.12f, 0f,
                 10.80f, 0.09f, 10.80f, NightlifeIsland,
-                colliders, homeExterior);
+                colliders, homeExterior,
+                CityPointOfInterestSurfaceKind.Paving,
+                SurfaceProjection.CylinderCapXZ);
+            // The inner ring stays a flat painted marking band, like
+            // the street lane paint it once matched.
             AddCylinder(parent, "Inner Route Ring", 0f, 0.225f, 0f,
                 7.20f, 0.025f, 7.20f, NightlifeFrame, false, homeExterior);
             AddCylinder(parent, "Empty Island Centre", 0f, 0.255f, 0f,
-                4.20f, 0.02f, 4.20f, NightlifePaving, false, homeExterior);
+                4.20f, 0.02f, 4.20f, NightlifePaving, false, homeExterior,
+                CityPointOfInterestSurfaceKind.Paving,
+                SurfaceProjection.CylinderCapXZ);
 
             float[] segmentAngles = { 48f, 102f, 168f, 226f, 292f };
             for (int index = 0; index < segmentAngles.Length; index++)
@@ -1273,11 +1303,15 @@ namespace BarPromenade
                 float z = Mathf.Cos(radians) * 4.70f;
                 string name = $"Broken Canopy Segment {index + 1}";
                 AddBox(parent, name + " Post", x, 1.70f, z,
-                    0.30f, 3.40f, 0.30f, NightlifeFrame, false, homeExterior);
+                    0.30f, 3.40f, 0.30f, NightlifeFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, name + " Beam", x, 3.36f, z,
-                    3.25f, 0.26f, 0.42f, NightlifeFrame, false, homeExterior, angle);
+                    3.25f, 0.26f, 0.42f, NightlifeFrame, false, homeExterior, angle,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
                 AddBox(parent, name + " Roof", x, 3.58f, z,
-                    3.45f, 0.18f, 1.25f, NightlifeFrame, false, homeExterior, angle);
+                    3.45f, 0.18f, 1.25f, NightlifeFrame, false, homeExterior, angle,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal,
+                    projection: SurfaceProjection.BoxXZ);
                 if (!homeExterior)
                 {
                     // Cloth is a city-only dressing: at vista distance
@@ -1304,7 +1338,8 @@ namespace BarPromenade
                         plateColor,
                         false,
                         homeExterior,
-                        angle);
+                        angle,
+                        surface: CityPointOfInterestSurfaceKind.Paper);
                 }
 
                 if (colliders)
@@ -1318,56 +1353,75 @@ namespace BarPromenade
             }
 
             AddBox(parent, "Last Route Mast Base", -2.75f, 0.52f, -1.25f,
-                1.12f, 0.78f, 1.12f, NightlifeFrame, false, homeExterior);
+                1.12f, 0.78f, 1.12f, NightlifeFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Last Route Mast", -2.75f, 3.35f, -1.25f,
-                0.34f, 5.70f, 0.34f, NightlifeFrame, false, homeExterior);
+                0.34f, 5.70f, 0.34f, NightlifeFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Broken Route Totem", -2.75f, 5.55f, -1.25f,
-                1.58f, 1.55f, 0.42f, NightlifeFrame, false, homeExterior);
+                1.58f, 1.55f, 0.42f, NightlifeFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Totem Route Map Backing", -2.75f, 5.55f, -1.02f,
-                1.28f, 1.20f, 0.04f, NightlifeRoutePaper, false, homeExterior);
+                1.28f, 1.20f, 0.04f, NightlifeRoutePaper, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Totem Torn Poster A", -2.95f, 5.66f, -0.99f,
                 0.64f, 0.70f, 0.025f, NightlifePosterBlue, false, homeExterior,
-                -4f);
+                -4f,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Totem Torn Poster B", -2.52f, 5.33f, -0.98f,
                 0.50f, 0.43f, 0.025f, NightlifePosterRed, false, homeExterior,
-                6f);
+                6f,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Totem Route Number Plate", -2.71f, 5.97f, -0.97f,
                 0.42f, 0.20f, 0.025f, NightlifeRouteInk, false, homeExterior);
             AddBox(parent, "Departure Board", 2.45f, 2.10f, -2.55f,
-                2.65f, 1.10f, 0.28f, NightlifeFrame, false, homeExterior, -12f);
+                2.65f, 1.10f, 0.28f, NightlifeFrame, false, homeExterior, -12f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board Support West", 1.61f, 0.885f, -2.73f,
-                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f);
+                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board Support East", 3.29f, 0.885f, -2.37f,
-                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f);
+                0.20f, 1.33f, 0.24f, NightlifeFrame, false, homeExterior, -12f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board Foot West", 1.61f, 0.27f, -2.73f,
-                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f);
+                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board Foot East", 3.29f, 0.27f, -2.37f,
-                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f);
+                0.48f, 0.12f, 0.46f, NightlifeFrame, false, homeExterior, -12f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board Glass", 2.45f, 2.10f, -2.39f,
                 2.30f, 0.78f, 0.035f, NightlifeRouteInk, false, homeExterior,
                 -12f);
             AddBox(parent, "Departure Schedule Row A", 2.45f, 2.30f, -2.365f,
                 1.78f, 0.07f, 0.025f, NightlifeRoutePaper, false, homeExterior,
-                -12f);
+                -12f,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Departure Schedule Row B", 2.45f, 2.10f, -2.365f,
                 1.42f, 0.07f, 0.025f, NightlifePosterBlue, false, homeExterior,
-                -12f);
+                -12f,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Departure Schedule Row C", 2.45f, 1.90f, -2.365f,
                 1.92f, 0.07f, 0.025f, NightlifeRoutePaper, false, homeExterior,
-                -12f);
+                -12f,
+                surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Empty Bench",
                 IslandBenchX, IslandBenchSeatCenterY, IslandBenchZ,
                 IslandBenchWidth, IslandBenchSeatThickness,
                 IslandBenchDepth, NightlifeSeat, false, homeExterior,
-                IslandBenchYaw);
+                IslandBenchYaw,
+                surface: CityPointOfInterestSurfaceKind.Timber,
+                projection: SurfaceProjection.BoxXZ);
             AddBox(parent, "Empty Bench Base",
                 IslandBenchX, 0.33f, IslandBenchZ,
                 0.38f, 0.66f, 0.48f, NightlifeFrame, false, homeExterior,
-                IslandBenchYaw);
+                IslandBenchYaw,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Island Waste Bin", 4.15f, 0.71f, 2.20f,
-                0.72f, 1.00f, 0.72f, NightlifeWaste, false, homeExterior, 8f);
+                0.72f, 1.00f, 0.72f, NightlifeWaste, false, homeExterior, 8f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Island Waste Bin Rim", 4.15f, 1.23f, 2.20f,
-                0.82f, 0.08f, 0.82f, NightlifeFrame, false, homeExterior, 8f);
+                0.82f, 0.08f, 0.82f, NightlifeFrame, false, homeExterior, 8f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Island Waste Bin Opening", 4.15f, 1.275f, 2.20f,
                 0.54f, 0.018f, 0.50f, NightlifeRouteInk, false, homeExterior,
                 8f);
@@ -1379,10 +1433,16 @@ namespace BarPromenade
                 28f);
             AddBox(parent, "Lost Scarf", -0.35f, 0.292f, 1.05f,
                 1.10f, 0.025f, 0.34f, NightlifePosterRed, false, homeExterior,
-                -18f);
+                -18f,
+                surface: CityPointOfInterestSurfaceKind.Cloth,
+                projection: SurfaceProjection.BoxXZ);
             AddBox(parent, "Discarded Timetable", -1.20f, 0.228f, -3.65f,
                 0.72f, 0.025f, 0.50f, NightlifeRoutePaper, false,
-                homeExterior, 12f);
+                homeExterior, 12f,
+                surface: CityPointOfInterestSurfaceKind.Paper,
+                projection: SurfaceProjection.BoxXZ);
+
+            BuildIslandMastFloodlight(parent, homeExterior);
 
             if (colliders)
             {
@@ -1412,6 +1472,109 @@ namespace BarPromenade
                     new Vector3(4.15f, 0.71f, 2.20f),
                     new Vector3(0.78f, 1.00f, 0.78f),
                     8f);
+            }
+        }
+
+        /// <summary>
+        /// The abandoned island's one working electric fixture: an old
+        /// service floodlight bracketed off the route mast under the
+        /// broken totem, aimed across the empty centre at the empty
+        /// bench. The city build carries one real shadowless
+        /// night-scaled Spot plus a fog halo; the home exterior vista
+        /// keeps only the bracket, housing and dead-by-day lens
+        /// geometry. The mast base already owns the obstacle collider,
+        /// so the light adds none.
+        /// </summary>
+        private static void BuildIslandMastFloodlight(
+            Transform parent,
+            bool homeExterior)
+        {
+            // Bracket arm from the mast face to the head, yawed to the
+            // mast-to-head direction.
+            AddBox(parent, "Island Floodlight Bracket",
+                -2.575f, IslandFloodlightHeadLocal.y, -1.15f,
+                0.14f, 0.14f, 0.60f, NightlifeFrame, false, homeExterior,
+                60f,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+
+            Transform head = new GameObject(
+                "Island Floodlight Head").transform;
+            head.SetParent(parent, false);
+            head.localPosition = IslandFloodlightHeadLocal;
+            head.localRotation = Quaternion.LookRotation(
+                (IslandFloodlightAimTarget -
+                 IslandFloodlightHeadLocal).normalized,
+                Vector3.up);
+
+            GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                "Island Floodlight Housing",
+                head,
+                new Vector3(0f, 0f, -0.16f),
+                new Vector3(0.46f, 0.30f, 0.38f),
+                NightlifeFrame,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            ConfigureRenderer(housing, homeExterior);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                housing.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                NightlifeFrame);
+
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Island Floodlight Lens",
+                head,
+                new Vector3(0f, 0f, 0.04f),
+                new Vector3(0.36f, 0.22f, 0.03f),
+                IslandFloodlightGlow,
+                CityNightResources.EmissiveMaterial,
+                false);
+            ConfigureRenderer(lens, homeExterior);
+            CityNightGlowRegistry.Register(
+                lens.GetComponent<Renderer>(),
+                IslandFloodlightGlow);
+
+            if (!homeExterior)
+            {
+                GameObject emitter = new GameObject(
+                    "Island Mast Floodlight Light");
+                emitter.transform.SetParent(head, false);
+                Light light = emitter.AddComponent<Light>();
+                light.type = LightType.Spot;
+                light.color = IslandFloodlightLightColor;
+                light.intensity = IslandFloodlightNightIntensity;
+                light.range = IslandFloodlightRange;
+                light.spotAngle = IslandFloodlightSpotAngle;
+                light.innerSpotAngle = IslandFloodlightInnerSpotAngle;
+                light.shadows = LightShadows.None;
+                light.renderMode = LightRenderMode.ForcePixel;
+                light.lightmapBakeType = LightmapBakeType.Realtime;
+
+                GameObject haloObject = new GameObject(
+                    "Island Floodlight Source Halo");
+                haloObject.transform.SetParent(
+                    emitter.transform,
+                    false);
+                CityLightHalo halo =
+                    haloObject.AddComponent<CityLightHalo>();
+                halo.Initialize(
+                    CityNightResources.AtmosphereMaterial,
+                    0.70f,
+                    1.95f,
+                    new Color(
+                        IslandFloodlightLightColor.r * 4.2f,
+                        IslandFloodlightLightColor.g * 4.2f,
+                        IslandFloodlightLightColor.b * 4.2f,
+                        0.18f),
+                    new Color(
+                        IslandFloodlightLightColor.r * 2.1f,
+                        IslandFloodlightLightColor.g * 2.1f,
+                        IslandFloodlightLightColor.b * 2.1f,
+                        0.05f));
+                CityNightSiteLightRegistry.Register(
+                    light,
+                    IslandFloodlightNightIntensity,
+                    halo);
             }
         }
 
@@ -1459,6 +1622,11 @@ namespace BarPromenade
                     recipe.Height,
                     recipe.Color,
                     recipe.TornVariant);
+                CityPointOfInterestSurfaceAppearance.ApplyClothPanel(
+                    rag.GetComponent<SkinnedMeshRenderer>(),
+                    recipe.Color,
+                    recipe.Width,
+                    recipe.Height);
                 CityClothWindRegistry.Register(
                     rag.GetComponent<Cloth>());
             }

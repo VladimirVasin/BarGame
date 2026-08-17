@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -1083,31 +1084,59 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.GetComponentsInChildren<Collider>(true).Length,
                 Is.GreaterThan(4));
-            // The one authored exception to the light-free public
+            // The two authored exceptions to the light-free public
             // places: the drying yard's night-scaled pole floodlight
-            // with its fog halo.
+            // and the last route island's mast floodlight, each with
+            // its fog halo.
             Light[] siteLights =
                 root.GetComponentsInChildren<Light>(true);
-            Assert.That(siteLights, Has.Length.EqualTo(1));
-            Light floodlight = siteLights[0];
-            Assert.That(
-                floodlight.name,
-                Is.EqualTo("Drying Yard Floodlight Light"));
-            Assert.That(floodlight.type, Is.EqualTo(LightType.Spot));
-            Assert.That(
-                floodlight.shadows,
-                Is.EqualTo(LightShadows.None));
-            CityLightHalo floodlightHalo =
-                floodlight.GetComponentInChildren<CityLightHalo>(true);
-            Assert.That(floodlightHalo, Is.Not.Null);
+            Assert.That(siteLights, Has.Length.EqualTo(2));
+            var expectedLightNames = new[]
+            {
+                "Drying Yard Floodlight Light",
+                "Island Mast Floodlight Light",
+            };
+            var floodlightHalos = new List<CityLightHalo>();
+            foreach (string expectedName in expectedLightNames)
+            {
+                Light floodlight = null;
+                for (int index = 0; index < siteLights.Length; index++)
+                {
+                    if (siteLights[index].name == expectedName)
+                    {
+                        floodlight = siteLights[index];
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    floodlight,
+                    Is.Not.Null,
+                    $"Missing site floodlight '{expectedName}'.");
+                Assert.That(
+                    floodlight.type,
+                    Is.EqualTo(LightType.Spot));
+                Assert.That(
+                    floodlight.shadows,
+                    Is.EqualTo(LightShadows.None));
+                CityLightHalo floodlightHalo =
+                    floodlight.GetComponentInChildren<CityLightHalo>(
+                        true);
+                Assert.That(floodlightHalo, Is.Not.Null);
+                floodlightHalos.Add(floodlightHalo);
+            }
+
             ParticleSystem[] siteParticles =
                 root.GetComponentsInChildren<ParticleSystem>(true);
-            Assert.That(siteParticles, Has.Length.EqualTo(1));
-            Assert.That(
-                siteParticles[0].GetComponent<CityLightHalo>(),
-                Is.SameAs(floodlightHalo),
-                "Only the floodlight's fog halo particles live under " +
-                "the public places.");
+            Assert.That(siteParticles, Has.Length.EqualTo(2));
+            foreach (ParticleSystem particles in siteParticles)
+            {
+                Assert.That(
+                    floodlightHalos,
+                    Has.Member(particles.GetComponent<CityLightHalo>()),
+                    "Only the floodlights' fog halo particles live " +
+                    "under the public places.");
+            }
             Assert.That(
                 root.GetComponentsInChildren<AudioSource>(true),
                 Is.Empty);
@@ -1229,17 +1258,32 @@ namespace BarPromenade.Tests.PlayMode
                     "The last-route canopy must not retain neon strips.");
             }
 
+            // The island keeps no neon of its own; its single emissive
+            // surface is the mast service floodlight's lens, which
+            // dies by day with the rest of the electric glow.
             Renderer[] renderers =
                 recipe.GetComponentsInChildren<Renderer>(true);
             Assert.That(renderers, Is.Not.Empty);
+            int emissiveCount = 0;
             for (int index = 0; index < renderers.Length; index++)
             {
-                Assert.That(
-                    renderers[index].sharedMaterial,
-                    Is.Not.SameAs(
-                        CityNightResources.EmissiveMaterial),
-                    $"'{renderers[index].name}' must be non-emissive.");
+                if (renderers[index].sharedMaterial ==
+                    CityNightResources.EmissiveMaterial)
+                {
+                    emissiveCount++;
+                    Assert.That(
+                        renderers[index].name,
+                        Is.EqualTo("Island Floodlight Lens"),
+                        $"'{renderers[index].name}' must be " +
+                        "non-emissive.");
+                }
             }
+
+            Assert.That(
+                emissiveCount,
+                Is.EqualTo(1),
+                "The mast floodlight lens is the island's only " +
+                "emissive surface.");
 
             Transform board = AssertRequiredChild(
                 recipe,

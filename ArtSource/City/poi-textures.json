@@ -9,8 +9,8 @@
       "grammar": "poi_paving",
       "resourcePath": "Textures/CityPoiPavingAlbedo",
       "meanLinearLuminance": 0.49963,
-      "albedoCompensation": 1.422,
-      "brightnessError": 0.029758,
+      "albedoCompensation": 1.4205,
+      "brightnessError": 0.031242,
       "metersPerTile": 3.0,
       "smoothness": 0.06,
       "metallic": 0.0,
@@ -35,6 +35,11 @@
           0.17,
           0.175,
           0.215
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeIsland": [
+          0.245,
+          0.235,
+          0.285
         ]
       },
       "edgeDelta": 2.3797,
@@ -48,8 +53,8 @@
       "grammar": "painted_metal",
       "resourcePath": "Textures/CityPoiPaintedMetalAlbedo",
       "meanLinearLuminance": 0.49986,
-      "albedoCompensation": 1.4465,
-      "brightnessError": 0.020379,
+      "albedoCompensation": 1.479,
+      "brightnessError": 0.066829,
       "metersPerTile": 1.4,
       "smoothness": 0.22,
       "metallic": 0.25,
@@ -59,6 +64,16 @@
           0.145,
           0.19,
           0.185
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeFrame": [
+          0.085,
+          0.09,
+          0.125
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeWaste": [
+          0.115,
+          0.135,
+          0.145
         ]
       },
       "edgeDelta": 2.1761,
@@ -72,8 +87,8 @@
       "grammar": "linen",
       "resourcePath": "Textures/CityPoiClothAlbedo",
       "meanLinearLuminance": 0.500166,
-      "albedoCompensation": 1.396,
-      "brightnessError": 0.052065,
+      "albedoCompensation": 1.4105,
+      "brightnessError": 0.076022,
       "metersPerTile": 1.6,
       "smoothness": 0.0,
       "metallic": 0.0,
@@ -93,6 +108,26 @@
           0.6,
           0.5,
           0.285
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeRagCanvas": [
+          0.335,
+          0.305,
+          0.245
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeRagFadedRed": [
+          0.295,
+          0.14,
+          0.15
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeRagFadedBlue": [
+          0.14,
+          0.205,
+          0.245
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifePosterRed": [
+          0.355,
+          0.135,
+          0.165
         ]
       },
       "edgeDelta": 3.103,
@@ -106,8 +141,8 @@
       "grammar": "planks",
       "resourcePath": "Textures/CityPoiTimberAlbedo",
       "meanLinearLuminance": 0.479822,
-      "albedoCompensation": 1.433,
-      "brightnessError": 0.0422,
+      "albedoCompensation": 1.445,
+      "brightnessError": 0.061298,
       "metersPerTile": 1.6,
       "smoothness": 0.08,
       "metallic": 0.0,
@@ -117,6 +152,11 @@
           0.405,
           0.245,
           0.185
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeSeat": [
+          0.225,
+          0.145,
+          0.245
         ]
       },
       "edgeDelta": 2.7101,
@@ -124,6 +164,40 @@
       "contrast": 69,
       "channelRatio": 1.0965,
       "sha256": "199DB79C483E37266AAFBAB5B9586B3E1FE828BA162C479876A3377B20BC5075"
+    },
+    {
+      "key": "CityPoiPaperAlbedo",
+      "grammar": "poi_paper",
+      "resourcePath": "Textures/CityPoiPaperAlbedo",
+      "meanLinearLuminance": 0.500197,
+      "albedoCompensation": 1.4215,
+      "brightnessError": 0.062593,
+      "metersPerTile": 0.9,
+      "smoothness": 0.02,
+      "metallic": 0.0,
+      "exposure": 0.731545,
+      "tints": {
+        "CityDistrictPointOfInterestWorldBuilder.NightlifeRoutePaper": [
+          0.385,
+          0.335,
+          0.255
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifePosterRed": [
+          0.355,
+          0.135,
+          0.165
+        ],
+        "CityDistrictPointOfInterestWorldBuilder.NightlifePosterBlue": [
+          0.145,
+          0.245,
+          0.295
+        ]
+      },
+      "edgeDelta": 6.014,
+      "seamRatio": 0.929,
+      "contrast": 88,
+      "channelRatio": 1.0692,
+      "sha256": "ACE4C38C1F523FAEA12DAA6083D249E23BFAB40F5B24A3F6D2F574FEBB908662"
     }
   ]
 }

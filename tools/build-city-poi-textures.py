@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the deterministic surface albedos for the district points of interest.
 
-Four seamless 1024x1024 sheets, imported by Unity at 512 and tiled by
+Five seamless 1024x1024 sheets, imported by Unity at 512 and tiled by
 metres through `CityPointOfInterestSurfaceAppearance` exactly the way the
 home/supermarket pipelines do it: each renderer's authored flat colour
 (brightened by the solved per-sheet compensation) multiplies the sheet in
@@ -10,9 +10,10 @@ linear space.
 The measured contract - linear luminance rule, wrap-by-construction
 drawing, compensation solving and validation - is imported from
 `build-home-textures.py`; this script only adds the yard paving grammar
-(large weathered concrete slabs) and reuses the home painted-metal,
-linen and plank grammars for the drying frames, the hanging wash and the
-shared bench.
+(large weathered concrete slabs) and the poster-paper grammar (the last
+route island's layered weathered paper), and reuses the home
+painted-metal, linen and plank grammars for the drying frames, the
+hanging wash, the island fixtures and the two benches.
 """
 
 from __future__ import annotations
@@ -118,7 +119,86 @@ def draw_poi_paving(base: Image.Image, rng) -> Image.Image:
     return home.soft_overlay(image, 10, weathering)
 
 
+def draw_poi_paper(base: Image.Image, rng) -> Image.Image:
+    """Weathered poster paper: fibre, faded print rows, creases, stains.
+
+    The island's posters, plates and timetables are individual small
+    boxes each sampling a hash-offset crop of this sheet, so the sheet
+    is a continuous paper field rather than a composition of whole
+    posters — the geometry supplies the poster outline.
+    """
+    image = ImageChops.overlay(
+        base,
+        home.fractal_noise(((64, 0.55), (256, 0.5), (512, 0.35)), rng),
+    )
+    draw = ImageDraw.Draw(image)
+
+    # Horizontal paper fibre: full-width hairlines, barely off-base.
+    for _ in range(150):
+        y = rng.randrange(SHEET_SIZE)
+        home.wrap_line(
+            draw,
+            (0, y, SHEET_SIZE, y),
+            home.BASE + rng.choice((-9, -6, 6, 9)),
+            width=1,
+        )
+
+    # Faded print: rows of short dark dashes at a pitch that divides
+    # the sheet, each row broken by gaps like bleached type.
+    row_pitch = 64
+    for row in range(SHEET_SIZE // row_pitch):
+        y = row * row_pitch + row_pitch // 2
+        x = rng.randrange(48)
+        tone = home.BASE - rng.randint(38, 52)
+        while x < SHEET_SIZE:
+            dash = rng.randint(18, 60)
+            if rng.random() < 0.72:
+                home.wrap_rect(
+                    draw,
+                    (x, y - 4, x + dash, y + 4),
+                    tone + rng.randint(-6, 6),
+                )
+            x += dash + rng.randint(10, 34)
+
+    # Creases and tear shadows: sparse wandering near-vertical lines.
+    for _ in range(7):
+        x = float(rng.randrange(SHEET_SIZE))
+        y = float(rng.randrange(SHEET_SIZE))
+        for _ in range(rng.randint(6, 12)):
+            nx = x + rng.uniform(-26.0, 26.0)
+            ny = y + rng.uniform(52.0, 120.0)
+            home.wrap_line(
+                draw,
+                (x, y, nx, ny),
+                home.BASE - rng.randint(24, 34),
+                width=rng.randint(1, 2),
+            )
+            x, y = nx % SHEET_SIZE, ny % SHEET_SIZE
+
+    # Glue shadows and sun-bleached patches, softened into staining.
+    def weathering(layer_draw: ImageDraw.ImageDraw) -> None:
+        for _ in range(9):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (x, y, x + rng.randint(90, 240), y + rng.randint(70, 190)),
+                fill=rng.randint(106, 118),
+            )
+        for _ in range(6):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (x, y, x + rng.randint(60, 160), y + rng.randint(50, 120)),
+                fill=rng.randint(138, 150),
+            )
+
+    return home.soft_overlay(image, 12, weathering)
+
+
 home.GRAMMARS["poi_paving"] = draw_poi_paving
+home.GRAMMARS["poi_paper"] = draw_poi_paper
 
 
 # --------------------------------------------------------------------------
@@ -145,6 +225,8 @@ POI_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
              (0.200, 0.220, 0.210)),
             ("CityDistrictPointOfInterestWorldBuilder.NightlifePaving",
              (0.170, 0.175, 0.215)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeIsland",
+             (0.245, 0.235, 0.285)),
         ),
     ),
     home.HomeSheetSpec(
@@ -159,6 +241,10 @@ POI_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
         tints=(
             ("CityDistrictPointOfInterestWorldBuilder.ResidentialFrame",
              (0.145, 0.190, 0.185)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeFrame",
+             (0.085, 0.090, 0.125)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeWaste",
+             (0.115, 0.135, 0.145)),
         ),
     ),
     home.HomeSheetSpec(
@@ -177,6 +263,14 @@ POI_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
              (0.225, 0.350, 0.375)),
             ("CityDistrictPointOfInterestWorldBuilder.ResidentialPatch",
              (0.600, 0.500, 0.285)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeRagCanvas",
+             (0.335, 0.305, 0.245)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeRagFadedRed",
+             (0.295, 0.140, 0.150)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeRagFadedBlue",
+             (0.140, 0.205, 0.245)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifePosterRed",
+             (0.355, 0.135, 0.165)),
         ),
     ),
     home.HomeSheetSpec(
@@ -191,6 +285,26 @@ POI_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
         tints=(
             ("CityDistrictPointOfInterestWorldBuilder.ResidentialCloth",
              (0.405, 0.245, 0.185)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeSeat",
+             (0.225, 0.145, 0.245)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="CityPoiPaperAlbedo",
+        grammar="poi_paper",
+        seed=0x43505052,
+        cast=(1.03, 1.00, 0.94),
+        mean_target=0.50,
+        meters_per_tile=0.9,
+        smoothness=0.02,
+        metallic=0.0,
+        tints=(
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifeRoutePaper",
+             (0.385, 0.335, 0.255)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifePosterRed",
+             (0.355, 0.135, 0.165)),
+            ("CityDistrictPointOfInterestWorldBuilder.NightlifePosterBlue",
+             (0.145, 0.245, 0.295)),
         ),
     ),
 )

@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — Last route island: textured end to end, mast floodlight
+
+- The island joins the drying yard as a fully textured public place. A
+  fifth scripted POI albedo, `CityPoiPaperAlbedo` (new `poi_paper`
+  grammar: paper fibre, faded print rows, creases, glue/bleach
+  staining), covers the island's paper layer — totem map backing, torn
+  posters, weathered route plates, schedule rows and the discarded
+  timetable. Painted metal covers all fifteen canopy members, the mast
+  group, the departure board frame, the bench base, the waste bin and
+  the new floodlight metalwork; the empty bench seat is timber; the
+  lost scarf and all six simulated canopy rags go through the cloth
+  path (`ApplyClothPanel`, previously laundry-only); the island
+  platform and empty centre disc are paved (`CylinderCapXZ`), while
+  the inner route ring stays a flat painted marking band.
+- The generator specs now transcribe the island tints (island paving,
+  nightlife frame/waste/seat, rag and poster colours), so every sheet
+  compensation re-solved: paving `1.422 -> 1.4205`, painted metal
+  `1.4465 -> 1.479`, cloth `1.396 -> 1.4105`, timber `1.433 -> 1.445`,
+  paper `1.4215`, all within the `8%` generator limit (worst `7.6%`,
+  cloth). Existing sheet images are byte-identical — only tints and
+  compensations moved in `ArtSource/City/poi-textures.json`.
+- The island gained the second authored POI realtime light: an old
+  service floodlight bracketed off the route mast under the broken
+  totem (head at recipe-local `-2.40, 4.42, -1.05`), aimed across the
+  empty centre at the empty bench. Cold violet-grey white
+  (`0.80, 0.74, 0.92`) — the district's magenta/cyan bleached to a
+  service tone, deliberately distinct from the drying yard's blue-white
+  — same shadowless `72°` Spot family, range `16`, night intensity
+  `150`, fog halo and boosted HDR lens, night-scaled through
+  `CityNightSiteLightRegistry` so nothing electric burns by day. It
+  adds no collider: the mast base already owns the island obstacle,
+  so approach clearance is untouched. The Home vista rebuilds
+  bracket/housing/lens geometry only. Documented worst-case realtime
+  light budget moves `19 -> 20` (night only). Art bible: the island's
+  "no glow of its own" is now scoped to neon — the mast floodlight is
+  the one working electric fixture, serving the emptiness, not a
+  stage.
+- Verification: `python tools/build-city-poi-textures.py --verify`
+  passes all five sheets. Focused Unity EditMode selection green
+  `18/18` (`CityPointOfInterestSurfaceAppearanceTests` incl. new
+  island coverage counts and island floodlight contract +
+  `LastRouteCanopyRagTests`). PlayMode POI assertions updated — the
+  public places carry the two named floodlights with their two halo
+  particle systems, and the island's zero-emissive rule is now "the
+  mast floodlight lens is the island's only emissive surface" —
+  `CityNightPresentationPlayModeTests` re-run green `4/4`.
+
 ## 2026-08-16 — The swing is probed, not guessed: backswing over the shoulder
 
 - Two in-game reviews in a row caught the beat swinging wrong — first
