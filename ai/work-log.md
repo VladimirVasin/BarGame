@@ -6,6 +6,52 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — The park's invisible wall
+
+- Bug: the player could not walk off the street into Central Park
+  anywhere — an invisible wall the whole way round, over ground that
+  looks open and a lawn mesh that runs on unbroken.
+- Two independent causes, found in that order.
+- First, a `0.4 m` seam at the gates. `CityRoadGroundBoundaryPlanner`
+  classifies every gate span as a safe connection and
+  `CityGroundTraversalPlanner` turns it into a connector, but that
+  connector reaches a fixed `ConnectorReach` (`0.8 m`) either side of
+  the park cell edge, while a region's `WalkableBounds` is inset
+  `RoadWidth * 0.5 + 1.2 m` from the cell node — `1.2 m` past the same
+  edge. Road, connector and lawn left an unwalkable band `0.4 m` wide,
+  and an agent of radius `0.35 m` cannot step over it.
+  `AddParkLawnReach` in `CityGroundTraversalPlanner` now adds, for a
+  safe `ParkGround` span whose lawn edge lies beyond the standard
+  connector, a second strip from the seam onto the lawn with the same
+  overlap at both ends. The existing connector is untouched, the strip
+  is clipped to the span the boundary planner produced, and interior
+  park-path seams get nothing because they already sit inside the lawn.
+- Second — the actual complaint, reported against cell `(8, 5)` — the
+  gates were never the whole boundary. `RequiresAuthoredAccess` funnels
+  a park's street frontage through gates because the park is fenced,
+  but `CityWorldBuilder` skips `BuildParkHedges` on a terraced city,
+  where a straight hedge would float over the terrace. The production
+  city is terraced, so it has no hedge and no gate posts and yet kept
+  the gates-only navigation: `93 m` of open-looking frontage per side,
+  passable at four `8.8 m` openings. Navigation and geometry now share
+  one predicate, `CityLayout.HasParkBoundaryHedges`, used by the world
+  builder to raise the hedge and by the boundary planner to demand a
+  gate. A hedged (flat) park keeps gate-only entry; a terraced one is
+  open along every level-safe metre and closed only where the boundary
+  plan finds a real drop.
+- Verified: EditMode `RoadWalkableAreaTests` +
+  `CityVerticalTraversalAuditTests` + `CityElevationPlannerTests`. The
+  new `FromLayout_WalksEveryLevelSafeParkGateOntoTheLawn` and
+  `FromLayout_OpensEveryLevelSafeParkFrontageWithoutHedges` walk the
+  gates and every safe frontage span inward in `0.25 m` steps at the
+  full agent radius; both fail before the change.
+  `FromLayout_AddsParkLawnButNotPerimeterGap` still passes, so a hedged
+  park still admits only through its gates. A perimeter dump confirmed
+  `(8, 5)` open end to end and only the guarded terrace drop at
+  `(7, 7)` still closed. Fourteen failures elsewhere in the suite (bus,
+  session, sfx, elevation, beach/lake) are pre-existing on this branch
+  — the failure set is identical before and after.
+
 ## 2026-08-17 — Central Park surfaces
 
 - Scope: the park was the last big zone still shipping flat colours —

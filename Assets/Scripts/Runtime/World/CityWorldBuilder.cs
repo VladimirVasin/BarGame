@@ -546,7 +546,7 @@ namespace BarPromenade
             CityStaticCollisionBuilder.AddParkBenchColliders(
                 park,
                 plan.BenchPositions);
-            if (!layout.ElevationPlan.IsElevated)
+            if (layout.HasParkBoundaryHedges)
             {
                 BuildParkHedges(park, plan);
             }

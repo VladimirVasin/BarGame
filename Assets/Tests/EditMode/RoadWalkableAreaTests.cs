@@ -146,6 +146,114 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void FromLayout_WalksEveryLevelSafeParkGateOntoTheLawn()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                481516);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+            int connected = 0;
+
+            foreach (CityParkRegionPlan region in layout.Park.Regions)
+            {
+                foreach (CityParkGateDescriptor gate in region.Gates)
+                {
+                    if (!area.Contains(
+                            gate.Center,
+                            CityGroundTraversalPlanner.MaximumAgentRadius))
+                    {
+                        continue;
+                    }
+
+                    // The lawn starts further in than the gate opening,
+                    // so every step between them must stay walkable.
+                    Vector3 inward = gate.OutwardNormal;
+                    float depth = Mathf.Abs(inward.x) > Mathf.Abs(inward.z)
+                        ? Mathf.Abs(
+                            (inward.x > 0f
+                                ? region.WalkableBounds.xMin
+                                : region.WalkableBounds.xMax) -
+                            gate.Center.x)
+                        : Mathf.Abs(
+                            (inward.z > 0f
+                                ? region.WalkableBounds.yMin
+                                : region.WalkableBounds.yMax) -
+                            gate.Center.z);
+                    for (float step = 0f; step <= depth + 1f; step += 0.25f)
+                    {
+                        Assert.That(
+                            area.Contains(
+                                gate.Center + (inward * step),
+                                CityGroundTraversalPlanner
+                                    .MaximumAgentRadius),
+                            Is.True,
+                            $"{gate.Id} at {step:0.00} m inside");
+                    }
+
+                    connected++;
+                }
+            }
+
+            Assert.That(layout.Park.Regions, Is.Not.Empty);
+            Assert.That(connected, Is.EqualTo(layout.Park.Gates.Count));
+        }
+
+        [Test]
+        public void FromLayout_OpensEveryLevelSafeParkFrontageWithoutHedges()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                481516);
+            RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);
+            CityRoadGroundBoundaryPlan boundaries =
+                CityRoadGroundBoundaryPlanner.Create(layout);
+            int openSpans = 0;
+
+            // A terraced park has no hedge, so a street frontage the
+            // boundary plan calls level-safe must be walkable end to end,
+            // not only where a gate stands.
+            Assert.That(layout.HasParkBoundaryHedges, Is.False);
+            foreach (CityRoadGroundBoundarySpan safe in
+                     boundaries.SafeConnections)
+            {
+                if (safe.Surface.Kind != CitySurfaceKind.ParkGround ||
+                    layout.GetPathKind(safe.Edge) != CityPathKind.Street)
+                {
+                    continue;
+                }
+
+                Rect bounds = safe.Surface.WorldBounds;
+                float inward = safe.IsHorizontal
+                    ? Mathf.Sign(bounds.center.y - safe.FixedCoordinate)
+                    : Mathf.Sign(bounds.center.x - safe.FixedCoordinate);
+                float along =
+                    (safe.MinimumCoordinate + safe.MaximumCoordinate) * 0.5f;
+                for (float step = -1f; step <= 3f; step += 0.25f)
+                {
+                    float across = safe.FixedCoordinate + (inward * step);
+                    Vector3 position = safe.IsHorizontal
+                        ? new Vector3(along, 0f, across)
+                        : new Vector3(across, 0f, along);
+                    Assert.That(
+                        area.Contains(
+                            position,
+                            CityGroundTraversalPlanner.MaximumAgentRadius),
+                        Is.True,
+                        $"{safe.Surface.Cell} {safe.Edge} at {step:0.00} m");
+                }
+
+                openSpans++;
+            }
+
+            Assert.That(
+                openSpans,
+                Is.GreaterThan(layout.Park.Gates.Count),
+                "the open frontage must exceed the eight gate openings");
+        }
+
+        [Test]
         public void FromLayout_AddsEveryDistrictPointAndStreetApproach()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

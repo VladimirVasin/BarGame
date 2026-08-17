@@ -388,7 +388,11 @@ namespace BarPromenade
         {
             if (surface.Kind == CitySurfaceKind.ParkGround)
             {
-                return layout.GetPathKind(edge) == CityPathKind.Street;
+                // Only a hedged park funnels its street frontage through
+                // gates; without a hedge every level-safe metre of the
+                // boundary is an entrance, as it looks from the street.
+                return layout.HasParkBoundaryHedges &&
+                       layout.GetPathKind(edge) == CityPathKind.Street;
             }
 
             return surface.Kind == CitySurfaceKind.Beach ||

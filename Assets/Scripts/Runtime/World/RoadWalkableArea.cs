@@ -60,9 +60,10 @@ namespace BarPromenade
                  index < roadGroundBoundaries.SafeConnections.Count;
                  index++)
             {
-                connectors.Add(
-                    roadGroundBoundaries.SafeConnections[index]
-                        .CreateConnector(ConnectorReach));
+                CityRoadGroundBoundarySpan safe =
+                    roadGroundBoundaries.SafeConnections[index];
+                connectors.Add(safe.CreateConnector(ConnectorReach));
+                AddParkLawnReach(layout, safe, connectors);
             }
 
             foreach (KeyValuePair<Vector2Int, CitySurfaceDescriptor> pair
@@ -156,6 +157,70 @@ namespace BarPromenade
             {
                 destination.Add(Rect.MinMaxRect(xMin, zMin, xMax, zMax));
             }
+        }
+
+        // A park region's lawn sits further inside its cells than the
+        // fixed connector reach, so a gate span needs a strip that runs
+        // from the seam all the way onto the lawn.
+        private static void AddParkLawnReach(
+            CityLayout layout,
+            CityRoadGroundBoundarySpan span,
+            ICollection<Rect> destination)
+        {
+            if (span.Surface.Kind != CitySurfaceKind.ParkGround ||
+                !TryGetParkLawn(layout, span.Surface.Cell, out Rect lawn))
+            {
+                return;
+            }
+
+            Rect surface = span.Surface.WorldBounds;
+            float inward = span.IsHorizontal
+                ? Mathf.Sign(surface.center.y - span.FixedCoordinate)
+                : Mathf.Sign(surface.center.x - span.FixedCoordinate);
+            float lawnEdge = span.IsHorizontal
+                ? (inward > 0f ? lawn.yMin : lawn.yMax)
+                : (inward > 0f ? lawn.xMin : lawn.xMax);
+            float depth = (lawnEdge - span.FixedCoordinate) * inward;
+            if (depth <= ConnectorReach)
+            {
+                return;
+            }
+
+            float outerEdge =
+                span.FixedCoordinate - (inward * ConnectorReach);
+            float innerEdge = lawnEdge + (inward * ConnectorReach);
+            destination.Add(span.IsHorizontal
+                ? Rect.MinMaxRect(
+                    span.MinimumCoordinate,
+                    Mathf.Min(outerEdge, innerEdge),
+                    span.MaximumCoordinate,
+                    Mathf.Max(outerEdge, innerEdge))
+                : Rect.MinMaxRect(
+                    Mathf.Min(outerEdge, innerEdge),
+                    span.MinimumCoordinate,
+                    Mathf.Max(outerEdge, innerEdge),
+                    span.MaximumCoordinate));
+        }
+
+        private static bool TryGetParkLawn(
+            CityLayout layout,
+            Vector2Int cell,
+            out Rect lawn)
+        {
+            for (int index = 0;
+                 index < layout.Park.Regions.Count;
+                 index++)
+            {
+                CityParkRegionPlan region = layout.Park.Regions[index];
+                if (region.ContainsCell(cell))
+                {
+                    lawn = region.WalkableBounds;
+                    return true;
+                }
+            }
+
+            lawn = default;
+            return false;
         }
 
         private static void AddGroundConnection(

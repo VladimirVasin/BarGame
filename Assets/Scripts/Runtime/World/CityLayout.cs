@@ -188,6 +188,12 @@ namespace BarPromenade
         public Vector2Int SpawnNode { get; }
         public Vector3 SpawnWorldPosition { get; }
 
+        // Boundary hedges only stand on a flat city: over terraced ground
+        // they would float, so a terraced park has no fence at all and its
+        // gates stop being the only way in.
+        public bool HasParkBoundaryHedges =>
+            Park.IsEnabled && !ElevationPlan.IsElevated;
+
         public Vector3 GetNodeWorldPosition(Vector2Int node)
         {
             if (node.x < 0 || node.x > BlockCount.x ||

@@ -6,6 +6,18 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The park stops pushing you back
+
+- Central Park held you out. Nothing stood at its edge — no fence, no
+  hedge, the grass ran straight up to the kerb — and you still walked
+  into an invisible wall the whole way round it.
+- Now you step off the street onto the grass wherever the two meet
+  level, along the entire boundary, and back out the same way. The
+  gates are still the marked entrances, they are simply no longer the
+  only ones.
+- Where the park stands above the street on a terrace you are still
+  stopped, as at any other drop in the city.
+
 ### 2026-08-17 — The park gets its own ground
 
 - Central Park is no longer a set of flat colours. The lawn is trodden
