@@ -6,6 +6,22 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-18 — The crossings meet the embankment properly
+
+- Step off the park footbridge and you landed on a strip of park path
+  laid over the granite, running on for another three and a half metres
+  before the road began. The embankment now runs unbroken up to the
+  bridge: a crossing is surfaced only as far as the bridge itself
+  reaches.
+- The square of road beside that bridge no longer flickers. The park
+  path was overlapping the junction paving at exactly the same height,
+  and the two fought over every pixel.
+- The bridges have their materials at last. The footbridge's planks and
+  handrails are the park's own timber, grain and knots and all; the
+  works bridge is painted steel chipped back to bright metal; and the
+  mouth bridge is coursed quay stone, the same the river wall is built
+  from.
+
 ### 2026-08-18 — The embankment is stone now
 
 - The riverside used to be three flat greys. Now you walk on big
@@ -18,8 +34,8 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 - Every railing, post, mooring bollard and lamp stem is painted cast
   iron, chipped back to bare metal in the places a hand or a hip would
   find.
-- The bridges are untouched: their steel, stone and timber are their
-  own.
+- The bridges keep their own palette but now share the stone and iron:
+  see the note above on the crossings.
 
 ### 2026-08-18 — The bridges stop at the riverbank
 

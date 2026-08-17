@@ -6,6 +6,58 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — A bridge crossing ends where its span does
+
+- Reported symptoms at the park footbridge: one cell past the deck is park
+  path where the embankment should be, and the neighbouring cell on the road
+  flickers between two textures.
+- Both are one fault. `CreateBaseSurfaces` insets a travel surface by half
+  its own width at each end, so a crossing edge runs bank node to bank node
+  minus the deck half-width. At 26 m spacing over a 10 m channel that is
+  8 m of overshoot per bank: 4 m of it is the road corridor, the other 4 m
+  is the granite promenade. The footbridge deck is 2.8 m wide, not 8 m, so
+  its inset is 1.4 m rather than `halfRoad` - the strip reaches 2.6 m into
+  the intersection pad, and pad and path top out at exactly
+  `nodeY + RoadTop`, which is the flicker. Landward of the span the same
+  strip lies 8 cm proud of the promenade, which is the false path cell.
+- Shortening the bridges in the previous commit exposed both: the old deck
+  ran the full `DeckBounds` and covered the overshoot from above.
+- A crossing edge now takes its inset from `SpanBounds`, so the carriageway
+  or path is exactly the deck - channel plus the two `QuayEdgeOffset` quay
+  seats. The embankment paving carries the approach, as it already did for
+  every metre of bank that no bridge touches.
+- The road bridge underside loses `SurfaceClearance` on each end as well as
+  each side, so its end faces no longer sit flush with the shortened
+  carriageway's.
+- Regression: `BridgeCrossings_EndOnTheirSpanAndLeaveTheBanksPaved` pins
+  every bridge's surface to its span and asserts no travel geometry reaches
+  the promenade between the road corridor and the span.
+- Follow-up from the same report: with the deck no longer hidden under an
+  oversized structure, the bridges read as flat colour, because they were
+  the one thing the river builder deliberately left untextured. They now
+  take the sheet their own material names - `Iron` for the works
+  crossing, `Quay` for the mouth crossing, and the park's `Timber` for the
+  footbridge deck, beams and handrails, which belongs to the park's family
+  rather than the embankment's three. Primitives take the per-transform
+  box projection; the combined rail, plank and structure batches bake
+  world UVs at their sheet's pitch, as the stair flights already did.
+  No authored colour changed.
+- `BuildRiver_TexturesTheBanksAndLeavesTheBridgesFlat` pinned the old
+  contract, so it becomes `BuildRiver_TexturesEveryBankAndBridgeMember`:
+  every renderer carries the sheet its material names, only the water and
+  the lamp glow stay flat, and the tint-to-manifest check stays on the
+  bank renderers, whose palette it was solved from.
+
+Verification:
+
+- Focused `CityRiverPlannerTests` passed 8/8; the new test fails on a
+  stashed clean tree, so it pins the reported fault.
+- Focused `CityRiverSurfaceAppearanceTests` passed 7/7 for the texturing
+  follow-up.
+- The full EditMode suite was also run against both trees for the surface
+  fix: 13 failures, identical before and after, all pre-existing and out
+  of scope.
+
 ## 2026-08-18 — Stair approach rails stop at the corner
 
 - Reported symptom: a signature stair's rail runs out into the roadway, seen

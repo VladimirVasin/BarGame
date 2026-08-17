@@ -378,6 +378,60 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void BridgeCrossings_EndOnTheirSpanAndLeaveTheBanksPaved()
+        {
+            CityStreetSurfacePlan surfaces =
+                CityStreetSurfacePlanner.Create(layout);
+            List<RuntimeOrientedBox> travelled = surfaces.StreetGeometry
+                .Concat(surfaces.ParkPathGeometry)
+                .ToList();
+
+            foreach (CityRiverBridgeDescriptor bridge in layout.River.Bridges)
+            {
+                Rect span = bridge.SpanBounds;
+                RuntimeOrientedBox deck = travelled.Single(box =>
+                    Vector2.Distance(
+                        new Vector2(box.Center.x, box.Center.z),
+                        span.center) < 0.01f);
+                Rect deckFootprint = CreateFootprint(deck);
+                Assert.That(
+                    deckFootprint.xMin,
+                    Is.EqualTo(span.xMin).Within(0.001f),
+                    bridge.Definition.Id);
+                Assert.That(
+                    deckFootprint.xMax,
+                    Is.EqualTo(span.xMax).Within(0.001f),
+                    bridge.Definition.Id);
+
+                foreach (CityRiverPromenadeDescriptor promenade in
+                         layout.River.Promenades)
+                {
+                    Rect approach = promenade.WestBank
+                        ? Rect.MinMaxRect(
+                            promenade.Bounds.xMin + 0.01f,
+                            span.yMin + 0.01f,
+                            span.xMin - 0.01f,
+                            span.yMax - 0.01f)
+                        : Rect.MinMaxRect(
+                            span.xMax + 0.01f,
+                            span.yMin + 0.01f,
+                            promenade.Bounds.xMax - 0.01f,
+                            span.yMax - 0.01f);
+                    Assert.That(approach.width, Is.GreaterThan(0f));
+                    foreach (RuntimeOrientedBox box in travelled)
+                    {
+                        Assert.That(
+                            HasPositiveOverlap(
+                                CreateFootprint(box),
+                                approach),
+                            Is.False,
+                            $"{bridge.Definition.Id} {promenade.Id}");
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void WorldBuilder_CreatesWaterBridgesAndFourPhysicalLandings()
         {
             var parent = new GameObject("River Test Parent");
@@ -596,6 +650,25 @@ namespace BarPromenade.Tests
             float z) =>
             x >= bounds.min.x && x <= bounds.max.x &&
             z >= bounds.min.z && z <= bounds.max.z;
+
+        private static Rect CreateFootprint(RuntimeOrientedBox box)
+        {
+            Vector3 half = box.Size * 0.5f;
+            Vector3 right = box.Rotation * Vector3.right;
+            Vector3 up = box.Rotation * Vector3.up;
+            Vector3 forward = box.Rotation * Vector3.forward;
+            float extentX = Mathf.Abs(right.x) * half.x +
+                            Mathf.Abs(up.x) * half.y +
+                            Mathf.Abs(forward.x) * half.z;
+            float extentZ = Mathf.Abs(right.z) * half.x +
+                            Mathf.Abs(up.z) * half.y +
+                            Mathf.Abs(forward.z) * half.z;
+            return Rect.MinMaxRect(
+                box.Center.x - extentX,
+                box.Center.z - extentZ,
+                box.Center.x + extentX,
+                box.Center.z + extentZ);
+        }
 
         private static bool HasPositiveOverlap(Rect first, Rect second) =>
             Mathf.Min(first.xMax, second.xMax) >

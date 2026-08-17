@@ -293,12 +293,14 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// Every embankment renderer carries its sheet and the bridges
-        /// carry none: their steel, stone and timber are their own
-        /// styles. A new quay object that ships flat fails here.
+        /// Every renderer the river builds carries the sheet its material
+        /// names: the banks and the two road bridges take the embankment's
+        /// three, the park footbridge takes the park's timber, and only
+        /// the water and the lamp glow stay flat. A new quay object or
+        /// bridge member that ships untextured fails here.
         /// </summary>
         [Test]
-        public void BuildRiver_TexturesTheBanksAndLeavesTheBridgesFlat()
+        public void BuildRiver_TexturesEveryBankAndBridgeMember()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -329,6 +331,18 @@ namespace BarPromenade.Tests.EditMode
                     var properties = new MaterialPropertyBlock();
                     renderer.GetPropertyBlock(properties);
                     Texture texture = properties.GetTexture(BaseMapId);
+                    if (IsParkTimber(renderer))
+                    {
+                        Assert.That(
+                            texture,
+                            Is.SameAs(
+                                CityParkSurfaceAppearance.GetTexture(
+                                    CityParkSurfaceKind.Timber)),
+                            $"'{renderer.name}' is footbridge timber and " +
+                            "must carry the park's timber sheet.");
+                        continue;
+                    }
+
                     CityRiverSurfaceKind? expected = ResolveExpectedKind(
                         renderer);
                     if (!expected.HasValue)
@@ -336,7 +350,7 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(
                             texture,
                             Is.Null,
-                            $"'{renderer.name}' is bridge or water and " +
+                            $"'{renderer.name}' is water or lamp glow and " +
                             "must not carry an embankment sheet.");
                         continue;
                     }
@@ -361,6 +375,15 @@ namespace BarPromenade.Tests.EditMode
                             RuntimePrimitiveFactory.DefaultMaterial),
                         $"'{renderer.name}' must share one material.");
 
+                    seen.Add(expected.Value);
+                    if (IsBridge(renderer))
+                    {
+                        // A bridge shares the bank's sheets but not its
+                        // palette: its steel, stone and timber keep their
+                        // own authored tints.
+                        continue;
+                    }
+
                     // The applied tint ties the live palette back to the
                     // manifest the compensation was solved from.
                     SheetRecord record = FindRecord(
@@ -376,7 +399,6 @@ namespace BarPromenade.Tests.EditMode
                             .Within(0.001f),
                         $"'{renderer.name}' is tinted with a colour the " +
                         "contract was not measured from.");
-                    seen.Add(expected.Value);
                 }
 
                 Assert.That(
@@ -397,9 +419,11 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// Granite underfoot, coursed blocks in the wall that holds the
-        /// river, and iron everywhere a hand can reach. Null means the
-        /// renderer is not the embankment's: a bridge, the water, or the
-        /// lamp glow that owns an emissive material.
+        /// river, and iron everywhere a hand can reach. A road bridge is
+        /// read from its own style: the works crossing is steel, the
+        /// mouth crossing is quay stone. Null means the renderer has
+        /// nothing to sample - the water, or the lamp glow that owns an
+        /// emissive material.
         /// </summary>
         private static CityRiverSurfaceKind? ResolveExpectedKind(
             Renderer renderer)
@@ -408,10 +432,20 @@ namespace BarPromenade.Tests.EditMode
                  current != null;
                  current = current.parent)
             {
-                if (current.name == "River Bridges" ||
-                    current.name == "Flowing Water")
+                if (current.name == "Flowing Water")
                 {
                     return null;
+                }
+
+                if (current.name.EndsWith(
+                        "Road Bridge",
+                        StringComparison.Ordinal))
+                {
+                    return current.name.StartsWith(
+                        "works-bridge",
+                        StringComparison.Ordinal)
+                        ? CityRiverSurfaceKind.Iron
+                        : CityRiverSurfaceKind.Quay;
                 }
             }
 
@@ -437,6 +471,36 @@ namespace BarPromenade.Tests.EditMode
             }
 
             return CityRiverSurfaceKind.Iron;
+        }
+
+        private static bool IsParkTimber(Renderer renderer)
+        {
+            return HasAncestor(
+                renderer,
+                "Central Park Timber Footbridge");
+        }
+
+        private static bool IsBridge(Renderer renderer)
+        {
+            return HasAncestor(renderer, "River Bridges");
+        }
+
+        private static bool HasAncestor(Renderer renderer, string name)
+        {
+            for (Transform current = renderer.transform;
+                 current != null;
+                 current = current.parent)
+            {
+                if (string.Equals(
+                        current.name,
+                        name,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static SheetRecord FindRecord(string key)

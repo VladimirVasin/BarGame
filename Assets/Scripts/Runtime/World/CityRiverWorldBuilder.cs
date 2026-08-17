@@ -346,37 +346,39 @@ namespace BarPromenade
             root.SetParent(parent, false);
             Rect span = bridge.SpanBounds;
             float deckY = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
-            Color structure = bridge.Definition.Style == CityBridgeStyle.Works
-                ? WorksSteel
-                : MouthStone;
-            Color accent = bridge.Definition.Style == CityBridgeStyle.Works
-                ? WorksAccent
-                : GraniteEdge;
+            bool works = bridge.Definition.Style == CityBridgeStyle.Works;
+            Color structure = works ? WorksSteel : MouthStone;
+            Color accent = works ? WorksAccent : GraniteEdge;
+            CityRiverSurfaceKind surface = ResolveBridgeSurface(
+                bridge.Definition.Style);
 
             CreateBox(
                 "Bridge Underside",
                 root,
                 new Vector3(span.center.x, deckY - 0.34f, span.center.y),
                 new Vector3(
-                    span.width,
+                    span.width - SurfaceClearance * 2f,
                     0.52f,
                     span.height - SurfaceClearance * 2f),
                 structure,
-                true);
+                true,
+                surface);
             CreateBox(
                 "North Girder",
                 root,
                 new Vector3(span.center.x, deckY - 0.68f, span.yMax - 0.22f),
                 new Vector3(span.width, 0.72f, 0.34f),
                 accent,
-                false);
+                false,
+                surface);
             CreateBox(
                 "South Girder",
                 root,
                 new Vector3(span.center.x, deckY - 0.68f, span.yMin + 0.22f),
                 new Vector3(span.width, 0.72f, 0.34f),
                 accent,
-                false);
+                false,
+                surface);
 
             float waterY = ResolveBridgeWaterY(layout, bridge);
             float pierHeight = Mathf.Max(0.5f, deckY - waterY - 0.42f);
@@ -391,7 +393,8 @@ namespace BarPromenade
                         span.center.y),
                     new Vector3(0.82f, pierHeight, span.height - 1.2f),
                     structure,
-                    true);
+                    true,
+                    surface);
             }
 
             bool innerNorth = bridge.Definition.InteriorDirection.y > 0;
@@ -411,7 +414,8 @@ namespace BarPromenade
                 guardRange.Minimum,
                 guardRange.Maximum,
                 Array.Empty<AxisRange>(),
-                structure);
+                structure,
+                surface);
             BuildBridgeRail(
                 root,
                 "Landing Parapet",
@@ -420,7 +424,21 @@ namespace BarPromenade
                 guardRange.Minimum,
                 guardRange.Maximum,
                 landingGaps,
-                structure);
+                structure,
+                surface);
+        }
+
+        /// <summary>
+        /// A bridge is textured as what it is made of: the works crossing
+        /// takes the bank's iron, the mouth crossing its quay stone. The
+        /// park footbridge is timber and takes the park's own sheet.
+        /// </summary>
+        private static CityRiverSurfaceKind ResolveBridgeSurface(
+            CityBridgeStyle style)
+        {
+            return style == CityBridgeStyle.Works
+                ? CityRiverSurfaceKind.Iron
+                : CityRiverSurfaceKind.Quay;
         }
 
         private static void BuildBridgeRail(
@@ -431,7 +449,8 @@ namespace BarPromenade
             float minimum,
             float maximum,
             IReadOnlyList<AxisRange> gaps,
-            Color color)
+            Color color,
+            CityRiverSurfaceKind surface)
         {
             List<AxisRange> spans = SubtractRanges(
                 minimum,
@@ -476,12 +495,21 @@ namespace BarPromenade
 
             if (boxes.Count > 0)
             {
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    name,
-                    parent,
-                    boxes,
-                    color,
-                    true);
+                GameObject rail =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        name,
+                        parent,
+                        boxes,
+                        color,
+                        true,
+                        CityRiverSurfaceAppearance
+                            .GetRecipe(surface)
+                            .MetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected);
+                CityRiverSurfaceAppearance.ApplyCombined(
+                    rail.GetComponent<Renderer>(),
+                    surface,
+                    color);
             }
         }
 
@@ -512,11 +540,12 @@ namespace BarPromenade
                         span.height + SurfaceClearance * 2f)));
             }
 
-            RuntimePrimitiveFactory.CreateCombinedBoxes(
+            CreateTimberBatch(
                 "Timber Deck Planks",
                 root,
                 planks,
-                Timber);
+                Timber,
+                false);
             var structure = new List<Bounds>
             {
                 new Bounds(
@@ -551,12 +580,39 @@ namespace BarPromenade
                     2.1f);
             }
 
-            RuntimePrimitiveFactory.CreateCombinedBoxes(
+            CreateTimberBatch(
                 "Timber Bridge Structure",
                 root,
                 structure,
                 TimberEdge,
                 true);
+        }
+
+        /// <summary>
+        /// One combined footbridge batch on the park's timber sheet, baked
+        /// at its pitch and box projected: the deck is read from above and
+        /// the handrail from the side, so no single plane serves both.
+        /// </summary>
+        private static void CreateTimberBatch(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            Color color,
+            bool collider)
+        {
+            const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
+            GameObject batch = RuntimePrimitiveFactory.CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                collider,
+                CityParkSurfaceAppearance.GetRecipe(timber).MetersPerTile,
+                CityParkSurfaceAppearance.GetUvMode(timber));
+            CityParkSurfaceAppearance.ApplyCombined(
+                batch.GetComponent<Renderer>(),
+                timber,
+                color);
         }
 
         private static AxisRange CreateBridgeGuardRange(
@@ -1579,9 +1635,9 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Gives one embankment primitive its sheet. The bridges pass no
-        /// surface: their steel, stone and timber are their own styles,
-        /// and the granite and iron sheets belong to the banks.
+        /// Gives one embankment or bridge primitive its sheet. A caller
+        /// with nothing to sample - the water, the lamp glow - passes no
+        /// surface and keeps its flat colour.
         /// </summary>
         private static void TextureSurface(
             GameObject instance,

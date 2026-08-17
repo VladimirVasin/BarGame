@@ -56,8 +56,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   structure must never share that plane or those side planes:
   `CityRiverWorldBuilder.SurfaceClearance` lifts the timber deck above the path
   and widens it past the path sides, and recesses the road underside inside the
-  carriageway sides rather than past them, which would expose the parapet post
-  bases that sit on the underside's own top plane.
+  carriageway sides and ends rather than past them, which would expose the
+  parapet post bases that sit on the underside's own top plane. That surface
+  is the span too: `CityStreetSurfacePlanner` insets a crossing edge to
+  `SpanBounds` instead of half its own width, so the carriageway or path is
+  exactly the deck and the promenade paving carries the approach — otherwise
+  a crossing runs bank node to bank node and lays `8 m` of road or path over
+  each embankment and into the junction pad it shares a plane with.
+  Every bridge member is textured as what it is made of: `Iron` for the Works
+  crossing, `Quay` for the Mouth crossing, and the park's own `Timber` sheet
+  for the footbridge, which belongs to the park's family rather than the
+  embankment's three.
   Each road bridge owns one bank-facing stair on both shores; the park bridge
   has no vehicle or lower-landing role. Only the two road bridges enter Route
   01, and bridge-adjacent furniture/spawn exclusions stay derived from the

@@ -151,8 +151,13 @@ namespace BarPromenade
                 float planarLength = new Vector2(
                     delta.x,
                     delta.z).magnitude;
+                float endInset = layout.TryGetBridge(
+                        edge,
+                        out CityRiverBridgeDescriptor bridge)
+                    ? ResolveBridgeSpanInset(edge, start, end, bridge)
+                    : halfSurface;
                 float insetAmount = planarLength > GeometryTolerance
-                    ? Mathf.Clamp01(halfSurface / planarLength)
+                    ? Mathf.Clamp01(endInset / planarLength)
                     : 0f;
                 Vector3 segmentStart = Vector3.Lerp(
                     start,
@@ -233,6 +238,26 @@ namespace BarPromenade
                         RoadSurfaceHeight,
                         nodeWidth)));
             }
+        }
+
+        // A crossing edge runs bank node to bank node, but the eight metres
+        // behind each bank node are the embankment, not the bridge. The span
+        // is the carriageway - beyond it the granite promenade is the
+        // surface, so the strip stops on the quay seat the span rests on.
+        private static float ResolveBridgeSpanInset(
+            RoadEdge edge,
+            Vector3 start,
+            Vector3 end,
+            CityRiverBridgeDescriptor bridge)
+        {
+            Rect span = bridge.SpanBounds;
+            float first = edge.IsHorizontal ? start.x : start.z;
+            float second = edge.IsHorizontal ? end.x : end.z;
+            float spanMinimum = edge.IsHorizontal ? span.xMin : span.yMin;
+            float spanMaximum = edge.IsHorizontal ? span.xMax : span.yMax;
+            return Mathf.Max(
+                spanMinimum - Mathf.Min(first, second),
+                Mathf.Max(first, second) - spanMaximum);
         }
 
         private static void CreateSidewalkStrips(
