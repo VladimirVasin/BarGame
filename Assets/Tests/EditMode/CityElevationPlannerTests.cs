@@ -710,6 +710,20 @@ namespace BarPromenade.Tests
                     placement.SideDirection,
                     stair.Width,
                     $"{stair.Id} upper approach");
+                AssertApproachClearsCrossingCarriageway(
+                    defaultLayout,
+                    stair,
+                    stair.LowerNode,
+                    placement.LowerInnerRail,
+                    placement.LowerApproachFootprint,
+                    $"{stair.Id} lower approach");
+                AssertApproachClearsCrossingCarriageway(
+                    defaultLayout,
+                    stair,
+                    stair.UpperNode,
+                    placement.UpperInnerRail,
+                    placement.UpperApproachFootprint,
+                    $"{stair.Id} upper approach");
                 AssertStairGuardClearance(
                     boundaries.SafeConnections,
                     boundaries.ProtectedDrops,
@@ -1019,6 +1033,64 @@ namespace BarPromenade.Tests
                    variableMinimum + Tolerance &&
                    span.MinimumCoordinate <
                    variableMaximum - Tolerance;
+        }
+
+        /// <summary>
+        /// A stair approach continues the sidewalk it replaces, so neither
+        /// its paving nor its guard rail may reach past the corner into a
+        /// carriageway that crosses the stair street.
+        /// </summary>
+        private static void AssertApproachClearsCrossingCarriageway(
+            CityLayout layout,
+            CityElevationStairDescriptor stair,
+            Vector2Int node,
+            CityExteriorStairRailDescriptor rail,
+            Rect approach,
+            string label)
+        {
+            Rect railFootprint = Rect.MinMaxRect(
+                Mathf.Min(rail.SurfaceStart.x, rail.SurfaceEnd.x) -
+                (rail.Thickness * 0.5f),
+                Mathf.Min(rail.SurfaceStart.z, rail.SurfaceEnd.z) -
+                (rail.Thickness * 0.5f),
+                Mathf.Max(rail.SurfaceStart.x, rail.SurfaceEnd.x) +
+                (rail.Thickness * 0.5f),
+                Mathf.Max(rail.SurfaceStart.z, rail.SurfaceEnd.z) +
+                (rail.Thickness * 0.5f));
+            float halfCarriageway =
+                (layout.RoadWidth -
+                 (CityStreetSurfacePlanner.SidewalkWidth * 2f)) * 0.5f;
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (edge.IsHorizontal == stair.Edge.IsHorizontal ||
+                    (edge.A != node && edge.B != node) ||
+                    layout.GetPathKind(edge) != CityPathKind.Street)
+                {
+                    continue;
+                }
+
+                Vector3 first = layout.GetNodeWorldPosition(edge.A);
+                Vector3 second = layout.GetNodeWorldPosition(edge.B);
+                float lateral = edge.IsHorizontal ? 0f : halfCarriageway;
+                float longitudinal =
+                    edge.IsHorizontal ? halfCarriageway : 0f;
+                Rect carriageway = Rect.MinMaxRect(
+                    Mathf.Min(first.x, second.x) - lateral,
+                    Mathf.Min(first.z, second.z) - longitudinal,
+                    Mathf.Max(first.x, second.x) + lateral,
+                    Mathf.Max(first.z, second.z) + longitudinal);
+                Assert.That(
+                    IntersectsInterior(railFootprint, carriageway),
+                    Is.False,
+                    $"{label} guard rail stands in the carriageway of " +
+                    $"crossing street {edge}.");
+                Assert.That(
+                    IntersectsInterior(approach, carriageway),
+                    Is.False,
+                    $"{label} paving reaches into the carriageway of " +
+                    $"crossing street {edge}.");
+            }
         }
 
         private static bool Contains(Rect outer, Rect inner)

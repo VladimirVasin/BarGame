@@ -50,6 +50,14 @@ namespace BarPromenade
 
     public static class CityElevationStairPlacementPlanner
     {
+        private static readonly Vector2Int[] NeighbourSteps =
+        {
+            new Vector2Int(1, 0),
+            new Vector2Int(-1, 0),
+            new Vector2Int(0, 1),
+            new Vector2Int(0, -1)
+        };
+
         public static CityElevationStairPlacement Create(
             CityLayout layout,
             CityElevationStairDescriptor stair)
@@ -100,12 +108,27 @@ namespace BarPromenade
                 exterior.Landings[1];
             Vector3 lowerApproachEnd = lowerLanding.StartEdgeCenter;
             Vector3 upperApproachStart = upperLanding.EndEdgeCenter;
+            float halfRoad = layout.RoadWidth * 0.5f;
+            float lowerInset = ResolveApproachInset(
+                layout,
+                stair.LowerNode,
+                halfRoad,
+                Vector3.Dot(lowerApproachEnd - lower, ascent));
+            float upperInset = ResolveApproachInset(
+                layout,
+                stair.UpperNode,
+                halfRoad,
+                Vector3.Dot(upper - upperApproachStart, ascent));
             Vector3 lowerApproachStart =
-                lower + sideDirection * sideOffset;
+                lower +
+                ascent * lowerInset +
+                sideDirection * sideOffset;
             lowerApproachStart.y +=
                 CityStreetSurfacePlanner.SidewalkTop;
             Vector3 upperApproachEnd =
-                upper + sideDirection * sideOffset;
+                upper -
+                ascent * upperInset +
+                sideDirection * sideOffset;
             upperApproachEnd.y +=
                 CityStreetSurfacePlanner.SidewalkTop;
             Rect footprint = CreateFootprint(
@@ -155,6 +178,42 @@ namespace BarPromenade
                 groundCutFootprint,
                 lowerInnerRail,
                 upperInnerRail);
+        }
+
+        /// <summary>
+        /// An approach ends where the sidewalk it continues ends, so that
+        /// neither its paving nor its guard rail reaches into the crossing
+        /// carriageway. Mirrors the street sidewalk endpoint inset and never
+        /// bites deeper than the approach is long.
+        /// </summary>
+        private static float ResolveApproachInset(
+            CityLayout layout,
+            Vector2Int node,
+            float halfRoad,
+            float approachLength)
+        {
+            int count = 0;
+            Vector2Int sum = Vector2Int.zero;
+            for (int index = 0; index < NeighbourSteps.Length; index++)
+            {
+                Vector2Int step = NeighbourSteps[index];
+                if (!layout.HasRoad(node, node + step))
+                {
+                    continue;
+                }
+
+                count++;
+                sum += step;
+            }
+
+            bool isIntersectionCore = count >= 3 ||
+                (count == 2 && sum != Vector2Int.zero);
+            float inset = isIntersectionCore
+                ? halfRoad
+                : count == 1
+                    ? -halfRoad
+                    : 0f;
+            return Mathf.Min(inset, Mathf.Max(0f, approachLength));
         }
 
         private static Rect Union(Rect first, Rect second)

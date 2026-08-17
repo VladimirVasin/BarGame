@@ -34,6 +34,7 @@ namespace BarPromenade
     {
         private const float StepTreadOverlap = 0.012f;
         private const float RampThickness = 0.12f;
+        private const float DegenerateRailLength = 0.001f;
 
         private static readonly Color StairColor =
             new Color(0.43f, 0.43f, 0.39f);
@@ -172,6 +173,12 @@ namespace BarPromenade
             for (int index = 0; index < rails.Count; index++)
             {
                 CityExteriorStairRailDescriptor rail = rails[index];
+                if (Vector3.Distance(rail.SurfaceStart, rail.SurfaceEnd) <=
+                    DegenerateRailLength)
+                {
+                    continue;
+                }
+
                 Transform railRoot = CreateGroup(rail.Id, railGroup);
                 CreateRailPost(
                     "Start Post",

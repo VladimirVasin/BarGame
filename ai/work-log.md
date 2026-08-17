@@ -6,6 +6,40 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — Stair approach rails stop at the corner
+
+- Reported symptom: a signature stair's rail runs out into the roadway, seen
+  around the street between nodes `7,7` and `7,8`.
+- Cause: `CityElevationStairPlacementPlanner` anchored both approaches at the
+  node centre, while ordinary sidewalks stop at the intersection square
+  (`ResolveEndpointInset` in `CityStreetSurfacePlanner`). With the default
+  8 m road that pushed the approach paving and its inner guard rail 4 m into
+  the junction, 3 m of it inside the crossing carriageway - a rail with posts
+  standing across the traffic lanes and the pedestrian crossing.
+- The approach now takes the same endpoint inset as the sidewalk it
+  continues: `halfRoad` at an intersection core, `-halfRoad` at a stub end,
+  clamped so it can never bite past the landing it serves. The lower approach
+  loses ~4 m of its ~9.6-10.5 m, and its rail with it.
+- Nothing else needed moving: the road datum is flat within `halfRoad` of a
+  node, so the approach and the carriageway are level where the rail now
+  ends - it was guarding a drop that does not exist there.
+- `CityExteriorStairWorldBuilder.BuildRails` skips a degenerate rail rather
+  than emitting a zero-length beam, in case a clamp ever collapses one.
+- Regression: `AssertApproachClearsCrossingCarriageway` walks the perpendicular
+  street edges at both stair nodes and asserts neither the approach footprint
+  nor the rail footprint intersects their carriageway.
+
+Verification:
+
+- `BarPromenade.Runtime.csproj` and `BarPromenade.EditModeTests.csproj`
+  compile with 0 errors.
+- Focused `CityElevationPlannerTests` passed 9/10, including the new
+  assertions on all four signature stairs.
+- `LegacyAndCustomBlueprints_KeepFlatFallback` fails with "Area 'central-park'
+  must be four-neighbour connected"; confirmed identical on a stashed clean
+  tree, so it is pre-existing and out of scope here.
+- No broader EditMode/PlayMode suite, player build or smoke was run.
+
 ## 2026-08-18 — The embankment gets its stone and iron
 
 - The banks were three flat colours: `Granite` underfoot, `GraniteEdge` in
