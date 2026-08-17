@@ -48,6 +48,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/CemeteryMourner3D.fbx";
         public const string CemeteryMournerManifestPath =
             "Assets/Pedestrians/Staged/Models/CemeteryMourner3D.json";
+        public const string CemeteryWatchmanModelPath =
+            "Assets/Pedestrians/Staged/Models/CemeteryWatchman3D.fbx";
+        public const string CemeteryWatchmanManifestPath =
+            "Assets/Pedestrians/Staged/Models/CemeteryWatchman3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -82,6 +86,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/CemeteryMourner3D.prefab";
         public const string CemeteryMournerProviderPath =
             "Assets/Resources/City/CemeteryMournerProvider.asset";
+        public const string CemeteryWatchmanPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/CemeteryWatchman3D.prefab";
+        public const string CemeteryWatchmanProviderPath =
+            "Assets/Resources/City/CemeteryWatchmanProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -282,6 +290,25 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
+                isStaged: true),
+            // The cemetery watchman: the idle slot carries the snide
+            // watch loop and the walk slot the hands-behind-back
+            // shuffle reserved for a later patrol pass. Staged like
+            // the mourner — authored with the shared art library,
+            // outside Resources and the runtime catalog.
+            new PedestrianDescriptor(
+                "Cemetery Watchman",
+                "CemeteryWatchman3D",
+                "cemetery_watchman_v1",
+                CemeteryWatchmanModelPath,
+                CemeteryWatchmanManifestPath,
+                CemeteryWatchmanPrefabPath,
+                "WatchmanWatch",
+                "WatchmanShuffle",
+                6f,
+                1.5f,
+                900,
+                2000,
                 isStaged: true)
         };
 
@@ -345,6 +372,14 @@ namespace BarPromenade.Editor
         {
             BuildCemeteryMournerOrThrow();
             Debug.Log("Staged Cemetery Mourner prefab rebuilt and bound.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Cemetery Watchman")]
+        public static void RunCemeteryWatchman()
+        {
+            BuildCemeteryWatchmanOrThrow();
+            Debug.Log("Staged Cemetery Watchman prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -814,6 +849,11 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         CemeteryMournerProvider.DesignId,
                         StringComparison.Ordinal)));
+                BindCemeteryWatchmanProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        CemeteryWatchmanProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -1104,6 +1144,123 @@ namespace BarPromenade.Editor
             {
                 isBuilding = false;
             }
+        }
+
+        public static void BuildCemeteryWatchmanOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Cemetery Watchman build requires its " +
+                    "model, manifest, locomotion library, production " +
+                    "Player model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    CemeteryWatchmanProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindCemeteryWatchmanProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged cemetery watchman prefab into a build —
+        /// the automated binding the babushka pass established.
+        /// </summary>
+        private static void BindCemeteryWatchmanProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the cemetery watchman provider before " +
+                    "its prefab exists.");
+            }
+
+            CemeteryWatchmanProvider provider =
+                AssetDatabase.LoadAssetAtPath<CemeteryWatchmanProvider>(
+                    CemeteryWatchmanProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(CemeteryWatchmanProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<CemeteryWatchmanProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    CemeteryWatchmanProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "CemeteryWatchmanProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
         }
 
         /// <summary>

@@ -6,6 +6,27 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The gate lodge and its snide watchman
+
+- Just inside the cemetery gate, off to the side of the opening, a
+  watchman's lodge now stands: a little hut on a timber floor with
+  peeling concrete walls, an overhanging wooden roof, an iron stove
+  pipe, an ajar plank door with a step and a stool by it — and a
+  window that looks straight at the gate. Whoever walks in, walks in
+  watched. Graves, trees and benches keep their distance from its
+  pocket, and the street approach to the gate stays untouched.
+- At the window stands the watchman himself — an extremely snide old
+  man in an aerodrome flat cap, a worn telogreika and kirza boots,
+  with grey whiskers and one permanently raised brow. His hands never
+  leave the small of his back; he shifts his weight, shakes his head
+  in quiet disapproval and now and then juts his chin at nothing in
+  particular.
+- You can talk to him. You will regret it exactly as much as you
+  will enjoy it: every conversation earns the next line of his
+  repertoire — fifteen dry little barbs about the grass, the plots,
+  the living and the lying — and he never says the same thing twice
+  in a row.
+
 ### 2026-08-17 — A mourner visits the cemetery
 
 - The cemetery gained its one visitor. Come near the grounds and

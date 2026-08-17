@@ -273,6 +273,70 @@
       "value": "The cashier stares at you in silence. He does not seem to blink."
     },
     {
+      "key": "interaction.talk_watchman",
+      "value": "E — Talk to the watchman"
+    },
+    {
+      "key": "cemetery.watchman.line.01",
+      "value": "Oh, a live one. Rare around here."
+    },
+    {
+      "key": "cemetery.watchman.line.02",
+      "value": "Off the grass. People are resting under it."
+    },
+    {
+      "key": "cemetery.watchman.line.03",
+      "value": "Shopping for a plot? Got one with a gate view."
+    },
+    {
+      "key": "cemetery.watchman.line.04",
+      "value": "Too early for you. Though, hard to say."
+    },
+    {
+      "key": "cemetery.watchman.line.05",
+      "value": "No guided tours. All the exhibits are lying down."
+    },
+    {
+      "key": "cemetery.watchman.line.06",
+      "value": "Walk around, walk around. Nobody here ever complained."
+    },
+    {
+      "key": "cemetery.watchman.line.07",
+      "value": "Bringing flowers is fine. Taking them out is bad luck."
+    },
+    {
+      "key": "cemetery.watchman.line.08",
+      "value": "Quiet place, ours. Well-mannered public."
+    },
+    {
+      "key": "cemetery.watchman.line.09",
+      "value": "What are you staring at? I'm the only temporary one here."
+    },
+    {
+      "key": "cemetery.watchman.line.10",
+      "value": "If you get lost, shout. We'll have a laugh together."
+    },
+    {
+      "key": "cemetery.watchman.line.11",
+      "value": "Looking for relatives, or just pricing things up?"
+    },
+    {
+      "key": "cemetery.watchman.line.12",
+      "value": "They walk and they walk... and nobody wants to lie down."
+    },
+    {
+      "key": "cemetery.watchman.line.13",
+      "value": "Don't linger after sunset. Not because of the dead — because of me."
+    },
+    {
+      "key": "cemetery.watchman.line.14",
+      "value": "Leave the enclosure alone. It will outlive you."
+    },
+    {
+      "key": "cemetery.watchman.line.15",
+      "value": "Free entry for the living. For now."
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Intoxication: {0}/100"
     },

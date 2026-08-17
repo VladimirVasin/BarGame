@@ -140,6 +140,10 @@ namespace BarPromenade
             // them.
             AddLamps(lamps, frame, alleys, access);
             List<Rect> reserved = CreatereservedFootprints(lamps);
+            // The watchman's lodge claims its gate-side pocket before
+            // benches, graves and trees, so the whole dressing plans
+            // around it the way it plans around the lamps.
+            AddLodge(parts, frame, reserved);
             AddBenches(parts, frame, alleys, reserved, access);
             List<GraveSite> graves = AddGraves(
                 parts,
@@ -729,6 +733,139 @@ namespace BarPromenade
         // ------------------------------------------------------------
         // graves
         // ------------------------------------------------------------
+
+        // ------------------------------------------------------------
+        // the watchman's lodge
+        // ------------------------------------------------------------
+
+        /// <summary>The whole lodge including its roof overhang must
+        /// fit strictly inside the grounds on the chosen side of the
+        /// gate; a narrower custom blueprint simply has no lodge and
+        /// the watchman plan degrades to absent.</summary>
+        private const float LodgeRequiredLateralRoom = 8.30f;
+
+        /// <summary>
+        /// The cemetery watchman's booth just inside the gate: a small
+        /// timber-floored hut with a window on the alley side (he
+        /// watches every arrival), an ajar door at the back, a stove
+        /// pipe and a stool. Every blocking part keeps its lateral
+        /// edge past the gate opening's raw approach rectangle, so the
+        /// canonical street entrance stays untouched. The pocket is
+        /// appended to the reserved footprints so benches, graves and
+        /// trees plan around the lodge.
+        /// </summary>
+        private static void AddLodge(
+            ICollection<CityCemeteryPartDescriptor> parts,
+            Frame frame,
+            ICollection<Rect> reservedFootprints)
+        {
+            float roomPositive = frame.LateralMax - frame.GateLateral;
+            float roomNegative = frame.GateLateral - frame.LateralMin;
+            float sideSign = roomPositive >= roomNegative ? 1f : -1f;
+            float room = Mathf.Max(roomPositive, roomNegative);
+            if (room < LodgeRequiredLateralRoom)
+            {
+                return;
+            }
+
+            void Emit(
+                string suffix,
+                CityCemeteryStyle style,
+                float depthCenter,
+                float depthSize,
+                float lateralOffset,
+                float lateralSize,
+                float yCenter,
+                float height)
+            {
+                Vector3 center = frame.Compose(
+                    depthCenter,
+                    frame.GateLateral + sideSign * lateralOffset,
+                    frame.GroundTopY + yCenter);
+                Vector3 size = frame.AlongX
+                    ? new Vector3(depthSize, height, lateralSize)
+                    : new Vector3(lateralSize, height, depthSize);
+                parts.Add(new CityCemeteryPartDescriptor(
+                    $"cemetery-lodge-{suffix}",
+                    CityCemeteryPartKind.Lodge,
+                    style,
+                    center,
+                    Quaternion.identity,
+                    size,
+                    -1,
+                    CityCemeteryGraveVariant.ClassicStele));
+            }
+
+            // Floor slab and the concrete shell: a front wall toward
+            // the fence, a solid outer wall, a rear wall with the
+            // 0.92 m doorway under a lintel that clears head height,
+            // and the alley-side wall carrying the watch window.
+            Emit("base", CityCemeteryStyle.Timber,
+                2.00f, 2.20f, 6.80f, 2.40f, 0.05f, 0.10f);
+            Emit("wall-front", CityCemeteryStyle.WeatheredConcrete,
+                0.96f, 0.12f, 6.80f, 2.40f, 1.225f, 2.25f);
+            Emit("wall-out", CityCemeteryStyle.WeatheredConcrete,
+                2.00f, 2.20f, 7.94f, 0.12f, 1.225f, 2.25f);
+            Emit("wall-rear", CityCemeteryStyle.WeatheredConcrete,
+                3.04f, 0.12f, 6.28f, 1.36f, 1.225f, 2.25f);
+            Emit("door-header", CityCemeteryStyle.WeatheredConcrete,
+                3.04f, 0.12f, 7.42f, 0.92f, 2.235f, 0.23f);
+            Emit("window-pier-a", CityCemeteryStyle.WeatheredConcrete,
+                1.20f, 0.60f, 5.66f, 0.12f, 1.225f, 2.25f);
+            Emit("window-pier-b", CityCemeteryStyle.WeatheredConcrete,
+                2.80f, 0.60f, 5.66f, 0.12f, 1.225f, 2.25f);
+            Emit("window-sill", CityCemeteryStyle.WeatheredConcrete,
+                2.00f, 1.00f, 5.66f, 0.12f, 0.525f, 0.85f);
+            Emit("window-board", CityCemeteryStyle.Timber,
+                2.00f, 1.12f, 5.64f, 0.18f, 0.975f, 0.05f);
+            Emit("window-head", CityCemeteryStyle.WeatheredConcrete,
+                2.00f, 1.00f, 5.66f, 0.12f, 2.10f, 0.50f);
+            Emit("roof", CityCemeteryStyle.Timber,
+                2.00f, 2.70f, 6.80f, 2.90f, 2.42f, 0.14f);
+            Emit("chimney", CityCemeteryStyle.Iron,
+                2.85f, 0.14f, 7.70f, 0.14f, 2.695f, 0.55f);
+            Emit("step", CityCemeteryStyle.Timber,
+                3.275f, 0.35f, 7.42f, 0.70f, 0.05f, 0.10f);
+            // The stool's id deliberately never matches the
+            // "cemetery-bench-*-seat" pattern, so the shared bench-sit
+            // pass leaves the watchman's seat alone.
+            Emit("stool", CityCemeteryStyle.Timber,
+                3.35f, 0.34f, 6.40f, 0.34f, 0.24f, 0.48f);
+
+            // The ajar timber door leaf, hinged at the doorway's outer
+            // jamb and swung 35 degrees into the grounds — the gate
+            // leaves' composed-direction pattern at hut scale.
+            Vector3 hinge = frame.Compose(
+                3.10f,
+                frame.GateLateral + sideSign * 7.88f,
+                frame.GroundTopY + 1.075f);
+            Vector3 closeDirection =
+                frame.LateralAxis * -sideSign;
+            Vector3 deeperDirection = frame.AlongX
+                ? new Vector3(frame.InwardSign, 0f, 0f)
+                : new Vector3(0f, 0f, frame.InwardSign);
+            const float openAngle = 35f * Mathf.Deg2Rad;
+            Vector3 leafDirection = (
+                closeDirection * Mathf.Cos(openAngle) +
+                deeperDirection * Mathf.Sin(openAngle)).normalized;
+            parts.Add(new CityCemeteryPartDescriptor(
+                "cemetery-lodge-door-leaf",
+                CityCemeteryPartKind.Lodge,
+                CityCemeteryStyle.Timber,
+                hinge + leafDirection * 0.43f,
+                Quaternion.LookRotation(leafDirection, Vector3.up),
+                new Vector3(0.04f, 1.95f, 0.86f),
+                -1,
+                CityCemeteryGraveVariant.ClassicStele));
+
+            float pocketNear = frame.GateLateral + sideSign * 5.20f;
+            float pocketFar = frame.GateLateral + sideSign * 8.30f;
+            reservedFootprints.Add(frame.RectFromDepthLateral(
+                0.50f,
+                3.70f,
+                Mathf.Min(pocketNear, pocketFar),
+                Mathf.Max(pocketNear, pocketFar)));
+        }
 
         private readonly struct GraveSite
         {

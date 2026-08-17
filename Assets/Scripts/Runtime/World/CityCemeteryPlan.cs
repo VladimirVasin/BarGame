@@ -21,7 +21,8 @@ namespace BarPromenade
         TreeTrunk = 11,
         TreeCrown = 12,
         Bush = 13,
-        Bench = 14
+        Bench = 14,
+        Lodge = 15
     }
 
     /// <summary>

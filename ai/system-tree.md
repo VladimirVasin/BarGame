@@ -299,6 +299,12 @@ Assets/
         CemeteryMournerFactory.cs  one transient instance per visit, passivity re-checked
         CemeteryMournerProvider.cs  the only serialized reference to the staged prefab
         CityCemeteryMournerController.cs  City-root proximity trigger, spawn/route/cooldown + the laid bouquet
+        CemeteryWatchmanPlan.cs  window-post stance read back from the plan's own lodge parts
+        CemeteryWatchmanQuips.cs  seeded 15-line snide repertoire, never the same twice running
+        CemeteryWatchmanInteraction.cs  cashier-contract talk stub serving the next quip
+        CemeteryWatchmanPresentation.cs  one-clip manual PlayableGraph (the watch loop)
+        CemeteryWatchmanFactory.cs  one permanent instance + its own talk trigger
+        CemeteryWatchmanProvider.cs  the only serialized reference to the staged prefab
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

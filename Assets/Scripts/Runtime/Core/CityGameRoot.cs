@@ -50,6 +50,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CemeteryWatchmanPresentation CemeteryWatchman
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -383,6 +388,13 @@ namespace BarPromenade
                 World.CemeteryPlan,
                 Player.GameObject.transform,
                 camera,
+                GameSessionState.CitySeed);
+            // The gate lodge is attended: one snide old watchman at
+            // his window post, eyes on the arch, answering every
+            // "поговорить" with the next line of his repertoire.
+            CemeteryWatchman = CemeteryWatchmanFactory.Create(
+                transform,
+                CemeteryWatchmanPlan.Create(World.CemeteryPlan),
                 GameSessionState.CitySeed);
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,

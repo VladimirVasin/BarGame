@@ -273,6 +273,70 @@
       "value": "Кассир молча смотрит на вас. Кажется, он не моргает."
     },
     {
+      "key": "interaction.talk_watchman",
+      "value": "E — заговорить со сторожем"
+    },
+    {
+      "key": "cemetery.watchman.line.01",
+      "value": "О, живой. Редкость в наших краях."
+    },
+    {
+      "key": "cemetery.watchman.line.02",
+      "value": "Не топчи траву. Под ней люди отдыхают."
+    },
+    {
+      "key": "cemetery.watchman.line.03",
+      "value": "Место присмотреть зашёл? Есть с видом на ворота."
+    },
+    {
+      "key": "cemetery.watchman.line.04",
+      "value": "Тебе рано. Хотя, как посмотреть."
+    },
+    {
+      "key": "cemetery.watchman.line.05",
+      "value": "Экскурсий не вожу. Все экспонаты лежачие."
+    },
+    {
+      "key": "cemetery.watchman.line.06",
+      "value": "Гуляй, гуляй. Отсюда ещё никто не жаловался."
+    },
+    {
+      "key": "cemetery.watchman.line.07",
+      "value": "Цветы — можно. Выносить — уже примета плохая."
+    },
+    {
+      "key": "cemetery.watchman.line.08",
+      "value": "Тихо тут у нас. Публика воспитанная."
+    },
+    {
+      "key": "cemetery.watchman.line.09",
+      "value": "Что смотришь? Я тут единственный временно."
+    },
+    {
+      "key": "cemetery.watchman.line.10",
+      "value": "Заблудишься — кричи. Посмеёмся вместе."
+    },
+    {
+      "key": "cemetery.watchman.line.11",
+      "value": "Родственников ищешь или так, приценяешься?"
+    },
+    {
+      "key": "cemetery.watchman.line.12",
+      "value": "Ходят, ходят... а ложиться никто не хочет."
+    },
+    {
+      "key": "cemetery.watchman.line.13",
+      "value": "После заката не задерживайся. Не из-за мёртвых — из-за меня."
+    },
+    {
+      "key": "cemetery.watchman.line.14",
+      "value": "Оградку не трогай. Она тебя переживёт."
+    },
+    {
+      "key": "cemetery.watchman.line.15",
+      "value": "Живым вход свободный. Пока что."
+    },
+    {
       "key": "drinking.intoxication",
       "value": "Опьянение: {0}/100"
     },

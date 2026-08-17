@@ -228,6 +228,14 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
+                        CityPedestrianAssetSetup.CemeteryWatchmanModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        CityPedestrianAssetSetup.CemeteryWatchmanManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
                         CityPedestrianAssetSetup.AnimationPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
@@ -282,6 +290,10 @@ namespace BarPromenade.Editor
                    string.Equals(
                        path,
                        CityPedestrianAssetSetup.CemeteryMournerModelPath,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       path,
+                       CityPedestrianAssetSetup.CemeteryWatchmanModelPath,
                        StringComparison.OrdinalIgnoreCase);
         }
 

@@ -184,6 +184,20 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
     ),
+    # The cemetery watchman. One staged model for the permanent post
+    # at the gate lodge: an extremely snide old man who watches every
+    # arrival from his window with his hands clasped behind his back.
+    # The idle slot carries the smirking watch loop and the walk slot
+    # a slow hands-behind-back shuffle (authored now, patrol later),
+    # mirroring how every staged design maps onto the same pair.
+    "cemetery_watchman": ArchetypeSpec(
+        "cemetery_watchman", "cemetery_watchman_v1", "Cemetery Watchman", 963201,
+        "CemeteryWatchman3D.blend", "CemeteryWatchman3D",
+        "CemeteryWatchman3D.png", "WatchmanWatch", "WatchmanShuffle",
+        (900, 2000),
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -361,6 +375,16 @@ PALETTE = {
     "bouquet_stem": (0.055, 0.110, 0.060, 1.0),
     "bouquet_bloom": (0.290, 0.060, 0.075, 1.0),
     "bouquet_wrap": (0.330, 0.300, 0.240, 1.0),
+    # Cemetery Watchman. A worn olive-grey telogreika over an old
+    # shirt, an aerodrome flat cap, kirza boots and grey whiskers:
+    # nothing bright, nothing official — the smirk is the uniform.
+    "watch_coat": (0.140, 0.130, 0.095, 1.0),
+    "watch_coat_light": (0.200, 0.190, 0.140, 1.0),
+    "watch_coat_dark": (0.070, 0.065, 0.048, 1.0),
+    "watch_trousers": (0.085, 0.090, 0.080, 1.0),
+    "watch_cap": (0.110, 0.095, 0.080, 1.0),
+    "watch_shirt": (0.230, 0.215, 0.180, 1.0),
+    "watch_grey": (0.360, 0.355, 0.340, 1.0),
 }
 
 
@@ -714,6 +738,10 @@ class PedestrianBuilder:
             "cemetery_mourner": (
                 self.build_cemetery_mourner_body,
                 self.build_cemetery_mourner_details,
+            ),
+            "cemetery_watchman": (
+                self.build_cemetery_watchman_body,
+                self.build_cemetery_watchman_details,
             ),
         }
         if self.spec.key not in builders:
@@ -2678,6 +2706,223 @@ class PedestrianBuilder:
             "hand.R", "surface_detail", "bouquet_stem",
         )
 
+    def build_cemetery_watchman_body(self) -> None:
+        """Snide old cemetery watchman; the attitude lives in the clips.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the stoop, the clasped hands behind the
+        back and the disapproving head shake are all authored in
+        WatchmanWatch and WatchmanShuffle rather than in the geometry.
+        The silhouette is a worn telogreika under a wide aerodrome
+        flat cap; the face carries the permanent smirk: one raised
+        brow, narrowed eyes, an off-centre mouth and grey whiskers.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.036, 1.560), (0.100, 0.094, 0.124), 12, 6),
+            "head", "body", "skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.320), (0, -0.024, 1.470), 0.066, 0.056, 10),
+            "neck", "body", "skin",
+        )
+        # The quilted telogreika: boxy, a little sunken at the chest —
+        # an old man's jacket, not a worker's.
+        self.add_part(
+            "CLO_CoatChest",
+            make_tapered_box((0, 0.008, 1.070), (0, -0.004, 1.340), (0.400, 0.245, 0), (0.405, 0.255, 0)),
+            "chest", "body", "watch_coat",
+        )
+        self.add_part(
+            "CLO_CoatWaist",
+            make_tapered_box((0, 0.016, 0.870), (0, 0.010, 1.090), (0.395, 0.250, 0), (0.400, 0.248, 0)),
+            "spine", "body", "watch_coat",
+        )
+        self.add_part(
+            "CLO_CoatHem",
+            make_tapered_box((0, 0.018, 0.690), (0, 0.016, 0.890), (0.415, 0.268, 0), (0.398, 0.252, 0)),
+            "pelvis", "clothing", "watch_coat_dark",
+        )
+        # The open collar shows a sliver of the old shirt underneath.
+        self.add_part(
+            "CLO_Collar",
+            make_frustum_between((0, -0.008, 1.330), (0, -0.014, 1.392), 0.102, 0.086, 10),
+            "neck", "clothing", "watch_coat_dark",
+        )
+        self.add_part(
+            "ACC_ShirtV",
+            make_tapered_box((0, -0.132, 1.238), (0, -0.128, 1.320), (0.120, 0.020, 0), (0.052, 0.016, 0)),
+            "chest", "surface_detail", "watch_shirt",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
+                f"upper_arm.{side}", "clothing", "watch_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.056, 0.045, 8),
+                f"forearm.{side}", "clothing", "watch_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.630, -0.016, 1.100),
+                    (sign * 0.694, -0.019, 1.068),
+                    0.048, 0.043, 8,
+                ),
+                f"forearm.{side}", "clothing", "watch_coat_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
+                f"hand.{side}", "body", "skin",
+            )
+            hip = (sign * 0.096, 0.004, 0.730)
+            knee = (sign * 0.103, -0.012, 0.354)
+            ankle = (sign * 0.112, -0.022, 0.095)
+            # Trousers tucked into tall kirza boot shafts.
+            self.add_part(
+                f"CLO_TrouserUpper.{side}",
+                make_frustum_between(hip, knee, 0.084, 0.060, 8),
+                f"thigh.{side}", "clothing", "watch_trousers",
+            )
+            self.add_part(
+                f"CLO_BootShaft.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.014, 0.340),
+                    (sign * 0.112, -0.022, 0.100),
+                    0.064, 0.056, 8,
+                ),
+                f"shin.{side}", "clothing", "shoe",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.085, 0.030),
+                    (sign * 0.112, -0.052, 0.145),
+                    (0.104, 0.260, 0),
+                    (0.092, 0.190, 0),
+                ),
+                f"foot.{side}", "body", "shoe",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+        # The wide aerodrome flat cap owns the silhouette and the
+        # exact 1.75 m envelope: a shallow dome over a band with a
+        # broad visor pushed slightly up — he looks at you from under
+        # it anyway.
+        self.add_part(
+            "CLO_CapDome",
+            make_ellipsoid((0, 0.000, 1.652), (0.146, 0.150, 0.076), 12, 6),
+            "head", "signature_silhouette", "watch_cap",
+        )
+        self.add_part(
+            "CLO_CapBand",
+            make_frustum_between((0, -0.006, 1.566), (0, -0.004, 1.622), 0.116, 0.124, 12),
+            "head", "clothing", "watch_cap",
+        )
+        self.add_part(
+            "CLO_CapCrown",
+            make_tapered_box((0, 0.002, 1.716), (0, 0.004, 1.750), (0.088, 0.092, 0), (0.034, 0.036, 0)),
+            "head", "signature_silhouette", "watch_cap",
+        )
+        self.add_part(
+            "CLO_CapVisor",
+            make_tapered_box((0, -0.196, 1.586), (0, -0.116, 1.612), (0.128, 0.088, 0), (0.144, 0.104, 0)),
+            "head", "signature_silhouette", "watch_cap",
+        )
+        # The permanent smirk: narrowed eyes, one raised grey brow,
+        # a big nose, grey whiskers and a mouth pulled off centre.
+        self.add_part(
+            "ACC_Eye.L",
+            make_box((0.045, -0.124, 1.560), (0.034, 0.018, 0.014)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Eye.R",
+            make_box((-0.045, -0.124, 1.562), (0.034, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Brow.L",
+            make_box((0.048, -0.128, 1.584), (0.044, 0.016, 0.014)),
+            "head", "face_detail", "watch_grey",
+        )
+        self.add_part(
+            "ACC_Brow.R",
+            make_box((-0.050, -0.128, 1.600), (0.046, 0.016, 0.016)),
+            "head", "face_detail", "watch_grey",
+        )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.148, 1.502), (0, -0.126, 1.546), (0.044, 0.052, 0), (0.030, 0.040, 0)),
+            "head", "face_detail", "skin",
+        )
+        self.add_part(
+            "ACC_Moustache",
+            make_box((0.004, -0.140, 1.482), (0.080, 0.024, 0.022)),
+            "head", "face_detail", "watch_grey",
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0.020, -0.128, 1.462), (0.048, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+
+    def build_cemetery_watchman_details(self) -> None:
+        """Quilt ridges, buttons and the whiskered chin.
+
+        No hand props: both hands stay clasped behind the back in
+        every authored loop, and no authority markers — the smirk is
+        the whole uniform.
+        """
+
+        # Horizontal quilt ridges read as the telogreika's padding.
+        for index, height in enumerate((1.280, 1.180, 1.080), start=1):
+            self.add_part(
+                f"ACC_QuiltSeam.{index:02d}",
+                make_box((0, -0.146, height), (0.370, 0.014, 0.016)),
+                "chest" if height > 1.1 else "spine",
+                "surface_detail", "watch_coat_dark",
+            )
+        for index, height in enumerate((0.980, 0.895), start=4):
+            self.add_part(
+                f"ACC_QuiltSeam.{index:02d}",
+                make_box((0, -0.140, height), (0.360, 0.014, 0.016)),
+                "spine", "surface_detail", "watch_coat_dark",
+            )
+        self.add_part(
+            "ACC_CoatButton.01",
+            make_box((0.060, -0.152, 1.230), (0.022, 0.016, 0.022)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_CoatButton.02",
+            make_box((0.058, -0.146, 1.110), (0.022, 0.016, 0.022)),
+            "chest", "surface_detail", "button",
+        )
+        self.add_part(
+            "ACC_CoatButton.03",
+            make_box((0.056, -0.148, 0.990), (0.022, 0.016, 0.022)),
+            "spine", "surface_detail", "button",
+        )
+        # Grey stubble on the chin closes the whiskered face.
+        self.add_part(
+            "ACC_Stubble",
+            make_tapered_box((0, -0.108, 1.436), (0, -0.120, 1.472), (0.096, 0.052, 0), (0.106, 0.062, 0)),
+            "head", "surface_detail", "watch_grey",
+        )
+
     def build_weigh_attendant_body(self) -> None:
         """Tired industrial worker in a quilted jacket and a knit cap.
 
@@ -3336,6 +3581,16 @@ ACTION_SPECS = (
         "graveside grief from a standing bow",
         "lay the bouquet low, thirty seconds of shoulder-shaking sobs behind raised hands, wipe each eye and straighten",
     ),
+    ActionSpec(
+        "WatchmanWatch", "cemetery_watchman_v1", 6.0, 144,
+        "rounded old shoulders, chin up under the cap, hands clasped behind the back",
+        "slow weight transfers, a disapproving head shake and one smug chin jut with a shrug",
+    ),
+    ActionSpec(
+        "WatchmanShuffle", "cemetery_watchman_v1", 1.5, 36,
+        "rounded old shoulders, chin up under the cap, hands clasped behind the back",
+        "short heavy shuffling steps with no arm swing and a mild capped-head bob",
+    ),
 )
 
 
@@ -3754,6 +4009,40 @@ def mourner_base_pose() -> dict[str, BonePose]:
         "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
         "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    }
+
+
+def watchman_base_pose() -> dict[str, BonePose]:
+    """Snide watch stance shared by the watch and shuffle loops.
+
+    Both loops keep the feet planted, so the ordinary walker sole bake
+    grounds them; the attitude lives in the rounded old shoulders, the
+    chin carried up under the cap visor and both hands clasped behind
+    the back — the eternal courtyard inspector.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(4.0, 0.0, 0.0), location_m=(0, 0.006, -0.035)),
+        "spine": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(1.0, -4.0, 5.0)),
+        "clavicle.R": BonePose(rotation_degrees=(1.0, 4.0, -5.0)),
+        # Hands clasped behind the back: the arms swing rearward and
+        # the forearms fold in toward the lumbar.
+        "upper_arm.L": BonePose(rotation_degrees=(-20.0, 12.0, 44.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-20.0, -12.0, -44.0)),
+        "forearm.L": BonePose(rotation_degrees=(-36.0, 16.0, -22.0)),
+        "forearm.R": BonePose(rotation_degrees=(-36.0, -16.0, 22.0)),
+        "hand.L": BonePose(rotation_degrees=(2.0, -6.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(2.0, 6.0, -4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
     }
 
 
@@ -4571,7 +4860,94 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         (1.0, mourner),
     ))
 
+    watchman = watchman_base_pose()
+
+    # The watch loop: slow weight transfers under a disapproving head
+    # shake, one chin jut with a raised-shoulder beat, the hands never
+    # leaving the small of the back.
+    def watchman_weight(lean: float) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(4.0, lean * 1.5, -lean * 2.5),
+                location_m=(lean * 0.015, 0.006, -0.037)),
+            "spine": BonePose(rotation_degrees=(8.0, 0.0, lean * 1.5)),
+            "chest": BonePose(rotation_degrees=(5.0, 0.0, -lean * 1.0)),
+            "thigh.L": BonePose(
+                rotation_degrees=(-4.0, 0.0, 3.0 + lean * 1.5)),
+            "thigh.R": BonePose(
+                rotation_degrees=(-4.0, 0.0, -3.0 + lean * 1.5)),
+        }
+
+    watchman_left = merge_pose(watchman, watchman_weight(1.0))
+    watchman_right = merge_pose(watchman, watchman_weight(-1.0))
+    watchman_shake_left = merge_pose(watchman, watchman_weight(1.0), {
+        "head": BonePose(rotation_degrees=(-2.0, -10.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-12.0, -4.0, 0.0)),
+    })
+    watchman_shake_right = merge_pose(watchman, watchman_weight(0.4), {
+        "head": BonePose(rotation_degrees=(-2.0, 9.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-12.0, 3.0, 0.0)),
+    })
+    watchman_jut = merge_pose(watchman, watchman_weight(-0.6), {
+        # The chin jut: the head tips back under the visor, the
+        # shoulders shrug once — "ну-ну, посмотрим".
+        "neck": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-10.0, 0.0, 2.0)),
+        "clavicle.L": BonePose(rotation_degrees=(6.0, -7.0, 9.0)),
+        "clavicle.R": BonePose(rotation_degrees=(6.0, 7.0, -9.0)),
+        "chest": BonePose(rotation_degrees=(3.0, 0.0, 0.5)),
+    })
+
+    # The shuffle: short heavy old-man steps, hands staying clasped
+    # behind the back, a mild bob of the capped head.
+    def watchman_shuffle_legs(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(5.0, lean * 1.5, -lean * 2.0),
+                location_m=(0, 0.006, -0.040)),
+            "head": BonePose(
+                rotation_degrees=(-2.0 + abs(left_forward) * 2.0, 0.0, 0.0)),
+            "thigh.L": BonePose(
+                rotation_degrees=(-4.0 - left_forward * 13.0, 0.0, 3.0)),
+            "shin.L": BonePose(
+                rotation_degrees=(8.0 + max(0.0, -left_forward) * 13.0, 0.0, 0.0)),
+            "foot.L": BonePose(
+                rotation_degrees=(-4.0 + left_forward * 4.0, 0.0, 0.0)),
+            "thigh.R": BonePose(
+                rotation_degrees=(-4.0 + left_forward * 13.0, 0.0, -3.0)),
+            "shin.R": BonePose(
+                rotation_degrees=(8.0 + max(0.0, left_forward) * 13.0, 0.0, 0.0)),
+            "foot.R": BonePose(
+                rotation_degrees=(-4.0 - left_forward * 4.0, 0.0, 0.0)),
+        }
+
+    watchman_step_l = merge_pose(watchman, watchman_shuffle_legs(1.0, 1.0))
+    watchman_step_pr = merge_pose(watchman, watchman_shuffle_legs(0.0, -0.4))
+    watchman_step_r = merge_pose(watchman, watchman_shuffle_legs(-1.0, -1.0))
+    watchman_step_pl = merge_pose(watchman, watchman_shuffle_legs(0.0, 0.4))
+
     return {
+        "WatchmanWatch": (
+            (0.0, watchman),
+            (0.12, watchman_left),
+            (0.30, watchman_shake_left),
+            (0.45, watchman_shake_right),
+            (0.55, watchman_left),
+            (0.62, watchman_jut),
+            (0.78, watchman_right),
+            (0.90, watchman_right),
+            (1.0, watchman),
+        ),
+        "WatchmanShuffle": (
+            (0.0, watchman_step_l),
+            (0.25, watchman_step_pr),
+            (0.5, watchman_step_r),
+            (0.75, watchman_step_pl),
+            (1.0, watchman_step_l),
+        ),
         "MournerWalk": (
             (0.0, mourner_walk_l),
             (0.25, mourner_walk_pr),

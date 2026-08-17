@@ -6,6 +6,46 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — The gate lodge and the snide cemetery watchman
+
+- Booth: new `CityCemeteryPartKind.Lodge` + `AddLodge` in the
+  cemetery planner — 15 `cemetery-lodge-*` parts (timber floor/roof,
+  concrete shell with a 0.92 m doorway under a 2.12 m lintel and a
+  1.0 × 0.9 watch window facing the alley, iron stovepipe, 35°-ajar
+  door leaf via the gate-leaf composed-direction pattern, step and
+  stool). Placed in the gate-side pocket on the roomier lateral side
+  (fit guard 8.3 m → narrower blueprints get no lodge), emitted
+  before benches/graves/trees with the pocket appended to the
+  reserved footprints. Every blocking part clears the RAW approach
+  rectangle (the stricter test-side rule), so no exemption needed.
+  World builder untouched — batches are per-style.
+- Watchman: fifth staged archetype `cemetery_watchman_v1` (seed
+  963201, 43 meshes / 988 triangles): aerodrome cap owning the
+  1.75 m envelope, quilted telogreika, kirza boot shafts, grey
+  moustache/stubble/brows with one raised — the smirk is geometry.
+  Two clips: `WatchmanWatch` 6 s (weight shifts, disapproving head
+  shake, one chin jut + shrug) and `WatchmanShuffle` 1.5 s
+  (hands-behind-back shuffle, authored now for a later patrol pass —
+  the runtime is stationary idle only). Quartet + stance read back
+  from the plan's own lodge parts (`cemetery-lodge-base` →
+  `window-board` direction, facing the gate arch), wired in
+  `CityGameRoot` after the mourner.
+- Snideness: the project's first rotating talk stub. Cashier-contract
+  `CemeteryWatchmanInteraction` on its own trigger box in front of
+  the window + pure `CemeteryWatchmanQuips` (seeded xorshift over 15
+  localized keys, a repeat draw slides to its neighbour — never the
+  same line twice running). 16 new keys in ru/en catalogs +
+  `RequiredKeys`; lines kept ≤ ~70 chars for the prompt panel.
+- Verification: Blender rebuild green first run (24 actions,
+  determinism ok); bundled-dotnet compiles green; batchmode
+  `RunCemeteryWatchman` build+bind; focused EditMode run of
+  `CemeteryWatchmanTests` (lodge pocket/approach sweep, Absent
+  degradation, window-post stance and gate-arch facing, quip
+  determinism/coverage/no-repeat, catalog presence) plus
+  `CityCemeteryPlannerTests`, `CemeteryMournerTests`,
+  `CityPedestrianRuntimeTests` (staged clip count 8 → 10) and
+  `LocalizationCatalogTests` regressions.
+
 ## 2026-08-17 — The cemetery mourner: a scripted graveside visit
 
 - New scripted transient staged NPC, the fourth staged archetype

@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 22,
+  "clip_count": 24,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -466,7 +466,47 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "WatchmanWatch",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 6.0,
+      "frame_start": 0,
+      "frame_end": 144,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "rounded old shoulders, chin up under the cap, hands clasped behind the back",
+      "gait": "slow weight transfers, a disapproving head shake and one smug chin jut with a shrug",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "WatchmanShuffle",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "rounded old shoulders, chin up under the cap, hands clasped behind the back",
+      "gait": "short heavy shuffling steps with no arm swing and a mild capped-head bob",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "e476627285468c0bed67e273bf1670518b911f5823a24b28fe3f8ef6079bca99"
+  "build_signature": "bfeec82e1f7bf91b9605134b146123b459edfda84f04d7b5d2d0c9917b5baf3c"
 }
