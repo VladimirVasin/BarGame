@@ -6,6 +6,93 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — Central Park surfaces
+
+- Scope: the park was the last big zone still shipping flat colours —
+  lawn, paths, plaza discs, trunks, canopies, benches, hedges. Six new
+  sheets from `tools/build-city-park-textures.py`
+  (`CityPark{Lawn,Path,Plaza,Bark,Foliage,Timber}Albedo`), the usual
+  import-from-`build-home-textures.py` pattern the cemetery generator
+  established, plus `ArtSource/City/park-textures.json` and its contact
+  sheet.
+- Grammars transcribe the bible's park materials: turf with bald
+  trodden patches, grit/ruts/pebbles, a `4x4` slab joint grid, vertical
+  bark ridges with knots, leaf clumps over dark gaps, grain under
+  flaked paint. Two local wrap helpers the shared module lacks —
+  `wrap_polygon`/`wrap_leaf` and `wrap_flake` — because the first pass
+  drew leaves and paint flakes as ellipses and both read as bubbles at
+  1:1.
+- Compensation: timber's `(0.38, 0.22, 0.10)` could not hold 8% across
+  a single constant at `mean_target 0.50` (9.0%). Raised the mean to
+  `0.58` (timber) and `0.55` (foliage) rather than touch the authored
+  palette — a higher-mean sheet is already precedent
+  (`HomeBedLinen 0.58`, `HomeEnamel 0.62`) and the compensation makes
+  the final brightness identical either way. Errors now 7.3% / 6.6%,
+  the rest 1.2-4.2%.
+- `RuntimeWorldUvMode.BoxProjected` in `RuntimePrimitiveFactory`: the
+  XZ planar bake collapses a vertical face to one line of the sheet
+  (V is that face's constant world Z). Fine for the cemetery's small
+  monuments, ruinous for a `18 m` hedge run. Box projection picks the
+  plane from the face normal, so every face tiles at true metre scale
+  and neighbours still share world coordinates. The old
+  `xzPlanarUvTileSize` parameter became `worldUvTileSize` + an optional
+  mode; every existing call site is positional and unchanged.
+- `CityTerrainSurfaceWorldBuilder.Build`/`BuildConformingDisc` took an
+  optional `worldUvTileSize` (default: the city ground pitch) so the
+  lawn and the plaza discs bake at their own sheets' pitch.
+- Seams for testing: `BuildParkLawn` extracted from `BuildGround` and
+  `BuildPark` made internal, so both are reachable without building
+  144 buildings. `HomeExteriorViewBuilder` grew `BuildParkPathBoxesIfAny`
+  and lost its now-unused generic combined-box helper.
+- Verified: `python tools/build-city-park-textures.py --verify` (six
+  sheets pass mean/edge/seam/contrast/chroma/compensation), then the
+  EditMode selection `CityParkSurfaceAppearanceTests` +
+  `RuntimePrimitiveFactoryTests` — 30/30. Not run: full EditMode/
+  PlayMode suites, player build.
+
+### Follow-up: the four park landmarks
+
+- Audited the whole decoration layer first: all 24 families are flat,
+  batched by `(chunk 48 m, BatchStyle)` into 7 shared colours, with
+  `SetColor` and no `_BaseMap` anywhere. So the park's fountain,
+  bandstand, chess tables and playground shared meshes with every
+  neighbouring district's decor and could not be textured in place.
+- Rejected the enum-explosion fix. A `BatchStyle` carries one colour,
+  and the park parts need 7 (material, colour) combinations —
+  Stone/Masonry, Stone/Street, Timber/{Masonry,Residential,Street},
+  PaintedMetal/{Residential,Street}. Added a second batch axis instead:
+  `DecorationPart` carries an optional `CityParkSurfaceKind`, and
+  `ChunkGeometry` keeps a `ParkBatchKey`-keyed dictionary beside the
+  seven flat arrays, sorted on read so chunk output stays deterministic.
+  The other 20 families are untouched and still flat.
+- Two new sheets, `CityParkStoneAlbedo` (1.5 m, jointless — the plaza
+  sheet's 4x4 grid would read as a crack across a carved figure) and
+  `CityParkPaintedMetalAlbedo` (1.2 m, metallic 0.15). Timber is
+  reused: its spec gained the three decoration batch colours, which
+  left the solved compensation at 1.3345 exactly, so all six original
+  PNGs stayed byte-identical (checked by sha256 against the previous
+  manifest).
+- Colours are unchanged everywhere. Each part keeps the batch tone it
+  had and only gains a sheet, so the darkened statue stays dark and the
+  teal playground frame stays teal. The fountain's standing water keeps
+  its flat plane, matching the river, lake and sea.
+- `RuntimePrimitiveFactory` gained an optional `worldUvOrigin`: the
+  decoration chunk transform is offset by the chunk origin, so without
+  it a landmark whose parts straddle a 48 m boundary would restart its
+  tiling mid-object. Default is zero, so every other caller is
+  unaffected.
+- Verified: generator `--verify` (8/8 sheets), then EditMode
+  `CityParkSurfaceAppearanceTests` + `RuntimePrimitiveFactoryTests` —
+  37/37, including a new test asserting that park batches carry a park
+  sheet and that nothing else in the decoration layer carries any.
+- Fixed one bug of my own on the way: the test's builder-tint table
+  read the three decoration colours before their static initialisers
+  ran, so both new sheets were validated against black.
+- Pre-existing failure, unrelated and left alone:
+  `CityDecorationPlannerTests.BarSideYard_LeansPhoneBoothAndDumpsterOnTheBarWall`
+  fails on `HomeYardSitePlanner.TryCreate` — confirmed by stashing this
+  work and rerunning it on the clean tree.
+
 ## 2026-08-17 — The watchman moves to his doorstep, under a bulb
 
 - Stance: `CemeteryWatchmanPlan` now reads `cemetery-lodge-step` and

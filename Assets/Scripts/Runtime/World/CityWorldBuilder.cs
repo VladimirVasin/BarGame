@@ -217,13 +217,7 @@ namespace BarPromenade
                 CitySurfaceKind.BuildableGround,
                 Color.white,
                 true);
-            parkLawn = CityTerrainSurfaceWorldBuilder.Build(
-                "Park Lawn",
-                surfaces,
-                layout,
-                CitySurfaceKind.ParkGround,
-                ParkGrass,
-                false);
+            parkLawn = BuildParkLawn(surfaces, layout);
             CityTerrainSurfaceWorldBuilder.Build(
                 "Yard Ground",
                 surfaces,
@@ -284,6 +278,37 @@ namespace BarPromenade
                     footprint.height));
         }
 
+        /// <summary>
+        /// The park's continuous ground. It is the one terrain surface
+        /// that does not use the city soil sheet: trodden turf on its
+        /// own metre pitch, tinted with the green the flat lawn always
+        /// had. Null when the layout has no park cells.
+        /// </summary>
+        internal static GameObject BuildParkLawn(
+            Transform parent,
+            CityLayout layout)
+        {
+            GameObject lawn = CityTerrainSurfaceWorldBuilder.Build(
+                "Park Lawn",
+                parent,
+                layout,
+                CitySurfaceKind.ParkGround,
+                ParkGrass,
+                false,
+                CityParkSurfaceAppearance
+                    .GetRecipe(CityParkSurfaceKind.Lawn)
+                    .MetersPerTile);
+            if (lawn != null)
+            {
+                CityParkSurfaceAppearance.ApplyCombined(
+                    lawn.GetComponent<Renderer>(),
+                    CityParkSurfaceKind.Lawn,
+                    ParkGrass);
+            }
+
+            return lawn;
+        }
+
         private static List<Rect> CreateSurfacePatches(
             CityLayout layout,
             CitySurfaceDescriptor surface)
@@ -315,8 +340,13 @@ namespace BarPromenade
                 plan.ParkPathGeometry,
                 CityExteriorAppearance.ParkPath,
                 true,
-                null,
-                null);
+                CityParkSurfaceAppearance
+                    .GetRecipe(CityParkSurfaceKind.Path)
+                    .MetersPerTile,
+                renderer => CityParkSurfaceAppearance.ApplyCombined(
+                    renderer,
+                    CityParkSurfaceKind.Path,
+                    CityExteriorAppearance.ParkPath));
             BuildOrientedSurfaceBoxesIfAny(
                 "Sidewalk Surfaces",
                 roads,
@@ -401,7 +431,7 @@ namespace BarPromenade
             }
         }
 
-        private static GameObject BuildPark(
+        internal static GameObject BuildPark(
             Transform parent,
             CityLayout layout,
             GameObject parkLawn)
@@ -429,14 +459,22 @@ namespace BarPromenade
                  regionIndex++)
             {
                 CityParkRegionPlan region = plan.Regions[regionIndex];
-                CityTerrainSurfaceWorldBuilder.BuildConformingDisc(
-                    $"Park Plaza {regionIndex + 1}",
-                    park,
-                    layout,
-                    region.PlazaPosition,
-                    ParkPlazaRadius,
-                    ParkPlazaTopOffset,
-                    ParkPlazaThickness,
+                GameObject plaza =
+                    CityTerrainSurfaceWorldBuilder.BuildConformingDisc(
+                        $"Park Plaza {regionIndex + 1}",
+                        park,
+                        layout,
+                        region.PlazaPosition,
+                        ParkPlazaRadius,
+                        ParkPlazaTopOffset,
+                        ParkPlazaThickness,
+                        ParkPlaza,
+                        CityParkSurfaceAppearance
+                            .GetRecipe(CityParkSurfaceKind.Plaza)
+                            .MetersPerTile);
+                CityParkSurfaceAppearance.ApplyCombined(
+                    plaza.GetComponent<Renderer>(),
+                    CityParkSurfaceKind.Plaza,
                     ParkPlaza);
             }
 
@@ -468,15 +506,17 @@ namespace BarPromenade
                 collider.size = new Vector3(0.62f, 2.3f, 0.62f);
             }
 
-            BuildCombinedBoxesIfAny(
+            BuildParkSurfaceBoxesIfAny(
                 "Park Tree Trunks",
                 park,
                 trunks,
+                CityParkSurfaceKind.Bark,
                 ParkTrunk);
-            BuildCombinedBoxesIfAny(
+            BuildParkSurfaceBoxesIfAny(
                 "Park Tree Canopies",
                 park,
                 canopies,
+                CityParkSurfaceKind.Foliage,
                 ParkCanopy);
 
             var benchParts =
@@ -497,10 +537,11 @@ namespace BarPromenade
                     new Vector3(0.18f, 0.60f, 0.46f)));
             }
 
-            BuildCombinedBoxesIfAny(
+            BuildParkSurfaceBoxesIfAny(
                 "Park Benches",
                 park,
                 benchParts,
+                CityParkSurfaceKind.Timber,
                 ParkBench);
             CityStaticCollisionBuilder.AddParkBenchColliders(
                 park,
@@ -559,10 +600,11 @@ namespace BarPromenade
                     region.Center.y);
             }
 
-            BuildCombinedBoxesIfAny(
+            BuildParkSurfaceBoxesIfAny(
                 "Park Boundary Hedges",
                 parent,
                 hedges,
+                CityParkSurfaceKind.Foliage,
                 ParkHedge);
             CityStaticCollisionBuilder.AddColliderGroup(
                 parent,
@@ -1907,6 +1949,39 @@ namespace BarPromenade
                 parent,
                 boxes,
                 true);
+        }
+
+        /// <summary>
+        /// One batched group of upright park objects - trunks, canopies,
+        /// bench timbers, hedge runs - textured from the park's own
+        /// packaged sheets. The mesh is unwrapped per face at the
+        /// recipe's metre pitch, so a long hedge shows leaves along its
+        /// whole length instead of one line of the sheet stretched flat.
+        /// </summary>
+        private static void BuildParkSurfaceBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes,
+            CityParkSurfaceKind kind,
+            Color color)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject group = RuntimePrimitiveFactory.CreateCombinedBoxes(
+                name,
+                parent,
+                boxes,
+                color,
+                false,
+                CityParkSurfaceAppearance.GetRecipe(kind).MetersPerTile,
+                CityParkSurfaceAppearance.GetUvMode(kind));
+            CityParkSurfaceAppearance.ApplyCombined(
+                group.GetComponent<Renderer>(),
+                kind,
+                color);
         }
 
         private static void BuildCombinedBoxesIfAny(

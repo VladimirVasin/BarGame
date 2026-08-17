@@ -1,0 +1,230 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityParkLawnAlbedo",
+      "grammar": "park_lawn",
+      "resourcePath": "Textures/CityParkLawnAlbedo",
+      "meanLinearLuminance": 0.519854,
+      "albedoCompensation": 1.394,
+      "brightnessError": 0.036423,
+      "metersPerTile": 3.0,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.677311,
+      "tints": {
+        "CityWorldBuilder.ParkGrass": [
+          0.16,
+          0.3,
+          0.18
+        ]
+      },
+      "edgeDelta": 3.7093,
+      "seamRatio": 0.841,
+      "contrast": 87,
+      "channelRatio": 1.0419,
+      "sha256": "D2E0F9EDD27919A823151235690C1EDC58A84829273DBB75394057547E93BAD2"
+    },
+    {
+      "key": "CityParkPathAlbedo",
+      "grammar": "park_path",
+      "resourcePath": "Textures/CityParkPathAlbedo",
+      "meanLinearLuminance": 0.499681,
+      "albedoCompensation": 1.3965,
+      "brightnessError": 0.022532,
+      "metersPerTile": 2.2,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.693442,
+      "tints": {
+        "CityExteriorAppearance.ParkPath": [
+          0.39,
+          0.34,
+          0.24
+        ]
+      },
+      "edgeDelta": 5.2209,
+      "seamRatio": 1.0255,
+      "contrast": 82,
+      "channelRatio": 1.0429,
+      "sha256": "D12E2040B54A055062463574D4C05D3B3D8956132AA3038DE0C65B52C0D99226"
+    },
+    {
+      "key": "CityParkPlazaAlbedo",
+      "grammar": "park_plaza",
+      "resourcePath": "Textures/CityParkPlazaAlbedo",
+      "meanLinearLuminance": 0.499604,
+      "albedoCompensation": 1.391,
+      "brightnessError": 0.011846,
+      "metersPerTile": 2.8,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.719129,
+      "tints": {
+        "CityWorldBuilder.ParkPlaza": [
+          0.38,
+          0.35,
+          0.29
+        ]
+      },
+      "edgeDelta": 2.7274,
+      "seamRatio": 1.3538,
+      "contrast": 64,
+      "channelRatio": 1.0146,
+      "sha256": "457DC76E7032A4914132555C4446ED1E35CBEB2D09EB252EB7EF88DF1F333B73"
+    },
+    {
+      "key": "CityParkBarkAlbedo",
+      "grammar": "park_bark",
+      "resourcePath": "Textures/CityParkBarkAlbedo",
+      "meanLinearLuminance": 0.480177,
+      "albedoCompensation": 1.486,
+      "brightnessError": 0.042377,
+      "metersPerTile": 1.2,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.731545,
+      "tints": {
+        "CityWorldBuilder.ParkTrunk": [
+          0.2,
+          0.12,
+          0.07
+        ]
+      },
+      "edgeDelta": 4.6292,
+      "seamRatio": 0.6489,
+      "contrast": 89,
+      "channelRatio": 1.0534,
+      "sha256": "F297D53138A0505883D72DC8BDA62E06806FF0167F213AACC2EA2209F01F5EA3"
+    },
+    {
+      "key": "CityParkFoliageAlbedo",
+      "grammar": "park_foliage",
+      "resourcePath": "Textures/CityParkFoliageAlbedo",
+      "meanLinearLuminance": 0.549951,
+      "albedoCompensation": 1.3825,
+      "brightnessError": 0.066444,
+      "metersPerTile": 1.6,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.591897,
+      "tints": {
+        "CityWorldBuilder.ParkCanopy": [
+          0.12,
+          0.27,
+          0.15
+        ],
+        "CityWorldBuilder.ParkHedge": [
+          0.1,
+          0.24,
+          0.13
+        ]
+      },
+      "edgeDelta": 3.6947,
+      "seamRatio": 0.9686,
+      "contrast": 89,
+      "channelRatio": 1.0302,
+      "sha256": "DF1857C77CC28DEF21C5CAC920ADE077F9162146AA5C2B16CE921378C54D427B"
+    },
+    {
+      "key": "CityParkTimberAlbedo",
+      "grammar": "park_timber",
+      "resourcePath": "Textures/CityParkTimberAlbedo",
+      "meanLinearLuminance": 0.579988,
+      "albedoCompensation": 1.3345,
+      "brightnessError": 0.07304,
+      "metersPerTile": 1.4,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "exposure": 0.629787,
+      "tints": {
+        "CityWorldBuilder.ParkBench": [
+          0.38,
+          0.22,
+          0.1
+        ],
+        "CityDecorationWorldBuilder.MasonryColor": [
+          0.27,
+          0.22,
+          0.17
+        ],
+        "CityDecorationWorldBuilder.ResidentialColor": [
+          0.2,
+          0.29,
+          0.3
+        ],
+        "CityDecorationWorldBuilder.StreetColor": [
+          0.1,
+          0.12,
+          0.13
+        ]
+      },
+      "edgeDelta": 3.1401,
+      "seamRatio": 0.6982,
+      "contrast": 67,
+      "channelRatio": 1.0729,
+      "sha256": "F735131B2787A6227EB3702980220079046077BD5A38920EA7A7EF9CB75401D4"
+    },
+    {
+      "key": "CityParkStoneAlbedo",
+      "grammar": "park_stone",
+      "resourcePath": "Textures/CityParkStoneAlbedo",
+      "meanLinearLuminance": 0.580002,
+      "albedoCompensation": 1.3445,
+      "brightnessError": 0.061134,
+      "metersPerTile": 1.5,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.556286,
+      "tints": {
+        "CityDecorationWorldBuilder.MasonryColor": [
+          0.27,
+          0.22,
+          0.17
+        ],
+        "CityDecorationWorldBuilder.StreetColor": [
+          0.1,
+          0.12,
+          0.13
+        ]
+      },
+      "edgeDelta": 5.6232,
+      "seamRatio": 0.975,
+      "contrast": 68,
+      "channelRatio": 1.0229,
+      "sha256": "F88EBD98466BF1D82F327E0C94141C1E52D748D0E85062E32F9EBFC1349B12CF"
+    },
+    {
+      "key": "CityParkPaintedMetalAlbedo",
+      "grammar": "park_painted_metal",
+      "resourcePath": "Textures/CityParkPaintedMetalAlbedo",
+      "meanLinearLuminance": 0.579967,
+      "albedoCompensation": 1.341,
+      "brightnessError": 0.065311,
+      "metersPerTile": 1.2,
+      "smoothness": 0.16,
+      "metallic": 0.15,
+      "exposure": 0.555097,
+      "tints": {
+        "CityDecorationWorldBuilder.ResidentialColor": [
+          0.2,
+          0.29,
+          0.3
+        ],
+        "CityDecorationWorldBuilder.StreetColor": [
+          0.1,
+          0.12,
+          0.13
+        ]
+      },
+      "edgeDelta": 5.6799,
+      "seamRatio": 0.9705,
+      "contrast": 67,
+      "channelRatio": 1.0115,
+      "sha256": "6AB63A91A276D6563ACF0642D7684552A7CA5E7C8FA376F5CD5C3CD9D8CC9F4A"
+    }
+  ]
+}

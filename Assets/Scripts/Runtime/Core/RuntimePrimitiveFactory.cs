@@ -6,6 +6,22 @@ using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// How a combined mesh bakes its world-scale UVs.
+    ///
+    /// `XZPlanar` projects every vertex straight down, which is right
+    /// for ground, roads and paths but collapses a vertical face to a
+    /// single stretched line of the sheet. `BoxProjected` picks the
+    /// projection plane per face from its normal, so an upright hedge
+    /// run, a trunk or a bench leg tiles at the same metre pitch as
+    /// the ground it stands on.
+    /// </summary>
+    public enum RuntimeWorldUvMode
+    {
+        XZPlanar,
+        BoxProjected
+    }
+
     public readonly struct RuntimeOrientedBox
     {
         public RuntimeOrientedBox(
@@ -279,13 +295,15 @@ namespace BarPromenade
             IReadOnlyList<Bounds> boxes,
             Color color,
             bool collider,
-            float xzPlanarUvTileSize)
+            float worldUvTileSize,
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
+            Vector3 worldUvOrigin = default)
         {
-            if (!IsPositiveFinite(xzPlanarUvTileSize))
+            if (!IsPositiveFinite(worldUvTileSize))
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(xzPlanarUvTileSize),
-                    "XZ planar UV tile size must be finite and positive.");
+                    nameof(worldUvTileSize),
+                    "World UV tile size must be finite and positive.");
             }
 
             return CreateCombinedBoxes(
@@ -295,7 +313,9 @@ namespace BarPromenade
                 color,
                 null,
                 collider,
-                xzPlanarUvTileSize);
+                worldUvTileSize,
+                uvMode,
+                worldUvOrigin);
         }
 
         public static GameObject CreateCombinedOrientedBoxes(
@@ -304,18 +324,19 @@ namespace BarPromenade
             IReadOnlyList<RuntimeOrientedBox> boxes,
             Color color,
             bool collider = false,
-            float? xzPlanarUvTileSize = null)
+            float? worldUvTileSize = null,
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar)
         {
             if (boxes == null)
             {
                 throw new ArgumentNullException(nameof(boxes));
             }
 
-            if (xzPlanarUvTileSize.HasValue &&
-                !IsPositiveFinite(xzPlanarUvTileSize.Value))
+            if (worldUvTileSize.HasValue &&
+                !IsPositiveFinite(worldUvTileSize.Value))
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(xzPlanarUvTileSize));
+                    nameof(worldUvTileSize));
             }
 
             var transforms = new Matrix4x4[boxes.Count];
@@ -345,7 +366,8 @@ namespace BarPromenade
                 color,
                 null,
                 collider,
-                xzPlanarUvTileSize);
+                worldUvTileSize,
+                uvMode);
         }
 
         private static GameObject CreateCombinedBoxes(
@@ -355,7 +377,9 @@ namespace BarPromenade
             Color color,
             Material sharedMaterial,
             bool collider,
-            float? xzPlanarUvTileSize)
+            float? worldUvTileSize,
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
+            Vector3 worldUvOrigin = default)
         {
             if (boxes == null)
             {
@@ -394,7 +418,9 @@ namespace BarPromenade
                 color,
                 sharedMaterial,
                 collider,
-                xzPlanarUvTileSize);
+                worldUvTileSize,
+                uvMode,
+                worldUvOrigin);
         }
 
         private static GameObject CreateCombinedBoxTransforms(
@@ -404,7 +430,9 @@ namespace BarPromenade
             Color color,
             Material sharedMaterial,
             bool collider,
-            float? xzPlanarUvTileSize)
+            float? worldUvTileSize,
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
+            Vector3 worldUvOrigin = default)
         {
             if (transforms == null)
             {
@@ -453,11 +481,13 @@ namespace BarPromenade
                 true,
                 true,
                 false);
-            if (xzPlanarUvTileSize.HasValue)
+            if (worldUvTileSize.HasValue)
             {
-                ApplyXZPlanarUvs(
+                ApplyWorldUvs(
                     combinedMesh,
-                    xzPlanarUvTileSize.Value);
+                    worldUvTileSize.Value,
+                    uvMode,
+                    worldUvOrigin);
             }
 
             combinedMesh.RecalculateBounds();
@@ -475,22 +505,57 @@ namespace BarPromenade
             return result;
         }
 
-        private static void ApplyXZPlanarUvs(
+        private static void ApplyWorldUvs(
             Mesh mesh,
-            float tileSize)
+            float tileSize,
+            RuntimeWorldUvMode uvMode,
+            Vector3 worldUvOrigin)
         {
             Vector3[] vertices = mesh.vertices;
             var uvs = new Vector2[vertices.Length];
             float tilesPerMeter = 1f / tileSize;
+            Vector3[] normals =
+                uvMode == RuntimeWorldUvMode.BoxProjected
+                    ? mesh.normals
+                    : null;
+            bool boxProjected =
+                normals != null && normals.Length == vertices.Length;
             for (int index = 0; index < vertices.Length; index++)
             {
-                Vector3 vertex = vertices[index];
-                uvs[index] = new Vector2(
-                    vertex.x * tilesPerMeter,
-                    vertex.z * tilesPerMeter);
+                Vector3 vertex = vertices[index] + worldUvOrigin;
+                uvs[index] = boxProjected
+                    ? ProjectBoxUv(vertex, normals[index]) * tilesPerMeter
+                    : new Vector2(
+                        vertex.x * tilesPerMeter,
+                        vertex.z * tilesPerMeter);
             }
 
             mesh.uv = uvs;
+        }
+
+        /// <summary>
+        /// Chooses the projection plane from the face normal's dominant
+        /// axis, so every face of a box tiles at true metre scale: tops
+        /// take XZ, faces looking along X take ZY and faces looking
+        /// along Z take XY. Neighbouring boxes still share world
+        /// coordinates, so a batched run reads as one continuous
+        /// surface rather than a repeated per-box stamp.
+        /// </summary>
+        private static Vector2 ProjectBoxUv(
+            Vector3 vertex,
+            Vector3 normal)
+        {
+            float absoluteX = Mathf.Abs(normal.x);
+            float absoluteY = Mathf.Abs(normal.y);
+            float absoluteZ = Mathf.Abs(normal.z);
+            if (absoluteY >= absoluteX && absoluteY >= absoluteZ)
+            {
+                return new Vector2(vertex.x, vertex.z);
+            }
+
+            return absoluteX >= absoluteZ
+                ? new Vector2(vertex.z, vertex.y)
+                : new Vector2(vertex.x, vertex.y);
         }
 
         private static bool IsFinite(Vector3 value)

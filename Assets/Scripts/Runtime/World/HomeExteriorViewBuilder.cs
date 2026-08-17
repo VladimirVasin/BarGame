@@ -228,11 +228,10 @@ namespace BarPromenade
                 "Home Exterior Street Surfaces",
                 parent,
                 streets);
-            BuildCombinedBoxesIfAny(
+            BuildParkPathBoxesIfAny(
                 "Home Exterior Park Paths",
                 parent,
-                parkPaths,
-                CityExteriorAppearance.ParkPath);
+                parkPaths);
             BuildSidewalkSurfaceBoxesIfAny(
                 "Home Exterior Sidewalk Surfaces",
                 parent,
@@ -840,6 +839,37 @@ namespace BarPromenade
                 false);
         }
 
+        /// <summary>
+        /// The reconstructed view repeats City's park walk on the same
+        /// sheet at the same metre pitch, so a path seen from the
+        /// balcony is the surface the player walks on down there.
+        /// </summary>
+        private static void BuildParkPathBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<Bounds> boxes)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject surface =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    CityExteriorAppearance.ParkPath,
+                    false,
+                    CityParkSurfaceAppearance
+                        .GetRecipe(CityParkSurfaceKind.Path)
+                        .MetersPerTile);
+            CityParkSurfaceAppearance.ApplyCombined(
+                surface.GetComponent<Renderer>(),
+                CityParkSurfaceKind.Path,
+                CityExteriorAppearance.ParkPath);
+        }
+
         private static void BuildRoadSurfaceBoxesIfAny(
             string name,
             Transform parent,
@@ -904,24 +934,6 @@ namespace BarPromenade
                     CityExteriorAppearance.RoadMarkingTextureTileSize);
             CityExteriorAppearance.ApplyRoadMarkingSurface(
                 markings.GetComponent<Renderer>());
-        }
-
-        private static void BuildCombinedBoxesIfAny(
-            string name,
-            Transform parent,
-            IReadOnlyList<Bounds> boxes,
-            Color color)
-        {
-            if (boxes.Count == 0)
-            {
-                return;
-            }
-
-            RuntimePrimitiveFactory.CreateCombinedBoxes(
-                name,
-                parent,
-                boxes,
-                color);
         }
     }
 }

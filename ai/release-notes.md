@@ -6,6 +6,30 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — The park gets its own ground
+
+- Central Park is no longer a set of flat colours. The lawn is trodden
+  turf worn through to bare earth on the shortcuts people actually
+  take, the walks are a gritty sand-stone path with ruts and pressed
+  pebbles, and the two round plazas are laid stone slabs with dark
+  joints, chipped corners and hairline cracks.
+- The things standing in it are textured too: fibrous bark with knots
+  on the trunks, overlapping leaves in the canopies and the boundary
+  hedges, and long grain under flaked paint on the benches. A hedge
+  run now reads as leaf mass down its whole length instead of one
+  smeared band.
+- The park keeps exactly the colours it had — nothing turned brighter
+  or greyer, the surfaces just stopped being blank. Park paths seen
+  from the home balcony match the ones underfoot.
+- The four things the park was built around are textured too. The
+  fountain is weathered stone streaked by rain, with a darkened figure
+  on its pedestal and the basin water still a flat sheet. The
+  bandstand stands on stone, is floored and columned in board, and
+  roofed and railed in paint that has been redone too many times. The
+  chess tables are stone with a wooden playing surface and worn
+  benches, and the swings and their bench are chipped municipal paint
+  over steel with timber seats.
+
 ### 2026-08-17 — A bulb over the watchman's door
 
 - The cemetery watchman moved off his window and onto his own

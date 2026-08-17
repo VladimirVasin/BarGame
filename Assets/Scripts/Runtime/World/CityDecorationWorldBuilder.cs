@@ -132,7 +132,8 @@ namespace BarPromenade
                     AddToChunk(
                         chunks,
                         bounds,
-                        part.Style);
+                        part.Style,
+                        part.Surface);
                 }
 
                 if (homeContext == null)
@@ -1086,29 +1087,35 @@ namespace BarPromenade
             ICollection<DecorationPart> parts)
         {
             const float radius = 3.20f;
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.14f, 0f,
+            const CityParkSurfaceKind stone = CityParkSurfaceKind.Stone;
+            Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.14f, 0f,
                 radius * 2f, 0.28f, radius * 2f);
-            Add(parts, c, BatchStyle.Masonry, -radius + 0.20f, 0.48f, 0f,
-                0.40f, 0.68f, radius * 2f);
-            Add(parts, c, BatchStyle.Masonry, radius - 0.20f, 0.48f, 0f,
-                0.40f, 0.68f, radius * 2f);
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.48f, -radius + 0.20f,
-                radius * 2f, 0.68f, 0.40f);
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.48f, radius - 0.20f,
-                radius * 2f, 0.68f, 0.40f);
+            Add(parts, c, BatchStyle.Masonry, stone, -radius + 0.20f,
+                0.48f, 0f, 0.40f, 0.68f, radius * 2f);
+            Add(parts, c, BatchStyle.Masonry, stone, radius - 0.20f,
+                0.48f, 0f, 0.40f, 0.68f, radius * 2f);
+            Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.48f,
+                -radius + 0.20f, radius * 2f, 0.68f, 0.40f);
+            Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.48f,
+                radius - 0.20f, radius * 2f, 0.68f, 0.40f);
+            // The standing water stays a flat plane, like the river,
+            // the lake and the sea: a texture here would read as silt
+            // on glass rather than a weak fountain still running.
             Add(parts, c, BatchStyle.Residential, 0f, 0.32f, 0f,
                 radius * 1.62f, 0.08f, radius * 1.62f);
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.88f, 0f,
+            Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.88f, 0f,
                 1.35f, 1.12f, 1.35f);
-            Add(parts, c, BatchStyle.Masonry, 0f, 1.74f, 0f,
+            Add(parts, c, BatchStyle.Masonry, stone, 0f, 1.74f, 0f,
                 0.72f, 0.62f, 0.72f);
-            Add(parts, c, BatchStyle.Street, 0f, 2.85f, 0f,
+            // The figure keeps its near-black street tone - a darkened
+            // monument, not a pale one - over the same stone sheet.
+            Add(parts, c, BatchStyle.Street, stone, 0f, 2.85f, 0f,
                 0.62f, 1.62f, 0.48f);
-            Add(parts, c, BatchStyle.Street, 0f, 3.88f, 0f,
+            Add(parts, c, BatchStyle.Street, stone, 0f, 3.88f, 0f,
                 0.58f, 0.58f, 0.58f);
-            Add(parts, c, BatchStyle.Street, -0.62f, 3.05f, 0f,
+            Add(parts, c, BatchStyle.Street, stone, -0.62f, 3.05f, 0f,
                 0.78f, 0.18f, 0.26f);
-            Add(parts, c, BatchStyle.Street, 0.62f, 3.05f, 0f,
+            Add(parts, c, BatchStyle.Street, stone, 0.62f, 3.05f, 0f,
                 0.78f, 0.18f, 0.26f);
         }
 
@@ -1117,31 +1124,34 @@ namespace BarPromenade
             ICollection<DecorationPart> parts)
         {
             float width = 6.80f;
-            Add(parts, c, BatchStyle.Masonry, 0f, 0.18f, 0f,
-                width, 0.36f, 5.60f);
-            Add(parts, c, BatchStyle.Residential, 0f, 0.45f, 0f,
+            const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
+            const CityParkSurfaceKind metal =
+                CityParkSurfaceKind.PaintedMetal;
+            Add(parts, c, BatchStyle.Masonry, CityParkSurfaceKind.Stone,
+                0f, 0.18f, 0f, width, 0.36f, 5.60f);
+            Add(parts, c, BatchStyle.Residential, timber, 0f, 0.45f, 0f,
                 width * 0.92f, 0.18f, 5.10f);
             for (int xSide = -1; xSide <= 1; xSide += 2)
             {
                 for (int zSide = -1; zSide <= 1; zSide += 2)
                 {
-                    Add(parts, c, BatchStyle.Masonry,
+                    Add(parts, c, BatchStyle.Masonry, timber,
                         xSide * width * 0.43f, 2.25f, zSide * 2.25f,
                         0.28f, 3.60f, 0.28f);
                 }
             }
 
-            Add(parts, c, BatchStyle.Residential, 0f, 4.15f, 0f,
+            Add(parts, c, BatchStyle.Residential, timber, 0f, 4.15f, 0f,
                 width + 0.55f, 0.30f, 6.15f);
-            Add(parts, c, BatchStyle.Street, 0f, 4.55f, 0f,
+            Add(parts, c, BatchStyle.Street, metal, 0f, 4.55f, 0f,
                 width * 0.78f, 0.50f, 4.90f);
-            Add(parts, c, BatchStyle.Street, 0f, 5.15f, 0f,
+            Add(parts, c, BatchStyle.Street, metal, 0f, 5.15f, 0f,
                 0.34f, 0.90f, 4.25f);
-            Add(parts, c, BatchStyle.Street, -2.15f, 1.14f, -2.34f,
+            Add(parts, c, BatchStyle.Street, metal, -2.15f, 1.14f, -2.34f,
                 1.85f, 0.12f, 0.12f);
-            Add(parts, c, BatchStyle.Street, 0f, 1.14f, -2.34f,
+            Add(parts, c, BatchStyle.Street, metal, 0f, 1.14f, -2.34f,
                 1.85f, 0.12f, 0.12f);
-            Add(parts, c, BatchStyle.Street, 2.15f, 1.14f, -2.34f,
+            Add(parts, c, BatchStyle.Street, metal, 2.15f, 1.14f, -2.34f,
                 1.85f, 0.12f, 0.12f);
         }
 
@@ -1152,17 +1162,22 @@ namespace BarPromenade
             for (int table = -1; table <= 1; table += 2)
             {
                 float x = table * ChessTableOffset;
-                Add(parts, c, BatchStyle.Masonry, x, 0.82f, 0f,
+                Add(parts, c, BatchStyle.Masonry,
+                    CityParkSurfaceKind.Stone, x, 0.82f, 0f,
                     1.20f, 0.14f, 1.20f);
-                Add(parts, c, BatchStyle.Masonry, x, 0.40f, 0f,
+                Add(parts, c, BatchStyle.Masonry,
+                    CityParkSurfaceKind.Stone, x, 0.40f, 0f,
                     0.28f, 0.80f, 0.28f);
-                Add(parts, c, BatchStyle.Residential, x, 0.90f, 0f,
+                Add(parts, c, BatchStyle.Residential,
+                    CityParkSurfaceKind.Timber, x, 0.90f, 0f,
                     0.92f, 0.05f, 0.92f);
-                Add(parts, c, BatchStyle.Street, x,
+                Add(parts, c, BatchStyle.Street,
+                    CityParkSurfaceKind.Timber, x,
                     ChessBenchSeatCenterY, -ChessBenchZ,
                     ChessBenchWidth, ChessBenchSeatThickness,
                     ChessBenchDepth);
-                Add(parts, c, BatchStyle.Street, x,
+                Add(parts, c, BatchStyle.Street,
+                    CityParkSurfaceKind.Timber, x,
                     ChessBenchSeatCenterY, ChessBenchZ,
                     ChessBenchWidth, ChessBenchSeatThickness,
                     ChessBenchDepth);
@@ -1173,36 +1188,70 @@ namespace BarPromenade
             RecipeContext c,
             ICollection<DecorationPart> parts)
         {
+            const CityParkSurfaceKind metal =
+                CityParkSurfaceKind.PaintedMetal;
+            const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
             for (int xSide = -1; xSide <= 1; xSide += 2)
             {
                 for (int zSide = -1; zSide <= 1; zSide += 2)
                 {
-                    Add(parts, c, BatchStyle.Residential,
+                    Add(parts, c, BatchStyle.Residential, metal,
                         xSide * 2.05f, 1.45f, zSide * 0.72f,
                         0.18f, 2.90f, 0.18f);
                 }
             }
 
-            Add(parts, c, BatchStyle.Residential, 0f, 2.82f, 0f,
+            Add(parts, c, BatchStyle.Residential, metal, 0f, 2.82f, 0f,
                 4.35f, 0.22f, 0.22f);
             for (int swing = -1; swing <= 1; swing += 2)
             {
                 float x = swing * 0.86f;
-                Add(parts, c, BatchStyle.Street, x - 0.28f, 1.82f, 0f,
-                    0.07f, 1.84f, 0.07f);
-                Add(parts, c, BatchStyle.Street, x + 0.28f, 1.82f, 0f,
-                    0.07f, 1.84f, 0.07f);
-                Add(parts, c, BatchStyle.Masonry, x, 0.90f, 0f,
+                Add(parts, c, BatchStyle.Street, metal, x - 0.28f,
+                    1.82f, 0f, 0.07f, 1.84f, 0.07f);
+                Add(parts, c, BatchStyle.Street, metal, x + 0.28f,
+                    1.82f, 0f, 0.07f, 1.84f, 0.07f);
+                Add(parts, c, BatchStyle.Masonry, timber, x, 0.90f, 0f,
                     0.72f, 0.12f, 0.34f);
             }
 
-            Add(parts, c, BatchStyle.Masonry, 0f,
+            Add(parts, c, BatchStyle.Masonry, timber, 0f,
                 PlaygroundBenchSeatCenterY, PlaygroundBenchZ,
                 PlaygroundBenchWidth, PlaygroundBenchSeatThickness,
                 PlaygroundBenchDepth);
-            Add(parts, c, BatchStyle.Street, 0f, 0.34f,
+            Add(parts, c, BatchStyle.Street, metal, 0f, 0.34f,
                 PlaygroundBenchZ,
                 0.42f, 0.68f, 0.42f);
+        }
+
+        /// <summary>
+        /// A park-landmark part: same batch colour as before, but
+        /// drawn from the park's own packaged sheet instead of a flat
+        /// fill.
+        /// </summary>
+        private static void Add(
+            ICollection<DecorationPart> parts,
+            RecipeContext context,
+            BatchStyle style,
+            CityParkSurfaceKind surface,
+            float x,
+            float y,
+            float z,
+            float width,
+            float height,
+            float depth)
+        {
+            Add(
+                parts,
+                context,
+                style,
+                surface,
+                x,
+                y,
+                z,
+                width,
+                height,
+                depth,
+                true);
         }
 
         private static void Add(
@@ -1215,6 +1264,33 @@ namespace BarPromenade
             float width,
             float height,
             float depth)
+        {
+            Add(
+                parts,
+                context,
+                style,
+                default,
+                x,
+                y,
+                z,
+                width,
+                height,
+                depth,
+                false);
+        }
+
+        private static void Add(
+            ICollection<DecorationPart> parts,
+            RecipeContext context,
+            BatchStyle style,
+            CityParkSurfaceKind surface,
+            float x,
+            float y,
+            float z,
+            float width,
+            float height,
+            float depth,
+            bool textured)
         {
             float streetDepthScale = context.StreetDepthScale;
             z *= streetDepthScale;
@@ -1229,13 +1305,17 @@ namespace BarPromenade
                 : new Vector3(width, height, depth);
             parts.Add(new DecorationPart(
                 new Bounds(center, size),
-                style));
+                style,
+                textured
+                    ? surface
+                    : (CityParkSurfaceKind?)null));
         }
 
         private static void AddToChunk(
             IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
             Bounds bounds,
-            BatchStyle style)
+            BatchStyle style,
+            CityParkSurfaceKind? surface)
         {
             var coordinate = new ChunkCoordinate(
                 Mathf.FloorToInt(bounds.center.x / SpatialChunkSize),
@@ -1251,6 +1331,7 @@ namespace BarPromenade
             Vector3 localCenter = bounds.center - coordinate.Origin;
             geometry.Add(
                 style,
+                surface,
                 new Bounds(localCenter, bounds.size));
         }
 
@@ -1329,6 +1410,54 @@ namespace BarPromenade
                             GetBatchColor(style));
                     }
                 }
+
+                BuildParkBatches(chunk, coordinate, geometry);
+            }
+        }
+
+        /// <summary>
+        /// The park landmarks' batches. They keep the batch colour they
+        /// always had and add the park's packaged sheet over it, box
+        /// projected at the sheet's metre pitch. The chunk transform is
+        /// offset by the chunk origin, so the origin goes back into the
+        /// UVs: a fountain whose kerb and basin land in two different
+        /// chunks still tiles as one continuous stone.
+        /// </summary>
+        private static void BuildParkBatches(
+            Transform chunk,
+            ChunkCoordinate coordinate,
+            ChunkGeometry geometry)
+        {
+            List<ParkBatchKey> keys = geometry.GetSortedParkKeys();
+            for (int index = 0; index < keys.Count; index++)
+            {
+                ParkBatchKey key = keys[index];
+                BatchGeometry batch = geometry.GetPark(key);
+                if (batch.Boxes.Count == 0)
+                {
+                    continue;
+                }
+
+                Color color = GetBatchColor(key.Style);
+                GameObject result =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        $"Park {key.Surface} {key.Style} Details",
+                        chunk,
+                        batch.Boxes,
+                        color,
+                        false,
+                        CityParkSurfaceAppearance
+                            .GetRecipe(key.Surface)
+                            .MetersPerTile,
+                        CityParkSurfaceAppearance.GetUvMode(key.Surface),
+                        coordinate.Origin);
+                Renderer renderer = result.GetComponent<Renderer>();
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                CityParkSurfaceAppearance.ApplyCombined(
+                    renderer,
+                    key.Surface,
+                    color);
             }
         }
 
@@ -1527,14 +1656,24 @@ namespace BarPromenade
         {
             public DecorationPart(
                 Bounds bounds,
-                BatchStyle style)
+                BatchStyle style,
+                CityParkSurfaceKind? surface)
             {
                 Bounds = bounds;
                 Style = style;
+                Surface = surface;
             }
 
             public Bounds Bounds { get; }
             public BatchStyle Style { get; }
+
+            /// <summary>
+            /// The packaged park sheet this part is made of, when it
+            /// belongs to one of the four park landmarks. Null for
+            /// every other decoration, which stays on its flat batch
+            /// colour.
+            /// </summary>
+            public CityParkSurfaceKind? Surface { get; }
         }
 
         private sealed class BatchGeometry
@@ -1547,13 +1686,37 @@ namespace BarPromenade
             private readonly BatchGeometry[] batches =
                 new BatchGeometry[BatchStyleCount];
 
+            // Park landmark parts batch on a second axis: the same
+            // seven colours, split again by the packaged sheet they
+            // are drawn from. Sorted on read so a chunk always emits
+            // its renderers in the same order.
+            private readonly Dictionary<ParkBatchKey, BatchGeometry>
+                parkBatches =
+                    new Dictionary<ParkBatchKey, BatchGeometry>();
+
             public List<Bounds> CollisionBoxes { get; } =
                 new List<Bounds>();
 
             public void Add(
                 BatchStyle style,
+                CityParkSurfaceKind? surface,
                 Bounds bounds)
             {
+                if (surface.HasValue)
+                {
+                    var key = new ParkBatchKey(style, surface.Value);
+                    if (!parkBatches.TryGetValue(
+                            key,
+                            out BatchGeometry parkBatch))
+                    {
+                        parkBatch = new BatchGeometry();
+                        parkBatches.Add(key, parkBatch);
+                    }
+
+                    parkBatch.Boxes.Add(bounds);
+                    return;
+                }
+
                 int index = (int)style;
                 BatchGeometry batch = batches[index];
                 if (batch == null)
@@ -1568,6 +1731,59 @@ namespace BarPromenade
             public BatchGeometry Get(BatchStyle style)
             {
                 return batches[(int)style];
+            }
+
+            public List<ParkBatchKey> GetSortedParkKeys()
+            {
+                var keys = new List<ParkBatchKey>(parkBatches.Keys);
+                keys.Sort(ParkBatchKey.Compare);
+                return keys;
+            }
+
+            public BatchGeometry GetPark(ParkBatchKey key)
+            {
+                return parkBatches[key];
+            }
+        }
+
+        private readonly struct ParkBatchKey : IEquatable<ParkBatchKey>
+        {
+            public ParkBatchKey(
+                BatchStyle style,
+                CityParkSurfaceKind surface)
+            {
+                Style = style;
+                Surface = surface;
+            }
+
+            public BatchStyle Style { get; }
+            public CityParkSurfaceKind Surface { get; }
+
+            public static int Compare(
+                ParkBatchKey left,
+                ParkBatchKey right)
+            {
+                int surfaceComparison =
+                    ((int)left.Surface).CompareTo((int)right.Surface);
+                return surfaceComparison != 0
+                    ? surfaceComparison
+                    : ((int)left.Style).CompareTo((int)right.Style);
+            }
+
+            public bool Equals(ParkBatchKey other)
+            {
+                return Style == other.Style &&
+                       Surface == other.Surface;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is ParkBatchKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return ((int)Style * 397) ^ (int)Surface;
             }
         }
 

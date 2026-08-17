@@ -229,6 +229,97 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The upright case: a tall thin box textured by the planar
+        /// projection would collapse its long side to a single line of
+        /// the sheet, because V would be the constant world Z of that
+        /// face. Box projection reads the face normal instead, so the
+        /// side spans its true metre height and neighbouring boxes
+        /// still share world coordinates.
+        /// </summary>
+        [Test]
+        public void CombinedBoxesCanUseBoxProjectedUvsOnUprightFaces()
+        {
+            const float tileSize = 1.6f;
+            Bounds[] boxes =
+            {
+                new Bounds(
+                    new Vector3(4f, 0.58f, -3f),
+                    new Vector3(18f, 1.16f, 0.72f))
+            };
+            GameObject combined =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Upright Hedge",
+                    null,
+                    boxes,
+                    Color.green,
+                    false,
+                    tileSize,
+                    RuntimeWorldUvMode.BoxProjected);
+
+            try
+            {
+                Mesh mesh =
+                    combined.GetComponent<MeshFilter>().sharedMesh;
+                Vector3[] vertices = mesh.vertices;
+                Vector3[] normals = mesh.normals;
+                Vector2[] uvs = mesh.uv;
+
+                Assert.That(uvs, Has.Length.EqualTo(vertices.Length));
+                Assert.That(
+                    normals,
+                    Has.Length.EqualTo(vertices.Length));
+                float minimumSideV = float.MaxValue;
+                float maximumSideV = float.MinValue;
+                for (int index = 0; index < vertices.Length; index++)
+                {
+                    Vector3 vertex = vertices[index];
+                    Vector3 normal = normals[index];
+                    float absoluteX = Mathf.Abs(normal.x);
+                    float absoluteY = Mathf.Abs(normal.y);
+                    float absoluteZ = Mathf.Abs(normal.z);
+                    Vector2 expected;
+                    if (absoluteY >= absoluteX && absoluteY >= absoluteZ)
+                    {
+                        expected = new Vector2(vertex.x, vertex.z);
+                    }
+                    else if (absoluteX >= absoluteZ)
+                    {
+                        expected = new Vector2(vertex.z, vertex.y);
+                    }
+                    else
+                    {
+                        expected = new Vector2(vertex.x, vertex.y);
+                        minimumSideV = Mathf.Min(
+                            minimumSideV,
+                            uvs[index].y);
+                        maximumSideV = Mathf.Max(
+                            maximumSideV,
+                            uvs[index].y);
+                    }
+
+                    Assert.That(
+                        uvs[index].x,
+                        Is.EqualTo(expected.x / tileSize)
+                            .Within(0.0001f));
+                    Assert.That(
+                        uvs[index].y,
+                        Is.EqualTo(expected.y / tileSize)
+                            .Within(0.0001f));
+                }
+
+                Assert.That(
+                    maximumSideV - minimumSideV,
+                    Is.EqualTo(1.16f / tileSize).Within(0.0001f),
+                    "The long side must span its own height in tiles, " +
+                    "not collapse to one line of the sheet.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(combined);
+            }
+        }
+
         [TestCase(
             ExteriorSurfaceKind.Ground,
             "Textures/CityGroundSoilAlbedo",

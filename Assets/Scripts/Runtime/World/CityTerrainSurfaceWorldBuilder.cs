@@ -24,7 +24,8 @@ namespace BarPromenade
             CityLayout layout,
             CitySurfaceKind kind,
             Color color,
-            bool applyGroundAppearance)
+            bool applyGroundAppearance,
+            float? worldUvTileSize = null)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -43,6 +44,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            float tileSize = ResolveTileSize(worldUvTileSize);
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
             var uvs = new List<Vector2>();
@@ -70,6 +72,7 @@ namespace BarPromenade
                         layout,
                         surface,
                         patches[patchIndex],
+                        tileSize,
                         vertices,
                         normals,
                         uvs,
@@ -115,6 +118,32 @@ namespace BarPromenade
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
             return result;
+        }
+
+        /// <summary>
+        /// The metre pitch this terrain mesh bakes into its UVs. Most
+        /// surfaces share the city ground sheet's pitch; a surface with
+        /// its own packaged sheet - the park lawn, its plazas - passes
+        /// the pitch that sheet was measured at.
+        /// </summary>
+        private static float ResolveTileSize(float? worldUvTileSize)
+        {
+            if (!worldUvTileSize.HasValue)
+            {
+                return CityExteriorAppearance.GroundTextureTileSize;
+            }
+
+            float tileSize = worldUvTileSize.Value;
+            if (tileSize <= 0f ||
+                float.IsNaN(tileSize) ||
+                float.IsInfinity(tileSize))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(worldUvTileSize),
+                    "A terrain UV tile size must be finite and positive.");
+            }
+
+            return tileSize;
         }
 
         internal static List<Rect> CreateSurfacePatches(
@@ -168,7 +197,8 @@ namespace BarPromenade
             float radius,
             float topOffset,
             float thickness,
-            Color color)
+            Color color,
+            float? worldUvTileSize = null)
         {
             if (parent == null)
             {
@@ -194,8 +224,7 @@ namespace BarPromenade
             var normals = new List<Vector3>(vertices.Capacity);
             var uvs = new List<Vector2>(vertices.Capacity);
             var triangles = new List<int>(DiscSegments * DiscRings * 12);
-            float tilesPerMeter =
-                1f / CityExteriorAppearance.GroundTextureTileSize;
+            float tilesPerMeter = 1f / ResolveTileSize(worldUvTileSize);
 
             AppendDiscSurfaceVertices(
                 layout,
@@ -473,6 +502,7 @@ namespace BarPromenade
             CityLayout layout,
             CitySurfaceDescriptor surface,
             Rect patch,
+            float worldUvTileSize,
             ICollection<Vector3> vertices,
             ICollection<Vector3> normals,
             ICollection<Vector2> uvs,
@@ -511,8 +541,7 @@ namespace BarPromenade
                 zAnchors);
 
             int firstVertex = vertices.Count;
-            float tilesPerMeter =
-                1f / CityExteriorAppearance.GroundTextureTileSize;
+            float tilesPerMeter = 1f / worldUvTileSize;
             for (int zIndex = 0;
                  zIndex < zCoordinates.Count;
                  zIndex++)
