@@ -6,6 +6,54 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-17 — The watchman moves to his doorstep, under a bulb
+
+- Stance: `CemeteryWatchmanPlan` now reads `cemetery-lodge-step` and
+  `cemetery-lodge-wall-rear` instead of the window board. The rear
+  wall is a slab, so the axis it is thin along is the doorway's
+  normal (signed away from the booth by the base→step vector); he
+  stands `DoorStandOffMeters` = 0.75 m past the step's centre and
+  `AlleyStepMeters` = 0.30 m aside along the wall toward the alley —
+  depth 4.025 / lateral 7.12 in the lodge frame. Outside the roof
+  overhang (3.35), in front of the 35°-ajar leaf rather than behind
+  it, 2.05 m from the base centre so the "right beside his booth"
+  guard holds.
+- Facing: no longer the gate arch. From behind the lodge that line
+  clipped his own rear corner at lateral 5.65, so he was staring into
+  his wall. The heading is now the alley: the arch vector with the
+  door normal projected out of it, i.e. straight along the rear wall
+  toward the main alley every visitor walks up. Arch-less plans fall
+  back to the door normal.
+- Porch bulb: `CityCemeteryLampDescriptor` gained a
+  `CityCemeteryLampKind` (Alley | LodgePorch) and `AddLodge` appends
+  `cemetery-lodge-lamp` at depth 3.20 / lateral 6.60 — under the eave
+  (3.35), clear of the wall face (3.10) so the swung leaf passes in
+  front of it, and beside the opening over the solid 1.36 m stretch
+  of rear wall (5.60–6.96); the far jamb has 0.12 m to the corner and
+  nothing to carry a bracket. World builder branches on kind: stem
+  into the eave, tin hood, emissive bulb at 2.01 m, warm point light
+  (1.00/0.80/0.55) with its own halo. Lodge part count stays 15 — the
+  fixture is built, not batched, exactly like the alley mantles.
+- Made it actually light him: intensity 30 → 110 at night with range
+  8 (the alley mantle is 42, the drying-yard floodlight 150 — at 30
+  the bulb glowed and lit nothing), `ForcePixel` kept so it wins the
+  URP asset's `AdditionalLightsPerObjectLimit: 4` beside him. Pedestrian
+  material is URP/Lit, so the point light does reach him.
+- Around-the-clock: `CityNightSiteLightRegistry.Register` gained a
+  `dayIntensity` overload — intensity lerps day→night instead of
+  scaling to zero, and the light stays enabled when that floor is
+  non-zero. The porch bulb sits at 25 by day, the only fixture in the
+  city that never goes out; its fog halo still fades with the night
+  factor. Every existing caller keeps the old behaviour through the
+  three-argument overload.
+- Validation: the alley 3–9 lamp rule now counts alley lamps only,
+  plus a new invariant — a plan has a porch lamp iff it has a lodge.
+- Verification: bundled-dotnet compiles green (runtime + EditMode).
+  EditMode run is PENDING — the Unity editor was reopened mid-task
+  and batchmode cannot share the project; the previous placement's
+  run was 13/13 with the full suite at 1045/1059 (the 14 failures are
+  pre-existing, confirmed against a stashed clean tree).
+
 ## 2026-08-17 — The gate lodge and the snide cemetery watchman
 
 - Booth: new `CityCemeteryPartKind.Lodge` + `AddLodge` in the

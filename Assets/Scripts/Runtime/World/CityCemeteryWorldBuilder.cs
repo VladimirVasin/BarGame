@@ -56,6 +56,20 @@ namespace BarPromenade
         private static readonly Color LampIronColor =
             new Color(0.060f, 0.070f, 0.070f);
 
+        // The lodge's porch bulb is the one warm light in the whole
+        // plot: a domestic tungsten note against the gas-mantle green,
+        // short-ranged so it reads as the watchman's own doorway lamp
+        // and not a second alley fixture. It has to actually throw
+        // light on the man standing under it, so it sits at the
+        // floodlight's end of the scale rather than the alley lamp's —
+        // and unlike every other fixture in the city it never goes
+        // out, only drops to a filament nobody notices by day.
+        internal static readonly Color PorchLightColor =
+            new Color(1.00f, 0.80f, 0.55f);
+        internal const float PorchNightIntensity = 110f;
+        internal const float PorchDayIntensity = 25f;
+        internal const float PorchRange = 8.0f;
+
         public static GameObject Build(
             Transform parent,
             CityCemeteryPlan plan)
@@ -128,7 +142,15 @@ namespace BarPromenade
 
             for (int index = 0; index < plan.Lamps.Count; index++)
             {
-                BuildAlleyLamp(root, plan.Lamps[index], index);
+                CityCemeteryLampDescriptor lamp = plan.Lamps[index];
+                if (lamp.Kind == CityCemeteryLampKind.LodgePorch)
+                {
+                    BuildLodgePorchLamp(root, lamp);
+                }
+                else
+                {
+                    BuildAlleyLamp(root, lamp, index);
+                }
             }
 
             return root.gameObject;
@@ -219,6 +241,82 @@ namespace BarPromenade
             CityNightSiteLightRegistry.Register(
                 light,
                 LampNightIntensity,
+                halo);
+        }
+
+        /// <summary>
+        /// The gate lodge's porch bulb: a short stem into the eave, a
+        /// tin hood and a bare emissive bulb hanging beside the door at
+        /// 2 m, with the point light that puts the watchman's face and
+        /// hands in the light instead of leaving him a silhouette in
+        /// his own doorway. Burns around the clock — dimmed by day,
+        /// full at night — so he is lit whenever anyone comes by.
+        /// </summary>
+        private static void BuildLodgePorchLamp(
+            Transform parent,
+            CityCemeteryLampDescriptor descriptor)
+        {
+            Transform assembly = new GameObject(
+                "Cemetery Lodge Porch Lamp").transform;
+            assembly.SetParent(parent, false);
+            assembly.SetPositionAndRotation(
+                descriptor.GroundPosition,
+                Quaternion.Euler(0f, descriptor.YawDegrees, 0f));
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Porch Lamp Stem",
+                assembly,
+                new Vector3(0f, 2.32f, 0f),
+                new Vector3(0.05f, 0.24f, 0.05f),
+                LampIronColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Porch Lamp Hood",
+                assembly,
+                new Vector3(0f, 2.15f, 0f),
+                new Vector3(0.24f, 0.07f, 0.24f),
+                LampIronColor,
+                false);
+
+            Color glow = MultiplyRgb(PorchLightColor, 4.6f, 1f);
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Porch Lamp Bulb",
+                assembly,
+                new Vector3(0f, 2.01f, 0f),
+                new Vector3(0.14f, 0.22f, 0.14f),
+                glow,
+                CityNightResources.EmissiveMaterial,
+                false);
+            CityNightGlowRegistry.Register(
+                lens.GetComponent<Renderer>(),
+                glow);
+
+            GameObject emitter = new GameObject("Porch Lamp Light");
+            emitter.transform.SetParent(assembly, false);
+            emitter.transform.localPosition = new Vector3(0f, 1.99f, 0f);
+            Light light = emitter.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = PorchLightColor;
+            light.intensity = PorchNightIntensity;
+            light.range = PorchRange;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+
+            GameObject haloObject = new GameObject("Porch Lamp Halo");
+            haloObject.transform.SetParent(emitter.transform, false);
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                0.40f,
+                1.10f,
+                MultiplyRgb(PorchLightColor, 4.2f, 0.18f),
+                MultiplyRgb(PorchLightColor, 2.1f, 0.05f));
+            CityNightSiteLightRegistry.Register(
+                light,
+                PorchNightIntensity,
+                PorchDayIntensity,
                 halo);
         }
 

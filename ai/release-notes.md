@@ -6,6 +6,20 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-17 — A bulb over the watchman's door
+
+- The cemetery watchman moved off his window and onto his own
+  doorstep, a pace out from the ajar door and a step aside, so he
+  stands in front of the open leaf rather than behind it. He watches
+  the main alley now — the road every visitor walks up from the gate
+  — instead of squinting past the corner of his own booth.
+- A bare bulb under a tin hood hangs from the lodge's eave beside
+  that door: the one warm light in the whole plot against the cold
+  green of the alley mantles, and the one bulb in the city nobody
+  ever switches off. It dims to a filament under the day sky and
+  comes up full after dark, so the old man is a lit face under a cap
+  at any hour instead of a shape in a doorway.
+
 ### 2026-08-17 — The gate lodge and its snide watchman
 
 - Just inside the cemetery gate, off to the side of the opening, a

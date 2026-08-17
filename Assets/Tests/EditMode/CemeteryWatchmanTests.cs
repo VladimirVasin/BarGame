@@ -58,6 +58,55 @@ namespace BarPromenade.Tests.EditMode
                     $"'{part.StableId}' stays inside the grounds.");
             }
 
+            // The lodge lights its own doorstep: exactly one porch
+            // bulb, hanging under the roof it belongs to and on the
+            // wall beside the doorway rather than out in the plot.
+            Assert.That(
+                plan.GetLampCount(CityCemeteryLampKind.LodgePorch),
+                Is.EqualTo(1));
+            CityCemeteryLampDescriptor porch = plan.Lamps.Single(
+                lamp => lamp.Kind == CityCemeteryLampKind.LodgePorch);
+            Assert.That(porch.StableId, Is.EqualTo("cemetery-lodge-lamp"));
+            CityCemeteryPartDescriptor roof = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-roof");
+            Assert.That(
+                ToXZRect(roof).Contains(new Vector2(
+                    porch.GroundPosition.x,
+                    porch.GroundPosition.z)),
+                Is.True,
+                "The bulb hangs under the lodge's own eave.");
+            // Beside the opening, over the solid stretch of the rear
+            // wall — the only side with wall to carry a bracket. The
+            // doorway's own centre line would fail this check.
+            CityCemeteryPartDescriptor rearWall = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-wall-rear");
+            Rect wallReach = Expand(ToXZRect(rearWall), 0.30f);
+            Assert.That(
+                wallReach.Contains(new Vector2(
+                    porch.GroundPosition.x,
+                    porch.GroundPosition.z)),
+                Is.True,
+                "...hung on the wall beside the door.");
+            CityCemeteryPartDescriptor doorstep = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-step");
+            Assert.That(
+                wallReach.Contains(new Vector2(
+                    doorstep.Center.x,
+                    doorstep.Center.z)),
+                Is.False,
+                "The doorway line itself is not where it hangs.");
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(
+                        porch.GroundPosition.x,
+                        porch.GroundPosition.z),
+                    new Vector2(doorstep.Center.x, doorstep.Center.z)),
+                Is.LessThan(1.2f),
+                "...but still right at the entrance.");
+            Assert.That(
+                porch.GroundPosition.y,
+                Is.EqualTo(plan.GroundTopY).Within(0.001f));
+
             // The reserved pocket kept the rest of the dressing out:
             // no grave, tree, bush or bench part stands inside the
             // lodge footprint band.
@@ -97,7 +146,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Plan_StandsTheWatchmanAtHisWindowFacingTheGate()
+        public void Plan_StandsTheWatchmanOnHisDoorstepFacingTheAlley()
         {
             (CityLayout _, CityCemeteryPlan plan) = GenerateCemetery();
             CemeteryWatchmanPlan watchmanPlan =
@@ -123,20 +172,82 @@ namespace BarPromenade.Tests.EditMode
                     stance.Position.x,
                     stance.Position.z)),
                 Is.False,
-                "He stands outside his own booth, at the window.");
+                "He stands outside his own booth, at its door.");
             Assert.That(
                 Vector3.Distance(stance.Position, lodgeBase.Center),
                 Is.LessThan(2.6f),
                 "...but right beside it.");
 
-            // He literally watches the gate arch.
+            // He holds the doorway, one short pace out and one step
+            // aside toward the alley — so he stands in front of the
+            // open leaf, never inside its sweep.
+            CityCemeteryPartDescriptor step = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-step");
+            var toStep = new Vector2(
+                step.Center.x - stance.Position.x,
+                step.Center.z - stance.Position.z);
+            float expectedOffset = Mathf.Sqrt(
+                CemeteryWatchmanPlan.DoorStandOffMeters *
+                CemeteryWatchmanPlan.DoorStandOffMeters +
+                CemeteryWatchmanPlan.AlleyStepMeters *
+                CemeteryWatchmanPlan.AlleyStepMeters);
+            Assert.That(
+                toStep.magnitude,
+                Is.EqualTo(expectedOffset).Within(0.001f));
+            CityCemeteryPartDescriptor doorLeaf = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-door-leaf");
+            Assert.That(
+                ToXZRect(doorLeaf).Contains(new Vector2(
+                    stance.Position.x,
+                    stance.Position.z)),
+                Is.False,
+                "The ajar leaf never sweeps through him.");
+
+            // The porch bulb hangs beside that door, so the old man
+            // is lit rather than a silhouette.
+            CityCemeteryLampDescriptor porch = plan.Lamps.Single(
+                lamp => lamp.Kind == CityCemeteryLampKind.LodgePorch);
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(
+                        porch.GroundPosition.x,
+                        porch.GroundPosition.z),
+                    new Vector2(
+                        stance.Position.x,
+                        stance.Position.z)),
+                Is.LessThan(1.3f),
+                "The watchman stands in his porch lamp's pool.");
+
+            // He watches the main alley, not the arch behind his own
+            // booth: his heading runs along the rear wall, and the
+            // gate side of the plot is the side he is turned to.
+            CityCemeteryPartDescriptor rearWall = plan.Parts.Single(
+                part => part.StableId == "cemetery-lodge-wall-rear");
+            Vector3 doorNormal = rearWall.Size.x < rearWall.Size.z
+                ? Vector3.right
+                : Vector3.forward;
+            Assert.That(
+                Mathf.Abs(Vector3.Dot(stance.Facing, doorNormal)),
+                Is.LessThan(0.001f),
+                "He looks along the wall, across the plot.");
+
             CityCemeteryPartDescriptor arch = plan.Parts.First(
                 part => part.StableId == "cemetery-gate-arch");
             Vector3 toArch = arch.Center - stance.Position;
             toArch.y = 0f;
             Assert.That(
                 Vector3.Dot(stance.Facing, toArch.normalized),
-                Is.GreaterThan(0.9f));
+                Is.GreaterThan(0.3f),
+                "The gate and its alley lie on the side he faces.");
+
+            // And the lodge is behind that line, not in it: he never
+            // stares into his own wall.
+            Assert.That(
+                ToXZRect(lodgeBase).Contains(new Vector2(
+                    stance.Position.x + stance.Facing.x * 2f,
+                    stance.Position.z + stance.Facing.z * 2f)),
+                Is.False,
+                "Two metres along his gaze is still open ground.");
         }
 
         [Test]

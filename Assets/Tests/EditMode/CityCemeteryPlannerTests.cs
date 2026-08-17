@@ -122,7 +122,13 @@ namespace BarPromenade.Tests.EditMode
 
             // The lamp chain walks the whole main alley and benches
             // wait beside it: at least two benches of four parts each.
-            Assert.That(first.Lamps.Count, Is.InRange(4, 9));
+            Assert.That(
+                first.GetLampCount(CityCemeteryLampKind.Alley),
+                Is.InRange(4, 9));
+            Assert.That(
+                first.GetLampCount(CityCemeteryLampKind.LodgePorch),
+                Is.EqualTo(1),
+                "The gate lodge lights its own doorstep.");
             Assert.That(
                 first.GetCount(CityCemeteryPartKind.Bench),
                 Is.GreaterThanOrEqualTo(8));
@@ -243,10 +249,26 @@ namespace BarPromenade.Tests.EditMode
                     CityNightSiteLightRegistry.SetNightFactor(0f);
                     foreach (Light light in lights)
                     {
+                        // The lodge's porch bulb is the one fixture
+                        // nobody switches off: it drops to its day
+                        // filament instead of dying with the rest.
+                        bool isPorchBulb =
+                            light.name == "Porch Lamp Light";
                         Assert.That(
                             light.enabled,
-                            Is.False,
-                            "Cemetery lamps die by day.");
+                            Is.EqualTo(isPorchBulb),
+                            isPorchBulb
+                                ? "The porch bulb burns around the clock."
+                                : "Cemetery alley lamps die by day.");
+                        if (isPorchBulb)
+                        {
+                            Assert.That(
+                                light.intensity,
+                                Is.EqualTo(
+                                    CityCemeteryWorldBuilder
+                                        .PorchDayIntensity)
+                                    .Within(0.01f));
+                        }
                     }
                 }
                 finally
@@ -259,6 +281,39 @@ namespace BarPromenade.Tests.EditMode
                     .First(item => item.name == "Lamp Mantle");
                 Assert.That(
                     mantle.sharedMaterial,
+                    Is.SameAs(CityNightResources.EmissiveMaterial));
+
+                // The lodge's porch bulb is its own warm fixture, hung
+                // at head height over the doorstep rather than on an
+                // alley pole.
+                Transform porch = root.transform.Find(
+                    "Cemetery Lodge Porch Lamp");
+                Assert.That(porch, Is.Not.Null);
+                Light porchLight =
+                    porch.GetComponentInChildren<Light>(true);
+                Assert.That(
+                    porchLight.color,
+                    Is.EqualTo(CityCemeteryWorldBuilder.PorchLightColor));
+                Assert.That(
+                    porchLight.transform.position.y -
+                    plan.GroundTopY,
+                    Is.InRange(1.7f, 2.4f));
+                Assert.That(
+                    porchLight.intensity,
+                    Is.EqualTo(
+                        CityCemeteryWorldBuilder.PorchNightIntensity)
+                        .Within(0.01f),
+                    "At full night it throws real light, not a glow.");
+                Assert.That(
+                    porchLight.renderMode,
+                    Is.EqualTo(LightRenderMode.ForcePixel),
+                    "It must survive the per-object additional light " +
+                    "limit standing next to the watchman.");
+                Renderer bulb = porch
+                    .GetComponentsInChildren<Renderer>(true)
+                    .First(item => item.name == "Porch Lamp Bulb");
+                Assert.That(
+                    bulb.sharedMaterial,
                     Is.SameAs(CityNightResources.EmissiveMaterial));
 
                 // Stone, gravel and soil batches carry their cemetery

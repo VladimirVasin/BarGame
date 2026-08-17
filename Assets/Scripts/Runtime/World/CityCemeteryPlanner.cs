@@ -142,8 +142,11 @@ namespace BarPromenade
             List<Rect> reserved = CreatereservedFootprints(lamps);
             // The watchman's lodge claims its gate-side pocket before
             // benches, graves and trees, so the whole dressing plans
-            // around it the way it plans around the lamps.
-            AddLodge(parts, frame, reserved);
+            // around it the way it plans around the lamps. Its porch
+            // bulb joins the lamp list afterwards: it hangs under the
+            // lodge's own eave, well inside the pocket, so it needs no
+            // reserved footprint of its own.
+            AddLodge(parts, lamps, frame, reserved);
             AddBenches(parts, frame, alleys, reserved, access);
             List<GraveSite> graves = AddGraves(
                 parts,
@@ -292,6 +295,19 @@ namespace BarPromenade
                 }
             }
 
+            // A lodge always lights its own doorway, and a plot
+            // without a lodge carries no porch bulb to hang.
+            bool hasLodge =
+                plan.GetCount(CityCemeteryPartKind.Lodge) > 0;
+            int porchLamps =
+                plan.GetLampCount(CityCemeteryLampKind.LodgePorch);
+            if (hasLodge != (porchLamps == 1))
+            {
+                throw new InvalidOperationException(
+                    "The gate lodge lights its doorstep with exactly " +
+                    "one porch lamp, and only a lodge carries one.");
+            }
+
             // A full-size cemetery must show the whole monument
             // vocabulary and light its main alley; a degenerate one-cell
             // plot only has to bury somebody.
@@ -309,7 +325,9 @@ namespace BarPromenade
                     }
                 }
 
-                if (plan.Lamps.Count < 3 || plan.Lamps.Count > 9)
+                int alleyLamps =
+                    plan.GetLampCount(CityCemeteryLampKind.Alley);
+                if (alleyLamps < 3 || alleyLamps > 9)
                 {
                     throw new InvalidOperationException(
                         "A full cemetery lights its main alley with " +
@@ -744,6 +762,23 @@ namespace BarPromenade
         /// the watchman plan degrades to absent.</summary>
         private const float LodgeRequiredLateralRoom = 8.30f;
 
+        /// <summary>Lateral offset of the doorway centre from the main
+        /// alley, on the lodge side: the doorway, its step, its porch
+        /// bulb and the watchman's own post all line up on it.</summary>
+        private const float LodgeDoorLateral = 7.42f;
+
+        /// <summary>Depth of the porch bulb: clear of the rear wall
+        /// face (3.10 m) and still under the roof's eave (3.35 m), so
+        /// the swung door leaf passes in front of it untouched.</summary>
+        private const float LodgePorchLampDepth = 3.20f;
+
+        /// <summary>Lateral offset of the porch bulb: beside the
+        /// doorway on the alley side, over the solid 1.36 m stretch of
+        /// the rear wall (offsets 5.60–6.96) rather than over the
+        /// opening itself. The other jamb has 0.12 m to the corner and
+        /// nothing to hang a bracket on.</summary>
+        private const float LodgePorchLampLateral = 6.60f;
+
         /// <summary>
         /// The cemetery watchman's booth just inside the gate: a small
         /// timber-floored hut with a window on the alley side (he
@@ -752,10 +787,12 @@ namespace BarPromenade
         /// edge past the gate opening's raw approach rectangle, so the
         /// canonical street entrance stays untouched. The pocket is
         /// appended to the reserved footprints so benches, graves and
-        /// trees plan around the lodge.
+        /// trees plan around the lodge, and a porch bulb is appended
+        /// to the lamp list so the doorstep is lit after dark.
         /// </summary>
         private static void AddLodge(
             ICollection<CityCemeteryPartDescriptor> parts,
+            ICollection<CityCemeteryLampDescriptor> lamps,
             Frame frame,
             ICollection<Rect> reservedFootprints)
         {
@@ -809,7 +846,7 @@ namespace BarPromenade
             Emit("wall-rear", CityCemeteryStyle.WeatheredConcrete,
                 3.04f, 0.12f, 6.28f, 1.36f, 1.225f, 2.25f);
             Emit("door-header", CityCemeteryStyle.WeatheredConcrete,
-                3.04f, 0.12f, 7.42f, 0.92f, 2.235f, 0.23f);
+                3.04f, 0.12f, LodgeDoorLateral, 0.92f, 2.235f, 0.23f);
             Emit("window-pier-a", CityCemeteryStyle.WeatheredConcrete,
                 1.20f, 0.60f, 5.66f, 0.12f, 1.225f, 2.25f);
             Emit("window-pier-b", CityCemeteryStyle.WeatheredConcrete,
@@ -825,7 +862,7 @@ namespace BarPromenade
             Emit("chimney", CityCemeteryStyle.Iron,
                 2.85f, 0.14f, 7.70f, 0.14f, 2.695f, 0.55f);
             Emit("step", CityCemeteryStyle.Timber,
-                3.275f, 0.35f, 7.42f, 0.70f, 0.05f, 0.10f);
+                3.275f, 0.35f, LodgeDoorLateral, 0.70f, 0.05f, 0.10f);
             // The stool's id deliberately never matches the
             // "cemetery-bench-*-seat" pattern, so the shared bench-sit
             // pass leaves the watchman's seat alone.
@@ -857,6 +894,22 @@ namespace BarPromenade
                 new Vector3(0.04f, 1.95f, 0.86f),
                 -1,
                 CityCemeteryGraveVariant.ClassicStele));
+
+            // One bulb under the eave beside the door, on the alley
+            // side. Without it the old man is a silhouette in his own
+            // doorway: the alley lamps stand on the far side of the
+            // lodge and its roof takes their light away exactly where
+            // he keeps his post. Yaw follows the frame's base heading,
+            // so the fixture's local +Z points straight out of the
+            // door and its light falls across the man beside it.
+            lamps.Add(new CityCemeteryLampDescriptor(
+                "cemetery-lodge-lamp",
+                CityCemeteryLampKind.LodgePorch,
+                frame.Compose(
+                    LodgePorchLampDepth,
+                    frame.GateLateral + sideSign * LodgePorchLampLateral,
+                    frame.GroundTopY),
+                frame.BaseYawDegrees));
 
             float pocketNear = frame.GateLateral + sideSign * 5.20f;
             float pocketFar = frame.GateLateral + sideSign * 8.30f;
@@ -1673,6 +1726,7 @@ namespace BarPromenade
 
                 lamps.Add(new CityCemeteryLampDescriptor(
                     $"cemetery-lamp-{index:D2}",
+                    CityCemeteryLampKind.Alley,
                     frame.Compose(
                         candidateDepth,
                         lateral,

@@ -299,7 +299,7 @@ Assets/
         CemeteryMournerFactory.cs  one transient instance per visit, passivity re-checked
         CemeteryMournerProvider.cs  the only serialized reference to the staged prefab
         CityCemeteryMournerController.cs  City-root proximity trigger, spawn/route/cooldown + the laid bouquet
-        CemeteryWatchmanPlan.cs  window-post stance read back from the plan's own lodge parts
+        CemeteryWatchmanPlan.cs  doorstep stance read back from the plan's own lodge parts
         CemeteryWatchmanQuips.cs  seeded 15-line snide repertoire, never the same twice running
         CemeteryWatchmanInteraction.cs  cashier-contract talk stub serving the next quip
         CemeteryWatchmanPresentation.cs  one-clip manual PlayableGraph (the watch loop)

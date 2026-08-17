@@ -141,24 +141,41 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// One night-scaled alley lamp. Lamps are real fixtures with a
-    /// Light component rather than batched boxes, so the plan carries
-    /// them separately from the part list and its budget.
+    /// The two fixtures the cemetery lights itself with: the cast-iron
+    /// mantles walking the main alley, and the single hooded bulb
+    /// hanging under the gate lodge's eave over its doorstep.
+    /// </summary>
+    public enum CityCemeteryLampKind
+    {
+        Alley = 0,
+        LodgePorch = 1
+    }
+
+    /// <summary>
+    /// One night-scaled lamp. Lamps are real fixtures with a Light
+    /// component rather than batched boxes, so the plan carries them
+    /// separately from the part list and its budget. The ground
+    /// position is the point on the ground under the fixture and the
+    /// yaw turns its local +Z along the alley's depth axis (for the
+    /// porch bulb: straight out of the lodge door).
     /// </summary>
     public readonly struct CityCemeteryLampDescriptor :
         IEquatable<CityCemeteryLampDescriptor>
     {
         public CityCemeteryLampDescriptor(
             string stableId,
+            CityCemeteryLampKind kind,
             Vector3 groundPosition,
             float yawDegrees)
         {
             StableId = stableId ?? string.Empty;
+            Kind = kind;
             GroundPosition = groundPosition;
             YawDegrees = yawDegrees;
         }
 
         public string StableId { get; }
+        public CityCemeteryLampKind Kind { get; }
         public Vector3 GroundPosition { get; }
         public float YawDegrees { get; }
 
@@ -168,6 +185,7 @@ namespace BarPromenade
                        StableId,
                        other.StableId,
                        StringComparison.Ordinal) &&
+                   Kind == other.Kind &&
                    GroundPosition.Equals(other.GroundPosition) &&
                    YawDegrees.Equals(other.YawDegrees);
         }
@@ -184,6 +202,7 @@ namespace BarPromenade
             {
                 int hash = StringComparer.Ordinal.GetHashCode(
                     StableId ?? string.Empty);
+                hash = (hash * 397) ^ (int)Kind;
                 hash = (hash * 397) ^ GroundPosition.GetHashCode();
                 return (hash * 397) ^ YawDegrees.GetHashCode();
             }
@@ -266,6 +285,20 @@ namespace BarPromenade
             for (int index = 0; index < parts.Count; index++)
             {
                 if (parts[index].Kind == kind)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public int GetLampCount(CityCemeteryLampKind kind)
+        {
+            int count = 0;
+            for (int index = 0; index < lamps.Count; index++)
+            {
+                if (lamps[index].Kind == kind)
                 {
                     count++;
                 }

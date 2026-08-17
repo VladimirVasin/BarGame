@@ -5,7 +5,9 @@ namespace BarPromenade
 {
     /// <summary>Where the watchman stands and which way he looks:
     /// derived entirely from the cemetery plan's own lodge and gate
-    /// parts, so the drawn booth and the NPC can never disagree.</summary>
+    /// parts, so the drawn booth and the NPC can never disagree. He
+    /// keeps his post on the doorstep, under the porch bulb the
+    /// planner hangs over the same doorway.</summary>
     public readonly struct CemeteryWatchmanStance
     {
         public CemeteryWatchmanStance(
@@ -31,19 +33,28 @@ namespace BarPromenade
 
     /// <summary>
     /// The authored population of the cemetery gate lodge: one snide
-    /// old watchman at his window post, eyes on the gate. Absent when
+    /// old watchman on his own doorstep, eyes on the main alley every
+    /// visitor walks up from the gate. Absent when
     /// the blueprint has no cemetery or the cemetery plan carries no
     /// lodge (a gate too close to a lateral edge skips the booth).
     /// </summary>
     public sealed class CemeteryWatchmanPlan
     {
-        /// <summary>How far off the lodge base's edge, on the window
-        /// side, the watchman holds his post.</summary>
-        public const float WindowStandOffMeters = 0.55f;
+        /// <summary>How far past the doorstep, along the door's own
+        /// normal, the watchman holds his post: clear of the leaf
+        /// swung ajar in front of him, still inside the porch bulb's
+        /// pool of light.</summary>
+        public const float DoorStandOffMeters = 0.75f;
+
+        /// <summary>And how far he steps off the doorway's own line
+        /// toward the main alley: enough to stand in front of the open
+        /// leaf rather than behind it, and to put the bulb beside the
+        /// door over his shoulder instead of at his back.</summary>
+        public const float AlleyStepMeters = 0.30f;
 
         private const string LodgeBaseId = "cemetery-lodge-base";
-        private const string LodgeWindowBoardId =
-            "cemetery-lodge-window-board";
+        private const string LodgeStepId = "cemetery-lodge-step";
+        private const string LodgeRearWallId = "cemetery-lodge-wall-rear";
         private const string GateArchId = "cemetery-gate-arch";
 
         private static readonly CemeteryWatchmanPlan AbsentPlan =
@@ -74,53 +85,79 @@ namespace BarPromenade
                     out CityCemeteryPartDescriptor lodgeBase) ||
                 !TryFindPart(
                     cemeteryPlan,
-                    LodgeWindowBoardId,
-                    out CityCemeteryPartDescriptor windowBoard))
+                    LodgeStepId,
+                    out CityCemeteryPartDescriptor step) ||
+                !TryFindPart(
+                    cemeteryPlan,
+                    LodgeRearWallId,
+                    out CityCemeteryPartDescriptor rearWall))
             {
                 return AbsentPlan;
             }
 
-            // Out of the booth toward its watch window: standing
-            // inside would bury him in the batched wall collider and
-            // starve his attention magnet.
-            Vector3 facingOut =
-                windowBoard.Center - lodgeBase.Center;
-            facingOut.y = 0f;
-            if (facingOut.sqrMagnitude < 0.0001f)
+            // Out of the booth through its doorway: the rear wall is a
+            // slab, so the axis it is thin along is the door's normal,
+            // signed away from the booth's middle. Standing inside
+            // would bury him in the batched wall collider and starve
+            // his attention magnet.
+            Vector3 outOfBooth = step.Center - lodgeBase.Center;
+            outOfBooth.y = 0f;
+            if (outOfBooth.sqrMagnitude < 0.0001f)
             {
                 return AbsentPlan;
             }
 
-            facingOut = facingOut.normalized;
-            float halfExtentAlongFacing = Mathf.Abs(Vector3.Dot(
-                new Vector3(
-                    lodgeBase.Size.x * 0.5f,
-                    0f,
-                    lodgeBase.Size.z * 0.5f),
-                new Vector3(
-                    Mathf.Abs(facingOut.x),
-                    0f,
-                    Mathf.Abs(facingOut.z))));
-            Vector3 position = lodgeBase.Center +
-                facingOut * (halfExtentAlongFacing +
-                             WindowStandOffMeters);
-            position.y = cemeteryPlan.GroundTopY;
+            Vector3 facingOut = rearWall.Size.x < rearWall.Size.z
+                ? Vector3.right
+                : Vector3.forward;
+            if (Vector3.Dot(facingOut, outOfBooth) < 0f)
+            {
+                facingOut = -facingOut;
+            }
 
-            // He literally watches the gate; a plan without the arch
-            // still leaves him facing away from his own wall.
-            Vector3 facing = facingOut;
+            // Which way the main alley lies, along the wall: the gate
+            // arch stands on it, so the arch direction with the door's
+            // own normal projected out of it is the alley heading. A
+            // plan without the arch leaves him looking straight out of
+            // his door rather than into a wall.
+            Vector3 alleyward = Vector3.zero;
             if (TryFindPart(
                     cemeteryPlan,
                     GateArchId,
                     out CityCemeteryPartDescriptor arch))
             {
-                Vector3 toArch = arch.Center - position;
+                Vector3 toArch = arch.Center - lodgeBase.Center;
                 toArch.y = 0f;
-                if (toArch.sqrMagnitude > 0.0001f)
-                {
-                    facing = toArch.normalized;
-                }
+                alleyward = toArch -
+                            facingOut * Vector3.Dot(toArch, facingOut);
             }
+
+            if (alleyward.sqrMagnitude < 0.0001f)
+            {
+                alleyward = Vector3.zero;
+            }
+            else
+            {
+                alleyward = alleyward.normalized;
+            }
+
+            // Measured off the step, not the wall: the doorstep is the
+            // one lodge part that already carries the doorway's own
+            // lateral line. Then one step along the wall toward the
+            // alley, so he stands in front of the leaf swung ajar
+            // instead of behind it.
+            Vector3 position = new Vector3(
+                step.Center.x,
+                cemeteryPlan.GroundTopY,
+                step.Center.z) +
+                facingOut * DoorStandOffMeters +
+                alleyward * AlleyStepMeters;
+
+            // He watches the alley, the road everyone who comes in
+            // walks up — not the gate arch behind his own booth.
+            Vector3 facing = alleyward.sqrMagnitude > 0.5f
+                ? alleyward
+                : facingOut;
 
             return new CemeteryWatchmanPlan(
                 new CemeteryWatchmanStance(
