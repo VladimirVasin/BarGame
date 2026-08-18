@@ -208,6 +208,238 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void AreaOverlay_DrawsAndNamesEveryCanonicalPrecinct()
+        {
+            // The precincts under test only exist on the shipped coastal
+            // blueprint; the bare settings overload builds the legacy city.
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                58021);
+            IReadOnlyList<CityMapAreaRegion> regions =
+                CityMapAreaOverlayBuilder.Create(layout);
+
+            Assert.That(
+                regions,
+                Has.Count.EqualTo(layout.Blueprint.Areas.Count));
+
+            var byFeature =
+                new Dictionary<CityAreaFeatureKind, CityMapAreaRegion>();
+            for (int index = 0; index < regions.Count; index++)
+            {
+                CityMapAreaRegion region = regions[index];
+                Assert.That(
+                    region.LandBounds.Count + region.WaterBounds.Count,
+                    Is.GreaterThan(0),
+                    region.AreaId);
+                Assert.That(
+                    region.Outline,
+                    Is.Not.Empty,
+                    region.AreaId);
+                Assert.That(
+                    region.LocalizationKey,
+                    Is.Not.Empty,
+                    region.AreaId);
+                byFeature[region.Feature] = region;
+            }
+
+            Assert.That(
+                byFeature.Keys,
+                Is.EquivalentTo(new[]
+                {
+                    CityAreaFeatureKind.UrbanDistrict,
+                    CityAreaFeatureKind.CentralPark,
+                    CityAreaFeatureKind.NorthWaterfront,
+                    CityAreaFeatureKind.Lake,
+                    CityAreaFeatureKind.Cemetery,
+                    CityAreaFeatureKind.Yard
+                }));
+
+            // The lake is the one precinct that carries open water, and
+            // an open precinct is only enterable through its gates.
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Lake].WaterBounds,
+                Is.Not.Empty);
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Lake].Gates,
+                Is.Not.Empty);
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Cemetery].Gates,
+                Is.Not.Empty);
+            Assert.That(
+                byFeature[CityAreaFeatureKind.UrbanDistrict].IsUrban,
+                Is.True);
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Yard].IsUrban,
+                Is.False);
+        }
+
+        [Test]
+        public void AreaTeleportTargets_LandOnWalkableGroundInEveryOpenPrecinct()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                58021);
+            var mapObject = new GameObject("City Map Area Target Test");
+            var previousRoute = new List<string>(
+                GameSessionState.PlannedBarRoute);
+            try
+            {
+                CityMapController controller =
+                    mapObject.AddComponent<CityMapController>();
+                controller.Initialize(layout, default, null, null);
+
+                IReadOnlyList<CityMapAreaTarget> targets =
+                    controller.MapAreaTargets;
+                // Not merely equal to the access count: both being zero
+                // would let every assertion below pass on an empty list.
+                Assert.That(
+                    targets,
+                    Is.Not.Empty,
+                    "The coastal city has open precincts to reach.");
+                Assert.That(
+                    targets,
+                    Has.Count.EqualTo(layout.OpenAreaAccesses.Count),
+                    "Every open precinct must be reachable, and only those.");
+                TestContext.Out.WriteLine(
+                    $"open precinct targets: {targets.Count}");
+
+                // One mask for the whole fixture: building it runs a full
+                // layout validation and every stair placement.
+                RoadWalkableArea walkable =
+                    RoadWalkableArea.FromLayout(layout);
+                var accessesByArea =
+                    new Dictionary<string, CityOpenAreaAccessDescriptor>();
+                for (int index = 0;
+                     index < layout.OpenAreaAccesses.Count;
+                     index++)
+                {
+                    CityOpenAreaAccessDescriptor access =
+                        layout.OpenAreaAccesses[index];
+                    accessesByArea.Add(access.AreaId, access);
+                }
+
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    CityMapAreaTarget target = targets[index];
+                    string what = target.Region.AreaId;
+                    Assert.That(
+                        target.SelectionIndex,
+                        Is.EqualTo(controller.MapObjects.Count + index),
+                        what);
+                    Assert.That(
+                        target.Region.IsUrban,
+                        Is.False,
+                        what);
+                    Assert.That(
+                        accessesByArea.TryGetValue(
+                            what,
+                            out CityOpenAreaAccessDescriptor access),
+                        Is.True,
+                        what);
+
+                    // The mask is the real boundary of the city, and it
+                    // tests one rectangle at a time - so this is the whole
+                    // safety contract of the feature.
+                    Assert.That(
+                        walkable.Contains(
+                            target.ArrivalPosition,
+                            CityGroundTraversalPlanner.MaximumAgentRadius),
+                        Is.True,
+                        $"{what} arrives outside the walkable mask.");
+                    Assert.That(
+                        CityTerrainSurfacePlan.TrySampleGroundTop(
+                            layout,
+                            new Vector2(
+                                target.ArrivalPosition.x,
+                                target.ArrivalPosition.z),
+                            out float groundTop,
+                            out CitySurfaceDescriptor surface),
+                        Is.True,
+                        what);
+                    Assert.That(surface.IsWater, Is.False, what);
+                    Assert.That(
+                        target.ArrivalPosition.y,
+                        Is.EqualTo(
+                            groundTop + PlayerFactory.GroundedRootOffset)
+                            .Within(0.001f),
+                        $"{what} must stand on the drawn ground.");
+
+                    // OutwardNormal points from the street into the area;
+                    // a future negation would face the player at the kerb.
+                    Assert.That(
+                        target.ArrivalFacing,
+                        Is.EqualTo(access.OutwardNormal),
+                        what);
+                    Assert.That(target.Cell, Is.EqualTo(access.Cell), what);
+                    Assert.That(
+                        controller.GetMapObjectLabel(target.SelectionIndex),
+                        Is.Not.Empty,
+                        what);
+                }
+
+                // The five yards share one name, so the labels must still
+                // come out distinct or the teleport panel is ambiguous.
+                var labels = new HashSet<string>();
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    Assert.That(
+                        labels.Add(
+                            controller.GetMapObjectLabel(
+                                targets[index].SelectionIndex)),
+                        Is.True,
+                        targets[index].Region.AreaId);
+                }
+            }
+            finally
+            {
+                GameSessionState.ClearRoute();
+                for (int index = 0; index < previousRoute.Count; index++)
+                {
+                    GameSessionState.TryAddRouteStop(previousRoute[index]);
+                }
+
+                UnityEngine.Object.DestroyImmediate(mapObject);
+            }
+        }
+
+        [Test]
+        public void HoverResolution_PrefersAnyMarkerOverTheAreaBeneathIt()
+        {
+            var cell = new Rect(80f, 80f, 40f, 40f);
+            var targets = new[]
+            {
+                new CityMapView.MapHoverTarget(
+                    cell,
+                    cell.center,
+                    "area",
+                    CityMapView.AreaHoverPriority),
+                new CityMapView.MapHoverTarget(
+                    new Rect(84f, 84f, 12f, 12f),
+                    new Vector2(90f, 90f),
+                    "marker",
+                    10)
+            };
+
+            // The pointer sits nearer the precinct's own centre, which
+            // must still not outbid the marker it is standing under.
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(
+                    targets,
+                    new Vector2(92f, 92f)),
+                Is.EqualTo("marker"));
+            Assert.That(
+                CityMapView.ResolveHoveredLabel(
+                    targets,
+                    new Vector2(110f, 110f)),
+                Is.EqualTo("area"));
+            Assert.That(
+                CityMapView.AreaHoverPriority,
+                Is.LessThan(0));
+        }
+
+        [Test]
         public void HoverResolution_PrefersNearestMarkerThenPriority()
         {
             var sharedHitbox = new Rect(90f, 90f, 24f, 20f);

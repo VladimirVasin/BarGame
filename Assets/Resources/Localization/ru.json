@@ -513,6 +513,14 @@
       "value": "Остановка"
     },
     {
+      "key": "map.lake.boat_station",
+      "value": "Лодочная станция"
+    },
+    {
+      "key": "map.area_at",
+      "value": "{0} [{1}, {2}]"
+    },
+    {
       "key": "bus.stop.default_coastal.industrial",
       "value": "Остановка «Промзона»"
     },

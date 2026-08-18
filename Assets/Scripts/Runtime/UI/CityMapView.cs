@@ -8,10 +8,19 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityMapView : MonoBehaviour
     {
+        // A precinct name is the background layer of the map: it answers
+        // "what is this ground" only where no named marker answers first,
+        // so it is resolved after every foreground target has missed.
+        internal const int AreaHoverPriority = -10;
+        private const int ForegroundHoverPriorityFloor = 0;
         private const int PointOfInterestHoverPriority = 10;
         internal const int BusStopHoverPriority = 15;
         private const int BarHoverPriority = 20;
         private const int LandmarkHoverPriority = 30;
+        // Highest of the foreground ranks, so when the hero shares a
+        // spot with a landmark - their own front door, say - the tie
+        // goes to the hero.
+        private const int PlayerHoverPriority = 40;
         private const float MinimumMapCellPixels = 22f;
         private const float KeyboardPanSpeed = 116f;
         private const float MouseWheelStep = 18f;
@@ -108,6 +117,27 @@ namespace BarPromenade
             new Color32(94, 84, 63, 255);
         private static readonly Color WaterLand =
             new Color32(35, 91, 119, 255);
+        // The lake is still water behind a bank, not open sea: a greener,
+        // quieter blue keeps the two bodies apart at a glance, and the
+        // shore around it is clay rather than more water.
+        private static readonly Color LakeWater =
+            new Color32(41, 84, 92, 255);
+        private static readonly Color LakeShoreLand =
+            new Color32(92, 97, 76, 255);
+        private static readonly Color LakeBank =
+            new Color32(76, 82, 66, 255);
+        private static readonly Color PierTimber =
+            new Color32(141, 116, 84, 255);
+        private static readonly Color BoatHut =
+            new Color32(163, 134, 92, 255);
+        private static readonly Color CemeteryMarker =
+            new Color32(176, 178, 166, 255);
+        private static readonly Color BeachSand =
+            new Color32(178, 158, 111, 255);
+        private static readonly Color YardTexture =
+            new Color32(126, 113, 86, 255);
+        private static readonly Color AreaGate =
+            new Color32(226, 178, 96, 255);
         private static readonly Color RiverWater =
             new Color32(26, 77, 103, 255);
         private static readonly Color RiverPromenade =
@@ -128,8 +158,6 @@ namespace BarPromenade
             RetroUiTheme.MapRoad;
         private static readonly Color ParkPath =
             new Color32(159, 150, 105, 255);
-        private static readonly Color DistrictLabelBackdrop =
-            RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.78f);
         private static readonly Color Route =
             RetroUiTheme.Accent;
         private static readonly Color BusRoute =
@@ -149,8 +177,9 @@ namespace BarPromenade
 
         internal static Color BusRouteColor => BusRoute;
 
+        // Every marker plus one background target per visible area cell.
         private readonly List<MapHoverTarget> hoverTargets =
-            new List<MapHoverTarget>(160);
+            new List<MapHoverTarget>(320);
         private readonly CityMapViewport mapViewport =
             new CityMapViewport();
 
@@ -161,6 +190,9 @@ namespace BarPromenade
         private Vector2 previousPanPointer;
         private Vector2 hoverCoordinateOffset;
         private Rect hoverClipRect;
+        // What the bus legend covers: the map under it is hidden, so
+        // a pointer resting on the legend names nothing.
+        private Rect hoverBlockRect;
         private bool isMapLineContextActive;
         private Rect mapLineClipRect;
         private Vector2 mapLineGroupOffset;
@@ -172,7 +204,6 @@ namespace BarPromenade
         private GUIStyle routeBadgeStyle;
         private GUIStyle hintStyle;
         private GUIStyle smallButtonStyle;
-        private GUIStyle districtLabelStyle;
         private GUIStyle pointOfInterestTitleStyle;
         private GUIStyle pointOfInterestItemStyle;
         private GUIStyle tooltipStyle;
@@ -290,6 +321,7 @@ namespace BarPromenade
 
                 HandlePointerScrolling(mapArea, logicalPointer);
                 hoverTargets.Clear();
+                hoverBlockRect = Rect.zero;
                 hoverCoordinateOffset = mapArea.position;
                 hoverClipRect = mapArea;
                 DrawSolidRect(mapArea, MapVoid);
@@ -338,12 +370,14 @@ namespace BarPromenade
                 2f,
                 1f);
             DrawSurfaces(projection);
+            DrawAreaGrounds(projection);
             DrawRiver(projection);
             DrawBuildings(projection);
             DrawRoads(projection);
             DrawRiverBridges(projection);
+            DrawAreaOutlines(projection);
+            DrawLakeStation(projection);
             DrawBusRoute(projection);
-            DrawDistrictLabels(projection);
             DrawRoute(projection);
             DrawBusStops(projection);
             DrawPointsOfInterest(projection);
@@ -352,6 +386,83 @@ namespace BarPromenade
             DrawPlayerHome(projection);
             DrawPlayer(projection);
             DrawBusLegend();
+            DrawAreaSelectionPass(projection);
+        }
+
+        /// <summary>
+        /// Makes the open precincts clickable in test-teleport mode. The
+        /// lake, the cemetery, the beach and the yards carry no building
+        /// lot, so nothing else on the map offers them a hit box.
+        ///
+        /// Issued dead last on purpose: IMGUI gives a press to the first
+        /// control that claims it, so every lot, bar, stop and landmark
+        /// button above has already had its chance and a full-cell button
+        /// can never swallow their clicks.
+        /// </summary>
+        private void DrawAreaSelectionPass(MapProjection projection)
+        {
+            if (!controller.DebugTeleportEnabled)
+            {
+                return;
+            }
+
+            IReadOnlyList<CityMapAreaTarget> targets =
+                controller.MapAreaTargets;
+            for (int index = 0; index < targets.Count; index++)
+            {
+                CityMapAreaTarget target = targets[index];
+                bool selected = target.SelectionIndex ==
+                                controller.SelectedMapObjectIndex;
+                DrawAreaSelectionCells(
+                    projection,
+                    target.Region.LandBounds,
+                    target.SelectionIndex);
+                DrawAreaSelectionCells(
+                    projection,
+                    target.Region.WaterBounds,
+                    target.SelectionIndex);
+                if (!selected)
+                {
+                    continue;
+                }
+
+                // The same acknowledgement a selected lot gets, drawn on
+                // the outline the precinct already has rather than as a
+                // box around every one of its cells.
+                IReadOnlyList<CityMapAreaEdge> outline =
+                    target.Region.Outline;
+                for (int edge = 0; edge < outline.Count; edge++)
+                {
+                    DrawLine(
+                        projection.WorldToScreen(new Vector3(
+                            outline[edge].Start.x,
+                            0f,
+                            outline[edge].Start.y)),
+                        projection.WorldToScreen(new Vector3(
+                            outline[edge].End.x,
+                            0f,
+                            outline[edge].End.y)),
+                        2f,
+                        RetroUiTheme.AccentPale);
+                }
+            }
+        }
+
+        private void DrawAreaSelectionCells(
+            MapProjection projection,
+            IReadOnlyList<Rect> bounds,
+            int selectionIndex)
+        {
+            for (int index = 0; index < bounds.Count; index++)
+            {
+                // The same rect the hover layer registers, so what the map
+                // names under the pointer is what the pointer can click.
+                Rect cell = ProjectWorldRect(projection, bounds[index]);
+                if (GUI.Button(cell, GUIContent.none, GUIStyle.none))
+                {
+                    controller.QueueSelectMapObject(selectionIndex);
+                }
+            }
         }
 
         private void HandlePointerScrolling(
@@ -764,37 +875,421 @@ namespace BarPromenade
             }
         }
 
-        private void DrawDistrictLabels(MapProjection projection)
+        /// <summary>
+        /// Draws what each precinct is made of, and registers its name as
+        /// the background hover layer. Nothing here prints text: an area
+        /// says what it is by how it is drawn, and gives its name only to
+        /// a pointer resting on it.
+        /// </summary>
+        private void DrawAreaGrounds(MapProjection projection)
         {
-            IReadOnlyList<CityAreaPlacement> areas =
-                controller.Layout.Blueprint.Areas;
-            for (int index = 0; index < areas.Count; index++)
+            IReadOnlyList<CityMapAreaRegion> regions =
+                controller.AreaRegions;
+            for (int index = 0; index < regions.Count; index++)
             {
-                CityAreaPlacement area = areas[index];
-                Vector2 position = projection.WorldToScreen(
-                    ResolveAreaLabelPosition(
-                        controller.Layout,
-                        area));
-                const float labelWidth = 104f;
-                const float labelHeight = 13f;
-                var labelRect = new Rect(
-                    Mathf.Round(position.x - labelWidth * 0.5f),
-                    Mathf.Round(position.y - labelHeight * 0.5f),
-                    labelWidth,
-                    labelHeight);
-                DrawSolidRect(labelRect, DistrictLabelBackdrop);
-                RetroUiTheme.StrokeRect(
-                    labelRect,
-                    1f,
-                    RetroUiTheme.WithAlpha(
-                        area.Definition.MapColor,
-                        0.92f));
-                GUI.Label(
-                    labelRect,
-                    LocalizationService.Get(
-                        area.Definition.LocalizationKey),
-                    districtLabelStyle);
+                CityMapAreaRegion region = regions[index];
+                RegisterAreaHoverTargets(projection, region);
+                if (region.IsUrban)
+                {
+                    continue;
+                }
+
+                DrawAreaWater(projection, region);
+                DrawAreaTexture(projection, region);
             }
+        }
+
+        private void RegisterAreaHoverTargets(
+            MapProjection projection,
+            CityMapAreaRegion region)
+        {
+            string label = LocalizationService.Get(
+                region.LocalizationKey);
+            RegisterAreaHoverTargets(projection, region.LandBounds, label);
+            RegisterAreaHoverTargets(projection, region.WaterBounds, label);
+        }
+
+        private void RegisterAreaHoverTargets(
+            MapProjection projection,
+            IReadOnlyList<Rect> bounds,
+            string label)
+        {
+            for (int index = 0; index < bounds.Count; index++)
+            {
+                Rect cell = ProjectWorldRect(projection, bounds[index]);
+                RegisterHoverTarget(
+                    cell,
+                    cell.center,
+                    label,
+                    AreaHoverPriority);
+            }
+        }
+
+        private void DrawAreaWater(
+            MapProjection projection,
+            CityMapAreaRegion region)
+        {
+            if (region.Feature != CityAreaFeatureKind.Lake)
+            {
+                return;
+            }
+
+            // The lake is a basin, not a blue square: the surface pass
+            // leaves its cells as bank, and the water is only the
+            // authored waterline, whose corners are cut off.
+            CityLakePlan lake = controller.LakePlan;
+            if (lake != null)
+            {
+                FillWaterline(projection, lake.Basin);
+                return;
+            }
+
+            for (int index = 0;
+                 index < region.WaterBounds.Count;
+                 index++)
+            {
+                DrawSolidRect(
+                    ProjectWorldRect(
+                        projection,
+                        region.WaterBounds[index]),
+                    LakeWater);
+            }
+        }
+
+        /// <summary>
+        /// Fills the waterline octagon by scanning it in rows. IMGUI can
+        /// only fill rectangles, so the cut corners are drawn as a stack
+        /// of shortening rows rather than as a polygon.
+        /// </summary>
+        private void FillWaterline(
+            MapProjection projection,
+            CityLakeBasin basin)
+        {
+            Rect water = ProjectWorldRect(
+                projection,
+                basin.WaterlineBounds);
+            float bevel = Mathf.Min(
+                basin.BevelMeters,
+                Mathf.Min(
+                    basin.WaterlineBounds.width,
+                    basin.WaterlineBounds.height) * 0.5f);
+            float bevelPixels = water.height <= 0f
+                ? 0f
+                : bevel / Mathf.Max(0.01f, basin.WaterlineBounds.height) *
+                  water.height;
+            if (bevelPixels < 1f)
+            {
+                DrawSolidRect(water, LakeWater);
+                return;
+            }
+
+            int rows = Mathf.Clamp(
+                Mathf.CeilToInt(bevelPixels),
+                1,
+                24);
+            float rowHeight = bevelPixels / rows;
+            DrawSolidRect(
+                new Rect(
+                    water.x,
+                    water.y + bevelPixels,
+                    water.width,
+                    Mathf.Max(0f, water.height - bevelPixels * 2f)),
+                LakeWater);
+            for (int index = 0; index < rows; index++)
+            {
+                float inset =
+                    bevelPixels * (1f - (index + 0.5f) / rows);
+                float width = Mathf.Max(1f, water.width - inset * 2f);
+                DrawSolidRect(
+                    new Rect(
+                        water.x + inset,
+                        water.y + index * rowHeight,
+                        width,
+                        rowHeight + 1f),
+                    LakeWater);
+                DrawSolidRect(
+                    new Rect(
+                        water.x + inset,
+                        water.yMax - (index + 1f) * rowHeight - 1f,
+                        width,
+                        rowHeight + 1f),
+                    LakeWater);
+            }
+        }
+
+        /// <summary>
+        /// The motif that tells one open precinct from another once the
+        /// permanent labels are gone: crosses for the cemetery, sand for
+        /// the beach, drying lines for a yard.
+        /// </summary>
+        private void DrawAreaTexture(
+            MapProjection projection,
+            CityMapAreaRegion region)
+        {
+            for (int index = 0;
+                 index < region.LandBounds.Count;
+                 index++)
+            {
+                Rect cell = ProjectWorldRect(
+                    projection,
+                    region.LandBounds[index]);
+                if (cell.width < 6f || cell.height < 6f)
+                {
+                    continue;
+                }
+
+                switch (region.Feature)
+                {
+                    case CityAreaFeatureKind.Cemetery:
+                        DrawCemeteryGraves(cell);
+                        break;
+                    case CityAreaFeatureKind.NorthWaterfront:
+                        DrawBeachSand(cell);
+                        break;
+                    case CityAreaFeatureKind.Yard:
+                        DrawYardLines(cell);
+                        break;
+                    case CityAreaFeatureKind.Lake:
+                        DrawLakeReeds(cell);
+                        break;
+                }
+            }
+        }
+
+        private void DrawCemeteryGraves(Rect cell)
+        {
+            const int columns = 3;
+            const int rows = 3;
+            float stemHeight = Mathf.Min(
+                4f,
+                Mathf.Max(2f, cell.height / (rows * 2.4f)));
+            for (int column = 0; column < columns; column++)
+            {
+                float x = Mathf.Round(
+                    cell.x + cell.width * (column + 0.5f) / columns);
+                for (int row = 0; row < rows; row++)
+                {
+                    float y = Mathf.Round(
+                        cell.y + cell.height * (row + 0.5f) / rows);
+                    DrawSolidRect(
+                        new Rect(x, y - stemHeight * 0.5f, 1f, stemHeight),
+                        CemeteryMarker);
+                    DrawSolidRect(
+                        new Rect(
+                            x - 1f,
+                            y - stemHeight * 0.5f + 1f,
+                            3f,
+                            1f),
+                        CemeteryMarker);
+                }
+            }
+        }
+
+        private void DrawBeachSand(Rect cell)
+        {
+            for (int index = 0; index < 4; index++)
+            {
+                float x = Mathf.Round(
+                    cell.x + cell.width * (index + 0.5f) / 4f);
+                float y = Mathf.Round(
+                    cell.y + cell.height * (index % 2 == 0 ? 0.34f : 0.66f));
+                DrawSolidRect(new Rect(x, y, 2f, 1f), BeachSand);
+            }
+        }
+
+        private void DrawYardLines(Rect cell)
+        {
+            float inset = Mathf.Min(3f, cell.width * 0.2f);
+            for (int index = 0; index < 2; index++)
+            {
+                float y = Mathf.Round(
+                    cell.y + cell.height * (index + 1f) / 3f);
+                DrawSolidRect(
+                    new Rect(
+                        cell.x + inset,
+                        y,
+                        Mathf.Max(1f, cell.width - inset * 2f),
+                        1f),
+                    YardTexture);
+            }
+        }
+
+        private void DrawLakeReeds(Rect cell)
+        {
+            for (int index = 0; index < 3; index++)
+            {
+                float x = Mathf.Round(
+                    cell.x + cell.width * (index + 0.5f) / 3f);
+                DrawSolidRect(
+                    new Rect(
+                        x,
+                        Mathf.Round(cell.y + cell.height * 0.5f - 1.5f),
+                        1f,
+                        3f),
+                    LakeBank);
+            }
+        }
+
+        /// <summary>
+        /// The edge of every non-urban precinct, plus the street openings
+        /// that are the only way into it.
+        /// </summary>
+        private void DrawAreaOutlines(MapProjection projection)
+        {
+            IReadOnlyList<CityMapAreaRegion> regions =
+                controller.AreaRegions;
+            for (int index = 0; index < regions.Count; index++)
+            {
+                CityMapAreaRegion region = regions[index];
+                if (region.IsUrban)
+                {
+                    continue;
+                }
+
+                Color outline = RetroUiTheme.WithAlpha(
+                    Brighten(region.MapColor, 0.42f),
+                    0.92f);
+                for (int edge = 0;
+                     edge < region.Outline.Count;
+                     edge++)
+                {
+                    CityMapAreaEdge segment = region.Outline[edge];
+                    DrawLine(
+                        projection.WorldToScreen(
+                            new Vector3(segment.Start.x, 0f, segment.Start.y)),
+                        projection.WorldToScreen(
+                            new Vector3(segment.End.x, 0f, segment.End.y)),
+                        1f,
+                        outline);
+                }
+
+                for (int gate = 0; gate < region.Gates.Count; gate++)
+                {
+                    DrawAreaGate(projection, region.Gates[gate]);
+                }
+            }
+        }
+
+        private void DrawAreaGate(
+            MapProjection projection,
+            Rect approach)
+        {
+            Rect gate = ProjectWorldRect(projection, approach);
+            bool horizontal = gate.width >= gate.height;
+            Vector2 start = horizontal
+                ? new Vector2(gate.xMin, gate.center.y)
+                : new Vector2(gate.center.x, gate.yMin);
+            Vector2 end = horizontal
+                ? new Vector2(gate.xMax, gate.center.y)
+                : new Vector2(gate.center.x, gate.yMax);
+            DrawLine(start, end, 3f, RetroUiTheme.Ink);
+            DrawLine(start, end, 1f, AreaGate);
+        }
+
+        /// <summary>
+        /// The boat station: the pier the fisherman sits on and the hire
+        /// hut behind it, both taken from the plan the world was built
+        /// from rather than guessed at map scale.
+        /// </summary>
+        private void DrawLakeStation(MapProjection projection)
+        {
+            CityLakePlan lake = controller.LakePlan;
+            if (lake == null)
+            {
+                return;
+            }
+
+            if (TryProjectParts(
+                    projection,
+                    lake,
+                    CityLakePartKind.PierDeck,
+                    out Rect pier))
+            {
+                DrawSolidRect(Expand(pier, 1f), RetroUiTheme.Ink);
+                DrawSolidRect(pier, PierTimber);
+            }
+
+            if (!TryProjectParts(
+                    projection,
+                    lake,
+                    CityLakePartKind.Hut,
+                    out Rect hut))
+            {
+                return;
+            }
+
+            Rect marker = Expand(hut, 1f);
+            DrawSolidRect(marker, RetroUiTheme.Ink);
+            DrawSolidRect(hut, BoatHut);
+            RegisterHoverTarget(
+                Expand(marker, 3f),
+                marker.center,
+                LocalizationService.Get("map.lake.boat_station"),
+                LandmarkHoverPriority);
+        }
+
+        private static bool TryProjectParts(
+            MapProjection projection,
+            CityLakePlan lake,
+            CityLakePartKind kind,
+            out Rect screenRect)
+        {
+            float minimumX = float.PositiveInfinity;
+            float maximumX = float.NegativeInfinity;
+            float minimumZ = float.PositiveInfinity;
+            float maximumZ = float.NegativeInfinity;
+            for (int index = 0; index < lake.Parts.Count; index++)
+            {
+                CityLakePartDescriptor part = lake.Parts[index];
+                if (part.Kind != kind)
+                {
+                    continue;
+                }
+
+                // The parts are axis-aligned in the default plan; the
+                // half extents of the rotated size still bound them.
+                Vector3 extents = part.Rotation * part.Size;
+                float halfX = Mathf.Abs(extents.x) * 0.5f;
+                float halfZ = Mathf.Abs(extents.z) * 0.5f;
+                minimumX = Mathf.Min(minimumX, part.Center.x - halfX);
+                maximumX = Mathf.Max(maximumX, part.Center.x + halfX);
+                minimumZ = Mathf.Min(minimumZ, part.Center.z - halfZ);
+                maximumZ = Mathf.Max(maximumZ, part.Center.z + halfZ);
+            }
+
+            if (minimumX > maximumX || minimumZ > maximumZ)
+            {
+                screenRect = default;
+                return false;
+            }
+
+            Rect projected = ProjectWorldRect(
+                projection,
+                Rect.MinMaxRect(minimumX, minimumZ, maximumX, maximumZ));
+            screenRect = new Rect(
+                projected.x,
+                projected.y,
+                Mathf.Max(2f, projected.width),
+                Mathf.Max(2f, projected.height));
+            return true;
+        }
+
+        private static Rect Expand(Rect rectangle, float amount)
+        {
+            return new Rect(
+                rectangle.x - amount,
+                rectangle.y - amount,
+                rectangle.width + amount * 2f,
+                rectangle.height + amount * 2f);
+        }
+
+        private static Color Brighten(Color color, float amount)
+        {
+            return new Color(
+                Mathf.Lerp(color.r, 1f, amount),
+                Mathf.Lerp(color.g, 1f, amount),
+                Mathf.Lerp(color.b, 1f, amount),
+                color.a);
         }
 
         private void DrawBusRoute(MapProjection projection)
@@ -832,39 +1327,6 @@ namespace BarPromenade
                     width,
                     color);
             }
-        }
-
-        private static Vector3 ResolveAreaLabelPosition(
-            CityLayout layout,
-            CityAreaPlacement area)
-        {
-            Vector2 average = Vector2.zero;
-            for (int index = 0; index < area.Cells.Count; index++)
-            {
-                Vector2Int cell = area.Cells[index];
-                average += new Vector2(cell.x, cell.y);
-            }
-
-            average /= area.Cells.Count;
-            Vector2Int anchor = area.Cells[0];
-            float bestDistance = float.PositiveInfinity;
-            for (int index = 0; index < area.Cells.Count; index++)
-            {
-                Vector2Int cell = area.Cells[index];
-                float distance = (new Vector2(cell.x, cell.y) - average)
-                    .sqrMagnitude;
-                if (distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    anchor = cell;
-                }
-            }
-
-            return layout.GetGridWorldPosition(anchor) +
-                   new Vector3(
-                       layout.NodeSpacing.x * 0.5f,
-                       0f,
-                       layout.NodeSpacing.y * 0.5f);
         }
 
         private void DrawRoute(MapProjection projection)
@@ -937,7 +1399,9 @@ namespace BarPromenade
             Rect legend = CreateBusLegendRect(
                 mapLineClipRect,
                 includeStop);
-            RemoveHoverTargetsUnderLegend(legend);
+            hoverBlockRect = new Rect(
+                legend.position + hoverCoordinateOffset,
+                legend.size);
             DrawSolidRect(
                 legend,
                 RetroUiTheme.WithAlpha(RetroUiTheme.MapGround, 0.9f));
@@ -983,25 +1447,6 @@ namespace BarPromenade
                     14f),
                 LocalizationService.Get("map.bus.stop_legend"),
                 pointOfInterestItemStyle);
-        }
-
-        private void RemoveHoverTargetsUnderLegend(Rect localLegend)
-        {
-            Rect globalLegend = new Rect(
-                localLegend.position + hoverCoordinateOffset,
-                localLegend.size);
-            for (int index = hoverTargets.Count - 1;
-                 index >= 0;
-                 index--)
-            {
-                Rect overlap = Intersect(
-                    hoverTargets[index].Hitbox,
-                    globalLegend);
-                if (overlap.width > 0f && overlap.height > 0f)
-                {
-                    hoverTargets.RemoveAt(index);
-                }
-            }
         }
 
         internal static Rect CreateBusLegendRect(
@@ -1190,32 +1635,60 @@ namespace BarPromenade
             }
 
             screenForward.Normalize();
-            Vector2 arrowTip = position + screenForward * 11f;
-            Vector2 arrowSide = new Vector2(
-                -screenForward.y,
-                screenForward.x);
-            DrawLine(
+            // One solid arrowhead standing on the player's own position
+            // and pointing where they face, outlined so it survives over
+            // pale ground. The name it carries belongs to the tooltip.
+            const float ahead = 8f;
+            const float behind = 5f;
+            const float halfBase = 5.5f;
+            Vector2 tip = position + screenForward * ahead;
+            Vector2 tail = position - screenForward * behind;
+            FillArrowhead(
+                tip + screenForward,
+                tail - screenForward,
+                halfBase + 1.4f,
+                RetroUiTheme.Ink);
+            FillArrowhead(tip, tail, halfBase, Player);
+            RegisterHoverTarget(
+                CreateCenteredRect(position, 17f, 17f),
                 position,
-                arrowTip,
-                3f,
-                Player);
-            DrawLine(
-                arrowTip,
-                arrowTip - screenForward * 4f + arrowSide * 3f,
-                2f,
-                Player);
-            DrawLine(
-                arrowTip,
-                arrowTip - screenForward * 4f - arrowSide * 3f,
-                2f,
-                Player);
-            DrawSolidRect(
-                new Rect(position.x - 3f, position.y - 3f, 6f, 6f),
-                Player);
-            GUI.Label(
-                new Rect(position.x + 5f, position.y - 7f, 55f, 13f),
                 LocalizationService.Get("map.player"),
-                routeItemStyle);
+                PlayerHoverPriority);
+        }
+
+        /// <summary>
+        /// Fills the triangle from <paramref name="tip"/> back to the base
+        /// centred on <paramref name="tail"/>. IMGUI draws rectangles, so
+        /// the triangle is laid down as rows that widen towards the base.
+        /// </summary>
+        private void FillArrowhead(
+            Vector2 tip,
+            Vector2 tail,
+            float halfBase,
+            Color color)
+        {
+            Vector2 axis = tail - tip;
+            float length = axis.magnitude;
+            if (length <= 0.01f)
+            {
+                return;
+            }
+
+            Vector2 direction = axis / length;
+            Vector2 side = new Vector2(-direction.y, direction.x);
+            int rows = Mathf.Clamp(Mathf.CeilToInt(length), 3, 24);
+            float step = length / rows;
+            for (int index = 0; index < rows; index++)
+            {
+                float across = (index + 0.5f) / rows;
+                Vector2 center = tip + direction * (length * across);
+                float half = Mathf.Max(0.5f, halfBase * across);
+                DrawLine(
+                    center - side * half,
+                    center + side * half,
+                    step + 1f,
+                    color);
+            }
         }
 
         private void DrawPlayerHome(MapProjection projection)
@@ -1268,14 +1741,6 @@ namespace BarPromenade
                     3f,
                     5f),
                 RetroUiTheme.Ink);
-            GUI.Label(
-                new Rect(
-                    body.xMax + 4f,
-                    body.y - 2f,
-                    58f,
-                    14f),
-                LocalizationService.Get("map.home"),
-                routeItemStyle);
         }
 
         private void RegisterHoverTarget(
@@ -1326,6 +1791,11 @@ namespace BarPromenade
             Rect mapBounds,
             Vector2 logicalPointer)
         {
+            if (hoverBlockRect.Contains(logicalPointer))
+            {
+                return;
+            }
+
             string label = ResolveHoveredLabel(
                 hoverTargets,
                 logicalPointer);
@@ -1378,13 +1848,38 @@ namespace BarPromenade
                 return string.Empty;
             }
 
+            // Markers first, and only then the ground they stand on: a
+            // precinct covers whole cells, so on distance alone it would
+            // outbid the very markers it lies under.
+            string label = ResolveHoveredLabel(
+                targets,
+                pointer,
+                ForegroundHoverPriorityFloor,
+                int.MaxValue);
+            return string.IsNullOrEmpty(label)
+                ? ResolveHoveredLabel(
+                    targets,
+                    pointer,
+                    int.MinValue,
+                    ForegroundHoverPriorityFloor - 1)
+                : label;
+        }
+
+        private static string ResolveHoveredLabel(
+            IReadOnlyList<MapHoverTarget> targets,
+            Vector2 pointer,
+            int minimumPriority,
+            int maximumPriority)
+        {
             string bestLabel = string.Empty;
             float bestDistance = float.PositiveInfinity;
             int bestPriority = int.MinValue;
             for (int index = 0; index < targets.Count; index++)
             {
                 MapHoverTarget target = targets[index];
-                if (string.IsNullOrEmpty(target.Label) ||
+                if (target.Priority < minimumPriority ||
+                    target.Priority > maximumPriority ||
+                    string.IsNullOrEmpty(target.Label) ||
                     !target.Hitbox.Contains(pointer))
                 {
                     continue;
@@ -1552,8 +2047,7 @@ namespace BarPromenade
                 LocalizationService.Get("map.teleport.title"),
                 subtitleStyle);
 
-            BuildingLot selected = controller.SelectedMapObject;
-            if (selected == null)
+            if (controller.SelectedMapObjectIndex < 0)
             {
                 GUI.Label(
                     new Rect(
@@ -2200,13 +2694,17 @@ namespace BarPromenade
             switch (surface.Kind)
             {
                 case CitySurfaceKind.Water:
-                    return WaterLand;
+                    // A lake cell is bank until the authored waterline is
+                    // laid over it; only the sea is water edge to edge.
+                    return surface.Feature == CityAreaFeatureKind.Lake
+                        ? LakeBank
+                        : WaterLand;
                 case CitySurfaceKind.RiverWater:
                     return RiverWater;
                 case CitySurfaceKind.Beach:
                     return WaterfrontLand;
                 case CitySurfaceKind.LakeShore:
-                    return LakeLand;
+                    return LakeShoreLand;
                 case CitySurfaceKind.CemeteryGround:
                     return CemeteryLand;
                 case CitySurfaceKind.OpenGround:
@@ -2338,11 +2836,6 @@ namespace BarPromenade
                 8,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
-                true);
-            districtLabelStyle = RetroUiTheme.CreateLabelStyle(
-                7,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
                 true);
             pointOfInterestTitleStyle = RetroUiTheme.CreateLabelStyle(
                 8,

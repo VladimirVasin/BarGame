@@ -6,6 +6,96 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — The open precincts join the teleport map
+
+- Follow-up to the precinct drawing pass: the new cells were drawn and named
+  but still could not be clicked. The cause is structural, not cosmetic - every
+  clickable thing on the map is a `BuildingLot`, and `CityBlueprintCell`
+  creates no lot for `OpenLand` or `Water`, so the lake, the cemetery, the five
+  yards and the north waterfront had no hit box at all. (The central park was
+  never affected: its `ParkLand` cells do create lots.)
+- **One selection index space, appended not interleaved.** `MapObjects` stays
+  literally `Layout.BuildingLots`, and indices at or past its count address the
+  new `MapAreaTargets`. `DrawBuildings` uses its raw loop index as the
+  selection index and `FindMapObjectIndex` is a ReferenceEquals scan, so any
+  shift would have mis-selected lots silently, with no compile error and no
+  failing test. Each target carries its own `SelectionIndex`, so the view never
+  reverse-maps a region back to an index.
+- **The arrival point is the precinct's own gate, stepped a stride in.** The
+  access centre itself sits on the seam between the street rect and the
+  precinct ground, and `RoadWalkableArea.Contains` tests one rectangle at a
+  time, so the seam fails at the `0.35 m` agent radius; `1.5 m` along
+  `OutwardNormal` lands deep inside the access cell's single mask rect and
+  still inside `ApproachBounds`. `OutwardNormal` is used unnegated - it already
+  points from the street into the area.
+- **Height comes from the drawn terrain, not the road datum.** The lot path
+  samples `CitySurfaceRole.RoadTop`, which can never resolve `5.5 m` from a
+  centreline and silently falls back to a flat road offset - metres wrong on
+  the terraced yards and the bilinear beach. The precinct path uses
+  `CityTerrainSurfacePlan.TrySampleGroundTop`, the sampler the terrain itself
+  is built from.
+- **The mask still gets the last word.** `AddRiverClippedGround` subtracts every
+  river segment from a cell rect, so a future access cell could be bisected.
+  `ConfirmDebugTeleport` clamps the arrival with `RoadWalkableArea.ClosestPoint`
+  and re-samples the height, and refuses the teleport with a logged
+  `debug_teleport_unreachable` rather than dropping the player in the water.
+  The mask is built lazily on the first teleport - the same one
+  `CityWorldBuilder` makes - so nothing pays for it unless a teleport happens.
+- The click pass is issued dead last in `DrawMap`, after the bus legend: IMGUI
+  gives a press to the first control that claims it, so full-cell buttons
+  cannot swallow a lot, bar, stop or landmark click. It is gated on
+  `DebugTeleportEnabled`, so the ordinary route-planning map is unchanged.
+- All five yards share `map.district.yard`, so the teleport panel would have
+  shown five identical lines. Labels now carry the gate cell through one new
+  `map.area_at` key, the way an anonymous lot carries its own.
+- Focused Unity EditMode `CityMapDistrictPresentationTests` passed `33/33`,
+  including new coverage that every open precinct has exactly one target whose
+  arrival is inside the walkable mask at the planner's `0.35 m` radius, stands
+  on sampled non-water ground at `top + GroundedRootOffset`, faces the
+  unnegated access normal, and yields a distinct label. The IMGUI click itself
+  cannot be exercised headlessly - batch mode has no game view - so the button
+  pass was reasoned about from the first-control-wins rule, not measured. No
+  PlayMode suite or build was run.
+
+## 2026-08-18 — The map draws its precincts and names nothing
+
+- The map had been keeping up with the city by adding a label per area. With
+  the river, the lake, the cemetery and five yards in, that was thirteen
+  104-px name plates over a ~290-px-wide map, five of them reading «Двор»,
+  and underneath them the new precincts were flat tinted rectangles.
+- **Areas are now drawn, not captioned.** Added `CityMapAreaOverlay`: a pure
+  per-layout model of every blueprint area — the drawn surface rects, the
+  outline of that ground taken from the surfaces themselves (so it stops at
+  the kerb where the ground does), and the canonical street approaches from
+  `CityLayout.OpenAreaAccesses`. The view strokes each non-urban precinct,
+  marks its gates, and gives it a motif: crosses, beach sand, yard lines,
+  lake reeds.
+- **The lake reads as a basin.** Its water cells are painted as bank and the
+  water is only the authored waterline, drawn with its corners cut, plus the
+  pier and the hire hut. All three come from the `CityLakePlan` the world was
+  actually built from, passed to the map by `CityGameRoot`, so the map cannot
+  disagree with the ground about where the boards are.
+- **Every name is now a tooltip.** The district plates, the pinned «Вы здесь»
+  and the pinned «Дом» are gone. Each area cell registers a background hover
+  target, so a pointer anywhere over the city names the ground it rests on,
+  while markers keep answering first: `ResolveHoveredLabel` resolves the
+  foreground tier and only falls back to the precinct layer when nothing
+  named was hit. The nearest-marker-then-priority rule inside the foreground
+  tier is unchanged.
+- The bus legend no longer deletes the hover targets it overlaps — a cell is
+  bigger than a marker, and deleting it blanked names well outside the
+  legend. The legend now blocks the tooltip only while the pointer is on it.
+- The hero is a filled arrowhead pointing where they face, laid down as
+  widening rows because IMGUI fills rectangles, outlined in ink so it holds
+  over pale ground.
+- Focused Unity EditMode `CityMapDistrictPresentationTests` passed `32/32`,
+  including new coverage that the overlay names and outlines every canonical
+  precinct with gates on the open ones, and that a marker outbids the area
+  beneath it. Unity compiled runtime and test assemblies for that run; no
+  PlayMode suite or build was run. First attempt caught that the bare
+  `CityLayoutGenerator.Generate(settings, seed)` overload builds the legacy
+  city, which has none of these precincts.
+
 ## 2026-08-18 — The man on the end of the boards
 
 - The fisherman's runtime layer had been in and green since the boat station

@@ -525,7 +525,8 @@ namespace BarPromenade
                 Player,
                 follow,
                 intoxicationHud,
-                BusPlan);
+                BusPlan,
+                World.LakePlan);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

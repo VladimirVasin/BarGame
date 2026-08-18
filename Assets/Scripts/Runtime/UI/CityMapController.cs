@@ -29,6 +29,52 @@ namespace BarPromenade
         public Vector3 WorldPosition { get; }
     }
 
+    /// <summary>
+    /// An open precinct the debug teleport can send the player to. The
+    /// lake, the cemetery, the beach and the yards carry no building lot,
+    /// so they are the one part of the city the lot-indexed selection
+    /// cannot reach; this is their entry in that selection.
+    ///
+    /// The arrival point is the precinct's own authored street approach
+    /// stepped a stride inside, because that gate is the only way in that
+    /// the walkable mask actually admits.
+    /// </summary>
+    public readonly struct CityMapAreaTarget
+    {
+        internal CityMapAreaTarget(
+            int selectionIndex,
+            CityMapAreaRegion region,
+            Vector2Int cell,
+            Vector3 arrivalPosition,
+            Vector3 arrivalFacing)
+        {
+            SelectionIndex = selectionIndex;
+            Region = region;
+            Cell = cell;
+            ArrivalPosition = arrivalPosition;
+            ArrivalFacing = arrivalFacing;
+        }
+
+        /// <summary>
+        /// Where this precinct sits in the map's one selection index
+        /// space, after the building lots. The target carries it so the
+        /// view never has to work it back out.
+        /// </summary>
+        public int SelectionIndex { get; }
+
+        public CityMapAreaRegion Region { get; }
+
+        /// <summary>The access cell, which is what the teleport logs.</summary>
+        public Vector2Int Cell { get; }
+
+        public Vector3 ArrivalPosition { get; }
+
+        // CityOpenAreaAccessDescriptor.OutwardNormal already points from
+        // the street INTO the precinct, so this is used as-is: negating it
+        // would land the player facing back at the kerb.
+        public Vector3 ArrivalFacing { get; }
+    }
+
     [DisallowMultipleComponent]
     public sealed class CityMapController : MonoBehaviour
     {
@@ -70,6 +116,17 @@ namespace BarPromenade
         private readonly Queue<PendingCommand> pendingCommands =
             new Queue<PendingCommand>();
 
+        private readonly List<CityMapAreaTarget> mapAreaTargets =
+            new List<CityMapAreaTarget>();
+
+        private IReadOnlyList<CityMapAreaRegion> areaRegions =
+            Array.Empty<CityMapAreaRegion>();
+
+        // Built on the first debug teleport, not at Initialize: it is the
+        // same mask CityWorldBuilder makes, and rebuilding it costs a full
+        // layout validation nobody needs unless a teleport happens.
+        private RoadWalkableArea walkableArea;
+
         private PlayerRuntime player;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
@@ -86,6 +143,30 @@ namespace BarPromenade
             pointsOfInterest;
         public CityMapBusOverlay BusOverlay { get; private set; } =
             CityMapBusOverlay.Empty;
+
+        /// <summary>
+        /// Every blueprint area as the map draws it. Built once from the
+        /// layout, because the outlines and gates never move.
+        /// </summary>
+        public IReadOnlyList<CityMapAreaRegion> AreaRegions =>
+            areaRegions;
+
+        /// <summary>
+        /// The open precincts a debug teleport can reach, in one index
+        /// space with the building lots: a selection index at or past
+        /// <see cref="MapObjects"/>.Count addresses this list instead.
+        /// Appending rather than interleaving is deliberate - every lot
+        /// index stays exactly what it was.
+        /// </summary>
+        public IReadOnlyList<CityMapAreaTarget> MapAreaTargets =>
+            mapAreaTargets;
+
+        /// <summary>
+        /// The built boat station, or null on a blueprint without a lake.
+        /// The map borrows the world's own plan so the pier and the hut it
+        /// draws stand exactly where the player will find them.
+        /// </summary>
+        public CityLakePlan LakePlan { get; private set; }
         public IReadOnlyList<BuildingLot> MapObjects =>
             Layout?.BuildingLots ?? Array.Empty<BuildingLot>();
         public BuildingLot PlayerHome => Layout?.PlayerHome;
@@ -96,7 +177,8 @@ namespace BarPromenade
         public int SelectedMapObjectIndex { get; private set; } = -1;
         public bool DebugTeleportEnabled { get; private set; }
         public BuildingLot SelectedMapObject =>
-            IsValidMapObjectIndex(SelectedMapObjectIndex)
+            SelectedMapObjectIndex >= 0 &&
+            SelectedMapObjectIndex < MapObjects.Count
                 ? MapObjects[SelectedMapObjectIndex]
                 : null;
         public CityMapView View { get; private set; }
@@ -128,13 +210,18 @@ namespace BarPromenade
             PlayerRuntime playerRuntime,
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
-            CityBusPlan busPlan)
+            CityBusPlan busPlan,
+            CityLakePlan lakePlan = null)
         {
             Layout = layout ?? throw new ArgumentNullException(nameof(layout));
             player = playerRuntime;
             cameraFollow = follow;
             intoxicationHud = hud;
             BusOverlay = CityMapBusOverlayBuilder.Create(busPlan);
+            areaRegions = CityMapAreaOverlayBuilder.Create(Layout);
+            CollectMapAreaTargets();
+            LakePlan = lakePlan;
+            walkableArea = null;
 
             bars.Clear();
             for (int index = 0; index < Layout.BuildingLots.Count; index++)
@@ -477,6 +564,19 @@ namespace BarPromenade
                 return string.Empty;
             }
 
+            if (TryGetAreaTarget(
+                    mapObjectIndex,
+                    out CityMapAreaTarget area))
+            {
+                // Five yards share one name, so the precinct is stamped
+                // with its gate cell the way an anonymous lot is.
+                return string.Format(
+                    LocalizationService.Get("map.area_at"),
+                    LocalizationService.Get(area.Region.LocalizationKey),
+                    area.Cell.x,
+                    area.Cell.y);
+            }
+
             BuildingLot lot = MapObjects[mapObjectIndex];
             if (lot.IsBar)
             {
@@ -561,15 +661,45 @@ namespace BarPromenade
                 !IsOpen ||
                 player.GameObject == null ||
                 player.Motor == null ||
-                SelectedMapObject == null)
+                !IsValidMapObjectIndex(SelectedMapObjectIndex))
             {
                 return false;
             }
 
             BuildingLot target = SelectedMapObject;
-            Vector3 destination =
-                ResolveDebugTeleportDestination(target);
-            Vector3 facing = target.DoorPosition - destination;
+            Vector2Int cell;
+            Vector3 destination;
+            Vector3 facing;
+            if (target != null)
+            {
+                cell = target.Cell;
+                destination = ResolveDebugTeleportDestination(target);
+                facing = target.DoorPosition - destination;
+            }
+            else if (TryGetAreaTarget(
+                         SelectedMapObjectIndex,
+                         out CityMapAreaTarget area))
+            {
+                cell = area.Cell;
+                if (!TryClampToWalkableGround(
+                        area.ArrivalPosition,
+                        out destination))
+                {
+                    GameLog.Warning(
+                        "map",
+                        "debug_teleport_unreachable",
+                        GameLog.Field("cell_x", cell.x),
+                        GameLog.Field("cell_y", cell.y));
+                    return false;
+                }
+
+                facing = area.ArrivalFacing;
+            }
+            else
+            {
+                return false;
+            }
+
             facing.y = 0f;
             SelectedMapObjectIndex = -1;
 
@@ -586,11 +716,52 @@ namespace BarPromenade
             GameLog.Info(
                 "map",
                 "debug_teleported",
-                GameLog.Field("cell_x", target.Cell.x),
-                GameLog.Field("cell_y", target.Cell.y),
+                GameLog.Field("cell_x", cell.x),
+                GameLog.Field("cell_y", cell.y),
                 GameLog.Field("x", destination.x),
                 GameLog.Field("y", destination.y),
                 GameLog.Field("z", destination.z));
+            return true;
+        }
+
+        /// <summary>
+        /// Holds an arrival to ground the player can actually stand on.
+        /// The mask, not the colliders, is the real boundary of the city,
+        /// and it is tested one rectangle at a time - so a point the
+        /// authored gate says is inside can still fall in a hole the river
+        /// cut. Where that happens the nearest legal point is used, and
+        /// its height re-sampled, rather than dropping the player in.
+        /// </summary>
+        private bool TryClampToWalkableGround(
+            Vector3 arrival,
+            out Vector3 destination)
+        {
+            walkableArea ??= RoadWalkableArea.FromLayout(Layout);
+            destination = arrival;
+            if (walkableArea.Contains(
+                    arrival,
+                    CityGroundTraversalPlanner.MaximumAgentRadius))
+            {
+                return true;
+            }
+
+            Vector3 nearest = walkableArea.ClosestPoint(
+                arrival,
+                CityGroundTraversalPlanner.MaximumAgentRadius);
+            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
+                    Layout,
+                    new Vector2(nearest.x, nearest.z),
+                    out float groundTop,
+                    out CitySurfaceDescriptor surface) ||
+                surface.IsWater)
+            {
+                return false;
+            }
+
+            destination = new Vector3(
+                nearest.x,
+                groundTop + PlayerFactory.GroundedRootOffset,
+                nearest.z);
             return true;
         }
 
@@ -981,19 +1152,22 @@ namespace BarPromenade
 
         private void MoveMapObjectSelection(int delta)
         {
-            if (MapObjects.Count == 0 || delta == 0)
+            int count = MapSelectionCount;
+            if (count == 0 || delta == 0)
             {
                 SelectedMapObjectIndex = -1;
                 return;
             }
 
+            // Stepping back from nothing lands on the last entry, which is
+            // the final open precinct - one press from the yards and the
+            // lake, instead of walking the whole lot list to reach them.
             int nextIndex = SelectedMapObjectIndex < 0
-                ? delta > 0 ? 0 : MapObjects.Count - 1
-                : (SelectedMapObjectIndex + Math.Sign(delta)) %
-                  MapObjects.Count;
+                ? delta > 0 ? 0 : count - 1
+                : (SelectedMapObjectIndex + Math.Sign(delta)) % count;
             if (nextIndex < 0)
             {
-                nextIndex += MapObjects.Count;
+                nextIndex += count;
             }
 
             SelectMapObject(nextIndex);
@@ -1006,7 +1180,26 @@ namespace BarPromenade
 
         private bool IsValidMapObjectIndex(int index)
         {
-            return index >= 0 && index < MapObjects.Count;
+            return index >= 0 && index < MapSelectionCount;
+        }
+
+        // Lots first, then the open precincts appended after them.
+        private int MapSelectionCount =>
+            MapObjects.Count + mapAreaTargets.Count;
+
+        private bool TryGetAreaTarget(
+            int mapObjectIndex,
+            out CityMapAreaTarget target)
+        {
+            int areaIndex = mapObjectIndex - MapObjects.Count;
+            if (areaIndex < 0 || areaIndex >= mapAreaTargets.Count)
+            {
+                target = default;
+                return false;
+            }
+
+            target = mapAreaTargets[areaIndex];
+            return true;
         }
 
         internal bool IsPointOfInterestLot(Vector2Int cell)
@@ -1025,6 +1218,79 @@ namespace BarPromenade
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// One selectable target per open precinct that has an authored
+        /// street access. Urban districts and the central park are absent
+        /// on purpose: their cells already carry building lots, so they
+        /// are already selectable through <see cref="MapObjects"/>.
+        /// </summary>
+        private void CollectMapAreaTargets()
+        {
+            mapAreaTargets.Clear();
+            IReadOnlyList<CityOpenAreaAccessDescriptor> accesses =
+                Layout.OpenAreaAccesses;
+            for (int index = 0; index < areaRegions.Count; index++)
+            {
+                CityMapAreaRegion region = areaRegions[index];
+                for (int other = 0; other < accesses.Count; other++)
+                {
+                    CityOpenAreaAccessDescriptor access = accesses[other];
+                    if (!string.Equals(
+                            access.AreaId,
+                            region.AreaId,
+                            StringComparison.Ordinal) ||
+                        !TryResolveAreaArrival(
+                            access,
+                            out Vector3 arrival))
+                    {
+                        continue;
+                    }
+
+                    mapAreaTargets.Add(new CityMapAreaTarget(
+                        MapObjects.Count + mapAreaTargets.Count,
+                        region,
+                        access.Cell,
+                        arrival,
+                        access.OutwardNormal));
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Where a teleport into an open precinct lands. The access centre
+        /// itself sits on the seam between the street and the precinct
+        /// ground, which the per-rectangle walkable test cannot pass, so
+        /// the arrival steps one stride inward along the access normal and
+        /// takes its height from the drawn terrain rather than from the
+        /// road datum the lot path uses.
+        /// </summary>
+        private bool TryResolveAreaArrival(
+            CityOpenAreaAccessDescriptor access,
+            out Vector3 arrival)
+        {
+            const float arrivalDepth = 1.5f;
+            Vector3 inward = access.OutwardNormal;
+            var groundXZ = new Vector2(
+                access.Center.x + inward.x * arrivalDepth,
+                access.Center.z + inward.z * arrivalDepth);
+            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
+                    Layout,
+                    groundXZ,
+                    out float groundTop,
+                    out _))
+            {
+                arrival = Vector3.zero;
+                return false;
+            }
+
+            arrival = new Vector3(
+                groundXZ.x,
+                groundTop + PlayerFactory.GroundedRootOffset,
+                groundXZ.y);
+            return true;
         }
 
         private void CollectPointsOfInterest()

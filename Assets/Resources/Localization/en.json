@@ -513,6 +513,14 @@
       "value": "Bus stop"
     },
     {
+      "key": "map.lake.boat_station",
+      "value": "Boat station"
+    },
+    {
+      "key": "map.area_at",
+      "value": "{0} [{1}, {2}]"
+    },
+    {
       "key": "bus.stop.default_coastal.industrial",
       "value": "Industrial stop"
     },
