@@ -6,6 +6,102 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-19 — And the boards start playing back
+
+- Sitting on either free park plank now starts a real game on that table.
+  Full legal chess on the chess player's board, full Russian draughts on the
+  neighbour's, both against an engine that is deliberately not very good, and
+  both from a seated first-person pose over the hero's own eyes.
+- **The rules are pure and they are checked by counting.**
+  `Assets/Scripts/Runtime/Games/` holds `ChessRules`/`ChessEngine`/`ChessMatch`
+  and `DraughtsRules`/`DraughtsEngine`/`DraughtsMatch` with no Unity in them
+  beyond the lattice constant they borrow. Chess is pinned by perft against
+  the five standard positions — start to depth `4` (`197281`), Kiwipete to `3`
+  (`97862`), the endgame position to `4` (`43238`), the promotion position and
+  the tactical position to `3` — which covers castling both sides both
+  colours, castling through check, en passant including the pin that forbids
+  it, and promotion with and without capture. Draughts is pinned rule by rule:
+  compulsory capture, backward capture by a man, maximal chains, flying kings
+  and their choice of landing, the Turkish strike, and crowning inside a chain
+  continuing as a king.
+- **The hero is dark at both boards, and that was not a choice.** The free
+  plank at each table is the one whose near ranks the drawn set already filled
+  with dark men, so the man opposite is White at his own board and opens. The
+  live board's opening position is asserted equal to `CityChessSetPlan`'s
+  drawn placement, piece for piece, so the game starts as the set stood.
+- **One mirror, in one place.** The board was drawn with its `a` file at
+  lattice file `7`. The chess engine underneath is written in ordinary chess
+  coordinates and `ChessMatch.MirrorFile` is the only conversion; draughts
+  needs none, because a draughts board is symmetric across the files.
+  Under-promotion is not offered — a pawn that gets there is a queen.
+- **The seated camera has almost no slack, and every number in it was found
+  by rendering rather than by reasoning.** The eye ends at `1.06 m` over the
+  plank and `0.34 m` forward along its facing, `72` degrees, with a look band
+  of `-6..75` and `+-55` of yaw — a man leaning right over the stone. Three
+  passes of renders walked it out from the head bone, and the far end is
+  bounded too: at `1.12 m` and `0.38 m` the pieces flatten and the man
+  opposite thins to a sliver, and the shot stops being a park. Four things
+  were wrong before a capture said so, and each is now a constant with the
+  render behind it in its own comment: the eye sat exactly on the head bone
+  (lens inside the skull); the look band reached `-25` up, which showed the
+  tops of the park trees, because the man opposite sits `2.2 m` away with his
+  head *below* the hero's eye line; at `0.06 m` forward the hero's own chest
+  was a flat wall across the bottom third of the frame; and at `68` degrees
+  the near corners of the board were `2%` inside a `16:9` frame, which is a
+  coincidence rather than a margin.
+- **The pitch is derived, not authored, and it had to be.** The near edge of a
+  board this close subtends far more angle than the far one, so the angle that
+  actually centres the field is nowhere near the line to the board's middle —
+  at the final eye it is `51.3` degrees against the `30` first authored. It is now
+  the bisector of the near and far edge angles, computed from the eye
+  constants, so moving the eye can never leave the field hanging off one end
+  of the frame. `CityBoardGameTests` asserts the near edge sits as far below
+  the axis as the far edge sits above it, and separately that the outer
+  corners of the corner squares are in frame at `16:9`.
+- **The head is not a mesh, and that is why the first attempt failed.** The
+  seated view hid the two anatomical parts called Head and Neck and left the
+  player looking at the inside of his own hair, ears, nose, stubble, brows,
+  eyes, pupils and mouth: twenty-two meshes in all, most of them on `face.*`
+  bones. `Player3DHeadVisibility` now states the rule against the rig —
+  anything weighted to `head`, `neck` or `face.*` — and
+  `Player3DHeadVisibilityTests` instantiates the production prefab and asserts
+  every part lands on the right side of the collar, that the torso, arms and
+  jacket survive, that everything comes back on restore, and that a renderer
+  somebody else had already switched off is left alone. Nothing below the
+  collar is ever hidden: at the resting angle the body falls under the bottom
+  of the frame, and looking down brings his own arms back over the stone.
+- **The board has no HUD, and that is the design rather than an omission.**
+  The panel that used to sit over the board naming the game, the turn, check
+  and the ending is gone; all of it is said by the man opposite instead, as
+  ten cues of two lines each — greet, your move, check, crown, take, refused
+  pick, win, lose, draw and the offer of another game. Ordinary lines are
+  dropped while one is still on screen, the result and the offer are forced
+  through, and the offer follows the result by four seconds so the two read as
+  two sentences. `CityParkQuarrelController.SetSuppressed` stops the quarrel
+  for the sitting, because there is one bubble anchor over that set and their
+  argument would have wiped out every word about the position.
+  `CityBoardGameTests` walks the cue enum per game and asserts each line
+  exists and fits the bubble's two rows of `48` characters, so a cue can never
+  be added without a line.
+- Live men replace that table's two static batches only — one object per man
+  on the same seven meshes, the same timber sheet and the same lattice — and
+  every move is carried a step at a time so a draughts chain reads as a chain.
+  The board is re-synced from the rules at the end of every move, so a
+  presentation bug costs one frame rather than a corrupt game.
+- Picking is a plane read rather than sixty-four colliders, which also picks
+  the square under a man as readily as an empty one. `E` still stands the hero
+  up, so confirm is `Space` / west button and cancel is `Backspace`; `R`
+  restarts a finished game. Two new synthesized effects (`BoardPiecePlace`,
+  `BoardPieceTake`) and twenty localized lines the old man aims at the hero
+  rather than at his neighbour.
+- Verification: `ChessRulesTests`, `DraughtsRulesTests`, `BoardGameEngineTests`,
+  `CityBoardGameTests`, `LocalizationCatalogTests` and `RetroSfxLibraryTests` —
+  `88/89`. The one failure is pre-existing and unrelated:
+  `RetroSfxLibraryTests` asserts every effect duration is inside `0.04..0.5 s`
+  and `ToiletFlush` has been `2.6 s` since it shipped. Two throwaway edit-mode
+  renders were taken to check the seated framing and deleted afterwards. Not
+  run: PlayMode, a player build, and the rest of the EditMode suite.
+
 ## 2026-08-18 — And the hero can sit down at either board
 
 - The prompt on the two free park game planks now names the game rather than

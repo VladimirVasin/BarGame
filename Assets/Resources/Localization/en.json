@@ -1051,6 +1051,158 @@
     {
       "key": "park.quarrel.checkers.line.12",
       "value": "More rules than players at this table."
+    },
+    {
+      "key": "park.board.chess.greet.01",
+      "value": "At last. Sit, do not hover."
+    },
+    {
+      "key": "park.board.chess.greet.02",
+      "value": "I have White. Do not dawdle."
+    },
+    {
+      "key": "park.board.chess.take.01",
+      "value": "A piece was there. Now it is not."
+    },
+    {
+      "key": "park.board.chess.take.02",
+      "value": "Thank you. I will take that."
+    },
+    {
+      "key": "park.board.chess.win.01",
+      "value": "Mate. As always."
+    },
+    {
+      "key": "park.board.chess.win.02",
+      "value": "That is the game."
+    },
+    {
+      "key": "park.board.chess.lose.01",
+      "value": "Hm. Fine. It happens."
+    },
+    {
+      "key": "park.board.chess.lose.02",
+      "value": "You won. A fluke."
+    },
+    {
+      "key": "park.board.checkers.greet.01",
+      "value": "So the fourth stool was good for something."
+    },
+    {
+      "key": "park.board.checkers.greet.02",
+      "value": "Taking is compulsory, remember?"
+    },
+    {
+      "key": "park.board.checkers.take.01",
+      "value": "Eaten. And I will eat again."
+    },
+    {
+      "key": "park.board.checkers.take.02",
+      "value": "Do not offer them. I will take."
+    },
+    {
+      "key": "park.board.checkers.win.01",
+      "value": "So much for your strategy."
+    },
+    {
+      "key": "park.board.checkers.win.02",
+      "value": "Nothing left to move. Game."
+    },
+    {
+      "key": "park.board.checkers.lose.01",
+      "value": "Luck. Once."
+    },
+    {
+      "key": "park.board.checkers.lose.02",
+      "value": "Swept me. Well I never."
+    },
+    {
+      "key": "park.board.chess.yourmove.01",
+      "value": "Move. I can wait."
+    },
+    {
+      "key": "park.board.chess.yourmove.02",
+      "value": "Your move. Not all day."
+    },
+    {
+      "key": "park.board.chess.check.01",
+      "value": "Check. Look properly."
+    },
+    {
+      "key": "park.board.chess.check.02",
+      "value": "Check. Your king is crowded."
+    },
+    {
+      "key": "park.board.chess.crown.01",
+      "value": "The pawn got there. A queen now."
+    },
+    {
+      "key": "park.board.chess.crown.02",
+      "value": "A queen. Out of a pawn, mind."
+    },
+    {
+      "key": "park.board.chess.musttake.01",
+      "value": "That one is going nowhere."
+    },
+    {
+      "key": "park.board.chess.musttake.02",
+      "value": "Not that piece. Think."
+    },
+    {
+      "key": "park.board.chess.draw.01",
+      "value": "A draw. Dull."
+    },
+    {
+      "key": "park.board.chess.draw.02",
+      "value": "Nobody beat anybody. Usual."
+    },
+    {
+      "key": "park.board.chess.again.01",
+      "value": "Another? Press R."
+    },
+    {
+      "key": "park.board.chess.again.02",
+      "value": "Set it up again — R."
+    },
+    {
+      "key": "park.board.checkers.yourmove.01",
+      "value": "Your move. Get on."
+    },
+    {
+      "key": "park.board.checkers.yourmove.02",
+      "value": "Well? Do not dawdle."
+    },
+    {
+      "key": "park.board.checkers.crown.01",
+      "value": "A king. Now hold on."
+    },
+    {
+      "key": "park.board.checkers.crown.02",
+      "value": "Crowned. Start counting."
+    },
+    {
+      "key": "park.board.checkers.musttake.01",
+      "value": "Taking is compulsory. Look."
+    },
+    {
+      "key": "park.board.checkers.musttake.02",
+      "value": "Not that one. There is a take."
+    },
+    {
+      "key": "park.board.checkers.draw.01",
+      "value": "A draw. Shuffling."
+    },
+    {
+      "key": "park.board.checkers.draw.02",
+      "value": "Nobody ate anybody."
+    },
+    {
+      "key": "park.board.checkers.again.01",
+      "value": "Again? Press R."
+    },
+    {
+      "key": "park.board.checkers.again.02",
+      "value": "Set them up — R."
     }
   ]
 }

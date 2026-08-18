@@ -113,6 +113,27 @@ returns. They spawn at randomly
   balcony profile skips the first-event delay and starts filling immediately
   instead of showing an empty street.
 
+Both park boards are now playable. Sitting on either free plank starts a
+real match against a deliberately mediocre engine: full legal chess on the
+chess player's table and full Russian draughts on the neighbour's, with the
+hero dark at both because dark is the side the drawn set already had nearest
+the free plank. The camera drops to the hero's own seated eyes over the stone
+— `1.06 m` above the plank and `0.34 m` forward of it, leaning right over
+the stone, `72` degrees, `+-55` degrees of yaw and a pitch band of `-6` to
+`75`. The resting pitch is not
+authored: it is the bisector of the board's near and far edge angles, so the
+field is centred in the frame by construction. Only the head is hidden, by
+rig rule rather than by mesh name, because on this model the head is
+twenty-two meshes. That table's
+two static batches are swapped for one object per man, moves are carried a
+step at a time, and the position survives standing up and coming back. The
+rules and both engines are pure C# under `Assets/Scripts/Runtime/Games/`,
+checked by perft against the five standard positions. There is no board HUD:
+whose move it is, check, compulsory capture, promotion, the result and the
+offer of another game all arrive as lines the man opposite speaks in his own
+bubble, and the quarrel between the two of them is suppressed for as long as
+somebody is sitting at a board.
+
 One full-size ambient midibus may also be active near the player, although its
 fog-hidden spawn cadence deliberately allows periods with no visible bus. The
 actual `8.25 x 2.38 x 2.95 m`, `4.5 m`-wheelbase 3D vehicle has a visible

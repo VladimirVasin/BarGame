@@ -98,6 +98,17 @@ namespace BarPromenade
             private set;
         }
         public GameObject ParkChessLamp { get; private set; }
+
+        /// <summary>
+        /// The live games on those two boards, or <c>null</c> when
+        /// there is no set to play on. Both boards remember their
+        /// position for as long as the City runtime lives.
+        /// </summary>
+        public CityBoardGameController BoardGames
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -594,6 +605,27 @@ namespace BarPromenade
                 ParkCheckersPlayer,
                 Player.GameObject.transform,
                 SpeechBubbles,
+                GameSessionState.CitySeed);
+            // And the games themselves. Nothing on either board moves
+            // until the hero takes one of the two free planks; from
+            // that moment that table is a real match against a real,
+            // deliberately mediocre engine, and it keeps its position
+            // for as long as this City lives. Raised last because it
+            // needs the seats, the camera and the bubbles all at once.
+            BoardGames = CityBoardGameController.Create(
+                transform,
+                CityBoardGamePlan.Create(Layout, World.DecorationPlan),
+                BenchSits,
+                Player,
+                camera,
+                follow,
+                ParkChessSetMen != null
+                    ? ParkChessSetMen.GetComponent<CityChessSetMen>()
+                    : null,
+                SpeechBubbles,
+                ParkChessPlayer,
+                ParkCheckersPlayer,
+                ParkQuarrel,
                 GameSessionState.CitySeed);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();

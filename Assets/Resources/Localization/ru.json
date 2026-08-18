@@ -1051,6 +1051,158 @@
     {
       "key": "park.quarrel.checkers.line.12",
       "value": "Правил больше, чем игроков за этим столом."
+    },
+    {
+      "key": "park.board.chess.greet.01",
+      "value": "Наконец-то. Садись, не стой."
+    },
+    {
+      "key": "park.board.chess.greet.02",
+      "value": "Я белыми. Не тяни."
+    },
+    {
+      "key": "park.board.chess.take.01",
+      "value": "Была фигура — и нет фигуры."
+    },
+    {
+      "key": "park.board.chess.take.02",
+      "value": "Спасибо, я возьму."
+    },
+    {
+      "key": "park.board.chess.win.01",
+      "value": "Мат. Как всегда."
+    },
+    {
+      "key": "park.board.chess.win.02",
+      "value": "Всё, партия окончена."
+    },
+    {
+      "key": "park.board.chess.lose.01",
+      "value": "Хм. Ладно. Бывает."
+    },
+    {
+      "key": "park.board.chess.lose.02",
+      "value": "Обыграл. Это случайность."
+    },
+    {
+      "key": "park.board.checkers.greet.01",
+      "value": "О, четвёртый стул пригодился."
+    },
+    {
+      "key": "park.board.checkers.greet.02",
+      "value": "Бить обязательно, помнишь?"
+    },
+    {
+      "key": "park.board.checkers.take.01",
+      "value": "Съел. И ещё съем."
+    },
+    {
+      "key": "park.board.checkers.take.02",
+      "value": "Не подставляй, я же беру."
+    },
+    {
+      "key": "park.board.checkers.win.01",
+      "value": "Вот и вся твоя стратегия."
+    },
+    {
+      "key": "park.board.checkers.win.02",
+      "value": "Ходить нечем. Партия."
+    },
+    {
+      "key": "park.board.checkers.lose.01",
+      "value": "Повезло. Один раз."
+    },
+    {
+      "key": "park.board.checkers.lose.02",
+      "value": "Подчистил. Ну надо же."
+    },
+    {
+      "key": "park.board.chess.yourmove.01",
+      "value": "Ходи. Я подожду."
+    },
+    {
+      "key": "park.board.chess.yourmove.02",
+      "value": "Твой ход. Не весь день же."
+    },
+    {
+      "key": "park.board.chess.check.01",
+      "value": "Шах. Смотри внимательнее."
+    },
+    {
+      "key": "park.board.chess.check.02",
+      "value": "Шах. И королю тесно."
+    },
+    {
+      "key": "park.board.chess.crown.01",
+      "value": "Пешка дошла. Теперь ферзь."
+    },
+    {
+      "key": "park.board.chess.crown.02",
+      "value": "Ферзь. Из пешки, заметь."
+    },
+    {
+      "key": "park.board.chess.musttake.01",
+      "value": "Этот никуда не пойдёт."
+    },
+    {
+      "key": "park.board.chess.musttake.02",
+      "value": "Не эта фигура. Думай."
+    },
+    {
+      "key": "park.board.chess.draw.01",
+      "value": "Ничья. Скучно."
+    },
+    {
+      "key": "park.board.chess.draw.02",
+      "value": "Никто никого. Обычное дело."
+    },
+    {
+      "key": "park.board.chess.again.01",
+      "value": "Ещё партию? Жми R."
+    },
+    {
+      "key": "park.board.chess.again.02",
+      "value": "Расставляй заново — клавиша R."
+    },
+    {
+      "key": "park.board.checkers.yourmove.01",
+      "value": "Твой ход. Шевелись."
+    },
+    {
+      "key": "park.board.checkers.yourmove.02",
+      "value": "Ну? Не тяни."
+    },
+    {
+      "key": "park.board.checkers.crown.01",
+      "value": "Дамка. Теперь держись."
+    },
+    {
+      "key": "park.board.checkers.crown.02",
+      "value": "Прошёл в дамки. Считай."
+    },
+    {
+      "key": "park.board.checkers.musttake.01",
+      "value": "Бить обязательно. Ищи."
+    },
+    {
+      "key": "park.board.checkers.musttake.02",
+      "value": "Этой нельзя. Есть бой."
+    },
+    {
+      "key": "park.board.checkers.draw.01",
+      "value": "Ничья. Топчемся."
+    },
+    {
+      "key": "park.board.checkers.draw.02",
+      "value": "Никто никого не съел."
+    },
+    {
+      "key": "park.board.checkers.again.01",
+      "value": "Ещё? Жми R."
+    },
+    {
+      "key": "park.board.checkers.again.02",
+      "value": "Расставляй — клавиша R."
     }
   ]
 }

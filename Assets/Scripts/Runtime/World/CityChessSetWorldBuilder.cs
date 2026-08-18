@@ -30,13 +30,39 @@ namespace BarPromenade
         /// light square has nothing but its own shading to separate it
         /// and the board batch is drawn shadowless and flat.
         /// </summary>
-        private static readonly Color LightManColor =
+        public static readonly Color LightManColor =
             new Color(0.365f, 0.297f, 0.230f);
-        private static readonly Color DarkManColor =
+        public static readonly Color DarkManColor =
             new Color(0.072f, 0.086f, 0.094f);
 
         private const CityParkSurfaceKind ManSurface =
             CityParkSurfaceKind.Timber;
+
+        /// <summary>
+        /// The sheet pitch and projection a man is unwrapped at. Public
+        /// because a live game replaces these batches with one object
+        /// per man and a piece that wore a different grain would read
+        /// as a different set.
+        /// </summary>
+        public static float ManSurfaceMetersPerTile =>
+            CityParkSurfaceAppearance
+                .GetRecipe(ManSurface)
+                .MetersPerTile;
+
+        public static RuntimeWorldUvMode ManSurfaceUvMode =>
+            CityParkSurfaceAppearance.GetUvMode(ManSurface);
+
+        /// <summary>Textures one man, batched or live, the one way a
+        /// man on this board is textured.</summary>
+        public static void ApplyManAppearance(
+            Renderer renderer,
+            bool isLight)
+        {
+            CityParkSurfaceAppearance.ApplyCombined(
+                renderer,
+                ManSurface,
+                isLight ? LightManColor : DarkManColor);
+        }
 
         /// <summary>
         /// Raises both sets, or returns <c>null</c> when the layout grew
@@ -68,7 +94,7 @@ namespace BarPromenade
                 return null;
             }
 
-            if (!TryFindBoardBasis(
+            if (!TryDescribeBoardBasis(
                     layout,
                     decorations,
                     out Vector3 origin,
@@ -83,6 +109,7 @@ namespace BarPromenade
 
             var root = new GameObject(RuntimeRootName);
             root.transform.SetParent(parent, false);
+            CityChessSetMen men3d = root.AddComponent<CityChessSetMen>();
 
             // One bucket per (table, colour). Four combined meshes for
             // fifty-six men is the whole reason the plan is a list of
@@ -137,6 +164,7 @@ namespace BarPromenade
                             .MetersPerTile,
                         CityParkSurfaceAppearance.GetUvMode(ManSurface),
                         Vector3.zero);
+                men3d.RegisterBatch(draughts ? 1 : -1, combined);
                 Renderer renderer = combined.GetComponent<Renderer>();
                 // Unlike the flat board batch these do cast, and it is
                 // the one thing that separates a light man from a light
@@ -157,34 +185,68 @@ namespace BarPromenade
             return root;
         }
 
-        private static bool TryFindBoardBasis(
+        /// <summary>
+        /// The frame the chess recipe was drawn in: where its middle
+        /// is, which way its boards face and which way their files run.
+        /// Public because the live game played on those boards has to
+        /// land on exactly the same lattice the static set did.
+        /// </summary>
+        public static bool TryDescribeBoardBasis(
             CityLayout layout,
             CityDecorationPlan decorations,
             out Vector3 origin,
             out Vector3 forward,
             out Vector3 tangent)
         {
-            for (int index = 0;
-                 index < decorations.Descriptors.Count;
-                 index++)
+            if (layout != null && decorations != null)
             {
-                CityDecorationDescriptor descriptor =
-                    decorations.Descriptors[index];
-                if (descriptor.Kind !=
-                    CityDecorationKind.ParkChessTables)
+                for (int index = 0;
+                     index < decorations.Descriptors.Count;
+                     index++)
                 {
-                    continue;
-                }
+                    CityDecorationDescriptor descriptor =
+                        decorations.Descriptors[index];
+                    if (descriptor.Kind !=
+                        CityDecorationKind.ParkChessTables)
+                    {
+                        continue;
+                    }
 
-                if (!CityDecorationWorldBuilder.TryDescribeRecipeBasis(
-                        layout,
-                        descriptor,
-                        out origin,
-                        out forward))
-                {
-                    continue;
+                    if (TryDescribeBoardBasis(
+                            layout,
+                            descriptor,
+                            out origin,
+                            out forward,
+                            out tangent))
+                    {
+                        return true;
+                    }
                 }
+            }
 
+            origin = Vector3.zero;
+            forward = Vector3.forward;
+            tangent = Vector3.right;
+            return false;
+        }
+
+        /// <summary>The same frame for one already-selected chess
+        /// decoration.</summary>
+        public static bool TryDescribeBoardBasis(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            out Vector3 origin,
+            out Vector3 forward,
+            out Vector3 tangent)
+        {
+            if (layout != null &&
+                descriptor.Kind == CityDecorationKind.ParkChessTables &&
+                CityDecorationWorldBuilder.TryDescribeRecipeBasis(
+                    layout,
+                    descriptor,
+                    out origin,
+                    out forward))
+            {
                 tangent = new Vector3(-forward.z, 0f, forward.x);
                 return true;
             }

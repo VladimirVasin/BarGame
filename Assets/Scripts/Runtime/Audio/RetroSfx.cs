@@ -40,6 +40,8 @@ namespace BarPromenade
         RefrigeratorThunk,
         ToiletFlush,
         TeethBrushScrub,
+        BoardPiecePlace,
+        BoardPieceTake,
         Count
     }
 
@@ -418,7 +420,33 @@ namespace BarPromenade
                 1024,
                 5200f,
                 0.030f,
-                58)
+                58),
+            new RetroSfxDefinition(
+                RetroSfxId.BoardPiecePlace,
+                RetroSfxCategory.World,
+                0.16f,
+                0.34f,
+                0f,
+                2,
+                0.04f,
+                2,
+                1024,
+                6800f,
+                0.055f,
+                62),
+            new RetroSfxDefinition(
+                RetroSfxId.BoardPieceTake,
+                RetroSfxCategory.World,
+                0.22f,
+                0.38f,
+                0f,
+                2,
+                0.05f,
+                2,
+                1024,
+                6200f,
+                0.045f,
+                60)
         };
 
         public static int Count => definitions.Length - 1;
@@ -549,6 +577,16 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.TeethBrushScrub:
                     return GenerateTeethBrushScrub(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.BoardPiecePlace:
+                    return GenerateBoardPiecePlace(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.BoardPieceTake:
+                    return GenerateBoardPieceTake(
                         time,
                         duration,
                         ref noiseState);
@@ -803,6 +841,52 @@ namespace BarPromenade
                 Mathf.Exp(-time * 18f) *
                 0.16f;
             return (body + rattle + canRing) * envelope;
+        }
+
+        /// <summary>
+        /// Turned wood set down on a stone slab: a short low knock with
+        /// a bright tick off the polish and almost no tail, because the
+        /// slab does not ring.
+        /// </summary>
+        private static float GenerateBoardPiecePlace(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.001f, 5f);
+            float knock = GlideSine(time, duration, 210f, 150f) * 0.70f;
+            float tick =
+                Mathf.Sin(2f * Mathf.PI * 1450f * time) *
+                Mathf.Exp(-time * 70f) *
+                0.26f;
+            float grain =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 95f) *
+                0.16f;
+            return (knock + tick + grain) * envelope;
+        }
+
+        /// <summary>
+        /// The same knock with the scrape of a man being dragged off
+        /// the board in front of it.
+        /// </summary>
+        private static float GenerateBoardPieceTake(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.002f, 3.6f);
+            float knock = GlideSine(time, duration, 260f, 170f) * 0.52f;
+            float scrape =
+                NextNoise(ref noiseState) *
+                Mathf.Max(0f, 1f - normalized * 1.4f) *
+                0.28f;
+            float clack =
+                Mathf.Sin(2f * Mathf.PI * 980f * time) *
+                Mathf.Exp(-time * 40f) *
+                0.20f;
+            return (knock + scrape + clack) * envelope;
         }
 
         private static float GeneratePour(

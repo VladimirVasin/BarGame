@@ -87,6 +87,7 @@ namespace BarPromenade
         private int lastCheckersLineIndex = -1;
 
         private ParkQuarrelSpeaker pendingSpeaker;
+        private bool isSuppressed;
         private string pendingLineKey = string.Empty;
         private bool pendingRidesClip;
         private bool hasPendingLine;
@@ -95,6 +96,29 @@ namespace BarPromenade
         /// <summary>True while the hero is close enough that the two of
         /// them are actually going at it.</summary>
         public bool IsEngaged => isEngaged;
+
+        /// <summary>
+        /// True while somebody is sitting at one of the boards. The
+        /// quarrel stops dead for as long as that lasts: the bubble is
+        /// the only channel a game has, and two old men shouting at
+        /// each other every five seconds would wipe out every word the
+        /// opponent says about the position.
+        /// </summary>
+        public bool IsSuppressed => isSuppressed;
+
+        public void SetSuppressed(bool suppressed)
+        {
+            if (isSuppressed == suppressed)
+            {
+                return;
+            }
+
+            isSuppressed = suppressed;
+            if (isSuppressed)
+            {
+                Disengage();
+            }
+        }
 
         /// <summary>The last line served, for tests and logs.</summary>
         public string LastLineKey { get; private set; } = string.Empty;
@@ -191,7 +215,8 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (chessPlayer == null ||
+            if (isSuppressed ||
+                chessPlayer == null ||
                 checkersPlayer == null ||
                 player == null)
             {

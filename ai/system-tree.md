@@ -175,6 +175,14 @@ Assets/
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
+      Games/         pure rules and engines for the two park boards, no Unity
+        BoardGameContracts.cs  side/status/placement/action/turn contract both games answer
+        ChessRules.cs          legal chess: make/unmake, castling, en passant, promotion, attack map
+        ChessEngine.cs         negamax + piece-square tables + quiescence + slack pick
+        ChessMatch.cs          the one file-mirror between chess coordinates and the drawn lattice
+        DraughtsRules.cs       Russian draughts: compulsory chains, flying kings, Turkish strike
+        DraughtsEngine.cs      negamax over snapshots + forced-capture extension + slack pick
+        DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
@@ -227,6 +235,10 @@ Assets/
         CityDecorationWorldBuilder.cs  six-style visuals, chunked collision proxies + utility dock read-back
         CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
         CityStreetUtilityWorldBuilder.cs  one placeholder trigger per utility dock
+        CityBoardGamePlan.cs     playable tables, seated eye pose + board-plane square picking
+        CityBoardGamePieces.cs   live men on one table: pooled views, carries, sweeps and crowns
+        CityBoardGameMarkers.cs  pooled emissive plates for hover/selection/destinations/check
+        CityChessSetMen.cs       the four static batches, remembered per table so one can be hidden
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
         CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
         CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
@@ -327,6 +339,8 @@ Assets/
         CemeteryWatchmanPresentation.cs  one-clip manual PlayableGraph (the watch loop)
         CemeteryWatchmanFactory.cs  one permanent instance + its own talk trigger
         CemeteryWatchmanProvider.cs  the only serialized reference to the staged prefab
+      Park/          the two old men's boards, once somebody sits down at one
+        CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof
@@ -366,6 +380,7 @@ Assets/
         Player3DCharacterPresentation.cs clips + physics handoff + full-body Rise sampling
         Player3DRagdollController.cs     bounded 13-body failed-balance physics + pose recovery
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
+        Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
         InventoryState.cs           atomic bounded stack mutations + starters

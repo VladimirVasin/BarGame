@@ -2036,3 +2036,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and the ground the mask admits are derived from one basin. Pedestrians are
   unaffected in practice: they consume the mask only as a clamp, not as a
   source of destinations.
+- **Accepted — the park boards are played by a pure engine the presentation
+  never argues with:** the two games live under `Assets/Scripts/Runtime/Games/`
+  as plain C# — position, legal moves, apply, search — and the scene layer
+  only ever asks for the current placement and the description of one applied
+  move. Three consequences were worth the split. Chess correctness is provable
+  by perft rather than by playing it, which is the only honest way to know a
+  move generator is right. The presentation can be wrong for at most one move:
+  every carry ends with the board re-read from the rules, so a mis-animated
+  chain repairs itself instead of compounding into a corrupt game. And the
+  engine's strength is one number in one struct rather than a property of the
+  code, which is what let the opponent be tuned down to a plausible old man —
+  a slack window at the root, a blunder roll, and an explicit exception that
+  never throws away a forced mate.
+- **Accepted — the hero is dark at both boards because the set already was:**
+  nothing chooses sides. The free plank at each table is the one the drawn
+  `CityChessSetPlan` filled with dark men, so the man opposite is White at his
+  own board and therefore opens. A test asserts the live opening position
+  equals the drawn placement piece for piece, which keeps the two from ever
+  drifting — the moment somebody sits down, the set they were looking at is
+  the position they are playing.
+- **Accepted — a first-person camera hides the head by rig rule, never by
+  mesh:** the hero's head is twenty-two separate meshes on this model — skull,
+  neck, hair cap and fourteen tufts, ears, nose, stubble, under-eye shadows,
+  and then eyes, pupils, brows and a mouth on their own `face.*` bones. The
+  first seated view hid the two anatomical parts named Head and Neck and left
+  the player looking at the inside of his own hair, which is the exact class of
+  bug that a list of mesh names reintroduces every time the model grows a part.
+  `Player3DHeadVisibility` therefore classifies by bone (`head`, `neck`,
+  `face.*`), so a part added later is covered by where it is weighted rather
+  than by somebody remembering to add it. Nothing below the collar is ever
+  hidden: the body is what tells the player he is sitting at the board, and the
+  camera is moved out of the skull instead.

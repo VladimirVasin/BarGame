@@ -55,6 +55,16 @@ namespace BarPromenade
         private CityBenchSitPlan plan;
         private PlayerAnimatedInteractionDefinition definition;
         private bool ownsActiveInteraction;
+        private bool seated;
+
+        /// <summary>
+        /// Raised when the hero settles onto this plank and again when
+        /// he leaves it. The two park game seats are the reason it
+        /// exists: sitting down at a board is the start of a game, and
+        /// the game has to know which board without polling every
+        /// bench in the city for a private flag.
+        /// </summary>
+        public event Action<CityBenchSitInteraction, bool> SeatedChanged;
 
         public string PromptKey =>
             ownsActiveInteraction &&
@@ -68,6 +78,10 @@ namespace BarPromenade
         public PlayerAnimatedInteractionController Controller =>
             controller;
         public CityBenchSitPlan Plan => plan;
+
+        /// <summary>The hero is on this plank, in the seated loop
+        /// rather than still walking in or standing up.</summary>
+        public bool IsSeated => seated;
 
         public void Initialize(
             PlayerRuntime player,
@@ -255,6 +269,21 @@ namespace BarPromenade
                 ownsActiveInteraction = false;
                 CityBenchSeatClaims.Release(plan.Id, this);
             }
+
+            UpdateSeated(
+                ownsActiveInteraction &&
+                phase == PlayerAnimatedInteractionPhase.Looping);
+        }
+
+        private void UpdateSeated(bool value)
+        {
+            if (seated == value)
+            {
+                return;
+            }
+
+            seated = value;
+            SeatedChanged?.Invoke(this, seated);
         }
 
         private void OnDisable()
@@ -280,6 +309,7 @@ namespace BarPromenade
 
             controller?.CancelActiveInteraction();
             ownsActiveInteraction = false;
+            UpdateSeated(false);
             CityBenchSeatClaims.Release(plan.Id, this);
         }
     }
