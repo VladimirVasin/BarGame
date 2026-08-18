@@ -573,7 +573,9 @@ namespace BarPromenade
                 case CityDecorationKind.ParkBandstand:
                     return 5f;
                 case CityDecorationKind.ParkChessTables:
-                    return 2.8f;
+                    // Two tables nearly four metres apart, each with a
+                    // bench standing off both of its long sides.
+                    return 3f;
                 case CityDecorationKind.ParkPlayground:
                     // The frame is small; what needs the room is the
                     // bench pushed clear of the swing arc behind it.

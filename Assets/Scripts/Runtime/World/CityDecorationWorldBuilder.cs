@@ -174,7 +174,7 @@ namespace BarPromenade
             descriptor.TryResolveLot(
                 layout,
                 out BuildingLot lot);
-            var context = new RecipeContext(descriptor, lot);
+            var context = new RecipeContext(layout, descriptor, lot);
             switch (descriptor.Kind)
             {
                 case CityDecorationKind.OldTownChimneysAndDormers:
@@ -434,11 +434,37 @@ namespace BarPromenade
         private const float CouchWidth = 2.20f;
         private const float CouchDepth = 0.92f;
         private const float ChessTableOffset = 1.85f;
+        // How far a chess foot is sunk past the grass it stands on, so
+        // the join reads as a footing bedded into the lawn rather than
+        // a box resting on a surface it only touches at one point.
+        private const float ChessGroundEmbed = 0.12f;
+        private const float ChessFootingSize = 0.66f;
+        private const float ChessFootingTopY = 0.12f;
+        private const float ChessPedestalSize = 0.34f;
+        private const float ChessPedestalTopY = 0.80f;
+        private const float ChessSlabSize = 1.44f;
+        private const float ChessSlabThickness = 0.14f;
+        private const float ChessTableTopY = 0.90f;
+        private const int ChessSquaresPerSide = 8;
+        private const float ChessSquareSize = 0.15f;
+        private const float ChessFieldSize =
+            ChessSquareSize * ChessSquaresPerSide;
+        private const float ChessLightTopY = ChessTableTopY + 0.035f;
+        private const float ChessSquareSink = 0.012f;
+        private const float ChessSquareProud = 0.005f;
+        private const float ChessRimWidth = 0.07f;
+        private const float ChessRimTopY = ChessLightTopY + 0.018f;
         private const float ChessBenchSeatCenterY = 0.46f;
         private const float ChessBenchSeatThickness = 0.16f;
-        private const float ChessBenchZ = 1.02f;
-        private const float ChessBenchWidth = 0.90f;
-        private const float ChessBenchDepth = 0.38f;
+        private const float ChessBenchZ = 1.10f;
+        private const float ChessBenchWidth = 1.12f;
+        private const float ChessBenchDepth = 0.42f;
+        private const float ChessBenchLegInset = 0.18f;
+        private const float ChessBenchLegWidth = 0.14f;
+        private const float ChessBenchLegDepth = 0.34f;
+        private const float ChessBenchPadWidth = 0.30f;
+        private const float ChessBenchPadDepth = 0.44f;
+        private const float ChessBenchPadTopY = 0.04f;
         private const float PlaygroundBenchZ =
             CityPlaygroundGeometry.BenchZ;
         private const float PlaygroundBenchSeatCenterY = 0.62f;
@@ -471,7 +497,7 @@ namespace BarPromenade
             descriptor.TryResolveLot(
                 layout,
                 out BuildingLot lot);
-            var context = new RecipeContext(descriptor, lot);
+            var context = new RecipeContext(layout, descriptor, lot);
             switch (descriptor.Kind)
             {
                 case CityDecorationKind.ResidentialDiscardedFurniture:
@@ -542,7 +568,7 @@ namespace BarPromenade
             }
 
             descriptor.TryResolveLot(layout, out BuildingLot lot);
-            var context = new RecipeContext(descriptor, lot);
+            var context = new RecipeContext(layout, descriptor, lot);
             origin = context.Origin;
             forward = context.Forward;
             return forward.sqrMagnitude > 0.0001f;
@@ -634,7 +660,7 @@ namespace BarPromenade
             descriptor.TryResolveLot(
                 layout,
                 out BuildingLot lot);
-            var context = new RecipeContext(descriptor, lot);
+            var context = new RecipeContext(layout, descriptor, lot);
             float depthScale = context.StreetDepthScale;
             switch (descriptor.Kind)
             {
@@ -1218,32 +1244,141 @@ namespace BarPromenade
                 1.85f, 0.12f, 0.12f);
         }
 
+        /// <summary>
+        /// Two park chess tables, each a stone pedestal on a bedded
+        /// footing carrying an inlaid board, flanked by a bench on
+        /// either side.
+        ///
+        /// Nothing here is drawn down to the recipe's origin plane. The
+        /// set is anchored at one sampled point but spans nearly four
+        /// metres of lawn that keeps sloping under it - a tenth of a
+        /// metre between the two tables in the default city - so every
+        /// foot asks the terrain what height it stands on and is drawn
+        /// down past it. That is what stops the downhill table and its
+        /// benches hanging over the grass.
+        /// </summary>
         private static void BuildChessTables(
             RecipeContext c,
             ICollection<DecorationPart> parts)
         {
+            const CityParkSurfaceKind stone = CityParkSurfaceKind.Stone;
             for (int table = -1; table <= 1; table += 2)
             {
                 float x = table * ChessTableOffset;
-                Add(parts, c, BatchStyle.Masonry,
-                    CityParkSurfaceKind.Stone, x, 0.82f, 0f,
-                    1.20f, 0.14f, 1.20f);
-                Add(parts, c, BatchStyle.Masonry,
-                    CityParkSurfaceKind.Stone, x, 0.40f, 0f,
-                    0.28f, 0.80f, 0.28f);
-                Add(parts, c, BatchStyle.Residential,
-                    CityParkSurfaceKind.Timber, x, 0.90f, 0f,
-                    0.92f, 0.05f, 0.92f);
-                Add(parts, c, BatchStyle.Street,
-                    CityParkSurfaceKind.Timber, x,
-                    ChessBenchSeatCenterY, -ChessBenchZ,
-                    ChessBenchWidth, ChessBenchSeatThickness,
-                    ChessBenchDepth);
-                Add(parts, c, BatchStyle.Street,
-                    CityParkSurfaceKind.Timber, x,
-                    ChessBenchSeatCenterY, ChessBenchZ,
-                    ChessBenchWidth, ChessBenchSeatThickness,
-                    ChessBenchDepth);
+                float ground = c.GroundDrop(x, 0f) - ChessGroundEmbed;
+                AddColumn(parts, c, BatchStyle.Masonry, stone,
+                    x, 0f, ground, ChessFootingTopY,
+                    ChessFootingSize, ChessFootingSize);
+                AddColumn(parts, c, BatchStyle.Masonry, stone,
+                    x, 0f, ground, ChessPedestalTopY,
+                    ChessPedestalSize, ChessPedestalSize);
+                AddColumn(parts, c, BatchStyle.Masonry, stone,
+                    x, 0f,
+                    ChessTableTopY - ChessSlabThickness,
+                    ChessTableTopY,
+                    ChessSlabSize, ChessSlabSize);
+                BuildChessBoard(c, parts, x);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    BuildChessBench(c, parts, x, side);
+                }
+            }
+        }
+
+        /// <summary>
+        /// One playing board, drawn square by square.
+        ///
+        /// It cannot be a sheet: the park textures ride world UVs, which
+        /// tile by world position, so an eight-by-eight pattern would
+        /// land wherever the table happened to stand and cut its own
+        /// squares off at the board's edge. Sixty-four drawn squares are
+        /// the only way the pattern registers with the board it is on -
+        /// a real board's colouring, a1 dark and h1 light, inside a rim
+        /// that stops the outer rank bleeding into the stone.
+        ///
+        /// The light half is one plate; the dark squares are set into it
+        /// and stand a few millimetres proud, which keeps the two planes
+        /// out of a depth fight and gives the inlay the shallow lip real
+        /// boards have.
+        /// </summary>
+        private static void BuildChessBoard(
+            RecipeContext c,
+            ICollection<DecorationPart> parts,
+            float x)
+        {
+            const CityParkSurfaceKind timber = CityParkSurfaceKind.Timber;
+            AddColumn(parts, c, BatchStyle.Masonry, timber,
+                x, 0f, ChessTableTopY, ChessLightTopY,
+                ChessFieldSize, ChessFieldSize);
+            const float squareOffset = (ChessSquaresPerSide - 1) * 0.5f;
+            for (int file = 0; file < ChessSquaresPerSide; file++)
+            {
+                for (int rank = 0; rank < ChessSquaresPerSide; rank++)
+                {
+                    if (((file + rank) & 1) != 0)
+                    {
+                        continue;
+                    }
+
+                    AddColumn(parts, c, BatchStyle.Street, timber,
+                        x + (file - squareOffset) * ChessSquareSize,
+                        (rank - squareOffset) * ChessSquareSize,
+                        ChessLightTopY - ChessSquareSink,
+                        ChessLightTopY + ChessSquareProud,
+                        ChessSquareSize, ChessSquareSize);
+                }
+            }
+
+            const float rimCenter =
+                (ChessFieldSize + ChessRimWidth) * 0.5f;
+            const float rimOuter =
+                ChessFieldSize + ChessRimWidth * 2f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                AddColumn(parts, c, BatchStyle.Street, timber,
+                    x, side * rimCenter,
+                    ChessTableTopY, ChessRimTopY,
+                    rimOuter, ChessRimWidth);
+                AddColumn(parts, c, BatchStyle.Street, timber,
+                    x + side * rimCenter, 0f,
+                    ChessTableTopY, ChessRimTopY,
+                    ChessRimWidth, ChessFieldSize);
+            }
+        }
+
+        /// <summary>
+        /// One chess bench: the seat it always had, now standing on two
+        /// stone legs that run from it down to the lawn under that end,
+        /// each ending in a pad bedded into the grass. A seat with
+        /// nothing beneath it floats by its own seat height however well
+        /// the anchor was placed.
+        /// </summary>
+        private static void BuildChessBench(
+            RecipeContext c,
+            ICollection<DecorationPart> parts,
+            float x,
+            int side)
+        {
+            const CityParkSurfaceKind stone = CityParkSurfaceKind.Stone;
+            float z = side * ChessBenchZ;
+            Add(parts, c, BatchStyle.Street, CityParkSurfaceKind.Timber,
+                x, ChessBenchSeatCenterY, z,
+                ChessBenchWidth, ChessBenchSeatThickness,
+                ChessBenchDepth);
+            float legTop =
+                ChessBenchSeatCenterY - ChessBenchSeatThickness * 0.25f;
+            for (int end = -1; end <= 1; end += 2)
+            {
+                float legX = x + end *
+                    (ChessBenchWidth * 0.5f - ChessBenchLegInset);
+                float ground = c.GroundDrop(legX, z) - ChessGroundEmbed;
+                AddColumn(parts, c, BatchStyle.Masonry, stone,
+                    legX, z, ground,
+                    ground + ChessGroundEmbed + ChessBenchPadTopY,
+                    ChessBenchPadWidth, ChessBenchPadDepth);
+                AddColumn(parts, c, BatchStyle.Masonry, stone,
+                    legX, z, ground, legTop,
+                    ChessBenchLegWidth, ChessBenchLegDepth);
             }
         }
 
@@ -1296,6 +1431,39 @@ namespace BarPromenade
             Add(parts, c, BatchStyle.Street, metal, 0f, 0.34f,
                 PlaygroundBenchZ,
                 0.42f, 0.68f, 0.42f);
+        }
+
+        /// <summary>
+        /// A park-landmark part stated by the two heights it runs
+        /// between rather than by a centre and a height. Anything
+        /// standing on sampled ground is naturally described that way -
+        /// a footing runs from the grass under it up to a fixed height -
+        /// and solving for the centre at every call site is where the
+        /// half-thicknesses go wrong.
+        /// </summary>
+        private static void AddColumn(
+            ICollection<DecorationPart> parts,
+            RecipeContext context,
+            BatchStyle style,
+            CityParkSurfaceKind surface,
+            float x,
+            float z,
+            float bottomY,
+            float topY,
+            float width,
+            float depth)
+        {
+            Add(
+                parts,
+                context,
+                style,
+                surface,
+                x,
+                (bottomY + topY) * 0.5f,
+                z,
+                width,
+                Mathf.Max(0.01f, topY - bottomY),
+                depth);
         }
 
         /// <summary>
@@ -1623,9 +1791,11 @@ namespace BarPromenade
         private readonly struct RecipeContext
         {
             public RecipeContext(
+                CityLayout layout,
                 CityDecorationDescriptor descriptor,
                 BuildingLot lot)
             {
+                Layout = layout;
                 Descriptor = descriptor;
                 Lot = lot;
                 Origin = descriptor.Position;
@@ -1651,6 +1821,7 @@ namespace BarPromenade
                     : BatchStyle.NeonMagenta;
             }
 
+            public CityLayout Layout { get; }
             public CityDecorationDescriptor Descriptor { get; }
             public BuildingLot Lot { get; }
             public Vector3 Origin { get; }
@@ -1698,6 +1869,39 @@ namespace BarPromenade
                     ? Lot.Size.x
                     : Lot.Size.y;
             public float Height => Lot == null ? 7f : Lot.Height;
+
+            /// <summary>
+            /// How far the terrain under a recipe-local footprint sits
+            /// from the recipe's own origin plane: negative downhill,
+            /// positive uphill. A ground decoration is anchored at one
+            /// sampled point, but the park lawn keeps sloping under the
+            /// rest of it, so a foot drawn down to y = 0 hangs in the
+            /// air on the downhill side of its own anchor. A foot drawn
+            /// down to this drop meets the grass instead.
+            ///
+            /// Zero when the sample falls outside the terrain contract,
+            /// which leaves the recipe on its origin plane exactly as
+            /// before.
+            /// </summary>
+            public float GroundDrop(float x, float z)
+            {
+                if (Layout == null)
+                {
+                    return 0f;
+                }
+
+                Vector3 foot =
+                    Origin +
+                    Tangent * x +
+                    Forward * (z * StreetDepthScale);
+                return CityTerrainSurfacePlan.TrySampleGroundTop(
+                    Layout,
+                    new Vector2(foot.x, foot.z),
+                    out float top,
+                    out _)
+                    ? top - Origin.y
+                    : 0f;
+            }
 
             private static Vector3 ResolveForward(
                 Vector3 candidate,

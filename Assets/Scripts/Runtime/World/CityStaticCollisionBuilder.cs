@@ -117,8 +117,11 @@ namespace BarPromenade
                     context.Add(target, 0f, 0.50f, 0f, 6.80f, 1.00f, 5.60f);
                     break;
                 case CityDecorationKind.ParkChessTables:
-                    context.Add(target, -1.85f, 0.55f, 0f, 1.28f, 1.10f, 2.45f);
-                    context.Add(target, 1.85f, 0.55f, 0f, 1.28f, 1.10f, 2.45f);
+                    // Table, board and both benches per side. The box
+                    // starts below the anchor plane because the set
+                    // beds its feet into a lawn that slopes under it.
+                    context.Add(target, -1.85f, 0.45f, 0f, 1.50f, 1.30f, 2.70f);
+                    context.Add(target, 1.85f, 0.45f, 0f, 1.50f, 1.30f, 2.70f);
                     break;
                 case CityDecorationKind.ParkPlayground:
                     AddPlayground(context, target);
