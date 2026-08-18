@@ -86,9 +86,9 @@ namespace BarPromenade
 
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
-            CityRiverResources.SetNightFactor(
+            CityWaterResources.SetNightFactor(
                 CityNightGlowRegistry.NightFactor);
-            CityRiverResources.SetRainIntensity(
+            CityWaterResources.SetRainIntensity(
                 GameWeatherRules.EvaluateCurrent().RainIntensity);
 
             BuildRiverbed(root, layout.River);

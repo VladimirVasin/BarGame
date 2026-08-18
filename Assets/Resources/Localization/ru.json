@@ -875,6 +875,70 @@
     {
       "key": "journal.hint",
       "value": "J / Esc — закрыть"
+    },
+    {
+      "key": "interaction.talk_fisherman",
+      "value": "E — заговорить с рыбаком"
+    },
+    {
+      "key": "lake.fisherman.line.01",
+      "value": "Не клюёт."
+    },
+    {
+      "key": "lake.fisherman.line.02",
+      "value": "С утра клевало. Теперь — нет."
+    },
+    {
+      "key": "lake.fisherman.line.03",
+      "value": "Ветер сменился. Всё, до вечера."
+    },
+    {
+      "key": "lake.fisherman.line.04",
+      "value": "Вода тёплая. Значит, стоит внизу."
+    },
+    {
+      "key": "lake.fisherman.line.05",
+      "value": "Свистеть тут не надо."
+    },
+    {
+      "key": "lake.fisherman.line.06",
+      "value": "Считать улов до конца — плохо."
+    },
+    {
+      "key": "lake.fisherman.line.07",
+      "value": "Дождь будет. К ночи."
+    },
+    {
+      "key": "lake.fisherman.line.08",
+      "value": "Дождя не будет. Я на облака смотрел."
+    },
+    {
+      "key": "lake.fisherman.line.09",
+      "value": "Лодки не дают. Уже лет десять как."
+    },
+    {
+      "key": "lake.fisherman.line.10",
+      "value": "Тут глубоко. Метра три, если у мостков."
+    },
+    {
+      "key": "lake.fisherman.line.11",
+      "value": "Раньше карась был. Сейчас — не знаю."
+    },
+    {
+      "key": "lake.fisherman.line.12",
+      "value": "Первую всегда отпускаю. Так надо."
+    },
+    {
+      "key": "lake.fisherman.line.13",
+      "value": "Фонарь мешает. Рыба свет видит."
+    },
+    {
+      "key": "lake.fisherman.line.14",
+      "value": "Тихо. Хорошо, что тихо."
+    },
+    {
+      "key": "lake.fisherman.line.15",
+      "value": "Скоро домой. Ещё немного посижу."
     }
   ]
 }

@@ -7,10 +7,6 @@ namespace BarPromenade
 {
     public enum CityOpenAreaDecorationKind
     {
-        LakeWaterEdge = 0,
-        LakeReeds = 1,
-        LakeRock = 2,
-        LakeBoat = 3,
         YardDeadTree = 10,
         YardBench = 11,
         YardCarpetFrame = 12,
@@ -23,9 +19,6 @@ namespace BarPromenade
 
     public enum CityOpenAreaDecorationStyle
     {
-        LakeStone = 0,
-        Reeds = 1,
-        WeatheredWood = 2,
         TreeTrunk = 6,
         YardTimber = 9,
         YardPipe = 10,
@@ -91,9 +84,9 @@ namespace BarPromenade
 
     public sealed class CityOpenAreaDecorationPlan
     {
-        // The cemetery now budgets its own dedicated plan; this covers
-        // the lake shoreline and the authored bar-side yard only.
-        public const int MaximumPartCount = 260;
+        // The cemetery and the lake both budget their own dedicated
+        // plans now; this covers the authored bar-side yard only.
+        public const int MaximumPartCount = 180;
 
         private readonly ReadOnlyCollection<
             CityOpenAreaDecorationDescriptor> descriptors;
@@ -142,7 +135,6 @@ namespace BarPromenade
         {
             switch (style)
             {
-                case CityOpenAreaDecorationStyle.Reeds:
                 // The dropped toy is ankle-high; it may not stop a body.
                 case CityOpenAreaDecorationStyle.YardPaint:
                     return false;
@@ -184,8 +176,7 @@ namespace BarPromenade
             }
 
             var descriptors =
-                new List<CityOpenAreaDecorationDescriptor>(260);
-            BuildLake(layout, descriptors);
+                new List<CityOpenAreaDecorationDescriptor>(180);
             HomeYardSitePlan? homeYardSite =
                 HomeYardSitePlanner.Create(layout);
             BuildHomeYard(layout, descriptors, homeYardSite);
@@ -541,263 +532,6 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The home-yard spotlight hot core must cover the full " +
                     "wheelchair circuit inside its protected range.");
-            }
-        }
-
-        private static void BuildLake(
-            CityLayout layout,
-            ICollection<CityOpenAreaDecorationDescriptor> target)
-        {
-            var lakeByCell =
-                new Dictionary<Vector2Int, CitySurfaceDescriptor>();
-            var shore = new List<CitySurfaceDescriptor>();
-            var water = new List<CitySurfaceDescriptor>();
-            var shoreAnchors = new List<ShoreAnchor>();
-            for (int index = 0; index < layout.Surfaces.Count; index++)
-            {
-                CitySurfaceDescriptor surface = layout.Surfaces[index];
-                if (surface.Feature != CityAreaFeatureKind.Lake)
-                {
-                    continue;
-                }
-
-                lakeByCell.Add(surface.Cell, surface);
-                if (surface.IsWater)
-                {
-                    water.Add(surface);
-                }
-                else if (surface.Kind == CitySurfaceKind.LakeShore)
-                {
-                    shore.Add(surface);
-                }
-            }
-
-            if (shore.Count == 0 || water.Count == 0)
-            {
-                return;
-            }
-
-            int edgeIndex = 0;
-            for (int waterIndex = 0; waterIndex < water.Count; waterIndex++)
-            {
-                CitySurfaceDescriptor waterSurface = water[waterIndex];
-                for (int directionIndex = 0;
-                     directionIndex < CardinalDirections.Length;
-                     directionIndex++)
-                {
-                    Vector2Int direction =
-                        CardinalDirections[directionIndex];
-                    if (!lakeByCell.TryGetValue(
-                            waterSurface.Cell + direction,
-                            out CitySurfaceDescriptor neighbour) ||
-                        neighbour.Kind != CitySurfaceKind.LakeShore)
-                    {
-                        continue;
-                    }
-
-                    target.Add(new CityOpenAreaDecorationDescriptor(
-                        $"lake-edge-{edgeIndex++:D2}",
-                        CityAreaFeatureKind.Lake,
-                        CityOpenAreaDecorationKind.LakeWaterEdge,
-                        CityOpenAreaDecorationStyle.LakeStone,
-                        CreateWaterEdgeBounds(
-                            waterSurface.WorldBounds,
-                            direction,
-                            neighbour.DatumY +
-                            CityElevationPlan.GroundTopOffset)));
-                    shoreAnchors.Add(CreateShoreAnchor(
-                        neighbour,
-                        waterSurface,
-                        -direction));
-                }
-            }
-
-            TryGetAccess(
-                layout,
-                CityAreaFeatureKind.Lake,
-                out CityOpenAreaAccessDescriptor access);
-            for (int index = 0; index < shoreAnchors.Count; index++)
-            {
-                ShoreAnchor anchor = shoreAnchors[index];
-                CitySurfaceDescriptor surface = anchor.Surface;
-                uint hash = StableHash(
-                    layout.Seed,
-                    surface.Cell.x,
-                    surface.Cell.y,
-                    0x4C414B45u);
-                float parallelJitter =
-                    ((hash & 0xFFFFu) / 65535f - 0.5f) * 5f;
-                Vector3 position = anchor.Position;
-                if (anchor.DirectionToWater.x != 0)
-                {
-                    position.z = Mathf.Clamp(
-                        position.z + parallelJitter,
-                        surface.WorldBounds.yMin + 1.2f,
-                        surface.WorldBounds.yMax - 1.2f);
-                }
-                else
-                {
-                    position.x = Mathf.Clamp(
-                        position.x + parallelJitter,
-                        surface.WorldBounds.xMin + 1.2f,
-                        surface.WorldBounds.xMax - 1.2f);
-                }
-
-                if ((index & 1) == 0)
-                {
-                    AddLakeReeds(
-                        target,
-                        index,
-                        position,
-                        access);
-                }
-                else
-                {
-                    Bounds rock = CreateGroundedBounds(
-                        position,
-                        new Vector3(1.35f, 0.58f, 0.95f));
-                    if (IsClearOfAccess(rock, access))
-                    {
-                        target.Add(new CityOpenAreaDecorationDescriptor(
-                            $"lake-rock-{index:D2}",
-                            CityAreaFeatureKind.Lake,
-                            CityOpenAreaDecorationKind.LakeRock,
-                            CityOpenAreaDecorationStyle.LakeStone,
-                            rock));
-                    }
-                }
-            }
-
-            ShoreAnchor boatAnchor = shoreAnchors[0];
-            float bestDistance = float.NegativeInfinity;
-            for (int index = 0; index < shoreAnchors.Count; index++)
-            {
-                float distance =
-                    (shoreAnchors[index].Position - access.Center)
-                    .sqrMagnitude;
-                if (distance > bestDistance)
-                {
-                    bestDistance = distance;
-                    boatAnchor = shoreAnchors[index];
-                }
-            }
-
-            Vector3 boatSize = boatAnchor.DirectionToWater.x != 0
-                ? new Vector3(1.25f, 0.48f, 3.8f)
-                : new Vector3(3.8f, 0.48f, 1.25f);
-            Bounds boat = CreateGroundedBounds(
-                boatAnchor.Position,
-                boatSize);
-            if (IsClearOfAccess(boat, access))
-            {
-                target.Add(new CityOpenAreaDecorationDescriptor(
-                    "lake-weathered-boat",
-                    CityAreaFeatureKind.Lake,
-                    CityOpenAreaDecorationKind.LakeBoat,
-                    CityOpenAreaDecorationStyle.WeatheredWood,
-                    boat));
-            }
-        }
-
-        private static ShoreAnchor CreateShoreAnchor(
-            CitySurfaceDescriptor shore,
-            CitySurfaceDescriptor water,
-            Vector2Int directionToWater)
-        {
-            const float waterGap = 1.15f;
-            Vector3 position = shore.Center;
-            if (directionToWater.x > 0)
-            {
-                position.x = water.WorldBounds.xMin - waterGap;
-                position.z = water.WorldBounds.center.y;
-            }
-            else if (directionToWater.x < 0)
-            {
-                position.x = water.WorldBounds.xMax + waterGap;
-                position.z = water.WorldBounds.center.y;
-            }
-            else if (directionToWater.y > 0)
-            {
-                position.x = water.WorldBounds.center.x;
-                position.z = water.WorldBounds.yMin - waterGap;
-            }
-            else
-            {
-                position.x = water.WorldBounds.center.x;
-                position.z = water.WorldBounds.yMax + waterGap;
-            }
-
-            position.y = shore.DatumY +
-                         CityElevationPlan.GroundTopOffset;
-            return new ShoreAnchor(shore, directionToWater, position);
-        }
-
-        private static Bounds CreateWaterEdgeBounds(
-            Rect water,
-            Vector2Int shoreDirection,
-            float groundTopY)
-        {
-            const float edgeHeight = 0.34f;
-            const float cornerClearance = 0.28f;
-            Vector3 size;
-            Vector3 center;
-            if (shoreDirection.x != 0)
-            {
-                size = new Vector3(
-                    WaterEdgeThickness,
-                    edgeHeight,
-                    Mathf.Max(0.2f, water.height - cornerClearance));
-                center = new Vector3(
-                    shoreDirection.x < 0
-                        ? water.xMin - WaterEdgeThickness * 0.5f
-                        : water.xMax + WaterEdgeThickness * 0.5f,
-                    groundTopY + edgeHeight * 0.5f,
-                    water.center.y);
-            }
-            else
-            {
-                size = new Vector3(
-                    Mathf.Max(0.2f, water.width - cornerClearance),
-                    edgeHeight,
-                    WaterEdgeThickness);
-                center = new Vector3(
-                    water.center.x,
-                    groundTopY + edgeHeight * 0.5f,
-                    shoreDirection.y < 0
-                        ? water.yMin - WaterEdgeThickness * 0.5f
-                        : water.yMax + WaterEdgeThickness * 0.5f);
-            }
-
-            return new Bounds(center, size);
-        }
-
-        private static void AddLakeReeds(
-            ICollection<CityOpenAreaDecorationDescriptor> target,
-            int clusterIndex,
-            Vector3 groundPosition,
-            CityOpenAreaAccessDescriptor access)
-        {
-            for (int reed = 0; reed < 3; reed++)
-            {
-                float height = 0.62f + reed * 0.14f;
-                Vector3 offset = new Vector3(
-                    (reed - 1) * 0.24f,
-                    0f,
-                    reed == 1 ? 0.18f : 0f);
-                Bounds bounds = CreateGroundedBounds(
-                    groundPosition + offset,
-                    new Vector3(0.12f, height, 0.12f));
-                if (!IsClearOfAccess(bounds, access))
-                {
-                    continue;
-                }
-
-                target.Add(new CityOpenAreaDecorationDescriptor(
-                    $"lake-reeds-{clusterIndex:D2}-{reed}",
-                    CityAreaFeatureKind.Lake,
-                    CityOpenAreaDecorationKind.LakeReeds,
-                    CityOpenAreaDecorationStyle.Reeds,
-                    bounds));
             }
         }
 
@@ -1362,21 +1096,5 @@ namespace BarPromenade
             }
         }
 
-        private readonly struct ShoreAnchor
-        {
-            public ShoreAnchor(
-                CitySurfaceDescriptor surface,
-                Vector2Int directionToWater,
-                Vector3 position)
-            {
-                Surface = surface;
-                DirectionToWater = directionToWater;
-                Position = position;
-            }
-
-            public CitySurfaceDescriptor Surface { get; }
-            public Vector2Int DirectionToWater { get; }
-            public Vector3 Position { get; }
-        }
     }
 }

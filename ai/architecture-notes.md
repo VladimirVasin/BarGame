@@ -1793,3 +1793,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   graph ownership and restore the neutral rig. Recovery adds `6 s` to the next
   normal interval. Dropping intoxication to `60` or below safely cancels the
   challenge and clears its delay.
+
+- **Accepted — One drive for every body of water:** The river and the lake are
+  two materials of one shader, and water carries no per-renderer variation at
+  all — no property blocks anywhere — so night factor and rain intensity have
+  to be written on the material itself. With one body that could live in
+  `CityRiverResources`; with two it cannot, because the registries that push
+  those values (`CityNightGlowRegistry`, `CityWeatherController`) have no
+  business knowing how many bodies exist. `CityWaterResources` owns the drive
+  and nothing else: each body registers its own material and is brought up to
+  the last pushed values on the spot, which is what lets a lake built halfway
+  through a rain slot arrive already wet. They are not merged into one material
+  because the difference is structural, not cosmetic — zero flow changes what
+  the vertex stage computes, and the lake's ripple sheet is isotropic where the
+  river's is deliberately smeared along its flow.
+- **Accepted — The lake's edge is authored, and its bank is off the nav graph:**
+  The `0.40 m` shore-to-water drop exceeds `CityRoadGroundBoundaryPlanner.MaximumSafeStep`,
+  so `CityTerrainSafetyWorldBuilder` used to ring the whole lake with a generic
+  `1.05 m` guard rail. Once `CityLakeWorldBuilder` authors a walkable bank down
+  to an inset waterline, that rail stands on ground which visibly continues
+  past it — the invisible perimeter this project does not build, and the exact
+  failure the park fix removed. The skip that already existed for `RiverWater`
+  is therefore widened to authored water edges, and the precinct owes a visible
+  barrier in its place: a continuous timber revetment standing clear of the
+  safe step, cut only where the pier deck bridges it or the chained slipway
+  closes it, under a `ValidateOrThrow` contract that checks the whole perimeter
+  is boarded or bridged to within `0.05 m`.
+- **Corrected — the lake bank is in the walkable mask, and has to be:** this
+  entry previously recorded the opposite as an accepted asymmetry — that the
+  bank was physically walkable but deliberately absent from the nav graph
+  because it sits on `Water` cells, so pedestrians would never stray onto it.
+  That reasoning weighed only pedestrians. `PlayerMotor` clamps against the
+  same mask, so the effect was a `52 x 52 m` invisible box sealing the player
+  out of the entire precinct. `CityLakePlanner.AppendWalkableFootprints` now
+  contributes the bank ring and the pier deck to the mask — never the pond —
+  and a shared `TryCreateSetup` guarantees the ground the world builder draws
+  and the ground the mask admits are derived from one basin. Pedestrians are
+  unaffected in practice: they consume the mask only as a clamp, not as a
+  source of destinations.

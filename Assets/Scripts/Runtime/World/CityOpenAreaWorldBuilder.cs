@@ -10,12 +10,6 @@ namespace BarPromenade
         public const string RootName = "Open Area Landmarks";
         private const float SpatialChunkSize = 48f;
 
-        private static readonly Color LakeStone =
-            new Color(0.24f, 0.28f, 0.25f);
-        private static readonly Color Reeds =
-            new Color(0.25f, 0.34f, 0.16f);
-        private static readonly Color WeatheredWood =
-            new Color(0.27f, 0.20f, 0.13f);
         private static readonly Color TreeTrunk =
             new Color(0.13f, 0.10f, 0.07f);
         private static readonly Color YardTimber =
@@ -244,12 +238,6 @@ namespace BarPromenade
         {
             switch (style)
             {
-                case CityOpenAreaDecorationStyle.LakeStone:
-                    return LakeStone;
-                case CityOpenAreaDecorationStyle.Reeds:
-                    return Reeds;
-                case CityOpenAreaDecorationStyle.WeatheredWood:
-                    return WeatheredWood;
                 case CityOpenAreaDecorationStyle.TreeTrunk:
                     return TreeTrunk;
                 case CityOpenAreaDecorationStyle.YardTimber:

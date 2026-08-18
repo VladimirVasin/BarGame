@@ -10,8 +10,15 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityOpenAreaDecorationPlannerTests
     {
+        /// <summary>
+        /// The pass-wide contract, now that the lake has moved out to
+        /// <see cref="CityLakePlanner"/> the way the cemetery did before
+        /// it: this plan is deterministic, inside its budget, valid, and
+        /// never stands anything in a street approach. The lake's own
+        /// version of the same guarantees lives in CityLakePlannerTests.
+        /// </summary>
         [Test]
-        public void DefaultCity_CreatesDeterministicClearLakeLandmarks()
+        public void DefaultCity_CreatesDeterministicClearYardDressing()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -26,40 +33,18 @@ namespace BarPromenade.Tests.EditMode
             CollectionAssert.AreEqual(
                 first.Descriptors,
                 second.Descriptors);
+            Assert.That(first.Count, Is.GreaterThan(0));
             Assert.That(
                 first.Count,
                 Is.LessThanOrEqualTo(
                     CityOpenAreaDecorationPlan.MaximumPartCount));
-            Assert.That(
-                first.GetCount(
-                    CityOpenAreaDecorationKind.LakeWaterEdge),
-                Is.GreaterThanOrEqualTo(8));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.LakeReeds),
-                Is.GreaterThan(0));
-            Assert.That(
-                first.GetCount(CityOpenAreaDecorationKind.LakeBoat),
-                Is.EqualTo(1));
 
-            Rect[] lakeWater = layout.Surfaces
-                .Where(surface =>
-                    surface.Feature == CityAreaFeatureKind.Lake &&
-                    surface.IsWater)
-                .Select(surface => surface.WorldBounds)
-                .ToArray();
-            foreach (CityOpenAreaDecorationDescriptor shorelineDetail in
-                     first.Descriptors.Where(item =>
-                         item.Kind == CityOpenAreaDecorationKind.LakeReeds ||
-                         item.Kind == CityOpenAreaDecorationKind.LakeRock ||
-                         item.Kind == CityOpenAreaDecorationKind.LakeBoat))
-            {
-                float nearestWater = lakeWater.Min(water =>
-                    RectDistance(ToXZRect(shorelineDetail.Bounds), water));
-                Assert.That(
-                    nearestWater,
-                    Is.LessThanOrEqualTo(1.5f),
-                    shorelineDetail.StableId);
-            }
+            // Nothing lake-shaped survives in this pass.
+            Assert.That(
+                first.Descriptors.Any(item =>
+                    item.Feature == CityAreaFeatureKind.Lake),
+                Is.False,
+                "The lake dresses itself now.");
 
             CityOpenAreaDecorationPlanner.ValidateOrThrow(layout, first);
             foreach (CityOpenAreaDecorationDescriptor descriptor in

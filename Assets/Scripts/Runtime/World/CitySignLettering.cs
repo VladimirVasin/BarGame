@@ -94,6 +94,27 @@ namespace BarPromenade
                     new[] { 0.08f, -0.25f, T, 0.5f },
                     new[] { 0.5f - H, 0f, T, 1f },
                 },
+                // А and Л are the boat station's: «ПРОКАТ ЛОДОК». Both
+                // are splayed legs in this font, which has no diagonal
+                // stroke - the same compromise Д already makes, and at
+                // a sign's reading distance through the composite the
+                // stepped leg and a true diagonal are one shape.
+                ['А'] = new[]
+                {
+                    new[] { 0f, 0.5f - H, 0.72f, T },
+                    new[] { -0.26f, 0.09f, T, 0.82f },
+                    new[] { 0.26f, 0.09f, T, 0.82f },
+                    new[] { -0.5f + H, -0.30f, T, 0.40f },
+                    new[] { 0.5f - H, -0.30f, T, 0.40f },
+                    new[] { 0f, -0.08f, 0.58f, T },
+                },
+                ['Л'] = new[]
+                {
+                    new[] { 0.06f, 0.5f - H, 0.88f, T },
+                    new[] { -0.20f, 0.09f, T, 0.82f },
+                    new[] { 0.5f - H, 0f, T, 1f },
+                    new[] { -0.5f + H, -0.30f, T, 0.40f },
+                },
                 ['7'] = new[]
                 {
                     new[] { 0f, 0.5f - H, 1f, T },

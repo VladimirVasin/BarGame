@@ -106,6 +106,12 @@ namespace BarPromenade
                 CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
             }
 
+            CityLakePlan lakePlan = CityLakePlanner.Create(layout);
+            if (lakePlan != null)
+            {
+                CityLakeWorldBuilder.Build(world, lakePlan);
+            }
+
             var bars = new List<BarEntrance>(settings.BarCount);
             HomeEntrance playerHome = null;
             SupermarketEntrance supermarket = null;
@@ -150,6 +156,7 @@ namespace BarPromenade
                 openAreaDecorationPlan,
                 openAreaDecorationRoot,
                 cemeteryPlan,
+                lakePlan,
                 decorationPlan,
                 decorationRoot,
                 riverRoot,
@@ -211,7 +218,17 @@ namespace BarPromenade
                             cemetery.Add(bounds);
                             break;
                         case CitySurfaceKind.Water:
-                            water.Add(bounds);
+                            // The sea keeps its flat slab. The lake's
+                            // water is drawn by CityLakeWorldBuilder,
+                            // which insets it to a cut-cornered
+                            // waterline and gives it a bank and a bed -
+                            // the same hand-off the river already gets.
+                            if (surface.Feature !=
+                                CityAreaFeatureKind.Lake)
+                            {
+                                water.Add(bounds);
+                            }
+
                             break;
                         case CitySurfaceKind.RiverWater:
                             break;
@@ -241,12 +258,26 @@ namespace BarPromenade
                 CitySurfaceKind.Beach,
                 CityExteriorAppearance.BeachSand,
                 false);
-            BuildCombinedBoxesIfAny(
-                "Lake Shore",
-                surfaces,
-                lakeShore,
-                CityExteriorAppearance.LakeShore,
-                true);
+            if (lakeShore.Count > 0)
+            {
+                // The shore ring takes the same trodden-clay sheet the
+                // authored bank inside it carries, so the walk from the
+                // street to the water crosses one ground rather than a
+                // lawn meeting a ramp.
+                GameObject lakeShoreGround =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Lake Shore",
+                        surfaces,
+                        lakeShore,
+                        CityExteriorAppearance.LakeShore,
+                        true,
+                        CityLakeSurfaceAppearance.GetRecipe(
+                            CityLakeSurfaceKind.Bank).MetersPerTile);
+                CityLakeSurfaceAppearance.ApplyCombined(
+                    lakeShoreGround.GetComponent<Renderer>(),
+                    CityLakeSurfaceKind.Bank,
+                    CityExteriorAppearance.LakeShore);
+            }
             if (cemetery.Count > 0)
             {
                 // The cemetery slab gets the leaf-litter soil sheet the

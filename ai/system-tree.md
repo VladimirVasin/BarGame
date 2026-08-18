@@ -202,6 +202,13 @@ Assets/
         CityCemeteryPlanner.cs   gate-framed alleys, hash-varied graves/оградки, trees, lamps + validation
         CityCemeteryWorldBuilder.cs  chunked oriented batches with cemetery sheets + night-scaled alley lamps
         CityCemeterySurfaceAppearance.cs  four cemetery albedos (granite/stone/gravel/soil) via MPBs
+        CityLakePlan.cs          oriented lake part/lamp descriptors, four hull variants, basin + budget
+        CityLakePlanner.cs       inset cut-cornered waterline, revetment ring, pier, hulls, hut + validation
+        CityLakeWorldBuilder.cs  chunked oriented batches with lake sheets + night-scaled shore lamps
+        CityLakeSurfaceAppearance.cs  three lake albedos (plank/bank/hull) via MPBs
+        CityLakeBankMeshFactory.cs  walkable collidered bank ring + colliderless silt bed cap
+        CityLakeResources.cs     the still-water material: zero flow, isotropic ripple, lamp glint
+        CityWaterResources.cs    the one night/rain drive shared by every water material
         CityParkSurfaceAppearance.cs  eight park albedos (lawn/path/plaza/bark/foliage/timber/stone/painted metal) via MPBs
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
@@ -293,6 +300,13 @@ Assets/
         WeighbridgeAttendantFactory.cs two instances, passivity re-checked at instantiation
         WeighbridgeAttendantProvider.cs  the only serialized reference to the staged prefab
         CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
+      Lake/          the boat station's one permanent inhabitant
+        LakeFishermanProvider.cs  the only serialized reference to the staged prefab
+        LakeFishermanPlan.cs     seat and facing read back from the plan's own pier deck parts
+        LakeFishermanQuips.cs    15-line seeded repertoire, never twice running, never second person
+        LakeFishermanInteraction.cs  talk stub on a trigger docked behind him, not in front
+        LakeFishermanPresentation.cs  single-clip manual PlayableGraph for the seated loop
+        LakeFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger
       Cemetery/      the scripted graveside visitor summoned by the hero's presence
         CemeteryMournerPlan.cs   pure grave candidates, foot-side stand, gate route, unseen spawn + trigger band
         CemeteryMournerTimeline.cs  approach/lay/cry(30 s)/wipe/depart clock with the one-shot lay cue

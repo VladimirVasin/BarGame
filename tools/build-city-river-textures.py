@@ -724,7 +724,7 @@ WATER_BUILDERS = {
 }
 
 
-def validate_water(
+def validate_water_wrap(
     image: Image.Image,
     spec: WaterSheetSpec,
     record: dict,
@@ -733,8 +733,9 @@ def validate_water(
 
     Everything else the albedo validator checks - mean linear luminance,
     solved compensation, channel balance - describes a diffuse colour
-    multiplied by a builder tint, which is not what either of these
-    sheets is.
+    multiplied by a builder tint, which is not what any of these sheets
+    is. Shared with the lake generator, which has its own two grammars
+    and the same wrap obligation.
     """
     if image.size != (SHEET_SIZE, SHEET_SIZE):
         raise ValueError(f"{spec.key} is {image.size}, expected square sheet.")
@@ -760,6 +761,18 @@ def validate_water(
             f"sheet's strongest interior transition; that is a seam."
         )
 
+    record["edgeDelta"] = round(edge_delta, 4)
+    record["seamRatio"] = round(seam_ratio, 4)
+
+
+def validate_water(
+    image: Image.Image,
+    spec: WaterSheetSpec,
+    record: dict,
+) -> None:
+    """Wrap, then the bound that belongs to this grammar."""
+    validate_water_wrap(image, spec, record)
+
     if spec.grammar == "river_water_normal":
         # A derivative map that has clipped its slopes has lost the
         # ripple, not compressed it: both tails pin to 0 and 255 and the
@@ -778,9 +791,6 @@ def validate_water(
                 f"sheet, outside 3..30%; a mask this full or this empty "
                 f"cannot be thresholded by depth at the bank."
             )
-
-    record["edgeDelta"] = round(edge_delta, 4)
-    record["seamRatio"] = round(seam_ratio, 4)
 
 
 # --------------------------------------------------------------------------

@@ -6,6 +6,49 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-18 — One lamp still burning
+
+- The three lamps on the bank are gone. The shore is dark, which is what an
+  abandoned station looks like — nobody is left to light the way in.
+- What is left is one small hand lamp, standing on the rail at the very end of
+  the мостки, the kind somebody carries out and sets down. It is warm, it is
+  close, and it never goes out: it is burning at noon and it is burning at
+  three in the morning. It is the only reason to walk to the end of the pier,
+  and after dark it lays a warm pool over the last boards and the water beside
+  them.
+
+### 2026-08-18 — Getting into the boat station
+
+- You can actually get to the lake now. The shore used to stop you dead a long
+  way out from the water, at nothing — the bank, the boats, the hut and the
+  pier were all there and all behind an invisible wall. The wall is gone: you
+  walk down the bank to the water's edge and out along the мостки to the end.
+- The hut has moved off the pier. It was standing across the foot of it, so
+  even reaching the boards would have meant walking into a wall.
+- What stops you at the water is the timber along the edge, and only that.
+
+### 2026-08-18 — The boat station
+
+- The lake is a place now. It used to be a flat green square of colour with a
+  handful of reeds around it; it is a pond with a shore you walk down, and at
+  the end of that shore a boat station nobody has run in years.
+- Wooden мостки walk out over the water on tarred piles. You can go to the end
+  of them. The lantern out there is broken and stays broken.
+- Seven hire boats lie hauled up on the bank, turned over on their blocks the
+  way somebody left them, and one oar nobody came back for. The rental hut
+  still has its board up — «ПРОКАТ ЛОДОК» — over a serving window boarded shut
+  with two planks.
+- The water is water. It is still — nothing on this pond is going anywhere —
+  but it breathes, it is murky green rather than flat blue, and duckweed
+  gathers along the boards at its edge.
+- After dark three lamps come on along the shore and lay their light out
+  across the water toward you. The bulb over the hut door never goes out at
+  all; by day it just burns low, like the one over the cemetery watchman's
+  door.
+- The pond no longer stops you with an invisible wall. What stops you is a line
+  of tarred boards along the water's edge, and where the boards break for the
+  boat ramp there is a beam on a rusted chain across it.
+
 ### 2026-08-18 — The river runs
 
 - The water moves. It falls from the south of the city towards the sea

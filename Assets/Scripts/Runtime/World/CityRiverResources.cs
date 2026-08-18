@@ -4,17 +4,18 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The single shared water material and the two sheets its shader
+    /// The river's shared water material and the two sheets its shader
     /// samples.
     ///
-    /// This is the one place in the runtime that builds a material from
-    /// <see cref="Shader.Find"/>, and it works only because the shader
-    /// lives under `Resources/Shaders`, where the build cannot strip it.
-    /// Everything else shares an authored `.mat`; the water has no `.mat`
-    /// because there is nothing to author - it carries no per-renderer
-    /// variation at all, which is also why the water renderers write no
-    /// property block. Night factor and rain intensity reach every
-    /// segment at once by being set here.
+    /// This builds a material from <see cref="Shader.Find"/>, which
+    /// works only because the shader lives under `Resources/Shaders`,
+    /// where the build cannot strip it. Everything else shares an
+    /// authored `.mat`; the water has no `.mat` because there is nothing
+    /// to author - it carries no per-renderer variation at all, which is
+    /// also why the water renderers write no property block. Night
+    /// factor and rain intensity reach every segment at once through
+    /// <see cref="CityWaterResources"/>, which this material registers
+    /// with as soon as it exists.
     ///
     /// The sheets are assigned to the material rather than through a
     /// property block for the same reason. They are not albedos and do
@@ -40,16 +41,15 @@ namespace BarPromenade
 
         /// <summary>
         /// The river runs south to north, into the sea. A still body
-        /// passes <see cref="Vector2.zero"/> and gets the same water
-        /// without a current.
+        /// passes <see cref="Vector2.zero"/>, which the shader reads as
+        /// "no current" rather than as a direction - see
+        /// <see cref="CityLakeResources"/>.
         /// </summary>
         public static readonly Vector2 RiverFlowDirection =
             new Vector2(0f, 1f);
 
-        private static readonly int NightFactorId =
-            Shader.PropertyToID("_NightFactor");
-        private static readonly int RainIntensityId =
-            Shader.PropertyToID("_RainIntensity");
+        private static readonly int AdditionalSpecularId =
+            Shader.PropertyToID("_AdditionalSpecular");
         private static readonly int RippleMapId =
             Shader.PropertyToID("_RippleMap");
         private static readonly int FoamMapId =
@@ -89,24 +89,17 @@ namespace BarPromenade
                             RiverFlowDirection.y,
                             0f,
                             0f));
+
+                    // The lake's addition stays off here, so the river
+                    // renders exactly as it did before it existed. Its
+                    // foam colour keeps the shader's white default:
+                    // white water is what a current makes.
+                    waterMaterial.SetFloat(AdditionalSpecularId, 0f);
+                    CityWaterResources.Register(waterMaterial);
                 }
 
                 return waterMaterial;
             }
-        }
-
-        public static void SetNightFactor(float factor)
-        {
-            WaterMaterial.SetFloat(
-                NightFactorId,
-                Mathf.Clamp01(factor));
-        }
-
-        public static void SetRainIntensity(float intensity)
-        {
-            WaterMaterial.SetFloat(
-                RainIntensityId,
-                Mathf.Clamp01(intensity));
         }
 
         private static void ApplySheets(Material material)
@@ -139,6 +132,7 @@ namespace BarPromenade
         {
             if (waterMaterial != null)
             {
+                CityWaterResources.Unregister(waterMaterial);
                 UnityEngine.Object.Destroy(waterMaterial);
                 waterMaterial = null;
             }

@@ -87,8 +87,15 @@ The vertical slice contains:
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
   every urban district at least `1.5 m` of local elevation variation, keeps
   the sea at datum `0`, gives the river a monotonic descent into it and places
-  the lake in a local elevated basin whose blocked physical shoreline drop is
-  about `0.4 m`. `CityTerrainSurfacePlan` is the authoritative sampled top for
+  the lake in a local elevated basin whose physical shoreline drop is
+  about `0.4 m`. That drop is no longer taken by the generic terrain guard
+  rail: `CityLakeWorldBuilder` authors a walkable bank down to an inset
+  waterline and a continuous timber revetment along it, and
+  `CityTerrainSafetyWorldBuilder` skips the boundary in consequence, exactly
+  as it already did for the river's quay walls. That bank is also contributed
+  to the walkable mask by `CityLakePlanner.AppendWalkableFootprints`, since a
+  `Water` cell is otherwise never walkable and the player would be clamped at
+  the cell boundary; the pond itself is never contributed. `CityTerrainSurfacePlan` is the authoritative sampled top for
   `BuildableGround`, `ParkGround`, `OpenGround` and `Beach`;
   `CityTerrainSurfaceWorldBuilder` turns it into triangulated render meshes and
   matching mesh colliders, eliminating vertical cell-slab seams and giving the
@@ -442,7 +449,10 @@ The vertical slice contains:
   excluded from player navigation and night-fixture placement;
 - reusable Lake and Cemetery non-urban profiles that are now present on the
   default city's eastern edge. The `4 x 4` lake has a walkable shore around a
-  blocked `2 x 2` water center, while the `3 x 2` cemetery is walkable ground;
+  `2 x 2` water center that is dressed as an abandoned boat station — its
+  visible waterline inset to a cut-cornered `36 m` octagon with a walkable
+  bank, a revetment, a pier and a hut — while the `3 x 2` cemetery is walkable
+  ground; while the `3 x 2` cemetery is walkable ground;
   each requires one street-linked open-area approach and exposes the same data
   to world, fence, navigation, map and deterministic landmark consumers. The
   cemetery is dressed by its own dedicated plan: a textured gravel alley

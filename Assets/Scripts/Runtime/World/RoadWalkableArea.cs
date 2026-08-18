@@ -53,6 +53,14 @@ namespace BarPromenade
                 AddRiverClippedGround(layout, surface, ground);
             }
 
+            // The lake precinct draws real walkable ground inside cells
+            // the blueprint marks as water — a bank down to an inset
+            // waterline, and a pier out over it. A water cell is never
+            // walkable, so without this the player is clamped at the
+            // water-cell boundary and the whole boat station is sealed
+            // behind an invisible box. The pond itself stays out.
+            CityLakePlanner.AppendWalkableFootprints(layout, ground);
+
             var connectors = new List<Rect>();
             CityRoadGroundBoundaryPlan roadGroundBoundaries =
                 CityRoadGroundBoundaryPlanner.Create(layout);

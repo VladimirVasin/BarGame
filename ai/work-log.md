@@ -6,6 +6,195 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — A lamp somebody left on the rail
+
+- Follow-up on the user's own screenshot: the head lamp had come out as a full
+  municipal street post with a big white head, which is not what an abandoned
+  pier should carry. Replaced with a small kerosene-warm hand lamp standing on
+  the rail cap at the very end of the boards - tin foot, amber glass, a wire
+  bail over the top, roughly a forearm tall.
+- The change is as much semantic as visual. A post says the pier is
+  maintained; a lamp left on the rail says somebody walked out here, put it
+  down and did not come back, which is the same sentence the rest of the
+  station is telling. §10d's Свет, Мостки, Нельзя and Проверка were rewritten
+  again to match, and Нельзя now names the street post and cold white light as
+  the things to avoid.
+- Scaled to an object: `165 / 70` at `26 m` becomes `46 / 16` at `11 m`, so it
+  lights the last stretch of deck and the water beside it and nothing further.
+  It stays on the day-floor overload, so it still never switches off.
+- Two things the render caught that no test could:
+  - The glass clipped to pure white. The emissive multiplier is bounded by the
+    *blue* channel, not by taste: at `2.4x` this colour's blue passes 1, all
+    three channels saturate together, and an amber glass becomes a white chip
+    while the cast light stays warm. `1.5x` puts blue at `0.63`, so red and
+    green saturate into a hot core and the glass keeps its hue. The halo
+    multipliers were clipping the same way and came down with it.
+  - The bail read as a dark spike rather than a handle at this size; lowered
+    and thinned.
+- Verification: `CityLakePlannerTests`, `LakeFishermanTests`,
+  `RoadWalkableAreaTests`, `CityNightGlowRegistryTests` — 14/14 — plus close
+  and mid-range renders at both day and night.
+
+## 2026-08-18 — One lamp still burning
+
+- User decision, and it overturns something I had written into the art bible
+  the same day. §10d said the pier-head lantern was dead and listed "горящий
+  фонарь на конце мостков" under Нельзя, on the reasoning that an abandoned
+  station keeps no working light. The three shore lamps are removed and that
+  lantern becomes the station's one working, always-on fixture instead.
+- The concept survives the inversion and is arguably tighter for it: the bank
+  going completely dark is a stronger statement of abandonment than three
+  municipal posts, and a single lamp still fed at the far end of the pier says
+  "left, not dismantled". §10d's Свет, Мостки, Нельзя and Проверка were all
+  rewritten to match rather than left contradicting the build.
+- It also lands better technically. The water's reflection is an
+  additional-light highlight, not a mirror, so it only exists where a fixture's
+  own range covers the surface — the shore lamps could never reach past the
+  bank. A lamp standing over the middle of the pond has the whole width of the
+  water under it.
+- `CityLakeLampKind.Shore` becomes `PierHead`; `CityLakePartKind.PierLantern`
+  is gone, because the fixture now carries its own post and lens the way every
+  other lamp does. The validator's "the shore carries two to five lamps" band
+  becomes "a pier carries exactly one head lamp", and the test additionally
+  pins that the lamp stands over open water — on the bank it would be a
+  different fixture with a different job.
+- Registered through the day-floor overload at `165 / 70` with a `26 m` range:
+  "always working" has to read at noon too, not just survive the night factor.
+- The lens is deliberately kept OUT of `CityNightGlowRegistry`. The day render
+  caught it: the registry lerps every registered emissive down to a tenth of
+  itself under a day sky, so the lamp was throwing light while its own glass
+  looked dead. That is right for a fixture that switches off and wrong for one
+  that does not — the always-on yard spotlight sits outside the registry for
+  the same reason. The cemetery porch bulb still has the older behaviour; left
+  alone as out of scope.
+- Verified by render, not only by test: from the water looking back at the
+  lamp it reads as a lit head with a fog halo over a dark post, a warm pool on
+  the deck and the water around the pier lit; the bank behind is entirely dark.
+  By day the glass reads lit. The reflection is a lit highlight rather than a
+  mirror, so it lives within the fixture's own range and does not stretch the
+  full width of the pond - the art bible says so rather than promising more.
+- Verification: `CityLakePlannerTests`, `LakeFishermanTests`,
+  `RoadWalkableAreaTests`, `CityRiverWaterTests` and
+  `CityNightGlowRegistryTests` — 21/21 — plus the day and night renders above.
+
+## 2026-08-18 — Getting into the boat station
+
+- The precinct shipped sealed. Every contract passed, the geometry rendered,
+  and the player could not reach any of it: `RoadWalkableArea` drops any
+  surface that is neither `BuildableGround` nor `IsWalkable`, a `Water` cell is
+  never walkable (`CitySurfacePlan.cs`: `cell.Topology == OpenLand`), and the
+  bank, revetment, pier, hut, boats and fisherman all sit inside the lake's
+  `2 x 2` water cells. `PlayerMotor` clamps against that mask every frame, so
+  the boundary of those cells was a `52 x 52 m` invisible box.
+- I had written the opposite into `ai/architecture-notes.md` the day before, as
+  an "accepted asymmetry" — that the bank was walkable but off the nav graph so
+  pedestrians would not stray onto it. That reasoning only ever considered
+  pedestrians. It never checked the player, and the player is clamped by the
+  same mask. Both that note and the work-log claim are corrected.
+- Confirmed twice before touching anything: by the deciding lines, and by an
+  EditMode probe that walked the mask at the agent radius and reported the bank
+  `False` from the cell line inward and the pier head `False`.
+- Fixed the way the river already solves it — the river registers its
+  promenades, bridge decks and landing platforms as explicit rects, and clips
+  its own channel out of the ground. The lake now does the same in reverse:
+  `CityLakePlanner.AppendWalkableFootprints` contributes the bank ring and the
+  pier deck, and never the pond. A shared `TryCreateSetup` derives the basin
+  and frame for both the dressing pass and the mask, so the ground the builder
+  draws and the ground the mask admits cannot diverge. Deliberately not routed
+  through `CityLakePlan`: that would put the whole ~292-part dressing planner
+  and its validator behind every `FromLayout` call in the game.
+- Strips are grown `1.2 m` outward past the cell line. Rectangles are tested
+  independently, so ground that merely abuts leaves a band two agent-radii wide
+  that nobody can stand in — the seam the park fix had to solve.
+- A multi-agent sweep over the other candidate mechanisms found two more real
+  defects that the passing tests could not see, both since fixed:
+  - **The hut stood across the pier root.** `AddHut` clamped a laterally
+    cramped hut back inside the bank and slid it onto the deck; `AddPier` never
+    consults the reserved list and nothing tested part against part. A `2.35 m`
+    collidered wall spanned the deck at its root — an invisible stop the mask
+    cannot see, because the mask is rectangles and the wall is a collider. The
+    hut now takes the side that has room or does not stand at all, the cemetery
+    lodge's rule, and `ValidatePierRootIsClear` enforces it. Reproduced as a
+    failing contract on seven fixtures before the fix.
+  - **The four cut corners were dead.** The strips followed the waterline's
+    axis-aligned bounds, so each `5.2 m` bevel triangle of real collidered bank
+    — up to `3.7 m` deep — was outside the mask: four fresh invisible corners
+    of the same class. Each is now filled by an eight-step staircase whose far
+    corner lands exactly on the diagonal, leaving a bounded `~0.46 m` standoff
+    from the boards instead.
+- Checked and left alone: pedestrians take the mask only as a clamp
+  (`CityPedestrianActor` uses it at one call site, `Constrain`), not as a route
+  source, so admitting the bank does not send anyone walking onto it.
+- Also confirmed by probe and not a bug: a `0.7 m` band along the rest of the
+  precinct perimeter. `LakeShore`, `CemeteryGround`, `Beach` and `OpenGround`
+  all return true from `RequiresAuthoredAccess`, so these precincts are entered
+  through their one authored street approach by design. The cemetery measures
+  identically. The lake's own approach probes walkable end to end.
+- Verification: `CityLakePlannerTests` (now including a walk from the street
+  approach across the bank and out to the pier head at the full agent radius,
+  the four cut corners, and a `24 x 24` sweep proving open water stays shut),
+  plus `RoadWalkableAreaTests` — the park's own regressions — and
+  `LakeFishermanTests`. 13/13.
+
+## 2026-08-18 — The boat station
+
+- The lake had never had a pass. It was a flat `52 x 52 m` tinted box on the
+  shared primitive material, a shore with no texture sheet, no light source
+  anywhere on the precinct, and four decorations borrowed from the shared
+  open-area pass. It was the only place in the city with no art-bible section.
+  Brought it to the cemetery's standard as an abandoned municipal boat
+  station: art-bible §10d, the Plan/Planner/WorldBuilder/SurfaceAppearance
+  quartet, a texture generator with a measured contract, real fixtures on the
+  night registries, and an inhabitant.
+- Three things found in the code that changed the design, all confirmed before
+  acting on them:
+  - `FlowAxis()` normalized a zero `_FlowDirection` to `(0,1)`, so "still
+    water" was a river flowing north with the label taken off.
+    `CityRiverResources`' doc comment claimed the opposite; both fixed.
+  - The lake shore was already ringed by an undocumented `1.05 m`
+    `Terrain Guard Rails` box — the `0.40 m` drop exceeds `MaximumSafeStep`
+    and only `RiverWater` was skipped. Once the bank made that boundary
+    continuous walkable ground the rail became the invisible perimeter the
+    park fix removed, so the skip was widened to authored water edges and the
+    precinct now owes a visible barrier instead, under a validated
+    continuity-and-height contract.
+  - `CitySignLettering` carried only `П Р О Д У К Т Ы 7`; «ПРОКАТ ЛОДОК»
+    needed `А` and `Л`.
+- The grid was deliberately not touched. The waterline is inset inside the
+  water cells by an authored bank and its corners cut, so the elevation plan,
+  `ValidateLakeBasin` and the map are all untouched — the same hand-off the
+  river already gets from `BuildGround`. **This entry originally also claimed
+  the nav mask was untouched. That was the bug: see 2026-08-18 — Getting into
+  the boat station.**
+- Rendered the result rather than trusting the tests, and it was worth it: the
+  first build passed every contract and still looked wrong. Cut the
+  screen-space mirror outright (it smeared the screen edge across the pond in
+  coloured rectangles); reshaped the hulls, which read as ramps until the
+  narrow face went on top; turned the hut to face the gate, since a shed
+  showing its blank back to the only approach says nothing; filled the bank
+  ring's four corners, which the radial projection had left as holes.
+- Chased a faint parallel banding on the water through the wave trains, the
+  ripple sheet, refraction, absorption, foam and per-vertex fog. Ruled every
+  one of them out by measurement (flat normals and saturated absorption still
+  band). Moved fog to the fragment stage anyway — interpolating a non-linear
+  curve across a metre grid is wrong regardless — and tripled the lake's
+  posterisation steps, which took the residual to about `3%` of range. Left it
+  named as a gap rather than claimed as fixed; it sits below the PS1
+  composite's dither in the shipped renderer, which this capture path bypasses.
+- The isotropy of the lake's ripple sheet is the one property that separates it
+  from the river's, so it is measured (`slopeAnisotropy`) and bounded in the
+  generator rather than left as a comment.
+- The fisherman's whole runtime layer, localization and tests are in and green;
+  his Blender archetype and staged prefab are not authored, so the factory logs
+  `lake_fisherman_provider_missing` and returns null. Recorded as a gap.
+- Verification: one focused EditMode selection over `CityLakePlannerTests`,
+  `CityRiverWaterTests`, `CityOpenAreaDecorationPlannerTests`,
+  `CitySignLetteringTests` and `CityElevationPlannerTests` (20/20), plus
+  `LakeFishermanTests` and `LocalizationCatalogTests` (12/12), and the texture
+  generators' own `--verify` for both the lake and the river after refactoring
+  their shared wrap validator. Not run: full EditMode/PlayMode suites, a player
+  build, `CityCemeteryPlannerTests`.
+
 ## 2026-08-18 — The river runs
 
 - The banks got granite, quay courses and iron; the water between them was

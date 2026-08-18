@@ -1,11 +1,17 @@
-// The city's water surface: river now, sea and lake next.
+// The city's water surface: the river and the lake now, the sea next.
 //
 // Everything is a function of world position rather than of UV, which is
 // what lets one segment's sheet meet the next without a seam and what
 // lets the same shader serve footprints that are nothing like a channel.
 // `_FlowDirection` is the only thing that says "river": set it to zero
-// and the same material is still water, just water that is not going
-// anywhere.
+// and the same material is still water, water that is not going
+// anywhere - the crests stop travelling and stand and breathe instead,
+// and the ripple sheet orbits rather than drifts.
+//
+// The lake also switches on `_AdditionalSpecular`, which lets the
+// city's own lamps glint on the water. Nothing else in the city needed
+// that, because nothing else in the city is still enough to hold a
+// reflection; a pond with lamps standing over it is.
 //
 // It renders in the transparent queue but writes opaque pixels. The
 // blend against what is behind the water is done here, from the depth
@@ -47,6 +53,13 @@ Shader "Bar Promenade/City River Water"
         _SpecularStrength("Specular Strength", Range(0, 4)) = 0.85
         _FresnelStrength("Fresnel Strength", Range(0, 1)) = 0.30
         _BandSteps("Band Steps", Float) = 4
+
+        // Still-water additions, off by default, which is what the
+        // river keeps them at: a channel this narrow, seen from a quay
+        // above it, has its lamps too far up the bank to glint, and its
+        // edge foam is white water rather than anything growing.
+        _AdditionalSpecular("Additional Light Specular", Range(0, 2)) = 0
+        _FoamColor("Foam Colour", Color) = (1, 1, 1, 1)
     }
 
     SubShader
@@ -78,6 +91,8 @@ Shader "Bar Promenade/City River Water"
             #pragma fragment RiverFragment
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            // The lamp glints on still water are URP additional lights.
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -109,6 +124,8 @@ Shader "Bar Promenade/City River Water"
                 half _SpecularStrength;
                 half _FresnelStrength;
                 float _BandSteps;
+                half _AdditionalSpecular;
+                half4 _FoamColor;
             CBUFFER_END
 
             struct Attributes
@@ -123,14 +140,24 @@ Shader "Bar Promenade/City River Water"
                 float3 positionWS : TEXCOORD0;
                 float3 waveNormalWS : TEXCOORD1;
                 float4 screenPos : TEXCOORD2;
-                half fogFactor : TEXCOORD3;
+                float viewZ : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            float2 FlowAxis()
+            // Returns the unit downstream axis and, through `flowing`,
+            // whether there is a current at all.
+            //
+            // The fallback is still (0,1), because every caller wants
+            // *some* axis to lay its pattern along even when the water
+            // is still. What changed is that the callers now know the
+            // difference: they used to take this axis on faith and a
+            // zero `_FlowDirection` produced a river flowing north with
+            // the label taken off.
+            float2 FlowAxis(out float flowing)
             {
                 float2 axis = _FlowDirection.xy;
                 float magnitude = length(axis);
+                flowing = step(1e-4, magnitude);
                 return magnitude > 1e-4 ? axis / magnitude : float2(0.0, 1.0);
             }
 
@@ -146,22 +173,48 @@ Shader "Bar Promenade/City River Water"
             // on where the vertex is, never on which sheet it belongs to.
             float WaveHeight(float2 positionXZ, float time, out float2 slope)
             {
-                float2 downstream = FlowAxis();
+                float flowing;
+                float2 downstream = FlowAxis(flowing);
                 float2 across = float2(-downstream.y, downstream.x);
 
                 float k0 = 6.2831853 / max(0.05, _WaveLength);
                 float k1 = 6.2831853 / max(0.05, _WaveLength * 0.53);
                 float k2 = 6.2831853 / max(0.05, _WaveLength * 1.71);
 
-                float p0 = dot(positionXZ, downstream) * k0 - time * 1.00;
-                float p1 = dot(positionXZ, downstream) * k1 - time * 1.63;
-                float p2 = dot(positionXZ, across) * k2 + time * 0.41;
+                // A current lines its second train up with its first,
+                // because that is what a current does. Still water has
+                // no axis to line anything up with, and two trains on
+                // one axis there produce corduroy: a static, perfectly
+                // parallel ribbing that reads as a ploughed field.
+                // Turning the middle train across the other two makes
+                // the standing pattern a lattice instead.
+                float2 secondAxis = lerp(
+                    normalize(downstream + across),
+                    downstream,
+                    flowing);
 
-                float a0 = _WaveHeight;
-                float a1 = _WaveHeight * 0.42;
-                float a2 = _WaveHeight * 0.31;
+                // Multiplying the time term by `flowing` freezes the
+                // crest pattern in place without freezing the surface:
+                // the amplitudes below keep moving, so still water
+                // still lives.
+                float p0 = dot(positionXZ, downstream) * k0 - time * 1.00 * flowing;
+                float p1 = dot(positionXZ, secondAxis) * k1 - time * 1.63 * flowing;
+                float p2 = dot(positionXZ, across) * k2 + time * 0.41 * flowing;
 
-                slope = downstream * (a0 * k0 * cos(p0) + a1 * k1 * cos(p1)) +
+                // Still water does not carry its crests away; it
+                // breathes in place. Three rates, none a multiple of
+                // another, so the trains never pulse together and the
+                // pond never looks like it is being pumped.
+                float b0 = lerp(0.55 + 0.45 * sin(time * 0.90), 1.0, flowing);
+                float b1 = lerp(0.55 + 0.45 * sin(time * 0.71 + 1.7), 1.0, flowing);
+                float b2 = lerp(0.55 + 0.45 * sin(time * 1.37 + 3.1), 1.0, flowing);
+
+                float a0 = _WaveHeight * b0;
+                float a1 = _WaveHeight * 0.42 * b1;
+                float a2 = _WaveHeight * 0.31 * b2;
+
+                slope = downstream * (a0 * k0 * cos(p0)) +
+                        secondAxis * (a1 * k1 * cos(p1)) +
                         across * (a2 * k2 * cos(p2));
                 return a0 * sin(p0) + a1 * sin(p1) + a2 * sin(p2);
             }
@@ -184,9 +237,17 @@ Shader "Bar Promenade/City River Water"
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.screenPos = ComputeScreenPos(output.positionCS);
 
-                float viewZ = -TransformWorldToView(positionWS).z;
-                output.fogFactor = ComputeFogFactorZ0ToFar(
-                    max(viewZ - _ProjectionParams.y, 0));
+                // The fog factor is deliberately NOT computed here.
+                //
+                // A water sheet is a big flat grid seen almost
+                // edge-on, and the fog curve is not linear, so
+                // interpolating a per-vertex factor across metre-wide
+                // rows lays a set of faint parallel bands down the
+                // whole surface - perspective turns them into stripes
+                // that look like a current on water that has none.
+                // Eye depth interpolates exactly, so the fragment
+                // stage derives the factor from it instead.
+                output.viewZ = -TransformWorldToView(positionWS).z;
                 return output;
             }
 
@@ -197,8 +258,17 @@ Shader "Bar Promenade/City River Water"
             // anisotropy that makes it read as a current.
             float3 SampleRipple(float2 positionXZ, float time)
             {
-                float2 downstream = FlowAxis();
-                float2 drift = downstream * time;
+                float flowing;
+                float2 downstream = FlowAxis(flowing);
+
+                // A current drags the sheet downstream forever. Still
+                // water has nowhere to drag it to, so it walks a small
+                // closed orbit instead: the sheet keeps moving, but it
+                // never commits to a direction, which is exactly the
+                // difference between a river and a pond.
+                float2 stillDrift =
+                    float2(sin(time * 0.35), cos(time * 0.29)) * 0.35;
+                float2 drift = lerp(stillDrift, downstream * time, flowing);
 
                 float2 uv0 = (positionXZ - drift) / max(0.05, _RippleTiling);
                 float2 uv1 = mul(
@@ -287,6 +357,37 @@ Shader "Bar Promenade/City River Water"
                 color += highlight * specular * _SpecularStrength *
                          lerp(1.0h, 0.45h, _NightFactor);
 
+                // The city's own lamps. Until now this surface read the
+                // sun and nothing else, which is why no electric light
+                // ever touched the water. A point light standing over a
+                // still pond lays a long glitter path toward whoever is
+                // looking - it falls out of the same banded highlight,
+                // driven by the real fixture, so it tracks the camera
+                // and the night cycle for free. Four is the whole boat
+                // station and more than the shader can spare.
+                #ifdef _ADDITIONAL_LIGHTS
+                if (_AdditionalSpecular > 0.0h)
+                {
+                    uint lightCount = min(GetAdditionalLightsCount(), 4u);
+                    for (uint lightIndex = 0u;
+                         lightIndex < lightCount;
+                         lightIndex++)
+                    {
+                        Light extra = GetAdditionalLight(
+                            lightIndex, input.positionWS);
+                        float3 halfExtra = normalize(
+                            extra.direction + viewDirWS);
+                        float glint = pow(
+                            saturate(dot(normalWS, halfExtra)),
+                            max(1.0, _SpecularPower));
+                        glint = floor(glint * steps) / steps;
+                        color += extra.color * extra.distanceAttenuation *
+                                 glint * _SpecularStrength *
+                                 _AdditionalSpecular;
+                    }
+                }
+                #endif
+
                 // Fresnel: at a grazing angle a river stops being a
                 // window and starts being a mirror of the sky, which at
                 // this distance is one flat tone.
@@ -298,6 +399,7 @@ Shader "Bar Promenade/City River Water"
                     _HighlightColor.rgb * lerp(0.85h, 0.30h, _NightFactor),
                     fresnel * _FresnelStrength);
 
+
                 // Foam. The depth threshold puts it exactly where the
                 // water runs out - the foot of the quay walls, the
                 // bridge piers, the stair landings - so nothing has to
@@ -308,9 +410,11 @@ Shader "Bar Promenade/City River Water"
                     0.0,
                     max(0.01, _FoamDistance),
                     waterDepth);
-                float2 downstream = FlowAxis();
+                float foamFlowing;
+                float2 downstream = FlowAxis(foamFlowing);
                 float2 foamUV = (input.positionWS.xz - downstream * time *
-                                 0.72) / max(0.05, _FoamTiling);
+                                 0.72 * foamFlowing) /
+                                max(0.05, _FoamTiling);
                 half foamMask = SAMPLE_TEXTURE2D(
                     _FoamMap, sampler_FoamMap, foamUV).r;
                 half foam = saturate(
@@ -321,7 +425,7 @@ Shader "Bar Promenade/City River Water"
                 half foamTone = lerp(1.0h, 0.55h, _NightFactor);
                 color = lerp(
                     color,
-                    half3(foamTone, foamTone, foamTone),
+                    _FoamColor.rgb * foamTone,
                     foam * 0.8h);
 
                 // Rain chop: the high-frequency break-up the old shader
@@ -335,7 +439,9 @@ Shader "Bar Promenade/City River Water"
                          (_RainIntensity * (floor(chop * steps) / steps) *
                           0.10h);
 
-                color = MixFog(color, input.fogFactor);
+                half fogFactor = ComputeFogFactorZ0ToFar(
+                    max(input.viewZ - _ProjectionParams.y, 0));
+                color = MixFog(color, fogFactor);
                 return half4(color, 1.0h);
             }
             ENDHLSL

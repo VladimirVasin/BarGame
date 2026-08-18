@@ -55,6 +55,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public LakeFishermanPresentation LakeFisherman
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -395,6 +400,13 @@ namespace BarPromenade
             CemeteryWatchman = CemeteryWatchmanFactory.Create(
                 transform,
                 CemeteryWatchmanPlan.Create(World.CemeteryPlan),
+                GameSessionState.CitySeed);
+            // The boat station is not abandoned by everybody: one man
+            // sits on the end of the мостки with his back to the shore
+            // and answers about the water whether or not he was asked.
+            LakeFisherman = LakeFishermanFactory.Create(
+                transform,
+                LakeFishermanPlan.Create(World.LakePlan),
                 GameSessionState.CitySeed);
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
