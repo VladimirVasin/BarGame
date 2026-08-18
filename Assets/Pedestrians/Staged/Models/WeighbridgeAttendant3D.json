@@ -41,6 +41,7 @@
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
+  "perch_seat_height_m": null,
   "build_signature": "504d1ab2c8d33aa9172e75fe4abacffab8c4c3208ac3d9a940efd07c5d45b4e1",
   "bones": [
     {

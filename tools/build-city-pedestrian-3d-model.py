@@ -87,6 +87,15 @@ class ArchetypeSpec:
     # included. The cabin gives 2.05 m from floor to ceiling and the cushion
     # sits 0.41 m up, so anything past 1.64 m would pass through the roof.
     seated_clearance_m: tuple[float, float] | None = None
+    # The other way to be seated: on an open bench in the world, where there
+    # is no roof to measure against. What has to be right instead is a single
+    # distance - from the underside of the seated hips, which is what actually
+    # rests on the plank, down to the soles, which have to reach the ground
+    # beside it. That distance IS the height of the drawn seat, so the band is
+    # declared in those terms and the world can be checked against it directly.
+    # A design that declares this leaves `seated_clearance_m` unset, and vice
+    # versa.
+    perch_seat_height_m: tuple[float, float] | None = None
     # A wheelchair stays grounded on its tyres rather than on the rider's
     # shoes. Declaring a radius switches the animation bake/validator to that
     # support contract and keeps the feet on the authored footrests.
@@ -214,6 +223,31 @@ ARCHETYPES = {
         (900, 2000),
         staged=True,
         pool_eligible=False,
+    ),
+    # The park chess player. One staged model for the permanent post at
+    # the west park chess set: an old man alone at one of the two tables
+    # with his elbows on the board rim and his head in both hands. The
+    # chess reference is carried twice over, because colour alone is not
+    # allowed to carry a read: the silhouette wears a king's crown where
+    # a hat would be, and the cloth carries a check. The idle slot holds
+    # the brooding loop and the walk slot a slow park trudge reserved for
+    # a later pass, mirroring how every staged design maps onto the same
+    # pair.
+    #
+    # He is the library's first bench sitter. That is not the bus cabin
+    # contract - there is no roof over a park bench - so he declares
+    # `perch_seat_height_m` instead of `seated_clearance_m`. The drawn
+    # chess bench puts its plank 0.54 m over the lawn, so that is the
+    # distance his authored seat has to keep from his own soles.
+    "park_chess_player": ArchetypeSpec(
+        "park_chess_player", "park_chess_player_v1", "Park Chess Player",
+        1104733,
+        "ParkChessPlayer3D.blend", "ParkChessPlayer3D",
+        "ParkChessPlayer3D.png", "ChessBrood", "ChessTrudge",
+        (900, 2100),
+        staged=True,
+        pool_eligible=False,
+        perch_seat_height_m=(0.53, 0.55),
     ),
 }
 
@@ -421,6 +455,28 @@ PALETTE = {
     "rod_cane": (0.230, 0.150, 0.072, 1.0),
     "rod_cork": (0.330, 0.245, 0.145, 1.0),
     "rod_reel": (0.128, 0.132, 0.130, 1.0),
+    # Park Chess Player. The park palette is deep black-green, sandy
+    # grey-brown and cold bone, so the check is bone on black-green
+    # rather than white on black: a true white square would be the
+    # loudest value in the whole precinct and would say "costume".
+    #
+    # Every light value here is deliberately held near 0.6 and nowhere
+    # near 1. He sits directly under the one burning lamp, and the
+    # fisherman's slicker had to come down from 0.560 to 0.455 for
+    # exactly this reason - a bright albedo two metres from a warm
+    # practical clips to white and stops being a material.
+    "chess_coat": (0.105, 0.128, 0.108, 1.0),
+    "chess_coat_light": (0.155, 0.185, 0.155, 1.0),
+    "chess_coat_dark": (0.052, 0.065, 0.055, 1.0),
+    "chess_trousers": (0.078, 0.082, 0.075, 1.0),
+    "chess_check_light": (0.615, 0.600, 0.545, 1.0),
+    "chess_check_dark": (0.062, 0.082, 0.068, 1.0),
+    "chess_crown": (0.600, 0.588, 0.535, 1.0),
+    "chess_crown_cross": (0.640, 0.628, 0.572, 1.0),
+    "chess_crown_dark": (0.255, 0.248, 0.225, 1.0),
+    "chess_skin": (0.372, 0.262, 0.198, 1.0),
+    "chess_grey": (0.385, 0.380, 0.362, 1.0),
+    "chess_boot": (0.048, 0.045, 0.040, 1.0),
 }
 
 
@@ -782,6 +838,10 @@ class PedestrianBuilder:
             "lake_fisherman": (
                 self.build_lake_fisherman_body,
                 self.build_lake_fisherman_details,
+            ),
+            "park_chess_player": (
+                self.build_park_chess_player_body,
+                self.build_park_chess_player_details,
             ),
         }
         if self.spec.key not in builders:
@@ -3261,6 +3321,291 @@ class PedestrianBuilder:
             "hand.R", "signature_silhouette", "rod_cane",
         )
 
+    def build_park_chess_player_body(self) -> None:
+        """Old man in a worn overcoat under a chess king's crown.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the seat, the elbows on the board rim and
+        the head sunk into both hands are all authored in ChessBrood
+        rather than in the geometry.
+
+        The chess reference is carried on two independent channels
+        because the art bible refuses to let colour be the only proof.
+        The silhouette owns the first: where every other design wears a
+        hat, this one wears the tulle of a king - a band pulled down
+        over the brow, a tapering body, a collar and a knop, and a small
+        cross that has gone crooked. It is the whole read at 15-30 m, in
+        fog and in grayscale. The cloth owns the second: a check on the
+        scarf tails and on both lapels.
+
+        Neither is white. The park runs on deep black-green, sandy
+        grey-brown and cold bone, so the light square is bone and the
+        dark one is the park's own black-green. He also sits directly
+        under the one burning lamp on the wire, which is the second
+        reason the light values stay near 0.6.
+
+        The coat stops just below the hips on purpose. A stiff skirt is
+        bound to the pelvis and cannot follow a knee, and this design
+        spends its whole life with both knees folded up at a bench; a
+        full-length hem would stand straight through both thighs.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.112), 12, 6),
+            "head", "body", "chess_skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.012, 1.318), (0, -0.022, 1.452), 0.064, 0.054, 10),
+            "neck", "body", "chess_skin",
+        )
+        self.add_part(
+            "CLO_CoatChest",
+            make_tapered_box((0, 0.006, 1.080), (0, -0.004, 1.340), (0.400, 0.246, 0), (0.412, 0.258, 0)),
+            "chest", "body", "chess_coat",
+        )
+        self.add_part(
+            "CLO_CoatWaist",
+            make_tapered_box((0, 0.010, 0.900), (0, 0.006, 1.090), (0.392, 0.248, 0), (0.402, 0.250, 0)),
+            "spine", "body", "chess_coat",
+        )
+        self.add_part(
+            "CLO_CoatHem",
+            make_tapered_box((0, 0.012, 0.655), (0, 0.010, 0.910), (0.424, 0.272, 0), (0.396, 0.252, 0)),
+            "pelvis", "clothing", "chess_coat_dark",
+        )
+        self.add_part(
+            "CLO_CoatYoke",
+            make_tapered_box((0, 0.002, 1.180), (0, -0.004, 1.325), (0.444, 0.278, 0), (0.408, 0.256, 0)),
+            "chest", "clothing", "chess_coat_light",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
+                f"upper_arm.{side}", "clothing", "chess_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
+                f"forearm.{side}", "clothing", "chess_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.632, -0.017, 1.096),
+                    (sign * 0.694, -0.019, 1.068),
+                    0.050, 0.045, 8,
+                ),
+                f"forearm.{side}", "clothing", "chess_coat_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.722, -0.022, 1.048), (0.082, 0.068, 0.056)),
+                f"hand.{side}", "body", "chess_skin",
+            )
+            # Both leg parts stop exactly at their own bone head. A shin
+            # part authored above the knee swings out through the thigh
+            # the moment the knee bends, and this design sits with both
+            # knees folded to a right angle for its entire life.
+            self.add_part(
+                f"CLO_TrouserUpper.{side}",
+                make_frustum_between(
+                    (sign * 0.092, 0.006, 0.742),
+                    (sign * 0.103, -0.012, 0.358),
+                    0.084, 0.066, 8,
+                ),
+                f"thigh.{side}", "clothing", "chess_trousers",
+            )
+            self.add_part(
+                f"CLO_TrouserLower.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.012, 0.352),
+                    (sign * 0.112, -0.024, 0.128),
+                    0.070, 0.058, 8,
+                ),
+                f"shin.{side}", "clothing", "chess_trousers",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.086, 0.024),
+                    (sign * 0.112, -0.052, 0.140),
+                    (0.106, 0.264, 0),
+                    (0.094, 0.190, 0),
+                ),
+                f"foot.{side}", "body", "chess_boot",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.086, 0.012), (0.110, 0.272, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+
+        # The crown owns the silhouette and the exact 1.75 m envelope.
+        # Only the cross reaches the ceiling, and it reaches it leaning:
+        # a straight one would read as municipal signage rather than as
+        # a chess piece that has been sat under for years.
+        self.add_part(
+            "CLO_CrownBand",
+            make_frustum_between((0, -0.030, 1.590), (0, -0.030, 1.632), 0.116, 0.112, 12),
+            "head", "signature_silhouette", "chess_crown_dark",
+        )
+        self.add_part(
+            "CLO_CrownBody",
+            make_frustum_between((0, -0.030, 1.632), (0, -0.030, 1.678), 0.110, 0.072, 12),
+            "head", "signature_silhouette", "chess_crown",
+        )
+        self.add_part(
+            "CLO_CrownCollar",
+            make_frustum_between((0, -0.030, 1.678), (0, -0.030, 1.690), 0.084, 0.084, 12),
+            "head", "signature_silhouette", "chess_crown_dark",
+        )
+        self.add_part(
+            "CLO_CrownKnop",
+            make_ellipsoid((0, -0.030, 1.700), (0.052, 0.050, 0.018), 10, 5),
+            "head", "signature_silhouette", "chess_crown",
+        )
+        # The cross gets the whole top of the envelope. An earlier pass
+        # gave it 24 mm and the review render showed why that is not
+        # enough: at 24 mm it is one dark pixel through the PS1 composite
+        # and the crown reads as a plain cap, which loses the entire
+        # first channel of the design. Its upper face sits at exactly
+        # 1.750, so this part sets the canonical height and nothing above
+        # it may be authored.
+        self.add_part(
+            "ACC_CrownCross",
+            make_tapered_box(
+                (0, -0.030, 1.700),
+                (0.024, -0.038, 1.750),
+                (0.030, 0.030, 0),
+                (0.024, 0.024, 0),
+            ),
+            "head", "signature_silhouette", "chess_crown_cross",
+        )
+        self.add_part(
+            "ACC_CrownCrossArm",
+            make_box((0.011, -0.0335, 1.7255), (0.078, 0.021, 0.018)),
+            "head", "signature_silhouette", "chess_crown_cross",
+        )
+
+        # What is left of the face under the band: heavy brows, a big
+        # nose and a grey moustache. The eyes are drawn because this is
+        # the one design the player walks up to in order to look at.
+        self.add_part(
+            "ACC_Eye.L",
+            make_box((0.042, -0.108, 1.548), (0.030, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Eye.R",
+            make_box((-0.042, -0.108, 1.548), (0.030, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Brow",
+            make_box((0, -0.112, 1.570), (0.136, 0.022, 0.016)),
+            "head", "face_detail", "chess_grey",
+        )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.130, 1.492), (0, -0.110, 1.536), (0.044, 0.050, 0), (0.030, 0.040, 0)),
+            "head", "face_detail", "chess_skin",
+        )
+        self.add_part(
+            "ACC_Moustache",
+            make_box((0, -0.122, 1.470), (0.082, 0.026, 0.020)),
+            "head", "face_detail", "chess_grey",
+        )
+
+    def build_park_chess_player_details(self) -> None:
+        """The check, and the few things that say the coat is old.
+
+        A check cannot be a texture here: every part is one flat colour
+        on one shared material, exactly like the drawn board on the
+        table, which is 64 boxes for the same reason. So the dark field
+        is the cloth itself and the light squares are separate parts
+        standing a few millimetres proud of it, alternating columns row
+        by row so the pattern reads as a lattice rather than as stripes.
+
+        The scarf carries it down the chest where a seated man folded
+        over a board still shows cloth, and the lapels repeat it at the
+        shoulders where the silhouette is widest.
+        """
+
+        self.add_part(
+            "CLO_ScarfLoop",
+            make_frustum_between((0, -0.008, 1.330), (0, -0.016, 1.406), 0.108, 0.098, 12),
+            "neck", "clothing", "chess_check_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_ScarfTail.{side}",
+                make_tapered_box(
+                    (sign * 0.052, -0.132, 1.010),
+                    (sign * 0.058, -0.146, 1.330),
+                    (0.086, 0.030, 0),
+                    (0.092, 0.032, 0),
+                ),
+                "chest", "clothing", "chess_check_dark",
+            )
+            self.add_part(
+                f"CLO_Lapel.{side}",
+                make_tapered_box(
+                    (sign * 0.088, -0.128, 1.086),
+                    (sign * 0.132, -0.136, 1.318),
+                    (0.076, 0.028, 0),
+                    (0.104, 0.030, 0),
+                ),
+                "chest", "clothing", "chess_check_dark",
+            )
+            self.add_part(
+                f"ACC_LapelCheck.{side}",
+                make_box((sign * 0.112, -0.144, 1.240), (0.046, 0.024, 0.046)),
+                "chest", "surface_detail", "chess_check_light",
+            )
+
+        # Three light squares per tail on a 0.042 lattice, columns
+        # swapped every row. Two rows deep is all a 0.09 m tail can
+        # carry and still be read as a check rather than as spots.
+        check_rows = (
+            (0.076, 1.268),
+            (0.034, 1.226),
+            (0.076, 1.184),
+        )
+        index = 0
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            for offset, height in check_rows:
+                index += 1
+                self.add_part(
+                    f"ACC_ScarfCheck.{index:02d}",
+                    make_box(
+                        (sign * offset, -0.154, height),
+                        (0.042, 0.026, 0.042),
+                    ),
+                    "chest", "surface_detail", "chess_check_light",
+                )
+
+        self.add_part(
+            "ACC_CoatSeam",
+            make_box((0, -0.126, 0.902), (0.392, 0.014, 0.014)),
+            "spine", "surface_detail", "chess_coat_dark",
+        )
+        self.add_part(
+            "ACC_CoatButton.01",
+            make_box((0.016, -0.130, 1.040), (0.024, 0.018, 0.026)),
+            "spine", "surface_detail", "chess_crown_dark",
+        )
+        self.add_part(
+            "ACC_CoatButton.02",
+            make_box((0.016, -0.128, 0.944), (0.024, 0.018, 0.026)),
+            "spine", "surface_detail", "chess_crown_dark",
+        )
+
     def build_weigh_attendant_body(self) -> None:
         """Tired industrial worker in a quilted jacket and a knit cap.
 
@@ -3661,9 +4006,30 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     if presentation is None:
         raise RuntimeError("Preview collection is missing")
 
-    posed_preview = spec.wheel_radius_m is not None
+    # A design whose whole content is its posture is useless in the bind
+    # A-pose: the wheelchair rider would be standing through his own
+    # chair and the chess player would be a man staring at nothing with
+    # his arms out. Both are previewed in the stance they are built for.
+    preview_pose = None
+    if spec.wheel_radius_m is not None:
+        preview_pose = pipeback_base_pose()
+    elif spec.perch_seat_height_m is not None:
+        preview_pose = chess_player_base_pose()
+    posed_preview = preview_pose is not None
+    perch_drop = 0.0
     if posed_preview:
-        apply_pose(result.rig, pipeback_base_pose())
+        apply_pose(result.rig, preview_pose)
+        bpy.context.view_layer.update()
+    if spec.perch_seat_height_m is not None:
+        # A perched design's boots stop above the plane the preview
+        # ground is on, because in the world it is the seat that carries
+        # him and not the lawn. Setting him down on the review floor is
+        # what makes the pose readable instead of levitating.
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        perch_drop = min(
+            evaluated_part_min_z(part, depsgraph) for part in result.parts
+        )
+        result.rig.location.z -= perch_drop
         bpy.context.view_layer.update()
 
     camera_data = bpy.data.cameras.new("CAM_PedestrianPreview")
@@ -3679,6 +4045,10 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         # right fist along -Y, so the library's usual left-front camera
         # would look straight down two metres of it and see a dot.
         "lake_fisherman": (-4.30, -3.15, 1.95),
+        # Lower and closer. He is seated and folded forward, so the
+        # library's standing camera looks down onto a crown and misses
+        # both the face in the hands and the check on the scarf.
+        "park_chess_player": (2.35, -3.90, 1.60),
     }.get(spec.key, (2.65, -4.40, 2.10))
     target = Vector((0, 0, 0.84 if posed_preview else 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
@@ -3712,6 +4082,8 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
     if posed_preview:
+        if perch_drop != 0.0:
+            result.rig.location.z += perch_drop
         reset_pose(result.rig)
         bpy.context.view_layer.update()
 
@@ -3766,6 +4138,11 @@ def write_manifest(
         "seated_clearance_m": (
             list(spec.seated_clearance_m)
             if spec.seated_clearance_m is not None
+            else None
+        ),
+        "perch_seat_height_m": (
+            list(spec.perch_seat_height_m)
+            if spec.perch_seat_height_m is not None
             else None
         ),
         "build_signature": report.build_signature,
@@ -3949,6 +4326,21 @@ ACTION_SPECS = (
         "FishermanTrudge", "lake_fisherman_v1", 1.5, 36,
         "hooded oilskin stance with the rod carried forward in both hands",
         "short heavy steps in waders with almost no arm swing",
+    ),
+    # The brooding loop is long on purpose. Nothing reads its phase, so
+    # the grid is regular rather than contractual, but twelve seconds is
+    # what it takes for a man who is not doing anything to stop looking
+    # like a looping animation.
+    ActionSpec(
+        "ChessBrood", "park_chess_player_v1", 12.0, 288,
+        "perched on the bench plank, both elbows on the board rim, the head sunk into both hands",
+        "three slow breaths carried by the ribs alone and one deeper settle",
+        seated=True,
+    ),
+    ActionSpec(
+        "ChessTrudge", "park_chess_player_v1", 1.5, 36,
+        "stooped old stance with both hands buried in the overcoat pockets",
+        "short flat park steps with the shoulders carried ahead of the hips",
     ),
 )
 
@@ -4445,6 +4837,116 @@ def fisherman_base_pose() -> dict[str, BonePose]:
         "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
         "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+    }
+
+
+def chess_player_base_pose() -> dict[str, BonePose]:
+    """Perched on the plank, elbows on the board rim, head in both hands.
+
+    The legs are the measured half of this pose. The chess bench draws
+    its plank 0.54 m over the lawn, which is high for a seat, so the
+    thighs slope down rather than run level the way the bus cabin's do:
+    a cabin-seated leg shape would hang his boots well clear of the
+    grass. `perch_seat_height_m` is what pins that, and the angles below
+    were converged against it rather than set by eye.
+
+    The two legs are deliberately different, and that is a fix rather
+    than a flourish. The shared Player rig is asymmetric on purpose
+    (`toe.L` at -0.230, `toe.R` at -0.188), so identical left and right
+    angles land the two soles about 32 mm apart and no single pelvis
+    channel can level them. Giving one foot the flat plant and drawing
+    the other back onto its toe makes one sole the contact, hides the
+    difference in a raised heel, and reads as a bored man besides.
+    """
+
+    return {
+        # The lean is not a mood setting, it is what lets him reach. A
+        # seated shoulder is already at its height ceiling in the A-pose
+        # rest, and with the torso upright the board is more than a
+        # forearm below the jaw: he physically cannot prop his head with
+        # his elbows down there. Folding the spine brings the head into
+        # reach, exactly as it does for a real person.
+        "pelvis": BonePose(rotation_degrees=(8.0, 0.0, 0.0), location_m=(0, 0.004, -0.010)),
+        "spine": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+        # And the neck takes it back. Folding 42 degrees at the chest
+        # without this would carry the crown over with it: a king's
+        # tulle laid on its side stops being a chess piece and becomes a
+        # bottle, and the face - the only content this design has -
+        # ends up pointed at the grass. Countering here leaves the crown
+        # 22 degrees off vertical, which reads as a bowed head, and
+        # keeps the face up where somebody walking past can see it.
+        "neck": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+        # Old shoulders, pulled up and forward around the ears.
+        "clavicle.L": BonePose(rotation_degrees=(4.0, -7.0, 9.0)),
+        "clavicle.R": BonePose(rotation_degrees=(4.0, 7.0, -9.0)),
+        # The six arm angles are a fitted result rather than a posed one,
+        # for the same reason the fisherman's were: this reach does not
+        # converge by eye. They were solved by coordinate descent against
+        # two measurements taken off the drawn chess set - an elbow
+        # resting on the board surface, and a palm under the jaw - to
+        # 0.1 mm at the elbow and 0.2 mm at the wrist. The right side is
+        # the left's own answer mirrored: the solver will happily find an
+        # equally exact but visibly different wrist roll, and an old man
+        # may be asymmetric by a few degrees but not by one hand turned
+        # over.
+        #
+        # Where the elbow lands is derived, not chosen. Given the seated
+        # shoulder and a 0.2869 m upper arm there is exactly one distance
+        # forward at which an elbow reaches the board without shortening
+        # the arm, and it puts them on the squares rather than on the
+        # slab edge. Which is where a man brooding over a position
+        # nobody is playing would have them anyway.
+        "upper_arm.L": BonePose(rotation_degrees=(-157.8, 1.0, 80.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-157.8, -1.0, -80.0)),
+        "forearm.L": BonePose(rotation_degrees=(-115.6, 46.8, 11.0)),
+        "forearm.R": BonePose(rotation_degrees=(-115.6, -46.8, -11.0)),
+        "hand.L": BonePose(rotation_degrees=(14.0, 18.0, -8.0)),
+        "hand.R": BonePose(rotation_degrees=(14.0, -18.0, 8.0)),
+        # Left foot flat and forward - this is the grounding contact, and
+        # the pair of angles that `perch_seat_height_m` converged on.
+        "thigh.L": BonePose(rotation_degrees=(-47.3, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(47.3, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
+        # Right foot drawn back under the plank, heel up. The knee bends
+        # rather than the hip, which is how a foot actually gets tucked:
+        # folding the shin swings the ankle back AND up, so this leg
+        # cannot steal the ground contact from the left one.
+        "thigh.R": BonePose(rotation_degrees=(-70.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(105.5, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+    }
+
+
+def chess_player_stand_pose() -> dict[str, BonePose]:
+    """The stooped stance the trudge is built on.
+
+    Standing, so the ordinary walker sole bake grounds him like anyone
+    else. Both hands go into the coat pockets, which keeps the arms out
+    of the way of a design whose whole silhouette lives above the neck.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(6.0, 0.0, 0.0), location_m=(0, 0.006, -0.030)),
+        "spine": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(3.0, -6.0, 7.0)),
+        "clavicle.R": BonePose(rotation_degrees=(3.0, 6.0, -7.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-24.0, 6.0, 54.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-24.0, -6.0, -54.0)),
+        "forearm.L": BonePose(rotation_degrees=(-34.0, 12.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-34.0, -12.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(6.0, 8.0, -4.0)),
+        "hand.R": BonePose(rotation_degrees=(6.0, -8.0, 4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-5.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
     }
 
 
@@ -5401,7 +5903,95 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     fisher_step_r = merge_pose(fisher, fisher_trudge_legs(-1.0, 1.0))
     fisher_step_pl = merge_pose(fisher, fisher_trudge_legs(0.0, -0.4))
 
+    # The chess player. One brooding loop on the plank and one trudge,
+    # off two different stances, because unlike every other staged
+    # design his idle is seated and his walk is not.
+    chess = chess_player_base_pose()
+    chess_stand = chess_player_stand_pose()
+
+    def chess_breath(amount: float) -> dict[str, BonePose]:
+        """One slow breath, as a fraction of a full one.
+
+        Only the spine and the chest move, and here that is the exact
+        inverse of the rule the fisherman needed. His hands had to stay
+        on a rod carried by his own fist, so his breath could move the
+        neck and the head freely. This design's hands hold his head:
+        the skull rides chest -> neck -> head and both palms ride
+        chest -> clavicle -> arm, so keying the chest carries all three
+        as one rigid piece and the head stays cradled. A breath authored
+        on the neck or the head instead would slide the face out of the
+        palms once per lap, which is the whole illusion.
+        """
+
+        return {
+            "spine": BonePose(rotation_degrees=(22.0 - 1.8 * amount, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(12.0 - 2.2 * amount, 0.0, 0.0)),
+        }
+
+    chess_brood = chess
+    chess_brood_inhale = merge_pose(chess, chess_breath(1.0))
+    # The one thing that happens in twelve seconds: the back rounds a
+    # little further, he settles, and it goes again. Authored on the same
+    # three bones as the breath, and kept as small as it is for a reason
+    # the fisherman never had to worry about - his elbows are resting on
+    # a fixed board. Every degree at the chest slides them about five
+    # millimetres across it, so a settle authored with any real amplitude
+    # would push both sleeves through the squares once a loop. The legs
+    # carry the rest of it: a man who rounds forward takes the weight off
+    # his drawn-back foot.
+    chess_sink = merge_pose(chess, {
+        "pelvis": BonePose(rotation_degrees=(9.0, 0.0, 0.0), location_m=(0, 0.004, -0.014)),
+        "spine": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(13.0, 0.0, -0.8)),
+        "thigh.R": BonePose(rotation_degrees=(-72.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(110.0, 0.0, 0.0)),
+    })
+    chess_sink_inhale = merge_pose(chess_sink, {
+        "spine": BonePose(rotation_degrees=(22.2, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(10.8, 0.0, -0.8)),
+    })
+
+    def chess_trudge_legs(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(6.0 + lean * 1.2, 0.0, left_forward * 1.4),
+                location_m=(0, 0.006, -0.030),
+            ),
+            "thigh.L": BonePose(rotation_degrees=(-5.0 - left_forward * 15.0, 0.0, 4.0)),
+            "shin.L": BonePose(rotation_degrees=(9.0 + max(0.0, -left_forward) * 22.0, 0.0, 0.0)),
+            "foot.L": BonePose(rotation_degrees=(-4.0 + left_forward * 5.0, 0.0, 0.0)),
+            "thigh.R": BonePose(rotation_degrees=(-5.0 + left_forward * 15.0, 0.0, -4.0)),
+            "shin.R": BonePose(rotation_degrees=(9.0 + max(0.0, left_forward) * 22.0, 0.0, 0.0)),
+            "foot.R": BonePose(rotation_degrees=(-4.0 - left_forward * 5.0, 0.0, 0.0)),
+        }
+
+    chess_step_l = merge_pose(chess_stand, chess_trudge_legs(1.0, 1.0))
+    chess_step_pr = merge_pose(chess_stand, chess_trudge_legs(0.0, -0.4))
+    chess_step_r = merge_pose(chess_stand, chess_trudge_legs(-1.0, 1.0))
+    chess_step_pl = merge_pose(chess_stand, chess_trudge_legs(0.0, -0.4))
+
     return {
+        "ChessBrood": (
+            (0.0, chess_brood),
+            (0.125, chess_brood_inhale),
+            (0.25, chess_brood),
+            (0.375, chess_brood_inhale),
+            (0.5, chess_sink),
+            (0.625, chess_sink_inhale),
+            (0.75, chess_brood),
+            (0.875, chess_brood_inhale),
+            (1.0, chess_brood),
+        ),
+        "ChessTrudge": (
+            (0.0, chess_step_l),
+            (0.25, chess_step_pr),
+            (0.5, chess_step_r),
+            (0.75, chess_step_pl),
+            (1.0, chess_step_l),
+        ),
         "WatchmanWatch": (
             (0.0, watchman),
             (0.12, watchman_left),
@@ -5818,6 +6408,7 @@ def validate_animated_grounding(
             "Hand clearance validation needs geometry on the hand/forearm bones"
         )
     seated_band = archetype.seated_clearance_m if archetype is not None else None
+    perch_band = archetype.perch_seat_height_m if archetype is not None else None
     reports: dict[str, dict[str, object]] = {}
     for action_name, action in actions.items():
         animation_data.action = action
@@ -5827,6 +6418,7 @@ def validate_animated_grounding(
                 action,
                 action_name,
                 seated_band,
+                perch_band,
             )
             continue
 
@@ -5916,29 +6508,49 @@ def validate_seated_clip(
     action: bpy.types.Action,
     action_name: str,
     seated_band: tuple[float, float] | None,
+    perch_band: tuple[float, float] | None = None,
 ) -> dict[str, object]:
-    """Prove a seated clip against the cabin instead of against the pavement.
+    """Prove a seated clip against whatever is actually carrying it.
 
     Sole contact is meaningless here: a seated design deliberately lifts its
-    boots off the ground plane, and the runtime aligns the shared rest pelvis
-    to the cushion rather than pinning the lowest sole. What can go wrong is
-    vertical: a design whose worn objects rise too far above the seated pelvis
-    passes through the cabin ceiling, and one that folds below it passes
-    through the floor. Both are measured here, on the real deformed meshes.
+    boots off the ground plane, and the runtime aligns the design to its seat
+    rather than pinning the lowest sole.
+
+    There are two ways to be seated and they are proved against different
+    things. A cabin rider is boxed in, so what can go wrong is vertical: a
+    design whose worn objects rise too far above the seated pelvis passes
+    through the roof, and one that folds below it passes through the floor.
+    A bench sitter has no roof at all, and what can go wrong instead is that
+    his boots never reach the ground beside the plank - so the distance from
+    the underside of his hips down to his soles is measured, and it has to
+    equal the height of the seat he was authored for. Both are measured on
+    the real deformed meshes.
     """
 
-    if seated_band is None:
+    if seated_band is None and perch_band is None:
         raise RuntimeError(
-            f"{action_name} is seated but its archetype declares no "
-            "seated_clearance_m band"
+            f"{action_name} is seated but its archetype declares neither a "
+            "seated_clearance_m nor a perch_seat_height_m band"
+        )
+    if seated_band is not None and perch_band is not None:
+        raise RuntimeError(
+            f"{action_name} declares both seated_clearance_m and "
+            "perch_seat_height_m; a design is carried by one seat, not two"
         )
 
     scene = bpy.context.scene
     rig = result.rig
-    floor, ceiling = seated_band
     headrooms: list[float] = []
     drops: list[float] = []
     seat_contacts: list[float] = []
+    # The underside of the hip geometry alone - the seat of the coat, which is
+    # the part that physically rests on a plank. Thighs are excluded here on
+    # purpose: on a high bench they slope down towards the knees, so including
+    # them would report the knee rather than the seat.
+    hip_parts = [part for part in result.parts if part.bone == "pelvis"]
+    perch_heights: list[float] = []
+    perch_lifts: list[float] = []
+    perch_contacts: list[str] = []
     for frame in range(round(action.frame_start), round(action.frame_end) + 1):
         scene.frame_set(frame)
         bpy.context.view_layer.update()
@@ -5957,9 +6569,64 @@ def validate_seated_clip(
                 pelvis_z
                 - min(evaluated_part_min_z(part, depsgraph) for part in seat_parts)
             )
+        if perch_band is not None:
+            if not hip_parts:
+                raise RuntimeError(
+                    "Perch validation needs geometry on the pelvis bone"
+                )
+            hip_bottom = min(
+                evaluated_part_min_z(part, depsgraph) for part in hip_parts
+            )
+            perch_heights.append(hip_bottom - bottom)
+            perch_lifts.append(pelvis_z - hip_bottom)
+            # Which part actually reaches the ground. A seated design has
+            # two candidates and they are not interchangeable: if the
+            # tucked foot outreaches the planted one, the pose reads as a
+            # man balanced on one toe with his other boot in the air, and
+            # the measurement above silently describes the wrong leg.
+            perch_contacts.append(
+                min(
+                    (
+                        (evaluated_part_min_z(part, depsgraph), part.obj.name)
+                        for part in result.parts
+                    ),
+                )[1]
+            )
         headrooms.append(top - pelvis_z)
         drops.append(pelvis_z - bottom)
 
+    drop = max(drops)
+    if perch_band is not None:
+        floor, ceiling = perch_band
+        lowest = min(perch_heights)
+        highest = max(perch_heights)
+        if lowest < floor or highest > ceiling:
+            raise RuntimeError(
+                f"{action_name} keeps its seat {lowest:.4f}-{highest:.4f} m "
+                f"above its own soles; the design is authored for a "
+                f"{floor:.3f}-{ceiling:.3f} m seat"
+            )
+        # How far the pelvis bone rides above the underside of the hips. The
+        # runtime lifts the model by exactly this to stand the seat of the
+        # coat on the drawn plank instead of sinking it into the timber.
+        perch_lift = max(perch_lifts)
+        contacts = sorted(set(perch_contacts))
+        print(
+            f"    perched {action_name}: seat {lowest:.4f}-{highest:.4f} m "
+            f"over the soles, pelvis lift {perch_lift:.4f} m, "
+            f"ground contact {', '.join(contacts)}"
+        )
+        return {
+            "seated": True,
+            "perched": True,
+            "perch_seat_height_min_m": stable_float(lowest),
+            "perch_seat_height_max_m": stable_float(highest),
+            "perch_pelvis_lift_m": stable_float(perch_lift),
+            "perch_contact_parts": contacts,
+            "seated_drop_m": stable_float(drop),
+        }
+
+    floor, ceiling = seated_band
     headroom = max(headrooms)
     if headroom < floor or headroom > ceiling:
         raise RuntimeError(
@@ -5967,7 +6634,6 @@ def validate_seated_clip(
             f"the design declares {floor:.3f}-{ceiling:.3f} m"
         )
 
-    drop = max(drops)
     # The cushion sits 0.41 m above the cabin floor, so nothing may hang more
     # than that below the seated pelvis.
     if drop > 0.41:

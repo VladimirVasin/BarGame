@@ -60,6 +60,12 @@ namespace BarPromenade
             get;
             private set;
         }
+        public ParkChessPlayerPresentation ParkChessPlayer
+        {
+            get;
+            private set;
+        }
+        public GameObject ParkChessLamp { get; private set; }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
             get;
@@ -408,6 +414,18 @@ namespace BarPromenade
                 transform,
                 LakeFishermanPlan.Create(World.LakePlan),
                 GameSessionState.CitySeed);
+            // The park kept a place for company and one man still keeps
+            // it: an old player at one of the two chess tables with his
+            // head in his hands and nobody across the board. He is
+            // raised before the bench interaction and the rest
+            // controller below, because both offer seats and his is
+            // claimed the moment he sits down.
+            ParkChessLamp = CityParkChessLampWorldBuilder.Build(
+                transform,
+                CityParkChessLampPlan.Create(Layout, World.DecorationPlan));
+            ParkChessPlayer = ParkChessPlayerFactory.Create(
+                transform,
+                ParkChessPlayerPlan.Create(Layout, World.DecorationPlan));
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their

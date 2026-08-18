@@ -45,6 +45,7 @@
     0.99,
     1.07
   ],
+  "perch_seat_height_m": null,
   "build_signature": "0c70dc24ac329986cbc330761cce100ca8417411e8041f903763e772e5253caf",
   "bones": [
     {

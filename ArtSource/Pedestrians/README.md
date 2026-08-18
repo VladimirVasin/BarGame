@@ -50,6 +50,21 @@ library:
   the stick is exactly what reads as a man pretending to fish. The line that
   falls from the tip is struck at runtime to the waterline the lake plan
   measured;
+- `Blender/ParkChessPlayer3D.blend`: **Park Chess Player**
+  (`park_chess_player_v1`), an old man perched on a plank of the Central Park
+  chess set with his elbows on the board and his head in both hands. The chess
+  reference runs on two independent channels, because colour alone is not
+  allowed to carry a read: a king's tulle worn where a hat would be — band,
+  tapering body, collar, knop and a crooked cross that sets the canonical
+  `1.75 m` — and a check on the scarf tails and both lapels, drawn as separate
+  light squares standing proud of the dark cloth for the same reason the table
+  board is 64 boxes. Nothing on him is white: the light square is the park's
+  cold bone at `0.615`, kept there deliberately because he sits under the one
+  burning lamp, which is exactly where the fisherman's slicker clipped. The
+  coat stops just below the hips — a stiff skirt rides the pelvis and cannot
+  follow a knee, and this design spends its life with both knees folded. He is
+  the first design to declare `perch_seat_height_m`, and both his loops are
+  reviewed in the seated stance rather than in the bind A-pose;
 - `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
   `PipebackIdle` keeps the head level over a slow body breath that pumps the
   bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
@@ -82,8 +97,14 @@ Each model has an adjacent deterministic review PNG.
 `Blender/CityPedestrianLocomotionContactSheet.png` shows, left to right, Idle
 and two opposite locomotion phases, with one row per authored design:
 Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
-designs, ending with the Lake Fisherman. The sheet grows a row automatically when an authored design is
+designs, ending with the Park Chess Player. The sheet grows a row automatically when an authored design is
 added; appearing here does not register a staged design with the runtime pool.
+
+Two designs are previewed posed rather than in the bind A-pose, because their
+whole content is a posture: the Pipeback Roller, who would otherwise stand
+through his own chair, and the Park Chess Player, who would otherwise be a man
+staring at nothing with his arms out. A perched design is additionally set down
+onto the review floor, since in the world it is a bench that carries him.
 
 Rebuild from the repository root with Blender 5:
 
@@ -120,6 +141,17 @@ The staged Lake Fisherman takes the same separate branch:
 - `Assets/Pedestrians/Staged/Models/LakeFisherman3D.fbx` and `.json`;
 - `Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab`, bound into
   `Assets/Resources/City/LakeFishermanProvider.asset`.
+
+So does the staged Park Chess Player, into
+`Assets/Resources/City/ParkChessPlayerProvider.asset`. His manifest carries one
+field no other design has, `perch_seat_height_m`. A bench sitter is neither
+sole-grounded — his hips are higher than his boots — nor cabin-seated, since a
+park bench has no roof to measure headroom against, so what the build proves
+instead is the distance from the underside of his hips to his soles: it has to
+equal the height of the plank the chess recipe draws (`0.540 m`). The validator
+also reports which part actually reaches the ground, because a seated design
+has two candidate feet and they are not interchangeable — if the tucked foot
+outreaches the planted one the pose reads as a man balanced on one toe.
 
 That prefab is passive like every other staged one — no collider, light, audio
 or interaction — which is exactly why its burning pipe and its fishing line are

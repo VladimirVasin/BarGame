@@ -552,6 +552,53 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moves the spine chain only, because both clavicles hang off the chest and a
   breath authored on them would open his two-handed grip on the rod once per
   lap.
+- **Accepted — a bench sitter is proved against its seat, not against the
+  pavement or a cabin:** the park chess player is the art library's first
+  design whose idle is seated on world furniture, and neither existing
+  grounding rule describes him. The walker rule pins the lowest sole to the
+  ground plane, which would drag him down until he stood on the lawn; the bus
+  rule (`seated_clearance_m`) measures headroom from the seated pelvis to a
+  roof a park bench does not have. He therefore declares
+  `perch_seat_height_m`, and the quantity it measures is deliberately not a
+  bone position but the distance from the underside of the hip geometry — the
+  seat of the coat, which is what physically rests on timber — down to the
+  soles. That distance IS the height of the drawn plank (`0.540 m`), so the
+  contract can be checked directly against the world instead of against a
+  guessed flesh allowance, and the runtime's correction is the same number
+  read the other way. Thighs are excluded from the hip measurement on purpose:
+  on a high bench they slope down toward the knees, so including them would
+  report the knee rather than the seat. The validator additionally reports
+  which part reaches the ground, because a seated design has two candidate
+  feet and a tucked foot that outreaches the planted one silently describes
+  the wrong leg while still passing a height band.
+  **Contrast with the removed `perch_clearance_m`:** the fisherman grew a
+  seated contract and lost it when he was authored standing, on the rule that
+  an unused declared contract is worse than none. This one is used by the only
+  design that declares it and is read by the runtime that seats him.
+- **Accepted — the chess lamp's wire crosses the set rather than running along
+  it:** the obvious span is along the line of the two tables, one lamp over
+  each board. The park's own geometry refuses it. Trees are planted on an 8x8
+  grid and the decoration planner then rejects any chess-set position within
+  `4.8 m` of a trunk, which seats the set in a gap between tree rows: on the
+  table line the nearest trunks stand about five metres off-axis, so a wire
+  between them passes beside the set and hangs its lamp over grass. Across the
+  set the same field offers a pair almost on the line. So the span runs on the
+  set's forward axis and its one working lamp hangs over the middle, covering
+  both boards — which is also the wider circle the fixture was chosen for. The
+  knot takes the trunk face nearest the set (`TrunkTieInsetMeters`), which is
+  both physically how a wire is tied and worth `0.26 m` of centring. A hook
+  pole is the fallback for a seed whose tree field offers nothing on one side;
+  it is a fallback, and the authored city is pinned to using real trees.
+- **Accepted — a head-in-hands loop breathes on the chest, never on the neck:**
+  the exact inversion of the fisherman's rule and for the same underlying
+  reason. His hands held a rod carried by his own fist, so his breath was free
+  to move the neck and head and had to avoid the clavicles. This design's
+  hands hold his head: the skull rides chest -> neck -> head and both palms
+  ride chest -> clavicle -> arm, so keying the spine and chest carries all
+  three as one rigid piece, while a breath on the neck or head slides his face
+  out of his palms once a lap. The settle is small for a second reason the
+  fisherman never had — his elbows rest on a fixed board, and every degree at
+  the chest slides them about five millimetres across it.
 - **Accepted — A staged wheelchair NPC is not a production archetype:**
   `pipeback_roller_v1` is a complete passive presentation asset, but it lives
   under `Assets/Pedestrians/Staged/` rather than `Resources`. Its strangeness

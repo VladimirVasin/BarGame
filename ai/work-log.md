@@ -6,6 +6,94 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — Somebody is still sitting at the chess tables
+
+- The park chess set has been drawn and sittable for a while with nobody on
+  it. Authored the `park_chess_player_v1` archetype and lit the corner. He is
+  an old man on the plank of one of the two tables, elbows on the board, head
+  in both hands, nobody across from him.
+- **The chess reference is carried twice, because §3.2 forbids letting colour
+  carry a read on its own.** The silhouette wears a king's tulle where a hat
+  would be - the direct continuation of Lampshade/Kettle Hat/Helmet Lamp - and
+  the cloth carries a check on the scarf tails and both lapels. Neither is
+  white: the light square is the park's cold bone at `0.615`, deliberately
+  near the fisherman's corrected `0.455` rather than near 1, because he sits
+  directly under the one burning lamp and that is exactly where the slicker
+  clipped.
+- **He is the library's first bench sitter, and neither existing grounding
+  rule fits.** Sole-pinning would drag him down until he stood on the lawn;
+  the bus cabin's `seated_clearance_m` measures headroom against a roof a park
+  bench does not have. So the generator grew `perch_seat_height_m`: the
+  distance from the underside of his hips - the part that rests on timber - to
+  his soles, which has to equal the height of the drawn plank. This one is
+  used, unlike the `perch_clearance_m` the fisherman grew and lost. The drawn
+  seat is `0.540 m`; the authored loop holds `0.5388-0.5396` across all 288
+  frames.
+- The legs are asymmetric on purpose and it is a fix, not a flourish. The
+  shared rig is asymmetric (`toe.L -0.230`, `toe.R -0.188`), so identical
+  angles land the soles `32 mm` apart. One foot plants flat and the other is
+  drawn back onto its toe: the validator now reports which part actually
+  touches, and it is `GEO_BootSole.L` on every frame, with the right toe
+  `3.7 mm` clear.
+- **The arms are solved, not posed**, the way the fisherman's were. Elbow on
+  the board and palm under the cheek, by coordinate descent, to `0.1 mm` and
+  `0.2 mm`; the right side is the left mirrored, because the solver will
+  happily find an equally exact but visibly different wrist roll. Where the
+  elbow lands is *derived*: a seated shoulder is already at its ceiling in the
+  A-pose rest and every degree of lean lowers it, so there is exactly one
+  forward distance at which an elbow reaches the board without shortening a
+  `0.2869 m` upper arm, and it puts them on the squares rather than on the
+  slab edge.
+- The breath rule is the fisherman's inverted. His hands held a rod, so his
+  breath could move the neck and head; this design's hands hold his head, so
+  the breath moves the spine and chest **only** and carries skull and both
+  palms as one piece. Keying the neck would slide his face out of his hands
+  once a lap. The settle is small for a second reason he never had: his elbows
+  rest on a fixed board, and every degree at the chest slides them about five
+  millimetres across it.
+- **The wire runs across the set, not along it, and that is a measurement.**
+  The park plants trees on an 8x8 grid and the decoration planner then keeps
+  the set `4.8 m` clear of every trunk, which drops it into a gap between tree
+  rows: along the line of the two tables the nearest trunks stand about five
+  metres off-axis, so a wire between them would pass beside the set and hang
+  its lamp over grass. Across the set the same field offers a pair almost
+  exactly on the line (`0.81 m` and `0.37 m` off). So the wire crosses between
+  the two boards and its one working lamp covers both, which is the wider
+  circle the fixture was chosen for. The knot takes the trunk face nearest the
+  set, which pulls the lamp a further `0.26 m` toward the middle.
+- Two pendants, one bulb. The dead one is a bare socket in an identical shade
+  further down the wire. The lens uses the boat station's `1.5x` multiplier
+  rather than the usual `4.6x` - blue passes 1 at `4.6x` and warm glass turns
+  into a white chip - and stays out of `CityNightGlowRegistry`, which would
+  read dead at noon on a fixture that never switches off.
+- Three renders caught what no test could: he was folded so far forward that
+  the crown lay on its side and the face pointed at the grass (the neck now
+  counters the lean, leaving the crown `22 deg` off vertical); the cross on
+  the crown was `24 mm` and disappeared into one downsampled pixel; and the
+  palms sat in front of the mouth rather than at the cheeks, which reads as
+  covering a face rather than propping a head.
+- **Worth remembering about edit-mode capture:** the review path builds no
+  Global Volume and no post-processing, so there is no bloom, no ACES and no
+  `+0.62` exposure. Raising this lamp from `40` to `58` changed the captured
+  image not at all. Practicals cannot be tuned against that image; the value
+  landed at `52 / 14` over `10 m` by sitting it between the documented pier
+  hand lamp (`46 / 16` over `11 m`) and the door bulb (`64-110` over `7-8 m`).
+- He claims his seat through `CityBenchSeatClaims` for the life of the City,
+  so the hero's prompt leaves that plank and `CityBenchNpcRestController`
+  never lowers a walker onto him. The factory is raised after
+  `CityBenchSitPlan.CreateAll` and before the rest controller for that reason.
+  The talk stub is deliberately not built: the constants and the dock offset
+  are in place for a later pass.
+- Verification: the full deterministic art build (12 archetypes, repeated
+  signatures matching, every clip grounded against its own footwear, the new
+  perch band proved on all 288 frames), `ParkChessPlayerTests`,
+  `CityChessTableGeometryTests` and `CityBenchRestTests` - 14/14 - plus
+  edit-mode renders of the set from the park approach, from the side, close on
+  his hands and wide, at day and night. No PlayMode suite and no player build.
+- Noted but not fixed, as out of scope: `CityPedestrianAssetSetup.BuildOrThrow`
+  binds the babushka, attendant, mourner, watchman and now the chess player,
+  but not the lake fisherman. His provider is bound only by his own menu item.
+
 ## 2026-08-18 — The open precincts join the teleport map
 
 - Follow-up to the precinct drawing pass: the new cells were drawn and named
