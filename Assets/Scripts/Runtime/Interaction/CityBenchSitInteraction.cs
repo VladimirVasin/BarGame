@@ -7,6 +7,14 @@ namespace BarPromenade
     /// Seats the hero on one city bench, wearing the same seated pose
     /// he holds on the bus. The transfer and ride clips are reused
     /// verbatim: the bench is the bus seat without the bus.
+    ///
+    /// The two park game planks are the exception, and they are the
+    /// reason this class knows about seat kinds at all. A bus seat is
+    /// backed onto from in front; a chess plank has a stone table
+    /// standing exactly where that approach would be, so those seats
+    /// carry their own clips — in past the plank's end and along the
+    /// timber — and say what game is on the board rather than offering
+    /// a sit.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityBenchSitInteraction :
@@ -17,6 +25,9 @@ namespace BarPromenade
             new Vector3[CityBenchSitPlan.MaximumApproachWaypoints];
 
         public const string SitPromptKey = "interaction.sit_bench";
+        public const string ChessPromptKey = "interaction.play_chess";
+        public const string DraughtsPromptKey =
+            "interaction.play_checkers";
         public const string StandPromptKey = "interaction.stand_up";
         public const string EnterClipName = "BusBoardEnter";
         public const string LoopClipName = "BusRideLoop";
@@ -25,6 +36,13 @@ namespace BarPromenade
         public const float TransferFramesPerSecond = 12f;
         public const int SitLoopFrameCount = 16;
         public const float SitLoopFramesPerSecond = 8f;
+        public const string BoardEnterClipName = "ChessSeatEnter";
+        public const string BoardLoopClipName = "ChessSeatPlayLoop";
+        public const string BoardExitClipName = "ChessSeatExit";
+        public const int BoardTransferFrameCount = 36;
+        public const float BoardTransferFramesPerSecond = 12f;
+        public const int BoardLoopFrameCount = 32;
+        public const float BoardLoopFramesPerSecond = 8f;
 
         // Bench surroundings are flat but not level: the yard's worn
         // ring lip and the point-of-interest ground slabs all sit
@@ -44,7 +62,7 @@ namespace BarPromenade
             controller.Phase ==
             PlayerAnimatedInteractionPhase.Looping
                 ? StandPromptKey
-                : SitPromptKey;
+                : ResolveSeatPromptKey(plan.Kind);
         public Vector3 InteractionPosition =>
             plan.InteractionPosition;
         public PlayerAnimatedInteractionController Controller =>
@@ -86,8 +104,35 @@ namespace BarPromenade
             controller = interactionController;
             playerRoot = player.GameObject.transform;
             plan = interactionPlan;
-            definition =
-                new PlayerAnimatedInteractionDefinition(
+            definition = CreateDefinition(plan.Kind);
+            controller.PhaseChanged += HandlePhaseChanged;
+        }
+
+        /// <summary>
+        /// Which game is laid out on the plank's own table. The seat
+        /// ids already carry it, so the prompt never has to be authored
+        /// twice against the same timber.
+        /// </summary>
+        public static string ResolveSeatPromptKey(
+            CityBenchSeatKind kind)
+        {
+            switch (kind)
+            {
+                case CityBenchSeatKind.ChessTable:
+                    return ChessPromptKey;
+                case CityBenchSeatKind.DraughtsTable:
+                    return DraughtsPromptKey;
+                default:
+                    return SitPromptKey;
+            }
+        }
+
+        public static PlayerAnimatedInteractionDefinition
+            CreateDefinition(CityBenchSeatKind kind)
+        {
+            if (kind == CityBenchSeatKind.Plank)
+            {
+                return new PlayerAnimatedInteractionDefinition(
                     EnterClipName,
                     LoopClipName,
                     ExitClipName,
@@ -100,7 +145,24 @@ namespace BarPromenade
                     exitFrameCount: TransferFrameCount,
                     exitFramesPerSecond:
                         TransferFramesPerSecond);
-            controller.PhaseChanged += HandlePhaseChanged;
+            }
+
+            // Both game tables wear the same clips: the timber, the
+            // slab and the gap a body has to get through are identical,
+            // and only the men on the board differ.
+            return new PlayerAnimatedInteractionDefinition(
+                BoardEnterClipName,
+                BoardLoopClipName,
+                BoardExitClipName,
+                enterFrameCount: BoardTransferFrameCount,
+                enterFramesPerSecond:
+                    BoardTransferFramesPerSecond,
+                loopFrameCount: BoardLoopFrameCount,
+                loopFramesPerSecond:
+                    BoardLoopFramesPerSecond,
+                exitFrameCount: BoardTransferFrameCount,
+                exitFramesPerSecond:
+                    BoardTransferFramesPerSecond);
         }
 
         public bool CanInteract(PlayerInteractor interactor)
@@ -161,7 +223,8 @@ namespace BarPromenade
 
             // A sitter standing behind or beside the timber first walks
             // around the nearer plank end; head-on approaches keep the
-            // straight walk.
+            // straight walk. A game plank has only the one lane in, off
+            // its own end, and routes onto that.
             int approachWaypointCount = plan.BuildApproachWaypoints(
                 playerRoot.position,
                 approachWaypointBuffer);

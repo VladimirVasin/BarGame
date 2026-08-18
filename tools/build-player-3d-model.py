@@ -193,6 +193,9 @@ REQUIRED_ACTIONS = (
     "BusBoardEnter",
     "BusRideLoop",
     "BusAlightExit",
+    "ChessSeatEnter",
+    "ChessSeatPlayLoop",
+    "ChessSeatExit",
 )
 
 
@@ -3984,6 +3987,236 @@ class CharacterBuilder:
             ),
         )
 
+        # The park chess planks. A bus seat is backed onto from in
+        # front; these have a stone table standing exactly there, so the
+        # body goes in past the end of the plank instead and works its
+        # way along the timber. He travels to his own left throughout,
+        # which is why the left leg leads and the right one trails: the
+        # hero's seat at either table is the one whose free end is the
+        # gap between the two tables, and that gap is always on his
+        # right as he sits down.
+        # Rig handedness, measured rather than assumed: a negative `z`
+        # on either thigh swings that leg towards `+X`, and a negative
+        # `y` on the pelvis turns the whole body the same way. `+X` is
+        # anatomical left, which is where he is going.
+        chess_side_step = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(2.0, -6.0, 0.0),
+                    location_m=(0.0, -0.015, 0.0),
+                ),
+                "spine": BonePose(rotation_degrees=(7.0, -2.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, -4.0, 0.0)),
+                "head": BonePose(rotation_degrees=(6.0, -8.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.19, -0.10, -0.26)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.09, -0.09, -0.32)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-20.0, 0.0, 12.0)),
+                "forearm.R": BonePose(rotation_degrees=(-12.0, 0.0, -7.0)),
+                "hand.L": BonePose(rotation_degrees=(5.0, -7.0, 4.0)),
+                "hand.R": BonePose(rotation_degrees=(3.0, 6.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-14.0, 0.0, -30.0)),
+                "shin.L": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(2.0, 0.0, 2.0)),
+                "shin.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+            },
+        )
+        chess_side_over = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(7.0, -12.0, 0.0),
+                    location_m=(0.0, -0.040, 0.0),
+                ),
+                "spine": BonePose(rotation_degrees=(14.0, -3.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, -3.0, 0.0)),
+                "head": BonePose(rotation_degrees=(7.0, -6.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.20, -0.14, -0.21)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.13, -0.14, -0.26)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-30.0, 0.0, 14.0)),
+                "forearm.R": BonePose(rotation_degrees=(-26.0, 0.0, -12.0)),
+                "hand.L": BonePose(rotation_degrees=(8.0, -7.0, 5.0)),
+                "hand.R": BonePose(rotation_degrees=(7.0, 7.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-30.0, 0.0, -22.0)),
+                "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-18.0, 0.0, -26.0)),
+                "shin.R": BonePose(rotation_degrees=(34.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+            },
+        )
+        chess_side_perch = self.merge_pose(
+            bus_seat_lower,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(3.0, -12.0, 0.0),
+                    location_m=(0.0, 0.075, -0.19),
+                ),
+                "spine": BonePose(rotation_degrees=(14.0, -3.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, -2.0, 0.0)),
+                "head": BonePose(rotation_degrees=(6.0, -5.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.14, -0.17, -0.23)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.13, 0.03, -0.30)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-34.0, 0.0, 12.0)),
+                "forearm.R": BonePose(rotation_degrees=(-8.0, 0.0, -6.0)),
+                "hand.L": BonePose(rotation_degrees=(8.0, -6.0, 4.0)),
+                "hand.R": BonePose(rotation_degrees=(-14.0, 6.0, -4.0)),
+                "thigh.L": BonePose(rotation_degrees=(-60.0, 0.0, -16.0)),
+                "shin.L": BonePose(rotation_degrees=(58.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-50.0, 0.0, -20.0)),
+                "shin.R": BonePose(rotation_degrees=(64.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+            },
+        )
+        chess_side_settle = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-1.0, -6.0, 0.0),
+                    location_m=(0.0, 0.095, -0.285),
+                ),
+                "spine": BonePose(rotation_degrees=(10.0, -1.5, 0.0)),
+                "chest": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, -1.0, 0.0)),
+                "head": BonePose(rotation_degrees=(7.0, -3.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.080, -0.170, -0.220)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.090, -0.100, -0.260)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-42.0, 0.0, 10.0)),
+                "forearm.R": BonePose(rotation_degrees=(-30.0, 0.0, -10.0)),
+                "hand.L": BonePose(rotation_degrees=(8.0, -5.0, 3.0)),
+                "hand.R": BonePose(rotation_degrees=(6.0, 6.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-69.0, 0.0, -6.0)),
+                "thigh.R": BonePose(rotation_degrees=(-70.0, 0.0, -10.0)),
+                "shin.L": BonePose(rotation_degrees=(74.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(74.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+            },
+        )
+
+        # Settled in the middle of the plank, over his own half of the
+        # board. He sits forward rather than back: there is no rest
+        # behind him and the game is a foot away.
+        chess_seated = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(2.0, 0.0, 0.0),
+                    location_m=(0.0, 0.095, -0.285),
+                ),
+                "spine": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(9.0, 0.0, -0.4)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.085, -0.185, -0.205)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.085, -0.185, -0.205)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-46.0, 0.0, 9.0)),
+                "forearm.R": BonePose(rotation_degrees=(-46.0, 0.0, -9.0)),
+                "hand.L": BonePose(rotation_degrees=(9.0, -5.0, 3.0)),
+                "hand.R": BonePose(rotation_degrees=(9.0, 5.0, -3.0)),
+            },
+        )
+        chess_study_lean = self.merge_pose(
+            chess_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(6.0, 0.0, 0.0),
+                    location_m=(0.0, 0.095, -0.285),
+                ),
+                "spine": BonePose(rotation_degrees=(21.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(12.0, 0.0, -0.4)),
+                "forearm.L": BonePose(rotation_degrees=(-52.0, 0.0, 9.0)),
+                "forearm.R": BonePose(rotation_degrees=(-52.0, 0.0, -9.0)),
+            },
+        )
+        chess_seated_breath = self.merge_pose(
+            chess_seated,
+            {
+                "spine": BonePose(rotation_degrees=(12.5, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-3.5, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-1.5, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(8.0, -2.5, -0.4)),
+            },
+        )
+
+        # A hand goes out over the board and comes back without moving
+        # anything. Nobody is playing him; the board has been set up and
+        # untouched for years, and this is the whole joke of the seat.
+        chess_hand_hover = self.merge_pose(
+            chess_seated,
+            {
+                "spine": BonePose(rotation_degrees=(16.0, 0.0, -1.5)),
+                "chest": BonePose(rotation_degrees=(-6.0, 0.0, 1.5)),
+                "head": BonePose(rotation_degrees=(10.0, -1.5, -0.4)),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.095, -0.235, -0.135)
+                ),
+                "forearm.R": BonePose(rotation_degrees=(-63.0, 0.0, -12.0)),
+                "hand.R": BonePose(rotation_degrees=(14.0, 5.0, -4.0)),
+            },
+        )
+        self._create_action(
+            "ChessSeatEnter", "chess_seat", 3.0, False, 36, 12,
+            (
+                (0.0, relaxed),
+                (0.14, chess_side_step),
+                (0.34, chess_side_over),
+                (0.52, chess_side_perch),
+                (0.72, chess_side_settle),
+                (1.0, chess_seated),
+            ),
+        )
+        self._create_action(
+            "ChessSeatPlayLoop", "chess_seat", 4.0, True, 32, 8,
+            (
+                (0.0, chess_seated),
+                (0.22, chess_study_lean),
+                (0.46, chess_hand_hover),
+                (0.68, chess_study_lean),
+                (0.86, chess_seated_breath),
+                (1.0, chess_seated),
+            ),
+        )
+        self._create_action(
+            "ChessSeatExit", "chess_seat", 3.0, False, 36, 12,
+            (
+                (0.0, chess_seated),
+                (0.22, chess_side_settle),
+                (0.42, chess_side_perch),
+                (0.62, chess_side_over),
+                (0.82, chess_side_step),
+                (1.0, relaxed),
+            ),
+        )
+
     def build_presentation(self) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -4348,17 +4581,20 @@ def validate_smoking_pose(
         bpy.context.view_layer.update()
 
 
-def validate_bus_ride_pose(
+def validate_seated_interaction_pose(
     result: BuildResult,
     errors: list[str],
+    enter_name: str,
+    loop_name: str,
+    exit_name: str,
 ) -> None:
-    """Verify fixed-root bus actions and their full-rig handoff seams."""
+    """Verify one fixed-root seat family and its full-rig handoff seams."""
 
     action_names = (
         "Relaxed",
-        "BusBoardEnter",
-        "BusRideLoop",
-        "BusAlightExit",
+        enter_name,
+        loop_name,
+        exit_name,
     )
     if any(result.actions.get(name) is None for name in action_names):
         return
@@ -4401,28 +4637,28 @@ def validate_bus_ride_pose(
         }
         seam_samples = (
             (
-                "Relaxed->BusBoardEnter",
+                f"Relaxed->{enter_name}",
                 sample(records["Relaxed"], 0.0),
-                sample(records["BusBoardEnter"], 0.0),
+                sample(records[enter_name], 0.0),
             ),
             (
-                "BusBoardEnter->BusRideLoop",
-                sample(records["BusBoardEnter"], 1.0),
-                sample(records["BusRideLoop"], 0.0),
+                f"{enter_name}->{loop_name}",
+                sample(records[enter_name], 1.0),
+                sample(records[loop_name], 0.0),
             ),
             (
-                "BusRideLoop seam",
-                sample(records["BusRideLoop"], 0.0),
-                sample(records["BusRideLoop"], 1.0),
+                f"{loop_name} seam",
+                sample(records[loop_name], 0.0),
+                sample(records[loop_name], 1.0),
             ),
             (
-                "BusRideLoop->BusAlightExit",
-                sample(records["BusRideLoop"], 1.0),
-                sample(records["BusAlightExit"], 0.0),
+                f"{loop_name}->{exit_name}",
+                sample(records[loop_name], 1.0),
+                sample(records[exit_name], 0.0),
             ),
             (
-                "BusAlightExit->Relaxed",
-                sample(records["BusAlightExit"], 1.0),
+                f"{exit_name}->Relaxed",
+                sample(records[exit_name], 1.0),
                 sample(records["Relaxed"], 1.0),
             ),
         )
@@ -4942,7 +5178,20 @@ def validate_result(
 
     validate_bed_sleep_pose(result, errors)
     validate_smoking_pose(result, errors)
-    validate_bus_ride_pose(result, errors)
+    validate_seated_interaction_pose(
+        result,
+        errors,
+        "BusBoardEnter",
+        "BusRideLoop",
+        "BusAlightExit",
+    )
+    validate_seated_interaction_pose(
+        result,
+        errors,
+        "ChessSeatEnter",
+        "ChessSeatPlayLoop",
+        "ChessSeatExit",
+    )
     validate_fall_recovery_pose(result, errors)
 
     triangle_count = 0

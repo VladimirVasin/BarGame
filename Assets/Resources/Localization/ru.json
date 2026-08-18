@@ -129,6 +129,14 @@
       "value": "E — присесть на лавочку"
     },
     {
+      "key": "interaction.play_chess",
+      "value": "E — сыграть в шахматы"
+    },
+    {
+      "key": "interaction.play_checkers",
+      "value": "E — сыграть в шашки"
+    },
+    {
       "key": "interaction.stand_up",
       "value": "E — встать"
     },

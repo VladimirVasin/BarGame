@@ -109,7 +109,9 @@ library contains:
 - bed: `BedEnter`, `BedSleepLoop`, `BedExit`;
 - smoking: `SmokeEnter`, `SmokeLoop`, `SmokeExit`;
 - cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`;
-- bus riding: `BusBoardEnter`, `BusRideLoop`, `BusAlightExit`.
+- bus riding: `BusBoardEnter`, `BusRideLoop`, `BusAlightExit`;
+- park game tables: `ChessSeatEnter`, `ChessSeatPlayLoop`,
+  `ChessSeatExit`.
 
 `Idle` is a four-second loop with an exact `Relaxed` seam. Two asymmetric
 breaths shift weight through the pelvis and legs while the spine, chest, head,
@@ -145,6 +147,21 @@ two-step boarding gesture and settles into a forward-facing passenger seat.
 full-rig seam. `BusAlightExit` starts at that identical seated endpoint, rises,
 steps down and returns exactly to `Relaxed`. Runtime owns the moving bus-local
 action anchor; all three source Actions keep the root bone fixed.
+
+`ChessSeatEnter` is the bus boarding turned through ninety degrees. A
+park chess plank has a stone table standing where a seat is normally
+backed onto, so the body goes in past the end of the plank instead: it
+steps out to anatomical left, swings the leading leg over the timber,
+perches on the plank end with the trailing hand braced behind it, brings
+both legs in under the slab and slides to the middle of the board. Rig
+handedness was measured rather than assumed for these poses — a negative
+bone-local `z` on either thigh abducts that leg towards `+X`, and a
+negative `y` on the pelvis turns the whole body the same way.
+`ChessSeatPlayLoop` is a four-second study over the board: two leans in,
+one hand carried out over the men and brought back without touching one,
+and a breath, on an exact full-rig seam. `ChessSeatExit` reverses the
+entry to `Relaxed`. Both boards wear the same three Actions; only the
+men on them differ.
 
 The Actions intentionally contain no gameplay events or root motion. Unity's
 deterministic interaction timelines own exact playback, terminal holds,

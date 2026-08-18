@@ -6,6 +6,59 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — And the hero can sit down at either board
+
+- The prompt on the two free park game planks now names the game rather than
+  offering a sit (`interaction.play_chess` / `interaction.play_checkers`), and
+  taking one seats the hero across the board from its old man, facing him.
+- **The old failure was a dock inside a table.** `CityBenchSitPlan` put every
+  entry dock in front of the seat, on the side the sitter faces, because that
+  is where you back onto an ordinary plank from. A game plank faces its own
+  table, so the dock landed under the slab and the approach stalled against
+  it: `Animated interaction entry was blocked; current=(-37.74, 4.77, -35.20),
+  target=(-36.63, 4.71, -35.20)`. Seats now carry a `CityBenchSeatKind`, and a
+  game seat docks off the plank end on the sitter's right instead, keeping the
+  seated facing.
+- **There is exactly one lane onto one of these planks, and it is narrower
+  than it looks.** The collision proxy is one box per table covering slab,
+  pedestal and both benches (`1.50 x 2.70`), so a body cannot stand behind a
+  plank or between plank and table at all. The dock therefore stands
+  `0.56 + 0.66 m` off the seat centre, clearing the block by `0.47 m` against
+  a `0.36 m` capsule, and `BuildApproachWaypoints` joins that end lane behind
+  the plank or across the board depending on which side of the set the walk
+  starts. `CityChessBoardGeometry` grew the bench and block extents so the
+  proxy, the drawn timber and the route now read the same numbers.
+- New `ChessSeatEnter`/`ChessSeatPlayLoop`/`ChessSeatExit` (`chess_seat`,
+  `3 s` / `4 s` / `3 s`), authored on top of the bus seat and validated by the
+  same full-rig seam checker, which was generalised from `validate_bus_ride_
+  pose` to take a clip family. The pelvis path perches on the plank end at
+  `0.52` and departs at `0.72`, so the clip sits on the corner and then slides
+  along the timber.
+- **Authoring these poses blind produced a forward stride, not a side entry.**
+  A single-axis Blender probe fixed it in one run: on this rig a negative
+  bone-local `z` on either thigh abducts that leg towards `+X`, and a negative
+  `y` on the pelvis turns the body the same way — both opposite to what the
+  existing `L +z / R -z` splay pairs suggest. Every lateral key had the wrong
+  sign. Beats were then replayed against a probe plank and slab under the real
+  runtime pelvis path rather than eyeballed on a floor.
+- **Moving the dock exposed a second copy of where the dock is.**
+  `ResolveSeatDockGround` resampled the walkable surface under its own
+  front-offset guess, so a side-docked seat would have been grounded at a
+  point the walk never reaches — the same class of bug as the original, one
+  step downstream. Both now call `CityBenchSitPlan.GetDockOffset`, and
+  `CityBenchRestTests` was pointed at it rather than repeating the formula a
+  third time; that test caught the drift on the first run.
+- The game trigger leans its depth back onto the lawn rather than sitting
+  centred on the plank, so the volume covers the lane the walk comes down
+  without reaching across the table into the plank opposite and offering the
+  wrong game.
+- Verification: `tools/build-player-3d-model.py` (29 Actions, seams and
+  fixed-root checks pass) and one EditMode selection —
+  `CityChessSeatSitTests`, `Player3DAssetImportTests`,
+  `LocalizationCatalogTests`, `ParkChessPlayerTests`,
+  `ParkCheckersPlayerTests`, `CityBenchRestTests`, `CityCemeteryPlannerTests`,
+  `CityPlaygroundSwingTests` — 40/40. No PlayMode run and no player build.
+
 ## 2026-08-18 — Both boards get their men
 
 - Authored `tools/build-city-chess-set-3d-model.py`: six turned chess pieces

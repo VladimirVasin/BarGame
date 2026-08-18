@@ -742,10 +742,11 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below orange player route; no live bus marker
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
-                                      -> 26 Generic in-place Actions
+                                      -> 29 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall
                                          -> 50-frame full-body Rise via all fours
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
+                                         -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
                                       -> real URP mesh shadows
 player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action

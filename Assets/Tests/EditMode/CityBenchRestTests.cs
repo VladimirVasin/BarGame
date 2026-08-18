@@ -149,14 +149,14 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     seat.Id);
 
-                // The sitter docks in front of the seat; the plan must
+                // The sitter docks in front of an ordinary seat and off
+                // the plank end of a game seat; either way the plan must
                 // stand him on the surface that is really there — the
                 // continuous district ground, the raised sidewalk and
                 // park path strips, or the carriageway a kerb-side dock
                 // overhangs.
-                Vector3 dock = seat.SeatTopCenter + seat.FaceDirection *
-                    (seat.SeatDepth * 0.5f +
-                     CityBenchSitPlan.EntryEdgeDistance);
+                Vector3 dock = seat.SeatTopCenter +
+                    CityBenchSitPlan.GetDockOffset(seat);
                 float expectedGround = seat.GroundY;
                 if (CityTerrainSurfacePlan.TrySampleGroundTop(
                         layout,

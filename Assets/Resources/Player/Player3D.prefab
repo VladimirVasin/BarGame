@@ -874,6 +874,21 @@ MonoBehaviour:
     clip: {fileID: 6198089451450497641, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2.6666667
     looping: 1
+  - clipName: ChessSeatEnter
+    category: chess_seat
+    clip: {fileID: 7508453432089489800, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
+  - clipName: ChessSeatExit
+    category: chess_seat
+    clip: {fileID: 3381358482616283584, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
+  - clipName: ChessSeatPlayLoop
+    category: chess_seat
+    clip: {fileID: -8500666027495548268, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 4
+    looping: 1
   - clipName: DownLeft
     category: fall
     clip: {fileID: -5620793988590711360, guid: d422d4befc223294aabace05eb97a274, type: 3}
@@ -978,7 +993,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.6.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 42f61e595829afb4a1e2214fbeb850c6
+  buildSignature: eb7ff9d6dc8b6bc3745c4c7464364923
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

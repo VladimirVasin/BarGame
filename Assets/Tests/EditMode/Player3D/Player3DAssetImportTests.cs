@@ -44,7 +44,7 @@ namespace BarPromenade.Tests
             Assert.That(manifest.parts, Has.Length.EqualTo(manifest.mesh_count));
             Assert.That(manifest.triangle_count, Is.InRange(1, 4500));
             Assert.That(manifest.actions, Has.Length.EqualTo(manifest.action_count));
-            Assert.That(manifest.action_count, Is.EqualTo(26));
+            Assert.That(manifest.action_count, Is.EqualTo(29));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
             AssertActionMetadata(
@@ -67,6 +67,30 @@ namespace BarPromenade.Tests
                 manifest,
                 "BusAlightExit",
                 "bus_ride",
+                3f,
+                false,
+                36,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "ChessSeatEnter",
+                "chess_seat",
+                3f,
+                false,
+                36,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "ChessSeatPlayLoop",
+                "chess_seat",
+                4f,
+                true,
+                32,
+                8f);
+            AssertActionMetadata(
+                manifest,
+                "ChessSeatExit",
+                "chess_seat",
                 3f,
                 false,
                 36,

@@ -120,8 +120,24 @@ namespace BarPromenade
                     // Table, board and both benches per side. The box
                     // starts below the anchor plane because the set
                     // beds its feet into a lawn that slopes under it.
-                    context.Add(target, -1.85f, 0.45f, 0f, 1.50f, 1.30f, 2.70f);
-                    context.Add(target, 1.85f, 0.45f, 0f, 1.50f, 1.30f, 2.70f);
+                    // The extents are the set's own, so the walk that
+                    // routes a sitter around this block cannot disagree
+                    // with the block.
+                    for (int table = -1; table <= 1; table += 2)
+                    {
+                        context.Add(
+                            target,
+                            table *
+                            CityChessBoardGeometry.TableOffsetMeters,
+                            0.45f,
+                            0f,
+                            CityChessBoardGeometry
+                                .TableBlockHalfWidthMeters * 2f,
+                            1.30f,
+                            CityChessBoardGeometry
+                                .TableBlockHalfDepthMeters * 2f);
+                    }
+
                     break;
                 case CityDecorationKind.ParkPlayground:
                     AddPlayground(context, target);

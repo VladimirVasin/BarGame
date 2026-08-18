@@ -5,6 +5,19 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
+    /// What a sittable plank belongs to, which decides how a body gets
+    /// onto it and what the prompt over it says. An ordinary plank is
+    /// backed up onto from the front; the two park game tables are not,
+    /// because the table itself stands where that approach would be.
+    /// </summary>
+    public enum CityBenchSeatKind
+    {
+        Plank = 0,
+        ChessTable = 1,
+        DraughtsTable = 2
+    }
+
+    /// <summary>
     /// One sittable bench seat in the city, in world space: where the
     /// timber is, how big it is, how high the walking surface sits and
     /// which way the sitter faces.
@@ -25,7 +38,8 @@ namespace BarPromenade
             float seatDepth,
             float groundY,
             Vector3 faceDirection,
-            float approachClearance = DefaultApproachClearance)
+            float approachClearance = DefaultApproachClearance,
+            CityBenchSeatKind kind = CityBenchSeatKind.Plank)
         {
             faceDirection.y = 0f;
             if (string.IsNullOrEmpty(id) ||
@@ -47,6 +61,7 @@ namespace BarPromenade
             GroundY = groundY;
             FaceDirection = faceDirection.normalized;
             ApproachClearance = approachClearance;
+            Kind = kind;
             IsPresent = true;
         }
 
@@ -57,6 +72,7 @@ namespace BarPromenade
         public float GroundY { get; }
         public Vector3 FaceDirection { get; }
         public float ApproachClearance { get; }
+        public CityBenchSeatKind Kind { get; }
         public bool IsPresent { get; }
     }
 
@@ -90,6 +106,38 @@ namespace BarPromenade
         public const float ParkSeatWidth = 2.2f;
         public const float ParkSeatDepth = 0.58f;
 
+        /// <summary>
+        /// How far past the end of a game-table plank its dock stands.
+        /// The whole table — slab, pedestal and both planks — is one
+        /// solid block to a walker, so the dock has to clear that block
+        /// by more than the capsule's own radius; anything tighter is a
+        /// dock the motor can walk to but never reach.
+        /// </summary>
+        public const float BoardSeatSideClearance = 0.66f;
+
+        /// <summary>
+        /// Where the walked approach waits before it steps in past the
+        /// plank end: level with the dock, one stride behind the plank
+        /// on the open lawn side.
+        /// </summary>
+        public const float BoardSeatBackLaneDistance = 0.95f;
+
+        /// <summary>
+        /// And the same lane on the far side of the table, for a sitter
+        /// who arrives across the board rather than behind it. Clears
+        /// the block itself with a stride to spare.
+        /// </summary>
+        public const float BoardSeatFrontLaneDistance =
+            CityChessBoardGeometry.BenchCenterZMeters +
+            CityChessBoardGeometry.TableBlockHalfDepthMeters + 0.6f;
+
+        /// <summary>
+        /// How far in from the plank's end the hips perch on the way
+        /// across. A body that swung its weight onto the exact corner
+        /// would read as sitting on air.
+        /// </summary>
+        public const float BoardSeatPerchInset = 0.12f;
+
         private const float TriggerHeight = 1.6f;
 
         public CityBenchSitPlan(CityBenchSeat seat)
@@ -101,19 +149,34 @@ namespace BarPromenade
             }
 
             Id = seat.Id;
+            Kind = seat.Kind;
             SeatWidth = seat.SeatWidth;
             SeatDepth = seat.SeatDepth;
             ApproachClearance = seat.ApproachClearance;
             Vector3 faceDirection = seat.FaceDirection;
+
+            // The sitter's own right hand, which is the plank end a
+            // game seat is entered past. Both free game seats put that
+            // end in the open gap between the two tables.
+            var sideDirection = new Vector3(
+                faceDirection.z,
+                0f,
+                -faceDirection.x);
+            bool boardSeat = seat.Kind != CityBenchSeatKind.Plank;
             var seatGround = new Vector3(
                 seat.SeatTopCenter.x,
                 seat.GroundY,
                 seat.SeatTopCenter.z);
-            Vector3 entryRoot = seatGround + faceDirection *
-                (seat.SeatDepth * 0.5f + EntryEdgeDistance);
+            SideDockDistance =
+                seat.SeatWidth * 0.5f + BoardSeatSideClearance;
+            Vector3 entryRoot = seatGround + GetDockOffset(seat);
             entryRoot.y =
                 seat.GroundY + PlayerFactory.GroundedRootOffset;
             EntryRootPosition = entryRoot;
+
+            // Facing is the seated facing either way: across the board
+            // at the man opposite, or out at whatever the plank was
+            // built to look at.
             EntryRotation = Quaternion.LookRotation(
                 faceDirection,
                 Vector3.up);
@@ -125,38 +188,80 @@ namespace BarPromenade
                 seat.SeatTopCenter.y + SeatClearance,
                 seat.SeatTopCenter.z);
 
-            // The pelvis walks upright to the seat front edge before it
-            // drops onto the plank, mirroring the bus door waypoint.
-            Vector3 waypointGround = seatGround + faceDirection *
-                (seat.SeatDepth * 0.5f + 0.10f);
-            waypointGround.y = entryRoot.y;
-            PelvisTransition =
-                new PlayerAnimatedInteractionPelvisTransition(
-                    PlayerCharacterDimensions.GetUprightPelvisPosition(
-                        waypointGround),
-                    enterArrivalProgress: 0.42f,
-                    enterDepartureProgress: 0.54f,
-                    exitArrivalProgress: 0.46f,
-                    exitDepartureProgress: 0.60f);
+            if (boardSeat)
+            {
+                // The hips perch on the end of the plank, hold there
+                // while the legs come in under the slab, then slide
+                // along the timber to the middle of the board.
+                PelvisTransition =
+                    new PlayerAnimatedInteractionPelvisTransition(
+                        ActionHipPosition + sideDirection *
+                            (seat.SeatWidth * 0.5f -
+                             BoardSeatPerchInset),
+                        enterArrivalProgress: 0.52f,
+                        enterDepartureProgress: 0.72f,
+                        exitArrivalProgress: 0.28f,
+                        exitDepartureProgress: 0.48f);
+            }
+            else
+            {
+                // The pelvis walks upright to the seat front edge before
+                // it drops onto the plank, mirroring the bus door
+                // waypoint.
+                Vector3 waypointGround = seatGround + faceDirection *
+                    (seat.SeatDepth * 0.5f + 0.10f);
+                waypointGround.y = entryRoot.y;
+                PelvisTransition =
+                    new PlayerAnimatedInteractionPelvisTransition(
+                        PlayerCharacterDimensions
+                            .GetUprightPelvisPosition(waypointGround),
+                        enterArrivalProgress: 0.42f,
+                        enterDepartureProgress: 0.54f,
+                        exitArrivalProgress: 0.46f,
+                        exitDepartureProgress: 0.60f);
+            }
 
             InteractionPosition = seat.SeatTopCenter;
-            TriggerCenter = new Vector3(
+            var triggerGround = new Vector3(
                 seat.SeatTopCenter.x,
                 seat.GroundY + TriggerHeight * 0.5f,
-                seat.SeatTopCenter.z) + faceDirection * 0.3f;
+                seat.SeatTopCenter.z);
+            TriggerCenter = boardSeat
+                ? triggerGround +
+                    sideDirection * (SideDockDistance * 0.5f) -
+                    faceDirection * 0.35f
+                : triggerGround + faceDirection * 0.3f;
             TriggerRotation = EntryRotation;
 
             // Trigger local axes follow the facing: X spans the plank,
-            // Z reaches over the approach side.
-            TriggerSize = new Vector3(
-                seat.SeatWidth + 0.7f,
-                TriggerHeight,
-                seat.SeatDepth + 1.4f);
+            // Z reaches over the approach side. A game plank also
+            // offers itself along its own end, because that end is the
+            // only part of it a body can stand beside — and it leans
+            // its depth backwards onto the open lawn, so the volume
+            // covers the lane the walk comes down without reaching
+            // across the table into the plank opposite.
+            TriggerSize = boardSeat
+                ? new Vector3(
+                    seat.SeatWidth + SideDockDistance + 0.7f,
+                    TriggerHeight,
+                    seat.SeatDepth + 1.9f)
+                : new Vector3(
+                    seat.SeatWidth + 0.7f,
+                    TriggerHeight,
+                    seat.SeatDepth + 1.4f);
             IsPresent = true;
         }
 
         public bool IsPresent { get; }
         public string Id { get; }
+        public CityBenchSeatKind Kind { get; }
+
+        /// <summary>
+        /// How far off the middle of a game plank its dock stands, along
+        /// the sitter's right. Ordinary planks compute it and never read
+        /// it: they are entered from the front.
+        /// </summary>
+        public float SideDockDistance { get; }
         public float SeatWidth { get; }
         public float SeatDepth { get; }
         public float ApproachClearance { get; }
@@ -175,6 +280,37 @@ namespace BarPromenade
         public Vector3 TriggerSize { get; }
 
         public const int MaximumApproachWaypoints = 2;
+
+        /// <summary>
+        /// The planar step from the middle of a seat to the dock a body
+        /// walks to before the enter clip takes over. An ordinary plank
+        /// is backed up onto from the front. A game plank cannot be:
+        /// the table stands exactly there, so its dock waits off the
+        /// plank's end on the sitter's right instead, and the hips
+        /// travel in sideways.
+        ///
+        /// Stated once, because the plan and the ground resample under
+        /// the dock have to agree about it: a dock sampled at one point
+        /// and walked to at another settles at the wrong height and the
+        /// approach stalls on a vertical tolerance instead of arriving.
+        /// </summary>
+        public static Vector3 GetDockOffset(CityBenchSeat seat)
+        {
+            if (!seat.IsPresent)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 face = seat.FaceDirection;
+            if (seat.Kind == CityBenchSeatKind.Plank)
+            {
+                return face *
+                    (seat.SeatDepth * 0.5f + EntryEdgeDistance);
+            }
+
+            return new Vector3(face.z, 0f, -face.x) *
+                (seat.SeatWidth * 0.5f + BoardSeatSideClearance);
+        }
 
         /// <summary>
         /// Plans the walked detour a sitter takes when he stands on the
@@ -211,6 +347,17 @@ namespace BarPromenade
             Vector3 offset = fromPosition - center;
             offset.y = 0f;
             float longitudinal = Vector3.Dot(offset, face);
+            if (Kind != CityBenchSeatKind.Plank)
+            {
+                return BuildBoardApproachWaypoints(
+                    center,
+                    face,
+                    tangent,
+                    Vector3.Dot(offset, tangent),
+                    longitudinal,
+                    buffer);
+            }
+
             float frontEdge = SeatDepth * 0.5f;
             if (longitudinal >= frontEdge)
             {
@@ -234,6 +381,41 @@ namespace BarPromenade
 
             buffer[count++] = center + corridor + face * frontDistance;
             return count;
+        }
+
+        /// <summary>
+        /// Plans the walk onto a game plank. The table is one solid
+        /// block from the board down to the grass and out past both
+        /// planks, so there is exactly one lane in: the line off the
+        /// plank's own end, which the dock stands on. The walk joins
+        /// that lane on whichever side of the set the sitter is already
+        /// on — the open lawn behind the plank, or the far side across
+        /// the board — and then comes down it.
+        /// </summary>
+        private int BuildBoardApproachWaypoints(
+            Vector3 center,
+            Vector3 face,
+            Vector3 tangent,
+            float lateral,
+            float longitudinal,
+            Vector3[] buffer)
+        {
+            // Already standing on the lane, behind the plank: the dock
+            // is a straight walk from here and a corner would only
+            // make the sitter double back.
+            if (longitudinal <= -BoardSeatBackLaneDistance + 0.35f &&
+                Mathf.Abs(lateral - SideDockDistance) <= 0.55f)
+            {
+                return 0;
+            }
+
+            float standoff = longitudinal > 0f
+                ? BoardSeatFrontLaneDistance
+                : -BoardSeatBackLaneDistance;
+            buffer[0] = center +
+                tangent * SideDockDistance +
+                face * standoff;
+            return 1;
         }
 
         /// <summary>
@@ -507,8 +689,7 @@ namespace BarPromenade
 
             // The same planar offset the plan constructor walks from the
             // seat centre to the entry dock.
-            Vector3 dock = seat.SeatTopCenter + seat.FaceDirection *
-                (seat.SeatDepth * 0.5f + EntryEdgeDistance);
+            Vector3 dock = seat.SeatTopCenter + GetDockOffset(seat);
             float groundY = seat.GroundY;
             if (CityTerrainSurfacePlan.TrySampleGroundTop(
                     layout,
@@ -541,7 +722,8 @@ namespace BarPromenade
                 seat.SeatDepth,
                 groundY,
                 seat.FaceDirection,
-                seat.ApproachClearance);
+                seat.ApproachClearance,
+                seat.Kind);
         }
 
         private static float RaiseToWalkwayTops(

@@ -129,6 +129,14 @@
       "value": "E — sit on the bench"
     },
     {
+      "key": "interaction.play_chess",
+      "value": "E — play chess"
+    },
+    {
+      "key": "interaction.play_checkers",
+      "value": "E — play draughts"
+    },
+    {
       "key": "interaction.stand_up",
       "value": "E — stand up"
     },

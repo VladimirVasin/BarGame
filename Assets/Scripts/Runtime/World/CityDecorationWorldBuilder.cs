@@ -463,11 +463,16 @@ namespace BarPromenade
             CityChessBoardGeometry.DarkSquareProudMeters;
         private const float ChessRimWidth = 0.07f;
         private const float ChessRimTopY = ChessLightTopY + 0.018f;
-        private const float ChessBenchSeatCenterY = 0.46f;
         private const float ChessBenchSeatThickness = 0.16f;
-        private const float ChessBenchZ = 1.10f;
-        private const float ChessBenchWidth = 1.12f;
-        private const float ChessBenchDepth = 0.42f;
+        private const float ChessBenchSeatCenterY =
+            CityChessBoardGeometry.BenchSeatTopY -
+            ChessBenchSeatThickness * 0.5f;
+        private const float ChessBenchZ =
+            CityChessBoardGeometry.BenchCenterZMeters;
+        private const float ChessBenchWidth =
+            CityChessBoardGeometry.BenchWidthMeters;
+        private const float ChessBenchDepth =
+            CityChessBoardGeometry.BenchDepthMeters;
         private const float ChessBenchLegInset = 0.18f;
         private const float ChessBenchLegWidth = 0.14f;
         private const float ChessBenchLegDepth = 0.34f;
@@ -536,7 +541,10 @@ namespace BarPromenade
                                 side * ChessBenchZ,
                                 ChessBenchWidth,
                                 ChessBenchDepth,
-                                -side));
+                                -side,
+                                table < 0
+                                    ? CityBenchSeatKind.ChessTable
+                                    : CityBenchSeatKind.DraughtsTable));
                         }
                     }
 
@@ -619,7 +627,8 @@ namespace BarPromenade
             float z,
             float width,
             float depth,
-            float faceSign)
+            float faceSign,
+            CityBenchSeatKind kind = CityBenchSeatKind.Plank)
         {
             float depthScale = context.StreetDepthScale;
             Vector3 seatTopCenter = context.Origin +
@@ -632,7 +641,9 @@ namespace BarPromenade
                 width,
                 Mathf.Max(0.05f, depth * depthScale),
                 context.Origin.y,
-                context.Forward * faceSign);
+                context.Forward * faceSign,
+                CityBenchSeat.DefaultApproachClearance,
+                kind);
         }
 
         // The reachable faces of the street utilities, shared with

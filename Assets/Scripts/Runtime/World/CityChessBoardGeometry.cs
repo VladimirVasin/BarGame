@@ -24,6 +24,32 @@ namespace BarPromenade
         /// along the recipe's tangent. The set has two.</summary>
         public const float TableOffsetMeters = 1.85f;
 
+        /// <summary>Middle of one bench, along the recipe's forward.
+        /// The set has one on each side of each table.</summary>
+        public const float BenchCenterZMeters = 1.10f;
+
+        /// <summary>The plank's length, along the recipe's tangent.</summary>
+        public const float BenchWidthMeters = 1.12f;
+
+        /// <summary>And its width, along the forward.</summary>
+        public const float BenchDepthMeters = 0.42f;
+
+        /// <summary>Top of the plank, over the decoration origin: what a
+        /// sitter's weight actually rests on.</summary>
+        public const float BenchSeatTopY = 0.54f;
+
+        /// <summary>
+        /// Half the logical blocking box one table stands inside, along
+        /// the tangent and the forward. The proxy is deliberately one
+        /// box per table rather than a table and two planks, so the
+        /// benches are solid to a walker and the only way onto one is
+        /// past its end. Anything that has to route a body around this
+        /// set reads the extents from here.
+        /// </summary>
+        public const float TableBlockHalfWidthMeters = 0.75f;
+
+        public const float TableBlockHalfDepthMeters = 1.35f;
+
         public const int SquaresPerSide = 8;
         public const float SquareSizeMeters = 0.15f;
         public const float FieldSizeMeters =
