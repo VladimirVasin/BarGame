@@ -40,7 +40,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Timeline_AlternatesEveryFiveSeconds()
+        public void Timeline_AlternatesEveryTenSeconds()
         {
             var timeline = new ParkQuarrelTimeline(Seed);
             var order = new List<ParkQuarrelSpeaker>();
@@ -48,7 +48,7 @@ namespace BarPromenade.Tests.EditMode
             // Ordinary frames, deliberately not a divisor of the
             // interval: the carried remainder is what keeps the cadence
             // from drifting a frame later every turn.
-            for (int step = 0; step < 1400; step++)
+            for (int step = 0; step < 2400; step++)
             {
                 timeline.Advance(1f / 60f);
                 if (timeline.ConsumeTauntCue(
@@ -58,8 +58,8 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(order.Count, Is.EqualTo(5),
-                "1.2 s then one every 5 s over 23.3 s is five shouts.");
+            Assert.That(order.Count, Is.EqualTo(4),
+                "1.2 s then one every 10 s over 40 s is four shouts.");
             for (int index = 1; index < order.Count; index++)
             {
                 Assert.That(
@@ -80,7 +80,7 @@ namespace BarPromenade.Tests.EditMode
             // Four turns' worth of stall in one step. Two men screaming
             // over each other on the frame the game unfreezes is not the
             // scene, so exactly one shout comes out of it.
-            timeline.Advance(21f);
+            timeline.Advance(41f);
             Assert.That(timeline.ConsumeTauntCue(out _), Is.True);
             Assert.That(timeline.ConsumeTauntCue(out _), Is.False);
             Assert.That(
@@ -370,13 +370,140 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(previous, Is.EqualTo(line.Length));
-            // The whole line has to be readable well inside the turn, or
-            // the neighbour cuts it off mid-word.
+            // The whole line has to be typed out well inside the four
+            // seconds it is up, or the panel takes itself down while the
+            // player is still being handed the words a letter at a time.
             float typedIn = line.Length /
                 NpcSpeechBubbleView.CharactersPerSecond;
             Assert.That(
                 typedIn,
-                Is.LessThan(ParkQuarrelTimeline.TauntIntervalSeconds));
+                Is.LessThan(NpcSpeechBubbleView.VisibleSeconds * 0.5f));
+        }
+
+        [Test]
+        public void Bubble_TakesItselfDownAfterFourSeconds()
+        {
+            var host = new GameObject("Bubble Lifetime Test Host");
+            try
+            {
+                var view = host.AddComponent<NpcSpeechBubbleView>();
+                var speaker = new GameObject("Speaker");
+                speaker.transform.SetParent(host.transform, false);
+
+                Assert.That(
+                    view.ShowAt(
+                        speaker,
+                        speaker.transform,
+                        "Шашки — это шахматы для уставших.",
+                        100f),
+                    Is.True);
+
+                view.AdvanceTo(
+                    100f + NpcSpeechBubbleView.VisibleSeconds - 0.01f);
+                Assert.That(view.IsShowing(speaker), Is.True,
+                    "It is still up on the last frame of its life.");
+
+                view.AdvanceTo(
+                    100f + NpcSpeechBubbleView.VisibleSeconds + 0.01f);
+                Assert.That(view.IsShowing(speaker), Is.False,
+                    "And gone by itself after that, unanswered.");
+
+                // Which has to happen with plenty of quiet left before
+                // the neighbour's turn comes round, or nothing was
+                // actually taken down between lines.
+                Assert.That(
+                    NpcSpeechBubbleView.VisibleSeconds,
+                    Is.LessThan(
+                        ParkQuarrelTimeline.TauntIntervalSeconds));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        // -- The distance fade -------------------------------------------
+
+        [Test]
+        public void Bubble_IsFaintAcrossTheParkAndSolidAtTheTables()
+        {
+            Assert.That(
+                CityParkQuarrelController.ResolveBubbleOpacity(
+                    CityParkQuarrelController.AudibleRadiusMeters),
+                Is.EqualTo(CityParkQuarrelController.FaintOpacity)
+                    .Within(0.0001f),
+                "At the edge of earshot it is barely there.");
+            Assert.That(
+                CityParkQuarrelController.ResolveBubbleOpacity(
+                    CityParkQuarrelController.SilenceRadiusMeters),
+                Is.EqualTo(CityParkQuarrelController.FaintOpacity)
+                    .Within(0.0001f),
+                "And no fainter out in the hysteresis band.");
+            Assert.That(
+                CityParkQuarrelController.ResolveBubbleOpacity(
+                    CityParkQuarrelController.SolidRadiusMeters),
+                Is.EqualTo(1f).Within(0.0001f),
+                "At the tables it is solid.");
+            Assert.That(
+                CityParkQuarrelController.ResolveBubbleOpacity(0f),
+                Is.EqualTo(1f).Within(0.0001f),
+                "And stays solid all the way in.");
+        }
+
+        [Test]
+        public void Bubble_FirmsUpWithoutEverGoingBackwards()
+        {
+            float previous = 0f;
+            for (int step = 0; step <= 200; step++)
+            {
+                float distance =
+                    CityParkQuarrelController.SilenceRadiusMeters *
+                    (1f - step / 200f);
+                float opacity =
+                    CityParkQuarrelController.ResolveBubbleOpacity(
+                        distance);
+                Assert.That(
+                    opacity,
+                    Is.InRange(
+                        CityParkQuarrelController.FaintOpacity,
+                        1f));
+                Assert.That(
+                    opacity,
+                    Is.GreaterThanOrEqualTo(previous - 0.0001f),
+                    "Walking in never makes a line fainter.");
+                previous = opacity;
+            }
+
+            Assert.That(previous, Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void Bubble_OpacityIsClampedAndSurvivesNonsense()
+        {
+            var host = new GameObject("Bubble Opacity Test Host");
+            try
+            {
+                var view = host.AddComponent<NpcSpeechBubbleView>();
+                Assert.That(
+                    view.Opacity,
+                    Is.EqualTo(NpcSpeechBubbleView.SolidOpacity),
+                    "Anything that never fades draws solid.");
+
+                view.SetOpacity(4f);
+                Assert.That(view.Opacity, Is.EqualTo(1f));
+                view.SetOpacity(-2f);
+                Assert.That(view.Opacity, Is.Zero);
+                view.SetOpacity(0.4f);
+                view.SetOpacity(float.NaN);
+                Assert.That(
+                    view.Opacity,
+                    Is.EqualTo(NpcSpeechBubbleView.SolidOpacity),
+                    "A NaN must never leave the park invisible.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
         }
     }
 }

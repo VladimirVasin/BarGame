@@ -12,7 +12,7 @@ namespace BarPromenade
 
     /// <summary>
     /// The clock of the quarrel at the park chess set: one shout every
-    /// five seconds, strictly alternating, for as long as somebody is
+    /// ten seconds, strictly alternating, for as long as somebody is
     /// there to hear it. Pure and EditMode-testable — the mourner
     /// timeline idiom, with the turn taking the place of the phase.
     ///
@@ -24,9 +24,17 @@ namespace BarPromenade
     /// </summary>
     public sealed class ParkQuarrelTimeline
     {
-        /// <summary>The turn. One shout each way, five seconds apart,
-        /// so a full exchange is ten.</summary>
-        public const float TauntIntervalSeconds = 5f;
+        /// <summary>
+        /// The turn. One shout every ten seconds, so a full exchange —
+        /// a line and the answer to it — runs twenty.
+        ///
+        /// The bubble is down for well over half of that: a line is read
+        /// in four seconds and then the park is quiet again. That gap is
+        /// the point. Two men shouting without pause read as a machine;
+        /// two men who go back to brooding between rounds read as two
+        /// men who have been doing this for years.
+        /// </summary>
+        public const float TauntIntervalSeconds = 10f;
 
         /// <summary>The wait before the first shout after the hero
         /// arrives. Short on purpose: the balcony pedestrian profile

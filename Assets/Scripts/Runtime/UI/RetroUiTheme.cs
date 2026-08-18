@@ -215,13 +215,21 @@ namespace BarPromenade
                 color);
         }
 
+        /// <summary>
+        /// A panel. The trailing <paramref name="opacity"/> scales every
+        /// layer of it at once — shadow, fill, dither, border and
+        /// highlight — so a panel can be faded as one object rather than
+        /// coming apart into its parts. Left at one it draws exactly what
+        /// it always drew.
+        /// </summary>
         public static void DrawPanel(
             Rect rect,
             Color fill,
             Color border,
             bool dither = false,
             float corner = 3f,
-            float thickness = 1f)
+            float thickness = 1f,
+            float opacity = 1f)
         {
             Rect snapped = SnapRect(rect);
             float cut = Mathf.Clamp(
@@ -229,6 +237,7 @@ namespace BarPromenade
                 0f,
                 Mathf.Min(snapped.width, snapped.height) * 0.25f);
             float line = Mathf.Max(1f, Mathf.Round(thickness));
+            float alpha = Mathf.Clamp01(opacity);
 
             DrawSteppedFill(
                 new Rect(
@@ -236,9 +245,9 @@ namespace BarPromenade
                     snapped.y + 2f,
                     snapped.width,
                     snapped.height),
-                WithAlpha(Shadow, 0.78f),
+                WithAlpha(Shadow, 0.78f * alpha),
                 cut);
-            DrawSteppedFill(snapped, fill, cut);
+            DrawSteppedFill(snapped, Fade(fill, alpha), cut);
             if (dither)
             {
                 DrawDither(
@@ -247,11 +256,13 @@ namespace BarPromenade
                         snapped.y + line,
                         snapped.width - line * 2f,
                         snapped.height - line * 2f),
-                    WithAlpha(AccentPale, 0.055f));
+                    WithAlpha(AccentPale, 0.055f * alpha));
             }
 
-            DrawSteppedBorder(snapped, border, cut, line);
-            Color highlight = Color.Lerp(border, AccentPale, 0.28f);
+            DrawSteppedBorder(snapped, Fade(border, alpha), cut, line);
+            Color highlight = Fade(
+                Color.Lerp(border, AccentPale, 0.28f),
+                alpha);
             FillRect(
                 new Rect(
                     snapped.x + cut + line,
@@ -266,6 +277,14 @@ namespace BarPromenade
                     line,
                     Mathf.Max(0f, snapped.height - cut * 2f - line * 2f)),
                 highlight);
+        }
+
+        /// <summary>The colour as it reads at that opacity: its own
+        /// alpha scaled, never replaced, so a backdrop that was already
+        /// slightly open stays slightly open.</summary>
+        public static Color Fade(Color color, float opacity)
+        {
+            return WithAlpha(color, color.a * Mathf.Clamp01(opacity));
         }
 
         public static void DrawDither(Rect rect, Color color)
@@ -337,6 +356,13 @@ namespace BarPromenade
             return style;
         }
 
+        /// <summary>
+        /// The cut-cornered slab, drawn as three bands that meet rather
+        /// than as two rectangles that cross. The silhouette is the same
+        /// one it always was; what changes is that no pixel is painted
+        /// twice, which is what lets the slab be drawn at less than full
+        /// opacity without its middle coming out darker than its edges.
+        /// </summary>
         private static void DrawSteppedFill(
             Rect rect,
             Color color,
@@ -353,7 +379,7 @@ namespace BarPromenade
                     rect.x + corner,
                     rect.y,
                     rect.width - corner * 2f,
-                    rect.height),
+                    corner),
                 color);
             FillRect(
                 new Rect(
@@ -361,6 +387,13 @@ namespace BarPromenade
                     rect.y + corner,
                     rect.width,
                     rect.height - corner * 2f),
+                color);
+            FillRect(
+                new Rect(
+                    rect.x + corner,
+                    rect.yMax - corner,
+                    rect.width - corner * 2f,
+                    corner),
                 color);
         }
 

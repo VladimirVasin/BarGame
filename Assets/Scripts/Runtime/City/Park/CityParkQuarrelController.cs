@@ -8,9 +8,10 @@ namespace BarPromenade
     /// coming here long enough that both boards have gone empty, and who
     /// hate each other on the only grounds that were ever available: one
     /// plays chess and despises draughts, the other plays draughts and
-    /// despises chess. Every five seconds, in strict turn, one of them
+    /// despises chess. Every ten seconds, in strict turn, one of them
     /// pulls his head out of his hands, throws it across the set and his
-    /// left arm up with it, and says something.
+    /// left arm up with it, and says something. The line hangs for four
+    /// seconds and then the park is quiet again until the answer.
     ///
     /// It runs only while the hero is near enough to hear it. That is
     /// not a performance saving — two mixers cost nothing — it is that a
@@ -47,6 +48,23 @@ namespace BarPromenade
         /// the turn every other frame and never hear a whole line.
         /// </summary>
         public const float SilenceRadiusMeters = 25f;
+
+        /// <summary>
+        /// Inside this the lines are drawn solid. It is a little wider
+        /// than the set itself, so a hero who has walked up to watch the
+        /// two of them reads them at full strength from either side of
+        /// the tables rather than having to stand on one man's feet.
+        /// </summary>
+        public const float SolidRadiusMeters = 8f;
+
+        /// <summary>
+        /// And how faint they are at the far edge of earshot. Low enough
+        /// that from across the park the quarrel reads as something
+        /// going on over there rather than as something being said to
+        /// the player, and high enough to still be legible if he cares
+        /// to squint at it — which is the whole invitation to walk over.
+        /// </summary>
+        public const float FaintOpacity = 0.35f;
 
         /// <summary>
         /// The frame of the authored shout at which the arm is fully out
@@ -150,6 +168,27 @@ namespace BarPromenade
             return distanceMeters <= radius;
         }
 
+        /// <summary>
+        /// How solid the bubbles are drawn from this far off: faint out
+        /// at the edge of earshot, solid once he has walked up, and
+        /// smoothed across the gap so the words firm up as he closes
+        /// rather than snapping on at one particular step.
+        /// </summary>
+        public static float ResolveBubbleOpacity(float distanceMeters)
+        {
+            if (float.IsNaN(distanceMeters))
+            {
+                return FaintOpacity;
+            }
+
+            float approach = Mathf.InverseLerp(
+                AudibleRadiusMeters,
+                SolidRadiusMeters,
+                distanceMeters);
+            approach = approach * approach * (3f - 2f * approach);
+            return Mathf.Lerp(FaintOpacity, 1f, approach);
+        }
+
         private void Update()
         {
             if (chessPlayer == null ||
@@ -173,6 +212,14 @@ namespace BarPromenade
             {
                 isEngaged = true;
                 timeline.Reset();
+            }
+
+            // Every frame, not once per line: he is walking while they
+            // are shouting, and a line that fixed its opacity when it
+            // opened would stay faint all the way up to the tables.
+            if (bubbles != null)
+            {
+                bubbles.SetOpacity(ResolveBubbleOpacity(distance));
             }
 
             timeline.Advance(Time.deltaTime);
@@ -211,9 +258,10 @@ namespace BarPromenade
                 return;
             }
 
-            // The neighbour's line comes down exactly as this one goes
-            // up. Being answered is what closes a line here, not a
-            // timer, so there is always exactly one on screen.
+            // The neighbour's line has taken itself down long before
+            // now — four seconds up against ten between shouts — but a
+            // frame lost somewhere must never leave two panels over one
+            // set, so his slot is cleared anyway.
             bubbles.Dismiss(
                 OwnerOf(ParkQuarrelTimeline.Opposite(pendingSpeaker)));
             bubbles.Show(
@@ -274,6 +322,7 @@ namespace BarPromenade
             if (bubbles != null)
             {
                 bubbles.DismissAll();
+                bubbles.SetOpacity(NpcSpeechBubbleView.SolidOpacity);
             }
 
             if (chessPlayer != null)

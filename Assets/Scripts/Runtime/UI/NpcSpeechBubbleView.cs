@@ -28,16 +28,23 @@ namespace BarPromenade
 
         /// <summary>Typing speed. Fast enough that a 46-character line
         /// is complete in under a second and a half, which leaves most
-        /// of the five-second turn for actually reading it.</summary>
+        /// of the four seconds it is up for actually reading it.</summary>
         public const float CharactersPerSecond = 34f;
 
         /// <summary>
-        /// A line nobody closed goes away by itself. Nothing should ever
-        /// reach this — the quarrel controller closes each line when the
-        /// next one opens — but a bubble stranded by a dead controller
-        /// would otherwise hang over the park forever.
+        /// How long a line stays up before it takes itself down. Nobody
+        /// has to close it: a line is a thing that was said, and a thing
+        /// that was said stops being on screen whether or not anybody
+        /// answers it. Four seconds is the whole of a 48-character line
+        /// typed out plus a little over two and a half to read it in.
         /// </summary>
-        public const float MaximumVisibleSeconds = 12f;
+        public const float VisibleSeconds = 4f;
+
+        /// <summary>
+        /// How solid a line is drawn when it is not being faded — the
+        /// value <see cref="Opacity"/> starts at and returns to.
+        /// </summary>
+        public const float SolidOpacity = 1f;
 
         public const float MinimumPanelWidth = 70f;
         public const float MaximumPanelWidth = 180f;
@@ -71,6 +78,14 @@ namespace BarPromenade
         private Camera worldCamera;
         private GUIStyle labelStyle;
 
+        /// <summary>
+        /// How solid the lines are drawn right now. Owned by whoever is
+        /// running the scene rather than by the panel: distance from the
+        /// hero is what fades a line here, and the panel has no idea
+        /// where the hero is standing.
+        /// </summary>
+        public float Opacity { get; private set; } = SolidOpacity;
+
         public bool HasRenderedLayout { get; private set; }
         public int LastRenderedBubbleCount { get; private set; }
         public Rect LastRenderedPanelRect { get; private set; }
@@ -82,6 +97,18 @@ namespace BarPromenade
         public void Initialize(Camera camera)
         {
             worldCamera = camera;
+        }
+
+        /// <summary>
+        /// Sets how solid the lines are drawn. A caller that stops
+        /// calling this leaves the last value standing, so anybody who
+        /// fades a line is expected to keep doing it every frame.
+        /// </summary>
+        public void SetOpacity(float opacity)
+        {
+            Opacity = float.IsNaN(opacity)
+                ? SolidOpacity
+                : Mathf.Clamp01(opacity);
         }
 
         /// <summary>
@@ -144,6 +171,34 @@ namespace BarPromenade
 
             bubbles[slot] = default;
             return true;
+        }
+
+        /// <summary>
+        /// Takes down every line that has been up its four seconds.
+        /// Split out of the frame loop and given the clock explicitly so
+        /// the life of a bubble can be proved in EditMode, where nothing
+        /// is ever drawn.
+        /// </summary>
+        public void AdvanceTo(float unscaledTime)
+        {
+            if (float.IsNaN(unscaledTime))
+            {
+                return;
+            }
+
+            for (int index = 0; index < bubbles.Length; index++)
+            {
+                if (bubbles[index].Owner == null)
+                {
+                    continue;
+                }
+
+                if (unscaledTime - bubbles[index].StartedAt >
+                    VisibleSeconds)
+                {
+                    bubbles[index] = default;
+                }
+            }
         }
 
         public void DismissAll()
@@ -217,6 +272,11 @@ namespace BarPromenade
             return RetroUiTheme.SnapRect(rect);
         }
 
+        private void Update()
+        {
+            AdvanceTo(Time.unscaledTime);
+        }
+
         private void OnGUI()
         {
             HasRenderedLayout = false;
@@ -269,9 +329,8 @@ namespace BarPromenade
             }
 
             float elapsed = unscaledTime - bubble.StartedAt;
-            if (elapsed > MaximumVisibleSeconds)
+            if (elapsed > VisibleSeconds)
             {
-                bubbles[index] = default;
                 return;
             }
 
@@ -302,8 +361,15 @@ namespace BarPromenade
                 RetroUiTheme.Accent,
                 true,
                 2f,
-                1f);
-            DrawTail(panel, logicalAnchor.x);
+                1f,
+                Opacity);
+            DrawTail(panel, logicalAnchor.x, Opacity);
+
+            // The text is faded by the global tint rather than by a
+            // second style, so the one cached style keeps serving both
+            // speakers at whatever distance each of them is standing.
+            Color previousGuiColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, Opacity);
             GUI.Label(
                 new Rect(
                     panel.x + HorizontalTextInset,
@@ -312,6 +378,7 @@ namespace BarPromenade
                     panel.height - VerticalTextInset * 2f),
                 drawn,
                 labelStyle);
+            GUI.color = previousGuiColor;
 
             HasRenderedLayout = true;
             LastRenderedBubbleCount++;
@@ -348,26 +415,48 @@ namespace BarPromenade
         /// Stepped rather than a triangle because nothing else in this
         /// UI has a diagonal edge in it.
         /// </summary>
-        private static void DrawTail(Rect panel, float anchorX)
+        private static void DrawTail(
+            Rect panel,
+            float anchorX,
+            float opacity)
         {
             float tipX = Mathf.Round(Mathf.Clamp(
                 anchorX,
                 panel.x + 6f,
                 panel.xMax - 6f));
-            var wide = new Rect(tipX - 3f, panel.yMax, 6f, 2f);
-            var narrow = new Rect(tipX - 1f, panel.yMax + 2f, 2f, 2f);
+            Color border = RetroUiTheme.Fade(
+                RetroUiTheme.Accent,
+                opacity);
+            Color fill = RetroUiTheme.Fade(BubbleBackdrop, opacity);
+            DrawOutlinedBlock(
+                new Rect(tipX - 3f, panel.yMax, 6f, 2f),
+                fill,
+                border);
+            DrawOutlinedBlock(
+                new Rect(tipX - 1f, panel.yMax + 2f, 2f, 2f),
+                fill,
+                border);
+        }
+
+        /// <summary>
+        /// A block with a column of border down either side of it. The
+        /// outline is drawn beside the block rather than as a larger
+        /// block behind it: a faded fill laid over its own outline would
+        /// let the outline through and the tail would come out a
+        /// different colour to the panel it hangs off.
+        /// </summary>
+        private static void DrawOutlinedBlock(
+            Rect block,
+            Color fill,
+            Color border)
+        {
             RetroUiTheme.FillRect(
-                new Rect(wide.x - 1f, wide.y, wide.width + 2f, wide.height),
-                RetroUiTheme.Accent);
+                new Rect(block.x - 1f, block.y, 1f, block.height),
+                border);
             RetroUiTheme.FillRect(
-                new Rect(
-                    narrow.x - 1f,
-                    narrow.y,
-                    narrow.width + 2f,
-                    narrow.height),
-                RetroUiTheme.Accent);
-            RetroUiTheme.FillRect(wide, BubbleBackdrop);
-            RetroUiTheme.FillRect(narrow, BubbleBackdrop);
+                new Rect(block.xMax, block.y, 1f, block.height),
+                border);
+            RetroUiTheme.FillRect(block, fill);
         }
 
         private int FindSlot(Object owner)
