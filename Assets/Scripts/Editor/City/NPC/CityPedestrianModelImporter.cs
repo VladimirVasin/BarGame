@@ -255,46 +255,7 @@ namespace BarPromenade.Editor
 
         private static bool IsPedestrianModel(string path)
         {
-            return string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.ModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.ChairCarrierModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.KettleHatModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.LongArmModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.HelmetLampModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.PipebackRollerModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.YardBabushkaModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.WeighAttendantModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.CemeteryMournerModelPath,
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       path,
-                       CityPedestrianAssetSetup.CemeteryWatchmanModelPath,
-                       StringComparison.OrdinalIgnoreCase);
+            return CityPedestrianAssetSetup.IsDeclaredModelPath(path);
         }
 
         private static string NormalizeClipName(string sourceName)

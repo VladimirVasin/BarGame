@@ -35,6 +35,21 @@ library:
   support an asymmetrical fan of tarnished organ pipes behind the backrest;
   bellows under the seat and pipe shutters make the chair, rather than the
   rider's disability, the bizarre element;
+- `Blender/LakeFisherman3D.blend`: **Lake Fisherman** (`lake_fisherman_v1`),
+  a hooded man in a municipal-yellow oilskin standing at the head of the
+  boat-station pier, tipped out over its end board. A stiff peaked hood owns
+  the top of the envelope over a storm yoke; the coat hem stops at mid-thigh
+  because it rides the pelvis and could not follow a leading knee. Both hand
+  props are hard geometry rather than togglable ones — he has exactly one role
+  and never puts either down. The pipe leaves `SOCKET_Mouth`, bends down and stands its bowl
+  back up in front of the beard; `ACC_PipeEmber` is a named contract, since the
+  runtime finds it to light the coal. The rod is bound rigidly to `hand.R`, so the
+  left hand is brought onto the same axis by the pose instead — and those six
+  arm angles were *fitted* against `ACC_RodGrip`/`ACC_RodTip` by coordinate
+  descent rather than set by eye, because a hand a couple of centimetres off
+  the stick is exactly what reads as a man pretending to fish. The line that
+  falls from the tip is struck at runtime to the waterline the lake plan
+  measured;
 - `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
   `PipebackIdle` keeps the head level over a slow body breath that pumps the
   bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
@@ -67,7 +82,7 @@ Each model has an adjacent deterministic review PNG.
 `Blender/CityPedestrianLocomotionContactSheet.png` shows, left to right, Idle
 and two opposite locomotion phases, with one row per authored design:
 Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
-Pipeback Roller. The sheet grows a row automatically when an authored design is
+designs, ending with the Lake Fisherman. The sheet grows a row automatically when an authored design is
 added; appearing here does not register a staged design with the runtime pool.
 
 Rebuild from the repository root with Blender 5:
@@ -100,6 +115,23 @@ mechanism anchors. It declares no `Sit` clip. The generator appends the two
 staged loops to the shared animation-only `CityPedestrianLocomotion.fbx`, but
 importing them does not add a sixth entry to `CityPedestrianResources`.
 
+The staged Lake Fisherman takes the same separate branch:
+
+- `Assets/Pedestrians/Staged/Models/LakeFisherman3D.fbx` and `.json`;
+- `Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab`, bound into
+  `Assets/Resources/City/LakeFishermanProvider.asset`.
+
+That prefab is passive like every other staged one — no collider, light, audio
+or interaction — which is exactly why its burning pipe and its fishing line are
+built by `LakeFishermanFactory` at runtime instead of being authored into the
+art. It carries one extra passive component, `LakeFishermanRigAnchors`, holding
+two anchors the prefab build measures off the imported meshes in the bind pose:
+the top of the pipe bowl, parented to `head`, and the point of the rod,
+parented to `hand.R`. Both are drawn by rigidly skinned vertices and so have no
+Transform of their own; reconstructing them at runtime would mean re-deriving
+the FBX axis conversion and the prefab's own `180°` model flip in gameplay
+code, twice, and again whenever the art moves.
+
 Its grounding proof is wheel-specific. Both drive tyres must meet the ground
 without penetration, their centres and radii must stay stable, both feet must
 remain on the footplates and both hands must meet the raised push levers during
@@ -110,14 +142,27 @@ the rider is already seated and the chair, not either shoe, establishes ground
 contact.
 
 The same run writes `Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx`
-with sixteen looping, in-place clips: an `Idle` and a `Walk` per registered
-design, one `Sit` for each design that declares a Route 01 ride, plus the two
-staged Pipeback loops. Every clip keys only the exact 31 Generic bones. The
+with one looping, in-place `Idle` and `Walk` per registered or staged design,
+plus one `Sit` for each design that declares a Route 01 ride. Every clip keys only the exact 31 Generic bones. The
 staged model separately exposes six passive mechanism anchors for later
 procedural wheel/caster motion. The validator checks closed loop endpoints and
 zero gameplay-root translation, then applies the owning design's footwear,
 seated, airborne or wheel-contact proof rather than pretending one grounding
 rule fits all four.
+
+`FishermanLean` carries a timing contract. It is keyed on an exact
+quarter-loop breath grid — rest at every quarter of the lap, full inhale at
+every eighth between them — so `frac(normalized * 4)` is the breath phase and
+`0.5` is the top of the draw. `LakeFishermanPresentation.BreathsPerLoop`
+mirrors that number, and the pipe's ember, its light and its plume are all
+read off it. Re-timing the clip without re-timing that constant detaches the
+smoke from the chest.
+
+That breath is keyed on the spine chain alone, and so is the one rod
+correction in the lap. Both clavicles hang off the chest, so anything authored
+there swings both arms and the rod as one piece and the two-handed grip
+survives; the same motion authored per-arm, or on the clavicles, opens his
+hands off the stick once every eight seconds.
 
 A seated clip is the one exception to footwear grounding, and it is declared
 rather than assumed. Its feet leave the pavement plane on purpose, so it is

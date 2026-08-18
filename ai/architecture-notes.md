@@ -540,6 +540,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   violate the lifecycle contract. Home therefore keeps its pedestrian exterior
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
+- **Accepted — a contextual effect reads its host clip's phase, never its own
+  timer:** the lake fisherman's pipe ember, its point light and its plume are
+  all functions of `LakeFishermanPresentation.BreathPhase`, derived from the
+  leaning clip's normalized time against a constant that mirrors the authored
+  key grid. A second free-running timer would be simpler and is wrong within a
+  second of watching him: smoke that swells while the ribs are still filling
+  reads as a particle system parented to a man rather than as smoking. The
+  same rule is why the plume's lag is expressed as a fraction of a breath
+  rather than as seconds. It also constrains what the clip may key: his breath
+  moves the spine chain only, because both clavicles hang off the chest and a
+  breath authored on them would open his two-handed grip on the rod once per
+  lap.
 - **Accepted — A staged wheelchair NPC is not a production archetype:**
   `pipeback_roller_v1` is a complete passive presentation asset, but it lives
   under `Assets/Pedestrians/Staged/` rather than `Resources`. Its strangeness

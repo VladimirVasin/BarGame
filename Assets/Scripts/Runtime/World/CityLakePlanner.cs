@@ -114,6 +114,7 @@ namespace BarPromenade
         private const uint DebrisSalt = 0x44454252u; // "DEBR"
 
         internal const string PierDeckHeadId = "lake-pier-deck-head";
+        internal const string PierHeadBoardId = "lake-pier-headboard";
         internal const string PierDeckRootId = "lake-pier-deck-00";
 
         /// <summary>
@@ -1160,7 +1161,7 @@ namespace BarPromenade
             // hole, and a hole is the invisible edge we are refusing to
             // build anywhere on this lake.
             parts.Add(Part(
-                "lake-pier-headboard",
+                PierHeadBoardId,
                 CityLakePartKind.PierRail,
                 CityLakeStyle.TarredTimber,
                 frame.Compose(

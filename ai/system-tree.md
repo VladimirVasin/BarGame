@@ -302,11 +302,14 @@ Assets/
         CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
       Lake/          the boat station's one permanent inhabitant
         LakeFishermanProvider.cs  the only serialized reference to the staged prefab
-        LakeFishermanPlan.cs     seat and facing read back from the plan's own pier deck parts
+        LakeFishermanPlan.cs     stance, facing and waterline read back from the lake plan itself
         LakeFishermanQuips.cs    15-line seeded repertoire, never twice running, never second person
         LakeFishermanInteraction.cs  talk stub on a trigger docked behind him, not in front
-        LakeFishermanPresentation.cs  single-clip manual PlayableGraph for the seated loop
-        LakeFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger
+        LakeFishermanPresentation.cs  single-clip manual PlayableGraph; publishes the loop's breath phase
+        LakeFishermanRigAnchors.cs  bind-pose anchors for the pipe bowl and the rod point
+        LakeFishermanPipeEffect.cs  ember, its point light and the plume, all on the breath phase
+        LakeFishermanLine.cs     line struck from the live rod tip to the measured waterline
+        LakeFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger + pipe + line
       Cemetery/      the scripted graveside visitor summoned by the hero's presence
         CemeteryMournerPlan.cs   pure grave candidates, foot-side stand, gate route, unseen spawn + trigger band
         CemeteryMournerTimeline.cs  approach/lay/cry(30 s)/wipe/depart clock with the one-shot lay cue

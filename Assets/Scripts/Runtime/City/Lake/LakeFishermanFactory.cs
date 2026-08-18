@@ -9,6 +9,13 @@ namespace BarPromenade
     /// as long as the City lives — the watchman pattern applied to the
     /// boat station, plus the same separate talk trigger carrying his
     /// repertoire.
+    ///
+    /// Three things are added around the staged prefab rather than into
+    /// it, and all three for the same reason: that prefab is validated
+    /// passive, with no collider, light, audio or interaction anywhere
+    /// in it. The talk stub, the burning pipe and the fishing line are
+    /// each a separate object hung off this root, so the art stays art
+    /// and the guard keeps working.
     /// </summary>
     public static class LakeFishermanFactory
     {
@@ -89,16 +96,50 @@ namespace BarPromenade
                     nameof(CityPedestrianAssetRegistry) + ".");
             }
 
+            var anchors = instance
+                .GetComponentInChildren<LakeFishermanRigAnchors>(true);
+            if (anchors == null ||
+                anchors.PipeEmberAnchor == null ||
+                anchors.RodTipAnchor == null)
+            {
+                UnityEngine.Object.Destroy(root.gameObject);
+                throw new InvalidOperationException(
+                    "The staged fisherman prefab requires bound " +
+                    nameof(LakeFishermanRigAnchors) + " for its pipe " +
+                    "and rod tip.");
+            }
+
             ValidatePassivePresentation(instance);
 
             var presentation = instance
                 .AddComponent<LakeFishermanPresentation>();
             presentation.Initialize(registry, stance);
 
-            // Colliderless like every staged NPC. The focus height is a
-            // seated head, not the watchman's standing one.
+            // The pipe. The prefab is validated to carry no light, so
+            // the ember, its glow and the plume are raised here and
+            // driven from the loop the presentation is already running.
+            var pipe = new GameObject("Fisherman Pipe");
+            pipe.transform.SetParent(root, false);
+            pipe.AddComponent<LakeFishermanPipeEffect>().Initialize(
+                presentation,
+                anchors.PipeEmberAnchor,
+                anchors.PipeEmberRenderer);
+
+            // And the line, from the live rod tip down to the water the
+            // lake plan measured.
+            var line = new GameObject("Fisherman Line");
+            line.transform.SetParent(root, false);
+            line.AddComponent<LakeFishermanLine>().Initialize(
+                anchors.RodTipAnchor,
+                plan.WaterTopY);
+
+            // Colliderless like every staged NPC. The focus height is
+            // measured off the authored lean rather than guessed: tipped
+            // out over the end board he carries his head at `1.45 m`,
+            // lower than the watchman's upright `1.34 m` post would
+            // suggest for a standing man.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
-            magnet.FocusHeight = 1.34f;
+            magnet.FocusHeight = 1.45f;
 
             // The talk stub docks behind him, on the shore side, which
             // is the only side of him a person can stand on.

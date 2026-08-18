@@ -198,6 +198,23 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
     ),
+    # The lake fisherman. One staged model for the permanent post at
+    # the head of the boat-station pier: a hooded man in a yellow
+    # oilskin standing at the end board, tipped out over it with a rod
+    # in both hands and a smouldering pipe clenched in his teeth. The
+    # idle slot carries the leaning fishing loop and the walk slot a
+    # slow oilskin trudge reserved for a later pass, mirroring how
+    # every staged design maps onto the same pair. He stands on his
+    # own boots like every walker, so the ordinary sole bake grounds
+    # him and he declares no exception.
+    "lake_fisherman": ArchetypeSpec(
+        "lake_fisherman", "lake_fisherman_v1", "Lake Fisherman", 1023877,
+        "LakeFisherman3D.blend", "LakeFisherman3D",
+        "LakeFisherman3D.png", "FishermanLean", "FishermanTrudge",
+        (900, 2000),
+        staged=True,
+        pool_eligible=False,
+    ),
 }
 
 
@@ -385,6 +402,25 @@ PALETTE = {
     "watch_cap": (0.110, 0.095, 0.080, 1.0),
     "watch_shirt": (0.230, 0.215, 0.180, 1.0),
     "watch_grey": (0.360, 0.355, 0.340, 1.0),
+    # Lake Fisherman. The one saturated note anywhere on the boat
+    # station is worn, not built: a municipal-yellow oilskin over the
+    # dead green water. It is deliberately the brightest hue any City
+    # design owns, because a lit hand lamp two metres away is the only
+    # thing that will ever illuminate it, and because the whole read of
+    # the pier at distance is one yellow mark at the far end of grey
+    # boards. Everything else on him is wet rubber, briar and grey.
+    "slicker": (0.455, 0.315, 0.045, 1.0),
+    "slicker_light": (0.585, 0.425, 0.080, 1.0),
+    "slicker_dark": (0.235, 0.158, 0.024, 1.0),
+    "oilskin_trousers": (0.175, 0.140, 0.055, 1.0),
+    "boot_rubber": (0.055, 0.058, 0.052, 1.0),
+    "fisher_skin": (0.395, 0.265, 0.190, 1.0),
+    "fisher_grey": (0.395, 0.390, 0.372, 1.0),
+    "pipe_briar": (0.165, 0.098, 0.055, 1.0),
+    "pipe_briar_dark": (0.082, 0.048, 0.028, 1.0),
+    "rod_cane": (0.230, 0.150, 0.072, 1.0),
+    "rod_cork": (0.330, 0.245, 0.145, 1.0),
+    "rod_reel": (0.128, 0.132, 0.130, 1.0),
 }
 
 
@@ -742,6 +778,10 @@ class PedestrianBuilder:
             "cemetery_watchman": (
                 self.build_cemetery_watchman_body,
                 self.build_cemetery_watchman_details,
+            ),
+            "lake_fisherman": (
+                self.build_lake_fisherman_body,
+                self.build_lake_fisherman_details,
             ),
         }
         if self.spec.key not in builders:
@@ -2923,6 +2963,304 @@ class PedestrianBuilder:
             "head", "surface_detail", "watch_grey",
         )
 
+
+    def build_lake_fisherman_body(self) -> None:
+        """Hooded man in a yellow oilskin; the fishing lives in the clips.
+
+        The source stays on the canonical A-pose skeleton so the shared
+        Avatar copies exactly; the lean out over the end board, the
+        two-handed grip and the slow watch of the float are all authored
+        in FishermanLean rather than in the geometry. The silhouette is
+        the stiff hooded slicker: a storm yoke over the shoulders, a
+        peaked hood that owns the top of the envelope, and a hem that
+        stops at mid-thigh. Under it, oilskin trousers into tall rubber
+        waders.
+
+        The face is deliberately half-lost inside the hood. What reads
+        at two metres is the grey beard and the pipe leaving the mouth,
+        which is the only place on this design the player will look.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.034, 1.552), (0.098, 0.092, 0.122), 12, 6),
+            "head", "body", "fisher_skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.010, 1.318), (0, -0.024, 1.468), 0.066, 0.056, 10),
+            "neck", "body", "fisher_skin",
+        )
+        # The slicker: boxier and squarer than any cloth coat on the
+        # library, because proofed canvas holds its own shape.
+        self.add_part(
+            "CLO_SlickerChest",
+            make_tapered_box((0, 0.008, 1.075), (0, -0.004, 1.345), (0.418, 0.258, 0), (0.428, 0.272, 0)),
+            "chest", "body", "slicker",
+        )
+        self.add_part(
+            "CLO_SlickerWaist",
+            make_tapered_box((0, 0.014, 0.870), (0, 0.010, 1.095), (0.410, 0.262, 0), (0.420, 0.264, 0)),
+            "spine", "body", "slicker",
+        )
+        # The hem stops at mid-thigh on purpose. A stiff skirt is bound
+        # to the pelvis and cannot follow a knee, so a full-length one
+        # would cut through the leading leg every time he takes a step
+        # or braces against the board.
+        self.add_part(
+            "CLO_SlickerHem",
+            make_tapered_box((0, 0.018, 0.581), (0, 0.016, 0.895), (0.455, 0.300, 0), (0.415, 0.266, 0)),
+            "pelvis", "clothing", "slicker_dark",
+        )
+        # The storm yoke: the doubled cape across the shoulders that
+        # says oilskin rather than raincoat at any distance.
+        self.add_part(
+            "CLO_StormYoke",
+            make_tapered_box((0, 0.004, 1.140), (0, -0.004, 1.330), (0.470, 0.300, 0), (0.430, 0.276, 0)),
+            "chest", "signature_silhouette", "slicker_light",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.080, 0.066, 10),
+                f"upper_arm.{side}", "clothing", "slicker",
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.060, 0.048, 8),
+                f"forearm.{side}", "clothing", "slicker",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.628, -0.016, 1.102),
+                    (sign * 0.696, -0.019, 1.066),
+                    0.052, 0.046, 8,
+                ),
+                f"forearm.{side}", "clothing", "slicker_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.720, -0.022, 1.052), (0.084, 0.070, 0.058)),
+                f"hand.{side}", "body", "fisher_skin",
+            )
+            hip = (sign * 0.094, 0.004, 0.740)
+            knee = (sign * 0.103, -0.012, 0.362)
+            self.add_part(
+                f"CLO_TrouserUpper.{side}",
+                make_frustum_between(hip, knee, 0.088, 0.070, 8),
+                f"thigh.{side}", "clothing", "oilskin_trousers",
+            )
+            # Wader tops, turned down at the knee. The shaft stops
+            # exactly at the knee joint and not a centimetre above it:
+            # this part rides the shin, and every centimetre of it
+            # authored past its own bone head swings out through the
+            # thigh as soon as the knee bends.
+            self.add_part(
+                f"CLO_BootShaft.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.012, 0.356),
+                    (sign * 0.112, -0.022, 0.100),
+                    0.082, 0.070, 8,
+                ),
+                f"shin.{side}", "clothing", "boot_rubber",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.088, 0.026),
+                    (sign * 0.112, -0.054, 0.148),
+                    (0.110, 0.272, 0),
+                    (0.098, 0.198, 0),
+                ),
+                f"foot.{side}", "body", "boot_rubber",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.088, 0.012), (0.114, 0.280, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+        # The hood owns the silhouette and the exact 1.75 m envelope: a
+        # deep shell well clear of the skull, a stiff peak pulled up at
+        # the crown, and a brim thrown forward over the face.
+        self.add_part(
+            "CLO_HoodShell",
+            make_ellipsoid((0, 0.012, 1.582), (0.148, 0.152, 0.130), 12, 6),
+            "head", "signature_silhouette", "slicker",
+        )
+        self.add_part(
+            "CLO_HoodPeak",
+            make_tapered_box((0, 0.030, 1.688), (0, 0.020, 1.750), (0.132, 0.142, 0), (0.054, 0.060, 0)),
+            "head", "signature_silhouette", "slicker",
+        )
+        self.add_part(
+            "CLO_HoodBrim",
+            make_tapered_box((0, -0.176, 1.594), (0, -0.122, 1.642), (0.182, 0.112, 0), (0.198, 0.132, 0)),
+            "head", "signature_silhouette", "slicker_light",
+        )
+        self.add_part(
+            "CLO_HoodCollar",
+            make_frustum_between((0, 0.000, 1.328), (0, -0.006, 1.424), 0.132, 0.120, 12),
+            "neck", "clothing", "slicker_dark",
+        )
+        # What survives the hood: narrowed weather eyes, a big nose and
+        # a grey beard. No mouth is drawn - the pipe is the mouth.
+        self.add_part(
+            "ACC_Eye.L",
+            make_box((0.044, -0.120, 1.556), (0.032, 0.018, 0.013)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Eye.R",
+            make_box((-0.044, -0.120, 1.556), (0.032, 0.018, 0.013)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.144, 1.498), (0, -0.122, 1.542), (0.046, 0.054, 0), (0.032, 0.042, 0)),
+            "head", "face_detail", "fisher_skin",
+        )
+        self.add_part(
+            "ACC_Beard",
+            make_tapered_box((0, -0.100, 1.408), (0, -0.124, 1.480), (0.128, 0.086, 0), (0.112, 0.070, 0)),
+            "head", "signature_silhouette", "fisher_grey",
+        )
+        self.add_part(
+            "ACC_Moustache",
+            make_box((0, -0.136, 1.486), (0.086, 0.026, 0.020)),
+            "head", "face_detail", "fisher_grey",
+        )
+
+    def build_lake_fisherman_details(self) -> None:
+        """The two things he is actually doing: the pipe and the rod.
+
+        Both are hard-mounted geometry rather than togglable props,
+        because unlike the babushka he has exactly one role and never
+        puts either down.
+
+        The pipe leaves the mouth along the canonical SOCKET_Mouth
+        direction, bends down and forward, and stands its bowl back up
+        in front of the beard - the classic bent shape, chosen because
+        a straight stem would read as a stick from the front. The ember
+        is a separate flat part on top of the bowl and nothing else:
+        the shared source material must stay non-emissive, so the glow,
+        the light and the smoke are all raised by the runtime against
+        this exact part.
+
+        The rod is bound rigidly to the right hand, because it is one
+        stick and this rig has one vertex group per part; the left hand
+        is brought onto the same axis by the authored pose instead, and
+        those angles were fitted against this geometry rather than set
+        by eye. It leaves the fist forward and slightly up, so the line
+        falls clear of the end board to the water the plan measured.
+        """
+
+        self.add_part(
+            "ACC_SlickerSeam.01",
+            make_box((0, -0.142, 1.262), (0.400, 0.014, 0.014)),
+            "chest", "surface_detail", "slicker_dark",
+        )
+        self.add_part(
+            "ACC_SlickerSeam.02",
+            make_box((0, -0.136, 1.036), (0.392, 0.014, 0.014)),
+            "spine", "surface_detail", "slicker_dark",
+        )
+        self.add_part(
+            "ACC_SlickerSeam.03",
+            make_box((0, -0.140, 0.898), (0.406, 0.014, 0.014)),
+            "spine", "surface_detail", "slicker_dark",
+        )
+        self.add_part(
+            "ACC_HoodCord",
+            make_box((0, -0.146, 1.372), (0.176, 0.018, 0.016)),
+            "neck", "surface_detail", "slicker_dark",
+        )
+        self.add_part(
+            "ACC_SlickerClasp.01",
+            make_box((0.052, -0.150, 1.196), (0.024, 0.018, 0.026)),
+            "chest", "surface_detail", "rod_reel",
+        )
+        self.add_part(
+            "ACC_SlickerClasp.02",
+            make_box((0.050, -0.146, 1.086), (0.024, 0.018, 0.026)),
+            "chest", "surface_detail", "rod_reel",
+        )
+
+        # The pipe, on the head bone, out of SOCKET_Mouth.
+        self.add_part(
+            "ACC_PipeStem",
+            make_frustum_between(
+                (0.008, -0.150, 1.474),
+                (0.020, -0.246, 1.434),
+                0.0074, 0.0086, 6, 1.0,
+            ),
+            "head", "signature_silhouette", "pipe_briar_dark",
+        )
+        self.add_part(
+            "ACC_PipeBowl",
+            make_frustum_between(
+                (0.022, -0.252, 1.428),
+                (0.024, -0.262, 1.492),
+                0.026, 0.030, 8, 1.0,
+            ),
+            "head", "signature_silhouette", "pipe_briar",
+        )
+        # The one part the runtime drives. Its name is a contract:
+        # LakeFishermanPipeEffect finds it by name and breathes the
+        # ember, the point light and the plume off it.
+        self.add_part(
+            "ACC_PipeEmber",
+            make_box((0.024, -0.262, 1.496), (0.036, 0.036, 0.010)),
+            "head", "signature_silhouette", "amber",
+        )
+
+        # The rod, on the right hand. Forward and up, out of the fist.
+        direction = (0.130, -0.960, 0.250)
+        grip = (-0.730, -0.030, 1.048)
+
+        def along(distance: float) -> tuple[float, float, float]:
+            return (
+                grip[0] + direction[0] * distance,
+                grip[1] + direction[1] * distance,
+                grip[2] + direction[2] * distance,
+            )
+
+        self.add_part(
+            "ACC_RodGrip",
+            make_frustum_between(along(-0.120), along(0.100), 0.021, 0.019, 8, 1.0),
+            "hand.R", "signature_silhouette", "rod_cork",
+        )
+        self.add_part(
+            "ACC_RodReel",
+            make_box(
+                (
+                    along(0.128)[0],
+                    along(0.128)[1],
+                    along(0.128)[2] - 0.052,
+                ),
+                (0.056, 0.072, 0.072),
+            ),
+            "hand.R", "signature_silhouette", "rod_reel",
+        )
+        self.add_part(
+            "ACC_RodButt",
+            make_frustum_between(along(0.100), along(0.760), 0.0140, 0.0106, 6, 1.0),
+            "hand.R", "signature_silhouette", "rod_cane",
+        )
+        self.add_part(
+            "ACC_RodMid",
+            make_frustum_between(along(0.760), along(1.450), 0.0106, 0.0070, 6, 1.0),
+            "hand.R", "signature_silhouette", "rod_cane",
+        )
+        self.add_part(
+            "ACC_RodTip",
+            make_frustum_between(along(1.450), along(2.050), 0.0070, 0.0032, 6, 1.0),
+            "hand.R", "signature_silhouette", "rod_cane",
+        )
+
     def build_weigh_attendant_body(self) -> None:
         """Tired industrial worker in a quilted jacket and a knit cap.
 
@@ -3337,6 +3675,10 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         "long_arm": (2.60, -4.35, 2.05),
         "helmet_lamp": (2.70, -4.30, 1.95),
         "pipeback_roller": (2.80, -4.65, 1.82),
+        # From his own right, and from lower down. The rod leaves the
+        # right fist along -Y, so the library's usual left-front camera
+        # would look straight down two metres of it and see a dot.
+        "lake_fisherman": (-4.30, -3.15, 1.95),
     }.get(spec.key, (2.65, -4.40, 2.10))
     target = Vector((0, 0, 0.84 if posed_preview else 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
@@ -3590,6 +3932,23 @@ ACTION_SPECS = (
         "WatchmanShuffle", "cemetery_watchman_v1", 1.5, 36,
         "rounded old shoulders, chin up under the cap, hands clasped behind the back",
         "short heavy shuffling steps with no arm swing and a mild capped-head bob",
+    ),
+    # Four breaths per lap, on an exact quarter-loop grid. The number
+    # is a contract, not a rhythm choice: it must match
+    # LakeFishermanPresentation.BreathsPerLoop, because the pipe ember
+    # and the plume are driven from the clip's own normalized time
+    # rather than from a second free-running timer. Anything that
+    # re-times this loop has to re-time that constant with it or the
+    # smoke stops belonging to the chest.
+    ActionSpec(
+        "FishermanLean", "lake_fisherman_v1", 8.0, 192,
+        "tipped forward over the end board, weight on the front foot, both hands on the rod",
+        "four slow breaths under the hood, one rod correction and a look down the line",
+    ),
+    ActionSpec(
+        "FishermanTrudge", "lake_fisherman_v1", 1.5, 36,
+        "hooded oilskin stance with the rod carried forward in both hands",
+        "short heavy steps in waders with almost no arm swing",
     ),
 )
 
@@ -4043,6 +4402,49 @@ def watchman_base_pose() -> dict[str, BonePose]:
         "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
         "shin.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+    }
+
+
+def fisherman_base_pose() -> dict[str, BonePose]:
+    """Standing lean over the end board, both fists on the rod.
+
+    He is not resting on the boards but on the parapet: the lean is
+    authored from the hips and the ankles together, so his weight goes
+    into the board in front of him rather than into a bow. The feet stay
+    planted and the ordinary sole bake grounds him like any walker.
+
+    Both hands really are on the stick. Only the right fist carries it -
+    the rod is one rigid part on one vertex group - so the left arm has
+    to be brought across onto the same line, and the angles below were
+    fitted to that line rather than eyeballed: `ACC_RodGrip` and
+    `ACC_RodTip` give the axis, and both arms were solved against it.
+    Nudging any one of these six bones by eye takes the left hand off
+    the rod, which is exactly the failure that looks like a man
+    pretending to fish.
+    """
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(5.0, 0.0, 0.0), location_m=(0, 0.008, -0.032)),
+        "spine": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        # Head down, watching the float rather than the far bank.
+        "neck": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(2.0, -4.0, 5.0)),
+        "clavicle.R": BonePose(rotation_degrees=(2.0, 4.0, -5.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-83.0, 42.8, 125.5)),
+        "forearm.L": BonePose(rotation_degrees=(-73.0, 60.5, -36.8)),
+        "hand.L": BonePose(rotation_degrees=(11.2, 21.0, -1.5)),
+        "upper_arm.R": BonePose(rotation_degrees=(-47.0, 10.0, 9.0)),
+        "forearm.R": BonePose(rotation_degrees=(-118.0, 32.0, -9.2)),
+        "hand.R": BonePose(rotation_degrees=(31.8, 22.5, -42.0)),
+        # Braced: the forward leg takes the lean, the back one trails.
+        "thigh.L": BonePose(rotation_degrees=(-13.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(19.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-5.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
     }
 
 
@@ -4929,6 +5331,76 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     watchman_step_r = merge_pose(watchman, watchman_shuffle_legs(-1.0, -1.0))
     watchman_step_pl = merge_pose(watchman, watchman_shuffle_legs(0.0, 0.4))
 
+    # The fisherman. One leaning loop and one trudge, both off the same
+    # hooded stance. The leaning loop is built on an exact quarter-loop
+    # breath grid: rest at every quarter, full inhale at every eighth
+    # between them, so `frac(normalized * 4)` is the breath phase and
+    # phase 0.5 is the top of the draw. The ember and the plume read
+    # exactly that, which is the whole reason the grid is regular
+    # rather than expressive.
+    fisher = fisherman_base_pose()
+
+    def fisher_breath(amount: float) -> dict[str, BonePose]:
+        """One inhale, as a fraction of the full draw on the pipe.
+
+        Only the spine chain moves, and that is a rule rather than a
+        simplification. Both clavicles hang off the chest, so breathing
+        on the chest swings both arms and the rod together and the
+        two-handed grip survives untouched; a breath authored on the
+        clavicles would open his hands off the stick once per lap.
+        """
+
+        return {
+            "spine": BonePose(rotation_degrees=(16.0 - 2.6 * amount, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(10.0 - 3.4 * amount, 0.0, 0.0)),
+            "neck": BonePose(rotation_degrees=(7.0 + 1.2 * amount, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(5.0 - 1.6 * amount, 0.0, 0.0)),
+        }
+
+    fisher_lean = fisher
+    fisher_inhale = merge_pose(fisher, fisher_breath(1.0))
+    # The one thing that happens in eight seconds: on the third breath
+    # he comes off the board, lifts the tip and looks down the line,
+    # then tips back onto it. Authored on the spine and the neck for
+    # the same reason the breath is - the rod has to come up with both
+    # hands still on it, and the only way to guarantee that is to move
+    # everything above the waist as one piece.
+    fisher_lift = merge_pose(fisher, {
+        "pelvis": BonePose(rotation_degrees=(3.0, 0.0, 0.0), location_m=(0, 0.008, -0.026)),
+        "spine": BonePose(rotation_degrees=(9.5, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(5.0, 0.0, -1.5)),
+        "neck": BonePose(rotation_degrees=(3.0, 0.0, -4.0)),
+        "head": BonePose(rotation_degrees=(2.0, 0.0, -3.0)),
+    })
+    fisher_lift_inhale = merge_pose(fisher_lift, {
+        "spine": BonePose(rotation_degrees=(6.9, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(1.6, 0.0, -1.5)),
+        "neck": BonePose(rotation_degrees=(4.2, 0.0, -4.0)),
+        "head": BonePose(rotation_degrees=(0.4, 0.0, -3.0)),
+    })
+
+    def fisher_trudge_legs(
+        left_forward: float,
+        lean: float,
+    ) -> dict[str, BonePose]:
+        return {
+            "pelvis": BonePose(
+                rotation_degrees=(5.0 + lean * 1.5, 0.0, left_forward * 1.2),
+                location_m=(0, 0.008, -0.032),
+            ),
+            "thigh.L": BonePose(rotation_degrees=(-13.0 - left_forward * 16.0, 0.0, 3.0)),
+            "shin.L": BonePose(rotation_degrees=(19.0 + max(0.0, -left_forward) * 24.0, 0.0, 0.0)),
+            "foot.L": BonePose(rotation_degrees=(-7.0 + left_forward * 6.0, 0.0, 0.0)),
+            "thigh.R": BonePose(rotation_degrees=(-5.0 + left_forward * 16.0, 0.0, -3.0)),
+            "shin.R": BonePose(rotation_degrees=(10.0 + max(0.0, left_forward) * 24.0, 0.0, 0.0)),
+            "foot.R": BonePose(rotation_degrees=(-5.0 - left_forward * 6.0, 0.0, 0.0)),
+        }
+
+    fisher_step_l = merge_pose(fisher, fisher_trudge_legs(1.0, 1.0))
+    fisher_step_pr = merge_pose(fisher, fisher_trudge_legs(0.0, -0.4))
+    fisher_step_r = merge_pose(fisher, fisher_trudge_legs(-1.0, 1.0))
+    fisher_step_pl = merge_pose(fisher, fisher_trudge_legs(0.0, -0.4))
+
     return {
         "WatchmanWatch": (
             (0.0, watchman),
@@ -5012,6 +5484,25 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.32, pipeback_push),
             (0.62, pipeback_release),
             (1.0, pipeback),
+        ),
+        # Quarter-loop breath grid; see LakeFishermanPresentation.
+        "FishermanLean": (
+            (0.0, fisher_lean),
+            (0.125, fisher_inhale),
+            (0.25, fisher_lean),
+            (0.375, fisher_inhale),
+            (0.5, fisher_lift),
+            (0.625, fisher_lift_inhale),
+            (0.75, fisher_lean),
+            (0.875, fisher_inhale),
+            (1.0, fisher_lean),
+        ),
+        "FishermanTrudge": (
+            (0.0, fisher_step_l),
+            (0.25, fisher_step_pr),
+            (0.5, fisher_step_r),
+            (0.75, fisher_step_pl),
+            (1.0, fisher_step_l),
         ),
         "LampshadeSit": ((0.0, lamp_seated), (0.5, lamp_seated_breath), (1.0, lamp_seated)),
         "ChairCarrierSit": ((0.0, chair_seated), (0.5, chair_seated_breath), (1.0, chair_seated)),

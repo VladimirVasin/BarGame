@@ -6,6 +6,79 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — The man on the end of the boards
+
+- The fisherman's runtime layer had been in and green since the boat station
+  landed, with one gap: no art. Authored the `lake_fisherman_v1` archetype and
+  closed it. He is a hooded man in a municipal-yellow oilskin standing at the
+  head of the pier, tipped out over its end board, with a rod in both hands and
+  a lit pipe in his teeth.
+- **Both hands are really on the rod, and that is a fitted result rather than a
+  posed one.** The rod is one rigid part on one vertex group, so it rides the
+  right fist and the left hand has to be brought onto the same axis. Eyeballing
+  Euler angles for a cross-body reach does not converge: the arm angles were
+  solved by coordinate descent against the model's own `ACC_RodGrip` and
+  `ACC_RodTip`, to `0.5 mm` on the right and `4.4 mm` on the left.
+- That grip then constrains what the loop may key. His breath is authored on
+  the spine chain **only**: both clavicles hang off the chest, so breathing on
+  the chest swings both arms and the rod together and the grip survives
+  untouched, while the same breath authored on the clavicles would open his
+  hands off the stick once per lap. The one rod correction in the eight seconds
+  is authored the same way, on the spine and neck, for the same reason.
+- **The pipe is driven by the clip, not by a timer.** `FishermanLean` is keyed
+  on an exact quarter-loop breath grid — rest at every quarter, full inhale at
+  every eighth between — so `frac(normalized * 4)` is the breath phase, and
+  `LakeFishermanPresentation` publishes it. The ember colour, its point light
+  and the plume's emission rate all read that one number; the plume lags it by
+  `0.18` of a breath because the draw pulls air through the bowl before the
+  smoke leaves it. Emitting in phase with the ribs was the mistake worth a
+  test: smoke that swells while the chest is still filling reads as a particle
+  system parented to a man.
+- **Two bind-pose anchors, measured by the prefab build.** Every pedestrian
+  part is a rigidly skinned mesh, so the pipe bowl and the rod point have no
+  Transform to hang an ember or a line from. Reconstructing either at runtime
+  would mean re-deriving the FBX axis conversion and the prefab's own 180°
+  model flip in gameplay code, twice. `CityPedestrianAssetSetup` measures both
+  off the imported meshes once and parents an empty to the bone that carries
+  them; `LakeFishermanRigAnchors` is passive metadata in the wheelchair
+  registry's pattern.
+- He was authored **sitting** first, and that cost a whole grounding contract
+  which is now gone again. A seated man is not sole-grounded — his backside is
+  lower than his boots — and he is not cabin-seated either, so the generator
+  grew `perch_clearance_m` / `ActionSpec.perched`, a bake that settled the
+  whole silhouette onto `z=0` on whatever carried it, and a proof that the seat
+  of the coat and both soles all reached the boards. It worked (soles at
+  `0.0000` and `0.0016`, hem at `0.0026`) and it took four measured passes,
+  the last of which turned up something worth keeping in mind: the shared
+  Player rig is deliberately asymmetric (`toe.L` at `-0.230`, `toe.R` at
+  `-0.188`), so identical left/right leg angles land the two soles `32 mm`
+  apart, and no per-frame pelvis bake can level two feet at once. When the user
+  asked for him standing instead, all of it came out — an unused declared
+  contract is worse than no contract — and he now grounds on his own boots like
+  every other walker.
+- Three renders caught what no test could:
+  - The wader shaft was authored from `0.560` down but rides `shin`, whose
+    head is at `0.354`. Every centimetre above its own bone head swung out
+    through the thigh as soon as the knee bent — a brown wedge stabbing out of
+    his hip. Shafts now stop exactly at the knee.
+  - The soles pointed at the sky. A positive `foot` rotation lowers the toe on
+    this rig; I had assumed the opposite sign from `SEATED_LEGS`, whose shins
+    happen to sit within a few degrees of vertical, where the sign does not
+    show.
+  - The slicker clipped to pure white next to the hand lamp. Brought down from
+    `0.560` to `0.455` red — still the loudest hue any City design wears, and
+    still the only saturated colour on the precinct that is worn rather than
+    built.
+- Also fixed a maintenance trap I fell into on the way: the model importer
+  kept its own hand-written list of pedestrian FBX paths. A design added to
+  `Descriptors` and forgotten there imports on default settings, builds its
+  own Avatar, and fails much later with `Bone 'root' rest transform differs`.
+  It now asks `CityPedestrianAssetSetup.IsDeclaredModelPath`.
+- Verification: `LakeFishermanTests` and `CityPedestrianRuntimeTests`, the full
+  deterministic art build (11 archetypes, repeated signatures match, every clip
+  grounded against its own footwear), and edit-mode renders of the pier from
+  the approach, the side, behind and the water.
+
 ## 2026-08-18 — A lamp somebody left on the rail
 
 - Follow-up on the user's own screenshot: the head lamp had come out as a full

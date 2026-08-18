@@ -6,6 +6,23 @@ Earlier notes: [`release-notes-2026-07.md`](archive/release-notes-2026-07.md).
 
 ## Unreleased
 
+### 2026-08-18 — Somebody is still fishing here
+
+- The boat station is abandoned by everyone except one man. Walk out along the
+  мостки and there is a hooded figure at the very end, leaning out over the end
+  board with his back to the shore, next to the lamp somebody left on the rail.
+  He does not turn round when you arrive. He does not turn round at all.
+- He is in a yellow oilskin — the only bright thing on a precinct of wet grey
+  timber and dead green water, and from the root of the pier he reads as one
+  warm mark at the far end of the boards.
+- He is fishing, properly: rod held in both hands, line out over the water,
+  float sitting on it.
+- And he is smoking. There is a pipe in his teeth, and it is lit — the coal
+  brightens when he draws on it and fades between, and the thread of smoke
+  follows a beat later. He breathes about four times every eight seconds, and
+  everything the pipe does is on that same breath.
+- Press `E` and he answers about the weather, at length, without looking up.
+
 ### 2026-08-18 — One lamp still burning
 
 - The three lamps on the bank are gone. The shore is dark, which is what an

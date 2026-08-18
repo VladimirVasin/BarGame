@@ -3,10 +3,11 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Where the fisherman sits and which way he looks: derived
+    /// Where the fisherman stands and which way he looks: derived
     /// entirely from the lake plan's own pier parts, so the drawn boards
     /// and the man on them can never disagree. He keeps the end of the
-    /// мостки, on the side without a rail, with his back to the shore.
+    /// мостки, on the side without a rail, with his back to the shore
+    /// and his weight tipped out over the end board.
     /// </summary>
     public readonly struct LakeFishermanStance
     {
@@ -38,28 +39,41 @@ namespace BarPromenade
     /// </summary>
     public sealed class LakeFishermanPlan
     {
-        /// <summary>How far back from the head of the deck he sits:
-        /// far enough that the head boards are in front of him rather
-        /// than under him.</summary>
-        public const float SeatInsetMeters = 0.85f;
+        /// <summary>How far back from the head of the deck he stands.
+        /// Small on purpose: he is leaning on the end board, and a man
+        /// standing a stride short of a parapet is not leaning on
+        /// anything. His boots stop just clear of it.</summary>
+        public const float StandInsetMeters = 0.05f;
 
         /// <summary>And how far off the deck's centre line, toward the
-        /// side without a rail — the side a person can actually put
-        /// their legs over.</summary>
-        public const float SeatSideOffsetMeters = 0.28f;
+        /// side without a rail — the side a person can actually get
+        /// their elbows onto.</summary>
+        public const float SideOffsetMeters = 0.28f;
 
         private static readonly LakeFishermanPlan AbsentPlan =
-            new LakeFishermanPlan(default, false);
+            new LakeFishermanPlan(default, 0f, false);
 
         private LakeFishermanPlan(
             LakeFishermanStance stance,
+            float waterTopY,
             bool isPresent)
         {
             Stance = stance;
+            WaterTopY = waterTopY;
             IsPresent = isPresent;
         }
 
         public LakeFishermanStance Stance { get; }
+
+        /// <summary>
+        /// The waterline his float sits on, read straight off the lake's
+        /// own basin. The line has to end in the water rather than at a
+        /// guessed depth: the basin insets its waterline inside the
+        /// blueprint cells, so nothing outside the plan knows where the
+        /// surface is.
+        /// </summary>
+        public float WaterTopY { get; }
+
         public bool IsPresent { get; }
 
         public static LakeFishermanPlan Create(CityLakePlan lakePlan)
@@ -92,12 +106,13 @@ namespace BarPromenade
             Vector3 sideways = Vector3.Cross(Vector3.up, outward);
 
             // The rail runs down one side; the planner puts it on the
-            // deck's negative lateral edge, so he sits toward the other.
+            // deck's negative lateral edge, so he stands toward the
+            // other.
             float deckTop = head.Center.y + head.Size.y * 0.5f;
             Vector3 position =
                 new Vector3(head.Center.x, deckTop, head.Center.z) -
-                outward * SeatInsetMeters +
-                sideways * SeatSideOffsetMeters;
+                outward * StandInsetMeters +
+                sideways * SideOffsetMeters;
 
             // Facing the water. This is the whole character: the player
             // arrives behind him and he does not turn round.
@@ -108,6 +123,7 @@ namespace BarPromenade
                     2,
                     1f,
                     0f),
+                lakePlan.Basin.WaterTopY,
                 true);
         }
     }

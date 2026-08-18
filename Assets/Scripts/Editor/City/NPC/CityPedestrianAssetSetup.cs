@@ -52,6 +52,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/CemeteryWatchman3D.fbx";
         public const string CemeteryWatchmanManifestPath =
             "Assets/Pedestrians/Staged/Models/CemeteryWatchman3D.json";
+        public const string LakeFishermanModelPath =
+            "Assets/Pedestrians/Staged/Models/LakeFisherman3D.fbx";
+        public const string LakeFishermanManifestPath =
+            "Assets/Pedestrians/Staged/Models/LakeFisherman3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -90,6 +94,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/CemeteryWatchman3D.prefab";
         public const string CemeteryWatchmanProviderPath =
             "Assets/Resources/City/CemeteryWatchmanProvider.asset";
+        public const string LakeFishermanPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab";
+        public const string LakeFishermanProviderPath =
+            "Assets/Resources/City/LakeFishermanProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -100,6 +108,7 @@ namespace BarPromenade.Editor
         private const string LeftWheelRendererName = "ACC_WheelTyre.L";
         private const string RightWheelRendererName = "ACC_WheelTyre.R";
         private const string SeatRendererName = "ACC_SeatCushion";
+        private const string RightHandBoneName = "hand.R";
 
         // The one worn lamp the pedestrian contract allows. It stays
         // shadowless and short-range so a single moving Spot cannot disturb
@@ -309,7 +318,29 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
-                isStaged: true)
+                isStaged: true),
+            // The lake fisherman: the idle slot carries the leaning
+            // fishing loop and the walk slot an oilskin trudge kept
+            // for a later pass. Staged like the watchman — authored
+            // with the shared art library, outside Resources and the
+            // runtime catalog. He is the only design that declares a
+            // fishing rig, which is what adds the two bind-pose
+            // anchors his pipe and his line hang from.
+            new PedestrianDescriptor(
+                "Lake Fisherman",
+                "LakeFisherman3D",
+                "lake_fisherman_v1",
+                LakeFishermanModelPath,
+                LakeFishermanManifestPath,
+                LakeFishermanPrefabPath,
+                "FishermanLean",
+                "FishermanTrudge",
+                8f,
+                1.5f,
+                900,
+                2000,
+                isStaged: true,
+                carriesFishingRig: true)
         };
 
         private static bool isBuilding;
@@ -380,6 +411,42 @@ namespace BarPromenade.Editor
         {
             BuildCemeteryWatchmanOrThrow();
             Debug.Log("Staged Cemetery Watchman prefab rebuilt and bound.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Lake Fisherman")]
+        public static void RunLakeFisherman()
+        {
+            BuildLakeFishermanOrThrow();
+            Debug.Log("Staged Lake Fisherman prefab rebuilt and bound.");
+        }
+
+        /// <summary>
+        /// True for a model path this pipeline owns. The importer asks
+        /// rather than keeping its own list: a design added to
+        /// <see cref="Descriptors"/> and forgotten here imports on
+        /// default settings, which silently produces its own Avatar and
+        /// then fails much later with a rest-transform mismatch.
+        /// </summary>
+        public static bool IsDeclaredModelPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                if (string.Equals(
+                        path,
+                        Descriptors[index].ModelPath,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1217,6 +1284,123 @@ namespace BarPromenade.Editor
             }
         }
 
+        public static void BuildLakeFishermanOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Lake Fisherman build requires its " +
+                    "model, manifest, locomotion library, production " +
+                    "Player model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    LakeFishermanProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindLakeFishermanProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged lake fisherman prefab into a build — the
+        /// automated binding the babushka pass established.
+        /// </summary>
+        private static void BindLakeFishermanProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the lake fisherman provider before " +
+                    "its prefab exists.");
+            }
+
+            LakeFishermanProvider provider =
+                AssetDatabase.LoadAssetAtPath<LakeFishermanProvider>(
+                    LakeFishermanProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(LakeFishermanProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<LakeFishermanProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    LakeFishermanProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "LakeFishermanProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
+        }
+
         /// <summary>
         /// Creates or rewires the one Resources provider asset that
         /// carries the staged cemetery watchman prefab into a build —
@@ -1505,6 +1689,7 @@ namespace BarPromenade.Editor
                     "anchor binding.");
             }
 
+            ValidateFishingRigBindings(prefab, registry, descriptor);
             ValidateWheelchairBindings(prefab, registry, descriptor);
             if (descriptor.IsWheelchair)
             {
@@ -1607,7 +1792,8 @@ namespace BarPromenade.Editor
             if (descriptor.IsStaged && behaviours.Any(behaviour =>
                     behaviour != null &&
                     !(behaviour is CityPedestrianAssetRegistry) &&
-                    !(behaviour is CityWheelchairNpcAssetRegistry)))
+                    !(behaviour is CityWheelchairNpcAssetRegistry) &&
+                    !(behaviour is LakeFishermanRigAnchors)))
             {
                 throw new InvalidOperationException(
                     "A staged pedestrian prefab may carry only its passive " +
@@ -2403,6 +2589,44 @@ namespace BarPromenade.Editor
                     pelvis,
                     sit);
 
+                if (descriptor.CarriesFishingRig)
+                {
+                    // Measured once, here, in the bind pose, off the
+                    // imported meshes themselves. Both points are drawn
+                    // by rigidly skinned vertices and neither has a
+                    // Transform, so reconstructing them at runtime would
+                    // mean re-deriving the FBX axis conversion and this
+                    // prefab's own 180 degree model flip in gameplay
+                    // code — twice, and again whenever the art moves.
+                    Transform rightHand = RequireTransform(
+                        transformsByName,
+                        RightHandBoneName,
+                        "fisherman prefab");
+                    Renderer emberRenderer = RequireRenderer(
+                        renderersByName,
+                        LakeFishermanRigAnchors.PipeEmberRendererName);
+                    Renderer rodTipRenderer = RequireRenderer(
+                        renderersByName,
+                        LakeFishermanRigAnchors.RodTipRendererName);
+                    Transform emberAnchor = CreateBoneAnchor(
+                        head,
+                        LakeFishermanRigAnchors.PipeEmberAnchorName,
+                        BindPoseCenter(emberRenderer));
+                    Transform rodTipAnchor = CreateBoneAnchor(
+                        rightHand,
+                        LakeFishermanRigAnchors.RodTipAnchorName,
+                        BindPoseFarthestPoint(
+                            rodTipRenderer,
+                            rightHand.position));
+                    prefabRoot
+                        .AddComponent<LakeFishermanRigAnchors>()
+                        .Configure(
+                            registry,
+                            emberAnchor,
+                            rodTipAnchor,
+                            emberRenderer);
+                }
+
                 if (descriptor.IsWheelchair)
                 {
                     // The shared animation FBX deliberately remains an exact
@@ -2454,6 +2678,172 @@ namespace BarPromenade.Editor
             finally
             {
                 UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        private static Renderer RequireRenderer(
+            Dictionary<string, Renderer> renderersByName,
+            string rendererName)
+        {
+            if (!renderersByName.TryGetValue(
+                    rendererName,
+                    out Renderer renderer) ||
+                renderer == null)
+            {
+                throw new InvalidOperationException(
+                    $"Imported pedestrian is missing renderer " +
+                    $"'{rendererName}'.");
+            }
+
+            return renderer;
+        }
+
+        /// <summary>
+        /// Parents an empty anchor to a bone at a measured world point.
+        /// The anchor then travels with that bone for free, which is the
+        /// entire reason it exists.
+        /// </summary>
+        private static Transform CreateBoneAnchor(
+            Transform bone,
+            string anchorName,
+            Vector3 worldPosition)
+        {
+            var anchor = new GameObject(anchorName).transform;
+            anchor.SetParent(bone, false);
+            anchor.position = worldPosition;
+            anchor.localRotation = Quaternion.identity;
+            anchor.localScale = Vector3.one;
+            return anchor;
+        }
+
+        /// <summary>
+        /// A rigidly skinned part's bind-pose centre. Every pedestrian
+        /// part carries one vertex group at weight one, so the shared
+        /// mesh sits in its own renderer's space exactly as authored.
+        /// </summary>
+        private static Vector3 BindPoseCenter(Renderer renderer)
+        {
+            Mesh mesh = RequireSharedMesh(renderer);
+            return renderer.transform.TransformPoint(mesh.bounds.center);
+        }
+
+        /// <summary>
+        /// The bind-pose vertex of a part that sits furthest from a
+        /// reference point — how the far end of a tapering rod section
+        /// is found without hard-coding its length.
+        /// </summary>
+        private static Vector3 BindPoseFarthestPoint(
+            Renderer renderer,
+            Vector3 fromWorldPosition)
+        {
+            Mesh mesh = RequireSharedMesh(renderer);
+            Vector3[] vertices = mesh.vertices;
+            if (vertices.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Renderer '{renderer.name}' has no vertices.");
+            }
+
+            Vector3 farthest = renderer.transform.TransformPoint(
+                vertices[0]);
+            float best = (farthest - fromWorldPosition).sqrMagnitude;
+            for (int index = 1; index < vertices.Length; index++)
+            {
+                Vector3 candidate = renderer.transform.TransformPoint(
+                    vertices[index]);
+                float distance =
+                    (candidate - fromWorldPosition).sqrMagnitude;
+                if (distance > best)
+                {
+                    best = distance;
+                    farthest = candidate;
+                }
+            }
+
+            return farthest;
+        }
+
+        private static Mesh RequireSharedMesh(Renderer renderer)
+        {
+            Mesh mesh = renderer is SkinnedMeshRenderer skinned
+                ? skinned.sharedMesh
+                : renderer.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null)
+            {
+                throw new InvalidOperationException(
+                    $"Renderer '{renderer.name}' has no shared mesh.");
+            }
+
+            return mesh;
+        }
+
+        /// <summary>
+        /// A fishing design owes both bind-pose anchors, on the right
+        /// bones, and nobody else may carry the component: an anchor
+        /// parented to the wrong bone still resolves at runtime and then
+        /// leaves the ember hanging in the air beside his head.
+        /// </summary>
+        private static void ValidateFishingRigBindings(
+            GameObject prefab,
+            CityPedestrianAssetRegistry registry,
+            PedestrianDescriptor descriptor)
+        {
+            LakeFishermanRigAnchors anchors =
+                prefab.GetComponentInChildren<LakeFishermanRigAnchors>(true);
+            if (!descriptor.CarriesFishingRig)
+            {
+                if (anchors != null)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no fishing " +
+                        "rig but its prefab carries anchor metadata.");
+                }
+
+                return;
+            }
+
+            if (anchors == null ||
+                anchors.PedestrianRegistry != registry ||
+                anchors.PipeEmberAnchor == null ||
+                anchors.RodTipAnchor == null ||
+                anchors.PipeEmberRenderer == null)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must bind its pipe and " +
+                    "rod anchors and its ember renderer.");
+            }
+
+            if (anchors.PipeEmberAnchor.parent == null ||
+                !string.Equals(
+                    anchors.PipeEmberAnchor.parent.name,
+                    "head",
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The pipe ember anchor must ride the head bone.");
+            }
+
+            if (anchors.RodTipAnchor.parent == null ||
+                !string.Equals(
+                    anchors.RodTipAnchor.parent.name,
+                    RightHandBoneName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The rod tip anchor must ride the right hand bone.");
+            }
+
+            // The rod is a two-metre stick on a 1.75 m envelope, so an
+            // anchor that landed on the grip instead of the point would
+            // still look plausible in the inspector. This does not.
+            float reach = Vector3.Distance(
+                anchors.RodTipAnchor.position,
+                anchors.RodTipAnchor.parent.position);
+            if (reach < 1.4f)
+            {
+                throw new InvalidOperationException(
+                    $"The rod tip anchor sits {reach:0.###} m from the " +
+                    "hand; it must be at the point of the rod.");
             }
         }
 
@@ -2856,10 +3246,12 @@ namespace BarPromenade.Editor
                 string sitClipName = null,
                 float sitDuration = 0f,
                 bool isStaged = false,
-                bool isWheelchair = false)
+                bool isWheelchair = false,
+                bool carriesFishingRig = false)
             {
                 IsStaged = isStaged;
                 IsWheelchair = isWheelchair;
+                CarriesFishingRig = carriesFishingRig;
                 SitClipName = sitClipName;
                 SitDuration = sitDuration;
                 CarriesHeadLamp = carriesHeadLamp;
@@ -2925,6 +3317,15 @@ namespace BarPromenade.Editor
             /// by an authored wheelchair design.
             /// </summary>
             public bool IsWheelchair { get; }
+
+            /// <summary>
+            /// Declares the two bind-pose anchors a fishing design needs:
+            /// the top of the pipe bowl on the head bone and the far end
+            /// of the rod on the right hand. Both are drawn by rigidly
+            /// skinned vertices, so neither has a Transform of its own
+            /// for the runtime to hang an ember or a line from.
+            /// </summary>
+            public bool CarriesFishingRig { get; }
 
             public int ExpectedLightCount => CarriesHeadLamp ? 1 : 0;
             public float Height => ExpectedHeight;
