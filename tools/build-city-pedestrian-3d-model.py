@@ -249,6 +249,36 @@ ARCHETYPES = {
         pool_eligible=False,
         perch_seat_height_m=(0.53, 0.55),
     ),
+    # The park checkers player. The second staged model for the same
+    # chess set: the mirror seat at the other table, turned back across
+    # the set so the two old men face each other with four metres of
+    # lawn and two empty planks between them. Nobody sits across either
+    # board - the absence §10 is built on is doubled rather than spent.
+    #
+    # Both games share one board, so the check cannot carry this design:
+    # what differs between chess and draughts is the men, not the field.
+    # Hence both channels are re-derived from the piece. The silhouette
+    # wears one thick draught laid almost flat where the other wears a
+    # king's tulle, and the cloth answers squares with circles run on
+    # the diagonal, because a draught only ever travels one.
+    #
+    # He is the second design to declare `perch_seat_height_m`, and it
+    # is the same 0.54 m plank at the same set, so the band is the same.
+    # His body is authored identically to the chess player's on purpose:
+    # the elbow-on-board and palm-under-cheek solve is a function of the
+    # board height, the plank height and the skull, and all three are
+    # shared, so keeping the geometry equal is what makes it transfer.
+    "park_checkers_player": ArchetypeSpec(
+        "park_checkers_player", "park_checkers_player_v1",
+        "Park Checkers Player",
+        1187419,
+        "ParkCheckersPlayer3D.blend", "ParkCheckersPlayer3D",
+        "ParkCheckersPlayer3D.png", "CheckersMull", "CheckersTrudge",
+        (900, 2200),
+        staged=True,
+        pool_eligible=False,
+        perch_seat_height_m=(0.53, 0.55),
+    ),
 }
 
 
@@ -477,6 +507,37 @@ PALETTE = {
     "chess_skin": (0.372, 0.262, 0.198, 1.0),
     "chess_grey": (0.385, 0.380, 0.362, 1.0),
     "chess_boot": (0.048, 0.045, 0.040, 1.0),
+    # Park Checkers Player. He sits at the other table of the same set,
+    # under the same one burning lamp, so every rule that set the chess
+    # player's values applies unchanged - nothing white, every light
+    # value held near 0.6.
+    #
+    # Two of them are copied rather than chosen. The light circle is the
+    # chess player's light square to the last digit, because it is the
+    # colour of the light field on the board both of them are sitting
+    # at: it is what says the two men are playing on the same thing. And
+    # the draught is turned from the crown's own three values, because
+    # they are two pieces of one set.
+    #
+    # What actually differs is the cloth. The park runs on deep
+    # black-green, sandy grey-brown and cold bone, and the chess player
+    # took the black-green, so this coat takes the sandy grey-brown. The
+    # two are deliberately matched in luminance (~0.12) and separated
+    # only in hue, so a grayscale read cannot tell them apart by value
+    # and the whole weight falls on the silhouette, exactly as §3.2
+    # demands.
+    "checkers_coat": (0.104, 0.094, 0.074, 1.0),
+    "checkers_coat_light": (0.146, 0.132, 0.104, 1.0),
+    "checkers_coat_dark": (0.050, 0.045, 0.036, 1.0),
+    "checkers_trousers": (0.066, 0.062, 0.053, 1.0),
+    "checkers_spot_light": (0.615, 0.600, 0.545, 1.0),
+    "checkers_spot_dark": (0.070, 0.074, 0.060, 1.0),
+    "checkers_disc": (0.600, 0.588, 0.535, 1.0),
+    "checkers_disc_rim": (0.255, 0.248, 0.225, 1.0),
+    "checkers_disc_ring": (0.640, 0.628, 0.572, 1.0),
+    "checkers_skin": (0.352, 0.248, 0.192, 1.0),
+    "checkers_grey": (0.372, 0.368, 0.352, 1.0),
+    "checkers_boot": (0.046, 0.043, 0.038, 1.0),
 }
 
 
@@ -842,6 +903,10 @@ class PedestrianBuilder:
             "park_chess_player": (
                 self.build_park_chess_player_body,
                 self.build_park_chess_player_details,
+            ),
+            "park_checkers_player": (
+                self.build_park_checkers_player_body,
+                self.build_park_checkers_player_details,
             ),
         }
         if self.spec.key not in builders:
@@ -3606,6 +3671,383 @@ class PedestrianBuilder:
             "spine", "surface_detail", "chess_crown_dark",
         )
 
+    def build_park_checkers_player_body(self) -> None:
+        """The same old man at the other table, under a draught.
+
+        Everything below the neck is the chess player's geometry to the
+        millimetre, and that is a requirement rather than a shortcut.
+        His arm angles are a coordinate-descent solve against two
+        measurements - an elbow on the board at `0.90` and a palm under
+        the cheek - and both tables draw the same board over the same
+        `0.54` plank. The solve therefore transfers exactly as long as
+        the shoulder, the upper arm, the hand and the skull it reaches
+        for are the same shapes in the same places. Change the coat and
+        the solve has to be reopened; keep it and this design gets a
+        fitted pose for free.
+
+        `CLO_CoatHem` is the one part it would be most tempting to
+        restyle and the one part that must not move: it rides the pelvis
+        and its underside is exactly what the `perch_seat_height_m`
+        validator measures down from, so it is the reason the runtime's
+        `0.0651` pelvis lift is shared too.
+
+        What changes is the read. Chess and draughts are played on one
+        board, so the check is spent - it says "board", and both men are
+        at one. What separates the games is the men, so both channels
+        are re-derived from the piece. The silhouette owns the first:
+        where the neighbour wears the tulle of a king, this one wears a
+        single thick draught. The cloth owns the second: circles, run on
+        the diagonal, in the neighbour's own light-square bone.
+
+        The tilt of the draught is a measurement, not a mood. Every
+        design is held to a `1.75 m` envelope to the last ten microns,
+        and a cap lying flat on a skull that stops at `1.640` cannot
+        reach it. So the draught is worn shoved back, and the angle is
+        whatever puts its raised edge on the ceiling: where the king's
+        cross takes the envelope standing straight up, the draught takes
+        it lying almost flat, spending the whole allowance sideways.
+        That is the silhouette inversion, and it also solves the fault
+        three review renders found on the chess player - a bowed head
+        with a wide brim in front of it - because a cap raked back off
+        the brow leaves the face open from the park approach.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.112), 12, 6),
+            "head", "body", "checkers_skin",
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between((0, -0.012, 1.318), (0, -0.022, 1.452), 0.064, 0.054, 10),
+            "neck", "body", "checkers_skin",
+        )
+        self.add_part(
+            "CLO_CoatChest",
+            make_tapered_box((0, 0.006, 1.080), (0, -0.004, 1.340), (0.400, 0.246, 0), (0.412, 0.258, 0)),
+            "chest", "body", "checkers_coat",
+        )
+        self.add_part(
+            "CLO_CoatWaist",
+            make_tapered_box((0, 0.010, 0.900), (0, 0.006, 1.090), (0.392, 0.248, 0), (0.402, 0.250, 0)),
+            "spine", "body", "checkers_coat",
+        )
+        self.add_part(
+            "CLO_CoatHem",
+            make_tapered_box((0, 0.012, 0.655), (0, 0.010, 0.910), (0.424, 0.272, 0), (0.396, 0.252, 0)),
+            "pelvis", "clothing", "checkers_coat_dark",
+        )
+        self.add_part(
+            "CLO_CoatYoke",
+            make_tapered_box((0, 0.002, 1.180), (0, -0.004, 1.325), (0.444, 0.278, 0), (0.408, 0.256, 0)),
+            "chest", "clothing", "checkers_coat_light",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.208, sign * -0.004, 1.292)
+            elbow = (sign * 0.470, -0.010, 1.175)
+            wrist = (sign * 0.680, -0.018, 1.075)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
+                f"upper_arm.{side}", "clothing", "checkers_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
+                f"forearm.{side}", "clothing", "checkers_coat",
+            )
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.632, -0.017, 1.096),
+                    (sign * 0.694, -0.019, 1.068),
+                    0.050, 0.045, 8,
+                ),
+                f"forearm.{side}", "clothing", "checkers_coat_dark",
+            )
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.722, -0.022, 1.048), (0.082, 0.068, 0.056)),
+                f"hand.{side}", "body", "checkers_skin",
+            )
+            self.add_part(
+                f"CLO_TrouserUpper.{side}",
+                make_frustum_between(
+                    (sign * 0.092, 0.006, 0.742),
+                    (sign * 0.103, -0.012, 0.358),
+                    0.084, 0.066, 8,
+                ),
+                f"thigh.{side}", "clothing", "checkers_trousers",
+            )
+            self.add_part(
+                f"CLO_TrouserLower.{side}",
+                make_frustum_between(
+                    (sign * 0.103, -0.012, 0.352),
+                    (sign * 0.112, -0.024, 0.128),
+                    0.070, 0.058, 8,
+                ),
+                f"shin.{side}", "clothing", "checkers_trousers",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.112, -0.086, 0.024),
+                    (sign * 0.112, -0.052, 0.140),
+                    (0.106, 0.264, 0),
+                    (0.094, 0.190, 0),
+                ),
+                f"foot.{side}", "body", "checkers_boot",
+            )
+            self.add_part(
+                f"GEO_BootSole.{side}",
+                make_box((sign * 0.112, -0.086, 0.012), (0.110, 0.272, 0.024)),
+                f"foot.{side}", "body", "sole",
+            )
+
+        # The draught. One piece, worn plate-flat and raked back off the
+        # brow, and it owns both the silhouette and the exact 1.75 m
+        # envelope the way the king's cross does next door.
+        #
+        # It is drawn as a turned edge rather than a plain disc, because
+        # a plain disc worn on a head is a beret and the whole first
+        # channel would be lost. The pale body is the piece; two dark
+        # lips stand proud of it around the rim and stop short of each
+        # other, so the pale body shows through between them as the
+        # groove every draught is turned with. `flatten` goes to 1.0 -
+        # the library default ovals a cross-section, which is right for
+        # a limb and wrong for something that has to read as round.
+        #
+        # The band is what makes it worn rather than balanced. The first
+        # review render had the draught alone on the skull and it read
+        # as a plate resting on the back of a head, because nothing
+        # joined the two. So the piece gets the same band the king's
+        # tulle has next door - pulled down over the brow, dark, cut to
+        # the skull - and the draught is the crown of a cap instead of
+        # an object sitting on hair.
+        self.add_part(
+            "CLO_DiscBand",
+            make_frustum_between(
+                (0, -0.030, 1.556), (0, -0.030, 1.618), 0.118, 0.114, 12,
+            ),
+            "head", "signature_silhouette", "checkers_disc_rim",
+        )
+        # The rake is not authored by eye. Given the radius of the piece
+        # and where it beds onto the band there is exactly one angle at
+        # which its raised edge lands on 1.750, and this is it.
+        #
+        # It is also centred over the skull rather than hung off the
+        # back of it, which the same render got wrong: shoved back far
+        # enough to clear the brow is right, shoved back far enough to
+        # leave the head is a hat falling off.
+        # Radius and rake are both set by the face, not by taste. A
+        # bench sitter's head is below the player's eye, so the player
+        # always looks down onto this piece, and the third review render
+        # showed a 0.39 m plate lying near-horizontal curtaining the
+        # whole face from the only angle the game ever offers. What
+        # governs that is the radius far more than the angle - the rake
+        # lifts the near edge a little, the radius decides how far it
+        # reaches out over the brow in the first place. So the draught
+        # came down to 0.30 m across and went back to 40 degrees, which
+        # puts its leading edge 29 mm forward of the brow and 147 mm
+        # above it: 79 degrees up from the eye's own forward line, and
+        # the face is open from every standing approach.
+        #
+        # It is still 2.6 times the width of the crown's band next door
+        # and still perfectly flat, so nothing is lost from the read the
+        # piece exists for.
+        disc_bottom = (-0.004, -0.024, 1.612904)
+        disc_top = (-0.00078, 0.00550, 1.648044)
+        disc_lip_low_high = (-0.00303, -0.01515, 1.623444)
+        disc_lip_high_low = (-0.00175, -0.00335, 1.637504)
+        self.add_part(
+            "CLO_DiscBody",
+            make_frustum_between(
+                disc_bottom, disc_top, 0.150, 0.150, 12, 1.0,
+            ),
+            "head", "signature_silhouette", "checkers_disc",
+        )
+        # Two dark lips around the rim that stop short of each other, so
+        # the pale body shows between them as the groove every draught
+        # is turned with. One part cheaper than drawing the groove, and
+        # it survives the downsample the way an inset line would not.
+        self.add_part(
+            "CLO_DiscRimLower",
+            make_frustum_between(
+                disc_bottom, disc_lip_low_high, 0.158, 0.158, 12, 1.0,
+            ),
+            "head", "signature_silhouette", "checkers_disc_rim",
+        )
+        # The upper lip caps the outermost, highest edge of the whole
+        # design. Its rim sits on 1.750 and nothing above it may be
+        # authored.
+        self.add_part(
+            "CLO_DiscRimUpper",
+            make_frustum_between(
+                disc_lip_high_low, disc_top, 0.158, 0.158, 12, 1.0,
+            ),
+            "head", "signature_silhouette", "checkers_disc_rim",
+        )
+        # The turned centre on the top face. Small, but it is the one
+        # mark that separates a draught from a plate at conversation
+        # distance, which is the only distance it is asked to work at.
+        self.add_part(
+            "ACC_DiscPip",
+            make_frustum_between(
+                (-0.00064, 0.00678, 1.649574),
+                (0.00020, 0.01448, 1.658744),
+                0.050, 0.045, 10, 1.0,
+            ),
+            "head", "signature_silhouette", "checkers_disc_ring",
+        )
+
+        # The same face, a few years and one habit apart: no moustache
+        # on this one, a week of grey stubble along the jaw instead, and
+        # a lighter brow. The eyes are drawn for the same reason as the
+        # neighbour's - this is a design the player walks up to.
+        self.add_part(
+            "ACC_Eye.L",
+            make_box((0.042, -0.108, 1.548), (0.030, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Eye.R",
+            make_box((-0.042, -0.108, 1.548), (0.030, 0.018, 0.012)),
+            "head", "face_detail", "void",
+        )
+        self.add_part(
+            "ACC_Brow",
+            make_box((0, -0.112, 1.568), (0.128, 0.020, 0.012)),
+            "head", "face_detail", "checkers_grey",
+        )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box((0, -0.126, 1.494), (0, -0.108, 1.534), (0.040, 0.046, 0), (0.028, 0.038, 0)),
+            "head", "face_detail", "checkers_skin",
+        )
+        self.add_part(
+            "ACC_Stubble",
+            make_tapered_box(
+                (0, -0.088, 1.442),
+                (0, -0.104, 1.492),
+                (0.132, 0.150, 0),
+                (0.152, 0.170, 0),
+            ),
+            "head", "face_detail", "checkers_grey",
+        )
+
+    def build_park_checkers_player_details(self) -> None:
+        """Circles on the diagonal, and the same tired coat.
+
+        The neighbour's check is a lattice of light squares standing
+        proud of dark cloth, drawn as separate parts for the reason the
+        table board is 64 boxes rather than a texture. This carries the
+        identical construction, the identical pitch and the identical
+        bone - and swaps the square for a circle and the lattice for a
+        diagonal.
+
+        Both halves of that swap are the game. A draught is round where
+        a chessman is turned and individual, and it only ever travels
+        the diagonal, on the dark squares alone. So a light circle
+        stepping down and inward says draughts as precisely as an
+        alternating square says board, and the two men can never be
+        mistaken for one another at any distance - while the shared bone
+        value keeps saying they are sitting at the same set.
+        """
+
+        self.add_part(
+            "CLO_ScarfLoop",
+            make_frustum_between((0, -0.008, 1.330), (0, -0.016, 1.406), 0.108, 0.098, 12),
+            "neck", "clothing", "checkers_spot_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_ScarfTail.{side}",
+                make_tapered_box(
+                    (sign * 0.052, -0.132, 1.010),
+                    (sign * 0.058, -0.146, 1.330),
+                    (0.086, 0.030, 0),
+                    (0.092, 0.032, 0),
+                ),
+                "chest", "clothing", "checkers_spot_dark",
+            )
+            self.add_part(
+                f"CLO_Lapel.{side}",
+                make_tapered_box(
+                    (sign * 0.088, -0.128, 1.086),
+                    (sign * 0.132, -0.136, 1.318),
+                    (0.076, 0.028, 0),
+                    (0.104, 0.030, 0),
+                ),
+                "chest", "clothing", "checkers_spot_dark",
+            )
+            # One on each lapel, where the neighbour carries one square,
+            # and deliberately off the tails' diagonal rather than on
+            # it: a second run up here crowds the first into a knot.
+            self.add_part(
+                f"ACC_LapelSpot.{side}",
+                make_frustum_between(
+                    (sign * 0.118, -0.144, 1.258),
+                    (sign * 0.118, -0.166, 1.258),
+                    0.020, 0.020, 10, 1.0,
+                ),
+                "chest", "surface_detail", "checkers_spot_light",
+            )
+
+        # Three circles per tail, stepping down and inward together. The
+        # circle is deliberately smaller than the neighbour's square
+        # even though the pitch is the same, and that is the one place
+        # the two patterns cannot be built alike: squares on a lattice
+        # tile, so they may touch and still read as a check, but circles
+        # at the same size touch and fuse into one chain of blobs. The
+        # first review render showed exactly that. A gap is what makes
+        # them count as separate men.
+        #
+        # The step across is smaller than the step down on purpose: a
+        # true 45 degrees walks the bottom circle off the edge of a
+        # 0.09 m tail, and a diagonal that leaves the cloth stops being
+        # a diagonal.
+        #
+        # And the run goes down and OUTWARD rather than down and inward,
+        # which the second review render settled. Mirrored inward runs
+        # meet at the sternum, and the six circles plus the lapels pile
+        # into one pale knot in the middle of the chest that reads as
+        # spillage. Opening them downward spreads the same six across
+        # the whole width of a folded man and lets each one be a piece.
+        spot_rows = (
+            (0.022, 1.278),
+            (0.054, 1.232),
+            (0.086, 1.186),
+        )
+        index = 0
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            for offset, height in spot_rows:
+                index += 1
+                self.add_part(
+                    f"ACC_ScarfSpot.{index:02d}",
+                    make_frustum_between(
+                        (sign * offset, -0.148, height),
+                        (sign * offset, -0.170, height),
+                        0.016, 0.016, 10, 1.0,
+                    ),
+                    "chest", "surface_detail", "checkers_spot_light",
+                )
+
+        self.add_part(
+            "ACC_CoatSeam",
+            make_box((0, -0.126, 0.902), (0.392, 0.014, 0.014)),
+            "spine", "surface_detail", "checkers_coat_dark",
+        )
+        self.add_part(
+            "ACC_CoatButton.01",
+            make_box((0.016, -0.130, 1.040), (0.024, 0.018, 0.026)),
+            "spine", "surface_detail", "checkers_disc_rim",
+        )
+        self.add_part(
+            "ACC_CoatButton.02",
+            make_box((0.016, -0.128, 0.944), (0.024, 0.018, 0.026)),
+            "spine", "surface_detail", "checkers_disc_rim",
+        )
+
     def build_weigh_attendant_body(self) -> None:
         """Tired industrial worker in a quilted jacket and a knit cap.
 
@@ -4010,11 +4452,17 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     # A-pose: the wheelchair rider would be standing through his own
     # chair and the chess player would be a man staring at nothing with
     # his arms out. Both are previewed in the stance they are built for.
+    # Keyed by archetype rather than by contract: `perch_seat_height_m`
+    # says a design is seated on world timber, not which posture it sits
+    # in, and the second bench sitter proved the difference the moment
+    # he existed.
     preview_pose = None
     if spec.wheel_radius_m is not None:
         preview_pose = pipeback_base_pose()
     elif spec.perch_seat_height_m is not None:
-        preview_pose = chess_player_base_pose()
+        preview_pose = PERCH_PREVIEW_POSES.get(
+            spec.key, chess_player_base_pose
+        )()
     posed_preview = preview_pose is not None
     perch_drop = 0.0
     if posed_preview:
@@ -4049,6 +4497,13 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         # library's standing camera looks down onto a crown and misses
         # both the face in the hands and the check on the scarf.
         "park_chess_player": (2.35, -3.90, 1.60),
+        # Deliberately the neighbour's camera, near enough to the metre.
+        # The first pass mirrored it to -X to look along the rake of the
+        # draught and put the model square in front of the key, which
+        # flattened every value and made a design that is meant to be
+        # judged beside the chess player impossible to compare with him.
+        # Same side, same height, same lens: the pair is the subject.
+        "park_checkers_player": (2.40, -3.88, 1.58),
     }.get(spec.key, (2.65, -4.40, 2.10))
     target = Vector((0, 0, 0.84 if posed_preview else 0.88))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
@@ -4339,6 +4794,30 @@ ACTION_SPECS = (
     ),
     ActionSpec(
         "ChessTrudge", "park_chess_player_v1", 1.5, 36,
+        "stooped old stance with both hands buried in the overcoat pockets",
+        "short flat park steps with the shoulders carried ahead of the hips",
+    ),
+    # The draughts player rides the chess player's posture exactly - the
+    # board, the plank and the skull are the same, so the solve is - but
+    # he cannot ride his clips. Clip names are the key of ACTION_BY_NAME
+    # and actions are handed to a design by `design_id`, so a shared
+    # name would either leave this archetype with nothing baked or
+    # overwrite the neighbour's entry. His own pair also earns something
+    # the sharing would have cost: the perch validator runs all 288
+    # frames against his meshes rather than somebody else's.
+    #
+    # The settle lands at a different point in the loop and breathes a
+    # little shallower. Two men under one lamp must not rise and fall
+    # together, and separate rhythms hold where a phase offset gives
+    # itself away to anyone who stands between them long enough.
+    ActionSpec(
+        "CheckersMull", "park_checkers_player_v1", 12.0, 288,
+        "perched on the bench plank, both elbows on the board rim, the head sunk into both hands",
+        "three shallow breaths carried by the ribs alone and one early settle",
+        seated=True,
+    ),
+    ActionSpec(
+        "CheckersTrudge", "park_checkers_player_v1", 1.5, 36,
         "stooped old stance with both hands buried in the overcoat pockets",
         "short flat park steps with the shoulders carried ahead of the hips",
     ),
@@ -4948,6 +5427,42 @@ def chess_player_stand_pose() -> dict[str, BonePose]:
         "shin.R": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
     }
+
+
+def checkers_player_base_pose() -> dict[str, BonePose]:
+    """The chess player's perch, unchanged, at the other table.
+
+    Deliberately not a second solve. The six arm angles it inherits were
+    converged by coordinate descent against an elbow on the board and a
+    palm under the cheek, and every quantity that solve depends on - the
+    board top at `0.90`, the plank at `0.54`, the shoulder, the length
+    of the upper arm and the skull the hand reaches for - is identical
+    at both tables and on both bodies, because the geometry was authored
+    identical for exactly this reason. Re-fitting it could only find the
+    same answer or a worse one.
+
+    The mirror the design asks for is the seat, not the skeleton: the
+    runtime sits him on the seat that is this one rotated 180 degrees
+    about the middle of the set, and that is what turns the two men to
+    face each other.
+    """
+
+    return chess_player_base_pose()
+
+
+def checkers_player_stand_pose() -> dict[str, BonePose]:
+    """The same stooped, hands-in-pockets stance the trudge is built on."""
+
+    return chess_player_stand_pose()
+
+
+# Which posture a perched design is previewed in. `perch_seat_height_m`
+# says a model is seated on world timber; it does not say how, and two
+# designs now declare it.
+PERCH_PREVIEW_POSES = {
+    "park_chess_player": chess_player_base_pose,
+    "park_checkers_player": checkers_player_base_pose,
+}
 
 
 def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
@@ -5973,6 +6488,53 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     chess_step_r = merge_pose(chess_stand, chess_trudge_legs(-1.0, 1.0))
     chess_step_pl = merge_pose(chess_stand, chess_trudge_legs(0.0, -0.4))
 
+    # The draughts player. Same posture, same two stances, own pair of
+    # clips - see ACTION_SPECS for why a shared clip name is not an
+    # option. What is authored differently is only the rhythm.
+    checkers = checkers_player_base_pose()
+    checkers_stand = checkers_player_stand_pose()
+
+    def checkers_breath(amount: float) -> dict[str, BonePose]:
+        """A shallower breath than the neighbour's, on the same bones.
+
+        The same rule and for the same reason: his hands hold his head,
+        so the skull rides chest -> neck -> head and both palms ride
+        chest -> clavicle -> arm, and keying the chest alone carries all
+        three as one piece. A breath on the neck would slide his face
+        out of his own palms once a lap.
+
+        Smaller than the chess player's because it has to be. His elbows
+        rest on the same fixed board, where a degree at the chest walks
+        them about five millimetres across the squares, and the wider
+        draught on his head magnifies every degree into a visible sweep.
+        """
+
+        return {
+            "spine": BonePose(rotation_degrees=(22.0 - 1.3 * amount, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(12.0 - 1.6 * amount, 0.0, 0.0)),
+        }
+
+    checkers_mull = checkers
+    checkers_mull_inhale = merge_pose(checkers, checkers_breath(1.0))
+    # The settle comes early rather than at the half, so the two loops
+    # never line up even where their periods do.
+    checkers_sink = merge_pose(checkers, {
+        "pelvis": BonePose(rotation_degrees=(9.0, 0.0, 0.0), location_m=(0, 0.004, -0.013)),
+        "spine": BonePose(rotation_degrees=(23.6, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(12.8, 0.0, 0.7)),
+        "thigh.R": BonePose(rotation_degrees=(-71.6, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(109.0, 0.0, 0.0)),
+    })
+    checkers_sink_inhale = merge_pose(checkers_sink, {
+        "spine": BonePose(rotation_degrees=(22.4, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(11.3, 0.0, 0.7)),
+    })
+
+    checkers_step_l = merge_pose(checkers_stand, chess_trudge_legs(1.0, 1.0))
+    checkers_step_pr = merge_pose(checkers_stand, chess_trudge_legs(0.0, -0.4))
+    checkers_step_r = merge_pose(checkers_stand, chess_trudge_legs(-1.0, 1.0))
+    checkers_step_pl = merge_pose(checkers_stand, chess_trudge_legs(0.0, -0.4))
+
     return {
         "ChessBrood": (
             (0.0, chess_brood),
@@ -5991,6 +6553,24 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.5, chess_step_r),
             (0.75, chess_step_pl),
             (1.0, chess_step_l),
+        ),
+        "CheckersMull": (
+            (0.0, checkers_mull),
+            (0.125, checkers_mull_inhale),
+            (0.25, checkers_sink),
+            (0.375, checkers_sink_inhale),
+            (0.5, checkers_mull),
+            (0.625, checkers_mull_inhale),
+            (0.75, checkers_mull),
+            (0.875, checkers_mull_inhale),
+            (1.0, checkers_mull),
+        ),
+        "CheckersTrudge": (
+            (0.0, checkers_step_l),
+            (0.25, checkers_step_pr),
+            (0.5, checkers_step_r),
+            (0.75, checkers_step_pl),
+            (1.0, checkers_step_l),
         ),
         "WatchmanWatch": (
             (0.0, watchman),

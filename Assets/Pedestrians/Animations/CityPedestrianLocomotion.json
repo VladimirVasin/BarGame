@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 28,
+  "clip_count": 30,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -593,7 +593,54 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "CheckersMull",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 12.0,
+      "frame_start": 0,
+      "frame_end": 288,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "perched on the bench plank, both elbows on the board rim, the head sunk into both hands",
+      "gait": "three shallow breaths carried by the ribs alone and one early settle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.538794,
+      "perch_seat_height_max_m": 0.539602,
+      "perch_pelvis_lift_m": 0.065095,
+      "perch_contact_parts": [
+        "GEO_BootSole.L"
+      ],
+      "seated_drop_m": 0.604698
+    },
+    {
+      "name": "CheckersTrudge",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 1.5,
+      "frame_start": 0,
+      "frame_end": 36,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "stooped old stance with both hands buried in the overcoat pockets",
+      "gait": "short flat park steps with the shoulders carried ahead of the hips",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "3373de1b35f49df14503d3c5c508f484ab82874c38b470c7713bc8ca4a4d6efc"
+  "build_signature": "7bbbc843b1c1fd0fa5b4aff7342d108aad412e33ba2200516b88775e16c093f5"
 }

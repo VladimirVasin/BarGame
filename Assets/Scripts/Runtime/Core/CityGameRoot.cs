@@ -65,6 +65,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public ParkCheckersPlayerPresentation ParkCheckersPlayer
+        {
+            get;
+            private set;
+        }
         public GameObject ParkChessLamp { get; private set; }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
@@ -414,18 +419,30 @@ namespace BarPromenade
                 transform,
                 LakeFishermanPlan.Create(World.LakePlan),
                 GameSessionState.CitySeed);
-            // The park kept a place for company and one man still keeps
-            // it: an old player at one of the two chess tables with his
-            // head in his hands and nobody across the board. He is
-            // raised before the bench interaction and the rest
-            // controller below, because both offer seats and his is
-            // claimed the moment he sits down.
+            // The park kept a place for company and two men still keep
+            // it: an old player at each of the two chess tables, on
+            // seats that are each other's rotated 180 degrees about the
+            // middle of the set, so the pair is turned toward one
+            // another with the whole set between them. One plays chess
+            // and one plays draughts, both have their heads in their
+            // hands, and neither has anybody across his own board — the
+            // two remaining planks stay unclaimed and sittable, which
+            // is the point of the place rather than an oversight.
+            //
+            // Both are raised before the bench interaction and the rest
+            // controller below, because both of those offer seats and
+            // these two are claimed the moment they sit down.
             ParkChessLamp = CityParkChessLampWorldBuilder.Build(
                 transform,
                 CityParkChessLampPlan.Create(Layout, World.DecorationPlan));
             ParkChessPlayer = ParkChessPlayerFactory.Create(
                 transform,
                 ParkChessPlayerPlan.Create(Layout, World.DecorationPlan));
+            ParkCheckersPlayer = ParkCheckersPlayerFactory.Create(
+                transform,
+                ParkCheckersPlayerPlan.Create(
+                    Layout,
+                    World.DecorationPlan));
             // Every authored seat is sittable in the bus ride's seated
             // pose: the bar-side yard bench faces the dead tree, the park,
             // point-of-interest and street-decoration seats face their

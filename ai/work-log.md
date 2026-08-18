@@ -6,6 +6,109 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — And somebody at the table next to him
+
+- Authored `park_checkers_player_v1`, the second man at the park chess set,
+  and seated him on `-seat-b2`. Of the four planks the recipe draws that is
+  the only one that is both at the other table and on the far side of it, so
+  the two men are turned toward one another with the whole set between them.
+  `-seat-b1` is the other table but the same side and the same direction,
+  which would seat them shoulder to shoulder; `-seat-a2` is the seat across
+  the old man's own board, which §10 forbids by name.
+- **The pair intensifies §10 rather than spending it.** Their two facings are
+  antiparallel and offset by the `3.70 m` between the tables, so each sits
+  about 59 degrees off the other's axis - in front of him, plainly, but never
+  looked at, and both are folded over their own boards anyway. The two
+  remaining planks stay unclaimed and sittable. Two old men turned to face
+  each other across four metres of lawn, each with an empty seat opposite,
+  not even playing the same game.
+- **Both channels had to be re-derived from the piece rather than the field.**
+  Chess and draughts share one board, so a check on the second man would say
+  "board" twice and separate nothing. The silhouette wears one thick draught
+  worn flat over a dark band; the cloth answers squares with circles run on
+  the diagonal, because that is the only line a draught travels. The circle is
+  smaller than the neighbour's square at the same pitch, and that is the one
+  place the two patterns cannot be built alike - squares on a lattice tile and
+  may touch, circles of the same size fuse into a chain of blobs, which the
+  first review render showed exactly.
+- **The rake of the draught is a measurement.** `CANONICAL_HEIGHT` is enforced
+  to ten microns, so a cap that merely sits lower than the neighbour's crown is
+  not available: a flat piece resting on a skull that stops at `1.640` cannot
+  reach `1.750`. It is therefore worn raked, at the one angle whose raised
+  edge lands on the ceiling. Where the king's cross takes the envelope standing
+  straight up, the draught takes it lying down, and the silhouette inverts on
+  axis and width instead of on height.
+- **What sets the radius is the face, not the read.** A bench sitter's head is
+  below the player's eye, so the player always looks down onto this piece, and
+  at `0.39 m` across it curtained the whole face from the only angle the game
+  offers. The radius governs that far more than the rake does - the rake lifts
+  the near edge, the radius decides how far it reaches out over the brow in the
+  first place. At `0.30 m` and 40 degrees the leading edge sits 29 mm forward of
+  the brow and 147 mm above it, and the face is open from every standing
+  approach. It is still 2.6 times the width of the crown's band next door.
+- **Everything below the neck is the chess player's geometry to the
+  millimetre**, which is a requirement rather than a saving: his six arm angles
+  are a coordinate-descent solve against an elbow on a board at `0.90` and a
+  palm under a cheek, and both tables draw the same board over the same plank,
+  so the solve transfers only while the coat, hips, legs and skull stay
+  identical. The build proved it rather than assuming it - the perch validator
+  reports the same `0.5388-0.5396 m` band, the same `0.0651 m` pelvis lift and
+  the same `GEO_BootSole.L` contact as its neighbour, on all 288 frames. Had
+  any of those moved, some part had been copied nearly rather than exactly.
+- **Own clips, not shared ones, and that is forced.** Actions are handed to a
+  design by `design_id` and `ACTION_BY_NAME` is keyed on the clip name alone,
+  so reusing `ChessBrood` would either leave the archetype with nothing baked
+  or overwrite the neighbour's entry. `CheckersMull` therefore earns its keep:
+  a shallower breath and the settle at a different point in the lap, so two men
+  under one lamp never rise and fall together, and the perch band is proved
+  against his own meshes rather than somebody else's.
+- The presentation and factory are deliberate near-copies rather than a shared
+  base. Every staged character owns its own passive quartet, `CityGameRoot`
+  types its property on the concrete presentation, and the two constants worth
+  sharing must not be: `PerchPelvisLiftMeters` and `FocusHeightMeters` are
+  measurements off one design's meshes and one design's pose, and a shared one
+  that drifted would fail no test - it would merely sink a man into his bench.
+  A third bench sitter is where the extraction earns itself.
+- Two generator faults the second design exposed and fixed: `render_preview`
+  hard-coded `chess_player_base_pose()` for any archetype declaring
+  `perch_seat_height_m`, so a second perched design would silently inherit the
+  wrong stance - it now dispatches per archetype; and the review camera was
+  first mirrored to the model's other side, which put it square in front of the
+  key light, flattened every value and made a design meant to be judged beside
+  the chess player impossible to compare with him. It now uses his camera.
+- No lamp work. `Lamp_BurnsOverTheMiddleOfTheSetAndNowhereElse` already pinned
+  both boards inside the lit circle, and a second burning lamp on that wire is
+  forbidden by §10; a new test pins that the second man is lit by the existing
+  one so no later move of the wire can light one and not the other.
+
+Verification:
+
+- The full deterministic art build across thirteen archetypes: repeated
+  signatures match, `park_checkers_player_v1` at 48 meshes and 1260 triangles
+  inside `(900, 2200)`, the `1.750` envelope exact, `perched CheckersMull:
+  seat 0.5388-0.5396 m over the soles, pelvis lift 0.0651 m, ground contact
+  GEO_BootSole.L`, and both new clips grounded against their own footwear.
+  The chess player's `build_signature` is byte-identical to HEAD and no other
+  manifest changed, so the shipped man did not regress.
+- `dotnet build` clean on `BarPromenade.Runtime` and
+  `BarPromenade.EditModeTests`; the staged prefab and provider rebuilt and
+  bound through the new menu item.
+- EditMode `19/19`: the four new `ParkCheckersPlayerTests` plus
+  `ParkChessPlayerTests`, `CityChessTableGeometryTests` and
+  `CityBenchRestTests` as regression. The load-bearing one is
+  `SeatClaims_TwoMenTakeTwoPlanksAndLeaveTwoFree` - both claims succeed,
+  neither can take the other's, and `-seat-a2` and `-seat-b1` are still drawn,
+  still unclaimed and still claimable by the hero.
+- Review renders: the archetype preview from his neighbour's camera, and a
+  temporary paired rig (scratch only, not committed) that seats both designs on
+  the real seat offsets with the drawn tables, boards and benches. From the
+  park approach and from the side the pair reads as a narrow vertical tower
+  against a wide flat circle, both folded over their own boards, both seats
+  opposite them visibly empty.
+- Not run, deliberately: PlayMode, the full EditMode suite and a player build.
+  The paired rig is a Blender approximation of the set, not the game's own
+  lighting; the in-engine day/night look of the pair is still worth a pass.
+
 ## 2026-08-18 — Somebody is still sitting at the chess tables
 
 - The park chess set has been drawn and sittable for a while with nobody on

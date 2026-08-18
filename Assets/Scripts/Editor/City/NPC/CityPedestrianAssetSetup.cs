@@ -60,6 +60,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Models/ParkChessPlayer3D.fbx";
         public const string ParkChessPlayerManifestPath =
             "Assets/Pedestrians/Staged/Models/ParkChessPlayer3D.json";
+        public const string ParkCheckersPlayerModelPath =
+            "Assets/Pedestrians/Staged/Models/ParkCheckersPlayer3D.fbx";
+        public const string ParkCheckersPlayerManifestPath =
+            "Assets/Pedestrians/Staged/Models/ParkCheckersPlayer3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/Models/PlayerCharacter3D.fbx";
         public const string AnimationPath =
@@ -106,6 +110,10 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/ParkChessPlayer3D.prefab";
         public const string ParkChessPlayerProviderPath =
             "Assets/Resources/City/ParkChessPlayerProvider.asset";
+        public const string ParkCheckersPlayerPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/ParkCheckersPlayer3D.prefab";
+        public const string ParkCheckersPlayerProviderPath =
+            "Assets/Resources/City/ParkCheckersPlayerProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -369,6 +377,28 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2100,
+                isStaged: true),
+            // The park checkers player: the second man at the same set,
+            // on the seat opposite-and-across from the chess player's.
+            // Staged the same way, and the second design whose idle is
+            // seated on world furniture, so his loop is proved against
+            // the same drawn bench rather than against the pavement.
+            // The clip durations and the triangle band below must stay
+            // equal to the ArchetypeSpec in the art generator;
+            // ValidateDescriptor fails on a drift.
+            new PedestrianDescriptor(
+                "Park Checkers Player",
+                "ParkCheckersPlayer3D",
+                "park_checkers_player_v1",
+                ParkCheckersPlayerModelPath,
+                ParkCheckersPlayerManifestPath,
+                ParkCheckersPlayerPrefabPath,
+                "CheckersMull",
+                "CheckersTrudge",
+                12f,
+                1.5f,
+                900,
+                2200,
                 isStaged: true)
         };
 
@@ -456,6 +486,14 @@ namespace BarPromenade.Editor
         {
             BuildParkChessPlayerOrThrow();
             Debug.Log("Staged Park Chess Player prefab rebuilt and bound.");
+        }
+
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Park Checkers Player")]
+        public static void RunParkCheckersPlayer()
+        {
+            BuildParkCheckersPlayerOrThrow();
+            Debug.Log("Staged Park Checkers Player prefab rebuilt and bound.");
         }
 
         /// <summary>
@@ -962,6 +1000,11 @@ namespace BarPromenade.Editor
                     string.Equals(
                         candidate.DesignId,
                         ParkChessPlayerProvider.DesignId,
+                        StringComparison.Ordinal)));
+                BindParkCheckersPlayerProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        ParkCheckersPlayerProvider.DesignId,
                         StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
@@ -1506,6 +1549,123 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "ParkChessPlayerProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
+        }
+
+        public static void BuildParkCheckersPlayerOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Park Checkers Player build requires its " +
+                    "model, manifest, locomotion library, production " +
+                    "Player model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    ParkCheckersPlayerProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindParkCheckersPlayerProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged park checkers player prefab into a build —
+        /// the automated binding the babushka pass established.
+        /// </summary>
+        private static void BindParkCheckersPlayerProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the park checkers player provider before " +
+                    "its prefab exists.");
+            }
+
+            ParkCheckersPlayerProvider provider =
+                AssetDatabase.LoadAssetAtPath<ParkCheckersPlayerProvider>(
+                    ParkCheckersPlayerProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(ParkCheckersPlayerProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<ParkCheckersPlayerProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    ParkCheckersPlayerProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "ParkCheckersPlayerProvider has no serialized " +
                     "'stagedPrefab' field.");
             }
 

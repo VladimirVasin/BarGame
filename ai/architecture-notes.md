@@ -552,6 +552,43 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moves the spine chain only, because both clavicles hang off the chest and a
   breath authored on them would open his two-handed grip on the rod once per
   lap.
+- **Accepted — the second bench sitter duplicates his neighbour's driver
+  rather than sharing one:** `ParkCheckersPlayer{Plan,Factory,Presentation}`
+  is a near-copy of the chess player's quartet, and that is chosen rather than
+  inherited. Every staged character in the library already owns its own
+  passive quartet, `ValidatePassivePresentation` alone is duplicated ten times,
+  and `CityGameRoot.ParkChessPlayer` is typed on the concrete presentation, so
+  extracting a base would edit a shipped, validated character for no
+  player-visible gain. The stronger reason is that the two numbers worth
+  sharing must not be: `PerchPelvisLiftMeters` and `FocusHeightMeters` are
+  measurements off one design's own meshes and one design's own pose, and a
+  shared constant that drifted would fail no test — it would merely sink a man
+  an inch into his bench. They come out equal here (`0.0651`) only because the
+  geometry below the neck was authored identical on purpose, and each file
+  names its own source for the value. **A third bench sitter is the point at
+  which the extraction earns itself; two is not.**
+- **Accepted — the draught takes the 1.75 m envelope lying down:** the
+  canonical height is enforced to ten microns on every archetype, so a hat
+  cannot simply be lower than the neighbour's to read as lower. The checkers
+  player's silhouette therefore inverts on axis and width rather than on
+  height: where the king's cross reaches the ceiling standing straight up, one
+  thick draught reaches it raked back, spending the whole allowance sideways.
+  Its rake is a derived quantity — given the radius and where the piece beds on
+  its band there is exactly one angle whose raised edge lands on `1.750`. What
+  actually sets the radius is the face, not the read: a bench sitter's head is
+  below the player's eye, so a wide plate lying near-horizontal curtains the
+  face from the only angle the game offers, and three review renders were spent
+  discovering that the radius governs that far more than the rake does.
+- **Accepted — two loops on one bench differ in rhythm, not only in phase:**
+  the two men are seen together from the park approach, and a phase offset on
+  one shared clip gives itself away to anyone who stands between them long
+  enough. `CheckersMull` is therefore its own authored clip with a shallower
+  breath and its settle at a different point in the lap. This is also forced
+  rather than merely preferred: actions are handed to a design by `design_id`
+  and `ACTION_BY_NAME` is keyed on the clip name alone, so a shared name would
+  either leave the new archetype with nothing baked or overwrite its
+  neighbour's entry. The cost is paid back — the perch validator now proves all
+  288 frames against this design's own meshes instead of somebody else's.
 - **Accepted — a bench sitter is proved against its seat, not against the
   pavement or a cabin:** the park chess player is the art library's first
   design whose idle is seated on world furniture, and neither existing

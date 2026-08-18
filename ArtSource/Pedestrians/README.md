@@ -65,6 +65,30 @@ library:
   follow a knee, and this design spends its life with both knees folded. He is
   the first design to declare `perch_seat_height_m`, and both his loops are
   reviewed in the seated stance rather than in the bind A-pose;
+- `Blender/ParkCheckersPlayer3D.blend`: **Park Checkers Player**
+  (`park_checkers_player_v1`), the second man at the same set, on the seat
+  that is his neighbour's rotated 180 degrees about the middle of it.
+  Everything below the neck is the chess player's geometry to the millimetre,
+  and that is a requirement rather than a saving: his six arm angles are a
+  solve against an elbow on a board at `0.90` and a palm under a cheek, and
+  both tables draw the same board over the same plank, so the solve transfers
+  only while the coat, the hips, the legs and the skull stay identical. What
+  changes is the read, and both channels are re-derived from the piece because
+  chess and draughts share one board — a check would say "board" twice and
+  distinguish nothing. The silhouette wears one thick draught, worn flat and
+  raked back over a dark band, with two dark rim lips that stop short of each
+  other so the pale body shows between them as a turned groove, and a turned
+  centre on the face. Its rake is derived, not chosen: given the radius and
+  where the piece beds on the band there is exactly one angle whose raised
+  edge lands on the canonical `1.750`, so where the king's cross takes the
+  envelope standing up, the draught takes it lying down. The radius is set by
+  the face rather than by the read — a bench sitter's head is below the
+  player's eye, and a wider plate curtains him from the only angle the game
+  offers. The cloth answers squares with circles run on the diagonal, on the
+  same lattice and in the same cold bone, and the circle is smaller than the
+  neighbour's square on purpose: squares tile and may touch, circles of the
+  same size fuse into a chain of blobs. His coat takes the park's sandy
+  grey-brown where the neighbour took its black-green;
 - `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
   `PipebackIdle` keeps the head level over a slow body breath that pumps the
   bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
@@ -97,14 +121,18 @@ Each model has an adjacent deterministic review PNG.
 `Blender/CityPedestrianLocomotionContactSheet.png` shows, left to right, Idle
 and two opposite locomotion phases, with one row per authored design:
 Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
-designs, ending with the Park Chess Player. The sheet grows a row automatically when an authored design is
+designs, ending with the Park Chess Player and the Park Checkers Player. The
+sheet grows a row automatically when an authored design is
 added; appearing here does not register a staged design with the runtime pool.
 
-Two designs are previewed posed rather than in the bind A-pose, because their
+Three designs are previewed posed rather than in the bind A-pose, because their
 whole content is a posture: the Pipeback Roller, who would otherwise stand
-through his own chair, and the Park Chess Player, who would otherwise be a man
-staring at nothing with his arms out. A perched design is additionally set down
-onto the review floor, since in the world it is a bench that carries him.
+through his own chair, and the two park board players, who would otherwise be
+men staring at nothing with their arms out. A perched design is additionally
+set down onto the review floor, since in the world it is a bench that carries
+him. The posture a perched design is previewed in is looked up per archetype
+rather than assumed from the contract — `perch_seat_height_m` says a model sits
+on world timber, not how, and there is more than one of them now.
 
 Rebuild from the repository root with Blender 5:
 
@@ -142,9 +170,11 @@ The staged Lake Fisherman takes the same separate branch:
 - `Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab`, bound into
   `Assets/Resources/City/LakeFishermanProvider.asset`.
 
-So does the staged Park Chess Player, into
-`Assets/Resources/City/ParkChessPlayerProvider.asset`. His manifest carries one
-field no other design has, `perch_seat_height_m`. A bench sitter is neither
+So do the staged Park Chess Player and Park Checkers Player, into
+`Assets/Resources/City/ParkChessPlayerProvider.asset` and
+`Assets/Resources/City/ParkCheckersPlayerProvider.asset`. Their manifests carry
+one field no other design has, `perch_seat_height_m`, and carry the same band —
+they sit at one set, on planks the same recipe draws at the same height. A bench sitter is neither
 sole-grounded — his hips are higher than his boots — nor cabin-seated, since a
 park bench has no roof to measure headroom against, so what the build proves
 instead is the distance from the underside of his hips to his soles: it has to
