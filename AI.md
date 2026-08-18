@@ -311,6 +311,19 @@ at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,
 `GameTimeRuntime.cs` and `GameTimeDayNightRules.cs`.
 
+The park chess set carries real men. Seven authored meshes from
+`tools/build-city-chess-set-3d-model.py` — six turned chess pieces and a
+draught, all sized from the drawn `0.15 m` square — are combined into four
+meshes for `56` men across the two boards: a full chess opening on one table
+and `24` draughts on the other. The placement is a checked contract rather
+than dressing (`a1` dark, a light square in each player's near-right corner,
+queen on her own colour, `RNBQKBNR`, knights facing the opponent, draughts on
+dark squares only), and correcting it also corrected the drawn board, which
+had put a dark square on both players' right for as long as it was empty.
+Nothing ever moves a piece: both games are set up and unstarted, which is an
+accepted exception to the art bible's ban on pieces, recorded in
+`ai/architecture-notes.md`.
+
 Runtime support diagnostics are written as bounded NDJSON through
 `Assets/Scripts/Runtime/Diagnostics/`; see `ai/debug-log.md` for profiles,
 paths and event boundaries.

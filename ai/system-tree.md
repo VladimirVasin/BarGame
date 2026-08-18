@@ -147,6 +147,10 @@ Assets/
       Models/
         CityBusDriver3D.fbx             exact 31-bone low-poly production driver
         CityBusDriver3D.json            deterministic parts/rig/bindings manifest
+  City/
+    Models/
+      CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
+      CityChessSet3D.json               deterministic heights/footprints manifest
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -524,11 +528,13 @@ ArtSource/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
   City/
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
+    Blender/                     generated park chess-set .blend and the six-silhouette review row
   Home/                          apartment albedo contract, manifest and contact sheet
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
+  build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling

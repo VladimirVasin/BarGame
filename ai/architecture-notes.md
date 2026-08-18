@@ -612,6 +612,57 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seated contract and lost it when he was authored standing, on the rule that
   an unused declared contract is worse than none. This one is used by the only
   design that declares it and is read by the runtime that seats him.
+- **Accepted architecture exception — there are pieces on the boards, and
+  they are in the starting position:** `ai/city-zones-art-bible.md` §10 listed
+  «фигуры на досках» among the things the chess set may not have, next to a
+  second player and a third sitter. The reasoning was sound and is preserved:
+  a position mid-game states that somebody opposite is moving, which is the
+  one thing the whole precinct is built to deny. Both sets are therefore laid
+  out untouched, and no runtime path moves a man. The result sharpens the
+  emptiness rather than spending it — the plank opposite each of them stops
+  being a table nobody plays at and becomes a game nobody started. What the
+  ban was actually protecting is now stated positively in the bible: no
+  position but the opening, no captured men beside the board, no clock, no
+  scoresheet, and no draughts king, because a king is evidence of a game.
+- **Accepted — the drawn board's dark parity is derived from the seats, not
+  chosen:** both planks face along the chess recipe's `+Forward` and
+  `Tangent = (-Forward.z, 0, Forward.x)` runs to the left of anyone facing
+  that way, so the near player's right-hand corner is `(file 0, rank 0)` and
+  the far player's is `(7, 7)`. A board is correct only when both are light,
+  and on an even board a half turn maps corner to corner, so the two share a
+  parity and one rule settles both: the dark squares are the odd ones. That
+  is also what puts `a1` dark and the white queen on a light `d1`. The recipe
+  originally drew the even parity, which is a board that fails at a glance to
+  anybody who plays — and which was invisible for exactly as long as the
+  boards were empty. `CityChessBoardGeometry` now owns the rule and the five
+  numbers the lattice and the men both need; two copies of `0.15` in two
+  files is how a set ends up half a square off its own squares.
+- **Accepted — the chess set is imported geometry, and the knight is why:**
+  everything else this city draws is a box or a stack of them, and a turned
+  chess piece could have been stacked cylinders. A knight cannot. Its whole
+  job is to be told apart from a bishop at four metres, and it is a drawn
+  profile: chest, throat, jaw, nose, the stop under the brow, forehead, poll,
+  crest and mane, extruded across four slices with the outer two scaled in.
+  The first attempt built it from five rotated boxes and rendered as a flag
+  on a pole. Since one design already had to be authored, all seven are,
+  which also buys a single triangle budget, a single height-ladder validator
+  and one review render where the six silhouettes are checked side by side.
+  The runtime cost is nil: `RuntimePrimitiveFactory.CreateCombinedMeshes`
+  bakes `56` men into four meshes on the same world-UV contract the box
+  batches use.
+- **Accepted — the men are imported through a mesh provider rather than a
+  prefab, and that is what forces three non-default import settings:** every
+  other model in the project instantiates its imported hierarchy, and that
+  hierarchy quietly carries two corrections — a `scale = 100` root and the
+  Z-up-to-Y-up rotation. Fifty-six GameObjects on a park table is not a thing
+  to do, so the meshes are used bare and both corrections have to be baked
+  into the file instead: `apply_scale_options="FBX_SCALE_ALL"` and
+  `bake_space_transform=True` on export. The third is `isReadable = true` on
+  the importer, because `Mesh.CombineMeshes` reads vertices at runtime and an
+  unreadable source combines into nothing — silently, in a player build, on a
+  board that comes up empty. All three fail invisibly: the model preview
+  looks perfect either way, which is why the editor validator asserts imported
+  height, origin and readability rather than trusting the art manifest.
 - **Accepted — the quarrel's shout is an authored clip, not a procedural bone
   overlay:** the project has both idioms. Every stationary NPC beat
   (`WatchmanWatch`, `MournerMourn`, `BabushkaBeat`, `WeigherCheck`) is a baked

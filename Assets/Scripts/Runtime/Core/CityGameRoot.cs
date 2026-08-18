@@ -87,6 +87,16 @@ namespace BarPromenade
             get;
             private set;
         }
+
+        /// <summary>
+        /// The men on the two boards, or <c>null</c> when the park grew
+        /// no chess set or the art has not been imported.
+        /// </summary>
+        public GameObject ParkChessSetMen
+        {
+            get;
+            private set;
+        }
         public GameObject ParkChessLamp { get; private set; }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
@@ -452,6 +462,13 @@ namespace BarPromenade
             ParkChessLamp = CityParkChessLampWorldBuilder.Build(
                 transform,
                 CityParkChessLampPlan.Create(Layout, World.DecorationPlan));
+            // Both boards are set up and neither game has been started.
+            // Fifty-six men, four combined meshes, nothing that moves.
+            ParkChessSetMen = CityChessSetWorldBuilder.Build(
+                transform,
+                Layout,
+                World.DecorationPlan,
+                GameSessionState.CitySeed);
             ParkChessPlayer = ParkChessPlayerFactory.Create(
                 transform,
                 ParkChessPlayerPlan.Create(Layout, World.DecorationPlan));

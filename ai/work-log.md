@@ -6,6 +6,67 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — Both boards get their men
+
+- Authored `tools/build-city-chess-set-3d-model.py`: six turned chess pieces
+  and a draught, `1910` triangles for the lot, every dimension a fraction of
+  the drawn `0.15 m` square. The runtime places `56` of them across the two
+  park boards as four combined meshes.
+- **The board's colouring was wrong and it took men on it to notice.** Both
+  planks face along the recipe's `+Forward`, and `Tangent = (-Forward.z, 0,
+  Forward.x)` runs to the left of anyone facing that way, so each man's
+  near-right corner is `(0,0)` or `(7,7)`. Both must be light and both were
+  dark. The dark parity is now the odd one, which also puts `a1` dark and the
+  white queen on a light `d1`. `CityChessBoardGeometry` owns that rule and the
+  five numbers the men and the lattice both need; the recipe aliases them, so
+  a set can never end up half a square off its own squares.
+- **This overrides a documented art rule and the rule was right to exist.**
+  `ai/city-zones-art-bible.md` §10 banned pieces on the boards, on the sound
+  reasoning that a position mid-game implies somebody opposite is moving.
+  Both sets are therefore laid out in the *starting* position and nothing in
+  the runtime ever moves one. That reads as a sharper version of the same
+  idea rather than a softer one: the empty plank opposite is no longer a
+  table nobody plays at, it is a game nobody started. The ban is replaced in
+  the bible by what it was actually protecting — no other position, no
+  captured men beside the board, no clock, no scoresheet, and no draughts
+  king, since a king means a game was played.
+- The knight is the whole reason this is an FBX rather than boxes. The first
+  attempt stacked five rotated boxes and rendered as a flag on a pole; the
+  second draws the head and neck as one closed profile — chest, throat, jaw,
+  nose, the stop under the brow, forehead, poll, crest, mane — and extrudes
+  it across four slices with the outer two scaled `0.88` so it is a solid
+  rather than a card. Two ears set the height. A horse is a line, and a line
+  has to be drawn rather than stacked.
+- Three exporter defaults had to be beaten, and all three hide behind the
+  imported hierarchy that every other model in this project instantiates:
+  `apply_scale_options="FBX_SCALE_ALL"` keeps the metre-to-FBX factor out of
+  a `scale = 100` root, `bake_space_transform=True` bakes Z-up-to-Y-up into
+  the vertices instead of onto that root's rotation, and `isReadable = true`
+  on the importer, because `Mesh.CombineMeshes` reads vertices at runtime and
+  an unreadable source combines into nothing — silently, in a player build,
+  on a board that simply comes up empty. Without the first two the meshes
+  arrive a hundredth of their size and lying on their backs while the model
+  preview still looks perfect.
+- `RuntimePrimitiveFactory` grew `CreateCombinedMeshes`: the same world-UV
+  and batching contract the box helpers have, for authored meshes. It is the
+  first geometry in this city that is not a box.
+- The men take the board's own timber sheet, pushed apart from the two square
+  tints — brighter than the light inlay, darker than the dark one — and
+  unlike the flat board batch they cast and receive shadows, which is what
+  separates a light man standing on a light square.
+- Verification: `blender --background --factory-startup --python
+  tools/build-city-chess-set-3d-model.py` (the validator reports every
+  contract breach at once, since tuning a turning is a loop); `dotnet build`
+  on the Editor project; `Unity.exe -batchmode -executeMethod
+  CityChessSetAssetSetup.Run`; EditMode selection
+  `CityChessSetTests|CityChessTableGeometryTests|ParkChessPlayerTests|ParkCheckersPlayerTests|CityParkSurfaceAppearanceTests`
+  — 57/57. Then a throwaway edit-mode capture of the real generated city from
+  the empty plank opposite each man, which is the one place the player is
+  invited to sit: the back rank reads rook-knight-bishop-king-queen-bishop-
+  knight-rook left to right from that side, the queens are on their own
+  colours, every draught is on a dark square, and neither old man's forearms
+  pass through his own back rank.
+
 ## 2026-08-18 — The two of them cannot stand each other
 
 - Gave the park chess set its argument. `CityParkQuarrelController` polls the

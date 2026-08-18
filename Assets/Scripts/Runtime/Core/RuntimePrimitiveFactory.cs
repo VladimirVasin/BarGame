@@ -68,6 +68,41 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>
+    /// One authored mesh placed into a combined batch. The box helpers
+    /// below cover everything this city is made of except the handful of
+    /// props whose shape a box cannot state — a knight is the first of
+    /// them — and those arrive as imported meshes that still have to
+    /// reach the batcher as one draw call.
+    /// </summary>
+    public readonly struct RuntimeMeshPlacement
+    {
+        public RuntimeMeshPlacement(
+            Mesh mesh,
+            Vector3 center,
+            Quaternion rotation)
+            : this(mesh, center, rotation, Vector3.one)
+        {
+        }
+
+        public RuntimeMeshPlacement(
+            Mesh mesh,
+            Vector3 center,
+            Quaternion rotation,
+            Vector3 scale)
+        {
+            Mesh = mesh;
+            Center = center;
+            Rotation = rotation;
+            Scale = scale;
+        }
+
+        public Mesh Mesh { get; }
+        public Vector3 Center { get; }
+        public Quaternion Rotation { get; }
+        public Vector3 Scale { get; }
+    }
+
     public static class RuntimePrimitiveFactory
     {
         private const int LowPolyCylinderSides = 8;
@@ -368,6 +403,119 @@ namespace BarPromenade
                 collider,
                 worldUvTileSize,
                 uvMode);
+        }
+
+        /// <summary>
+        /// Bakes a set of imported meshes into one mesh under one
+        /// renderer, on the same world-UV contract the box batches use.
+        /// The sources are shared assets and are never modified.
+        /// </summary>
+        public static GameObject CreateCombinedMeshes(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeMeshPlacement> placements,
+            Color color,
+            bool collider = false,
+            float? worldUvTileSize = null,
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
+            Vector3 worldUvOrigin = default)
+        {
+            if (placements == null)
+            {
+                throw new ArgumentNullException(nameof(placements));
+            }
+
+            if (placements.Count == 0)
+            {
+                throw new ArgumentException(
+                    "At least one mesh placement is required.",
+                    nameof(placements));
+            }
+
+            if (worldUvTileSize.HasValue &&
+                !IsPositiveFinite(worldUvTileSize.Value))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(worldUvTileSize));
+            }
+
+            var combine = new CombineInstance[placements.Count];
+            long vertexBudget = 0;
+            for (int index = 0; index < placements.Count; index++)
+            {
+                RuntimeMeshPlacement placement = placements[index];
+                if (placement.Mesh == null)
+                {
+                    throw new ArgumentException(
+                        "A mesh placement has no source mesh.",
+                        nameof(placements));
+                }
+
+                if (!IsFinite(placement.Center) ||
+                    !IsFinite(placement.Rotation) ||
+                    !IsPositiveFinite(placement.Scale))
+                {
+                    throw new ArgumentException(
+                        "Combined meshes require finite transforms and " +
+                        "positive scales.",
+                        nameof(placements));
+                }
+
+                vertexBudget += placement.Mesh.vertexCount;
+                combine[index] = new CombineInstance
+                {
+                    mesh = placement.Mesh,
+                    transform = Matrix4x4.TRS(
+                        placement.Center,
+                        placement.Rotation,
+                        placement.Scale)
+                };
+            }
+
+            GameObject result = CreatePrimitive(
+                PrimitiveType.Cube,
+                name,
+                parent,
+                Vector3.zero,
+                Vector3.one,
+                color,
+                false,
+                null);
+            MeshFilter meshFilter = result.GetComponent<MeshFilter>();
+            var combinedMesh = new Mesh
+            {
+                name = $"{name} Combined Mesh",
+                hideFlags = HideFlags.HideAndDontSave,
+                indexFormat = vertexBudget > ushort.MaxValue
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            combinedMesh.CombineMeshes(
+                combine,
+                true,
+                true,
+                false);
+            if (worldUvTileSize.HasValue)
+            {
+                ApplyWorldUvs(
+                    combinedMesh,
+                    worldUvTileSize.Value,
+                    uvMode,
+                    worldUvOrigin);
+            }
+
+            combinedMesh.RecalculateBounds();
+            meshFilter.sharedMesh = combinedMesh;
+            result.AddComponent<RuntimeGeneratedMeshOwner>()
+                .Initialize(combinedMesh);
+            if (collider)
+            {
+                result.AddComponent<MeshCollider>().sharedMesh =
+                    combinedMesh;
+            }
+
+            combinedMesh.UploadMeshData(!collider);
+            return result;
         }
 
         private static GameObject CreateCombinedBoxes(

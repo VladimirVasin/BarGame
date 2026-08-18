@@ -433,7 +433,11 @@ namespace BarPromenade
         private const float CouchSeatThickness = 0.42f;
         private const float CouchWidth = 2.20f;
         private const float CouchDepth = 0.92f;
-        private const float ChessTableOffset = 1.85f;
+        // The five numbers a man standing on this board also has to know
+        // are owned by CityChessBoardGeometry and aliased here, so the
+        // drawn lattice and the set on it cannot drift apart.
+        private const float ChessTableOffset =
+            CityChessBoardGeometry.TableOffsetMeters;
         // How far a chess foot is sunk past the grass it stands on, so
         // the join reads as a footing bedded into the lawn rather than
         // a box resting on a surface it only touches at one point.
@@ -444,14 +448,19 @@ namespace BarPromenade
         private const float ChessPedestalTopY = 0.80f;
         private const float ChessSlabSize = 1.44f;
         private const float ChessSlabThickness = 0.14f;
-        private const float ChessTableTopY = 0.90f;
-        private const int ChessSquaresPerSide = 8;
-        private const float ChessSquareSize = 0.15f;
+        private const float ChessTableTopY =
+            CityChessBoardGeometry.TableTopY;
+        private const int ChessSquaresPerSide =
+            CityChessBoardGeometry.SquaresPerSide;
+        private const float ChessSquareSize =
+            CityChessBoardGeometry.SquareSizeMeters;
         private const float ChessFieldSize =
-            ChessSquareSize * ChessSquaresPerSide;
-        private const float ChessLightTopY = ChessTableTopY + 0.035f;
+            CityChessBoardGeometry.FieldSizeMeters;
+        private const float ChessLightTopY =
+            CityChessBoardGeometry.LightTopY;
         private const float ChessSquareSink = 0.012f;
-        private const float ChessSquareProud = 0.005f;
+        private const float ChessSquareProud =
+            CityChessBoardGeometry.DarkSquareProudMeters;
         private const float ChessRimWidth = 0.07f;
         private const float ChessRimTopY = ChessLightTopY + 0.018f;
         private const float ChessBenchSeatCenterY = 0.46f;
@@ -1296,6 +1305,20 @@ namespace BarPromenade
         /// a real board's colouring, a1 dark and h1 light, inside a rim
         /// that stops the outer rank bleeding into the stone.
         ///
+        /// Which parity is dark is not free, and it is decided by the
+        /// planks rather than by taste. Both seats face along the
+        /// recipe's forward axis, `Tangent` runs to the left of anyone
+        /// facing `+Forward`, and a board is correct only when each
+        /// player has a light square in his near-right corner. That
+        /// corner is `(file 0, rank 0)` for the man on the near plank
+        /// and `(7, 7)` for the man opposite — the same parity, because
+        /// an even board maps corner to corner under a half turn. So the
+        /// dark squares are the odd ones, which also puts `a1` (the far
+        /// file on his left) dark and the white queen on `d1` light.
+        /// Drawing the even parity instead is a board that fails at a
+        /// glance to anybody who plays, and it was invisible only while
+        /// the boards were empty.
+        ///
         /// The light half is one plate; the dark squares are set into it
         /// and stand a few millimetres proud, which keeps the two planes
         /// out of a depth fight and gives the inlay the shallow lip real
@@ -1315,7 +1338,7 @@ namespace BarPromenade
             {
                 for (int rank = 0; rank < ChessSquaresPerSide; rank++)
                 {
-                    if (((file + rank) & 1) != 0)
+                    if (!CityChessBoardGeometry.IsDarkSquare(file, rank))
                     {
                         continue;
                     }

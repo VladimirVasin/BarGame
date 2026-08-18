@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e55a3b6166501b469ad324fe7ddb1cb, type: 3}
+  m_Name: CityChessSetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityChessSetProvider
+  pawn: {fileID: -3106523366022815247, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  rook: {fileID: -5061664187516273469, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  knight: {fileID: 8432114177796286538, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  bishop: {fileID: -8426712764268489635, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  queen: {fileID: 8205516438096155613, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  king: {fileID: -7228961151371064467, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  draught: {fileID: -1596374389320072889, guid: 77b23104260d1ff468a28a50ce27a3b0, type: 3}
+  buildSignature: 5d076d58fda875359748cd45fffc685c35de8f776841634f91bd6ef48a6157b3

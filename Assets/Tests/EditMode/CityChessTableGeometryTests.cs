@@ -81,9 +81,9 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// The board is a board. Thirty-two dark squares per table, on
-        /// the lattice, in the colouring a real set has: the corner
-        /// square of the near-left file is dark, and no two dark squares
-        /// touch along an edge.
+        /// the lattice, in the colouring a real set has: a light square
+        /// in the near-right corner of each of the two occupied planks,
+        /// and no two dark squares touching along an edge.
         /// </summary>
         [Test]
         public void EachBoard_LaysThirtyTwoDarkSquaresOnTheLattice()
@@ -132,9 +132,12 @@ namespace BarPromenade.Tests.EditMode
                         $"Two dark squares share {cell}.");
                     Assert.That(
                         (cell.x + cell.y) % 2,
-                        Is.EqualTo(0),
-                        $"{cell} breaks the alternation: a1 is dark, so " +
-                        "every dark square has an even file-plus-rank.");
+                        Is.EqualTo(1),
+                        $"{cell} breaks the alternation. The dark parity " +
+                        "is the odd one, because both planks face along " +
+                        "+Forward with the tangent to their left, so each " +
+                        "man's near-right corner is (0,0) or (7,7) and " +
+                        "both have to be light.");
                 }
 
                 Assert.That(

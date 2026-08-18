@@ -1,0 +1,76 @@
+{
+  "generator": "tools/build-city-chess-set-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "city_chess_set_v1",
+  "display_name": "Park Chess Set Men",
+  "square_size_m": 0.15,
+  "radial_segments": 10,
+  "triangle_count": 1978,
+  "pieces": [
+    {
+      "key": "pawn",
+      "mesh": "GEO_Pawn",
+      "display_name": "Pawn",
+      "height_m": 0.108,
+      "radius_m": 0.0435,
+      "triangle_count": 240,
+      "directional": false
+    },
+    {
+      "key": "rook",
+      "mesh": "GEO_Rook",
+      "display_name": "Rook",
+      "height_m": 0.126,
+      "radius_m": 0.0495,
+      "triangle_count": 208,
+      "directional": false
+    },
+    {
+      "key": "knight",
+      "mesh": "GEO_Knight",
+      "display_name": "Knight",
+      "height_m": 0.150272,
+      "radius_m": 0.04863,
+      "triangle_count": 260,
+      "directional": true
+    },
+    {
+      "key": "bishop",
+      "mesh": "GEO_Bishop",
+      "display_name": "Bishop",
+      "height_m": 0.17205,
+      "radius_m": 0.04695,
+      "triangle_count": 320,
+      "directional": false
+    },
+    {
+      "key": "queen",
+      "mesh": "GEO_Queen",
+      "display_name": "Queen",
+      "height_m": 0.19395,
+      "radius_m": 0.051,
+      "triangle_count": 446,
+      "directional": false
+    },
+    {
+      "key": "king",
+      "mesh": "GEO_King",
+      "display_name": "King",
+      "height_m": 0.21525,
+      "radius_m": 0.0525,
+      "triangle_count": 344,
+      "directional": false
+    },
+    {
+      "key": "draught",
+      "mesh": "GEO_Draught",
+      "display_name": "Draught",
+      "height_m": 0.0228,
+      "radius_m": 0.05505,
+      "triangle_count": 160,
+      "directional": false
+    }
+  ],
+  "build_signature": "5d076d58fda875359748cd45fffc685c35de8f776841634f91bd6ef48a6157b3"
+}
