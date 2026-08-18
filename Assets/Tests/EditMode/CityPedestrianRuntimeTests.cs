@@ -29,8 +29,10 @@ namespace BarPromenade.Tests.EditMode
             "pipeback_roller_v1";
         // The Pipeback Roller, the Yard Babushka, the Weigh Attendant,
         // the Cemetery Mourner, the Cemetery Watchman and the Lake
-        // Fisherman contribute two staged loops each.
-        private const int StagedLocomotionClipCount = 12;
+        // Fisherman contribute two staged loops each. The two park
+        // players carry three: an idle, a trudge held for a later pass,
+        // and the authored shout they throw at each other.
+        private const int StagedLocomotionClipCount = (6 * 2) + (2 * 3);
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -167,6 +169,12 @@ namespace BarPromenade.Tests.EditMode
                     "WatchmanShuffle",
                     "FishermanLean",
                     "FishermanTrudge",
+                    "ChessBrood",
+                    "ChessTrudge",
+                    "ChessJeer",
+                    "CheckersMull",
+                    "CheckersTrudge",
+                    "CheckersJeer",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",

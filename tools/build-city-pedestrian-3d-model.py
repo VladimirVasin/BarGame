@@ -96,6 +96,11 @@ class ArchetypeSpec:
     # A design that declares this leaves `seated_clearance_m` unset, and vice
     # versa.
     perch_seat_height_m: tuple[float, float] | None = None
+    # Optional single authored beat that is neither locomotion nor a ride: a
+    # thing this design does, once, on top of its idle. The runtime blends it
+    # over the idle on a two-input mixer, so the clip has to open and close on
+    # the idle's own base pose or the seam shows.
+    action_clip: str | None = None
     # A wheelchair stays grounded on its tyres rather than on the rider's
     # shoes. Declaring a radius switches the animation bake/validator to that
     # support contract and keeps the feet on the authored footrests.
@@ -248,6 +253,7 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.53, 0.55),
+        action_clip="ChessJeer",
     ),
     # The park checkers player. The second staged model for the same
     # chess set: the mirror seat at the other table, turned back across
@@ -278,6 +284,7 @@ ARCHETYPES = {
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.53, 0.55),
+        action_clip="CheckersJeer",
     ),
 }
 
@@ -4585,9 +4592,9 @@ def write_manifest(
         "animations": [],
         "shared_animation_source": ANIMATION_SOURCE,
         "shared_clips": (
-            [spec.idle_clip, spec.walk_clip, spec.sit_clip]
-            if spec.sit_clip is not None
-            else [spec.idle_clip, spec.walk_clip]
+            [spec.idle_clip, spec.walk_clip]
+            + ([spec.sit_clip] if spec.sit_clip is not None else [])
+            + ([spec.action_clip] if spec.action_clip is not None else [])
         ),
         "rides_bus": spec.sit_clip is not None,
         "seated_clearance_m": (
@@ -4797,6 +4804,28 @@ ACTION_SPECS = (
         "stooped old stance with both hands buried in the overcoat pockets",
         "short flat park steps with the shoulders carried ahead of the hips",
     ),
+    # And the thing he actually does. Two seconds, because a shout is
+    # not a pose and the whole reason it reads is that it is over before
+    # the brooding has visibly resumed. It opens and closes on the exact
+    # base pose of ChessBrood - `chess_player_base_pose()` at both ends,
+    # never re-typed numbers - so the runtime mixer can cross into it and
+    # back out over a tenth of a second without a seam, and the loop
+    # validator reads zero error on a clip that is not really a loop.
+    #
+    # Only the left arm leaves the board; the right elbow stays on the
+    # rim throughout. The head does not get lifted out of the hands so
+    # much as it turns out from under them, which is the difference
+    # between a man standing up to argue and a man who has been having
+    # this argument sitting down for eleven years.
+    ActionSpec(
+        "ChessJeer", "park_chess_player_v1", 2.0, 48,
+        "perched on the plank, right elbow still on the board rim, "
+        "left arm thrown up across the set",
+        "head turned out from under the hands to the neighbour, a hard "
+        "left-arm throw, the accusation held, and a collapse back into "
+        "the palms slower than the throw was",
+        seated=True,
+    ),
     # The draughts player rides the chess player's posture exactly - the
     # board, the plank and the skull are the same, so the solve is - but
     # he cannot ride his clips. Clip names are the key of ACTION_BY_NAME
@@ -4820,6 +4849,21 @@ ACTION_SPECS = (
         "CheckersTrudge", "park_checkers_player_v1", 1.5, 36,
         "stooped old stance with both hands buried in the overcoat pockets",
         "short flat park steps with the shoulders carried ahead of the hips",
+    ),
+    # His answer: the same two seconds and, unmirrored, the same pose,
+    # because they have been doing this for years and neither has
+    # learned anything from it. The two seats are a 180-degree rotation
+    # of each other about the middle of the set, which puts each man's
+    # neighbour over the same shoulder - so the same body-relative turn
+    # sends each of them at the other. See `park_jeer` for the working.
+    ActionSpec(
+        "CheckersJeer", "park_checkers_player_v1", 2.0, 48,
+        "perched on the plank, right elbow still on the board rim, "
+        "left arm thrown up back across the set",
+        "head turned out from under the hands to the neighbour, a hard "
+        "left-arm throw, the accusation held, and a collapse back into "
+        "the palms slower than the throw was",
+        seated=True,
     ),
 )
 
@@ -6466,6 +6510,91 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "chest": BonePose(rotation_degrees=(10.8, 0.0, -0.8)),
     })
 
+    # The shout. One pose, taken by both men, because their bodies are
+    # the same body: `checkers_player_base_pose()` returns the chess
+    # player's, and the mirror the pair reads as lives in the seat the
+    # runtime puts them on.
+    #
+    # That the two can share a pose at all is a fact about the drawn
+    # set, not a convenience. The chess seat is the `-seat-a1` plank at
+    # local `(-1.85, -1.10)` facing `+Forward`; the draughts seat is
+    # `-seat-b2` at `(+1.85, +1.10)` facing `-Forward`. Since
+    # `Tangent = (-Forward.z, 0, Forward.x)` points to the left of
+    # anybody facing `+Forward`, the neighbour lies `2.2 m` ahead and
+    # `3.7 m` to the LEFT of the chess player - and, working the same
+    # projection on the far seat, `2.2 m` ahead and `3.7 m` to the left
+    # of the draughts player too. Each of them sees the other over the
+    # same shoulder. So both turn left, and the arm that goes up is the
+    # left one for both, on the side the head went.
+    #
+    # `+Y` on a head, neck or chest bone is that left turn: the bone
+    # runs up its own local Y, the body faces `-Y` in Blender source
+    # space with anatomical left at `+X`, and a positive turn about the
+    # vertical carries the face toward `+X`. The watchman's head shake
+    # keys the same axis.
+    #
+    # The sum is `64`, short of the `73` degrees that would put his eyes
+    # exactly on the neighbour. That is deliberate: an old neck does not
+    # go there, and the read is the throw rather than the eyeline.
+    def park_jeer(amount: float) -> dict[str, BonePose]:
+        """The shout, from the brooding base at `0` to full throw at `1`.
+
+        Linear on every channel so that a small negative amount is a
+        real anticipation beat rather than a special case.
+        """
+
+        def to(base: float, thrown: float) -> float:
+            return base + (thrown - base) * amount
+
+        return {
+            # He sits up out of the round back to do it.
+            "pelvis": BonePose(
+                rotation_degrees=(to(8.0, 5.0), 0.0, 0.0),
+                location_m=(0.0, 0.004, to(-0.010, -0.004)),
+            ),
+            "spine": BonePose(rotation_degrees=(to(22.0, 16.5), 0.0, 0.0)),
+            "chest": BonePose(
+                rotation_degrees=(to(12.0, 10.5), to(0.0, 16.0), 0.0)),
+            # Chin up and round to the left. Negative X lifts the chin,
+            # the way the watchman's jut does.
+            "neck": BonePose(
+                rotation_degrees=(to(-8.0, -15.0), to(0.0, 22.0), 0.0)),
+            "head": BonePose(
+                rotation_degrees=(
+                    to(-2.0, -9.0), to(0.0, 26.0), to(0.0, -3.0))),
+            # The left shoulder hikes and the whole arm leaves the board:
+            # the elbow comes off the squares, the forearm opens out of
+            # the fold that was holding the skull, and the hand ends up
+            # open and high on the side the neighbour is on.
+            "clavicle.L": BonePose(
+                rotation_degrees=(
+                    to(4.0, 12.0), to(-7.0, -7.0), to(9.0, 9.0))),
+            "upper_arm.L": BonePose(
+                rotation_degrees=(
+                    to(-157.8, 55.0), to(1.0, 0.0), to(80.0, -30.0))),
+            "forearm.L": BonePose(
+                rotation_degrees=(
+                    to(-115.6, 8.0), to(46.8, 0.0), to(11.0, -12.0))),
+            "hand.L": BonePose(
+                rotation_degrees=(
+                    to(14.0, 0.0), to(18.0, 0.0), to(-8.0, -8.0))),
+            # The right elbow never leaves the rim. Only the palm under
+            # the jaw is given up, and it is given up by the head moving
+            # rather than by the hand: that is the whole gesture.
+            "hand.R": BonePose(
+                rotation_degrees=(
+                    to(14.0, 2.0), to(-18.0, -8.0), to(8.0, 3.0))),
+        }
+
+    # Anticipation, throw, the accusation held, and a collapse that is
+    # slower than the throw was, because nobody snaps back into their
+    # own hands.
+    chess_jeer_load = merge_pose(chess, park_jeer(-0.14))
+    chess_jeer_throw = merge_pose(chess, park_jeer(1.0))
+    chess_jeer_hold = merge_pose(chess, park_jeer(0.94))
+    chess_jeer_press = merge_pose(chess, park_jeer(0.82))
+    chess_jeer_fall = merge_pose(chess, park_jeer(0.28))
+
     def chess_trudge_legs(
         left_forward: float,
         lean: float,
@@ -6530,6 +6659,12 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "chest": BonePose(rotation_degrees=(11.3, 0.0, 0.7)),
     })
 
+    checkers_jeer_load = merge_pose(checkers, park_jeer(-0.14))
+    checkers_jeer_throw = merge_pose(checkers, park_jeer(1.0))
+    checkers_jeer_hold = merge_pose(checkers, park_jeer(0.94))
+    checkers_jeer_press = merge_pose(checkers, park_jeer(0.82))
+    checkers_jeer_fall = merge_pose(checkers, park_jeer(0.28))
+
     checkers_step_l = merge_pose(checkers_stand, chess_trudge_legs(1.0, 1.0))
     checkers_step_pr = merge_pose(checkers_stand, chess_trudge_legs(0.0, -0.4))
     checkers_step_r = merge_pose(checkers_stand, chess_trudge_legs(-1.0, 1.0))
@@ -6554,6 +6689,18 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.75, chess_step_pl),
             (1.0, chess_step_l),
         ),
+        # Both ends are the brooding base pose itself, so the runtime
+        # mixer can cross in and out of this in a tenth of a second and
+        # the loop validator reads zero error.
+        "ChessJeer": (
+            (0.0, chess_brood),
+            (0.08, chess_jeer_load),
+            (0.22, chess_jeer_throw),
+            (0.45, chess_jeer_hold),
+            (0.62, chess_jeer_press),
+            (0.82, chess_jeer_fall),
+            (1.0, chess_brood),
+        ),
         "CheckersMull": (
             (0.0, checkers_mull),
             (0.125, checkers_mull_inhale),
@@ -6571,6 +6718,20 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.5, checkers_step_r),
             (0.75, checkers_step_pl),
             (1.0, checkers_step_l),
+        ),
+        # The same shout, keyed onto his own base pose and under his own
+        # name. The name is what makes it a second clip: clips are keyed
+        # by name and handed to a design by `design_id`, so sharing one
+        # would leave this archetype with nothing baked. The pose is not
+        # mirrored, because the seat already is - see `park_jeer`.
+        "CheckersJeer": (
+            (0.0, checkers_mull),
+            (0.08, checkers_jeer_load),
+            (0.22, checkers_jeer_throw),
+            (0.45, checkers_jeer_hold),
+            (0.62, checkers_jeer_press),
+            (0.82, checkers_jeer_fall),
+            (1.0, checkers_mull),
         ),
         "WatchmanWatch": (
             (0.0, watchman),

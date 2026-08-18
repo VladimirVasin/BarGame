@@ -947,6 +947,102 @@
     {
       "key": "lake.fisherman.line.15",
       "value": "Скоро домой. Ещё немного посижу."
+    },
+    {
+      "key": "park.quarrel.chess.line.01",
+      "value": "В шашках думают коленом."
+    },
+    {
+      "key": "park.quarrel.chess.line.02",
+      "value": "Шашка ходит вперёд. Назад ей стыдно."
+    },
+    {
+      "key": "park.quarrel.chess.line.03",
+      "value": "Это не игра. Ты двигаешь крышечки."
+    },
+    {
+      "key": "park.quarrel.chess.line.04",
+      "value": "Шашки — это шахматы, из которых вынули мысль."
+    },
+    {
+      "key": "park.quarrel.chess.line.05",
+      "value": "Дамка — это пешка за выслугу лет."
+    },
+    {
+      "key": "park.quarrel.chess.line.06",
+      "value": "Вся твоя мысль умещается в одну диагональ."
+    },
+    {
+      "key": "park.quarrel.chess.line.07",
+      "value": "Тридцать две клетки, и все мимо."
+    },
+    {
+      "key": "park.quarrel.chess.line.08",
+      "value": "Съел три подряд и сияет, как самовар."
+    },
+    {
+      "key": "park.quarrel.chess.line.09",
+      "value": "Твой король — две шашки одна на другой."
+    },
+    {
+      "key": "park.quarrel.chess.line.10",
+      "value": "В шашках нет мата. Потому и говорить не о чем."
+    },
+    {
+      "key": "park.quarrel.chess.line.11",
+      "value": "Игра для тех, кому фигуры различать тяжело."
+    },
+    {
+      "key": "park.quarrel.chess.line.12",
+      "value": "Ты не играешь. Ты подметаешь доску."
+    },
+    {
+      "key": "park.quarrel.checkers.line.01",
+      "value": "Конь ходит буквой Г. От слова «горе»."
+    },
+    {
+      "key": "park.quarrel.checkers.line.02",
+      "value": "Два часа думаешь, чтобы за минуту проиграть."
+    },
+    {
+      "key": "park.quarrel.checkers.line.03",
+      "value": "Слон всю жизнь по одному цвету. Как ты."
+    },
+    {
+      "key": "park.quarrel.checkers.line.04",
+      "value": "Рокировка — это король убежал за угол."
+    },
+    {
+      "key": "park.quarrel.checkers.line.05",
+      "value": "Шестнадцать фигур, и ни одной мысли."
+    },
+    {
+      "key": "park.quarrel.checkers.line.06",
+      "value": "У тебя не игра, а сословия."
+    },
+    {
+      "key": "park.quarrel.checkers.line.07",
+      "value": "Ферзь работает, остальные стоят. Знакомо?"
+    },
+    {
+      "key": "park.quarrel.checkers.line.08",
+      "value": "Ты не играешь. Ты вспоминаешь чужие партии."
+    },
+    {
+      "key": "park.quarrel.checkers.line.09",
+      "value": "Взятие на проходе. Одно название чего стоит."
+    },
+    {
+      "key": "park.quarrel.checkers.line.10",
+      "value": "Шахматы придумали, чтобы молчать красиво."
+    },
+    {
+      "key": "park.quarrel.checkers.line.11",
+      "value": "Твоя партия кончится ничьей. Как и всё."
+    },
+    {
+      "key": "park.quarrel.checkers.line.12",
+      "value": "Правил больше, чем игроков за этим столом."
     }
   ]
 }

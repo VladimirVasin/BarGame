@@ -70,6 +70,23 @@ namespace BarPromenade
             get;
             private set;
         }
+
+        /// <summary>
+        /// The argument between the two of them, or <c>null</c> when the
+        /// layout grew no chess set to argue over.
+        /// </summary>
+        public CityParkQuarrelController ParkQuarrel
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>Where lines nobody said to the hero are drawn.</summary>
+        public NpcSpeechBubbleView SpeechBubbles
+        {
+            get;
+            private set;
+        }
         public GameObject ParkChessLamp { get; private set; }
         public IReadOnlyList<CityBenchSitInteraction> BenchSits
         {
@@ -547,6 +564,20 @@ namespace BarPromenade
             balanceView.Initialize(
                 Player.GameObject.transform,
                 camera);
+            // Lines spoken by somebody who is not talking to the hero.
+            // Raised here rather than with the two men because it needs
+            // the camera, which does not exist until this far down.
+            SpeechBubbles = ui.AddComponent<NpcSpeechBubbleView>();
+            SpeechBubbles.Initialize(camera);
+            // The argument at the chess set. Null when the layout grew
+            // no park: there is then nobody to have it with.
+            ParkQuarrel = CityParkQuarrelController.Create(
+                transform,
+                ParkChessPlayer,
+                ParkCheckersPlayer,
+                Player.GameObject.transform,
+                SpeechBubbles,
+                GameSessionState.CitySeed);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(

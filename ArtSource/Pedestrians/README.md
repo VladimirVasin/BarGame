@@ -88,7 +88,19 @@ library:
   same lattice and in the same cold bone, and the circle is smaller than the
   neighbour's square on purpose: squares tile and may touch, circles of the
   same size fuse into a chain of blobs. His coat takes the park's sandy
-  grey-brown where the neighbour took its black-green;
+  grey-brown where the neighbour took its black-green. Both men own a third
+  Action beyond their idle and their held-back trudge: `ChessJeer` and
+  `CheckersJeer`, two seconds each, the shout they throw across the set.
+  The head comes out from under the hands and turns `64` degrees to the
+  neighbour, the left arm is thrown up and held, and it falls back slower
+  than it rose while the right elbow never leaves the board rim. Both keys
+  at `0.0` and `1.0` are the design's own brooding base pose, taken from
+  `chess_player_base_pose()` rather than re-typed, so the runtime can mix
+  the beat in and out over a tenth of a second and the loop validator still
+  reads zero. The pose is **not** mirrored between the two men: their seats
+  are a 180-degree rotation of each other, which puts each one's neighbour
+  ahead and to his own left, so the same body-relative turn sends each of
+  them at the other;
 - `Blender/CityPedestrianLocomotion.blend` also owns its two staged Actions.
   `PipebackIdle` keeps the head level over a slow body breath that pumps the
   bellows under the pipe load; `PipebackRoll` is an in-place two-handed lever
@@ -124,6 +136,10 @@ Lampshade, Chair Carrier, Kettle Hat, Long-Arm, Helmet Lamp, then the staged
 designs, ending with the Park Chess Player and the Park Checkers Player. The
 sheet grows a row automatically when an authored design is
 added; appearing here does not register a staged design with the runtime pool.
+The sheet is three tiles wide and shows locomotion only, so the two park
+players' `ChessJeer`/`CheckersJeer` beat is not on it: review that one with a
+throwaway script that samples the Action directly, the way the arm throw was
+fitted in the first place.
 
 Three designs are previewed posed rather than in the bind A-pose, because their
 whole content is a posture: the Pipeback Roller, who would otherwise stand

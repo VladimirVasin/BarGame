@@ -947,6 +947,102 @@
     {
       "key": "lake.fisherman.line.15",
       "value": "Home soon. I'll sit a while longer."
+    },
+    {
+      "key": "park.quarrel.chess.line.01",
+      "value": "In draughts they think with the knee."
+    },
+    {
+      "key": "park.quarrel.chess.line.02",
+      "value": "A draught goes forward. Back would shame it."
+    },
+    {
+      "key": "park.quarrel.chess.line.03",
+      "value": "That is no game. You shuffle bottle caps."
+    },
+    {
+      "key": "park.quarrel.chess.line.04",
+      "value": "Draughts is chess with the thought taken out."
+    },
+    {
+      "key": "park.quarrel.chess.line.05",
+      "value": "A king there is a pawn promoted for service."
+    },
+    {
+      "key": "park.quarrel.chess.line.06",
+      "value": "Your whole thought fits on one diagonal."
+    },
+    {
+      "key": "park.quarrel.chess.line.07",
+      "value": "Thirty-two squares, and all of them missed."
+    },
+    {
+      "key": "park.quarrel.chess.line.08",
+      "value": "Takes three in a row and glows like a stove."
+    },
+    {
+      "key": "park.quarrel.chess.line.09",
+      "value": "Your king is two draughts stacked up."
+    },
+    {
+      "key": "park.quarrel.chess.line.10",
+      "value": "No mate in draughts. So nothing to discuss."
+    },
+    {
+      "key": "park.quarrel.chess.line.11",
+      "value": "A game for men who cannot tell pieces apart."
+    },
+    {
+      "key": "park.quarrel.chess.line.12",
+      "value": "You are not playing. You are sweeping."
+    },
+    {
+      "key": "park.quarrel.checkers.line.01",
+      "value": "The knight moves like a letter. A sad one."
+    },
+    {
+      "key": "park.quarrel.checkers.line.02",
+      "value": "Two hours of thinking to lose in a minute."
+    },
+    {
+      "key": "park.quarrel.checkers.line.03",
+      "value": "A bishop on one colour for life. Like you."
+    },
+    {
+      "key": "park.quarrel.checkers.line.04",
+      "value": "Castling is a king running round a corner."
+    },
+    {
+      "key": "park.quarrel.checkers.line.05",
+      "value": "Sixteen pieces and not one idea in them."
+    },
+    {
+      "key": "park.quarrel.checkers.line.06",
+      "value": "You have no game. You have social classes."
+    },
+    {
+      "key": "park.quarrel.checkers.line.07",
+      "value": "The queen works, the rest stand. Familiar?"
+    },
+    {
+      "key": "park.quarrel.checkers.line.08",
+      "value": "You do not play. You recite other men."
+    },
+    {
+      "key": "park.quarrel.checkers.line.09",
+      "value": "En passant. The name alone says enough."
+    },
+    {
+      "key": "park.quarrel.checkers.line.10",
+      "value": "Chess was invented to keep silent nicely."
+    },
+    {
+      "key": "park.quarrel.checkers.line.11",
+      "value": "Your game ends in a draw. Like the rest."
+    },
+    {
+      "key": "park.quarrel.checkers.line.12",
+      "value": "More rules than players at this table."
     }
   ]
 }

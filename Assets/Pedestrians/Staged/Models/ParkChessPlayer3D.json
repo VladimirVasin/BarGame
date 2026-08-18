@@ -37,7 +37,8 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
   "shared_clips": [
     "ChessBrood",
-    "ChessTrudge"
+    "ChessTrudge",
+    "ChessJeer"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,

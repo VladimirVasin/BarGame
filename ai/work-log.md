@@ -6,6 +6,81 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-18 — The two of them cannot stand each other
+
+- Gave the park chess set its argument. `CityParkQuarrelController` polls the
+  hero against the middle of the set (`22 m` in, `25 m` out — the gap is
+  hysteresis, or a hero standing on the line resets the turn every other
+  frame), ticks `ParkQuarrelTimeline` and, on each cue, calls `BeginTaunt` on
+  whichever presentation holds the turn. Modelled on
+  `CityCemeteryMournerController`: the two staged prefabs stay passive.
+- **The turn is five seconds and strictly alternating.** The opener is drawn
+  from the city seed rather than fixed. A hitch long enough to owe several
+  shouts forfeits them instead of firing a backlog — two men screaming over
+  each other on the frame the game unfreezes is not the scene — while an
+  ordinary frame's overshoot is carried so the cadence does not drift a frame
+  later every turn.
+- **Two new authored clips rather than a procedural bone overlay.** The
+  library already keeps every stationary NPC beat as a baked clip validated
+  on posture and loop closure, and `CityPedestrianAssetRegistry` exposes only
+  `Head`, `Pelvis` and the two feet — an overlay would have had to find
+  `neck` and `upper_arm.L` by name and would have left the shout out of the
+  manifest, out of the perch validator and out of review renders. The four
+  existing procedural exceptions are all *continuous* additions to a pose,
+  not a beat with its own silhouette.
+- **The two men share one unmirrored pose, and that is a fact about the
+  set.** The chess seat is at local `(-1.85, -1.10)` facing `+Forward`, the
+  draughts seat at `(+1.85, +1.10)` facing `-Forward`, and
+  `Tangent = (-Forward.z, 0, Forward.x)` points to the left of anybody facing
+  `+Forward`. Project the separation onto each man's own frame and both get
+  the same answer: the neighbour is `2.2 m` ahead and `3.7 m` to his **left**.
+  So both turn left, both throw the left arm, and `checkers_player_base_pose`
+  already returns the chess player's body. Two clip names remain necessary
+  only because clips are keyed by name and handed to a design by `design_id`.
+- The head turn sums to `64°` across chest, neck and head, short of the `73°`
+  that would put his eyes on the neighbour: an old neck does not go there and
+  the read is the throw, not the eyeline. `+Y` is that left turn — the same
+  axis the watchman's head shake keys.
+- The arm was authored against measured axis semantics rather than by eye. A
+  throwaway Blender probe rendered single-axis rotations off the rest pose
+  and settled it: on `upper_arm.L`, `+X` raises the arm from the rest T and
+  `-Z` swings it forward. The first attempt, written by perturbing the fitted
+  fold, left the arm across the chest; the review render caught it.
+- **The bubble opens on the clip's own phase**, not on a second timer — the
+  fisherman's rule. The presentation exposes `TauntPhase`, the controller
+  runs at `[DefaultExecutionOrder(320)]` so it reads this frame's value, and
+  the line appears the frame the phase crosses `0.22`, which is the authored
+  full-extension key. Re-timing the clip re-times both.
+- `NpcSpeechBubbleView` is IMGUI on the shared `640x360` canvas at
+  `GUI.depth = -75` — above the intoxication HUD, below the interaction
+  prompt, the map and the pause menu. Not uGUI/TMP: that would have been the
+  project's first Canvas, needed an asmdef reference and a committed Cyrillic
+  font atlas. Not world-space either: the PS1 composite pass crushes the
+  frame to `640x360` and RGB555 *before* UI is drawn, so a panel in the world
+  would be unreadable while this one stays sharp. The panel is measured once
+  from the whole line and only the drawn substring grows, or `CalcHeight`
+  would jump the box a row taller mid-word.
+- `CityPedestrianAssetRegistry` gained an optional `ActionClip` slot and
+  `CityPedestrianAssetSetup` an optional `actionClipName`/`actionDuration`,
+  copying the existing `sitClipName` shape. Every other descriptor compiles
+  and validates unchanged; a design that declares no beat must not carry a
+  clip in the slot.
+- Repaired a pre-existing failure while here:
+  `CityPedestrianRuntimeTests.ProductionPrefabs_UseCustomLocomotionAndGroundedWalk`
+  still expected `26` locomotion clips and named none of the park pair's, so
+  it had been red since the two men were added. Its list and
+  `StagedLocomotionClipCount` now cover all six park clips (`32` total).
+- Verification: `blender --background --python
+  tools/build-city-pedestrian-3d-model.py` — `32` actions, both jeers perch
+  at `0.5354-0.5392 m` inside the declared `(0.53, 0.55)` band with
+  `loop_max_error 1e-06`; `dotnet build` on `BarPromenade.EditModeTests` and
+  `BarPromenade.Editor` (0 errors); `Unity.exe -batchmode -executeMethod
+  CityPedestrianAssetSetup.Run` to rebind both staged prefabs; EditMode
+  selection `ParkQuarrelTests|CityPedestrianRuntimeTests|ParkChessPlayerTests|ParkCheckersPlayerTests`
+  — 46/46. **Not run, and not runnable here:** the bubble itself. Batch mode
+  has no game view, so IMGUI cannot be captured; the panel, its backdrop and
+  the typing need a play-mode look.
+
 ## 2026-08-18 — And somebody at the table next to him
 
 - Authored `park_checkers_player_v1`, the second man at the park chess set,

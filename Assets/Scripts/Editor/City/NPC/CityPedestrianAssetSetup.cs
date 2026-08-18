@@ -143,7 +143,8 @@ namespace BarPromenade.Editor
 
         /// <summary>
         /// An idle and a walk for every production or staged design, plus one
-        /// authored seated loop for each design that declares a Route 01 ride.
+        /// authored seated loop for each design that declares a Route 01 ride
+        /// and one authored beat for each design that declares an action.
         /// </summary>
         private static int ExpectedLocomotionClipCount
         {
@@ -153,6 +154,11 @@ namespace BarPromenade.Editor
                 for (int index = 0; index < Descriptors.Length; index++)
                 {
                     if (Descriptors[index].RidesBus)
+                    {
+                        count++;
+                    }
+
+                    if (Descriptors[index].HasAction)
                     {
                         count++;
                     }
@@ -377,7 +383,9 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2100,
-                isStaged: true),
+                isStaged: true,
+                actionClipName: "ChessJeer",
+                actionDuration: 2f),
             // The park checkers player: the second man at the same set,
             // on the seat opposite-and-across from the chess player's.
             // Staged the same way, and the second design whose idle is
@@ -399,7 +407,9 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2200,
-                isStaged: true)
+                isStaged: true,
+                actionClipName: "CheckersJeer",
+                actionDuration: 2f)
         };
 
         private static bool isBuilding;
@@ -1936,6 +1946,12 @@ namespace BarPromenade.Editor
                     descriptor.SitDuration,
                     animationManifest)
                 : null;
+            AnimationClip action = descriptor.HasAction
+                ? LoadLocomotionClip(
+                    descriptor.ActionClipName,
+                    descriptor.ActionDuration,
+                    animationManifest)
+                : null;
             BuildPrefab(
                 descriptor,
                 modelAsset,
@@ -1943,6 +1959,7 @@ namespace BarPromenade.Editor
                 idle,
                 walk,
                 sit,
+                action,
                 manifest);
         }
 
@@ -2048,6 +2065,22 @@ namespace BarPromenade.Editor
                     "A design without a declared Route 01 ride must not " +
                     "carry a seated clip.");
             }
+
+            if (descriptor.HasAction)
+            {
+                ValidateLocomotionClip(
+                    registry.ActionClip,
+                    descriptor.ActionClipName,
+                    descriptor.ActionDuration,
+                    animationManifest);
+            }
+            else if (registry.ActionClip != null)
+            {
+                throw new InvalidOperationException(
+                    "A design without a declared authored beat must not " +
+                    "carry an action clip.");
+            }
+
             if (registry.Renderers.Count != manifest.mesh_count ||
                 registry.RendererBindings.Count != manifest.mesh_count)
             {
@@ -2177,6 +2210,12 @@ namespace BarPromenade.Editor
                           !string.Equals(
                               NormalizeClipName(registry.SitClip.name),
                               descriptor.SitClipName,
+                              StringComparison.Ordinal))) ||
+                        (descriptor.HasAction &&
+                         (registry.ActionClip == null ||
+                          !string.Equals(
+                              NormalizeClipName(registry.ActionClip.name),
+                              descriptor.ActionClipName,
                               StringComparison.Ordinal))))
                     {
                         QueueBuildWhenSourcesExist();
@@ -2321,18 +2360,7 @@ namespace BarPromenade.Editor
                     AnimationPath,
                     StringComparison.Ordinal) ||
                 !manifest.shared_clips.SequenceEqual(
-                    descriptor.RidesBus
-                        ? new[]
-                        {
-                            descriptor.IdleClipName,
-                            descriptor.WalkClipName,
-                            descriptor.SitClipName
-                        }
-                        : new[]
-                        {
-                            descriptor.IdleClipName,
-                            descriptor.WalkClipName
-                        }))
+                    ExpectedSharedClips(descriptor)))
             {
                 throw new InvalidOperationException(
                     "City pedestrian must be non-emissive, collider-free, " +
@@ -2457,6 +2485,11 @@ namespace BarPromenade.Editor
                 {
                     clipOwners.Add(descriptor.SitClipName, descriptor);
                 }
+
+                if (descriptor.HasAction)
+                {
+                    clipOwners.Add(descriptor.ActionClipName, descriptor);
+                }
             }
 
             HashSet<string> names =
@@ -2516,6 +2549,14 @@ namespace BarPromenade.Editor
                              StringComparison.Ordinal))
                 {
                     expectedDuration = owner.SitDuration;
+                }
+                else if (owner.HasAction &&
+                         string.Equals(
+                             clip.name,
+                             owner.ActionClipName,
+                             StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.ActionDuration;
                 }
                 else
                 {
@@ -2719,6 +2760,32 @@ namespace BarPromenade.Editor
             }
         }
 
+        /// <summary>
+        /// The clips a design's own model manifest must declare, in the
+        /// order the art generator writes them: idle, walk, then the
+        /// optional seated ride and the optional authored beat.
+        /// </summary>
+        private static string[] ExpectedSharedClips(
+            PedestrianDescriptor descriptor)
+        {
+            var clips = new List<string>(4)
+            {
+                descriptor.IdleClipName,
+                descriptor.WalkClipName
+            };
+            if (descriptor.RidesBus)
+            {
+                clips.Add(descriptor.SitClipName);
+            }
+
+            if (descriptor.HasAction)
+            {
+                clips.Add(descriptor.ActionClipName);
+            }
+
+            return clips.ToArray();
+        }
+
         private static void BuildPrefab(
             PedestrianDescriptor descriptor,
             GameObject modelAsset,
@@ -2726,6 +2793,7 @@ namespace BarPromenade.Editor
             AnimationClip idle,
             AnimationClip walk,
             AnimationClip sit,
+            AnimationClip action,
             CityPedestrianManifest manifest)
         {
             GameObject prefabRoot = new GameObject(descriptor.PrefabRootName);
@@ -2906,7 +2974,8 @@ namespace BarPromenade.Editor
                     headLamp,
                     descriptor.PreservesAirborneMotion,
                     pelvis,
-                    sit);
+                    sit,
+                    action);
 
                 if (descriptor.CarriesFishingRig)
                 {
@@ -3566,13 +3635,17 @@ namespace BarPromenade.Editor
                 float sitDuration = 0f,
                 bool isStaged = false,
                 bool isWheelchair = false,
-                bool carriesFishingRig = false)
+                bool carriesFishingRig = false,
+                string actionClipName = null,
+                float actionDuration = 0f)
             {
                 IsStaged = isStaged;
                 IsWheelchair = isWheelchair;
                 CarriesFishingRig = carriesFishingRig;
                 SitClipName = sitClipName;
                 SitDuration = sitDuration;
+                ActionClipName = actionClipName;
+                ActionDuration = actionDuration;
                 CarriesHeadLamp = carriesHeadLamp;
                 PreservesAirborneMotion = preservesAirborneMotion;
                 DisplayName = displayName;
@@ -3608,6 +3681,17 @@ namespace BarPromenade.Editor
             public string SitClipName { get; }
             public float SitDuration { get; }
             public bool RidesBus => !string.IsNullOrEmpty(SitClipName);
+
+            /// <summary>
+            /// The design's one authored non-locomotion beat, or
+            /// <c>null</c> for a design that only ever idles and walks.
+            /// Like the seated loop it is not a locomotion clip and is
+            /// never ground-validated as one.
+            /// </summary>
+            public string ActionClipName { get; }
+            public float ActionDuration { get; }
+            public bool HasAction =>
+                !string.IsNullOrEmpty(ActionClipName);
             public int MinimumTriangleCount { get; }
             public int MaximumTriangleCount { get; }
 

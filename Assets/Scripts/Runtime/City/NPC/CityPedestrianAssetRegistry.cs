@@ -91,6 +91,7 @@ namespace BarPromenade
         [SerializeField] private AnimationClip idleClip;
         [SerializeField] private AnimationClip walkClip;
         [SerializeField] private AnimationClip sitClip;
+        [SerializeField] private AnimationClip actionClip;
         [SerializeField] private Bounds localBounds;
         [SerializeField] private int sourceTriangleCount;
         [SerializeField] private string sourceGeneratorVersion;
@@ -127,6 +128,14 @@ namespace BarPromenade
         /// declares no seated ride.
         /// </summary>
         public AnimationClip SitClip => sitClip;
+
+        /// <summary>
+        /// The design's one authored non-locomotion beat — the shout at
+        /// the chess set — or <c>null</c> for a design that has nothing
+        /// to say. It is a slot rather than a list because no design has
+        /// ever needed two; a second one earns the list.
+        /// </summary>
+        public AnimationClip ActionClip => actionClip;
         public Bounds LocalBounds => localBounds;
         public int SourceTriangleCount => sourceTriangleCount;
         public string SourceGeneratorVersion => sourceGeneratorVersion;
@@ -170,7 +179,8 @@ namespace BarPromenade
             Light configuredHeadLamp = null,
             bool configuredPreservesAirborneMotion = false,
             Transform configuredPelvisAnchor = null,
-            AnimationClip configuredSitClip = null)
+            AnimationClip configuredSitClip = null,
+            AnimationClip configuredActionClip = null)
         {
             headLamp = configuredHeadLamp;
             preservesAirborneMotion = configuredPreservesAirborneMotion;
@@ -186,6 +196,7 @@ namespace BarPromenade
             idleClip = configuredIdleClip;
             walkClip = configuredWalkClip;
             sitClip = configuredSitClip;
+            actionClip = configuredActionClip;
             localBounds = configuredLocalBounds;
             sourceTriangleCount = configuredSourceTriangleCount;
             sourceGeneratorVersion = configuredSourceGeneratorVersion ??

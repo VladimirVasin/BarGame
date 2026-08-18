@@ -488,6 +488,7 @@ MonoBehaviour:
   idleClip: {fileID: 8502292523883359718, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   walkClip: {fileID: -6732064715783676075, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   sitClip: {fileID: 0}
+  actionClip: {fileID: -7761338759945140009, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   localBounds:
     m_Center: {x: -0.00000011920929, y: 0.87499964, z: 0.03699997}
     m_Extent: {x: 0.763, y: 0.87499964, z: 0.185}

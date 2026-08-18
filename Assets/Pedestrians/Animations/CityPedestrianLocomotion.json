@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 30,
+  "clip_count": 32,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -595,6 +595,33 @@
       "ground_max_contact_gap_m": 0.0
     },
     {
+      "name": "ChessJeer",
+      "archetype": "park_chess_player_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "perched on the plank, right elbow still on the board rim, left arm thrown up across the set",
+      "gait": "head turned out from under the hands to the neighbour, a hard left-arm throw, the accusation held, and a collapse back into the palms slower than the throw was",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.535384,
+      "perch_seat_height_max_m": 0.539153,
+      "perch_pelvis_lift_m": 0.063843,
+      "perch_contact_parts": [
+        "GEO_BootSole.L"
+      ],
+      "seated_drop_m": 0.602997
+    },
+    {
       "name": "CheckersMull",
       "archetype": "park_checkers_player_v1",
       "duration_seconds": 12.0,
@@ -640,7 +667,34 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "CheckersJeer",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "in_place": true,
+      "authored_posture": "perched on the plank, right elbow still on the board rim, left arm thrown up back across the set",
+      "gait": "head turned out from under the hands to the neighbour, a hard left-arm throw, the accusation held, and a collapse back into the palms slower than the throw was",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.535384,
+      "perch_seat_height_max_m": 0.539153,
+      "perch_pelvis_lift_m": 0.063843,
+      "perch_contact_parts": [
+        "GEO_BootSole.L"
+      ],
+      "seated_drop_m": 0.602997
     }
   ],
-  "build_signature": "7bbbc843b1c1fd0fa5b4aff7342d108aad412e33ba2200516b88775e16c093f5"
+  "build_signature": "1f17cb16223e5b68d014c0b02bf89ff2f6503807bf9db040817627749786f776"
 }

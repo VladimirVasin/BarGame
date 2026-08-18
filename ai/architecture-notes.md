@@ -612,6 +612,64 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seated contract and lost it when he was authored standing, on the rule that
   an unused declared contract is worse than none. This one is used by the only
   design that declares it and is read by the runtime that seats him.
+- **Accepted — the quarrel's shout is an authored clip, not a procedural bone
+  overlay:** the project has both idioms. Every stationary NPC beat
+  (`WatchmanWatch`, `MournerMourn`, `BabushkaBeat`, `WeigherCheck`) is a baked
+  clip the art build validates on posture and loop closure; separately, four
+  files (`BarPatronDrinkingArmPose`, `BarBartenderPresentation`,
+  `SupermarketCashierPresentation`, `HomeTeethBrushingArmPose`) carry a
+  recorded exception that solves bones in `LateUpdate`. The shout takes the
+  first. `CityPedestrianAssetRegistry` exposes only `Head`, `Pelvis` and the
+  two feet, so an overlay would have had to find `neck` and `upper_arm.L` by
+  name walk, and it would have left the one thing these two designs do out of
+  the clip manifest, out of the perch validator and out of every review
+  render. The four existing exceptions are also all *continuous* additions to
+  a held pose; this is a beat with its own silhouette, which is what a clip
+  is for. Cost: a `ChessJeer`/`CheckersJeer` pair, a third optional clip slot
+  on the shared registry, and an `~11 MB` rebake of the shared library.
+- **Accepted — both men shout with the same unmirrored pose:** the natural
+  assumption is that seats facing each other need mirrored turns, and it is
+  wrong here. The chess seat is `-seat-a1` at local `(-1.85, -1.10)` facing
+  `+Forward`; the draughts seat is `-seat-b2` at `(+1.85, +1.10)` facing
+  `-Forward`. Because `Tangent = (-Forward.z, 0, Forward.x)` points to the
+  left of anybody facing `+Forward`, projecting the separation onto each
+  man's own frame gives the same pair of numbers twice: the neighbour is
+  `2.2 m` ahead and `3.7 m` to his **left**. The seats are a 180-degree
+  rotation of each other, so each sees the other over the same shoulder.
+  Both therefore turn left and both throw the left arm — the arm goes up on
+  the side the head went — and `park_jeer` is one pose function used twice,
+  in the same way `checkers_player_base_pose()` already returns the chess
+  player's body. Two clip *names* remain necessary because `ACTION_BY_NAME`
+  is keyed on the name and actions are handed to a design by `design_id`.
+  **This is the fact to re-derive if either seat ever moves**, because
+  authoring it the wrong way round leaves one of the two shouting into a
+  hedge and no test can see it.
+- **Accepted — the line appears on the clip's phase, and the panel is
+  measured before it is typed:** the shout opens the bubble the frame
+  `TauntPhase` crosses `0.22`, the authored full-extension key, rather than
+  when the controller decided to shout. That is the fisherman's rule applied
+  to a second host, and it is why `CityParkQuarrelController` declares
+  `[DefaultExecutionOrder(320)]` — both presentations evaluate their graphs in
+  an unordered `LateUpdate`, so a reader of this frame's phase has to be
+  behind them. Once open, the typewriter runs on the view's own unscaled
+  clock: that is UI time, not world time, and the rule does not reach it.
+  The panel is sized once from the whole line and only the drawn substring
+  grows, because `GUIStyle.CalcHeight` on a growing string steps the box a
+  row taller mid-word.
+- **Accepted — a line nobody said to the hero is drawn over the speaker, not
+  in the prompt panel:** `InteractionPromptView` is the hero's own channel —
+  what he can do, and what he was just told when he asked. A quarrel he is
+  merely standing next to has no business in it, and putting it there would
+  also make two men look like they were addressing him. `NpcSpeechBubbleView`
+  is a separate IMGUI layer at `GUI.depth = -75`: above the intoxication HUD,
+  below the interaction prompt, the city map and the pause menu, so it never
+  covers anything the player operates. It is not uGUI/TextMeshPro — that
+  would be the project's first `Canvas`, an asmdef reference and a committed
+  Cyrillic font atlas, where the built-in IMGUI font already renders all
+  `261` Russian entries. It is not world-space geometry either:
+  `Ps1CompositeRendererFeature` averages the frame to `640x360` and quantizes
+  to RGB555 *before* UI is drawn, so a panel in the world would be crushed
+  while this one stays sharp.
 - **Accepted — the chess lamp's wire crosses the set rather than running along
   it:** the obvious span is along the line of the two tables, one lamp over
   each board. The park's own geometry refuses it. Trees are planted on an 8x8
