@@ -39,6 +39,18 @@ namespace BarPromenade
         public const float SeatHeightFraction = 0.56f;
 
         /// <summary>
+        /// How far down the stone the search may go looking for
+        /// something solid and wide enough. A cross has nothing to
+        /// screw a board to until near its foot.
+        /// </summary>
+        public const float LowestSeatFraction = 0.18f;
+        public const int SeatSteps = 9;
+
+        /// <summary>Narrower than this is not a face, it is an edge.
+        /// </summary>
+        public const float MinimumFaceMeters = 0.16f;
+
+        /// <summary>
         /// The most of the stone's own width the board may take. A
         /// cross is narrow and a plate wider than its arm would read
         /// as nailed to the air.
@@ -86,28 +98,25 @@ namespace BarPromenade
                 return null;
             }
 
+            Vector3 outward = plan.Heading * Vector3.back;
+            if (!TryFindSolidFace(
+                    stone,
+                    bounds,
+                    outward,
+                    out Vector3 face,
+                    out float span,
+                    out float seat))
+            {
+                return null;
+            }
+
             var root = new GameObject(RootName);
             root.transform.SetParent(stone, true);
 
-            // The face a visitor stands at: down the grave, toward the
-            // feet, which is where the mound is and where the camera
-            // walks round to.
-            Vector3 outward = plan.Heading * Vector3.back;
-            float reach = Mathf.Abs(
-                (bounds.extents.x * outward.x) +
-                (bounds.extents.z * outward.z));
-            Vector3 face = bounds.center +
-                           (outward * (reach + ProudMeters));
-
-            float span = Mathf.Max(
-                Mathf.Abs(bounds.size.x * outward.z),
-                Mathf.Abs(bounds.size.z * outward.x));
             float width = Mathf.Min(
                 WidthMeters,
                 span * MaximumFaceShare);
             float height = width * (HeightMeters / WidthMeters);
-            float seat = bounds.min.y +
-                         (bounds.size.y * SeatHeightFraction);
 
             // TextMeshPro lays its quads out with normals of
             // `(0, 0, -1)`, so a line of text is readable from its own
@@ -176,7 +185,7 @@ namespace BarPromenade
                 height * 0.30f,
                 height * 0.29f,
                 CemeteryPlaqueSurface.NameSize,
-                false);
+                CemeteryPlaqueSurface.NameMinimumSize);
             TMP_Text years = CreateLine(
                 parent,
                 "Plaque Years",
@@ -185,7 +194,7 @@ namespace BarPromenade
                 height * 0.22f,
                 height * 0.04f,
                 CemeteryPlaqueSurface.YearsSize,
-                false);
+                CemeteryPlaqueSurface.YearsSize * 0.55f);
             TMP_Text epitaph = CreateLine(
                 parent,
                 "Plaque Epitaph",
@@ -194,7 +203,7 @@ namespace BarPromenade
                 height * 0.40f,
                 -height * 0.24f,
                 CemeteryPlaqueSurface.EpitaphSize,
-                true);
+                CemeteryPlaqueSurface.EpitaphMinimumSize);
             surface.Bind(name, years, epitaph);
         }
 
@@ -211,7 +220,7 @@ namespace BarPromenade
             float height,
             float offsetY,
             float size,
-            bool autoSize)
+            float minimumSize)
         {
             var line = new GameObject(name);
             line.transform.SetParent(parent, false);
@@ -230,13 +239,12 @@ namespace BarPromenade
             text.alignment = TextAlignmentOptions.Center;
             text.enableWordWrapping = true;
             text.overflowMode = TextOverflowModes.Truncate;
-            text.enableAutoSizing = autoSize;
-            if (autoSize)
-            {
-                text.fontSizeMin =
-                    CemeteryPlaqueSurface.EpitaphMinimumSize;
-                text.fontSizeMax = size;
-            }
+            // Every line shrinks to fit rather than being dropped:
+            // `Truncate` on a line that does not fit renders nothing
+            // at all, which is a blank plate and looks like a bug.
+            text.enableAutoSizing = true;
+            text.fontSizeMin = minimumSize;
+            text.fontSizeMax = size;
 
             text.rectTransform.sizeDelta =
                 new Vector2(width * 0.92f, height);
@@ -268,6 +276,121 @@ namespace BarPromenade
                 plan.Ground.x + face.x,
                 plan.GroundTopY + NominalSeatHeightMeters,
                 plan.Ground.z + face.z);
+        }
+
+        /// <summary>
+        /// Finds real stone to screw the board to.
+        ///
+        /// The monument is one of four silhouettes and only two of
+        /// them are slabs. An Orthodox cross is mostly the air between
+        /// its arms, and an obelisk narrows as it climbs, so the front
+        /// face of the whole bounding box is not a surface — a board
+        /// fixed to it hangs in a gap. This walks down the stone in
+        /// bands, takes the widest one that is wide enough to carry a
+        /// plate, and puts the board on the actual front of the solid
+        /// there.
+        /// </summary>
+        private static bool TryFindSolidFace(
+            Transform stone,
+            Bounds bounds,
+            Vector3 outward,
+            out Vector3 face,
+            out float span,
+            out float seat)
+        {
+            face = bounds.center;
+            span = 0f;
+            seat = bounds.center.y;
+
+            var points = new System.Collections.Generic.List<Vector3>(
+                512);
+            MeshFilter[] filters =
+                stone.GetComponentsInChildren<MeshFilter>(true);
+            for (int index = 0; index < filters.Length; index++)
+            {
+                if (filters[index]
+                        .GetComponentInParent<CemeteryPlaqueSurface>()
+                    != null)
+                {
+                    continue;
+                }
+
+                Mesh mesh = filters[index].sharedMesh;
+                if (mesh == null)
+                {
+                    continue;
+                }
+
+                Transform owner = filters[index].transform;
+                Vector3[] vertices = mesh.vertices;
+                for (int v = 0; v < vertices.Length; v++)
+                {
+                    points.Add(
+                        owner.TransformPoint(vertices[v]));
+                }
+            }
+
+            if (points.Count == 0)
+            {
+                return false;
+            }
+
+            // Across the face, horizontally: the axis the board's own
+            // width runs along.
+            Vector3 across = Vector3.Cross(Vector3.up, outward);
+            float bottom = bounds.min.y;
+            float total = Mathf.Max(bounds.size.y, 0.0001f);
+            float band = HeightMeters * 0.55f;
+
+            for (int step = 0; step < SeatSteps; step++)
+            {
+                float fraction = Mathf.Lerp(
+                    SeatHeightFraction,
+                    LowestSeatFraction,
+                    step / (float)(SeatSteps - 1));
+                float y = bottom + (total * fraction);
+                float low = float.MaxValue;
+                float high = float.MinValue;
+                float front = float.MinValue;
+                for (int index = 0; index < points.Count; index++)
+                {
+                    Vector3 point = points[index];
+                    if (Mathf.Abs(point.y - y) > band)
+                    {
+                        continue;
+                    }
+
+                    float sideways =
+                        (point.x * across.x) + (point.z * across.z);
+                    low = Mathf.Min(low, sideways);
+                    high = Mathf.Max(high, sideways);
+                    front = Mathf.Max(
+                        front,
+                        (point.x * outward.x) +
+                        (point.z * outward.z));
+                }
+
+                if (low > high)
+                {
+                    continue;
+                }
+
+                float measured = high - low;
+                if (measured < MinimumFaceMeters &&
+                    step < SeatSteps - 1)
+                {
+                    continue;
+                }
+
+                float middle = (low + high) * 0.5f;
+                span = measured;
+                seat = y;
+                face = (across * middle) +
+                       (outward * (front + ProudMeters));
+                return span > 0.0001f;
+            }
+
+            return false;
         }
 
         private static bool TryMeasure(

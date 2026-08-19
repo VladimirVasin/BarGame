@@ -104,6 +104,28 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   against four balance-point phases, and `FollowingTheBalancePointLandsIt`
   proves the intended play lands across three deadzones, three reaction delays
   and four phases — a window one reaction speed wide is not a mechanic.
+- **The board was blank and hanging, and guessing had run out.** Two more
+  passes of reasoning had produced two more wrong fixes, so this one was
+  measured: a throwaway EditMode probe printing the real bounds of the stone,
+  the board and every line on it.
+  It said the type was `4 mm` tall on a plate `200 mm` deep. TextMeshPro
+  measures its size in the same units as its rect, and on this board one unit
+  of size comes out at roughly `0.095 m` of line — so the first numbers, read
+  as points, overflowed the rect and `Truncate` threw whole lines away, and
+  the second, read as metres, drew letters too small to see. Sizes are now
+  taken off that measurement, and every line auto-shrinks rather than being
+  dropped, because a truncated line renders as nothing and reads as a bug.
+  It also said the board was seated on the *bounding box* of the monument.
+  For a stele that is the front face; for the Orthodox cross — one of the four
+  silhouettes the plot hash can pick — it is the air between the arms.
+  `TryFindSolidFace` now walks the stone's own vertices down in bands, takes
+  the first band wide enough to carry a plate, and puts the board on the real
+  front of the solid there.
+  The probe became `TheBoardSitsOnTheStoneAndCarriesReadableLines`: the bezel
+  must intersect the stone, the plate must sit within its height, and each of
+  the three lines must draw more than `12 mm` of letter and fit inside the
+  brass. None of that was visible to any test before, which is why it shipped
+  twice.
 - **Five faults in the stone act, and two of them were mine at the root.**
   The committed monument floated because it was placed by its authored parts
   while the one in the hero's hands was placed by its own measured bounds —

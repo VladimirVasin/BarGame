@@ -1126,6 +1126,89 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void TheBoardSitsOnTheStoneAndCarriesReadableLines()
+        {
+            // Both halves of this shipped broken and neither was
+            // visible to any test: a board seated on the bounding box
+            // of a monument that is mostly air, and type sized as
+            // though TextMeshPro measured in metres, which overflowed
+            // its rect and rendered nothing at all. Numbers, not eyes.
+            CemeteryGravediggingPlan plan = CreatePlan();
+            var host = new GameObject("Plaque Host");
+            spawned.Add(host);
+            GameObject stone = CityCemeterySealedGraveWorldBuilder
+                .BuildStandingStone(host.transform, plan);
+            Assert.That(stone, Is.Not.Null);
+
+            GameObject board = CityCemeteryPlaqueWorldBuilder.Attach(
+                stone.transform,
+                plan);
+            Assert.That(
+                board,
+                Is.Not.Null,
+                "Every monument the yard stands must take a board.");
+
+            Bounds stoneBounds = MeasureStone(stone.transform);
+            Bounds plate = FindRenderer(
+                board.transform,
+                CityCemeteryPlaqueWorldBuilder.PlateName).bounds;
+
+            // Screwed to the stone, not hanging in front of it.
+            Assert.That(
+                stoneBounds.Intersects(
+                    FindRenderer(
+                        board.transform,
+                        CityCemeteryPlaqueWorldBuilder.BezelName)
+                        .bounds),
+                Is.True,
+                "The board has to touch the stone it is fixed to.");
+            Assert.That(
+                plate.center.y,
+                Is.InRange(stoneBounds.min.y, stoneBounds.max.y),
+                "And sit on its face rather than above or below it.");
+
+            // Three lines, each of them actually drawn and each of
+            // them inside the brass.
+            TMPro.TMP_Text[] lines =
+                board.GetComponentsInChildren<TMPro.TMP_Text>(true);
+            Assert.That(lines.Length, Is.EqualTo(3));
+            foreach (TMPro.TMP_Text line in lines)
+            {
+                line.ForceMeshUpdate(true, true);
+                Assert.That(
+                    line.textInfo.characterCount,
+                    Is.GreaterThan(0),
+                    line.name + " has no characters.");
+                Assert.That(
+                    line.font,
+                    Is.Not.Null,
+                    line.name + " has no face to cut it in.");
+
+                Bounds drawn = line.GetComponent<Renderer>().bounds;
+                float tall = drawn.size.y;
+                Assert.That(
+                    tall,
+                    Is.GreaterThan(0.012f),
+                    line.name +
+                    " draws " +
+                    Mathf.RoundToInt(tall * 1000f) +
+                    " mm of letter, which is nothing at arm's " +
+                    "length.");
+                Assert.That(
+                    tall,
+                    Is.LessThan(plate.size.y),
+                    line.name + " is taller than the plate.");
+
+                float wide = Mathf.Max(drawn.size.x, drawn.size.z);
+                float across = Mathf.Max(plate.size.x, plate.size.z);
+                Assert.That(
+                    wide,
+                    Is.LessThanOrEqualTo(across),
+                    line.name + " runs off the side of the brass.");
+            }
+        }
+
+        [Test]
         public void ThePanelHoldsEverythingItDraws()
         {
             CemeteryGraveWorkView.CreateLayout(
@@ -1443,6 +1526,53 @@ namespace BarPromenade.Tests.EditMode
 
             public CityLayout Layout { get; }
             public CemeteryGravediggingPlan Plan { get; }
+        }
+
+        /// <summary>The stone's own bounds, with the board on it
+        /// left out.</summary>
+        private static Bounds MeasureStone(Transform stone)
+        {
+            Bounds bounds = default;
+            bool any = false;
+            foreach (Renderer renderer in
+                     stone.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer
+                        .GetComponentInParent<CemeteryPlaqueSurface>()
+                    != null)
+                {
+                    continue;
+                }
+
+                if (!any)
+                {
+                    bounds = renderer.bounds;
+                    any = true;
+                    continue;
+                }
+
+                bounds.Encapsulate(renderer.bounds);
+            }
+
+            Assert.That(any, Is.True, "The stone has no geometry.");
+            return bounds;
+        }
+
+        private static Renderer FindRenderer(
+            Transform root,
+            string name)
+        {
+            foreach (Renderer renderer in
+                     root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.name == name)
+                {
+                    return renderer;
+                }
+            }
+
+            Assert.Fail("No renderer named " + name + ".");
+            return null;
         }
 
         private static int CountSpades(Transform root)

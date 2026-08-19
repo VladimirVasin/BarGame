@@ -19,16 +19,30 @@ namespace BarPromenade
         /// <summary>Point sizes on a board `0.30 m` across. TMP works
         /// in its own units, so these are set against the plate's own
         /// rect rather than against metres.</summary>
-        public const float NameSize = 3.4f;
-        public const float YearsSize = 2.2f;
-        public const float EpitaphSize = 2.4f;
+        /// <summary>
+        /// Measured rather than guessed. On this board one unit of
+        /// TextMeshPro's size comes out at roughly `0.095 m` of line,
+        /// so a size picked as though it were metres draws letters
+        /// four millimetres tall, and one picked as though it were
+        /// points overflows the rect and `Truncate` throws the whole
+        /// line away. Both of those shipped. These give a name about
+        /// `40 mm` tall on a plate `200 mm` deep.
+        /// </summary>
+        public const float NameSize = 0.42f;
+        public const float YearsSize = 0.28f;
+        public const float EpitaphSize = 0.32f;
 
         /// <summary>
         /// The epitaph is the one line whose length is not known when
         /// the board is built, so it is the one line allowed to shrink
         /// itself to fit rather than run off the brass.
         /// </summary>
-        public const float EpitaphMinimumSize = 1.3f;
+        public const float EpitaphMinimumSize = 0.14f;
+
+        /// <summary>The name shrinks too, so a longer localisation
+        /// than "Безымянный" cannot push itself off the brass.
+        /// </summary>
+        public const float NameMinimumSize = 0.26f;
 
         private TMP_Text nameLine;
         private TMP_Text yearsLine;
