@@ -31,6 +31,17 @@ namespace BarPromenade
         public Quaternion DirectionalLightRotation { get; }
         public float NightFactor { get; }
 
+        /// <summary>
+        /// A hundredth of a degree: the sun does not move that far in
+        /// a whole game day, and it is far more than the drift
+        /// Quaternion.Slerp leaves behind. Without it the sample taken
+        /// at the very first minute of dusk — identical to the day in
+        /// every colour, intensity and factor — reads as a change,
+        /// because Slerp renormalises its result and the bits stop
+        /// matching the constant it interpolated from.
+        /// </summary>
+        public const float RotationEpsilonDegrees = 0.01f;
+
         public bool IsVisuallyEquivalentTo(DayNightVisualSample other)
         {
             return DirectionalLightColor.Equals(
@@ -41,8 +52,10 @@ namespace BarPromenade
                    ReflectionIntensity.Equals(
                        other.ReflectionIntensity) &&
                    ShadowStrength.Equals(other.ShadowStrength) &&
-                   DirectionalLightRotation.Equals(
-                       other.DirectionalLightRotation) &&
+                   Quaternion.Angle(
+                       DirectionalLightRotation,
+                       other.DirectionalLightRotation) <=
+                       RotationEpsilonDegrees &&
                    NightFactor.Equals(other.NightFactor);
         }
     }

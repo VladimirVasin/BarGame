@@ -1154,13 +1154,30 @@ namespace BarPromenade
 
         public static CityBlueprintBuilder From(CityBlueprint source)
         {
+            return From(
+                source,
+                source == null
+                    ? throw new ArgumentNullException(nameof(source))
+                    : source.Id);
+        }
+
+        /// <summary>
+        /// The same blueprint under a different name: areas, cells,
+        /// requirements and the river all carry over, and only the id
+        /// changes. Whatever reads a blueprint by id — the terracing
+        /// most of all — then treats the copy as a stranger.
+        /// </summary>
+        public static CityBlueprintBuilder From(
+            CityBlueprint source,
+            string id)
+        {
             if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
             var builder = new CityBlueprintBuilder(
-                source.Id,
+                id,
                 source.CenterNode,
                 source.RequiresCentralPark,
                 source.RequiresNorthWaterfront,

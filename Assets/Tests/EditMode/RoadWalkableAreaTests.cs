@@ -291,7 +291,10 @@ namespace BarPromenade.Tests
         [Test]
         public void FromLayout_AddsBuildableGroundButExcludesWaterAndOutside()
         {
+            // The legacy blueprint is a dry inland grid: only the
+            // shipped city has water for this contract to exclude.
             CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
                 731942);
             RoadWalkableArea area = RoadWalkableArea.FromLayout(layout);

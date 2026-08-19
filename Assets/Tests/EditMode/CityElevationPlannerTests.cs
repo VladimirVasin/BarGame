@@ -759,8 +759,13 @@ namespace BarPromenade.Tests
             CityLayout legacy = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
                 Seed);
+            // A blueprint carrying a river is required to be terraced:
+            // its banks must sit above the water, which a flat plan
+            // cannot do. So the custom fixture clones the dry legacy
+            // grid under a new id — the point of the case is that an
+            // id the terracing does not know falls back to flat.
             CityBlueprint customBlueprint = CloneWithId(
-                CityBlueprintCatalog.Default,
+                legacy.Blueprint,
                 "custom-flat-elevation-fixture");
             CityLayout custom = CityLayoutGenerator.Generate(
                 customBlueprint,
@@ -1197,23 +1202,17 @@ namespace BarPromenade.Tests
                 plan.WorldOrigin.z + node.y * plan.NodeSpacing.y);
         }
 
+        /// <summary>
+        /// The whole blueprint under a name the terracing has never
+        /// heard of. Rebuilding it by hand loses the river and the
+        /// area requirements, and a blueprint missing either fails its
+        /// own validation.
+        /// </summary>
         private static CityBlueprint CloneWithId(
             CityBlueprint source,
             string id)
         {
-            var builder = new CityBlueprintBuilder(id, source.CenterNode);
-            foreach (CityAreaPlacement area in source.Areas)
-            {
-                foreach (Vector2Int cell in area.Cells)
-                {
-                    builder.AddCells(
-                        area.Definition,
-                        new[] { cell },
-                        area.GetTopology(cell));
-                }
-            }
-
-            return builder.Build();
+            return CityBlueprintBuilder.From(source, id).Build();
         }
 
         private static void AssertFlatFallback(CityElevationPlan plan)

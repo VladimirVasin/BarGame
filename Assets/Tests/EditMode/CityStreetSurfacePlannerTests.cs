@@ -281,20 +281,28 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     $"Sidewalk {walkable} left both its street corridor " +
                     "and every selected Road v2.1 junction sidewalk.");
+                // Mathf.Approximately is a 1e-6 relative test, and
+                // a rectangle assembled out of a dozen float adds
+                // lands two microns off a metre. Hold the sidewalk to
+                // the same tolerance as every other measurement here.
                 Assert.That(
-                    Mathf.Approximately(
-                        walkable.width,
-                        CityStreetSurfacePlanner.SidewalkWidth) ||
-                    Mathf.Approximately(
-                        walkable.height,
-                        CityStreetSurfacePlanner.SidewalkWidth) ||
+                    Mathf.Abs(
+                        walkable.width -
+                        CityStreetSurfacePlanner.SidewalkWidth) <=
+                        Tolerance ||
+                    Mathf.Abs(
+                        walkable.height -
+                        CityStreetSurfacePlanner.SidewalkWidth) <=
+                        Tolerance ||
                     layout.ElevationPlan.SignatureStairs.Any(stair =>
                         Mathf.Abs(
                             stair.Width -
                             Mathf.Min(
                                 walkable.width,
                                 walkable.height)) <= Tolerance),
-                    Is.True);
+                    Is.True,
+                    $"Sidewalk {walkable} is neither a sidewalk width " +
+                    "nor a signature stair width.");
             }
         }
 

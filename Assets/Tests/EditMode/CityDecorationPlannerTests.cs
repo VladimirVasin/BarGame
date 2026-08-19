@@ -433,11 +433,9 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void BarSideYard_LeansPhoneBoothAndDumpsterOnTheBarWall()
         {
-            CityDecorationPlan plan = CreatePlan(
+            CityDecorationPlan plan = CreateShippedPlan(
                 GameSessionState.DefaultCitySeed,
-                out CityLayout layout,
-                out _,
-                out _);
+                out CityLayout layout);
             Assert.That(
                 HomeYardSitePlanner.TryCreate(
                     layout,
@@ -591,6 +589,28 @@ namespace BarPromenade.Tests.EditMode
                         $"Two {label} crowd one corner.");
                 }
             }
+        }
+
+        /// <summary>
+        /// The shipped city. The legacy blueprint the other cases run
+        /// on carries no home yard at every seed, so anything that
+        /// asserts on the yard has to ask for the real one.
+        /// </summary>
+        private static CityDecorationPlan CreateShippedPlan(
+            int seed,
+            out CityLayout layout)
+        {
+            layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                seed);
+            RoadFencePlan fence = RoadFencePlanner.CreatePlan(layout);
+            CityNightFixturePlan night =
+                CityNightFixturePlanner.CreatePlan(layout);
+            return CityDecorationPlanner.CreatePlan(
+                layout,
+                fence,
+                night);
         }
 
         private static CityDecorationPlan CreatePlan(

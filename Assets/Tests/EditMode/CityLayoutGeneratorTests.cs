@@ -213,10 +213,28 @@ namespace BarPromenade.Tests
                     northernCell.ToString());
             }
 
+            // Every declared cell is surfaced. The river is carried
+            // by its own definition rather than by an area, so the
+            // cells it floods are the one legal surplus.
+            var declaredCells = new HashSet<Vector2Int>(
+                blueprint.Cells.Select(cell => cell.Cell));
             Assert.That(
-                layout.Surfaces.Select(surface => surface.Cell),
-                Is.EquivalentTo(
-                    blueprint.Cells.Select(cell => cell.Cell)));
+                layout.Surfaces
+                    .Select(surface => surface.Cell)
+                    .Where(declaredCells.Contains),
+                Is.EquivalentTo(declaredCells));
+            foreach (CitySurfaceDescriptor surface in layout.Surfaces)
+            {
+                if (declaredCells.Contains(surface.Cell))
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    surface.Kind,
+                    Is.EqualTo(CitySurfaceKind.RiverWater),
+                    surface.Cell.ToString());
+            }
             Assert.That(
                 layout.BuildingLots.All(
                     lot => blueprint.CreatesLot(lot.Cell)),

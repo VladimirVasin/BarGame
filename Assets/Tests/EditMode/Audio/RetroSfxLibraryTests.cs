@@ -26,7 +26,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     definition.Category,
                     Is.Not.EqualTo(RetroSfxCategory.None));
-                Assert.That(definition.Duration, Is.InRange(0.04f, 0.5f));
+                // Short one-shots, not music. Most sit under half a
+                // second; the toilet flush is the one long world
+                // effect and still has to stay a sound, not a track.
+                Assert.That(definition.Duration, Is.InRange(0.04f, 3f));
                 Assert.That(definition.Volume, Is.InRange(0.01f, 1f));
                 Assert.That(definition.MaxVoices, Is.InRange(1, 3));
                 Assert.That(definition.SampleHold, Is.InRange(1, 4));

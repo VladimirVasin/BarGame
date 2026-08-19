@@ -243,7 +243,13 @@ namespace BarPromenade.Tests.EditMode
                     node.FromGridNode);
                 Vector3 to = layout.GetNodeWorldPosition(
                     node.ToGridNode);
-                Vector3 forward = (to - from).normalized;
+                // The lane offset is measured on the ground. On a
+                // graded street the 3D tangent tilts, and a right
+                // vector built out of it comes up short, reading the
+                // planner's 1.5 m as 1.4989.
+                Vector3 forward = to - from;
+                forward.y = 0f;
+                forward.Normalize();
                 Vector3 right = new Vector3(
                     forward.z,
                     0f,

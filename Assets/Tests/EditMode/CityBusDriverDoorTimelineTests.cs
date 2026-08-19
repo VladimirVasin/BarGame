@@ -157,10 +157,13 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(sample.DoorLook01, Is.InRange(0f, 1f));
                 if (sample.DoorLook01 > 0f)
                 {
+                    // He turns his head to the door as it opens and
+                    // holds it through the dwell; over the closing beat
+                    // the gaze eases back rather than snapping away.
+                    // Only a shut door is never looked at.
                     Assert.That(
                         sample.DoorPhase,
-                        Is.EqualTo(CityBusDoorPhase.Opening)
-                            .Or.EqualTo(CityBusDoorPhase.Open));
+                        Is.Not.EqualTo(CityBusDoorPhase.Closed));
                 }
             }
 
