@@ -1270,7 +1270,11 @@
     },
     {
       "key": "cemetery.work.hint.spade",
-      "value": "A/D — segment   hold E to swing, release to strike   Esc — walk off"
+      "value": "A/D — segment   E — dig   Esc — leave"
+    },
+    {
+      "key": "cemetery.work.hint.fill",
+      "value": "A/D — segment   E — fill   Esc — leave"
     },
     {
       "key": "cemetery.work.hint.coffin",
@@ -1279,30 +1283,6 @@
     {
       "key": "cemetery.work.abandoned",
       "value": "Left it half done. That is starting again."
-    },
-    {
-      "key": "cemetery.soil.turf",
-      "value": "turf"
-    },
-    {
-      "key": "cemetery.soil.loam",
-      "value": "loam"
-    },
-    {
-      "key": "cemetery.soil.clay",
-      "value": "clay"
-    },
-    {
-      "key": "cemetery.soil.stone",
-      "value": "stone"
-    },
-    {
-      "key": "cemetery.soil.root",
-      "value": "root"
-    },
-    {
-      "key": "cemetery.soil.spoil",
-      "value": "spoil"
     },
     {
       "key": "interaction.read_plaque",

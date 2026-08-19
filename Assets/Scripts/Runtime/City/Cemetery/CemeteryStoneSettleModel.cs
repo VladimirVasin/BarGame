@@ -55,9 +55,9 @@ namespace BarPromenade
         public int StrikesRequired { get; }
 
         /// <summary>
-        /// The swing the blows are timed on. Wider than any digging
-        /// ground: this is the last thing the hero does for the wage
-        /// and it should land, not tease.
+        /// The swing the blows are timed on. Generous: this is the
+        /// last thing the hero does for the wage and it should land,
+        /// not tease.
         /// </summary>
         public float BiteHalfWidth { get; }
         public float GrazeHalfWidth { get; }
@@ -74,9 +74,8 @@ namespace BarPromenade
 
         /// <summary>The tamping swing, as the stroke model wants it.
         /// </summary>
-        public CemeterySoilProfile TampProfile =>
-            new CemeterySoilProfile(
-                CemeterySoilKind.Stone,
+        public CemeterySwingProfile TampProfile =>
+            new CemeterySwingProfile(
                 BiteHalfWidth,
                 GrazeHalfWidth,
                 SwingsPerSecond);

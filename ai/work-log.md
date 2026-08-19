@@ -6,6 +6,59 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-20 — The spade acts stop being a swing, and the soil goes with it
+
+- **Digging and filling are a choice of square and a press.** The timing bar
+  is out of both, at the user's direction, and they were right: `18` timed
+  swings is one shot demanded eighteen times, and it was the same shot every
+  time. What was left once it went is the thing that was actually carrying
+  the act — the lattice rule that no segment may go deeper than its
+  shallowest neighbour, which is a decision about *where* to work. `A`/`D`
+  move the spade, `E` takes a course, and `CemeteryGraveLatticeModel.TryStrike`
+  no longer consults anything but that rule.
+- **The chosen square is outlined in the hole, not on the panel.**
+  `CityCemeterySegmentFrameWorldBuilder` builds one thin chalk-white frame and
+  moves it, since every segment of a lattice is the same size, and
+  `Place` drops it on the working face of the chosen segment — down as the
+  digging goes, up as the filling comes back. This is what made the panel's
+  `3 x 2` map redundant: with the timing bar gone, choosing the square was the
+  whole act, and six identical patches of earth with the map beside them was a
+  puzzle to be solved against the world rather than a picture of it. The panel
+  is gone for both spade acts; what is left is one hint line naming two keys.
+  The two acts no longer share it — `Coffined` returns `FillHintKey` now —
+  because a line reading "dig" at a hero shovelling a hole shut is the wrong
+  instruction however cheap it is to share.
+- **The soil system is deleted outright.** `CemeteryGraveSoil` (turf, loam,
+  clay, stone, root, spoil and their table) is gone, with the lattice's
+  per-course ground, the controller's `NextGroundSeed`, the view's soil
+  colours and label, the six `cemetery.soil.*` keys in both catalogs and four
+  tests. A kind of ground that changes nothing and is shown nowhere is not
+  detail, it is weight. `CemeterySoilProfile` survives in substance as
+  `CemeterySwingProfile`, declared in `CemeteryStrokeModel` and stated by
+  `CemeteryStoneSettleSettings.TampProfile`: the three blows that set the
+  stone are the only timed swing left in the job, so its shape belongs where
+  it is used. `TheOnlyTimedSwingLeftIsWideEnoughToHit` still measures that
+  window off the model in seconds, which is the mistake that unit invited
+  once already.
+- **The plaque's face is found by triangles, not vertices.** The band search
+  shipped reading the monument's *vertices*, and `Attach` returned null on
+  every stone. A throwaway EditMode probe said why in one line: a monument is
+  a combined box mesh with 48 vertices, all of them at box corners, so a
+  horizontal band anywhere between two corner rows samples nothing at all.
+  `TryFindSolidFace` now walks the triangles whose `[minY, maxY]` span
+  contains the seat height and takes their corners, which is a surface rather
+  than a point cloud and cannot have holes between rows. It searches top-down
+  from `0.74` to `0.44` of the stone's height with a `0.10 m` threshold and
+  cuts the board to whatever the stone offers there, so the plate lands on the
+  head of a stele and between the arms of a cross instead of on the plinth.
+  The probe is now `TheBoardSitsOnTheStoneAndCarriesReadableLines`.
+- **Verified:** EditMode `CemeteryGraveWork`, `CemeteryGravedigging`,
+  `CemeteryWatchman`, `LocalizationCatalog`, `RetroSfxLibrary` and
+  `CityCemeteryPlanner`, 84/84. The world frame's own geometry is not covered
+  — it is built from `GetSegmentRect` and placed by `GetSegmentFace`, both of
+  which are, but that the outline reads as an outline on screen is an eyeball
+  matter like the rest of the IMGUI surface.
+
 ## 2026-08-19 — The gravedigging is worked, not pressed
 
 - **Four acts, four games.** The ladder gains a rung —

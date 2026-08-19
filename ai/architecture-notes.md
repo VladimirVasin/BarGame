@@ -1741,20 +1741,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone.
-- **Accepted — The ground inside a dug grave is rolled, not seeded:**
-  `CemeteryGraveLatticeModel` takes an `int` seed and is a pure function of
-  it, but `CemeteryGraveWorkController.NextGroundSeed` supplies a fresh
-  `UnityEngine.Random` draw every time a spade act opens, so which segment
-  hides the stone differs between attempts. This is the only value in the
-  gravedigging not derived from `GameSessionState.CitySeed`, and a deliberate
-  exception to the project's deterministic-generation preference. The reason
-  is that `SetCitySeed` has no gameplay caller: the seed is pinned to
-  `DefaultCitySeed` forever, so a plot-derived roll is not "deterministic per
-  city", it is "identical in every playthrough of the only city". The
-  exception is safe because the rolled value is not world state — it lives
-  inside one modal session, is never persisted, and an abandoned act discards
-  it along with everything else the session built. Anything that must survive
-  a trip indoors still comes from the seed.
+- **Accepted — Both spade acts are a choice, not a swing:** Digging and
+  filling ask the hero to pick one of six squares and press `E`; there is no
+  timing bar in either. There was one, with five kinds of ground behind it
+  (turf, loam, clay, stone, root) each with its own bite window, and it is
+  gone at the user's direction along with the whole soil system: `18` timed
+  swings is the same shot demanded eighteen times, and a kind of ground the
+  hero cannot see and cannot answer differently is not detail. What carries
+  the act instead is the lattice rule — no segment may go deeper than its
+  shallowest neighbour — which is a decision about where to work and is
+  visible in the hole, because the segment under the spade is outlined down
+  there by `CityCemeterySegmentFrameWorldBuilder` rather than on a panel. The
+  HUD for both acts is one line naming two keys. The one timed swing left in
+  the job is the three blows that set the stone, and `CemeterySwingProfile`
+  now states its shape where it is used instead of in a table of soils.
 - **Accepted — The gravedigging animates the tool, not the hero:** Every act
   of the gravedigger's job runs as a modal session that drives one procedural
   spade (`CityGravediggerShovelWorldBuilder` +

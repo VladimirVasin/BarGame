@@ -41,16 +41,6 @@ namespace BarPromenade
         /// <summary>Two lines at the hint's own size.</summary>
         public const float HintHeight = 22f;
 
-        /// <summary>Cell size of the lattice map, in logical pixels.
-        /// </summary>
-        public const float CellWidth = 40f;
-        public const float CellHeight = 26f;
-        public const float CellGap = 3f;
-
-        /// <summary>Between the map of the hole and the numbers beside
-        /// it.</summary>
-        public const float SideGap = 10f;
-
         public const float BarHeight = 9f;
 
         /// <summary>Localization for the board and for heaving the
@@ -62,19 +52,6 @@ namespace BarPromenade
         public const string ReadHintKey = "cemetery.plaque.read.hint";
 
         private const string EpitaphControlName = "grave-epitaph";
-
-        private static readonly Color TurfColor =
-            new Color(0.30f, 0.38f, 0.22f);
-        private static readonly Color LoamColor =
-            new Color(0.33f, 0.25f, 0.16f);
-        private static readonly Color ClayColor =
-            new Color(0.44f, 0.31f, 0.21f);
-        private static readonly Color StoneColor =
-            new Color(0.47f, 0.47f, 0.50f);
-        private static readonly Color RootColor =
-            new Color(0.38f, 0.33f, 0.17f);
-        private static readonly Color SpoilColor =
-            new Color(0.29f, 0.23f, 0.15f);
 
         private CemeteryGraveWorkController work;
         private Camera worldCamera;
@@ -97,38 +74,6 @@ namespace BarPromenade
             (work.Phase == CemeteryGraveWorkPhase.Working ||
              work.IsReading);
 
-        /// <summary>
-        /// The one place a kind of ground becomes a colour, so the map
-        /// and any legend can never disagree about what clay looks
-        /// like.
-        /// </summary>
-        public static Color GetSoilColor(CemeterySoilKind kind)
-        {
-            switch (kind)
-            {
-                case CemeterySoilKind.Turf:
-                    return TurfColor;
-                case CemeterySoilKind.Clay:
-                    return ClayColor;
-                case CemeterySoilKind.Stone:
-                    return StoneColor;
-                case CemeterySoilKind.Root:
-                    return RootColor;
-                case CemeterySoilKind.Spoil:
-                    return SpoilColor;
-                default:
-                    return LoamColor;
-            }
-        }
-
-        /// <summary>The name of a kind of ground, for the line under
-        /// the map.</summary>
-        public static string GetSoilKey(CemeterySoilKind kind)
-        {
-            return "cemetery.soil." +
-                   kind.ToString().ToLowerInvariant();
-        }
-
         private void OnGUI()
         {
             if (!Visible || worldCamera == null)
@@ -145,13 +90,25 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
+                // Only the two acts with a gauge get a panel. Digging
+                // and filling are a choice of square and a press, and
+                // the square is outlined down in the hole where the
+                // hero is already looking — a framed map of six cells
+                // beside it was repeating the world back at him.
                 if (work.IsReading)
                 {
-                    DrawReading();
+                    DrawHintOnly(
+                        LocalizationService.Get(ReadHintKey));
                 }
                 else if (work.IsInscribing)
                 {
                     DrawInscribing();
+                }
+                else if (work.IsSpadeAct)
+                {
+                    DrawHintOnly(
+                        LocalizationService.Get(
+                            work.GetLiveHintKey()));
                 }
                 else
                 {
@@ -204,33 +161,6 @@ namespace BarPromenade
                 HintHeight);
         }
 
-        /// <summary>The lattice map's corner of the body.</summary>
-        public static Rect CreateLatticeRect(Rect body)
-        {
-            return new Rect(
-                body.x,
-                body.y + 2f,
-                (CellWidth *
-                 CemeteryGraveLatticeModel.SegmentsAlong) +
-                (CellGap *
-                 (CemeteryGraveLatticeModel.SegmentsAlong - 1)),
-                (CellHeight *
-                 CemeteryGraveLatticeModel.SegmentsAcross) +
-                CellGap);
-        }
-
-        /// <summary>Everything beside the map: the ground's name, the
-        /// swing and how far the work has got.</summary>
-        public static Rect CreateSideRect(Rect body)
-        {
-            Rect map = CreateLatticeRect(body);
-            return new Rect(
-                map.xMax + SideGap,
-                body.y + 2f,
-                body.xMax - map.xMax - SideGap,
-                body.height - 4f);
-        }
-
         private void DrawPanel()
         {
             CreateLayout(
@@ -249,11 +179,7 @@ namespace BarPromenade
                         work.Act)),
                 titleStyle);
 
-            if (work.IsSpadeAct)
-            {
-                DrawSpadeAct(body);
-            }
-            else if (work.Act == CemeteryGraveWorkStage.Dug)
+            if (work.Act == CemeteryGraveWorkStage.Dug)
             {
                 DrawCoffinAct(body);
             }
@@ -266,192 +192,6 @@ namespace BarPromenade
                 hint,
                 LocalizationService.Get(work.GetLiveHintKey()),
                 hintStyle);
-        }
-
-        // ---- digging and filling ------------------------------
-
-        private void DrawSpadeAct(Rect body)
-        {
-            CemeteryGraveLatticeModel lattice = work.Lattice;
-            if (lattice == null)
-            {
-                return;
-            }
-
-            Rect map = CreateLatticeRect(body);
-            DrawLattice(map, lattice);
-
-            Rect side = CreateSideRect(body);
-            DrawSoilLabel(side, lattice);
-            if (work.TargetSegment >= 0)
-            {
-                DrawSwing(
-                    new Rect(
-                        side.x,
-                        side.y + 18f,
-                        side.width,
-                        BarHeight),
-                    lattice.GetProfile(work.TargetSegment));
-            }
-            DrawBar(
-                new Rect(
-                    side.x,
-                    side.yMax - BarHeight,
-                    side.width,
-                    BarHeight),
-                lattice.Progress01,
-                RetroUiTheme.Good);
-        }
-
-        private void DrawLattice(
-            Rect map,
-            CemeteryGraveLatticeModel lattice)
-        {
-            for (int segment = 0;
-                 segment < CemeteryGraveLatticeModel.SegmentCount;
-                 segment++)
-            {
-                int along =
-                    segment / CemeteryGraveLatticeModel.SegmentsAcross;
-                int across =
-                    segment % CemeteryGraveLatticeModel.SegmentsAcross;
-                var cell = new Rect(
-                    map.x + (along * (CellWidth + CellGap)),
-                    map.y + (across * (CellHeight + CellGap)),
-                    CellWidth,
-                    CellHeight);
-                bool workable = lattice.IsWorkable(segment);
-                bool selected = segment == work.TargetSegment;
-                RetroUiTheme.DrawPanel(
-                    cell,
-                    RetroUiTheme.Ink,
-                    selected
-                        ? RetroUiTheme.Accent
-                        : RetroUiTheme.BorderMuted,
-                    false,
-                    2f,
-                    selected ? 2f : 1f,
-                    workable || selected ? 1f : 0.45f);
-
-                // Courses stack up the cell so the picture reads as a
-                // section through the ground rather than as a score.
-                float inset = 3f;
-                float lane = (cell.height - (inset * 2f)) /
-                             CemeteryGraveLatticeModel
-                                 .CoursesPerSegment;
-                int done = lattice.GetCoursesDone(segment);
-                for (int course = 0;
-                     course < CemeteryGraveLatticeModel
-                         .CoursesPerSegment;
-                     course++)
-                {
-                    var band = new Rect(
-                        cell.x + inset,
-                        cell.y + inset + (course * lane),
-                        cell.width - (inset * 2f),
-                        lane - 1f);
-                    bool cleared =
-                        lattice.Mode ==
-                        CemeteryGraveLatticeMode.Filling
-                            ? course >=
-                              CemeteryGraveLatticeModel
-                                  .CoursesPerSegment - done
-                            : course < done;
-                    Color soil = GetSoilColor(
-                        lattice.GetSoilAt(segment, course));
-                    RetroUiTheme.FillRect(
-                        band,
-                        cleared
-                            ? RetroUiTheme.Fade(soil, 0.22f)
-                            : soil);
-                }
-
-                if (!workable && !selected)
-                {
-                    RetroUiTheme.DrawDither(
-                        cell,
-                        RetroUiTheme.Fade(RetroUiTheme.Ink, 0.55f));
-                }
-            }
-        }
-
-        private void DrawSoilLabel(
-            Rect side,
-            CemeteryGraveLatticeModel lattice)
-        {
-            int segment = work.TargetSegment;
-            if (segment < 0)
-            {
-                return;
-            }
-
-            GUI.Label(
-                new Rect(side.x, side.y, side.width, 13f),
-                LocalizationService.Get(
-                    GetSoilKey(lattice.GetSoil(segment))),
-                labelStyle);
-        }
-
-        /// <summary>
-        /// The swing, with its bands drawn from the same rule the
-        /// strike is judged by. Bite in the middle, graze either side
-        /// of it, and everything beyond that is a jarred blade.
-        /// </summary>
-        private void DrawSwing(
-            Rect track,
-            CemeterySoilProfile profile)
-        {
-            RetroUiTheme.DrawPanel(
-                track,
-                RetroUiTheme.Ink,
-                RetroUiTheme.BorderMuted,
-                false,
-                1f,
-                1f);
-            var inner = new Rect(
-                track.x + 1f,
-                track.y + 1f,
-                track.width - 2f,
-                track.height - 2f);
-            DrawBand(
-                inner,
-                profile.BiteHalfWidth + profile.GrazeHalfWidth,
-                RetroUiTheme.Fade(RetroUiTheme.Muted, 0.55f));
-            DrawBand(
-                inner,
-                profile.BiteHalfWidth,
-                RetroUiTheme.Good);
-            if (!work.Stroke.IsSwinging)
-            {
-                return;
-            }
-
-            float marker = inner.x +
-                           ((work.Stroke.Position + 1f) *
-                            0.5f *
-                            inner.width);
-            RetroUiTheme.FillRect(
-                new Rect(
-                    Mathf.Round(marker) - 1f,
-                    track.y - 1f,
-                    2f,
-                    track.height + 2f),
-                RetroUiTheme.Accent);
-        }
-
-        private static void DrawBand(
-            Rect inner,
-            float halfWidth,
-            Color color)
-        {
-            float half = Mathf.Clamp01(halfWidth) * 0.5f;
-            RetroUiTheme.FillRect(
-                new Rect(
-                    inner.x + ((0.5f - half) * inner.width),
-                    inner.y,
-                    half * 2f * inner.width,
-                    inner.height),
-                color);
         }
 
         // ---- the coffin ---------------------------------------
@@ -683,27 +423,21 @@ namespace BarPromenade
         /// </summary>
         private void DrawInscribing()
         {
-            var hint = new Rect(
-                (RetroUiTheme.LogicalWidth - PanelWidth) * 0.5f,
-                RetroUiTheme.LogicalHeight -
-                HintHeight -
-                PanelBottomMargin,
-                PanelWidth,
-                HintHeight);
-            GUI.Label(
-                hint,
+            DrawHintOnly(
                 LocalizationService.Get(
                     CemeteryGraveWorkController.PlaqueHintKey) +
                 "   " +
                 LocalizationService.Get(PlaqueWordsKey) +
                 " " +
-                work.EpitaphWordsLeft,
-                hintStyle);
+                work.EpitaphWordsLeft);
         }
 
-        /// <summary>One line saying how to step back. The board says
-        /// everything else.</summary>
-        private void DrawReading()
+        /// <summary>
+        /// One bare line at the foot of the screen and nothing else.
+        /// Used wherever the act itself is legible in the world and a
+        /// panel would only sit between the hero and it.
+        /// </summary>
+        private void DrawHintOnly(string line)
         {
             GUI.Label(
                 new Rect(
@@ -713,8 +447,58 @@ namespace BarPromenade
                     PanelBottomMargin,
                     PanelWidth,
                     HintHeight),
-                LocalizationService.Get(ReadHintKey),
+                line,
                 hintStyle);
+        }
+
+        /// <summary>
+        /// The swing the three blows are timed on, with its bands
+        /// drawn from the same rule the strike is judged by. Bite in
+        /// the middle, graze either side of it, and everything beyond
+        /// that is a jarred blade.
+        /// </summary>
+        private void DrawSwing(
+            Rect track,
+            CemeterySwingProfile profile)
+        {
+            RetroUiTheme.DrawPanel(
+                track,
+                RetroUiTheme.Ink,
+                RetroUiTheme.BorderMuted,
+                false,
+                1f,
+                1f);
+            var inner = new Rect(
+                track.x + 1f,
+                track.y + 1f,
+                track.width - 2f,
+                track.height - 2f);
+            DrawBandAt(
+                inner,
+                0f,
+                profile.BiteHalfWidth + profile.GrazeHalfWidth,
+                RetroUiTheme.Fade(RetroUiTheme.Muted, 0.55f));
+            DrawBandAt(
+                inner,
+                0f,
+                profile.BiteHalfWidth,
+                RetroUiTheme.Good);
+            if (!work.Stroke.IsSwinging)
+            {
+                return;
+            }
+
+            float marker = inner.x +
+                           ((work.Stroke.Position + 1f) *
+                            0.5f *
+                            inner.width);
+            RetroUiTheme.FillRect(
+                new Rect(
+                    Mathf.Round(marker) - 1f,
+                    track.y - 1f,
+                    2f,
+                    track.height + 2f),
+                RetroUiTheme.Accent);
         }
 
         // ---- shared -------------------------------------------

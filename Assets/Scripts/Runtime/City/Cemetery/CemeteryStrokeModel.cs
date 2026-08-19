@@ -2,6 +2,41 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// How one swing answers: how wide the window of a good strike is
+    /// and how fast the marker runs through it.
+    ///
+    /// It used to belong to a kind of ground. Digging and filling are
+    /// a choice of square and a press now, so the only swing left in
+    /// the job is the three blows that set the stone, and the shape of
+    /// that swing is stated where it is used rather than in a table of
+    /// soils nobody meets.
+    /// </summary>
+    public readonly struct CemeterySwingProfile
+    {
+        public CemeterySwingProfile(
+            float biteHalfWidth,
+            float grazeHalfWidth,
+            float swingsPerSecond)
+        {
+            BiteHalfWidth = biteHalfWidth;
+            GrazeHalfWidth = grazeHalfWidth;
+            SwingsPerSecond = swingsPerSecond;
+        }
+
+        /// <summary>Half-width of the biting window on the swing,
+        /// which runs from <c>-1</c> to <c>1</c> about its
+        /// centre.</summary>
+        public float BiteHalfWidth { get; }
+
+        /// <summary>Half-width of the band outside the bite where the
+        /// blade only grazes. Beyond it the blade jars.</summary>
+        public float GrazeHalfWidth { get; }
+
+        /// <summary>Full sweeps of the marker per second.</summary>
+        public float SwingsPerSecond { get; }
+    }
+
     /// <summary>What the blade did.</summary>
     public enum CemeteryStrokeOutcome
     {
@@ -15,16 +50,16 @@ namespace BarPromenade
         /// nothing.</summary>
         Graze = 2,
 
-        /// <summary>Flat on the ground. It rings, and a root you were
-        /// cutting has to be started again.</summary>
+        /// <summary>Flat on it. The blade rings and nothing moves.
+        /// </summary>
         Jar = 3
     }
 
     /// <summary>
-    /// One swing of the spade, as a bar the hero times rather than a
-    /// button he mashes. The marker runs the swing back and forth
-    /// through the ground's biting window; he holds the key while it
-    /// runs and lets go when it is in.
+    /// One swing, as a bar the hero times rather than a button he
+    /// mashes. The marker runs back and forth through the biting
+    /// window; he holds the key while it runs and lets go when it is
+    /// in.
     ///
     /// Letting the marker pass is free — it comes round again. That
     /// is deliberate: the game is timing, not reflex punishment, and a
@@ -39,7 +74,7 @@ namespace BarPromenade
     {
         public const float FixedStep = 1f / 120f;
 
-        private CemeterySoilProfile profile;
+        private CemeterySwingProfile profile;
         private float phase;
         private float accumulator;
 
@@ -51,9 +86,8 @@ namespace BarPromenade
         /// <c>0</c>.</summary>
         public float Position { get; private set; }
 
-        /// <summary>The ground this swing is being taken against.
-        /// </summary>
-        public CemeterySoilProfile Profile => profile;
+        /// <summary>The shape of the swing being taken.</summary>
+        public CemeterySwingProfile Profile => profile;
 
         /// <summary>Full sweeps completed since the swing began, for
         /// a view that wants to darken a marker the hero has been
@@ -61,13 +95,13 @@ namespace BarPromenade
         public int Sweeps { get; private set; }
 
         /// <summary>
-        /// Winds up a swing against one kind of ground. The seed only
+        /// Winds up a swing. The seed only
         /// shifts where on the bar the marker starts, so two strikes
         /// on the same segment do not feel like a metronome.
         /// </summary>
-        public void Begin(CemeterySoilProfile soilProfile, int seed)
+        public void Begin(CemeterySwingProfile swingProfile, int seed)
         {
-            profile = soilProfile;
+            profile = swingProfile;
             phase = UnitFromBits(unchecked((uint)seed)) *
                     Mathf.PI *
                     2f;
@@ -126,17 +160,17 @@ namespace BarPromenade
         /// </summary>
         public static CemeteryStrokeOutcome Resolve(
             float position,
-            CemeterySoilProfile soilProfile)
+            CemeterySwingProfile swingProfile)
         {
             float distance = Mathf.Abs(position);
-            if (distance <= soilProfile.BiteHalfWidth)
+            if (distance <= swingProfile.BiteHalfWidth)
             {
                 return CemeteryStrokeOutcome.Bite;
             }
 
             return distance <=
-                   soilProfile.BiteHalfWidth +
-                   soilProfile.GrazeHalfWidth
+                   swingProfile.BiteHalfWidth +
+                   swingProfile.GrazeHalfWidth
                 ? CemeteryStrokeOutcome.Graze
                 : CemeteryStrokeOutcome.Jar;
         }

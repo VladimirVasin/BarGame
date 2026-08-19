@@ -27,14 +27,13 @@ namespace BarPromenade
     /// lattice always satisfies it.
     ///
     /// Filling is the same lattice read upward, so one model serves
-    /// both acts — though it meets nothing but the loose spoil it came
-    /// off, so only the digging has ground worth varying.
+    /// both acts.
     ///
-    /// The model is a pure function of its seed: one number is one
-    /// arrangement of ground, every time, which is what makes it
-    /// testable. What varies is who supplies the number. The work
-    /// re-rolls it on every attempt, so two goes at the same hole never
-    /// meet the same stone in the same corner.
+    /// It carries no notion of what the earth is made of. It did once
+    /// — turf, loam, clay, stone and root, each with its own window on
+    /// a timing bar — but both spade acts are now a choice of square
+    /// and a press, and a kind of ground that changes nothing and is
+    /// shown nowhere is not detail, it is weight.
     /// </summary>
     public sealed class CemeteryGraveLatticeModel
     {
@@ -57,46 +56,15 @@ namespace BarPromenade
         public const int TotalCourses =
             SegmentCount * CoursesPerSegment;
 
-        /// <summary>
-        /// Keeps the ground apart from anything else drawn out of the
-        /// same seed — the sway on the ropes, the lean of the stone.
-        /// </summary>
-        private const uint SoilSalt = 0x51F0D9A3u;
-
-        private readonly CemeterySoilKind[] soil;
         private readonly int[] coursesDone;
         private readonly CemeteryGraveLatticeMode mode;
 
-        /// <summary>
-        /// Lays the ground out for one attempt at one hole. The seed
-        /// is the only entropy, and the caller owns where it comes
-        /// from: a fixed number here is a fixed grave, which is what
-        /// every test wants, and a fresh one is fresh ground, which is
-        /// what the hero gets.
-        /// </summary>
+        /// <summary>Lays out one hole's worth of work.</summary>
         public CemeteryGraveLatticeModel(
-            int seed,
             CemeteryGraveLatticeMode latticeMode)
         {
             mode = latticeMode;
-            soil = new CemeterySoilKind[TotalCourses];
             coursesDone = new int[SegmentCount];
-            for (int segment = 0;
-                 segment < SegmentCount;
-                 segment++)
-            {
-                for (int course = 0;
-                     course < CoursesPerSegment;
-                     course++)
-                {
-                    soil[(segment * CoursesPerSegment) + course] =
-                        ResolveSoil(
-                            seed,
-                            segment,
-                            course,
-                            latticeMode);
-                }
-            }
         }
 
         public CemeteryGraveLatticeMode Mode => mode;
@@ -117,39 +85,6 @@ namespace BarPromenade
         {
             RequireSegment(segment);
             return coursesDone[segment];
-        }
-
-        /// <summary>
-        /// The ground this segment would meet next. A finished segment
-        /// reports the last course it went through, because there is
-        /// nothing left to meet.
-        /// </summary>
-        public CemeterySoilKind GetSoil(int segment)
-        {
-            RequireSegment(segment);
-            int course = Math.Min(
-                coursesDone[segment],
-                CoursesPerSegment - 1);
-            return soil[(segment * CoursesPerSegment) + course];
-        }
-
-        /// <summary>The ground at one exact course, for tests and for
-        /// the map the view draws.</summary>
-        public CemeterySoilKind GetSoilAt(int segment, int course)
-        {
-            RequireSegment(segment);
-            if (course < 0 || course >= CoursesPerSegment)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(course));
-            }
-
-            return soil[(segment * CoursesPerSegment) + course];
-        }
-
-        public CemeterySoilProfile GetProfile(int segment)
-        {
-            return CemeterySoilTable.Get(GetSoil(segment));
         }
 
         /// <summary>
@@ -196,10 +131,9 @@ namespace BarPromenade
         /// not the hero's to work — the caller then simply keeps the
         /// stroke and the ground as they were.
         ///
-        /// One good strike is one course, whatever the ground. Asking
-        /// for a second on the same square is the same shot demanded
-        /// twice; what makes hard ground hard is the width of the
-        /// window it gives, and that is stated in the profile.
+        /// One press is one course. The difficulty of both spade acts
+        /// is the rule above — a segment may not get ahead of its
+        /// shallowest neighbour — and not the stroke.
         /// </summary>
         public bool TryStrike(
             int segment,
@@ -262,68 +196,6 @@ namespace BarPromenade
             }
 
             return coursesDone[(along * SegmentsAcross) + across];
-        }
-
-        /// <summary>
-        /// The sod is always the lid, and there is only ever one hard
-        /// course in a segment — a grave that is stone all the way
-        /// down is a grave nobody finishes. Filling meets nothing but
-        /// the heap it came off.
-        /// </summary>
-        private static CemeterySoilKind ResolveSoil(
-            int seed,
-            int segment,
-            int course,
-            CemeteryGraveLatticeMode latticeMode)
-        {
-            if (latticeMode == CemeteryGraveLatticeMode.Filling)
-            {
-                return CemeterySoilKind.Spoil;
-            }
-
-            if (course == 0)
-            {
-                return CemeterySoilKind.Turf;
-            }
-
-            uint roll = Mix(
-                unchecked((uint)seed),
-                (uint)((segment * CoursesPerSegment) + course)) %
-                100u;
-            if (roll < 52u)
-            {
-                return CemeterySoilKind.Loam;
-            }
-
-            if (roll < 78u)
-            {
-                return CemeterySoilKind.Clay;
-            }
-
-            return roll < 90u
-                ? CemeterySoilKind.Root
-                : CemeterySoilKind.Stone;
-        }
-
-        /// <summary>
-        /// The seed and the course, stirred hard enough that adjacent
-        /// courses of the same seed are unrelated. Neighbouring slots
-        /// differ by one, and a weak mix would lay stone in stripes.
-        /// </summary>
-        private static uint Mix(uint seed, uint slot)
-        {
-            unchecked
-            {
-                uint hash = seed ^ SoilSalt;
-                hash ^= (slot + 0x9E3779B9u) + (hash << 6) +
-                        (hash >> 2);
-                hash ^= hash >> 16;
-                hash *= 0x7FEB352Du;
-                hash ^= hash >> 15;
-                hash *= 0x846CA68Bu;
-                hash ^= hash >> 16;
-                return hash;
-            }
         }
 
         private static int ClampSegment(int segment)

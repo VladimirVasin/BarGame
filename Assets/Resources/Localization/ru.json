@@ -1270,7 +1270,11 @@
     },
     {
       "key": "cemetery.work.hint.spade",
-      "value": "A/D — участок   держать E — замах, отпустить — удар   Esc — бросить"
+      "value": "A/D — участок   E — копать   Esc — выйти"
+    },
+    {
+      "key": "cemetery.work.hint.fill",
+      "value": "A/D — участок   E — засыпать   Esc — выйти"
     },
     {
       "key": "cemetery.work.hint.coffin",
@@ -1279,30 +1283,6 @@
     {
       "key": "cemetery.work.abandoned",
       "value": "Бросил на середине. Начинать заново."
-    },
-    {
-      "key": "cemetery.soil.turf",
-      "value": "дёрн"
-    },
-    {
-      "key": "cemetery.soil.loam",
-      "value": "суглинок"
-    },
-    {
-      "key": "cemetery.soil.clay",
-      "value": "глина"
-    },
-    {
-      "key": "cemetery.soil.stone",
-      "value": "камень"
-    },
-    {
-      "key": "cemetery.soil.root",
-      "value": "корень"
-    },
-    {
-      "key": "cemetery.soil.spoil",
-      "value": "отвал"
     },
     {
       "key": "interaction.read_plaque",

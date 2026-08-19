@@ -67,6 +67,7 @@ namespace BarPromenade
         public const string StoneTitleKey =
             "cemetery.work.stone.title";
         public const string SpadeHintKey = "cemetery.work.hint.spade";
+        public const string FillHintKey = "cemetery.work.hint.fill";
         public const string CoffinHintKey =
             "cemetery.work.hint.coffin";
         public const string StoneRaiseHintKey =
@@ -114,6 +115,7 @@ namespace BarPromenade
         private CemeteryStoneSettleModel settle;
 
         private GameObject workingPit;
+        private GameObject segmentFrame;
         private CemeteryShovelAnimator spadeAnimator;
         private CemeteryGraveSlings slings;
         private bool headOnRight;
@@ -366,6 +368,8 @@ namespace BarPromenade
                     return CoffinHintKey;
                 case CemeteryGraveWorkStage.Filled:
                     return StoneRaiseHintKey;
+                case CemeteryGraveWorkStage.Coffined:
+                    return FillHintKey;
                 default:
                     return SpadeHintKey;
             }
@@ -481,38 +485,33 @@ namespace BarPromenade
             }
 
             RefreshTarget();
+            Vector3 face = GetTargetFace();
             spadeAnimator.SetTargets(
-                GetTargetFace(),
+                face,
                 CemeteryGraveWorkStance.GetHeapTop(
                     job.Plan,
                     CityCemeteryProgressivePitWorldBuilder
                         .GetHeapFullness(lattice)));
+            CityCemeterySegmentFrameWorldBuilder.Place(
+                segmentFrame != null ? segmentFrame.transform : null,
+                job.Plan,
+                lattice,
+                target);
             if (spadeAnimator.IsStriking)
             {
                 return;
             }
 
-            if (!stroke.IsSwinging)
+            // No bar and no window: pick the square and take the
+            // course off it. Both spade acts are eighteen deliberate
+            // choices about where to work next, and the rule that a
+            // segment may not get ahead of its neighbours is the whole
+            // of the difficulty.
+            spadeAnimator.SetSwing(-1f);
+            if (WasWorkPressed() && target >= 0)
             {
-                spadeAnimator.SetSwing(-1f);
-                if (WasWorkPressed() && target >= 0)
-                {
-                    stroke.Begin(
-                        lattice.GetProfile(target),
-                        GetStrokeSeed());
-                }
-
-                return;
+                ApplyStroke(CemeteryStrokeOutcome.Bite);
             }
-
-            stroke.Advance(deltaTime);
-            spadeAnimator.SetSwing(stroke.Position);
-            if (IsWorkHeld())
-            {
-                return;
-            }
-
-            ApplyStroke(stroke.Release());
         }
 
         private void ApplyStroke(CemeteryStrokeOutcome outcome)
@@ -869,11 +868,13 @@ namespace BarPromenade
                         job.Plan));
             }
 
-            lattice = new CemeteryGraveLatticeModel(
-                NextGroundSeed(),
-                mode);
+            lattice = new CemeteryGraveLatticeModel(mode);
             RebuildWorkingPit();
             target = lattice.FindWorkable(0, 1);
+            segmentFrame =
+                CityCemeterySegmentFrameWorldBuilder.Build(
+                    transform,
+                    job.Plan);
             TakeUpSpade();
         }
 
@@ -1168,6 +1169,7 @@ namespace BarPromenade
             settle = null;
             target = -1;
             DestroyPart(ref workingPit);
+            DestroyPart(ref segmentFrame);
             DestroyPart(ref sessionPlaque);
             borrowedStone = null;
             if (spadeAnimator != null)
@@ -1251,29 +1253,6 @@ namespace BarPromenade
                 return (int)(
                     PlotHash() ^ ((uint)(int)act * 0x27D4EB2Fu));
             }
-        }
-
-        /// <summary>
-        /// Fresh ground for every attempt.
-        ///
-        /// This is the one number in the gravedigging that is not
-        /// drawn from the city seed, and it is deliberate. Everything
-        /// else about the job is a pure function of the world — which
-        /// plot, which monument, where the heap goes — because it has
-        /// to survive a trip indoors and be rebuilt exactly. The
-        /// ground inside a hole does not: it lives only as long as the
-        /// attempt does, and a man who walks off a half-dug grave and
-        /// comes back should not be handed the same stone in the same
-        /// corner he already knows about.
-        ///
-        /// The cost is that a bad roll can be re-rolled by leaving and
-        /// starting again, which is priced at everything already dug.
-        /// </summary>
-        private static int NextGroundSeed()
-        {
-            return UnityEngine.Random.Range(
-                int.MinValue,
-                int.MaxValue);
         }
 
         /// <summary>

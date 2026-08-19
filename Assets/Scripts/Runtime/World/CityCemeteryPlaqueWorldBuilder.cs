@@ -32,23 +32,28 @@ namespace BarPromenade
         public const float ProudMeters = 0.012f;
 
         /// <summary>
-        /// Where up the stone the board is fixed, as a share of the
-        /// stone's own height. Chest height on anything the yard
-        /// stands: where a hand would put it and an eye finds it.
+        /// Where up the stone the board goes: the upper part of the
+        /// face, which is where a mason puts a plate and where an eye
+        /// looks for one. The search starts high and only comes down
+        /// as far as the middle — a board at the foot of a monument
+        /// reads as something that fell off it.
         /// </summary>
-        public const float SeatHeightFraction = 0.56f;
-
-        /// <summary>
-        /// How far down the stone the search may go looking for
-        /// something solid and wide enough. A cross has nothing to
-        /// screw a board to until near its foot.
-        /// </summary>
-        public const float LowestSeatFraction = 0.18f;
+        public const float TopSeatFraction = 0.74f;
+        public const float LowestSeatFraction = 0.44f;
         public const int SeatSteps = 9;
 
-        /// <summary>Narrower than this is not a face, it is an edge.
+        /// <summary>
+        /// Narrower than this is not a face, it is an edge. It is
+        /// deliberately small: the board is cut down to whatever the
+        /// stone offers rather than the stone being searched for
+        /// somewhere a full-width board would fit, which is what
+        /// drove it to the plinth.
         /// </summary>
-        public const float MinimumFaceMeters = 0.16f;
+        public const float MinimumFaceMeters = 0.10f;
+
+        /// <summary>Below this a plate is a badge, not a plaque.
+        /// </summary>
+        public const float MinimumWidthMeters = 0.13f;
 
         /// <summary>
         /// The most of the stone's own width the board may take. A
@@ -113,9 +118,10 @@ namespace BarPromenade
             var root = new GameObject(RootName);
             root.transform.SetParent(stone, true);
 
-            float width = Mathf.Min(
-                WidthMeters,
-                span * MaximumFaceShare);
+            float width = Mathf.Clamp(
+                span * MaximumFaceShare,
+                MinimumWidthMeters,
+                WidthMeters);
             float height = width * (HeightMeters / WidthMeters);
 
             // TextMeshPro lays its quads out with normals of
@@ -285,10 +291,14 @@ namespace BarPromenade
         /// them are slabs. An Orthodox cross is mostly the air between
         /// its arms, and an obelisk narrows as it climbs, so the front
         /// face of the whole bounding box is not a surface — a board
-        /// fixed to it hangs in a gap. This walks down the stone in
-        /// bands, takes the widest one that is wide enough to carry a
-        /// plate, and puts the board on the actual front of the solid
-        /// there.
+        /// fixed to it hangs in a gap.
+        ///
+        /// It works on triangles rather than on vertices, and that is
+        /// the whole trick. These monuments are combined boxes: a
+        /// stele is forty-eight vertices, all of them at corners, so
+        /// sampling points inside a horizontal band finds nothing at
+        /// all at any height between them. A triangle, on the other
+        /// hand, knows it spans the band it crosses.
         /// </summary>
         private static bool TryFindSolidFace(
             Transform stone,
@@ -302,8 +312,8 @@ namespace BarPromenade
             span = 0f;
             seat = bounds.center.y;
 
-            var points = new System.Collections.Generic.List<Vector3>(
-                512);
+            var triangles =
+                new System.Collections.Generic.List<Vector3[]>(256);
             MeshFilter[] filters =
                 stone.GetComponentsInChildren<MeshFilter>(true);
             for (int index = 0; index < filters.Length; index++)
@@ -316,21 +326,26 @@ namespace BarPromenade
                 }
 
                 Mesh mesh = filters[index].sharedMesh;
-                if (mesh == null)
+                if (mesh == null || !mesh.isReadable)
                 {
                     continue;
                 }
 
                 Transform owner = filters[index].transform;
                 Vector3[] vertices = mesh.vertices;
-                for (int v = 0; v < vertices.Length; v++)
+                int[] indices = mesh.triangles;
+                for (int i = 0; i + 2 < indices.Length; i += 3)
                 {
-                    points.Add(
-                        owner.TransformPoint(vertices[v]));
+                    triangles.Add(new[]
+                    {
+                        owner.TransformPoint(vertices[indices[i]]),
+                        owner.TransformPoint(vertices[indices[i + 1]]),
+                        owner.TransformPoint(vertices[indices[i + 2]])
+                    });
                 }
             }
 
-            if (points.Count == 0)
+            if (triangles.Count == 0)
             {
                 return false;
             }
@@ -340,34 +355,48 @@ namespace BarPromenade
             Vector3 across = Vector3.Cross(Vector3.up, outward);
             float bottom = bounds.min.y;
             float total = Mathf.Max(bounds.size.y, 0.0001f);
-            float band = HeightMeters * 0.55f;
+
+            float bestSpan = 0f;
+            Vector3 bestFace = bounds.center;
+            float bestSeat = bounds.center.y;
 
             for (int step = 0; step < SeatSteps; step++)
             {
                 float fraction = Mathf.Lerp(
-                    SeatHeightFraction,
+                    TopSeatFraction,
                     LowestSeatFraction,
                     step / (float)(SeatSteps - 1));
                 float y = bottom + (total * fraction);
                 float low = float.MaxValue;
                 float high = float.MinValue;
                 float front = float.MinValue;
-                for (int index = 0; index < points.Count; index++)
+                for (int index = 0; index < triangles.Count; index++)
                 {
-                    Vector3 point = points[index];
-                    if (Mathf.Abs(point.y - y) > band)
+                    Vector3[] corners = triangles[index];
+                    float lowest = Mathf.Min(
+                        corners[0].y,
+                        Mathf.Min(corners[1].y, corners[2].y));
+                    float highest = Mathf.Max(
+                        corners[0].y,
+                        Mathf.Max(corners[1].y, corners[2].y));
+                    if (y < lowest || y > highest)
                     {
                         continue;
                     }
 
-                    float sideways =
-                        (point.x * across.x) + (point.z * across.z);
-                    low = Mathf.Min(low, sideways);
-                    high = Mathf.Max(high, sideways);
-                    front = Mathf.Max(
-                        front,
-                        (point.x * outward.x) +
-                        (point.z * outward.z));
+                    for (int c = 0; c < 3; c++)
+                    {
+                        Vector3 corner = corners[c];
+                        float sideways =
+                            (corner.x * across.x) +
+                            (corner.z * across.z);
+                        low = Mathf.Min(low, sideways);
+                        high = Mathf.Max(high, sideways);
+                        front = Mathf.Max(
+                            front,
+                            (corner.x * outward.x) +
+                            (corner.z * outward.z));
+                    }
                 }
 
                 if (low > high)
@@ -376,21 +405,31 @@ namespace BarPromenade
                 }
 
                 float measured = high - low;
-                if (measured < MinimumFaceMeters &&
-                    step < SeatSteps - 1)
+                float middle = (low + high) * 0.5f;
+                Vector3 seated = (across * middle) +
+                                 (outward * (front + ProudMeters));
+                if (measured > bestSpan)
                 {
-                    continue;
+                    bestSpan = measured;
+                    bestFace = seated;
+                    bestSeat = y;
                 }
 
-                float middle = (low + high) * 0.5f;
-                span = measured;
-                seat = y;
-                face = (across * middle) +
-                       (outward * (front + ProudMeters));
-                return span > 0.0001f;
+                // Highest band that can carry a board wins, and the
+                // board is cut to it rather than the other way round.
+                if (measured >= MinimumFaceMeters)
+                {
+                    span = measured;
+                    seat = y;
+                    face = seated;
+                    return true;
+                }
             }
 
-            return false;
+            span = bestSpan;
+            seat = bestSeat;
+            face = bestFace;
+            return bestSpan > MinimumWidthMeters * 0.5f;
         }
 
         private static bool TryMeasure(

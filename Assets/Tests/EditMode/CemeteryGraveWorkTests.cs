@@ -18,13 +18,6 @@ namespace BarPromenade.Tests.EditMode
     /// </summary>
     public sealed class CemeteryGraveWorkTests
     {
-        /// <summary>One fixed roll of ground, so the rules can be
-        /// held to it. The work itself re-rolls on every attempt;
-        /// that is the controller's business, not the model's.
-        /// </summary>
-        private const int GroundSeed = 0x5A17E3;
-        private const int OtherGroundSeed = 0x2C90B1;
-
         private readonly List<GameObject> spawned =
             new List<GameObject>();
 
@@ -50,142 +43,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void OneSeedIsOneGroundAndAnotherSeedIsAnother()
-        {
-            var first = new CemeteryGraveLatticeModel(
-                GroundSeed,
-                CemeteryGraveLatticeMode.Digging);
-            var second = new CemeteryGraveLatticeModel(
-                GroundSeed,
-                CemeteryGraveLatticeMode.Digging);
-            var other = new CemeteryGraveLatticeModel(
-                OtherGroundSeed,
-                CemeteryGraveLatticeMode.Digging);
-
-            Assert.That(
-                CemeteryGraveLatticeModel.SegmentCount,
-                Is.EqualTo(6));
-            Assert.That(
-                CemeteryGraveLatticeModel.TotalCourses,
-                Is.EqualTo(18));
-
-            bool differs = false;
-            for (int segment = 0;
-                 segment < CemeteryGraveLatticeModel.SegmentCount;
-                 segment++)
-            {
-                Assert.That(
-                    first.GetSoilAt(segment, 0),
-                    Is.EqualTo(CemeterySoilKind.Turf),
-                    "The sod is always the lid.");
-                for (int course = 0;
-                     course < CemeteryGraveLatticeModel
-                         .CoursesPerSegment;
-                     course++)
-                {
-                    Assert.That(
-                        first.GetSoilAt(segment, course),
-                        Is.EqualTo(second.GetSoilAt(segment, course)),
-                        "One seed is one arrangement of ground, or " +
-                        "nothing about it can be tested.");
-                    differs |= first.GetSoilAt(segment, course) !=
-                               other.GetSoilAt(segment, course);
-                }
-            }
-
-            Assert.That(
-                differs,
-                Is.True,
-                "Another seed has to be another hole.");
-        }
-
-        [Test]
-        public void FreshGroundIsDealtEveryTimeAndDealsEveryKind()
-        {
-            // The work re-rolls the seed on every attempt, so what
-            // matters is that the roll actually moves and that it can
-            // still produce all five kinds of digging ground rather
-            // than settling into loam.
-            var seen = new HashSet<CemeterySoilKind>();
-            var arrangements = new HashSet<string>();
-            for (int seed = 1; seed <= 400; seed++)
-            {
-                var lattice = new CemeteryGraveLatticeModel(
-                    seed * 7919,
-                    CemeteryGraveLatticeMode.Digging);
-                var shape = new System.Text.StringBuilder();
-                for (int segment = 0;
-                     segment < CemeteryGraveLatticeModel.SegmentCount;
-                     segment++)
-                {
-                    for (int course = 0;
-                         course < CemeteryGraveLatticeModel
-                             .CoursesPerSegment;
-                         course++)
-                    {
-                        CemeterySoilKind kind =
-                            lattice.GetSoilAt(segment, course);
-                        seen.Add(kind);
-                        shape.Append((int)kind);
-                    }
-                }
-
-                arrangements.Add(shape.ToString());
-            }
-
-            foreach (CemeterySoilKind kind in new[]
-                     {
-                         CemeterySoilKind.Turf,
-                         CemeterySoilKind.Loam,
-                         CemeterySoilKind.Clay,
-                         CemeterySoilKind.Stone,
-                         CemeterySoilKind.Root
-                     })
-            {
-                Assert.That(
-                    seen.Contains(kind),
-                    Is.True,
-                    kind + " never comes up in four hundred rolls.");
-            }
-
-            Assert.That(
-                seen.Contains(CemeterySoilKind.Spoil),
-                Is.False,
-                "Spoil belongs to filling and nowhere else.");
-            Assert.That(
-                arrangements.Count,
-                Is.GreaterThan(350),
-                "Four hundred rolls must not collapse onto a handful " +
-                "of holes.");
-        }
-
-        [Test]
-        public void FillingMeetsNothingButTheHeapItCameOff()
-        {
-            var lattice = new CemeteryGraveLatticeModel(
-                GroundSeed,
-                CemeteryGraveLatticeMode.Filling);
-            for (int segment = 0;
-                 segment < CemeteryGraveLatticeModel.SegmentCount;
-                 segment++)
-            {
-                for (int course = 0;
-                     course < CemeteryGraveLatticeModel
-                         .CoursesPerSegment;
-                     course++)
-                {
-                    Assert.That(
-                        lattice.GetSoilAt(segment, course),
-                        Is.EqualTo(CemeterySoilKind.Spoil));
-                }
-            }
-        }
-
-        [Test]
         public void TheLatticeRefusesAPillarAndNeverDeadlocks()
         {
             var lattice = new CemeteryGraveLatticeModel(
-                GroundSeed,
                 CemeteryGraveLatticeMode.Digging);
 
             // Take one corner down as far as the rule allows, then
@@ -241,10 +101,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void OnlyABiteTakesEarthAndOnlyARootForgetsIt()
+        public void OnlyABiteTakesEarthAndABlockedSquareRefusesIt()
         {
             var lattice = new CemeteryGraveLatticeModel(
-                GroundSeed,
                 CemeteryGraveLatticeMode.Digging);
 
             // The top course is turf everywhere: one strike, and a
@@ -276,106 +135,29 @@ namespace BarPromenade.Tests.EditMode
                     out _),
                 Is.False);
 
-            // Hard ground is no exception: one good strike takes one
-            // course of stone exactly as it takes one of loam. Asking
-            // for a second on the same square is the same shot demanded
-            // twice, and it only made the act longer.
-            Assert.That(
-                TryFindSoil(
-                    CemeterySoilKind.Stone,
-                    out int hardSeed,
-                    out int hardSegment,
-                    out int hardCourse),
-                Is.True,
-                "The soil roll must be able to bury a stone.");
-            var hard = new CemeteryGraveLatticeModel(
-                hardSeed,
-                CemeteryGraveLatticeMode.Digging);
-            DigDownTo(hard, hardSegment, hardCourse);
-            Assert.That(
-                hard.GetSoil(hardSegment),
-                Is.EqualTo(CemeterySoilKind.Stone));
-            int before = hard.GetCoursesDone(hardSegment);
-            Assert.That(
-                hard.TryStrike(
-                    hardSegment,
-                    CemeteryStrokeOutcome.Bite,
-                    out bool hardDone),
-                Is.True);
-            Assert.That(hardDone, Is.True);
-            Assert.That(
-                hard.GetCoursesDone(hardSegment),
-                Is.EqualTo(before + 1),
-                "One strike, one course, whatever it is made of.");
         }
 
         [Test]
-        public void TheSwingIsJudgedByTheBandsItDraws()
+        public void TheOnlyTimedSwingLeftIsWideEnoughToHit()
         {
-            CemeterySoilProfile clay =
-                CemeterySoilTable.Get(CemeterySoilKind.Clay);
+            // Digging and filling are a choice of square and a press
+            // now, so the only swing still timed is the three blows
+            // that set the stone. The marker is a sine and runs
+            // fastest exactly where the window is, so what matters is
+            // the time in hand, measured off the model.
+            CemeterySwingProfile tamp =
+                CemeteryStoneSettleSettings.Default.TampProfile;
+            float window = MeasureBiteWindowSeconds(tamp);
             Assert.That(
-                CemeteryStrokeModel.Resolve(0f, clay),
-                Is.EqualTo(CemeteryStrokeOutcome.Bite));
+                window,
+                Is.GreaterThan(0.12f),
+                "The last swing of the job gives only " +
+                Mathf.RoundToInt(window * 1000f) +
+                " ms, which is a handful of frames.");
             Assert.That(
-                CemeteryStrokeModel.Resolve(
-                    clay.BiteHalfWidth * 0.5f,
-                    clay),
-                Is.EqualTo(CemeteryStrokeOutcome.Bite));
-            Assert.That(
-                CemeteryStrokeModel.Resolve(
-                    -(clay.BiteHalfWidth + (clay.GrazeHalfWidth * 0.5f)),
-                    clay),
-                Is.EqualTo(CemeteryStrokeOutcome.Graze));
-            Assert.That(
-                CemeteryStrokeModel.Resolve(0.95f, clay),
-                Is.EqualTo(CemeteryStrokeOutcome.Jar));
-
-            // Harder ground is met in a narrower window than loam, and
-            // met faster.
-            CemeterySoilProfile loam =
-                CemeterySoilTable.Get(CemeterySoilKind.Loam);
-            CemeterySoilProfile stone =
-                CemeterySoilTable.Get(CemeterySoilKind.Stone);
-            Assert.That(
-                stone.BiteHalfWidth,
-                Is.LessThan(loam.BiteHalfWidth));
-            Assert.That(
-                stone.SwingsPerSecond,
-                Is.GreaterThan(loam.SwingsPerSecond));
-        }
-
-        [Test]
-        public void EveryGroundLeavesTimeEnoughToActuallyHitIt()
-        {
-            // The marker is a sine, so it runs fastest exactly where
-            // the biting window is. That makes the window's width a
-            // liar: what the hand gets is the time inside it, and this
-            // measures that off the model rather than off the table.
-            foreach (CemeterySoilKind kind in
-                     System.Enum.GetValues(typeof(CemeterySoilKind)))
-            {
-                float window = MeasureBiteWindowSeconds(kind);
-                Assert.That(
-                    window,
-                    Is.GreaterThan(0.10f),
-                    kind +
-                    " gives the hand only " +
-                    Mathf.RoundToInt(window * 1000f) +
-                    " ms to release in, which is a handful of frames.");
-                Assert.That(
-                    window,
-                    Is.LessThan(0.32f),
-                    kind +
-                    " is so wide that the timing stops being one.");
-            }
-
-            // And the ordering still means something: soft ground is
-            // more forgiving than hard.
-            Assert.That(
-                MeasureBiteWindowSeconds(CemeterySoilKind.Turf),
-                Is.GreaterThan(
-                    MeasureBiteWindowSeconds(CemeterySoilKind.Stone)));
+                window,
+                Is.LessThan(0.40f),
+                "And it is wide enough that it stops being timing.");
         }
 
         [Test]
@@ -387,9 +169,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(CemeteryStrokeOutcome.None),
                 "Nothing was swung.");
 
-            CemeterySoilProfile loam =
-                CemeterySoilTable.Get(CemeterySoilKind.Loam);
-            model.Begin(loam, 12345);
+            model.Begin(
+                CemeteryStoneSettleSettings.Default.TampProfile,
+                12345);
             Assert.That(model.IsSwinging, Is.True);
 
             // It reaches both ends of the bar inside one sweep, and it
@@ -708,7 +490,6 @@ namespace BarPromenade.Tests.EditMode
         {
             CemeteryGravediggingPlan plan = CreatePlan();
             var lattice = new CemeteryGraveLatticeModel(
-                GroundSeed,
                 CemeteryGraveLatticeMode.Digging);
 
             float area = 0f;
@@ -767,10 +548,8 @@ namespace BarPromenade.Tests.EditMode
         public void TheHeapIsWhateverIsNotInTheGround()
         {
             var digging = new CemeteryGraveLatticeModel(
-                GroundSeed,
                 CemeteryGraveLatticeMode.Digging);
             var filling = new CemeteryGraveLatticeModel(
-                GroundSeed,
                 CemeteryGraveLatticeMode.Filling);
 
             Assert.That(
@@ -1167,6 +946,33 @@ namespace BarPromenade.Tests.EditMode
                 Is.InRange(stoneBounds.min.y, stoneBounds.max.y),
                 "And sit on its face rather than above or below it.");
 
+            // Up where a mason puts a plate. It once slid to the
+            // plinth because the search demanded a full-width face and
+            // only the base was that wide.
+            float up = (plate.center.y - stoneBounds.min.y) /
+                       stoneBounds.size.y;
+            Assert.That(
+                up,
+                Is.GreaterThan(0.40f),
+                "The board is down at the foot of the stone (" +
+                Mathf.RoundToInt(up * 100f) +
+                "% up it), which reads as something that fell off.");
+            Assert.That(up, Is.LessThan(0.90f));
+
+            // Centred across the face rather than shoved to one edge.
+            Vector3 sideways = Vector3.Cross(
+                Vector3.up,
+                plan.Heading * Vector3.back);
+            float offset = Mathf.Abs(
+                ((plate.center.x - stoneBounds.center.x) *
+                 sideways.x) +
+                ((plate.center.z - stoneBounds.center.z) *
+                 sideways.z));
+            Assert.That(
+                offset,
+                Is.LessThan(0.05f),
+                "The board is off to one side of the stone.");
+
             // Three lines, each of them actually drawn and each of
             // them inside the brass.
             TMPro.TMP_Text[] lines =
@@ -1255,21 +1061,14 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThanOrEqualTo(20f),
                 "The hint must be able to wrap rather than clip.");
 
-            // And the picture beside the numbers actually fits, with
-            // the lattice cells inside their own map.
-            Rect map = CemeteryGraveWorkView.CreateLatticeRect(body);
-            Rect side = CemeteryGraveWorkView.CreateSideRect(body);
-            Assert.That(map.xMin, Is.GreaterThanOrEqualTo(body.xMin));
-            Assert.That(map.yMax, Is.LessThanOrEqualTo(body.yMax));
+            // The spade acts have no panel at all now — the square
+            // is outlined down in the hole — so what is left to hold
+            // is that the two acts which still carry a gauge have room
+            // for one.
             Assert.That(
-                side.width,
-                Is.GreaterThan(map.width * 1.2f),
-                "The bars beside the map need more room than it does.");
-            Assert.That(
-                side.xMax,
-                Is.LessThanOrEqualTo(body.xMax + 0.001f));
-            Assert.That(side.xMin, Is.GreaterThan(map.xMax));
-            Assert.That(side.yMax, Is.LessThanOrEqualTo(body.yMax));
+                body.height,
+                Is.GreaterThan(40f),
+                "A gauge needs a body to live in.");
         }
 
         [Test]
@@ -1299,20 +1098,27 @@ namespace BarPromenade.Tests.EditMode
                     Is.Not.Empty);
             }
 
-            // The two spade acts share one hint and one bar; the rope
-            // and the stone each have their own.
-            Assert.That(
-                CemeteryGraveWorkController.GetHintKey(
-                    CemeteryGraveWorkStage.Marked),
-                Is.EqualTo(
-                    CemeteryGraveWorkController.GetHintKey(
-                        CemeteryGraveWorkStage.Coffined)));
-            Assert.That(
-                CemeteryGraveWorkController.GetHintKey(
-                    CemeteryGraveWorkStage.Dug),
-                Is.Not.EqualTo(
-                    CemeteryGraveWorkController.GetHintKey(
-                        CemeteryGraveWorkStage.Filled)));
+            // Four acts, four lines. The two spade acts run off the
+            // same lattice and the same key, but one takes earth out
+            // and the other puts it back, and a line reading "dig" at
+            // a hero shovelling a hole shut is the wrong instruction
+            // however cheap it is to share.
+            var lines = new System.Collections.Generic.HashSet<string>();
+            foreach (CemeteryGraveWorkStage stage in
+                     new[]
+                     {
+                         CemeteryGraveWorkStage.Marked,
+                         CemeteryGraveWorkStage.Dug,
+                         CemeteryGraveWorkStage.Coffined,
+                         CemeteryGraveWorkStage.Filled
+                     })
+            {
+                Assert.That(
+                    lines.Add(
+                        CemeteryGraveWorkController.GetHintKey(stage)),
+                    Is.True,
+                    "Every act asks for something of its own.");
+            }
         }
 
         [Test]
@@ -1444,10 +1250,8 @@ namespace BarPromenade.Tests.EditMode
         /// frame so the answer is the model's and not the sampling's.
         /// </summary>
         private static float MeasureBiteWindowSeconds(
-            CemeterySoilKind kind)
+            CemeterySwingProfile profile)
         {
-            CemeterySoilProfile profile =
-                CemeterySoilTable.Get(kind);
             var model = new CemeteryStrokeModel();
             model.Begin(profile, 1);
             const float step = 1f / 600f;
@@ -1681,50 +1485,5 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        /// <summary>
-        /// The first roll of ground that contains a named kind, and
-        /// where in it. The ground is re-rolled per attempt now, so a
-        /// test that wants a root has to go looking for one rather
-        /// than assume the fixed grave grew it.
-        /// </summary>
-        private static bool TryFindSoil(
-            CemeterySoilKind kind,
-            out int seed,
-            out int segment,
-            out int course)
-        {
-            for (int candidate = 1; candidate <= 500; candidate++)
-            {
-                int rolled = candidate * 7919;
-                var lattice = new CemeteryGraveLatticeModel(
-                    rolled,
-                    CemeteryGraveLatticeMode.Digging);
-                for (int index = 0;
-                     index < CemeteryGraveLatticeModel.SegmentCount;
-                     index++)
-                {
-                    for (int step = 0;
-                         step < CemeteryGraveLatticeModel
-                             .CoursesPerSegment;
-                         step++)
-                    {
-                        if (lattice.GetSoilAt(index, step) != kind)
-                        {
-                            continue;
-                        }
-
-                        seed = rolled;
-                        segment = index;
-                        course = step;
-                        return true;
-                    }
-                }
-            }
-
-            seed = 0;
-            segment = -1;
-            course = -1;
-            return false;
-        }
     }
 }
