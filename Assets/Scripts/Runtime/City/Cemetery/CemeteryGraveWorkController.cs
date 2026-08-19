@@ -118,7 +118,7 @@ namespace BarPromenade
         private CemeteryGraveSlings slings;
         private bool headOnRight;
         private Transform borrowedCoffin;
-        private GameObject stoneMover;
+        private Transform borrowedStone;
         private GameObject sessionPlaque;
         private int target;
         private int strikeCount;
@@ -626,7 +626,7 @@ namespace BarPromenade
 
         private void UpdateStoneAct(float deltaTime)
         {
-            if (settle == null || stoneMover == null)
+            if (settle == null || borrowedStone == null)
             {
                 return;
             }
@@ -716,8 +716,13 @@ namespace BarPromenade
         /// </summary>
         private void ApplyStonePose()
         {
+            if (borrowedStone == null)
+            {
+                return;
+            }
+
             CityCemeterySealedGraveWorldBuilder.ApplyLyingPose(
-                stoneMover.transform,
+                borrowedStone,
                 job.Plan,
                 1f - settle.Lift01);
             if (settle.Phase == CemeteryStonePhase.Raising)
@@ -725,7 +730,7 @@ namespace BarPromenade
                 return;
             }
 
-            stoneMover.transform.position += new Vector3(
+            borrowedStone.position += new Vector3(
                 0f,
                 Mathf.Lerp(StoneLiftMeters, 0f, settle.Set01),
                 0f);
@@ -879,28 +884,28 @@ namespace BarPromenade
         /// </summary>
         public float CoffinGaugeSign => headOnRight ? 1f : -1f;
 
+        /// <summary>
+        /// Borrows the monument that has been lying by the head since
+        /// the job was taken. It is the same object: raising a second
+        /// stone beside the first is exactly the doubling the coffin
+        /// and the spade were already fixed for.
+        /// </summary>
         private void BeginStoneAct()
         {
-            Vector3 seat = GetStoneSeat();
-            stoneMover = new GameObject("Grave Stone Setting");
-            stoneMover.transform.SetParent(transform, false);
-            stoneMover.transform.position = seat;
-            GameObject stone =
-                CityCemeterySealedGraveWorldBuilder.BuildStone(
-                    stoneMover.transform,
-                    job.Plan);
-            if (stone != null)
-            {
-                // The monument's parts are authored in world space, so
-                // the mover cancels its own offset and the geometry
-                // lands where it belongs — while still turning about
-                // the foot of the stone rather than about the origin
-                // of the city.
-                stone.transform.localPosition = -seat;
-            }
-
+            borrowedStone = job.LyingStone;
             settle = new CemeteryStoneSettleModel(
                 CemeteryStoneSettleSettings.Default);
+            // The board goes on before he is asked what to put on it:
+            // the shot walks round to the front of the monument, and a
+            // bare face there would be asking him to inscribe nothing.
+            if (borrowedStone != null)
+            {
+                sessionPlaque =
+                    CityCemeteryPlaqueWorldBuilder.Attach(
+                        borrowedStone,
+                        job.Plan);
+            }
+
             ApplyStonePose();
             TakeUpSpade();
         }
@@ -908,26 +913,14 @@ namespace BarPromenade
         /// <summary>
         /// The stone is fast; now the board on it. The act is not
         /// committed until the hero has answered, because the whole
-        /// point of the plaque is that the line goes on with the
-        /// stone and not after it.
+        /// point of the plaque is that the line goes on with the stone
+        /// and not after it.
         /// </summary>
         private void BeginInscribing()
         {
             inscribing = true;
             epitaphDraft = string.Empty;
             stroke.Cancel();
-            // The board has to be on the stone before he is asked what
-            // to put on it — the shot walks round to the front of the
-            // monument, and a bare face there would be asking him to
-            // inscribe nothing.
-            if (sessionPlaque == null)
-            {
-                sessionPlaque =
-                    CityCemeteryPlaqueWorldBuilder.Build(
-                        transform,
-                        job.Plan);
-            }
-
             // Round to the front rather than cut to it.
             BeginCameraBlend(CemeteryGraveWorkPhase.Entering);
         }
@@ -954,9 +947,13 @@ namespace BarPromenade
                 return;
             }
 
-            if (cut)
+            if (cut &&
+                GameSessionState.TrySetGraveEpitaph(epitaphDraft) &&
+                sessionPlaque != null)
             {
-                GameSessionState.TrySetGraveEpitaph(epitaphDraft);
+                sessionPlaque
+                    .GetComponent<CemeteryPlaqueSurface>()
+                    ?.Refresh();
             }
 
             inscribing = false;
@@ -1018,6 +1015,10 @@ namespace BarPromenade
                 case CemeteryGraveWorkStage.Coffined:
                     job.SetPitDressingVisible(true);
                     break;
+                case CemeteryGraveWorkStage.Filled:
+                    // The stone goes back on its side by the head.
+                    job.RestLyingStone();
+                    break;
             }
         }
 
@@ -1037,8 +1038,8 @@ namespace BarPromenade
             settle = null;
             target = -1;
             DestroyPart(ref workingPit);
-            DestroyPart(ref stoneMover);
             DestroyPart(ref sessionPlaque);
+            borrowedStone = null;
             if (spadeAnimator != null)
             {
                 spadeAnimator.PlayLayDown(
@@ -1279,6 +1280,10 @@ namespace BarPromenade
             {
                 CemeteryGraveWorkStance.EvaluatePlaqueCamera(
                     job.Plan,
+                    sessionPlaque != null
+                        ? sessionPlaque.transform.position
+                        : CityCemeteryPlaqueWorldBuilder
+                            .GetNominalSeat(job.Plan),
                     out position,
                     out rotation);
                 fieldOfView =
@@ -1313,7 +1318,7 @@ namespace BarPromenade
                 return borrowedCoffin.position;
             }
 
-            if (stoneMover != null)
+            if (borrowedStone != null)
             {
                 return GetStoneHead();
             }

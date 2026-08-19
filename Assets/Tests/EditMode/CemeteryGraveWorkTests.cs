@@ -1082,6 +1082,168 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ThePlateCanCutAnythingAPlayerCanType()
+        {
+            // The board has to carry whatever is typed at it, so the
+            // font's coverage is not a nice-to-have — a missing glyph
+            // is a visible hole in the one line the player wrote.
+            const string cyrillic =
+                "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+            const string latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string others = "0123456789 .,-!?:;'\"()/«»";
+            foreach (string set in new[] { cyrillic, latin, others })
+            {
+                foreach (char glyph in set)
+                {
+                    Assert.That(
+                        CemeteryPlaqueTexture.Supports(glyph),
+                        Is.True,
+                        "The plate has no glyph for '" + glyph + "'.");
+                }
+            }
+
+            // Lower case is folded rather than refused: a stamped
+            // board has no lower case.
+            Assert.That(
+                CemeteryPlaqueTexture.Supports('щ'),
+                Is.True);
+            Assert.That(
+                CemeteryPlaqueTexture.Normalize("спи, друг"),
+                Is.EqualTo("СПИ, ДРУГ"));
+
+            // And anything it genuinely cannot cut is marked rather
+            // than silently dropped, so the line never shortens under
+            // the player without saying why.
+            Assert.That(
+                CemeteryPlaqueTexture.Normalize("a☃b"),
+                Is.EqualTo("A?B"));
+        }
+
+        [Test]
+        public void EveryEpitaphTheLimitsAllowFitsOnTheBoard()
+        {
+            // The word count and the plate's width are two different
+            // rules, and the second is the one that actually decides
+            // whether the line is readable. Any line the first allows
+            // has to survive the second without losing a word.
+            var longest = new System.Text.StringBuilder();
+            for (int index = 0;
+                 index < CemeteryEpitaph.MaximumWords;
+                 index++)
+            {
+                if (index > 0)
+                {
+                    longest.Append(' ');
+                }
+
+                longest.Append(new string('Ш', 7));
+            }
+
+            string line = CemeteryEpitaph.Sanitize(longest.ToString());
+            System.Collections.Generic.IReadOnlyList<string> wrapped =
+                CemeteryPlaqueTexture.WrapLines(
+                    CemeteryPlaqueTexture.Normalize(line),
+                    CemeteryPlaqueTexture.Columns,
+                    CemeteryPlaqueTexture.EpitaphLines);
+
+            int carried = 0;
+            for (int index = 0; index < wrapped.Count; index++)
+            {
+                Assert.That(
+                    wrapped[index].Length,
+                    Is.LessThanOrEqualTo(
+                        CemeteryPlaqueTexture.Columns),
+                    "A line may not run off the brass.");
+                carried += CemeteryEpitaph.CountWords(wrapped[index]);
+            }
+
+            Assert.That(
+                carried,
+                Is.EqualTo(CemeteryEpitaph.CountWords(line)),
+                "Every word the limits allowed has to reach the " +
+                "plate, or the board is quietly editing him.");
+
+            // The two headings fit too, at their own sizes.
+            Assert.That(
+                CemeteryPlaqueTexture.Normalize(
+                    LocalizationService.Get(
+                        CemeteryEpitaph.UnknownNameKey)).Length,
+                Is.LessThanOrEqualTo(
+                    CemeteryPlaqueTexture.TitleColumns));
+            Assert.That(
+                CemeteryPlaqueTexture.Normalize(
+                    LocalizationService.Get(
+                        CemeteryEpitaph.UnknownYearsKey)).Length,
+                Is.LessThanOrEqualTo(CemeteryPlaqueTexture.Columns));
+        }
+
+        [Test]
+        public void TheStampedPlateActuallyCarriesInk()
+        {
+            // A plate that came out blank would look exactly like a
+            // plate whose text failed to draw, so this counts the ink.
+            Texture2D stamp = CemeteryPlaqueTexture.Create(
+                "БЕЗЫМЯННЫЙ",
+                "ГОДЫ НЕИЗВЕСТНЫ",
+                "СПИ СПОКОЙНО");
+            try
+            {
+                Assert.That(
+                    stamp.width,
+                    Is.EqualTo(CemeteryPlaqueTexture.TextureWidth));
+                Assert.That(
+                    stamp.height,
+                    Is.EqualTo(CemeteryPlaqueTexture.TextureHeight));
+                Assert.That(
+                    stamp.filterMode,
+                    Is.EqualTo(FilterMode.Point),
+                    "Smoothing a five-by-seven plate is how it stops " +
+                    "looking stamped.");
+
+                Color32[] pixels = stamp.GetPixels32();
+                int inked = 0;
+                for (int index = 0; index < pixels.Length; index++)
+                {
+                    if (pixels[index].r == CemeteryPlaqueTexture.Ink.r &&
+                        pixels[index].g == CemeteryPlaqueTexture.Ink.g &&
+                        pixels[index].b == CemeteryPlaqueTexture.Ink.b)
+                    {
+                        inked++;
+                    }
+                }
+
+                Assert.That(
+                    inked,
+                    Is.GreaterThan(300),
+                    "Three lines of stamping is a lot of dark pixels.");
+
+                // A bare board still carries its two headings.
+                Texture2D bare = CemeteryPlaqueTexture.Create(
+                    "БЕЗЫМЯННЫЙ",
+                    "ГОДЫ НЕИЗВЕСТНЫ",
+                    string.Empty);
+                try
+                {
+                    Assert.That(
+                        CountInk(bare),
+                        Is.GreaterThan(100));
+                    Assert.That(
+                        CountInk(bare),
+                        Is.LessThan(inked),
+                        "And less of it than a written one.");
+                }
+                finally
+                {
+                    Object.DestroyImmediate(bare);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(stamp);
+            }
+        }
+
+        [Test]
         public void ThePanelHoldsEverythingItDraws()
         {
             CemeteryGraveWorkView.CreateLayout(
@@ -1399,6 +1561,23 @@ namespace BarPromenade.Tests.EditMode
 
             public CityLayout Layout { get; }
             public CemeteryGravediggingPlan Plan { get; }
+        }
+
+        private static int CountInk(Texture2D stamp)
+        {
+            Color32[] pixels = stamp.GetPixels32();
+            int inked = 0;
+            for (int index = 0; index < pixels.Length; index++)
+            {
+                if (pixels[index].r == CemeteryPlaqueTexture.Ink.r &&
+                    pixels[index].g == CemeteryPlaqueTexture.Ink.g &&
+                    pixels[index].b == CemeteryPlaqueTexture.Ink.b)
+                {
+                    inked++;
+                }
+            }
+
+            return inked;
         }
 
         private static int CountSpades(Transform root)

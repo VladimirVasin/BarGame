@@ -62,7 +62,7 @@ namespace BarPromenade
             var root = new GameObject(RuntimeRootName);
             root.transform.SetParent(parent, false);
             Vector3 seat =
-                CityCemeteryPlaqueWorldBuilder.GetSeat(plan);
+                CityCemeteryPlaqueWorldBuilder.GetNominalSeat(plan);
             root.transform.position = new Vector3(
                 seat.x,
                 plan.GroundTopY,

@@ -156,6 +156,27 @@ namespace BarPromenade
         public Transform WaitingCoffin =>
             waitingCoffin != null ? waitingCoffin.transform : null;
 
+        /// <summary>
+        /// The monument lying by the head, for the act that stands it
+        /// up. There is only ever one stone: the act moves this rather
+        /// than raising a second beside it.
+        /// </summary>
+        public Transform LyingStone =>
+            lyingStone != null ? lyingStone.transform : null;
+
+        /// <summary>Lays the monument back down where it was waiting.
+        /// </summary>
+        public void RestLyingStone()
+        {
+            if (lyingStone != null)
+            {
+                CityCemeterySealedGraveWorldBuilder.ApplyLyingPose(
+                    lyingStone.transform,
+                    plan,
+                    1f);
+            }
+        }
+
         /// <summary>Puts the spade back where it stands between acts.
         /// </summary>
         public void RestSpade()
@@ -666,7 +687,7 @@ namespace BarPromenade
 
             if (plaque == null)
             {
-                plaque = CityCemeteryPlaqueWorldBuilder.Build(
+                plaque = CityCemeteryPlaqueWorldBuilder.Attach(
                     stone.transform,
                     plan);
             }

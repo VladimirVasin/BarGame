@@ -104,6 +104,29 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   against four balance-point phases, and `FollowingTheBalancePointLandsIt`
   proves the intended play lands across three deadzones, three reaction delays
   and four phases — a window one reaction speed wide is not a mechanic.
+- **One stone, a board really on it, and words really on the board.** Three
+  faults in the first pass at act four, all of them visible at a glance.
+  The session was building a second monument beside the one already lying by
+  the head, so it now borrows `CemeteryGravediggingController.LyingStone` the
+  way the coffin and the spade are borrowed — one stone, heaved upright and
+  driven home, and `RestLyingStone` puts it back on its side if the act is
+  abandoned. The plaque hung at a fixed offset from the plot centre rather
+  than on the stone; `CityCemeteryPlaqueWorldBuilder.Attach` now measures the
+  monument's renderers, seats the board against its real front face at a share
+  of its real height and parents it to the stone, so it rides the thing while
+  it is being stood up and fits a narrow cross as well as a wide stele.
+- **The plaque's letters are a font now, not a panel.** `CitySignLettering` is
+  eleven glyphs covering exactly what the city's signs spell, and a board has
+  to carry whatever is typed at it, so `CemeteryPlaqueTexture` is a real
+  `5 x 7` bitmap font — full Cyrillic and Latin, figures and punctuation, with
+  the dozen Cyrillic capitals that are Latin shapes aliased rather than drawn
+  twice — rasterized into a point-filtered `168 x 112` texture and handed to
+  the shared material through a property block. The plate is its own quad with
+  authored UVs, because a cube's faces do not all run the same way up and half
+  of them would mirror the text. `CemeteryPlaqueSurface` re-stamps it the
+  moment the line is cut. Three tests hold it: every character the player can
+  type has a glyph, every epitaph the word limit allows survives wrapping with
+  all its words, and a stamped plate actually carries ink.
 - **The stone act is two efforts and a plaque.** The monument now lies flat by
   the head of the plot from the moment the job is taken — part of the kit, like
   the coffin and the spade — and the lamp and spade survive to `Sealed` rather

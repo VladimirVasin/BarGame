@@ -214,12 +214,11 @@ namespace BarPromenade
         /// </summary>
         public static void EvaluatePlaqueCamera(
             CemeteryGravediggingPlan plan,
+            Vector3 board,
             out Vector3 position,
             out Quaternion rotation)
         {
             RequirePlan(plan);
-            Vector3 board =
-                CityCemeteryPlaqueWorldBuilder.GetSeat(plan);
             Vector3 outward = plan.Heading * Vector3.back;
             position = board + (outward * PlaqueViewDistanceMeters);
             Vector3 forward = board - position;
