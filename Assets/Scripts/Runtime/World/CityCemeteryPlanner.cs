@@ -36,6 +36,12 @@ namespace BarPromenade
         private const float GraveRowPitch = 5.0f;
         private const int GraveAcceptPercent = 48;
 
+        // Anything whose underside clears this much headroom above the
+        // ground is overhead dressing: the gate arch spanning the
+        // entrance, a birch canopy leaning over the plots. It blocks
+        // neither the street approach nor a future burial.
+        private const float OverheadClearance = 2.1f;
+
         // Nearly-open gate leaves: 8 degrees off the alley axis keeps
         // the swung leaf's lateral reach (sin 8 * length + thickness)
         // inside the 0.35 m margin between the pillar centre and the
@@ -148,7 +154,11 @@ namespace BarPromenade
             // reserved footprint of its own.
             AddLodge(parts, lamps, frame, reserved);
             AddBenches(parts, frame, alleys, reserved, access);
-            List<GraveSite> graves = AddGraves(
+            // The burial lattice divides the whole dressed interior at
+            // the grave pitch. Every cell is classified here — buried,
+            // free, or not burial ground at all — and the monuments
+            // are raised on the cells the seed accepted.
+            List<PlotSite> plots = PlanPlots(
                 parts,
                 frame,
                 layout.Seed,
@@ -157,12 +167,18 @@ namespace BarPromenade
                 access);
             AddTrees(
                 parts, frame, layout.Seed, alleys, reserved,
-                graves, access);
-            AddBushes(parts, frame, layout.Seed, alleys, graves, access);
+                plots, access);
+            AddBushes(parts, frame, layout.Seed, alleys, plots, access);
+            // Vegetation is planted around the standing monuments, not
+            // around the empty plots, so a birch or a bush can land on
+            // ground the lattice still called free. Demote those last,
+            // so a vacant plot really is one a grave can be raised on.
+            MarkObstructedPlots(plots, parts, groundTopY);
 
             var plan = new CityCemeteryPlan(
                 parts,
                 lamps,
+                CreatePlotDescriptors(plots),
                 grounds,
                 groundTopY);
             ValidateOrThrow(layout, plan);
@@ -246,7 +262,8 @@ namespace BarPromenade
                 }
 
                 if (!part.BlocksMovement ||
-                    GetMinimumWorldY(part) >= plan.GroundTopY + 2.1f)
+                    GetMinimumWorldY(part) >=
+                        plan.GroundTopY + OverheadClearance)
                 {
                     // The gate arch spans the entrance well above head
                     // height; only ground-level blockers must keep the
@@ -295,6 +312,8 @@ namespace BarPromenade
                 }
             }
 
+            ValidatePlots(plan);
+
             // A lodge always lights its own doorway, and a plot
             // without a lodge carries no porch bulb to hang.
             bool hasLodge =
@@ -339,6 +358,139 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "A planned cemetery must contain at least one " +
                     "grave.");
+            }
+        }
+
+        /// <summary>
+        /// The burial lattice's contract: it partitions the precinct
+        /// exactly once, the occupied plots account for every grave in
+        /// the plan, and a vacant plot is genuinely free ground — a
+        /// new monument can be raised on it without touching anything
+        /// already standing.
+        /// </summary>
+        private static void ValidatePlots(CityCemeteryPlan plan)
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            var ordinals = new HashSet<int>();
+            int occupied = 0;
+            int vacant = 0;
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                CityCemeteryPlotDescriptor plot = plan.Plots[index];
+                if (string.IsNullOrWhiteSpace(plot.StableId) ||
+                    !ids.Add(plot.StableId) ||
+                    plot.Row < 0 ||
+                    plot.Column < 0 ||
+                    !IsFinite(plot.Ground) ||
+                    !IsFinite(plot.Yaw) ||
+                    plot.Footprint.width <= 0f ||
+                    plot.Footprint.height <= 0f)
+                {
+                    throw new InvalidOperationException(
+                        "Cemetery plots require unique IDs and finite " +
+                        "positive envelopes.");
+                }
+
+                if (plot.Footprint.xMin < plan.Grounds.xMin ||
+                    plot.Footprint.xMax > plan.Grounds.xMax ||
+                    plot.Footprint.yMin < plan.Grounds.yMin ||
+                    plot.Footprint.yMax > plan.Grounds.yMax)
+                {
+                    throw new InvalidOperationException(
+                        $"Cemetery plot '{plot.StableId}' leaves the " +
+                        "cemetery grounds.");
+                }
+
+                bool isOccupied =
+                    plot.State == CityCemeteryPlotState.Occupied;
+                if (isOccupied != (plot.GraveOrdinal >= 0) ||
+                    (isOccupied && !ordinals.Add(plot.GraveOrdinal)))
+                {
+                    throw new InvalidOperationException(
+                        $"Cemetery plot '{plot.StableId}' carries an " +
+                        "inconsistent grave ordinal.");
+                }
+
+                if (isOccupied)
+                {
+                    occupied++;
+                }
+                else if (plot.State == CityCemeteryPlotState.Vacant)
+                {
+                    vacant++;
+                }
+
+                for (int other = index + 1;
+                     other < plan.Plots.Count;
+                     other++)
+                {
+                    if (OverlapsStrict(
+                            plot.Footprint,
+                            plan.Plots[other].Footprint))
+                    {
+                        throw new InvalidOperationException(
+                            $"Cemetery plot '{plot.StableId}' overlaps " +
+                            $"'{plan.Plots[other].StableId}'.");
+                    }
+                }
+            }
+
+            // Every grave stands on exactly one plot, and the ordinals
+            // run 0..n-1 so a caller can address a grave by its plot.
+            if (occupied != plan.GraveCount ||
+                (occupied > 0 && ordinals.Count != occupied))
+            {
+                throw new InvalidOperationException(
+                    "The occupied cemetery plots must account for " +
+                    "every grave in the plan.");
+            }
+
+            for (int ordinal = 0; ordinal < occupied; ordinal++)
+            {
+                if (!ordinals.Contains(ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "Cemetery grave ordinals must run without " +
+                        $"gaps; {ordinal} has no plot.");
+                }
+            }
+
+            // A vacant plot is a promise that a grave fits there now.
+            for (int index = 0; index < plan.Parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = plan.Parts[index];
+                if (part.GraveOrdinal >= 0 ||
+                    GetMinimumWorldY(part) >=
+                        plan.GroundTopY + OverheadClearance)
+                {
+                    continue;
+                }
+
+                Rect footprint = ToXZRect(part);
+                for (int plotIndex = 0;
+                     plotIndex < plan.Plots.Count;
+                     plotIndex++)
+                {
+                    CityCemeteryPlotDescriptor plot =
+                        plan.Plots[plotIndex];
+                    if (plot.State != CityCemeteryPlotState.Vacant ||
+                        !OverlapsStrict(footprint, plot.Footprint))
+                    {
+                        continue;
+                    }
+
+                    throw new InvalidOperationException(
+                        $"Cemetery part '{part.StableId}' stands on " +
+                        $"vacant plot '{plot.StableId}'.");
+                }
+            }
+
+            // A working yard always has somewhere left to bury.
+            if (plan.GraveCount >= 12 && vacant < 1)
+            {
+                throw new InvalidOperationException(
+                    "A full cemetery must keep at least one vacant " +
+                    "plot for the next burial.");
             }
         }
 
@@ -920,24 +1072,40 @@ namespace BarPromenade
                 Mathf.Max(pocketNear, pocketFar)));
         }
 
-        private readonly struct GraveSite
+        /// <summary>
+        /// One cell of the burial lattice while the plan is still
+        /// being built. Its geometry settles the moment the lattice is
+        /// laid out — the same deterministic jitter that poses a
+        /// monument also poses the empty ground reserved for one — so
+        /// only the state can still change, falling from vacant to
+        /// obstructed once the vegetation is planted over it.
+        /// </summary>
+        private sealed class PlotSite
         {
-            public GraveSite(
-                int ordinal,
+            public PlotSite(
+                int row,
+                int column,
                 Vector3 ground,
                 Quaternion yaw,
-                Rect footprint)
+                Rect footprint,
+                CityCemeteryPlotState state)
             {
-                Ordinal = ordinal;
+                Row = row;
+                Column = column;
                 Ground = ground;
                 Yaw = yaw;
                 Footprint = footprint;
+                State = state;
+                GraveOrdinal = -1;
             }
 
-            public int Ordinal { get; }
+            public int Row { get; }
+            public int Column { get; }
             public Vector3 Ground { get; }
             public Quaternion Yaw { get; }
             public Rect Footprint { get; }
+            public CityCemeteryPlotState State { get; set; }
+            public int GraveOrdinal { get; set; }
         }
 
         private static List<Rect> CreatereservedFootprints(
@@ -957,7 +1125,21 @@ namespace BarPromenade
             return footprints;
         }
 
-        private static List<GraveSite> AddGraves(
+        /// <summary>
+        /// Lays the burial lattice over the dressed interior and
+        /// classifies every cell, raising a monument on each cell the
+        /// seed accepts.
+        ///
+        /// Cell geometry — jitter, heading, envelope — comes from the
+        /// detail hash alone, so it is the same whether or not anybody
+        /// is buried there: the empty plots are the graves the city
+        /// has not dug yet, already standing in their places. The
+        /// accept hash only decides which of the clear cells are
+        /// occupied today, and it is read after the geometry test, so
+        /// the accepted cells and their ordinals are exactly the ones
+        /// the yard has always had.
+        /// </summary>
+        private static List<PlotSite> PlanPlots(
             ICollection<CityCemeteryPartDescriptor> parts,
             Frame frame,
             int seed,
@@ -965,7 +1147,7 @@ namespace BarPromenade
             IReadOnlyList<Rect> reservedFootprints,
             CityOpenAreaAccessDescriptor access)
         {
-            var graves = new List<GraveSite>(64);
+            var plots = new List<PlotSite>(160);
             int ordinal = 0;
             // Rows and columns start deep enough that the perimeter
             // tree ring (footprint half-width 1.1 m at its own inset)
@@ -987,13 +1169,6 @@ namespace BarPromenade
                         break;
                     }
 
-                    uint acceptHash = StableHash(
-                        seed, column, row, GraveAcceptSalt);
-                    if (acceptHash % 100u >= GraveAcceptPercent)
-                    {
-                        continue;
-                    }
-
                     uint detailHash = StableHash(
                         seed, column, row, GraveDetailSalt);
                     float lateralJitter =
@@ -1004,8 +1179,6 @@ namespace BarPromenade
                     float yawJitter =
                         (((detailHash >> 16) & 0xFFu) / 255f - 0.5f) *
                         8f;
-                    CityCemeteryStyle stoneStyle =
-                        PickStoneStyle((detailHash >> 24) % 3u);
 
                     float graveDepth = depth + depthJitter;
                     float graveLateral = lateral + lateralJitter;
@@ -1014,13 +1187,48 @@ namespace BarPromenade
                         graveDepth + 1.85f,
                         graveLateral - 1.6f,
                         graveLateral + 1.6f);
-                    if (OverlapsAny(footprint, alleys, 0.5f) ||
-                        OverlapsAny(footprint, reservedFootprints, 0.3f) ||
-                        !IsClearOfAccess(footprint, access))
+                    Vector3 ground = frame.Compose(
+                        graveDepth,
+                        graveLateral,
+                        frame.GroundTopY);
+                    Quaternion yaw = Quaternion.Euler(
+                        0f,
+                        frame.BaseYawDegrees + yawJitter,
+                        0f);
+
+                    // Gravel, lamps, benches, the watchman's pocket
+                    // and the canonical street approach own their
+                    // ground outright: no burial ever happens there.
+                    bool clear =
+                        !OverlapsAny(footprint, alleys, 0.5f) &&
+                        !OverlapsAny(
+                            footprint, reservedFootprints, 0.3f) &&
+                        IsClearOfAccess(footprint, access);
+                    var site = new PlotSite(
+                        row,
+                        column,
+                        ground,
+                        yaw,
+                        footprint,
+                        clear
+                            ? CityCemeteryPlotState.Vacant
+                            : CityCemeteryPlotState.Obstructed);
+                    plots.Add(site);
+                    if (!clear)
                     {
                         continue;
                     }
 
+                    uint acceptHash = StableHash(
+                        seed, column, row, GraveAcceptSalt);
+                    if (acceptHash % 100u >= GraveAcceptPercent)
+                    {
+                        // Clear ground nobody is buried in yet.
+                        continue;
+                    }
+
+                    CityCemeteryStyle stoneStyle =
+                        PickStoneStyle((detailHash >> 24) % 3u);
                     uint variantHash = StableHash(
                         seed, column, row, GraveVariantSalt);
                     // The first six accepted plots cycle through every
@@ -1046,14 +1254,6 @@ namespace BarPromenade
                         variant !=
                             CityCemeteryGraveVariant.OvergrownSlab;
 
-                    Vector3 ground = frame.Compose(
-                        graveDepth,
-                        graveLateral,
-                        frame.GroundTopY);
-                    Quaternion yaw = Quaternion.Euler(
-                        0f,
-                        frame.BaseYawDegrees + yawJitter,
-                        0f);
                     EmitGrave(
                         parts,
                         ordinal,
@@ -1064,16 +1264,74 @@ namespace BarPromenade
                         tilt,
                         enclosure,
                         offering);
-                    graves.Add(new GraveSite(
-                        ordinal,
-                        ground,
-                        yaw,
-                        footprint));
+                    site.State = CityCemeteryPlotState.Occupied;
+                    site.GraveOrdinal = ordinal;
                     ordinal++;
                 }
             }
 
-            return graves;
+            return plots;
+        }
+
+        /// <summary>
+        /// Demotes every vacant plot the dressing actually stands on.
+        /// Trees and bushes are planned around the standing monuments
+        /// only, so this is what keeps the vacant count honest: a plot
+        /// survives as vacant when nothing at grave height touches its
+        /// envelope.
+        /// </summary>
+        private static void MarkObstructedPlots(
+            IReadOnlyList<PlotSite> plots,
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            float groundTopY)
+        {
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.GraveOrdinal >= 0 ||
+                    GetMinimumWorldY(part) >=
+                        groundTopY + OverheadClearance)
+                {
+                    continue;
+                }
+
+                Rect footprint = ToXZRect(part);
+                for (int plotIndex = 0;
+                     plotIndex < plots.Count;
+                     plotIndex++)
+                {
+                    PlotSite plot = plots[plotIndex];
+                    if (plot.State != CityCemeteryPlotState.Vacant ||
+                        !OverlapsStrict(footprint, plot.Footprint))
+                    {
+                        continue;
+                    }
+
+                    plot.State = CityCemeteryPlotState.Obstructed;
+                }
+            }
+        }
+
+        private static List<CityCemeteryPlotDescriptor>
+            CreatePlotDescriptors(IReadOnlyList<PlotSite> plots)
+        {
+            var descriptors =
+                new List<CityCemeteryPlotDescriptor>(plots.Count);
+            for (int index = 0; index < plots.Count; index++)
+            {
+                PlotSite plot = plots[index];
+                descriptors.Add(new CityCemeteryPlotDescriptor(
+                    $"cemetery-plot-r{plot.Row:D2}-c{plot.Column:D2}",
+                    plot.Row,
+                    plot.Column,
+                    plot.State,
+                    plot.GraveOrdinal,
+                    plot.Ground,
+                    plot.Yaw,
+                    plot.Footprint));
+            }
+
+            return descriptors;
         }
 
         private static CityCemeteryStyle PickStoneStyle(uint pick)
@@ -1386,7 +1644,7 @@ namespace BarPromenade
             int seed,
             IReadOnlyList<Rect> alleys,
             IReadOnlyList<Rect> reservedFootprints,
-            IReadOnlyList<GraveSite> graves,
+            IReadOnlyList<PlotSite> plots,
             CityOpenAreaAccessDescriptor access)
         {
             int treeIndex = 0;
@@ -1406,7 +1664,7 @@ namespace BarPromenade
                 {
                     TryAddTree(
                         parts, frame, seed, alleys, reservedFootprints,
-                        graves, access, ref treeIndex, side, step,
+                        plots, access, ref treeIndex, side, step,
                         depth, lateral);
                 }
             }
@@ -1431,7 +1689,7 @@ namespace BarPromenade
 
                     TryAddTree(
                         parts, frame, seed, alleys, reservedFootprints,
-                        graves, access, ref treeIndex, side, step,
+                        plots, access, ref treeIndex, side, step,
                         depth, lateral);
                 }
             }
@@ -1449,7 +1707,7 @@ namespace BarPromenade
                         : frame.LateralMax - 7.5f;
                     TryAddTree(
                         parts, frame, seed, alleys, reservedFootprints,
-                        graves, access, ref treeIndex,
+                        plots, access, ref treeIndex,
                         100 + crossIndex, side, depth + 2.9f, lateral);
                 }
             }
@@ -1461,7 +1719,7 @@ namespace BarPromenade
             int seed,
             IReadOnlyList<Rect> alleys,
             IReadOnlyList<Rect> reservedFootprints,
-            IReadOnlyList<GraveSite> graves,
+            IReadOnlyList<PlotSite> plots,
             CityOpenAreaAccessDescriptor access,
             ref int treeIndex,
             int hashA,
@@ -1487,9 +1745,11 @@ namespace BarPromenade
                 return;
             }
 
-            for (int index = 0; index < graves.Count; index++)
+            for (int index = 0; index < plots.Count; index++)
             {
-                if (OverlapsStrict(footprint, graves[index].Footprint))
+                PlotSite plot = plots[index];
+                if (plot.State == CityCemeteryPlotState.Occupied &&
+                    OverlapsStrict(footprint, plot.Footprint))
                 {
                     return;
                 }
@@ -1574,17 +1834,22 @@ namespace BarPromenade
             Frame frame,
             int seed,
             IReadOnlyList<Rect> alleys,
-            IReadOnlyList<GraveSite> graves,
+            IReadOnlyList<PlotSite> plots,
             CityOpenAreaAccessDescriptor access)
         {
             int bushCount = 0;
             for (int index = 0;
-                 index < graves.Count && bushCount < 10;
+                 index < plots.Count && bushCount < 10;
                  index++)
             {
-                GraveSite grave = graves[index];
+                PlotSite grave = plots[index];
+                if (grave.State != CityCemeteryPlotState.Occupied)
+                {
+                    continue;
+                }
+
                 uint hash = StableHash(
-                    seed, grave.Ordinal, 7, BushSalt);
+                    seed, grave.GraveOrdinal, 7, BushSalt);
                 if (hash % 100u >= 16u)
                 {
                     continue;

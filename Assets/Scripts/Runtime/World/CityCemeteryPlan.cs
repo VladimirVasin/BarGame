@@ -209,6 +209,139 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>
+    /// What a cell of the burial lattice holds. Every cell inside the
+    /// fence is one of the three: a monument stands on it, it is clear
+    /// ground waiting for a burial, or something else already owns the
+    /// square metre and nobody will ever be laid there.
+    /// </summary>
+    public enum CityCemeteryPlotState
+    {
+        /// <summary>A monument stands here.</summary>
+        Occupied = 0,
+
+        /// <summary>
+        /// Clear, buriable ground: no alley, no lamp, no bench, no
+        /// lodge, no tree and no street approach touches it. A new
+        /// grave can be raised here without moving anything.
+        /// </summary>
+        Vacant = 1,
+
+        /// <summary>
+        /// Lattice ground that is not burial ground: the gravel
+        /// alleys and their margin, the lamp and bench footprints,
+        /// the watchman's pocket, the canonical street approach, or a
+        /// tree or bush already standing on it.
+        /// </summary>
+        Obstructed = 2
+    }
+
+    /// <summary>
+    /// One cell of the cemetery's burial lattice. The lattice covers
+    /// the whole dressable interior at the grave pitch, so the three
+    /// plot states partition the entire precinct: what is buried, what
+    /// is free to bury, and what will never take a coffin.
+    ///
+    /// Geometry is fixed per cell by the same deterministic hash that
+    /// poses the monuments, so a vacant plot already knows exactly
+    /// where a future grave's ground point, heading and envelope will
+    /// be — burying somebody later moves nothing that is already
+    /// standing.
+    /// </summary>
+    public readonly struct CityCemeteryPlotDescriptor :
+        IEquatable<CityCemeteryPlotDescriptor>
+    {
+        public CityCemeteryPlotDescriptor(
+            string stableId,
+            int row,
+            int column,
+            CityCemeteryPlotState state,
+            int graveOrdinal,
+            Vector3 ground,
+            Quaternion yaw,
+            Rect footprint)
+        {
+            StableId = stableId ?? string.Empty;
+            Row = row;
+            Column = column;
+            State = state;
+            GraveOrdinal = graveOrdinal;
+            Ground = ground;
+            Yaw = yaw;
+            Footprint = footprint;
+        }
+
+        public string StableId { get; }
+
+        /// <summary>Lattice row, counted from the gate inwards.</summary>
+        public int Row { get; }
+
+        /// <summary>Lattice column, counted from the lateral minimum.</summary>
+        public int Column { get; }
+
+        public CityCemeteryPlotState State { get; }
+
+        /// <summary>
+        /// The grave standing on this plot, or -1 for a vacant or
+        /// obstructed one.
+        /// </summary>
+        public int GraveOrdinal { get; }
+
+        /// <summary>
+        /// Ground point of the monument: where the slab sits today for
+        /// an occupied plot, and where it would sit for a vacant one.
+        /// </summary>
+        public Vector3 Ground { get; }
+
+        /// <summary>Heading of the monument on this plot.</summary>
+        public Quaternion Yaw { get; }
+
+        /// <summary>
+        /// XZ envelope the plot reserves, enclosure included. Two
+        /// plots never overlap.
+        /// </summary>
+        public Rect Footprint { get; }
+
+        public bool IsVacant => State == CityCemeteryPlotState.Vacant;
+
+        public bool Equals(CityCemeteryPlotDescriptor other)
+        {
+            return string.Equals(
+                       StableId,
+                       other.StableId,
+                       StringComparison.Ordinal) &&
+                   Row == other.Row &&
+                   Column == other.Column &&
+                   State == other.State &&
+                   GraveOrdinal == other.GraveOrdinal &&
+                   Ground.Equals(other.Ground) &&
+                   Yaw.Equals(other.Yaw) &&
+                   Footprint.Equals(other.Footprint);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityCemeteryPlotDescriptor other &&
+                   Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(
+                    StableId ?? string.Empty);
+                hash = (hash * 397) ^ Row;
+                hash = (hash * 397) ^ Column;
+                hash = (hash * 397) ^ (int)State;
+                hash = (hash * 397) ^ GraveOrdinal;
+                hash = (hash * 397) ^ Ground.GetHashCode();
+                hash = (hash * 397) ^ Yaw.GetHashCode();
+                return (hash * 397) ^ Footprint.GetHashCode();
+            }
+        }
+    }
+
     public sealed class CityCemeteryPlan
     {
         /// <summary>
@@ -224,11 +357,15 @@ namespace BarPromenade
             parts;
         private readonly ReadOnlyCollection<CityCemeteryLampDescriptor>
             lamps;
+        private readonly ReadOnlyCollection<CityCemeteryPlotDescriptor>
+            plots;
         private readonly int[] variantGraveCounts;
+        private readonly int[] plotStateCounts;
 
         internal CityCemeteryPlan(
             IList<CityCemeteryPartDescriptor> partSource,
             IList<CityCemeteryLampDescriptor> lampSource,
+            IList<CityCemeteryPlotDescriptor> plotSource,
             Rect grounds,
             float groundTopY)
         {
@@ -249,6 +386,21 @@ namespace BarPromenade
                 StringComparison.Ordinal));
             lamps = new ReadOnlyCollection<CityCemeteryLampDescriptor>(
                 lampCopy);
+
+            var plotCopy = new List<CityCemeteryPlotDescriptor>(
+                plotSource);
+            plotCopy.Sort((left, right) => string.Compare(
+                left.StableId,
+                right.StableId,
+                StringComparison.Ordinal));
+            plots = new ReadOnlyCollection<CityCemeteryPlotDescriptor>(
+                plotCopy);
+
+            plotStateCounts = new int[3];
+            for (int index = 0; index < plots.Count; index++)
+            {
+                plotStateCounts[(int)plots[index].State]++;
+            }
 
             Grounds = grounds;
             GroundTopY = groundTopY;
@@ -272,12 +424,39 @@ namespace BarPromenade
 
         public IReadOnlyList<CityCemeteryPartDescriptor> Parts => parts;
         public IReadOnlyList<CityCemeteryLampDescriptor> Lamps => lamps;
+
+        /// <summary>
+        /// Every cell of the burial lattice, in row-major order: the
+        /// whole precinct divided into occupied, vacant and obstructed
+        /// ground. Lamps and parts describe what stands in the
+        /// cemetery; plots describe what the cemetery still has room
+        /// for.
+        /// </summary>
+        public IReadOnlyList<CityCemeteryPlotDescriptor> Plots => plots;
         public int Count => parts.Count;
         public Rect Grounds { get; }
         public float GroundTopY { get; }
 
         /// <summary>Distinct grave ordinals in the plan.</summary>
         public int GraveCount { get; }
+
+        /// <summary>Cells of the burial lattice, all states.</summary>
+        public int PlotCount => plots.Count;
+
+        /// <summary>Plots a monument already stands on.</summary>
+        public int OccupiedPlotCount =>
+            plotStateCounts[(int)CityCemeteryPlotState.Occupied];
+
+        /// <summary>
+        /// Plots a new grave can be raised on today, without moving
+        /// anything already standing.
+        /// </summary>
+        public int VacantPlotCount =>
+            plotStateCounts[(int)CityCemeteryPlotState.Vacant];
+
+        /// <summary>Lattice cells that are not burial ground.</summary>
+        public int ObstructedPlotCount =>
+            plotStateCounts[(int)CityCemeteryPlotState.Obstructed];
 
         public int GetCount(CityCemeteryPartKind kind)
         {
@@ -310,6 +489,33 @@ namespace BarPromenade
         public int GetGraveVariantCount(CityCemeteryGraveVariant variant)
         {
             return variantGraveCounts[(int)variant];
+        }
+
+        public int GetPlotCount(CityCemeteryPlotState state)
+        {
+            return plotStateCounts[(int)state];
+        }
+
+        /// <summary>
+        /// The next free plot for a burial, or false when the yard is
+        /// full. Plots are ordered row-major from the gate inwards, so
+        /// the graveyard fills the way a real one does: the rows
+        /// nearest the entrance first.
+        /// </summary>
+        public bool TryGetNextVacantPlot(
+            out CityCemeteryPlotDescriptor plot)
+        {
+            for (int index = 0; index < plots.Count; index++)
+            {
+                if (plots[index].State == CityCemeteryPlotState.Vacant)
+                {
+                    plot = plots[index];
+                    return true;
+                }
+            }
+
+            plot = default;
+            return false;
         }
     }
 

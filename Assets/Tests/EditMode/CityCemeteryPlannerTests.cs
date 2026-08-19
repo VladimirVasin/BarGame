@@ -27,6 +27,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(second, Is.Not.Null);
             CollectionAssert.AreEqual(first.Parts, second.Parts);
             CollectionAssert.AreEqual(first.Lamps, second.Lamps);
+            CollectionAssert.AreEqual(first.Plots, second.Plots);
             Assert.That(
                 first.Count,
                 Is.LessThanOrEqualTo(CityCemeteryPlan.MaximumPartCount));
@@ -557,6 +558,154 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The burial lattice divides the whole precinct: what is
+        /// buried, what is free to bury, and what is not burial ground
+        /// at all. This is the contract the coming burials rest on —
+        /// a vacant plot must be somewhere a monument can go up
+        /// without moving anything already standing.
+        /// </summary>
+        [Test]
+        public void DefaultCity_DividesTheGroundsIntoOccupiedAndVacantPlots()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+
+            CityCemeteryPlan plan = CityCemeteryPlanner.Create(layout);
+
+            Assert.That(plan, Is.Not.Null);
+            TestContext.WriteLine(
+                $"CEMETERY-CENSUS plots={plan.PlotCount} " +
+                $"occupied={plan.OccupiedPlotCount} " +
+                $"vacant={plan.VacantPlotCount} " +
+                $"obstructed={plan.ObstructedPlotCount} " +
+                $"rows={plan.Plots.Max(plot => plot.Row) + 1} " +
+                $"columns={plan.Plots.Max(plot => plot.Column) + 1} " +
+                $"grounds={plan.Grounds.width:F1}x" +
+                $"{plan.Grounds.height:F1}");
+
+            // The lattice is a solid rectangle with no holes, and the
+            // three states partition it exactly once.
+            int rows = plan.Plots.Max(plot => plot.Row) + 1;
+            int columns = plan.Plots.Max(plot => plot.Column) + 1;
+            Assert.That(plan.PlotCount, Is.EqualTo(rows * columns));
+            Assert.That(
+                plan.Plots.Select(plot => plot.StableId).Distinct()
+                    .Count(),
+                Is.EqualTo(plan.PlotCount));
+            Assert.That(
+                plan.OccupiedPlotCount +
+                plan.VacantPlotCount +
+                plan.ObstructedPlotCount,
+                Is.EqualTo(plan.PlotCount));
+            Assert.That(
+                plan.GetPlotCount(CityCemeteryPlotState.Vacant),
+                Is.EqualTo(plan.VacantPlotCount));
+
+            // Every grave stands on exactly one plot, at that plot's
+            // own ground point and heading.
+            Assert.That(
+                plan.OccupiedPlotCount,
+                Is.EqualTo(plan.GraveCount));
+            CityCemeteryPlotDescriptor[] occupied = plan.Plots
+                .Where(plot =>
+                    plot.State == CityCemeteryPlotState.Occupied)
+                .ToArray();
+            Assert.That(
+                occupied.Select(plot => plot.GraveOrdinal)
+                    .OrderBy(ordinal => ordinal),
+                Is.EqualTo(Enumerable.Range(0, plan.GraveCount)));
+            foreach (CityCemeteryPlotDescriptor plot in occupied)
+            {
+                CityCemeteryPartDescriptor slab = plan.Parts.Single(
+                    part =>
+                        part.Kind == CityCemeteryPartKind.GraveSlab &&
+                        part.GraveOrdinal == plot.GraveOrdinal);
+                Assert.That(
+                    slab.Center.x,
+                    Is.EqualTo(plot.Ground.x).Within(0.001f),
+                    plot.StableId);
+                Assert.That(
+                    slab.Center.z,
+                    Is.EqualTo(plot.Ground.z).Within(0.001f),
+                    plot.StableId);
+                Assert.That(
+                    Quaternion.Angle(slab.Rotation, plot.Yaw),
+                    Is.LessThan(0.01f),
+                    plot.StableId);
+            }
+
+            // Vacant and obstructed plots carry no grave identity.
+            Assert.That(
+                plan.Plots.Where(plot =>
+                        plot.State != CityCemeteryPlotState.Occupied)
+                    .All(plot => plot.GraveOrdinal == -1),
+                Is.True);
+
+            // Plots never overlap and never leave the grounds, so the
+            // envelope a vacant plot promises is really its own.
+            for (int left = 0; left < plan.Plots.Count; left++)
+            {
+                CityCemeteryPlotDescriptor plot = plan.Plots[left];
+                Assert.That(
+                    plan.Grounds.xMin <= plot.Footprint.xMin &&
+                    plan.Grounds.xMax >= plot.Footprint.xMax &&
+                    plan.Grounds.yMin <= plot.Footprint.yMin &&
+                    plan.Grounds.yMax >= plot.Footprint.yMax,
+                    Is.True,
+                    $"{plot.StableId} leaves the grounds.");
+                for (int right = left + 1;
+                     right < plan.Plots.Count;
+                     right++)
+                {
+                    Assert.That(
+                        Overlaps(
+                            plot.Footprint,
+                            plan.Plots[right].Footprint),
+                        Is.False,
+                        $"{plot.StableId} overlaps " +
+                        $"{plan.Plots[right].StableId}.");
+                }
+            }
+
+            // The yard has room left, and the next burial goes into
+            // the free plot nearest the gate.
+            Assert.That(plan.VacantPlotCount, Is.GreaterThan(0));
+            Assert.That(
+                plan.TryGetNextVacantPlot(
+                    out CityCemeteryPlotDescriptor next),
+                Is.True);
+            Assert.That(next.IsVacant, Is.True);
+            Assert.That(next.GraveOrdinal, Is.EqualTo(-1));
+            Assert.That(
+                next.StableId,
+                Is.EqualTo(plan.Plots
+                    .First(plot => plot.IsVacant).StableId));
+
+            // Nothing at grave height stands on a vacant plot: no
+            // gravel, no lamp, no bench, no lodge, no tree, no bush
+            // and no neighbouring monument.
+            foreach (CityCemeteryPlotDescriptor plot in
+                     plan.Plots.Where(item => item.IsVacant))
+            {
+                foreach (CityCemeteryPartDescriptor part in plan.Parts)
+                {
+                    if (MinimumWorldY(part) >= plan.GroundTopY + 2.1f)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        Overlaps(ToXZRect(part), plot.Footprint),
+                        Is.False,
+                        $"{part.StableId} stands on vacant plot " +
+                        $"{plot.StableId}.");
+                }
+            }
+        }
+
         private static Rect ToXZRect(CityCemeteryPartDescriptor part)
         {
             Vector3 right = part.Rotation * Vector3.right;
@@ -575,6 +724,19 @@ namespace BarPromenade.Tests.EditMode
                 part.Center.z - halfZ,
                 part.Center.x + halfX,
                 part.Center.z + halfZ);
+        }
+
+        private static float MinimumWorldY(
+            CityCemeteryPartDescriptor part)
+        {
+            Vector3 right = part.Rotation * Vector3.right;
+            Vector3 up = part.Rotation * Vector3.up;
+            Vector3 forward = part.Rotation * Vector3.forward;
+            float halfY =
+                Mathf.Abs(right.y) * part.Size.x * 0.5f +
+                Mathf.Abs(up.y) * part.Size.y * 0.5f +
+                Mathf.Abs(forward.y) * part.Size.z * 0.5f;
+            return part.Center.y - halfY;
         }
 
         private static bool Overlaps(Rect left, Rect right)
