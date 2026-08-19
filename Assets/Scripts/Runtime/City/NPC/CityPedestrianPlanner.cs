@@ -425,7 +425,12 @@ namespace BarPromenade
                     {
                         Vector2Int direction =
                             CardinalDirections[directionIndex];
-                        if (connection.Contains(direction))
+                        // A leg with no pavement of its own is walked
+                        // across exactly like an absent one: the park
+                        // path meeting a street does not interrupt the
+                        // kerb, and pretending it does leaves the two
+                        // corners beside it hanging.
+                        if (connection.ContainsStreet(direction))
                         {
                             continue;
                         }
@@ -462,8 +467,69 @@ namespace BarPromenade
                     continue;
                 }
 
-                ConnectStraightSeams(gridNode, endpoints, graph);
+                if (!TryConnectDeadEndCap(
+                        gridNode,
+                        center,
+                        endpoints,
+                        graph))
+                {
+                    ConnectStraightSeams(gridNode, endpoints, graph);
+                }
             }
+        }
+
+        /// <summary>
+        /// Closes the head of a cul-de-sac. Where one street ends at
+        /// a node its two pavements stop a road's width apart with
+        /// nothing between them, and the seam pass will not join them
+        /// because they belong to the same street. That leaves two dead
+        /// ends, and reducing the graph to its two-core then unravels
+        /// the whole street from those ends inwards. A real pavement
+        /// turns the corner and comes back, so one cap node on the
+        /// street's own axis joins the two sides.
+        ///
+        /// False when this is not a cul-de-sac — anything with more than
+        /// one pavement arriving is a seam or a junction, not a head.
+        /// </summary>
+        private static bool TryConnectDeadEndCap(
+            Vector2Int gridNode,
+            Vector3 center,
+            IReadOnlyList<LaneEndpoint> endpoints,
+            GraphBuilder graph)
+        {
+            if (endpoints.Count != 2 ||
+                !endpoints[0].Edge.Equals(endpoints[1].Edge))
+            {
+                return false;
+            }
+
+            // The two ends sit symmetrically about the street axis, so
+            // their midpoint is the middle of the turning head. It is
+            // junction furniture like a corner or a mouth, so it stands
+            // at the junction's own height rather than at whatever the
+            // street's grade happens to be a step inside it.
+            Vector3 midpoint =
+                (endpoints[0].Position + endpoints[1].Position) * 0.5f;
+            int cap = graph.AddNode(
+                $"junction:{gridNode.x}:{gridNode.y}:cap",
+                new Vector3(
+                    midpoint.x,
+                    center.y + CityStreetSurfacePlanner.SidewalkTop,
+                    midpoint.z),
+                false);
+            graph.AddLink(
+                $"turn:{gridNode.x}:{gridNode.y}:cap:a",
+                endpoints[0].NodeIndex,
+                cap,
+                CityPedestrianLinkKind.Turn,
+                false);
+            graph.AddLink(
+                $"turn:{gridNode.x}:{gridNode.y}:cap:b",
+                cap,
+                endpoints[1].NodeIndex,
+                CityPedestrianLinkKind.Turn,
+                false);
+            return true;
         }
 
         private static void ConnectWideTurnEndpoint(
@@ -858,7 +924,13 @@ namespace BarPromenade
                 return halfRoad;
             }
 
-            return connection.Count == 1 ? -halfRoad : 0f;
+            // A pavement stops at the head of a cul-de-sac, not past
+            // it. The road slab runs half a width beyond the last node
+            // on its own axis but pinches in well before that at the
+            // kerb line, so a lane pushed out by the old -halfRoad
+            // ended in mid-air: its height could not be sampled and
+            // the two sides had nothing to stand on to meet.
+            return 0f;
         }
 
         private static void GetMouthCorners(
@@ -1135,9 +1207,11 @@ namespace BarPromenade
         {
             private readonly List<Vector2Int> directions =
                 new List<Vector2Int>(4);
+            private readonly List<Vector2Int> streetDirections =
+                new List<Vector2Int>(4);
 
             public int Count => directions.Count;
-            public int StreetCount { get; private set; }
+            public int StreetCount => streetDirections.Count;
             public bool IsIntersectionCore =>
                 directions.Count >= 3 ||
                 (directions.Count == 2 &&
@@ -1148,13 +1222,19 @@ namespace BarPromenade
                 directions.Add(direction);
                 if (street)
                 {
-                    StreetCount++;
+                    streetDirections.Add(direction);
                 }
             }
 
-            public bool Contains(Vector2Int direction)
+            /// <summary>
+            /// Whether a pavement actually arrives from this side. A
+            /// park path is a road and no pavement, so a junction that
+            /// only asks "is there a road here" walks its corners into
+            /// a dead end.
+            /// </summary>
+            public bool ContainsStreet(Vector2Int direction)
             {
-                return directions.Contains(direction);
+                return streetDirections.Contains(direction);
             }
         }
 
