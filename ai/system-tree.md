@@ -347,8 +347,20 @@ Assets/
         CemeteryWatchmanProvider.cs  the only serialized reference to the staged prefab
         CemeteryGraveWorkStage.cs  the monotone ladder the whole worksite is rebuilt from
         CemeteryGravediggingPlan.cs  hole, spoil, lamp seat, heading + the stone this plot will wear
-        CemeteryGravediggingController.cs  the three acts, their world, restore and the wage
-        CemeteryGraveDigSiteInteraction.cs  one staged worksite stub: dig, lower, fill
+        CemeteryGravediggingController.cs  the four acts, their world, restore and the wage
+        CemeteryGraveDigSiteInteraction.cs  one staged worksite stub: dig, lower, fill, set
+        ICemeteryGraveWorkSession.cs  the seam that lets an act be earned instead of pressed
+        CemeteryGraveWorkController.cs  the modal session: camera, hero lease, input, commit
+        CemeteryGraveWorkStance.cs  where he stands, which way he throws, what the shot sees
+        CemeteryGraveLatticeModel.cs  6 x 3 courses, the no-pillar rule and the ground per course
+        CemeteryGraveSoil.cs  turf/loam/clay/stone/root/spoil and how each answers the spade
+        CemeteryStrokeModel.cs  the swing bar, and the one rule that judges a strike
+        CemeteryCoffinLowerModel.cs  two ropes, tilt and the slip that drops the box
+        CemeteryStoneSettleModel.cs  the plumb, and why tamping a leaning stone is wrong
+        CemeteryShovelAnimator.cs  drive, lever, lift, dump — the only animated thing here
+        CemeteryGraveTrestle.cs  two bearers, four slings, and the coffin pose they imply
+        (World) CityCemeteryCoffinRestWorldBuilder.cs  the two blocks the box waits on
+        (World) CityGravediggerShovelWorldBuilder.cs  the spade, and where it stands between acts
       Park/          the two old men's boards, once somebody sits down at one
         CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation

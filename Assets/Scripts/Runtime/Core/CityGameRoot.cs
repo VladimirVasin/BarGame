@@ -60,6 +60,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CemeteryGraveWorkController GraveWork
+        {
+            get;
+            private set;
+        }
         public LakeFishermanPresentation LakeFisherman
         {
             get;
@@ -619,6 +624,19 @@ namespace BarPromenade
             // the camera, which does not exist until this far down.
             SpeechBubbles = ui.AddComponent<NpcSpeechBubbleView>();
             SpeechBubbles.Initialize(camera);
+            // Every act of the gravedigger's job is now a piece of
+            // work rather than a press. Raised here rather than beside
+            // the job itself because it takes the camera down onto the
+            // hole and leases the hero out of sight while he digs, and
+            // neither of those exists until this far down.
+            GraveWork = CemeteryGraveWorkController.Create(
+                transform,
+                Gravedigging,
+                Player,
+                follow,
+                camera,
+                intoxicationHud,
+                ui.transform);
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.
             ParkQuarrel = CityParkQuarrelController.Create(

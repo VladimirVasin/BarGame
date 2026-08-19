@@ -87,7 +87,7 @@ namespace BarPromenade
             var boxes = new List<Bounds>(9);
             AppendCollar(boxes, plan);
             AppendFloor(boxes, plan);
-            AppendSpoil(boxes, plan);
+            AppendSpoil(boxes, plan, 1f);
 
             GameObject earth =
                 RuntimePrimitiveFactory.CreateCombinedBoxes(
@@ -123,7 +123,7 @@ namespace BarPromenade
                 CemeteryGravediggingPlan.PitWallThicknessMeters);
         }
 
-        private static void AppendCollar(
+        internal static void AppendCollar(
             ICollection<Bounds> boxes,
             CemeteryGravediggingPlan plan)
         {
@@ -145,7 +145,7 @@ namespace BarPromenade
                 mouth.yMin, mouth.yMax, floor, top);
         }
 
-        private static void AppendFloor(
+        internal static void AppendFloor(
             ICollection<Bounds> boxes,
             CemeteryGravediggingPlan plan)
         {
@@ -160,24 +160,40 @@ namespace BarPromenade
                 plan.PitFloorY);
         }
 
-        private static void AppendSpoil(
+        /// <summary>
+        /// The heap at any point between bare grass and everything the
+        /// hole held. <paramref name="fullness01"/> walks the courses
+        /// on from the bottom, growing the one it is part-way through
+        /// rather than popping a whole course into existence — a heap
+        /// that jumps a step every spadeful reads as a staircase being
+        /// built, not as earth being thrown.
+        /// </summary>
+        internal static void AppendSpoil(
             ICollection<Bounds> boxes,
-            CemeteryGravediggingPlan plan)
+            CemeteryGravediggingPlan plan,
+            float fullness01)
         {
             Rect footprint = plan.SpoilFootprint;
+            int count = SpoilCourseHeights.Length;
+            float filled = Mathf.Clamp01(fullness01) * count;
             float top = plan.GroundTopY;
-            for (int course = 0;
-                 course < SpoilCourseHeights.Length;
-                 course++)
+            for (int course = 0; course < count; course++)
             {
+                float share = Mathf.Clamp01(filled - course);
+                if (share <= 0f)
+                {
+                    break;
+                }
+
+                float height = SpoilCourseHeights[course] * share;
                 AddCourse(
                     boxes,
                     footprint,
                     SpoilCourseScales[course],
                     SpoilCourseOffsets[course],
                     top,
-                    SpoilCourseHeights[course]);
-                top += SpoilCourseHeights[course];
+                    height);
+                top += height;
             }
         }
 
@@ -206,7 +222,7 @@ namespace BarPromenade
         /// See <see cref="MouthGuardThickness"/>: a collider with no
         /// renderer, flush with the ground over the open mouth.
         /// </summary>
-        private static void AppendMouthGuard(
+        internal static void AppendMouthGuard(
             Transform root,
             CemeteryGravediggingPlan plan)
         {
@@ -224,7 +240,7 @@ namespace BarPromenade
                 mouth.height);
         }
 
-        private static void AddBox(
+        internal static void AddBox(
             ICollection<Bounds> boxes,
             float xMin,
             float xMax,

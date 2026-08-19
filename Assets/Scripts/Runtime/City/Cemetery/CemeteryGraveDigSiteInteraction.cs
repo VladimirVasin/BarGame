@@ -32,10 +32,14 @@ namespace BarPromenade
         public const string CoffinPromptKey =
             "interaction.lower_coffin";
         public const string FillPromptKey = "interaction.fill_grave";
+        public const string StonePromptKey =
+            "interaction.set_grave_stone";
         public const string DugFeedbackKey =
             "cemetery.gravedigging.dug";
         public const string CoffinFeedbackKey =
             "cemetery.gravedigging.coffin";
+        public const string FilledFeedbackKey =
+            "cemetery.gravedigging.filled";
         public const string SealedFeedbackKey =
             "cemetery.gravedigging.done";
         public const float FeedbackDurationSeconds = 3.0f;
@@ -167,6 +171,24 @@ namespace BarPromenade
             markCount = 0;
         }
 
+        /// <summary>
+        /// Takes the marked-out plate and its pegs out of sight while
+        /// the hero is actually working the plot. The plate hovers a
+        /// finger above the ground over the whole mouth, so leaving it
+        /// up would put a lid on the hole being dug under it.
+        /// </summary>
+        public void SetMarksVisible(bool visible)
+        {
+            for (int index = 0; index < markCount; index++)
+            {
+                Renderer mark = marks[index];
+                if (mark != null)
+                {
+                    mark.enabled = visible;
+                }
+            }
+        }
+
         public bool CanInteract(PlayerInteractor interactor)
         {
             return isInitialized &&
@@ -195,14 +217,15 @@ namespace BarPromenade
             }
         }
 
-        /// <summary>The three acts that are the hero's to take. A
-        /// finished grave offers nothing.</summary>
+        /// <summary>The acts that are the hero's to take. A finished
+        /// grave offers nothing.</summary>
         internal static bool IsWorkingStage(
             CemeteryGraveWorkStage value)
         {
             return value == CemeteryGraveWorkStage.Marked ||
                    value == CemeteryGraveWorkStage.Dug ||
-                   value == CemeteryGraveWorkStage.Coffined;
+                   value == CemeteryGraveWorkStage.Coffined ||
+                   value == CemeteryGraveWorkStage.Filled;
         }
 
         internal static string GetPromptKey(
@@ -214,6 +237,8 @@ namespace BarPromenade
                     return CoffinPromptKey;
                 case CemeteryGraveWorkStage.Coffined:
                     return FillPromptKey;
+                case CemeteryGraveWorkStage.Filled:
+                    return StonePromptKey;
                 default:
                     return DigPromptKey;
             }
@@ -230,6 +255,8 @@ namespace BarPromenade
                 case CemeteryGraveWorkStage.Dug:
                     return CoffinFeedbackKey;
                 case CemeteryGraveWorkStage.Coffined:
+                    return FilledFeedbackKey;
+                case CemeteryGraveWorkStage.Filled:
                     return SealedFeedbackKey;
                 default:
                     return DugFeedbackKey;

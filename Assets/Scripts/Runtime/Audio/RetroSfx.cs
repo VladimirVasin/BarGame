@@ -42,6 +42,12 @@ namespace BarPromenade
         TeethBrushScrub,
         BoardPiecePlace,
         BoardPieceTake,
+        SpadeBite,
+        SpadeGlance,
+        SpadeToss,
+        RopeCreak,
+        CoffinSettle,
+        StoneTamp,
         Count
     }
 
@@ -446,7 +452,85 @@ namespace BarPromenade
                 1024,
                 6200f,
                 0.045f,
-                60)
+                60),
+            new RetroSfxDefinition(
+                RetroSfxId.SpadeBite,
+                RetroSfxCategory.World,
+                0.26f,
+                0.42f,
+                1f,
+                3,
+                0.05f,
+                2,
+                1024,
+                5400f,
+                0.070f,
+                64),
+            new RetroSfxDefinition(
+                RetroSfxId.SpadeGlance,
+                RetroSfxCategory.World,
+                0.20f,
+                0.34f,
+                1f,
+                3,
+                0.05f,
+                2,
+                1024,
+                7200f,
+                0.080f,
+                60),
+            new RetroSfxDefinition(
+                RetroSfxId.SpadeToss,
+                RetroSfxCategory.World,
+                0.30f,
+                0.30f,
+                1f,
+                3,
+                0.06f,
+                2,
+                1024,
+                4200f,
+                0.075f,
+                56),
+            new RetroSfxDefinition(
+                RetroSfxId.RopeCreak,
+                RetroSfxCategory.World,
+                0.34f,
+                0.30f,
+                1f,
+                2,
+                0.22f,
+                2,
+                1024,
+                3600f,
+                0.090f,
+                54),
+            new RetroSfxDefinition(
+                RetroSfxId.CoffinSettle,
+                RetroSfxCategory.World,
+                0.44f,
+                0.46f,
+                1f,
+                2,
+                0.10f,
+                2,
+                1024,
+                3000f,
+                0.035f,
+                70),
+            new RetroSfxDefinition(
+                RetroSfxId.StoneTamp,
+                RetroSfxCategory.World,
+                0.24f,
+                0.38f,
+                1f,
+                3,
+                0.07f,
+                2,
+                1024,
+                4800f,
+                0.060f,
+                62)
         };
 
         public static int Count => definitions.Length - 1;
@@ -587,6 +671,36 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.BoardPieceTake:
                     return GenerateBoardPieceTake(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.SpadeBite:
+                    return GenerateSpadeBite(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.SpadeGlance:
+                    return GenerateSpadeGlance(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.SpadeToss:
+                    return GenerateSpadeToss(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.RopeCreak:
+                    return GenerateRopeCreak(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.CoffinSettle:
+                    return GenerateCoffinSettle(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.StoneTamp:
+                    return GenerateStoneTamp(
                         time,
                         duration,
                         ref noiseState);
@@ -887,6 +1001,137 @@ namespace BarPromenade
                 Mathf.Exp(-time * 40f) *
                 0.20f;
             return (knock + scrape + clack) * envelope;
+        }
+
+        /// <summary>
+        /// Steel into wet ground: a short crunch with the low thud of
+        /// the tread taking a boot behind it. No ring — the earth
+        /// swallows everything above the crunch.
+        /// </summary>
+        private static float GenerateSpadeBite(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.004f, 2.4f);
+            float crunch =
+                NextNoise(ref noiseState) *
+                Mathf.Max(0f, 1f - (normalized * 1.7f)) *
+                0.52f;
+            float thud = GlideSine(time, duration, 128f, 74f) * 0.44f;
+            float grit =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 26f) *
+                0.20f;
+            return (crunch + thud + grit) * envelope;
+        }
+
+        /// <summary>
+        /// The blade skidding off the face instead of into it: bright,
+        /// thin and over at once, with the handle knocking once in the
+        /// hands.
+        /// </summary>
+        private static float GenerateSpadeGlance(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.002f, 4.2f);
+            float scrape =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 15f) *
+                0.46f;
+            float ring =
+                Mathf.Sin(2f * Mathf.PI * 1720f * time) *
+                Mathf.Exp(-time * 46f) *
+                0.22f;
+            float knock = GlideSine(time, duration, 240f, 190f) * 0.18f;
+            return (scrape + ring + knock) * envelope;
+        }
+
+        /// <summary>
+        /// A spadeful thrown onto the heap. It lands loose, so it is
+        /// all scatter and no impact.
+        /// </summary>
+        private static float GenerateSpadeToss(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float normalized = Mathf.Clamp01(time / duration);
+            float envelope = Envelope(time, duration, 0.030f, 1.9f);
+            float scatter =
+                NextNoise(ref noiseState) *
+                Mathf.Lerp(0.16f, 0.50f, normalized) *
+                0.72f;
+            float body = GlideSine(time, duration, 96f, 58f) * 0.24f;
+            return (scatter + body) * envelope;
+        }
+
+        /// <summary>
+        /// Hemp under load, running a little and catching again. The
+        /// triangle is the fibres, not a tone.
+        /// </summary>
+        private static float GenerateRopeCreak(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.040f, 1.6f);
+            float groan =
+                Triangle(Mathf.Lerp(58f, 41f, time / duration), time) *
+                0.34f;
+            float fibre =
+                NextNoise(ref noiseState) *
+                Mathf.Abs(Mathf.Sin(2f * Mathf.PI * 9f * time)) *
+                0.26f;
+            return (groan + fibre) * envelope;
+        }
+
+        /// <summary>
+        /// Boards taking their own weight at the bottom of a hole: one
+        /// deep knock and the earth under it, with a long tail because
+        /// there are walls either side of it now.
+        /// </summary>
+        private static float GenerateCoffinSettle(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.003f, 1.5f);
+            float knock = GlideSine(time, duration, 112f, 52f) * 0.68f;
+            float boards =
+                Mathf.Sin(2f * Mathf.PI * 320f * time) *
+                Mathf.Exp(-time * 18f) *
+                0.24f;
+            float earth =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 11f) *
+                0.22f;
+            return (knock + boards + earth) * envelope;
+        }
+
+        /// <summary>
+        /// A boot treading loose earth down round the foot of a stone:
+        /// dull, packed, and a shade more solid every time.
+        /// </summary>
+        private static float GenerateStoneTamp(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.005f, 2.8f);
+            float pack = GlideSine(time, duration, 150f, 88f) * 0.50f;
+            float scuff =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 22f) *
+                0.34f;
+            float grit =
+                NextNoise(ref noiseState) *
+                Mathf.Exp(-time * 60f) *
+                0.14f;
+            return (pack + scuff + grit) * envelope;
         }
 
         private static float GeneratePour(

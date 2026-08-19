@@ -6,6 +6,157 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-19 — The gravedigging is worked, not pressed
+
+- **Four acts, four games.** The ladder gains a rung —
+  `Unclaimed → Marked → Dug → Coffined → Filled → Sealed → Paid` — because
+  closing a hole cannot be undone, so filling and setting the stone had to be
+  separate commits. `CemeteryGraveWorkController` runs each act as a modal
+  session over `BarMinigameModalLock`, blends the camera down onto the grave
+  the way `CityBoardGameController` does, and calls
+  `CemeteryGravediggingController.TryAdvance` only at the end.
+  `TryAdvance` itself is untouched: the site prompt now goes through
+  `RequestAdvance`, which hands the act to an `ICemeteryGraveWorkSession` if
+  one is attached and otherwise commits outright — which is what every
+  EditMode test and any headless build still sees.
+- **Nothing is committed until it is finished.** A session owns everything it
+  puts in the world and takes it all back out on `Esc`, so
+  `GameSessionState` gained no field: the worksite stays a pure function of
+  one stored stage, and that stage never has to describe half a hole.
+- **The hole is a lattice.** `CemeteryGraveLatticeModel` divides the mouth
+  `3 × 2` and each segment into three courses, `18` in all. One rule holds
+  it together — a segment may only be worked while it is no deeper than its
+  shallowest neighbour — which forbids pillars, cannot deadlock (the globally
+  shallowest segment always satisfies it), and is the whole reason the pit is
+  divided. `CemeterySoilTable` gives turf, loam, clay, stone and root their
+  own bite width, swing speed and strike count; a jarred blade only costs
+  progress on a root. Filling is the same lattice read upward and meets
+  nothing but spoil, so only digging has ground worth varying.
+- **The ground is re-rolled on every attempt.** The lattice takes an `int`
+  seed and is a pure function of it — one number is one hole, which is what
+  makes it testable — but `CemeteryGraveWorkController.NextGroundSeed` draws a
+  fresh one each time an act opens. This is deliberate and it is the one
+  number in the job not derived from the city seed: `CitySeed` is never
+  actually changed at runtime (`SetCitySeed` has no gameplay caller), so
+  seeding the soil from the plot id meant every playthrough met the same stone
+  in the same corner. Recorded as an accepted exception in
+  `ai/architecture-notes.md`; the price is that a bad roll can be re-rolled by
+  abandoning, which costs everything already dug.
+- **The spade is the only animated thing.** `CityGravediggerShovelWorldBuilder`
+  builds it from oriented boxes with its origin at the blade's point, and
+  `CemeteryShovelAnimator` drives it through drive/lever/lift/dump. The hero
+  is leased out of sight through `PlayerPresentationVisibility` and the camera
+  takes his own eye line, so there is no rig to disagree with — an accepted
+  deviation, recorded in `ai/architecture-notes.md`, and the reason
+  `ai/contextual-animation-standard.md` does not apply here.
+- **Geometry.** `CityCemeteryProgressivePitWorldBuilder` states the half-dug
+  hole as one earth block per segment from the floor up to its working face,
+  which is the same expression for both acts. The slab is cut once at the
+  first spadeful and not touched again, so a stroke costs one small combined
+  mesh rather than a rebuild of the cemetery ground.
+  `CityCemeteryGroundExcavation.Excavate` is now idempotent for an identical
+  rectangle, mirroring `Fill`, so the commit survives finding its own hole
+  already open; an overlapping *different* rectangle is still refused.
+  `CityCemeteryPitWorldBuilder.AppendSpoil` grew a fullness so the heap grows
+  and shrinks smoothly instead of a course at a time.
+- **The swing was unplayable and is retuned.** The first numbers were chosen
+  as widths and shipped as widths, which is the wrong unit: the marker is a
+  sine, so it runs *fastest* exactly where the biting window is. Measured as
+  time in hand, stone gave `20 ms` — one frame at 60 — and loam `52 ms`. Bite
+  bands roughly doubled and sweep rates roughly halved, putting the range at
+  `116 ms` (stone) to `245 ms` (turf).
+  `CemeteryGraveWorkTests.EveryGroundLeavesTimeEnoughToActuallyHitIt` now
+  measures every row off `CemeteryStrokeModel` itself and holds it between
+  `0.10 s` and `0.32 s`, so the unit can never quietly become width again.
+- **The spade stood inside the waiting coffin.** The kit's two offsets were
+  chosen independently and the spade's landed within the box's outline, so the
+  handle came up through the lid. It now stands past the end of the box, and
+  `CemeteryGravediggingPlan.ValidateOrThrow` projects the gap onto the
+  coffin's own long axis and refuses a plan where it is smaller than
+  `CoffinHalfSpanMeters`, so the two numbers can no longer drift into each
+  other unnoticed.
+- **Hard ground no longer wants two strikes.** `StrikesPerCourse` and
+  `ResetsOnJar` are gone from `CemeterySoilProfile` along with the lattice's
+  per-course strike counter: one good strike is one course, whatever it is
+  made of. Asking for a second hit on the same square is the same shot
+  demanded twice, and it only lengthened the act. What still separates stone
+  from loam is the width of the window, so stone and root were tightened to
+  `105` and `122` ms against loam's `192`.
+- **Act two was "hold Q and E", and now it cannot be.** The old model paid
+  both ropes out at matched rates, so holding both lowered the box level with
+  nothing to control. The fix is the user's own: `Q` and `E` still pay their
+  own end out and nothing held still means nothing moves — a coffin on two
+  unattended ropes does not descend, and pretending otherwise was an
+  overcomplication I went down a long way before being pulled back — but the
+  *balance point* crawls. Fresh ground gives under one bearer and then the
+  other, so the setting of the ropes that hangs the box level moves, and moves
+  further than the tolerance is wide. Standing still now loses it because
+  level walks out from under a box that never moved; holding both loses it
+  because the head pays out faster than the foot and the point keeps going.
+  Rope only ever goes out, so correcting and descending are the same action
+  and every correction costs depth. The gauge draws the moving band and a
+  needle for the balance the hero controls — a band pinned to the centre would
+  say "hold still", which is the one thing that does not work.
+  The tuning trap is recorded in the settings: the point must crawl slower
+  *on average* than the slower rope can move the balance. An early pass had a
+  wander that outran the ropes, which is not difficulty, it is impossibility.
+  `NoWayOfNotPlayingLowersTheCoffin` holds all four ways of not playing
+  against four balance-point phases, and `FollowingTheBalancePointLandsIt`
+  proves the intended play lands across three deadzones, three reaction delays
+  and four phases — a window one reaction speed wide is not a mechanic.
+- **The bearers are gone and the rope keys follow the shot.** Two timbers laid
+  across the mouth were the one thing standing where the coffin has to pass, so
+  `CemeteryGraveTrestle` became `CemeteryGraveSlings`: four ropes running down
+  from the ground line, no timber. The blocks the box waited on keep their own
+  colour and stay at the foot of the plot. And `Q`/`E` were bound to the head
+  and foot of the grave, which puts them the right way round on half the yard
+  and backwards on the other half depending on the plot's heading against the
+  side the digger stands on; they are now bound to the left and right of the
+  shot, with `CoffinGaugeSign` mirroring the needle and the sliding band to
+  match. `TheRopeKeysFollowTheShotAndNotTheGrave` holds both headings.
+- **The panel was sized to the picture and clipped the words.** IMGUI
+  truncates a label that does not fit; it does not shrink one. The hint names
+  three controls in a sentence and lost both ends of itself at `292` logical
+  px. Panel widened to `356`, the three rows given explicit heights, and the
+  hint wrapped over two lines so a longer locale drops a line instead of
+  losing its ends. The layout came out of `OnGUI` into
+  `CemeteryGraveWorkView.CreateLayout` / `CreateLatticeRect` /
+  `CreateSideRect` so `ThePanelHoldsEverythingItDraws` can hold it to
+  containment and ordering — the only part of an IMGUI surface testable
+  without a game view.
+- **The gear stands on the plot, and there is only ever one of each.**
+  Taking the job now also sets down the coffin on two timber blocks and drives
+  the spade into the ground beside it, past the foot of the grave — the only
+  clear ground on the plot, since the heap owns one flank, the digger and his
+  camera own the other and the lamp owns the head. `CemeteryGravediggingPlan`
+  carries `CoffinRestGround` / `SpadeRestGround` with a per-plot skew, and
+  `ValidateOrThrow` refuses a plan that would leave either of them standing on
+  the worksite.
+- **The acts borrow those props rather than raising their own.** This was the
+  point: a session that built its own spade put two spades on one plot. The
+  spade and the waiting coffin now belong to `CemeteryGravediggingController`
+  and are exposed as `Spade` / `WaitingCoffin`;
+  `CemeteryGraveWorkController` enables the animator already on the spade and
+  plays `PlayTakeUp`, so the object the player has been looking at is the
+  object that comes to hand, and `PlayLayDown` stands it back in the ground
+  under the camera blend. Act two moves the waiting coffin onto the bearers
+  instead of spawning one, so `LowerCoffin` consumes the same box.
+  `ThereIsOnlyEverOneSpadeOnTheWorksite` and
+  `TheWaitingCoffinIsTheOneThatGoesInTheHole` count them through the whole
+  ladder. Lifetimes stay a pure function of the stage: spade and blocks
+  through `Coffined`, waiting coffin through `Dug`, all tidied at `Filled`.
+- **The lamp belongs to the job, not to the hole.** It is raised in
+  `TryAccept` and in the `Marked` branch of `Restore`, not in `Dig`. Digging
+  is now a timed act, and timing a spade against ground lit by one distant
+  alley lamp is not a difficulty setting.
+- **Verified:** EditMode `CemeteryGraveWork`, `CemeteryGravedigging`,
+  `CemeteryWatchman`, `LocalizationCatalog` and `RetroSfxLibrary` suites,
+  67/67 after the retune (80/80 with `CityCemeteryPlanner` and
+  `InteractionPromptView` before it). The panel is IMGUI and cannot be
+  captured headlessly, so its layout is not covered; the framing rule is
+  (`CemeteryGraveWorkStance` is pure and asserts the shot looks down into the
+  hole from the dry side of it).
+
 ## 2026-08-19 — A grave takes three acts, and the third one pays
 
 - **The job is three interactions, not one.** `CemeteryGraveWorkStage` is a

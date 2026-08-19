@@ -51,6 +51,34 @@ namespace BarPromenade
         public const float LampLateralOffsetMeters =
             PitWidthMeters * 0.5f + PitWallThicknessMeters * 0.5f;
 
+        /// <summary>
+        /// Where the coffin waits and where the spade stands while
+        /// they are not in the hero's hands: past the foot end of the
+        /// grave, laid across it.
+        ///
+        /// It is the only place on the plot they fit. The heap owns
+        /// one flank, the digger and his camera own the other, and the
+        /// head end carries the lamp; what is left is the ground below
+        /// the feet, and there is a metre and a half of it before the
+        /// next row of graves begins.
+        /// </summary>
+        public const float KitLongOffsetMeters =
+            PitLengthMeters * 0.5f +
+            PitWallThicknessMeters +
+            0.42f;
+
+        /// <summary>
+        /// Half the length of the coffin as it lies there, across the
+        /// grave. The spade has to stand past the end of it: anything
+        /// nearer the middle puts the handle through the lid, which is
+        /// exactly what a first pass at these numbers did.
+        /// </summary>
+        public const float CoffinHalfSpanMeters = 0.98f;
+        public const float SpadeLongOffsetMeters =
+            KitLongOffsetMeters - 0.16f;
+        public const float SpadeLateralOffsetMeters =
+            CoffinHalfSpanMeters + 0.30f;
+
         private static readonly CemeteryGravediggingPlan AbsentPlan =
             new CemeteryGravediggingPlan();
 
@@ -113,6 +141,34 @@ namespace BarPromenade
             // vault is not what one man digs in an afternoon, and an
             // overgrown slab cannot be an hour old.
             uint stoneHash = StableHash(plot.StableId);
+            // Both are set down by hand rather than installed, so both
+            // sit a few degrees off true — the same few degrees every
+            // time, because it is the plot that decides and not the
+            // moment the hero happens to arrive.
+            float coffinSkew =
+                ((stoneHash >> 3) % 13u) - 6f;
+            float spadeSkew =
+                ((stoneHash >> 11) % 19u) - 9f;
+            Vector3 coffinOffset = Heading * new Vector3(
+                0f,
+                0f,
+                -KitLongOffsetMeters);
+            CoffinRestGround = new Vector3(
+                Ground.x + coffinOffset.x,
+                groundTopY,
+                Ground.z + coffinOffset.z);
+            CoffinRestYawDegrees =
+                headingYawDegrees + 90f + coffinSkew;
+            Vector3 spadeOffset = Heading * new Vector3(
+                SpadeLateralOffsetMeters,
+                0f,
+                -SpadeLongOffsetMeters);
+            SpadeRestGround = new Vector3(
+                Ground.x + spadeOffset.x,
+                groundTopY,
+                Ground.z + spadeOffset.z);
+            SpadeRestYawDegrees = headingYawDegrees + spadeSkew;
+
             Monument = (CityCemeteryGraveVariant)(stoneHash % 4u);
             MonumentStyle = ((stoneHash >> 8) & 1u) == 0u
                 ? CityCemeteryStyle.GraniteDark
@@ -143,9 +199,19 @@ namespace BarPromenade
         /// </summary>
         public Quaternion Heading { get; }
 
-        /// <summary>Where the work lamp stands while the grave is
-        /// open.</summary>
+        /// <summary>Where the work lamp stands from the moment the
+        /// job is taken until the earth goes back.</summary>
         public Vector3 LampGround { get; }
+
+        /// <summary>Where the coffin lies waiting, on its two blocks
+        /// past the foot of the grave.</summary>
+        public Vector3 CoffinRestGround { get; }
+        public float CoffinRestYawDegrees { get; }
+
+        /// <summary>Where the spade stands driven into the ground
+        /// between acts.</summary>
+        public Vector3 SpadeRestGround { get; }
+        public float SpadeRestYawDegrees { get; }
 
         /// <summary>The stone that goes up when the grave is closed.
         /// </summary>
@@ -295,6 +361,45 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The gravedigger's lamp must stand on the " +
                     "worksite.");
+            }
+
+            // Neither the coffin nor the spade may be standing on the
+            // hole, on its collar or in the heap: the hero has to be
+            // able to work all three of those without the props being
+            // in the way, and that is the whole point of setting them
+            // down past the feet.
+            Rect work = plan.WorkFootprint;
+            var spade = new Vector2(
+                plan.SpadeRestGround.x,
+                plan.SpadeRestGround.z);
+            if (work.Contains(new Vector2(
+                    plan.CoffinRestGround.x,
+                    plan.CoffinRestGround.z)) ||
+                work.Contains(spade))
+            {
+                throw new InvalidOperationException(
+                    "The gravedigger's coffin and spade must wait " +
+                    "clear of the worksite.");
+            }
+
+            // And clear of each other. A spade standing inside the
+            // coffin's own outline comes up through the lid.
+            Vector3 apart = plan.SpadeRestGround -
+                            plan.CoffinRestGround;
+            // The box is laid across the grave, so its own length runs
+            // along the world direction its resting yaw faces.
+            Vector3 coffinLength = Quaternion.Euler(
+                0f,
+                plan.CoffinRestYawDegrees,
+                0f) * Vector3.forward;
+            float alongCoffin = Mathf.Abs(
+                (apart.x * coffinLength.x) +
+                (apart.z * coffinLength.z));
+            if (alongCoffin < CoffinHalfSpanMeters)
+            {
+                throw new InvalidOperationException(
+                    "The gravedigger's spade must stand past the " +
+                    "end of the waiting coffin, not through it.");
             }
 
             Rect footprint = plan.WorkFootprint;

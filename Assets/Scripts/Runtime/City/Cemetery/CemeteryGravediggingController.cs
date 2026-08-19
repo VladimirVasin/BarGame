@@ -23,10 +23,12 @@ namespace BarPromenade
 
         /// <summary>
         /// The lamp the gravedigger works by: the same kerosene hand
-        /// lamp that stands at the end of the lake pier, set down on
-        /// the collar beside the open hole. It is turned a little off
-        /// the grave's own axis because it was put down by hand and
-        /// not installed.
+        /// lamp that stands at the end of the lake pier, set down at
+        /// the head-end corner of the plot. It arrives with the job
+        /// and stays until the earth is back — every act is worked by
+        /// its light, and the first of them most of all. It is turned
+        /// a little off the grave's own axis because it was put down
+        /// by hand and not installed.
         /// </summary>
         public const string LampName = "Grave Work Lamp";
         public const float LampYawDegrees = 24f;
@@ -40,11 +42,16 @@ namespace BarPromenade
 
         private CemeteryGravediggingPlan plan;
         private CityCemeteryGroundExcavation excavation;
+        private ICemeteryGraveWorkSession workSession;
         private CemeteryGraveDigSiteInteraction site;
         private GameObject pit;
         private GameObject lamp;
         private GameObject coffin;
-        private GameObject sealedGrave;
+        private GameObject mound;
+        private GameObject stone;
+        private GameObject spade;
+        private GameObject waitingCoffin;
+        private GameObject coffinBlocks;
 
         /// <summary>The job as planned, present or not.</summary>
         public CemeteryGravediggingPlan Plan => plan;
@@ -77,6 +84,10 @@ namespace BarPromenade
         public bool IsCoffined =>
             Stage >= CemeteryGraveWorkStage.Coffined;
 
+        /// <summary>True once the earth is back and the mound is
+        /// turned. The head of the grave is still bare.</summary>
+        public bool IsFilled => Stage >= CemeteryGraveWorkStage.Filled;
+
         /// <summary>True only once the grave is closed and the stone
         /// is standing: the job, and nothing short of it.</summary>
         public bool IsSealed => Stage >= CemeteryGraveWorkStage.Sealed;
@@ -90,6 +101,107 @@ namespace BarPromenade
 
         /// <summary>The worksite, while one is standing.</summary>
         public CemeteryGraveDigSiteInteraction Site => site;
+
+        /// <summary>The register of holes this job cuts its grave out
+        /// of. The work session needs it to open the ground before the
+        /// act that records the opening is committed.</summary>
+        public CityCemeteryGroundExcavation Excavation => excavation;
+
+        /// <summary>
+        /// Hands the acts over to something that makes the hero earn
+        /// them. Without one the prompt commits an act outright, which
+        /// is what every test and any headless build sees.
+        /// </summary>
+        public void SetWorkSession(ICemeteryGraveWorkSession session)
+        {
+            workSession = session;
+        }
+
+        /// <summary>
+        /// Hides the lining of the open hole. The work session shows
+        /// its own half-finished earth in the same place, and two
+        /// meshes over one hole would fight for every pixel of it.
+        /// </summary>
+        public void SetPitDressingVisible(bool visible)
+        {
+            if (pit == null)
+            {
+                return;
+            }
+
+            Renderer[] renderers =
+                pit.GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                renderers[index].enabled = visible;
+            }
+        }
+
+        /// <summary>
+        /// The spade itself, for the act that swings it. There is only
+        /// ever one, so an act borrows this rather than raising a
+        /// second — which is the whole reason it lives here and not in
+        /// the session.
+        /// </summary>
+        public CemeteryShovelAnimator Spade =>
+            spade != null
+                ? spade.GetComponent<CemeteryShovelAnimator>()
+                : null;
+
+        /// <summary>The coffin waiting on its blocks, for the act that
+        /// carries it to the hole.</summary>
+        public Transform WaitingCoffin =>
+            waitingCoffin != null ? waitingCoffin.transform : null;
+
+        /// <summary>Puts the spade back where it stands between acts.
+        /// </summary>
+        public void RestSpade()
+        {
+            CemeteryShovelAnimator animator = Spade;
+            if (animator == null)
+            {
+                return;
+            }
+
+            animator.Rest(
+                CityGravediggerShovelWorldBuilder.GetRestPosition(
+                    plan),
+                CityGravediggerShovelWorldBuilder.GetRestRotation(
+                    plan));
+            animator.enabled = false;
+        }
+
+        /// <summary>Puts the coffin back on its blocks.</summary>
+        public void RestWaitingCoffin()
+        {
+            if (waitingCoffin == null)
+            {
+                return;
+            }
+
+            waitingCoffin.transform.SetPositionAndRotation(
+                CityCemeteryCoffinRestWorldBuilder.GetCoffinPosition(
+                    plan),
+                CityCemeteryCoffinRestWorldBuilder.GetCoffinRotation(
+                    plan));
+        }
+
+        /// <summary>Hides the coffin already at the bottom of the
+        /// hole, for an act that puts its own there.</summary>
+        public void SetCoffinVisible(bool visible)
+        {
+            if (coffin == null)
+            {
+                return;
+            }
+
+            Renderer[] renderers =
+                coffin.GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                renderers[index].enabled = visible;
+            }
+        }
 
         public static CemeteryGravediggingController Create(
             Transform parent,
@@ -135,6 +247,16 @@ namespace BarPromenade
 
             GameSessionState.TryActivateQuest(QuestId.DigTheGrave);
             RaiseSite();
+            // The tools come with the job too: a coffin waiting on its
+            // blocks past the feet and a spade stood in the ground
+            // beside it. The old man does not send a man to dig and
+            // then make him find a box.
+            RaiseKit();
+            // The lamp comes with the job, not with the hole. A man
+            // sent to dig at this hour is sent with a light, and the
+            // first act is the one that most needs it: without it he
+            // would be timing a spade against ground he cannot see.
+            RaiseLamp();
             GameLog.Info(
                 "city",
                 "cemetery_gravedigging_accepted",
@@ -145,8 +267,12 @@ namespace BarPromenade
         /// <summary>
         /// Takes the next act of the work, whichever one is due: the
         /// ground gives up its rectangle, or the coffin goes down, or
-        /// the earth goes back over it and the stone goes up. False
+        /// the earth goes back over it, or the stone goes up. False
         /// when there is no act due or the world refused it.
+        ///
+        /// This is the commit, not the doing of it. The minigame that
+        /// makes the hero earn each act calls this once, at the end,
+        /// with the work already visible on the ground.
         /// </summary>
         public bool TryAdvance()
         {
@@ -157,7 +283,9 @@ namespace BarPromenade
                 case CemeteryGraveWorkStage.Dug:
                     return LowerCoffin();
                 case CemeteryGraveWorkStage.Coffined:
-                    return SealGrave();
+                    return FillGrave();
+                case CemeteryGraveWorkStage.Filled:
+                    return RaiseStone();
                 default:
                     return false;
             }
@@ -200,22 +328,32 @@ namespace BarPromenade
             switch (Stage)
             {
                 case CemeteryGraveWorkStage.Marked:
+                    RaiseLamp();
+                    RaiseKit();
                     RaiseSite();
                     break;
                 case CemeteryGraveWorkStage.Dug:
                     OpenPit();
                     RaiseLamp();
+                    RaiseKit();
                     RaiseSite();
                     break;
                 case CemeteryGraveWorkStage.Coffined:
                     OpenPit();
                     RaiseLamp();
                     RaiseCoffin();
+                    RaiseSpade();
+                    RaiseCoffinBlocks();
+                    RaiseSite();
+                    break;
+                case CemeteryGraveWorkStage.Filled:
+                    RaiseMound();
                     RaiseSite();
                     break;
                 case CemeteryGraveWorkStage.Sealed:
                 case CemeteryGraveWorkStage.Paid:
-                    RaiseMonument();
+                    RaiseMound();
+                    RaiseStoneObject();
                     break;
             }
         }
@@ -248,6 +386,11 @@ namespace BarPromenade
                 return false;
             }
 
+            // The box that was waiting is the box that is now down the
+            // hole, so the waiting one goes — but its blocks stay
+            // where they were kicked, because nobody carries those
+            // away either.
+            DestroyPart(ref waitingCoffin);
             site?.SetStage(CemeteryGraveWorkStage.Coffined);
             GameLog.Info(
                 "city",
@@ -256,17 +399,17 @@ namespace BarPromenade
             return true;
         }
 
-        private bool SealGrave()
+        private bool FillGrave()
         {
             // The earth goes back before anything is built on it: a
-            // stone standing over a hole that is still open would be
+            // mound standing over a hole that is still open would be
             // a worse bug than a step that simply refused.
             if (excavation == null ||
                 !excavation.Fill(
                     CityCemeteryPitWorldBuilder.GetExcavationRect(
                         plan)) ||
                 !GameSessionState.TryAdvanceGraveWork(
-                    CemeteryGraveWorkStage.Sealed))
+                    CemeteryGraveWorkStage.Filled))
             {
                 return false;
             }
@@ -274,14 +417,36 @@ namespace BarPromenade
             DestroyPart(ref pit);
             DestroyPart(ref coffin);
             // The lamp goes with them. It stood there because there was
-            // a hole to see into, and there is no longer a hole.
+            // a hole to see into, and there is no longer a hole. The
+            // spade and the blocks go the same way: the last spadeful
+            // is the one that tidies the site.
             DestroyPart(ref lamp);
+            DestroyPart(ref spade);
+            DestroyPart(ref coffinBlocks);
+            site?.SetStage(CemeteryGraveWorkStage.Filled);
+            RaiseMound();
+            GameLog.Info(
+                "city",
+                "cemetery_grave_filled",
+                GameLog.Field("plot", plan.Plot.StableId));
+            return true;
+        }
+
+        private bool RaiseStone()
+        {
+            RaiseStoneObject();
+            if (stone == null ||
+                !GameSessionState.TryAdvanceGraveWork(
+                    CemeteryGraveWorkStage.Sealed))
+            {
+                return false;
+            }
+
             // Told first, then taken down: in play mode the object
             // outlives this frame, and for that frame it must already
             // know it has nothing left to offer.
             site?.SetStage(CemeteryGraveWorkStage.Sealed);
             DestroyPart(ref site);
-            RaiseMonument();
             GameSessionState.TryCompleteQuest(QuestId.DigTheGrave);
             GameLog.Info(
                 "city",
@@ -305,7 +470,24 @@ namespace BarPromenade
                 transform,
                 plan,
                 Stage,
-                TryAdvance);
+                RequestAdvance);
+        }
+
+        /// <summary>
+        /// What the prompt actually calls. A work session that takes
+        /// the act answers true and the act is now its business; the
+        /// prompt reports nothing, because nothing has been done yet.
+        /// With no session the act is committed on the spot, which is
+        /// the behaviour the job shipped with.
+        /// </summary>
+        private bool RequestAdvance()
+        {
+            if (workSession != null && workSession.TryBegin(Stage))
+            {
+                return false;
+            }
+
+            return TryAdvance();
         }
 
         private bool OpenPit()
@@ -349,14 +531,94 @@ namespace BarPromenade
             }
         }
 
-        private void RaiseMonument()
+        /// <summary>
+        /// The gear standing about the plot between acts: the coffin
+        /// on its blocks and the spade in the ground beside it.
+        /// </summary>
+        private void RaiseKit()
         {
-            if (sealedGrave == null)
+            RaiseSpade();
+            RaiseCoffinBlocks();
+            if (waitingCoffin != null)
             {
-                sealedGrave =
-                    CityCemeterySealedGraveWorldBuilder.Build(
+                return;
+            }
+
+            waitingCoffin = CityCemeteryCoffinWorldBuilder.Build(
+                transform,
+                plan);
+            RestWaitingCoffin();
+        }
+
+        /// <summary>
+        /// The two offcuts the box waits on. They outlive it: nobody
+        /// carries blocks away, so they stay by the foot of the grave
+        /// until the whole site is tidied at the last spadeful.
+        /// </summary>
+        private void RaiseCoffinBlocks()
+        {
+            if (coffinBlocks == null)
+            {
+                coffinBlocks =
+                    CityCemeteryCoffinRestWorldBuilder.Build(
                         transform,
                         plan);
+            }
+        }
+
+        /// <summary>
+        /// The one spade this job ever has. It is built once and lives
+        /// until the earth is back, so the act that swings it moves
+        /// this object rather than raising a second one beside it.
+        /// </summary>
+        private void RaiseSpade()
+        {
+            if (spade != null)
+            {
+                return;
+            }
+
+            spade = CityGravediggerShovelWorldBuilder.Build(
+                transform,
+                CityGravediggerShovelWorldBuilder.RootName);
+            if (spade == null)
+            {
+                return;
+            }
+
+            var animator =
+                spade.AddComponent<CemeteryShovelAnimator>();
+            animator.Rest(
+                CityGravediggerShovelWorldBuilder.GetRestPosition(
+                    plan),
+                CityGravediggerShovelWorldBuilder.GetRestRotation(
+                    plan));
+            animator.enabled = false;
+        }
+
+        private void RaiseMound()
+        {
+            if (mound == null)
+            {
+                mound = CityCemeterySealedGraveWorldBuilder.BuildMound(
+                    transform,
+                    plan);
+            }
+        }
+
+        /// <summary>
+        /// The stone is parented to the mound so a finished grave is
+        /// still one object in the hierarchy, exactly as it was before
+        /// filling and setting became separate acts.
+        /// </summary>
+        private void RaiseStoneObject()
+        {
+            RaiseMound();
+            if (stone == null && mound != null)
+            {
+                stone = CityCemeterySealedGraveWorldBuilder.BuildStone(
+                    mound.transform,
+                    plan);
             }
         }
 

@@ -59,9 +59,15 @@ namespace BarPromenade
 
         /// <summary>
         /// Opens one hole and rebuilds the slab around it. False when
-        /// the rectangle is degenerate, when it duplicates a hole
-        /// already open, or when there is no slab to cut — a city
+        /// the rectangle is degenerate, when it overlaps a different
+        /// hole already open, or when there is no slab to cut — a city
         /// whose blueprint carries no cemetery digs no graves.
+        ///
+        /// Cutting exactly the same rectangle twice succeeds and does
+        /// nothing, the mirror of <see cref="Fill"/>. Digging opens
+        /// the hole long before the act that records it is committed,
+        /// and the commit must not fail on finding its own work
+        /// already done.
         /// </summary>
         public bool Excavate(Rect mouth)
         {
@@ -72,6 +78,11 @@ namespace BarPromenade
                 !IsFinite(mouth))
             {
                 return false;
+            }
+
+            if (IndexOf(mouth) >= 0)
+            {
+                return true;
             }
 
             for (int index = 0; index < cuts.Count; index++)

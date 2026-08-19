@@ -1218,7 +1218,11 @@
     },
     {
       "key": "interaction.fill_grave",
-      "value": "E — fill it in and set the stone"
+      "value": "E — fill the grave in"
+    },
+    {
+      "key": "interaction.set_grave_stone",
+      "value": "E — set the stone"
     },
     {
       "key": "cemetery.gravedigging.accepted",
@@ -1237,12 +1241,72 @@
       "value": "Down it goes. Now fill it in."
     },
     {
+      "key": "cemetery.gravedigging.filled",
+      "value": "The earth is back. The stone now."
+    },
+    {
       "key": "cemetery.gravedigging.done",
       "value": "Done. Straighter than the last man’s. Now back to the watchman for the money."
     },
     {
       "key": "cemetery.gravedigging.paid",
       "value": "“Here. You earned it.”   +${0}"
+    },
+    {
+      "key": "cemetery.work.dig.title",
+      "value": "Digging"
+    },
+    {
+      "key": "cemetery.work.coffin.title",
+      "value": "Lowering the coffin"
+    },
+    {
+      "key": "cemetery.work.fill.title",
+      "value": "Filling in"
+    },
+    {
+      "key": "cemetery.work.stone.title",
+      "value": "Setting the stone"
+    },
+    {
+      "key": "cemetery.work.hint.spade",
+      "value": "A/D — segment   hold E to swing, release to strike   Esc — walk off"
+    },
+    {
+      "key": "cemetery.work.hint.coffin",
+      "value": "Q/E let the left and right ropes out. Level keeps crawling away: let out whichever end is high.   Esc — walk off"
+    },
+    {
+      "key": "cemetery.work.hint.stone",
+      "value": "A/D — hold it plumb   E — tamp   Esc — walk off"
+    },
+    {
+      "key": "cemetery.work.abandoned",
+      "value": "Left it half done. That is starting again."
+    },
+    {
+      "key": "cemetery.soil.turf",
+      "value": "turf"
+    },
+    {
+      "key": "cemetery.soil.loam",
+      "value": "loam"
+    },
+    {
+      "key": "cemetery.soil.clay",
+      "value": "clay"
+    },
+    {
+      "key": "cemetery.soil.stone",
+      "value": "stone"
+    },
+    {
+      "key": "cemetery.soil.root",
+      "value": "root"
+    },
+    {
+      "key": "cemetery.soil.spoil",
+      "value": "spoil"
     },
     {
       "key": "quest.dig_grave.title",

@@ -23,6 +23,7 @@ namespace BarPromenade
     {
         public const string RootName = "Sealed Grave";
         public const string MoundName = "Grave Mound";
+        public const string StoneName = "Grave Monument";
 
         /// <summary>
         /// The mound covers the body and stops short of the head, so
@@ -70,6 +71,25 @@ namespace BarPromenade
             Transform parent,
             CemeteryGravediggingPlan plan)
         {
+            GameObject root = BuildMound(parent, plan);
+            if (root != null)
+            {
+                BuildStone(root.transform, plan);
+            }
+
+            return root;
+        }
+
+        /// <summary>
+        /// The closed grave without its stone: what stands on the plot
+        /// between the last spadeful and the moment the monument is
+        /// set. Those are two rungs of the work, so they are two
+        /// builds.
+        /// </summary>
+        public static GameObject BuildMound(
+            Transform parent,
+            CemeteryGravediggingPlan plan)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -105,7 +125,35 @@ namespace BarPromenade
                 mound.GetComponent<Renderer>(),
                 CityCemeterySurfaceKind.Soil,
                 CityCemeteryPitWorldBuilder.FreshEarth);
+            return root.gameObject;
+        }
 
+        /// <summary>
+        /// The monument alone, batched exactly as the standing rows
+        /// are. It is built under its own root so the setting of it
+        /// can be carried, tilted and tamped before it is left there.
+        /// </summary>
+        public static GameObject BuildStone(
+            Transform parent,
+            CemeteryGravediggingPlan plan)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            if (!plan.IsPresent)
+            {
+                return null;
+            }
+
+            Transform root = new GameObject(StoneName).transform;
+            root.SetParent(parent, false);
             CityCemeteryWorldBuilder.BuildPartBatches(
                 root,
                 CreateMonumentParts(plan),

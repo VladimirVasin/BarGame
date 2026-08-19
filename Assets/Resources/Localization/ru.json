@@ -1218,7 +1218,11 @@
     },
     {
       "key": "interaction.fill_grave",
-      "value": "E — закопать и поставить камень"
+      "value": "E — закопать могилу"
+    },
+    {
+      "key": "interaction.set_grave_stone",
+      "value": "E — поставить камень"
     },
     {
       "key": "cemetery.gravedigging.accepted",
@@ -1237,12 +1241,72 @@
       "value": "Опустил. Осталось закопать."
     },
     {
+      "key": "cemetery.gravedigging.filled",
+      "value": "Земля на месте. Теперь камень."
+    },
+    {
       "key": "cemetery.gravedigging.done",
       "value": "Готово. Ровнее, чем у прошлого. Теперь — к сторожу за расчётом."
     },
     {
       "key": "cemetery.gravedigging.paid",
       "value": "«Держи. Заработал.»   +${0}"
+    },
+    {
+      "key": "cemetery.work.dig.title",
+      "value": "Копка"
+    },
+    {
+      "key": "cemetery.work.coffin.title",
+      "value": "Опускание гроба"
+    },
+    {
+      "key": "cemetery.work.fill.title",
+      "value": "Засыпка"
+    },
+    {
+      "key": "cemetery.work.stone.title",
+      "value": "Установка камня"
+    },
+    {
+      "key": "cemetery.work.hint.spade",
+      "value": "A/D — участок   держать E — замах, отпустить — удар   Esc — бросить"
+    },
+    {
+      "key": "cemetery.work.hint.coffin",
+      "value": "Q/E — травить левый и правый концы. Ровное место всё время уползает: травите тот конец, что выше.   Esc — бросить"
+    },
+    {
+      "key": "cemetery.work.hint.stone",
+      "value": "A/D — держать отвес   E — трамбовать   Esc — бросить"
+    },
+    {
+      "key": "cemetery.work.abandoned",
+      "value": "Бросил на середине. Начинать заново."
+    },
+    {
+      "key": "cemetery.soil.turf",
+      "value": "дёрн"
+    },
+    {
+      "key": "cemetery.soil.loam",
+      "value": "суглинок"
+    },
+    {
+      "key": "cemetery.soil.clay",
+      "value": "глина"
+    },
+    {
+      "key": "cemetery.soil.stone",
+      "value": "камень"
+    },
+    {
+      "key": "cemetery.soil.root",
+      "value": "корень"
+    },
+    {
+      "key": "cemetery.soil.spoil",
+      "value": "отвал"
     },
     {
       "key": "quest.dig_grave.title",

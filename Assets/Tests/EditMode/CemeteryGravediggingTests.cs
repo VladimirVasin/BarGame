@@ -220,12 +220,25 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(0),
                 "Nothing may be left standing over the open grave.");
 
-            // A second cut into the same ground is refused: one hole
-            // per grave, and no double-digging.
+            // Cutting exactly the same rectangle again is a no-op
+            // rather than a refusal: the digging opens the ground
+            // before the act that records it is committed, and the
+            // commit must survive finding its own work already done.
             Assert.That(
                 excavation.Excavate(
                     CityCemeteryPitWorldBuilder.GetExcavationRect(
                         job.Plan)),
+                Is.True);
+            Assert.That(excavation.Cuts.Count, Is.EqualTo(1));
+
+            // A different hole that runs into this one still is a
+            // refusal: one grave per hole, and no double-digging.
+            Rect overlapping =
+                CityCemeteryPitWorldBuilder.GetExcavationRect(
+                    job.Plan);
+            overlapping.x += overlapping.width * 0.5f;
+            Assert.That(
+                excavation.Excavate(overlapping),
                 Is.False);
             Assert.That(excavation.Cuts.Count, Is.EqualTo(1));
 
@@ -300,7 +313,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void AcceptedJob_IsThreeActsAndOnlyTheLastOneIsAGrave()
+        public void AcceptedJob_IsFourActsAndOnlyTheLastOneIsAGrave()
         {
             Job job = CreateJob();
             CemeteryGravediggingController controller =
@@ -342,7 +355,17 @@ namespace BarPromenade.Tests.EditMode
                 0.5f);
             Assert.That(site.LastPulse, Is.GreaterThan(low));
 
-            // Act one: the hole, and the lamp that lights it.
+            // The lamp is already burning over the marked-out plot.
+            // It has to be: the first act is worked by its light, and
+            // an unlit plot is a man timing a spade against ground he
+            // cannot see.
+            Assert.That(
+                controller.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Not.Null,
+                "The lamp comes with the job, not with the hole.");
+
+            // Act one: the hole.
             Assert.That(controller.TryAdvance(), Is.True);
             Assert.That(
                 controller.Stage,
@@ -460,16 +483,23 @@ namespace BarPromenade.Tests.EditMode
                 coffin.GetComponentsInChildren<Collider>().Length,
                 Is.EqualTo(0));
 
-            // Act three, and only now is it a grave: the earth goes
-            // back, the hole is gone and a stone stands at the head.
+            // Act three: the earth goes back and the hole is gone,
+            // but the head of the grave is still bare and the job is
+            // not finished.
             Assert.That(controller.TryAdvance(), Is.True);
             Assert.That(
                 controller.Stage,
-                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+                Is.EqualTo(CemeteryGraveWorkStage.Filled));
             Assert.That(
                 GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
-                Is.EqualTo(QuestStatus.Completed));
-            Assert.That(controller.Site, Is.Null);
+                Is.EqualTo(QuestStatus.Active),
+                "A mound without a stone is not a finished grave.");
+            Assert.That(controller.CanCollectWage, Is.False);
+            Assert.That(controller.Site, Is.Not.Null);
+            Assert.That(
+                controller.Site.PromptKey,
+                Is.EqualTo(
+                    CemeteryGraveDigSiteInteraction.StonePromptKey));
             Assert.That(excavation.Cuts.Count, Is.EqualTo(0));
             Assert.That(
                 controller.transform.Find(
@@ -486,7 +516,6 @@ namespace BarPromenade.Tests.EditMode
                     CemeteryGravediggingController.LampName),
                 Is.Null,
                 "The lamp is picked up with the last spadeful.");
-            Assert.That(controller.TryAdvance(), Is.False);
 
             Transform closed = controller.transform.Find(
                 CityCemeterySealedGraveWorldBuilder.RootName);
@@ -494,6 +523,26 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 closed.Find(
                     CityCemeterySealedGraveWorldBuilder.MoundName),
+                Is.Not.Null);
+            Assert.That(
+                closed.Find(
+                    CityCemeterySealedGraveWorldBuilder.StoneName),
+                Is.Null,
+                "The stone is a separate act.");
+
+            // Act four, and only now is it a grave.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Completed));
+            Assert.That(controller.Site, Is.Null);
+            Assert.That(controller.TryAdvance(), Is.False);
+            Assert.That(
+                closed.Find(
+                    CityCemeterySealedGraveWorldBuilder.StoneName),
                 Is.Not.Null);
             Bounds standing = Envelope(closed);
             Assert.That(
@@ -531,6 +580,26 @@ namespace BarPromenade.Tests.EditMode
             CemeteryGravediggingController controller =
                 CreateController(job, out _);
             Assert.That(controller.TryAccept(), Is.True);
+
+            // A trip indoors with nothing but the plot marked out
+            // still finds the lamp standing on it: the light belongs
+            // to the job, not to the hole.
+            CemeteryGravediggingController marked =
+                CreateController(job, out _);
+            Assert.That(
+                marked.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Marked));
+            Assert.That(marked.Site, Is.Not.Null);
+            Assert.That(
+                marked.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Not.Null);
+            Assert.That(
+                marked.transform.Find(
+                    CityCemeteryPitWorldBuilder.RootName),
+                Is.Null,
+                "And no hole under it yet.");
+
             Assert.That(controller.TryAdvance(), Is.True);
             Assert.That(controller.TryAdvance(), Is.True);
 
@@ -558,9 +627,38 @@ namespace BarPromenade.Tests.EditMode
                     CemeteryGravediggingController.LampName),
                 Is.Not.Null);
 
-            // And again with the grave closed: no hole, no coffin, no
-            // worksite — a mound and a stone.
+            // Again with the hole closed but the stone not yet up: a
+            // mound, a bare head and a worksite still offering work.
             Assert.That(rebuilt.TryAdvance(), Is.True);
+            CemeteryGravediggingController mounded =
+                CreateController(job, out _);
+            Assert.That(
+                mounded.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Filled));
+            Assert.That(mounded.Site, Is.Not.Null);
+            Assert.That(
+                mounded.Site.PromptKey,
+                Is.EqualTo(
+                    CemeteryGraveDigSiteInteraction.StonePromptKey));
+            Assert.That(
+                mounded.transform.Find(
+                    CityCemeteryPitWorldBuilder.RootName),
+                Is.Null);
+            Transform standing = mounded.transform.Find(
+                CityCemeterySealedGraveWorldBuilder.RootName);
+            Assert.That(standing, Is.Not.Null);
+            Assert.That(
+                standing.Find(
+                    CityCemeterySealedGraveWorldBuilder.StoneName),
+                Is.Null);
+            Assert.That(
+                mounded.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "A closed grave needs nothing lit over it.");
+
+            // And again with the stone set: no worksite left at all.
+            Assert.That(mounded.TryAdvance(), Is.True);
             CemeteryGravediggingController finished =
                 CreateController(job, out _);
             Assert.That(
@@ -568,18 +666,10 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(CemeteryGraveWorkStage.Sealed));
             Assert.That(finished.Site, Is.Null);
             Assert.That(
-                finished.transform.Find(
-                    CityCemeteryPitWorldBuilder.RootName),
-                Is.Null);
-            Assert.That(
-                finished.transform.Find(
-                    CityCemeterySealedGraveWorldBuilder.RootName),
+                finished.transform
+                    .Find(CityCemeterySealedGraveWorldBuilder.RootName)
+                    .Find(CityCemeterySealedGraveWorldBuilder.StoneName),
                 Is.Not.Null);
-            Assert.That(
-                finished.transform.Find(
-                    CemeteryGravediggingController.LampName),
-                Is.Null,
-                "A closed grave needs nothing lit over it.");
         }
 
         [Test]
@@ -601,6 +691,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(controller.TryCollectWage(), Is.False);
             Assert.That(controller.TryAdvance(), Is.True);
             Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.IsFilled,
+                Is.True,
+                "The hole is closed but the head is still bare.");
             Assert.That(controller.CanCollectWage, Is.False);
             watchman.Interact(interactor);
             Assert.That(

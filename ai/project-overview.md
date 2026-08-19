@@ -465,7 +465,12 @@ The vertical slice contains:
   cemetery plan), and a chain of night-scaled gas lamps walking the whole
   main alley on alternating sides (a pair at the gate, one roughly every
   `15 m`, one at the far end); ground, alleys, mounds and stone carry
-  dedicated `CityCemetery*Albedo` sheets;
+  dedicated `CityCemetery*Albedo` sheets. The watchman at the gate carries
+  the game's one paid job, and it is four worked acts on one vacant plot —
+  dig, lower, fill, set the stone — each a modal session that takes the
+  camera down onto the grave, hides the hero and animates a procedural spade
+  alone. Nothing is committed until an act finishes, so the worksite stays a
+  pure function of `GameSessionState.GraveWorkStage`;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24
@@ -1100,7 +1105,9 @@ The vertical slice contains:
 - Final bespoke art and audio masters, accessibility, localization coverage,
   and platform release work.
 - Bar minigames: the original four sprite minigames are cut entirely; any
-  future bar activities start from a new design.
+  future bar activities start from a new design. The cemetery gravedigging
+  acts are the first minigames built on that footing — city-side, and on the
+  surviving `BarMinigameModalLock` rather than the removed catalog.
 - A dedicated 3D bartender (planned next pass; the supermarket cashier
   shipped as the Watcher Cashier).
 

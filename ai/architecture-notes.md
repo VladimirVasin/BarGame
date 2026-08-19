@@ -1741,6 +1741,45 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone.
+- **Accepted — The ground inside a dug grave is rolled, not seeded:**
+  `CemeteryGraveLatticeModel` takes an `int` seed and is a pure function of
+  it, but `CemeteryGraveWorkController.NextGroundSeed` supplies a fresh
+  `UnityEngine.Random` draw every time a spade act opens, so which segment
+  hides the stone differs between attempts. This is the only value in the
+  gravedigging not derived from `GameSessionState.CitySeed`, and a deliberate
+  exception to the project's deterministic-generation preference. The reason
+  is that `SetCitySeed` has no gameplay caller: the seed is pinned to
+  `DefaultCitySeed` forever, so a plot-derived roll is not "deterministic per
+  city", it is "identical in every playthrough of the only city". The
+  exception is safe because the rolled value is not world state — it lives
+  inside one modal session, is never persisted, and an abandoned act discards
+  it along with everything else the session built. Anything that must survive
+  a trip indoors still comes from the seed.
+- **Accepted — The gravedigging animates the tool, not the hero:** Every act
+  of the gravedigger's job runs as a modal session that drives one procedural
+  spade (`CityGravediggerShovelWorldBuilder` +
+  `CemeteryShovelAnimator`) and never touches the player rig. The camera takes
+  the hero's own eye line and `PlayerPresentationVisibility` leases his body
+  out of sight for the duration, so there is no visible hero to disagree with
+  the tool and no authored clip to keep in step with it. This is an explicit
+  user decision and a deliberate deviation from
+  `ai/contextual-animation-standard.md`, which governs interactions that take
+  ownership of the hero presentation; this one takes ownership of the camera
+  and hides the presentation instead. The framing is load bearing, not art
+  direction: any shot that put the hero back in frame would show a man
+  standing perfectly still beside a spade digging by itself. The upgrade path
+  is already in the project if it is ever wanted —
+  `Player3DAssetRegistry.Anchors.RightGrip` with
+  `HomeTeethBrushingInteraction.EnsureProps` for the prop and
+  `HomeTeethBrushingArmPose` for a procedural arm, no Blender work required.
+- **Accepted — Minigames return, in the city and by a new design:** The
+  gravedigging acts are the first minigames since the sprite-era cut below.
+  That cut removed four *bar* minigames along with the sprite art they were
+  built on and left `BarMinigameModalLock` standing "as the generic gameplay
+  modal lock"; `ai/project-overview.md` records that any future activity
+  starts from a new design. These are that new design, they live in the city
+  rather than the bar, and they reuse the surviving modal lock rather than
+  reviving `BarMinigameCatalog`/`IBarMinigame`.
 - **Accepted — Sprite era ends, minigames cut:** All four bar minigames
   (cocktails, beer pong, Split the G, Tinctures in a Row), their domains,
   presentations, atlases and localization keys are removed from the project
