@@ -79,6 +79,19 @@ namespace BarPromenade
         public const float SpadeLateralOffsetMeters =
             CoffinHalfSpanMeters + 0.30f;
 
+        /// <summary>
+        /// Where the monument lies on its back until it is stood up:
+        /// past the head of the grave, on the flank away from the work
+        /// lamp. It waits within sight of the spot it will occupy,
+        /// because a stone dragged from somewhere else at the last
+        /// moment would be a stone the player never saw arrive.
+        /// </summary>
+        public const float StoneRestLongOffsetMeters =
+            PitLengthMeters * 0.5f +
+            PitWallThicknessMeters +
+            0.46f;
+        public const float StoneRestLateralOffsetMeters = 0.62f;
+
         private static readonly CemeteryGravediggingPlan AbsentPlan =
             new CemeteryGravediggingPlan();
 
@@ -168,6 +181,18 @@ namespace BarPromenade
                 groundTopY,
                 Ground.z + spadeOffset.z);
             SpadeRestYawDegrees = headingYawDegrees + spadeSkew;
+            // The lamp sits at the head end on the positive lateral
+            // side, so the stone lies out on the other one.
+            Vector3 stoneOffset = Heading * new Vector3(
+                -StoneRestLateralOffsetMeters,
+                0f,
+                StoneRestLongOffsetMeters);
+            StoneRestGround = new Vector3(
+                Ground.x + stoneOffset.x,
+                groundTopY,
+                Ground.z + stoneOffset.z);
+            StoneRestYawDegrees =
+                headingYawDegrees + 90f + (coffinSkew * 0.5f);
 
             Monument = (CityCemeteryGraveVariant)(stoneHash % 4u);
             MonumentStyle = ((stoneHash >> 8) & 1u) == 0u
@@ -212,6 +237,11 @@ namespace BarPromenade
         /// between acts.</summary>
         public Vector3 SpadeRestGround { get; }
         public float SpadeRestYawDegrees { get; }
+
+        /// <summary>Where the monument lies on its back until the
+        /// hero heaves it up.</summary>
+        public Vector3 StoneRestGround { get; }
+        public float StoneRestYawDegrees { get; }
 
         /// <summary>The stone that goes up when the grave is closed.
         /// </summary>

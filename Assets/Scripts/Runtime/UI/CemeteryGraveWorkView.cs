@@ -53,6 +53,16 @@ namespace BarPromenade
 
         public const float BarHeight = 9f;
 
+        /// <summary>Localization for the board and for heaving the
+        /// stone up onto it.</summary>
+        public const string RaiseLabelKey =
+            "cemetery.work.stone.raise";
+        public const string PlaqueTitleKey = "cemetery.plaque.title";
+        public const string PlaqueWordsKey = "cemetery.plaque.words";
+        public const string EmptyEpitaphKey = "cemetery.plaque.empty";
+
+        private const string EpitaphControlName = "grave-epitaph";
+
         private static readonly Color TurfColor =
             new Color(0.30f, 0.38f, 0.22f);
         private static readonly Color LoamColor =
@@ -71,6 +81,8 @@ namespace BarPromenade
         private GUIStyle titleStyle;
         private GUIStyle labelStyle;
         private GUIStyle hintStyle;
+        private GUIStyle plaqueStyle;
+        private GUIStyle fieldStyle;
 
         public void Bind(
             CemeteryGraveWorkController controller,
@@ -127,6 +139,9 @@ namespace BarPromenade
 
             EnsureStyles();
             GUI.depth = -85;
+            // The field wants the keyboard, so the panel has to be a
+            // real control group rather than a painting.
+            GUI.enabled = true;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
@@ -134,7 +149,23 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                DrawPanel();
+                if (work.IsInscribing)
+                {
+                    CreateLayout(
+                        out Rect plaquePanel,
+                        out _,
+                        out _,
+                        out _);
+                    RetroUiTheme.DrawPanel(
+                        plaquePanel,
+                        RetroUiTheme.Panel,
+                        RetroUiTheme.BorderMuted);
+                    DrawInscribing(plaquePanel);
+                }
+                else
+                {
+                    DrawPanel();
+                }
             }
             finally
             {
@@ -242,9 +273,7 @@ namespace BarPromenade
 
             GUI.Label(
                 hint,
-                LocalizationService.Get(
-                    CemeteryGraveWorkController.GetHintKey(
-                        work.Act)),
+                LocalizationService.Get(work.GetLiveHintKey()),
                 hintStyle);
         }
 
@@ -263,9 +292,16 @@ namespace BarPromenade
 
             Rect side = CreateSideRect(body);
             DrawSoilLabel(side, lattice);
-            DrawSwing(
-                new Rect(side.x, side.y + 18f, side.width, BarHeight),
-                lattice);
+            if (work.TargetSegment >= 0)
+            {
+                DrawSwing(
+                    new Rect(
+                        side.x,
+                        side.y + 18f,
+                        side.width,
+                        BarHeight),
+                    lattice.GetProfile(work.TargetSegment));
+            }
             DrawBar(
                 new Rect(
                     side.x,
@@ -372,7 +408,7 @@ namespace BarPromenade
         /// </summary>
         private void DrawSwing(
             Rect track,
-            CemeteryGraveLatticeModel lattice)
+            CemeterySoilProfile profile)
         {
             RetroUiTheme.DrawPanel(
                 track,
@@ -381,13 +417,6 @@ namespace BarPromenade
                 false,
                 1f,
                 1f);
-            if (work.TargetSegment < 0)
-            {
-                return;
-            }
-
-            CemeterySoilProfile profile =
-                lattice.GetProfile(work.TargetSegment);
             var inner = new Rect(
                 track.x + 1f,
                 track.y + 1f,
@@ -581,52 +610,163 @@ namespace BarPromenade
                 return;
             }
 
-            var level = new Rect(
-                body.x,
-                body.y + 6f,
-                body.width,
-                13f);
+            // Two different efforts and therefore two different
+            // pictures: a weight coming up, then three blows landing.
+            // Sharing one bar between them would say they are the same
+            // action, and the whole point is that they are not.
+            if (model.Phase == CemeteryStonePhase.Raising)
+            {
+                GUI.Label(
+                    new Rect(body.x, body.y + 4f, body.width, 13f),
+                    LocalizationService.Get(RaiseLabelKey),
+                    labelStyle);
+                DrawBar(
+                    new Rect(
+                        body.x,
+                        body.y + 22f,
+                        body.width,
+                        13f),
+                    model.Lift01,
+                    RetroUiTheme.Good);
+                return;
+            }
+
+            DrawBlows(
+                new Rect(body.x, body.y + 2f, body.width, 15f),
+                model);
+            DrawSwing(
+                new Rect(body.x, body.y + 24f, body.width, BarHeight),
+                model.Settings.TampProfile);
+        }
+
+        /// <summary>
+        /// Three notches, filling as the blows land. A count rather
+        /// than a bar, because three is few enough to see at a glance
+        /// and a bar would hide which blow is next.
+        /// </summary>
+        private void DrawBlows(
+            Rect row,
+            CemeteryStoneSettleModel model)
+        {
+            int total = Mathf.Max(1, model.Settings.StrikesRequired);
+            float gap = 4f;
+            float width = (row.width - (gap * (total - 1))) / total;
+            for (int index = 0; index < total; index++)
+            {
+                var notch = new Rect(
+                    row.x + (index * (width + gap)),
+                    row.y,
+                    width,
+                    row.height);
+                RetroUiTheme.DrawPanel(
+                    notch,
+                    RetroUiTheme.Ink,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    1f,
+                    1f);
+                if (index >= model.StrikesLanded)
+                {
+                    continue;
+                }
+
+                RetroUiTheme.FillRect(
+                    new Rect(
+                        notch.x + 2f,
+                        notch.y + 2f,
+                        notch.width - 4f,
+                        notch.height - 4f),
+                    RetroUiTheme.Good);
+            }
+        }
+
+        // ---- the plaque ---------------------------------------
+
+        /// <summary>
+        /// The board, as the hero is cutting it. Three lines: two he
+        /// was never told and one he has to find. The field is the only
+        /// place in the game a player writes anything, so it says
+        /// plainly how much room is left rather than silently refusing
+        /// the ninth word.
+        /// </summary>
+        private void DrawInscribing(Rect panel)
+        {
+            float inner = panel.width - (PanelPadding * 2f);
+            var title = new Rect(
+                panel.x + PanelPadding,
+                panel.y + PanelPadding,
+                inner,
+                TitleHeight);
+            GUI.Label(
+                title,
+                LocalizationService.Get(PlaqueTitleKey),
+                titleStyle);
+
+            var name = new Rect(
+                panel.x + PanelPadding,
+                title.yMax + 3f,
+                inner,
+                12f);
+            GUI.Label(
+                name,
+                LocalizationService.Get(
+                    CemeteryEpitaph.UnknownNameKey),
+                plaqueStyle);
+            var years = new Rect(
+                panel.x + PanelPadding,
+                name.yMax,
+                inner,
+                12f);
+            GUI.Label(
+                years,
+                LocalizationService.Get(
+                    CemeteryEpitaph.UnknownYearsKey),
+                plaqueStyle);
+
+            var field = new Rect(
+                panel.x + PanelPadding,
+                years.yMax + 6f,
+                inner,
+                16f);
             RetroUiTheme.DrawPanel(
-                level,
-                RetroUiTheme.Ink,
-                RetroUiTheme.BorderMuted,
+                field,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.Accent,
                 false,
                 1f,
                 1f);
-            var inner = new Rect(
-                level.x + 1f,
-                level.y + 1f,
-                level.width - 2f,
-                level.height - 2f);
-            DrawBand(
-                inner,
-                model.Settings.PlumbTolerance,
-                RetroUiTheme.Good);
-
-            // A spirit level's bubble, not a needle: it is the thing
-            // being kept between the lines.
-            float bubble = inner.x +
-                           ((Mathf.Clamp(model.Lean, -1f, 1f) + 1f) *
-                            0.5f *
-                            inner.width);
-            RetroUiTheme.FillRect(
+            GUI.SetNextControlName(EpitaphControlName);
+            string typed = GUI.TextField(
                 new Rect(
-                    Mathf.Round(bubble) - 3f,
-                    inner.y + 1f,
-                    6f,
-                    inner.height - 2f),
-                model.IsPlumb
-                    ? RetroUiTheme.Accent
-                    : RetroUiTheme.Bad);
+                    field.x + 3f,
+                    field.y + 2f,
+                    field.width - 6f,
+                    field.height - 4f),
+                work.EpitaphDraft,
+                CemeteryEpitaph.MaximumCharacters,
+                fieldStyle);
+            work.EpitaphDraft = typed;
+            GUI.FocusControl(EpitaphControlName);
 
-            DrawBar(
+            int left = CemeteryEpitaph.MaximumWords -
+                       CemeteryEpitaph.CountWords(work.EpitaphDraft);
+            GUI.Label(
                 new Rect(
-                    body.x,
-                    level.yMax + 8f,
-                    body.width,
-                    BarHeight),
-                model.Settle01,
-                RetroUiTheme.Good);
+                    panel.x + PanelPadding,
+                    field.yMax + 1f,
+                    inner,
+                    11f),
+                LocalizationService.Get(PlaqueWordsKey) + " " + left,
+                labelStyle);
+            GUI.Label(
+                new Rect(
+                    panel.x + PanelPadding,
+                    panel.yMax - 15f,
+                    inner,
+                    12f),
+                LocalizationService.Get(
+                    CemeteryGraveWorkController.PlaqueHintKey),
+                hintStyle);
         }
 
         // ---- shared -------------------------------------------
@@ -675,6 +815,14 @@ namespace BarPromenade
                 RetroUiTheme.Muted,
                 false,
                 true);
+            plaqueStyle = RetroUiTheme.CreateLabelStyle(
+                11,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.AccentPale);
+            fieldStyle = RetroUiTheme.CreateLabelStyle(
+                11,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Text);
         }
     }
 }

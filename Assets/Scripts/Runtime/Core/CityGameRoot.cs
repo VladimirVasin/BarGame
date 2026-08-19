@@ -65,6 +65,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CemeteryPlaqueView GravePlaque
+        {
+            get;
+            private set;
+        }
         public LakeFishermanPresentation LakeFisherman
         {
             get;
@@ -637,6 +642,14 @@ namespace BarPromenade
                 camera,
                 intoxicationHud,
                 ui.transform);
+            // And the board on the finished stone. It carries no
+            // letters of its own, so reading it is the only way the
+            // line the player wrote is ever seen again.
+            GravePlaque = ui.AddComponent<CemeteryPlaqueView>();
+            if (Gravedigging != null)
+            {
+                Gravedigging.PlaqueRead += GravePlaque.Show;
+            }
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.
             ParkQuarrel = CityParkQuarrelController.Create(

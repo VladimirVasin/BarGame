@@ -157,6 +157,15 @@ namespace BarPromenade
             get;
             private set;
         } = CemeteryGraveWorkStage.Unclaimed;
+
+        /// <summary>
+        /// The line the hero cut into the plaque over the grave he
+        /// dug. The only text in the game a player composes, and once
+        /// it is on the board it never changes — a man does not go
+        /// back and revise a stranger's epitaph.
+        /// </summary>
+        public static string GraveEpitaph { get; private set; } =
+            string.Empty;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
@@ -257,6 +266,7 @@ namespace BarPromenade
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
             GraveWorkStage = CemeteryGraveWorkStage.Unclaimed;
+            GraveEpitaph = string.Empty;
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
@@ -328,6 +338,39 @@ namespace BarPromenade
                 "grave_work_advanced",
                 GameLog.Field("previous_stage", previous.ToString()),
                 GameLog.Field("stage", stage.ToString()));
+            return true;
+        }
+
+        /// <summary>
+        /// Cuts the hero's line into the plaque. It is written once:
+        /// a second attempt is refused rather than allowed to correct
+        /// the first, because the board has already been nailed on and
+        /// the whole point of the thing is that it is final.
+        ///
+        /// Whatever is handed in is trimmed to what a plaque holds
+        /// before it is kept, so the stored value and the rendered one
+        /// are the same string.
+        /// </summary>
+        public static bool TrySetGraveEpitaph(string text)
+        {
+            if (!string.IsNullOrEmpty(GraveEpitaph))
+            {
+                return false;
+            }
+
+            string cut = CemeteryEpitaph.Sanitize(text);
+            if (string.IsNullOrEmpty(cut))
+            {
+                return false;
+            }
+
+            GraveEpitaph = cut;
+            GameLog.Info(
+                "quest",
+                "grave_epitaph_written",
+                GameLog.Field(
+                    "words",
+                    CemeteryEpitaph.CountWords(cut)));
             return true;
         }
 

@@ -53,6 +53,10 @@ namespace BarPromenade
         /// the way out, before it swings to the work.</summary>
         public const float FreeLiftMeters = 0.26f;
 
+        /// <summary>How high the spade goes over the head of a stone
+        /// before it comes down on it.</summary>
+        public const float TampRaiseMeters = 0.62f;
+
         private const int MaximumKeys = 6;
 
         private readonly Vector3[] keyPositions =
@@ -169,6 +173,32 @@ namespace BarPromenade
                 24f,
                 LayDownSeconds * 0.55f);
             AddKey(position, 0f, LayDownSeconds * 0.45f);
+        }
+
+        /// <summary>
+        /// A blow straight down onto the top of the stone, driving it
+        /// into the ground. Not a dig: the spade goes up over the head
+        /// and comes down flat, which is what a man actually taps a
+        /// monument home with when he has no maul.
+        /// </summary>
+        public void PlayTamp(Vector3 head)
+        {
+            fromPosition = transform.position;
+            fromTilt = ReadTilt();
+            keyCount = 0;
+            keyIndex = 0;
+            keyElapsed = 0f;
+            isStriking = true;
+            hasRestPose = false;
+            AddKey(
+                head + (Vector3.up * TampRaiseMeters),
+                -74f,
+                DriveSeconds);
+            AddKey(head + (Vector3.up * 0.04f), -84f, LeverSeconds);
+            AddKey(
+                head + (Vector3.up * TampRaiseMeters * 0.55f),
+                -70f,
+                ReturnSeconds);
         }
 
         /// <summary>

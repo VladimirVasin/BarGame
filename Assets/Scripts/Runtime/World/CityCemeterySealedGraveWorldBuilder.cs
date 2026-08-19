@@ -24,6 +24,7 @@ namespace BarPromenade
         public const string RootName = "Sealed Grave";
         public const string MoundName = "Grave Mound";
         public const string StoneName = "Grave Monument";
+        public const string LyingStoneName = "Grave Monument Lying";
 
         /// <summary>
         /// The mound covers the body and stops short of the head, so
@@ -159,6 +160,130 @@ namespace BarPromenade
                 CreateMonumentParts(plan),
                 "Grave Stone");
             return root.gameObject;
+        }
+
+        /// <summary>
+        /// The monument on its back, waiting to be stood up.
+        ///
+        /// It is the same stone, built the same way, under a mover
+        /// whose pivot is the anchor the parts were authored around —
+        /// so tipping it is one rotation and standing it up later is
+        /// the same rotation run backwards. Where it comes to rest
+        /// vertically is measured rather than assumed: the four
+        /// silhouettes are different heights and a cross is mostly
+        /// air, so only its own bounds know where its back is.
+        /// </summary>
+        public static GameObject BuildLyingStone(
+            Transform parent,
+            CemeteryGravediggingPlan plan)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            if (!plan.IsPresent)
+            {
+                return null;
+            }
+
+            var mover = new GameObject(LyingStoneName);
+            mover.transform.SetParent(parent, false);
+            GameObject stone = BuildStone(mover.transform, plan);
+            if (stone == null)
+            {
+                return mover;
+            }
+
+            stone.transform.localPosition = -GetStoneAnchor(plan);
+            ApplyLyingPose(mover.transform, plan, 1f);
+            return mover;
+        }
+
+        /// <summary>
+        /// Puts a stone mover somewhere between flat on the grass and
+        /// standing on its foot. <paramref name="lying01"/> is
+        /// <c>1</c> for down and <c>0</c> for up, and the ground
+        /// clearance is re-measured on the way so it neither floats
+        /// nor sinks through the turf as it comes round.
+        /// </summary>
+        public static void ApplyLyingPose(
+            Transform mover,
+            CemeteryGravediggingPlan plan,
+            float lying01)
+        {
+            if (mover == null)
+            {
+                throw new ArgumentNullException(nameof(mover));
+            }
+
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            float amount = Mathf.Clamp01(lying01);
+            Vector3 anchor = GetStoneAnchor(plan);
+            Vector3 seat = Vector3.Lerp(
+                anchor,
+                plan.StoneRestGround,
+                amount);
+            Quaternion upright = Quaternion.identity;
+            Quaternion flat = Quaternion.Euler(
+                                  0f,
+                                  plan.StoneRestYawDegrees,
+                                  0f) *
+                              Quaternion.Euler(-90f, 0f, 0f);
+            mover.SetPositionAndRotation(
+                seat,
+                Quaternion.Slerp(upright, flat, amount));
+            mover.position += new Vector3(
+                0f,
+                plan.GroundTopY - MeasureLowestPoint(mover),
+                0f);
+        }
+
+        /// <summary>
+        /// The point the monument's parts are authored around, which
+        /// is what every pose of it turns about.
+        /// </summary>
+        public static Vector3 GetStoneAnchor(
+            CemeteryGravediggingPlan plan)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            return new Vector3(
+                plan.Ground.x,
+                plan.GroundTopY,
+                plan.Ground.z);
+        }
+
+        private static float MeasureLowestPoint(Transform mover)
+        {
+            Renderer[] renderers =
+                mover.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                return mover.position.y;
+            }
+
+            float lowest = float.MaxValue;
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                lowest = Mathf.Min(
+                    lowest,
+                    renderers[index].bounds.min.y);
+            }
+
+            return lowest;
         }
 
         /// <summary>

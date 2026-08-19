@@ -52,6 +52,18 @@ namespace BarPromenade
         /// </summary>
         public const float FocusDropMeters = 0.30f;
 
+        /// <summary>How far the shot steps toward the stone while it
+        /// is being stood up.</summary>
+        public const float StoneShiftMeters = 0.62f;
+
+        /// <summary>How far back from the board the reading shot
+        /// stands. Close: the plate is a hand's span across.</summary>
+        public const float PlaqueViewDistanceMeters = 0.92f;
+
+        /// <summary>Tighter than the working shot, because the whole
+        /// subject is one small plate.</summary>
+        public const float PlaqueFieldOfView = 38f;
+
         /// <summary>
         /// From the digger, across the grave, over the hole and on to
         /// the heap. The plan puts the heap squarely on one flank, so
@@ -129,12 +141,37 @@ namespace BarPromenade
             out Vector3 position,
             out Quaternion rotation)
         {
+            EvaluateCamera(
+                plan,
+                interest,
+                0f,
+                out position,
+                out rotation);
+        }
+
+        /// <summary>
+        /// The same shot stepped sideways along its own right. The
+        /// stone waits off to one side of the grave and is stood up
+        /// there, so the act that does it is worth leaning into rather
+        /// than watching from the middle of a hole that is already
+        /// closed.
+        /// </summary>
+        public static void EvaluateCamera(
+            CemeteryGravediggingPlan plan,
+            Vector3 interest,
+            float lateralShiftMeters,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
             RequirePlan(plan);
             Vector3 stand = GetStandPosition(plan);
+            Vector3 right = Vector3.Cross(
+                Vector3.up,
+                GetWorkDirection(plan));
             position = new Vector3(
-                stand.x,
+                stand.x + (right.x * lateralShiftMeters),
                 stand.y + EyeHeightMeters,
-                stand.z);
+                stand.z + (right.z * lateralShiftMeters));
             Vector3 focus = Vector3.Lerp(
                 GetRestingFocus(plan),
                 interest,
@@ -145,6 +182,50 @@ namespace BarPromenade
                 : Quaternion.LookRotation(
                     GetWorkDirection(plan),
                     Vector3.up);
+        }
+
+        /// <summary>
+        /// How far the shot leans toward the side the stone is lying
+        /// on, signed so it always leans the right way whichever
+        /// direction the grave faces.
+        /// </summary>
+        public static float GetStoneLateralShift(
+            CemeteryGravediggingPlan plan)
+        {
+            RequirePlan(plan);
+            Vector3 right = Vector3.Cross(
+                Vector3.up,
+                GetWorkDirection(plan));
+            Vector3 toStone =
+                plan.StoneRestGround - plan.Ground;
+            float side =
+                (right.x * toStone.x) + (right.z * toStone.z);
+            return Mathf.Sign(side) * StoneShiftMeters;
+        }
+
+        /// <summary>
+        /// Square on to the board, close enough to read it.
+        ///
+        /// This is the one shot in the job that is not taken from where
+        /// the hero stands, and it has to be: the plaque faces down the
+        /// grave and the digger works from the flank, so his own eye
+        /// line sees the board edge-on. He walks round to read it, and
+        /// so does the camera.
+        /// </summary>
+        public static void EvaluatePlaqueCamera(
+            CemeteryGravediggingPlan plan,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
+            RequirePlan(plan);
+            Vector3 board =
+                CityCemeteryPlaqueWorldBuilder.GetSeat(plan);
+            Vector3 outward = plan.Heading * Vector3.back;
+            position = board + (outward * PlaqueViewDistanceMeters);
+            Vector3 forward = board - position;
+            rotation = forward.sqrMagnitude > 0.000001f
+                ? Quaternion.LookRotation(forward, Vector3.up)
+                : Quaternion.LookRotation(-outward, Vector3.up);
         }
 
         private static void RequirePlan(CemeteryGravediggingPlan plan)

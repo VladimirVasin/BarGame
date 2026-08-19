@@ -521,41 +521,186 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void AStoneOnlySettlesWhileItStandsStraight()
+        public void TheStoneIsHeavedUpAndThenDrivenHome()
         {
+            var model = new CemeteryStoneSettleModel(
+                CemeteryStoneSettleSettings.Default);
+            Assert.That(
+                model.Phase,
+                Is.EqualTo(CemeteryStonePhase.Raising));
+
+            // Heaving is repeated effort and nothing else: no window,
+            // no failure, every press worth the same.
+            int presses = 0;
+            while (model.Phase == CemeteryStonePhase.Raising &&
+                   presses < 100)
+            {
+                presses++;
+                model.Press();
+            }
+
+            Assert.That(
+                presses,
+                Is.InRange(8, 24),
+                "Standing a stone up should be a steady effort, not " +
+                "a single tap and not a marathon.");
+            Assert.That(
+                model.Lift01,
+                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(
+                model.Phase,
+                Is.EqualTo(CemeteryStonePhase.Setting));
+
+            // Blows are timed, and a missed one costs only the swing.
+            model.Strike(CemeteryStrokeOutcome.Graze);
+            model.Strike(CemeteryStrokeOutcome.Jar);
+            Assert.That(
+                model.StrikesLanded,
+                Is.EqualTo(0),
+                "Only a clean blow drives it.");
+            Assert.That(model.IsComplete, Is.False);
+
+            for (int index = 0;
+                 index <
+                 CemeteryStoneSettleSettings.Default.StrikesRequired;
+                 index++)
+            {
+                model.Strike(CemeteryStrokeOutcome.Bite);
+            }
+
+            Assert.That(model.IsComplete, Is.True);
+            Assert.That(
+                model.Set01,
+                Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void AStoneLeftAloneSettlesBackButNeverFails()
+        {
+            var model = new CemeteryStoneSettleModel(
+                CemeteryStoneSettleSettings.Default);
+            model.Press();
+            model.Press();
+            model.Press();
+            float gained = model.Lift01;
+            Assert.That(gained, Is.GreaterThan(0f));
+
+            // Let go and it sags — gently, and never past the floor.
+            for (int step = 0; step < 1200; step++)
+            {
+                model.Advance(1f / 120f);
+            }
+
+            Assert.That(model.Lift01, Is.LessThan(gained));
+            Assert.That(
+                model.Lift01,
+                Is.GreaterThanOrEqualTo(0f),
+                "It comes to rest on the grass, not through it.");
+            Assert.That(
+                model.Phase,
+                Is.EqualTo(CemeteryStonePhase.Raising),
+                "There is no way to fail the last act of the job.");
+
+            // The sag is slow enough that ordinary pressing gains on
+            // it, or the half would be unwinnable rather than heavy.
             CemeteryStoneSettleSettings settings =
                 CemeteryStoneSettleSettings.Default;
-            var leaning = new CemeteryStoneSettleModel(settings, 21);
-
-            // Tamping without ever shouldering it back does not stand
-            // a stone up: it drives the low side down.
-            for (int step = 0; step < 600; step++)
-            {
-                leaning.Advance(1f / 60f, 0f, true);
-            }
-
-            Assert.That(leaning.IsComplete, Is.False);
             Assert.That(
-                leaning.Settle01,
-                Is.LessThan(0.5f),
-                "The obvious move is the wrong one.");
+                settings.PressLift,
+                Is.GreaterThan(settings.SagRate * 0.5f),
+                "One press has to be worth more than half a second " +
+                "of letting go.");
+        }
 
-            // Worked properly — shoulder it toward plumb, tread only
-            // while it is there — it goes in.
-            var worked = new CemeteryStoneSettleModel(settings, 21);
-            int guard = 0;
-            while (!worked.IsComplete && guard < 20000)
+        [Test]
+        public void AnEpitaphIsShortOrItIsNotAnEpitaph()
+        {
+            Assert.That(CemeteryEpitaph.CountWords(null), Is.EqualTo(0));
+            Assert.That(CemeteryEpitaph.CountWords("   "), Is.EqualTo(0));
+            Assert.That(
+                CemeteryEpitaph.CountWords("  спи   спокойно "),
+                Is.EqualTo(2),
+                "Runs of whitespace are one gap, not several words.");
+
+            Assert.That(
+                CemeteryEpitaph.IsWithinLimits(string.Empty),
+                Is.True,
+                "A man may have nothing to say over a stranger.");
+            Assert.That(
+                CemeteryEpitaph.IsWithinLimits("один два три"),
+                Is.True);
+
+            var tooMany = new System.Text.StringBuilder();
+            for (int index = 0;
+                 index <= CemeteryEpitaph.MaximumWords;
+                 index++)
             {
-                guard++;
-                float correction = Mathf.Clamp(
-                    -worked.Lean * 6f,
-                    -1f,
-                    1f);
-                worked.Advance(1f / 60f, correction, worked.IsPlumb);
+                tooMany.Append("сло ");
             }
 
-            Assert.That(worked.IsComplete, Is.True);
-            Assert.That(worked.IsPlumb, Is.True);
+            Assert.That(
+                CemeteryEpitaph.IsWithinLimits(tooMany.ToString()),
+                Is.False);
+
+            // What is kept is exactly what the limits allow, and it is
+            // trimmed rather than refused.
+            string cut = CemeteryEpitaph.Sanitize(tooMany.ToString());
+            Assert.That(
+                CemeteryEpitaph.CountWords(cut),
+                Is.EqualTo(CemeteryEpitaph.MaximumWords));
+            Assert.That(
+                CemeteryEpitaph.IsWithinLimits(cut),
+                Is.True,
+                "Sanitising has to produce something the limits " +
+                "would have accepted in the first place.");
+            Assert.That(
+                cut.Length,
+                Is.LessThanOrEqualTo(
+                    CemeteryEpitaph.MaximumCharacters));
+
+            // One very long word is still cut down: the board has a
+            // width and the word count alone does not know it.
+            string wall = new string('ы', 400);
+            Assert.That(
+                CemeteryEpitaph.Sanitize(wall).Length,
+                Is.LessThanOrEqualTo(
+                    CemeteryEpitaph.MaximumCharacters));
+        }
+
+        [Test]
+        public void ThePlaqueIsWrittenOnceAndThenItIsCut()
+        {
+            Assert.That(
+                GameSessionState.GraveEpitaph,
+                Is.Empty,
+                "A new game starts with a bare board.");
+            Assert.That(
+                GameSessionState.TrySetGraveEpitaph("   "),
+                Is.False,
+                "Whitespace is not an inscription.");
+
+            Assert.That(
+                GameSessionState.TrySetGraveEpitaph(
+                    "  спи   спокойно, незнакомец  "),
+                Is.True);
+            Assert.That(
+                GameSessionState.GraveEpitaph,
+                Is.EqualTo("спи спокойно, незнакомец"),
+                "It is kept as the plaque would carry it.");
+
+            Assert.That(
+                GameSessionState.TrySetGraveEpitaph("другое"),
+                Is.False,
+                "Nobody goes back and revises a stranger's epitaph.");
+            Assert.That(
+                GameSessionState.GraveEpitaph,
+                Is.EqualTo("спи спокойно, незнакомец"));
+
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.GraveEpitaph,
+                Is.Empty,
+                "A new game is a new grave.");
         }
 
         [Test]
@@ -831,8 +976,19 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(CemeteryGraveWorkStage.Filled));
             Assert.That(
                 CountSpades(controller.transform),
+                Is.EqualTo(1),
+                "Still one: the stone is driven home with the back " +
+                "of the same spade.");
+
+            // Only the finished grave puts the tools away.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+            Assert.That(
+                CountSpades(controller.transform),
                 Is.EqualTo(0),
-                "The last spadeful takes the spade with it.");
+                "The stone going up is what ends the job.");
             Assert.That(controller.Spade, Is.Null);
         }
 

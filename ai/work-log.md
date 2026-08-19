@@ -104,6 +104,35 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   against four balance-point phases, and `FollowingTheBalancePointLandsIt`
   proves the intended play lands across three deadzones, three reaction delays
   and four phases — a window one reaction speed wide is not a mechanic.
+- **The stone act is two efforts and a plaque.** The monument now lies flat by
+  the head of the plot from the moment the job is taken — part of the kit, like
+  the coffin and the spade — and the lamp and spade survive to `Sealed` rather
+  than `Filled`, because the last act is worked by the same light and driven
+  home with the back of the same spade. `CemeteryStoneSettleModel` was rewritten
+  from the plumb-bubble into `Raising` (press `E`, dead weight, no window, sags
+  when let go) and `Setting` (three timed blows on the shared swing, a miss
+  costing only the swing). `CemeteryShovelAnimator.PlayTamp` brings the spade
+  down flat from over the head. Nothing in the act can be failed: it is the
+  last thing between the hero and his wage.
+- **The plaque, and the only text a player writes.** Three lines — a name
+  nobody gave, a span nobody knows, and one the hero cuts himself.
+  `CemeteryEpitaph` is pure: `CountWords`, `IsWithinLimits` and `Sanitize`
+  hold it to eight words and sixty-four characters, and the field refuses a
+  ninth word rather than truncating one silently. It is stored through
+  `GameSessionState.TrySetGraveEpitaph`, which writes once and refuses a
+  second attempt. Note the limit of "permanently": the project has no save
+  files at all, so it survives scene loads and dies with the session, exactly
+  like every other piece of session state.
+  The board carries no letters as geometry. `CitySignLettering` knows only the
+  glyphs the city's own signs spell and a plaque has to hold whatever is typed,
+  so the board is a board (`CityCemeteryPlaqueWorldBuilder`) and the words live
+  on the panel — with `CemeteryPlaqueReadInteraction` left on the finished
+  grave, or the line would be visible once and never again.
+- **Two shots the act needed.** `EvaluateCamera` gained a signed lateral shift
+  so standing the stone up leans toward the side it is lying on, and
+  `EvaluatePlaqueCamera` walks round to the front of the monument for the
+  inscription — the digger works from the flank, so his own eye line sees the
+  board edge-on and could never read it.
 - **The bearers are gone and the rope keys follow the shot.** Two timbers laid
   across the mouth were the one thing standing where the coffin has to pass, so
   `CemeteryGraveTrestle` became `CemeteryGraveSlings`: four ropes running down

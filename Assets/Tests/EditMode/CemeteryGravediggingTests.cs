@@ -514,8 +514,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 controller.transform.Find(
                     CemeteryGravediggingController.LampName),
-                Is.Null,
-                "The lamp is picked up with the last spadeful.");
+                Is.Not.Null,
+                "The lamp stays: there is one act left and it is " +
+                "worked by the same light.");
 
             Transform closed = controller.transform.Find(
                 CityCemeterySealedGraveWorldBuilder.RootName);
@@ -544,6 +545,11 @@ namespace BarPromenade.Tests.EditMode
                 closed.Find(
                     CityCemeterySealedGraveWorldBuilder.StoneName),
                 Is.Not.Null);
+            Assert.That(
+                controller.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "Now the light goes with him: the job is done.");
             Bounds standing = Envelope(closed);
             Assert.That(
                 standing.max.y,
@@ -654,8 +660,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 mounded.transform.Find(
                     CemeteryGravediggingController.LampName),
-                Is.Null,
-                "A closed grave needs nothing lit over it.");
+                Is.Not.Null,
+                "The stone is still to set, and it is set by the " +
+                "same light.");
 
             // And again with the stone set: no worksite left at all.
             Assert.That(mounded.TryAdvance(), Is.True);
@@ -670,6 +677,11 @@ namespace BarPromenade.Tests.EditMode
                     .Find(CityCemeterySealedGraveWorldBuilder.RootName)
                     .Find(CityCemeterySealedGraveWorldBuilder.StoneName),
                 Is.Not.Null);
+            Assert.That(
+                finished.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "A finished grave needs nothing lit over it.");
         }
 
         [Test]

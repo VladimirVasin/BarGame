@@ -69,7 +69,11 @@ namespace BarPromenade
         public const string SpadeHintKey = "cemetery.work.hint.spade";
         public const string CoffinHintKey =
             "cemetery.work.hint.coffin";
-        public const string StoneHintKey = "cemetery.work.hint.stone";
+        public const string StoneRaiseHintKey =
+            "cemetery.work.hint.stone.raise";
+        public const string StoneSetHintKey =
+            "cemetery.work.hint.stone.set";
+        public const string PlaqueHintKey = "cemetery.plaque.hint";
         public const string AbandonedFeedbackKey =
             "cemetery.work.abandoned";
 
@@ -77,11 +81,9 @@ namespace BarPromenade
         /// it is trodden in.</summary>
         public const float StoneLiftMeters = 0.24f;
 
-        /// <summary>How far the stone visibly leans at full lean. A
-        /// monument at fifteen degrees already looks like a fallen
-        /// one, so the gauge exaggerates and the world does
-        /// not.</summary>
-        public const float StoneLeanDegrees = 13f;
+        /// <summary>Roughly where the top of a single-grave monument
+        /// is, for aiming a blow at it.</summary>
+        public const float StoneHeadHeightMeters = 1.05f;
 
         /// <summary>Ropes are not creaked more often than this,
         /// however long a key is held.</summary>
@@ -117,8 +119,11 @@ namespace BarPromenade
         private bool headOnRight;
         private Transform borrowedCoffin;
         private GameObject stoneMover;
+        private GameObject sessionPlaque;
         private int target;
         private int strikeCount;
+        private bool inscribing;
+        private string epitaphDraft = string.Empty;
         private float ropeCue;
         private float tampCue;
 
@@ -154,6 +159,30 @@ namespace BarPromenade
         /// <summary>Which segment the spade is aimed at, or
         /// <c>-1</c>.</summary>
         public int TargetSegment => target;
+
+        /// <summary>
+        /// True while the hero is stood at the finished stone with the
+        /// plaque in front of him, deciding what to cut into it.
+        /// </summary>
+        public bool IsInscribing => inscribing;
+
+        /// <summary>
+        /// What is on the board so far. The view writes to it as the
+        /// player types and refuses anything past the word count, so
+        /// the field can never hold a line the plaque could not.
+        /// </summary>
+        public string EpitaphDraft
+        {
+            get => epitaphDraft;
+            set
+            {
+                if (inscribing &&
+                    CemeteryEpitaph.IsWithinLimits(value))
+                {
+                    epitaphDraft = value ?? string.Empty;
+                }
+            }
+        }
 
         public CemeteryGravediggingPlan Plan =>
             job != null ? job.Plan : null;
@@ -273,6 +302,28 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// What the hero is being asked to do this instant. The stone
+        /// act asks two different things of him and says so — heaving
+        /// and striking are not one instruction.
+        /// </summary>
+        internal string GetLiveHintKey()
+        {
+            if (inscribing)
+            {
+                return PlaqueHintKey;
+            }
+
+            if (act == CemeteryGraveWorkStage.Filled &&
+                settle != null &&
+                settle.Phase != CemeteryStonePhase.Raising)
+            {
+                return StoneSetHintKey;
+            }
+
+            return GetHintKey(act);
+        }
+
         internal static string GetHintKey(
             CemeteryGraveWorkStage stage)
         {
@@ -281,7 +332,7 @@ namespace BarPromenade
                 case CemeteryGraveWorkStage.Dug:
                     return CoffinHintKey;
                 case CemeteryGraveWorkStage.Filled:
-                    return StoneHintKey;
+                    return StoneRaiseHintKey;
                 default:
                     return SpadeHintKey;
             }
@@ -309,6 +360,12 @@ namespace BarPromenade
                     phase = CemeteryGraveWorkPhase.Working;
                 }
 
+                return;
+            }
+
+            if (inscribing)
+            {
+                UpdateInscribing();
                 return;
             }
 
@@ -574,34 +631,115 @@ namespace BarPromenade
                 return;
             }
 
-            bool tamping = IsWorkHeld();
-            settle.Advance(deltaTime, ReadLean(), tamping);
-            Vector3 seat = GetStoneSeat();
-            stoneMover.transform.SetPositionAndRotation(
-                new Vector3(
-                    seat.x,
-                    seat.y +
-                    Mathf.Lerp(
-                        StoneLiftMeters,
-                        0f,
-                        settle.Settle01),
-                    seat.z),
-                job.Plan.Heading *
-                Quaternion.Euler(
-                    0f,
-                    0f,
-                    settle.Lean * StoneLeanDegrees));
-            tampCue -= deltaTime;
-            if (tamping && tampCue <= 0f)
+            if (settle.Phase == CemeteryStonePhase.Raising)
             {
-                tampCue = TampInterval;
-                RetroAudio.PlayAt(RetroSfxId.StoneTamp, seat);
+                UpdateStoneRaising(deltaTime);
+                return;
             }
 
+            UpdateStoneSetting(deltaTime);
+        }
+
+        /// <summary>
+        /// Heaving it up. No bar and no window — dead weight answers to
+        /// nothing but repeated effort, so every press is worth the
+        /// same and letting go only lets it settle back.
+        /// </summary>
+        private void UpdateStoneRaising(float deltaTime)
+        {
+            if (WasWorkPressed())
+            {
+                settle.Press();
+                RetroAudio.PlayAt(
+                    RetroSfxId.StoneTamp,
+                    GetStoneSeat());
+            }
+
+            settle.Advance(deltaTime);
+            ApplyStonePose();
+        }
+
+        /// <summary>
+        /// Driving it home: three blows from above, each one timed on
+        /// the same swing the spade digs with.
+        /// </summary>
+        private void UpdateStoneSetting(float deltaTime)
+        {
+            ApplyStonePose();
+            if (spadeAnimator != null && spadeAnimator.IsStriking)
+            {
+                return;
+            }
+
+            if (!stroke.IsSwinging)
+            {
+                spadeAnimator?.SetSwing(-1f);
+                if (WasWorkPressed())
+                {
+                    stroke.Begin(
+                        settle.Settings.TampProfile,
+                        GetStrokeSeed());
+                }
+
+                return;
+            }
+
+            stroke.Advance(deltaTime);
+            spadeAnimator?.SetSwing(stroke.Position);
+            if (IsWorkHeld())
+            {
+                return;
+            }
+
+            CemeteryStrokeOutcome outcome = stroke.Release();
+            strikeCount++;
+            settle.Strike(outcome);
+            Vector3 head = GetStoneHead();
+            spadeAnimator?.SetTargets(head, head);
+            spadeAnimator?.PlayTamp(head);
+            RetroAudio.PlayAt(
+                outcome == CemeteryStrokeOutcome.Bite
+                    ? RetroSfxId.StoneTamp
+                    : RetroSfxId.SpadeGlance,
+                head);
+            ApplyStonePose();
             if (settle.IsComplete)
             {
-                Complete();
+                BeginInscribing();
             }
+        }
+
+        /// <summary>
+        /// Puts the stone where the two halves say: tipped up out of
+        /// the grass while it is being raised, then sinking a third of
+        /// its lift into the ground with every blow that lands.
+        /// </summary>
+        private void ApplyStonePose()
+        {
+            CityCemeterySealedGraveWorldBuilder.ApplyLyingPose(
+                stoneMover.transform,
+                job.Plan,
+                1f - settle.Lift01);
+            if (settle.Phase == CemeteryStonePhase.Raising)
+            {
+                return;
+            }
+
+            stoneMover.transform.position += new Vector3(
+                0f,
+                Mathf.Lerp(StoneLiftMeters, 0f, settle.Set01),
+                0f);
+        }
+
+        /// <summary>Roughly where a blow would land on the top of the
+        /// stone.</summary>
+        private Vector3 GetStoneHead()
+        {
+            Vector3 seat = GetStoneSeat();
+            return new Vector3(
+                seat.x,
+                seat.y + StoneHeadHeightMeters,
+                seat.z);
         }
 
         private Vector3 GetStoneSeat()
@@ -678,12 +816,17 @@ namespace BarPromenade
             spadeAnimator.enabled = true;
             spadeAnimator.SetWorkDirection(
                 CemeteryGraveWorkStance.GetWorkDirection(job.Plan));
+            Vector3 face = lattice != null
+                ? GetTargetFace()
+                : GetStoneHead();
             spadeAnimator.SetTargets(
-                GetTargetFace(),
-                CemeteryGraveWorkStance.GetHeapTop(
-                    job.Plan,
-                    CityCemeteryProgressivePitWorldBuilder
-                        .GetHeapFullness(lattice)));
+                face,
+                lattice != null
+                    ? CemeteryGraveWorkStance.GetHeapTop(
+                        job.Plan,
+                        CityCemeteryProgressivePitWorldBuilder
+                            .GetHeapFullness(lattice))
+                    : face);
             spadeAnimator.PlayTakeUp();
         }
 
@@ -757,8 +900,68 @@ namespace BarPromenade
             }
 
             settle = new CemeteryStoneSettleModel(
-                CemeteryStoneSettleSettings.Default,
-                GetActSeed());
+                CemeteryStoneSettleSettings.Default);
+            ApplyStonePose();
+            TakeUpSpade();
+        }
+
+        /// <summary>
+        /// The stone is fast; now the board on it. The act is not
+        /// committed until the hero has answered, because the whole
+        /// point of the plaque is that the line goes on with the
+        /// stone and not after it.
+        /// </summary>
+        private void BeginInscribing()
+        {
+            inscribing = true;
+            epitaphDraft = string.Empty;
+            stroke.Cancel();
+            // The board has to be on the stone before he is asked what
+            // to put on it — the shot walks round to the front of the
+            // monument, and a bare face there would be asking him to
+            // inscribe nothing.
+            if (sessionPlaque == null)
+            {
+                sessionPlaque =
+                    CityCemeteryPlaqueWorldBuilder.Build(
+                        transform,
+                        job.Plan);
+            }
+
+            // Round to the front rather than cut to it.
+            BeginCameraBlend(CemeteryGraveWorkPhase.Entering);
+        }
+
+        /// <summary>
+        /// Reading the keys while the field has them. Only the two
+        /// that end it are looked at — everything else is the player's
+        /// text and belongs to the field, not to the game.
+        /// </summary>
+        private void UpdateInscribing()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            bool cut = keyboard.enterKey.wasPressedThisFrame ||
+                       keyboard.numpadEnterKey.wasPressedThisFrame;
+            bool leaveBlank =
+                keyboard.escapeKey.wasPressedThisFrame;
+            if (!cut && !leaveBlank)
+            {
+                return;
+            }
+
+            if (cut)
+            {
+                GameSessionState.TrySetGraveEpitaph(epitaphDraft);
+            }
+
+            inscribing = false;
+            epitaphDraft = string.Empty;
+            Complete();
         }
 
         private void Complete()
@@ -827,12 +1030,15 @@ namespace BarPromenade
         private void TearDownAct()
         {
             stroke.Cancel();
+            inscribing = false;
+            epitaphDraft = string.Empty;
             lattice = null;
             lower = null;
             settle = null;
             target = -1;
             DestroyPart(ref workingPit);
             DestroyPart(ref stoneMover);
+            DestroyPart(ref sessionPlaque);
             if (spadeAnimator != null)
             {
                 spadeAnimator.PlayLayDown(
@@ -1016,11 +1222,10 @@ namespace BarPromenade
                 return;
             }
 
-            CemeteryGraveWorkStance.EvaluateCamera(
-                job.Plan,
-                GetCameraInterest(),
+            ResolveWorkShot(
                 out Vector3 workPosition,
-                out Quaternion workRotation);
+                out Quaternion workRotation,
+                out float workFieldOfView);
             if (cameraPhase == CemeteryGraveWorkPhase.Entering)
             {
                 cameraBlendElapsed += Mathf.Max(0f, deltaTime);
@@ -1038,7 +1243,7 @@ namespace BarPromenade
                         smooth),
                     Mathf.Lerp(
                         cameraBlendFieldOfView,
-                        CemeteryGraveWorkStance.FieldOfView,
+                        workFieldOfView,
                         smooth));
                 if (amount >= 1f)
                 {
@@ -1051,7 +1256,47 @@ namespace BarPromenade
             cameraFollow.SetFixedPose(
                 workPosition,
                 workRotation,
-                CemeteryGraveWorkStance.FieldOfView);
+                workFieldOfView);
+        }
+
+        /// <summary>
+        /// Where the shot stands for whatever is being done.
+        ///
+        /// Three cases rather than one. Most of the work is watched
+        /// from the digger's own eye line over the hole; standing the
+        /// stone up leans that shot toward the side the stone is lying
+        /// on, because the act happens out there and not in the middle;
+        /// and cutting the plaque walks round to the front of the
+        /// monument, which is the only way the board is anything but
+        /// an edge.
+        /// </summary>
+        private void ResolveWorkShot(
+            out Vector3 position,
+            out Quaternion rotation,
+            out float fieldOfView)
+        {
+            if (inscribing)
+            {
+                CemeteryGraveWorkStance.EvaluatePlaqueCamera(
+                    job.Plan,
+                    out position,
+                    out rotation);
+                fieldOfView =
+                    CemeteryGraveWorkStance.PlaqueFieldOfView;
+                return;
+            }
+
+            float shift = act == CemeteryGraveWorkStage.Filled
+                ? CemeteryGraveWorkStance.GetStoneLateralShift(
+                    job.Plan)
+                : 0f;
+            CemeteryGraveWorkStance.EvaluateCamera(
+                job.Plan,
+                GetCameraInterest(),
+                shift,
+                out position,
+                out rotation);
+            fieldOfView = CemeteryGraveWorkStance.FieldOfView;
         }
 
         /// <summary>What the shot leans toward: whatever the hero is
@@ -1070,8 +1315,7 @@ namespace BarPromenade
 
             if (stoneMover != null)
             {
-                return stoneMover.transform.position +
-                       (Vector3.up * 0.55f);
+                return GetStoneHead();
             }
 
             return CemeteryGraveWorkStance.GetRestingFocus(job.Plan);

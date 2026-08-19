@@ -52,6 +52,9 @@ namespace BarPromenade
         private GameObject spade;
         private GameObject waitingCoffin;
         private GameObject coffinBlocks;
+        private GameObject lyingStone;
+        private GameObject plaque;
+        private CemeteryPlaqueReadInteraction plaqueReader;
 
         /// <summary>The job as planned, present or not.</summary>
         public CemeteryGravediggingPlan Plan => plan;
@@ -348,6 +351,9 @@ namespace BarPromenade
                     break;
                 case CemeteryGraveWorkStage.Filled:
                     RaiseMound();
+                    RaiseLamp();
+                    RaiseSpade();
+                    RaiseLyingStone();
                     RaiseSite();
                     break;
                 case CemeteryGraveWorkStage.Sealed:
@@ -416,12 +422,10 @@ namespace BarPromenade
 
             DestroyPart(ref pit);
             DestroyPart(ref coffin);
-            // The lamp goes with them. It stood there because there was
-            // a hole to see into, and there is no longer a hole. The
-            // spade and the blocks go the same way: the last spadeful
-            // is the one that tidies the site.
-            DestroyPart(ref lamp);
-            DestroyPart(ref spade);
+            // The blocks go: the box is under the ground and nothing
+            // else was ever set on them. The lamp and the spade stay —
+            // there is one act left, it is worked by the same light and
+            // driven home with the back of the same spade.
             DestroyPart(ref coffinBlocks);
             site?.SetStage(CemeteryGraveWorkStage.Filled);
             RaiseMound();
@@ -442,6 +446,12 @@ namespace BarPromenade
                 return false;
             }
 
+            // Now the site is finished, and everything that was here
+            // to work with goes with him: the light he worked by, the
+            // spade, and the ground where the stone was lying.
+            DestroyPart(ref lamp);
+            DestroyPart(ref spade);
+            DestroyPart(ref lyingStone);
             // Told first, then taken down: in play mode the object
             // outlives this frame, and for that frame it must already
             // know it has nothing left to offer.
@@ -538,6 +548,7 @@ namespace BarPromenade
         private void RaiseKit()
         {
             RaiseSpade();
+            RaiseLyingStone();
             RaiseCoffinBlocks();
             if (waitingCoffin != null)
             {
@@ -555,6 +566,21 @@ namespace BarPromenade
         /// carries blocks away, so they stay by the foot of the grave
         /// until the whole site is tidied at the last spadeful.
         /// </summary>
+        /// <summary>
+        /// The monument, on its back past the head of the grave. It is
+        /// delivered with the job like everything else: the hero has to
+        /// see the stone waiting before he is asked to stand it up.
+        /// </summary>
+        private void RaiseLyingStone()
+        {
+            if (lyingStone == null && stone == null)
+            {
+                lyingStone =
+                    CityCemeterySealedGraveWorldBuilder
+                        .BuildLyingStone(transform, plan);
+            }
+        }
+
         private void RaiseCoffinBlocks()
         {
             if (coffinBlocks == null)
@@ -619,7 +645,48 @@ namespace BarPromenade
                 stone = CityCemeterySealedGraveWorldBuilder.BuildStone(
                     mound.transform,
                     plan);
+                DestroyPart(ref lyingStone);
             }
+
+            RaisePlaque();
+        }
+
+        /// <summary>
+        /// The board on the face of the stone, and the stub that reads
+        /// it. Both outlive the worksite: the plaque carries no letters
+        /// of its own, so without something to read it with the line
+        /// the player wrote would be seen once and never again.
+        /// </summary>
+        private void RaisePlaque()
+        {
+            if (stone == null)
+            {
+                return;
+            }
+
+            if (plaque == null)
+            {
+                plaque = CityCemeteryPlaqueWorldBuilder.Build(
+                    stone.transform,
+                    plan);
+            }
+
+            if (plaqueReader == null)
+            {
+                plaqueReader = CemeteryPlaqueReadInteraction.Create(
+                    transform,
+                    plan,
+                    RaisePlaqueRead);
+            }
+        }
+
+        /// <summary>Raised when the hero stops to read the board.
+        /// </summary>
+        public event Action PlaqueRead;
+
+        private void RaisePlaqueRead()
+        {
+            PlaqueRead?.Invoke();
         }
 
         private void DestroyPart(ref GameObject part)

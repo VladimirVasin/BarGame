@@ -1277,10 +1277,6 @@
       "value": "Q/E — травить левый и правый концы. Ровное место всё время уползает: травите тот конец, что выше.   Esc — бросить"
     },
     {
-      "key": "cemetery.work.hint.stone",
-      "value": "A/D — держать отвес   E — трамбовать   Esc — бросить"
-    },
-    {
       "key": "cemetery.work.abandoned",
       "value": "Бросил на середине. Начинать заново."
     },
@@ -1307,6 +1303,46 @@
     {
       "key": "cemetery.soil.spoil",
       "value": "отвал"
+    },
+    {
+      "key": "interaction.read_plaque",
+      "value": "E — прочитать табличку"
+    },
+    {
+      "key": "cemetery.plaque.title",
+      "value": "Надгробная табличка"
+    },
+    {
+      "key": "cemetery.plaque.name",
+      "value": "Безымянный"
+    },
+    {
+      "key": "cemetery.plaque.years",
+      "value": "Годы неизвестны"
+    },
+    {
+      "key": "cemetery.plaque.words",
+      "value": "Слов осталось:"
+    },
+    {
+      "key": "cemetery.plaque.hint",
+      "value": "Наберите строку.   Enter — вырезать,   Esc — оставить пустой"
+    },
+    {
+      "key": "cemetery.plaque.empty",
+      "value": "(без надписи)"
+    },
+    {
+      "key": "cemetery.work.stone.raise",
+      "value": "поднять камень"
+    },
+    {
+      "key": "cemetery.work.hint.stone.raise",
+      "value": "E — нажимать, поднимая камень   Esc — бросить"
+    },
+    {
+      "key": "cemetery.work.hint.stone.set",
+      "value": "E держать — замах, отпустить — удар сверху   Esc — бросить"
     },
     {
       "key": "quest.dig_grave.title",

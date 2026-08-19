@@ -356,7 +356,11 @@ Assets/
         CemeteryGraveSoil.cs  turf/loam/clay/stone/root/spoil and how each answers the spade
         CemeteryStrokeModel.cs  the swing bar, and the one rule that judges a strike
         CemeteryCoffinLowerModel.cs  two ropes, tilt and the slip that drops the box
-        CemeteryStoneSettleModel.cs  the plumb, and why tamping a leaning stone is wrong
+        CemeteryStoneSettleModel.cs  heaving it upright, then three blows to set it
+        CemeteryEpitaph.cs  the eight words a plaque holds, counted and cut
+        CemeteryPlaqueReadInteraction.cs  the finished grave's board, read again
+        (World) CityCemeteryPlaqueWorldBuilder.cs  the board itself, which carries no letters
+        (UI) CemeteryPlaqueView.cs  the three lines the board actually says
         CemeteryShovelAnimator.cs  drive, lever, lift, dump — the only animated thing here
         CemeteryGraveTrestle.cs  two bearers, four slings, and the coffin pose they imply
         (World) CityCemeteryCoffinRestWorldBuilder.cs  the two blocks the box waits on

@@ -1277,10 +1277,6 @@
       "value": "Q/E let the left and right ropes out. Level keeps crawling away: let out whichever end is high.   Esc — walk off"
     },
     {
-      "key": "cemetery.work.hint.stone",
-      "value": "A/D — hold it plumb   E — tamp   Esc — walk off"
-    },
-    {
       "key": "cemetery.work.abandoned",
       "value": "Left it half done. That is starting again."
     },
@@ -1307,6 +1303,46 @@
     {
       "key": "cemetery.soil.spoil",
       "value": "spoil"
+    },
+    {
+      "key": "interaction.read_plaque",
+      "value": "E — read the plaque"
+    },
+    {
+      "key": "cemetery.plaque.title",
+      "value": "Grave plaque"
+    },
+    {
+      "key": "cemetery.plaque.name",
+      "value": "Unnamed"
+    },
+    {
+      "key": "cemetery.plaque.years",
+      "value": "Years unknown"
+    },
+    {
+      "key": "cemetery.plaque.words",
+      "value": "Words left:"
+    },
+    {
+      "key": "cemetery.plaque.hint",
+      "value": "Type a line.   Enter — cut it,   Esc — leave it bare"
+    },
+    {
+      "key": "cemetery.plaque.empty",
+      "value": "(no inscription)"
+    },
+    {
+      "key": "cemetery.work.stone.raise",
+      "value": "heave it up"
+    },
+    {
+      "key": "cemetery.work.hint.stone.raise",
+      "value": "E — press to heave the stone up   Esc — walk off"
+    },
+    {
+      "key": "cemetery.work.hint.stone.set",
+      "value": "hold E to swing, release to strike down   Esc — walk off"
     },
     {
       "key": "quest.dig_grave.title",
