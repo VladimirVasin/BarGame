@@ -153,9 +153,14 @@ namespace BarPromenade.Tests.EditMode
             "interaction.talk_watchman",
             "interaction.gravedigging_offer",
             "interaction.dig_grave",
+            "interaction.lower_coffin",
+            "interaction.fill_grave",
             "cemetery.gravedigging.accepted",
             "cemetery.gravedigging.declined",
+            "cemetery.gravedigging.dug",
+            "cemetery.gravedigging.coffin",
             "cemetery.gravedigging.done",
+            "cemetery.gravedigging.paid",
             "quest.dig_grave.title",
             "quest.dig_grave.description.active",
             "quest.dig_grave.description.completed",
@@ -350,6 +355,16 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 valuesByKey["inventory.cash"],
                 Does.Not.Contain("₽"));
+
+            // The gravedigger's wage is the one number the player is
+            // told and never shown anywhere else, so the placeholder
+            // and the currency mark are both part of the contract.
+            Assert.That(
+                valuesByKey["cemetery.gravedigging.paid"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["cemetery.gravedigging.paid"],
+                Does.Contain("$"));
         }
 
         [TestCase("Localization/ru")]

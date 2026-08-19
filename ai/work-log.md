@@ -6,6 +6,82 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-19 — A grave takes three acts, and the third one pays
+
+- **The job is three interactions, not one.** `CemeteryGraveWorkStage` is a
+  monotone ladder (`Unclaimed` → `Marked` → `Dug` → `Coffined` → `Sealed` →
+  `Paid`) carried in `GameSessionState`, and the whole worksite is a pure
+  function of it, so `CemeteryGravediggingController.Restore` rebuilds any
+  stage exactly on every city build. The quest log keeps only the two states
+  it has ever had: `Active` on accept, `Completed` on the third act. Digging
+  the hole no longer finishes anything.
+- **Act one leaves a light beside the hole.** The hole is unchanged; what is
+  new is the lamp standing on the collar at the head-end right corner, `24°`
+  off the grave's axis, on `CemeteryGravediggingPlan.LampGround` — half a
+  collar thickness out on both axes, with `ValidateOrThrow` proving it lands
+  on the worksite rather than over the void, and a test proving the whole
+  `0.14 m` fixture clears the mouth even turned. It is not a lamp of its own:
+  `CityLakeWorldBuilder.BuildPierHeadLamp` was extracted wholesale into
+  `CityHandLampWorldBuilder` and both places now call it, so the fisherman's
+  pier lamp and the gravedigger's are one fixture and cannot drift. That
+  brought its registry decisions along unchanged — the site registry's
+  day-floor overload (`46`/`16`) so it burns around the clock, and the glass
+  deliberately OUT of the glow registry, which would otherwise dim the lamp to
+  a tenth by day while it went on throwing light. The extraction is
+  mechanical: same object names, same order, same values, and the lake suites
+  stayed green.
+- **Act two is a real model.** `CityCemeteryCoffinWorldBuilder` builds the
+  six-sided домовина: four flank boards turned to their own segment of the
+  outline (`0.40 m` at the feet, `0.62 m` at the shoulders, `0.46 m` at the
+  head), end boards, an overhanging lid of a centre plank and four wings on
+  the same segments, and an Orthodox cross laid on it. `1.95 x 0.75 x 0.44 m`
+  inside a `2.30 x 1.05 x 1.60 m` hole, colliderless under the mouth cap.
+- **Act three closes it.** `CityCemeteryGroundExcavation.Fill` removes the cut
+  and rebuilds the slab whole — idempotent, because the work is restored from
+  a stage and not from a list of holes. The pit dressing and the coffin go
+  with it and `CityCemeterySealedGraveWorldBuilder` puts up a fresh mound and
+  a stone. The stone is not a new silhouette: `CityCemeteryPlanner` grew a
+  public `CreateGraveParts`, and the batching loop of `CityCemeteryWorldBuilder`
+  became `BuildPartBatches`, so a grave the hero digs goes through the same
+  path as the standing rows. The `GraveSlab` part is dropped — a slab is what
+  a family lays years later — and the plot's own FNV-1a hash fixes which of
+  the four single-grave silhouettes it wears and whether it is dark granite or
+  light marble.
+- **The mound was a step pyramid first.** Three centred courses read exactly
+  as the pit builder's own comment warns; the fix was per-course yaw
+  (`0/-8/+11°`) and offsets an order of magnitude larger, with scales stated
+  along and across separately so the heap stays a ridge over the body. Caught
+  by a headless render, not by a test.
+- **The lamp is picked up with the last spadeful.** `SealGrave` destroys it
+  along with the pit dressing and the coffin, and `Restore` stands it only for
+  `Dug` and `Coffined`. A closed grave needs nothing lit over it, and leaving
+  a lamp burning on finished work made the plot read as still open.
+- **The wage.** `GameSessionState.TryEarnCash` is the only way cash goes up
+  outside a new game, logged like every other economy move. A finished grave
+  pays `150` on the next ordinary talk interaction at the watchman's window,
+  once.
+- **Telling the player about the money at all.** Two gaps, both real: nothing
+  pointed him back to the gate, and the wage was announced by a line with no
+  number in it — cash lives only on the inventory screen and the two shop
+  panels, all of them modal. The sealing line now ends with "теперь — к
+  сторожу за расчётом", and `InteractionPromptView` grew a formatted-feedback
+  path: `ShowFormattedFeedback`/`ShowFormattedFeedbackAt` hold arguments
+  beside the key and `GetDisplayedTextAt` composes them at the view's single
+  text-resolution point. The key stays a key, so everything reading
+  `PromptKey` still gets one; the catalog keeps the wording around the number
+  (`«Держи. Заработал.»   +${0}`), which is the project's twelve-site
+  `string.Format(Get(key), value)` convention rather than a new one. A catalog
+  invariant now pins both the placeholder and the `$`.
+
+**Verification.** Final run `CemeteryGravediggingTests`,
+`InteractionPromptViewTests`, `LocalizationCatalogTests`, `CityLakePlannerTests`,
+`LakeFishermanTests`, `CemeteryWatchmanTests` — 41/41. Four headless renders
+confirmed the lamp, the coffin, the closed grave and that the lamp is gone from
+it, and drove the mound rework. IMGUI cannot be captured headlessly, so the
+wage line is proved by `FormattedFeedback_KeepsTheKeyAndComposesTheValue`
+instead of by eye. Not run: the full EditMode suite, PlayMode and a player
+build.
+
 ## 2026-08-19 — The yard counts its empty places and the first grave is dug
 
 - **The cemetery is divided into burial plots.** `CityCemeteryPlan.Plots`

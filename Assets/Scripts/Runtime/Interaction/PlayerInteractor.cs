@@ -47,6 +47,23 @@ namespace BarPromenade
                        durationSeconds);
         }
 
+        /// <summary>
+        /// The same line with runtime values composed into it, for the
+        /// handful of answers that have to carry a number — a wage, a
+        /// price, a count.
+        /// </summary>
+        public bool ShowFormattedFeedback(
+            string localizationKey,
+            float durationSeconds,
+            params object[] arguments)
+        {
+            return promptView != null &&
+                   promptView.ShowFormattedFeedback(
+                       localizationKey,
+                       durationSeconds,
+                       arguments);
+        }
+
         private void Update()
         {
             if (!InputEnabled || SceneTransitionService.IsTransitioning)

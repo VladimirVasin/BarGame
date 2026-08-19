@@ -145,6 +145,18 @@ namespace BarPromenade
         public static DrinkId LastAlcoholicDrink { get; private set; } = DrinkId.None;
         public static int DrinksConsumed { get; private set; }
         public static int CashBalance { get; private set; } = DefaultCash;
+
+        /// <summary>
+        /// How far the cemetery watchman's job has got. It is
+        /// carried here rather than in the quest log because the
+        /// log only knows taken and finished, and the work has
+        /// three separate acts in between.
+        /// </summary>
+        public static CemeteryGraveWorkStage GraveWorkStage
+        {
+            get;
+            private set;
+        } = CemeteryGraveWorkStage.Unclaimed;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
@@ -244,6 +256,7 @@ namespace BarPromenade
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
+            GraveWorkStage = CemeteryGraveWorkStage.Unclaimed;
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
@@ -291,6 +304,61 @@ namespace BarPromenade
             }
 
             return completed;
+        }
+
+        /// <summary>
+        /// Moves the gravedigging work one or more rungs up its
+        /// ladder. Refuses anything that is not forward: the worksite
+        /// is rebuilt from this value alone, so a stage that could go
+        /// back would be a grave that closes and opens again.
+        /// </summary>
+        public static bool TryAdvanceGraveWork(
+            CemeteryGraveWorkStage stage)
+        {
+            if (stage <= GraveWorkStage ||
+                !Enum.IsDefined(typeof(CemeteryGraveWorkStage), stage))
+            {
+                return false;
+            }
+
+            CemeteryGraveWorkStage previous = GraveWorkStage;
+            GraveWorkStage = stage;
+            GameLog.Info(
+                "quest",
+                "grave_work_advanced",
+                GameLog.Field("previous_stage", previous.ToString()),
+                GameLog.Field("stage", stage.ToString()));
+            return true;
+        }
+
+        /// <summary>
+        /// Pays money into the hero's pocket. The only way cash goes
+        /// up outside a new game, so every earning passes one logged
+        /// gate.
+        /// </summary>
+        public static bool TryEarnCash(int amount, string reason)
+        {
+            if (amount <= 0)
+            {
+                return false;
+            }
+
+            int previousCash = CashBalance;
+            CashBalance = (int)Math.Min(
+                (long)CashBalance + amount,
+                int.MaxValue);
+            GameLog.Info(
+                "session",
+                "cash_earned",
+                GameLog.Field(
+                    "reason",
+                    string.IsNullOrWhiteSpace(reason)
+                        ? string.Empty
+                        : reason),
+                GameLog.Field("amount", CashBalance - previousCash),
+                GameLog.Field("cash_before", previousCash),
+                GameLog.Field("cash_balance", CashBalance));
+            return true;
         }
 
         public static bool IsInventoryItemReservedForQuest(

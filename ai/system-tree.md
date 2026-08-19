@@ -214,6 +214,12 @@ Assets/
         CityCemeteryPlanner.cs   gate-framed alleys, hash-varied graves/оградки, trees, lamps + validation
         CityCemeteryWorldBuilder.cs  chunked oriented batches with cemetery sheets + night-scaled alley lamps
         CityCemeterySurfaceAppearance.cs  four cemetery albedos (granite/stone/gravel/soil) via MPBs
+        CityCemeteryGroundWorldBuilder.cs  the cemetery slab, rebuilt around every open grave
+        CityCemeteryGroundExcavation.cs   the register of open holes; cut and fill both rebuild the slab
+        CityCemeteryPitWorldBuilder.cs    collar, floor, spoil heap + the cap that keeps the hero out
+        CityHandLampWorldBuilder.cs      the shared kerosene hand lamp: pier head and graveside, one fixture
+        CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
+        CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
         CityLakePlan.cs          oriented lake part/lamp descriptors, four hull variants, basin + budget
         CityLakePlanner.cs       inset cut-cornered waterline, revetment ring, pier, hulls, hut + validation
         CityLakeWorldBuilder.cs  chunked oriented batches with lake sheets + night-scaled shore lamps
@@ -339,6 +345,10 @@ Assets/
         CemeteryWatchmanPresentation.cs  one-clip manual PlayableGraph (the watch loop)
         CemeteryWatchmanFactory.cs  one permanent instance + its own talk trigger
         CemeteryWatchmanProvider.cs  the only serialized reference to the staged prefab
+        CemeteryGraveWorkStage.cs  the monotone ladder the whole worksite is rebuilt from
+        CemeteryGravediggingPlan.cs  hole, spoil, lamp seat, heading + the stone this plot will wear
+        CemeteryGravediggingController.cs  the three acts, their world, restore and the wage
+        CemeteryGraveDigSiteInteraction.cs  one staged worksite stub: dig, lower, fill
       Park/          the two old men's boards, once somebody sits down at one
         CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation

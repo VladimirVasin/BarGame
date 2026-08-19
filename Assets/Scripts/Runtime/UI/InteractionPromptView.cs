@@ -15,6 +15,7 @@ namespace BarPromenade
         private string promptKey = string.Empty;
         private Func<bool> promptAction;
         private string feedbackKey = string.Empty;
+        private object[] feedbackArguments;
         private float feedbackStartedAt;
         private float feedbackExpiresAt;
         private GUIStyle buttonStyle;
@@ -50,10 +51,43 @@ namespace BarPromenade
                 Time.unscaledTime);
         }
 
+        /// <summary>
+        /// The same line with runtime values composed into it — a wage,
+        /// a count, a price. The key stays a key: the arguments are
+        /// held beside it and applied at the one place the text is
+        /// resolved, so everything that reads
+        /// <see cref="PromptKey"/> still gets a catalog key and the
+        /// catalog still owns the wording around the number.
+        /// </summary>
+        public bool ShowFormattedFeedback(
+            string key,
+            float durationSeconds,
+            params object[] arguments)
+        {
+            return ShowFormattedFeedbackAt(
+                key,
+                durationSeconds,
+                Time.unscaledTime,
+                arguments);
+        }
+
         public bool ShowFeedbackAt(
             string key,
             float durationSeconds,
             float unscaledTime)
+        {
+            return ShowFormattedFeedbackAt(
+                key,
+                durationSeconds,
+                unscaledTime,
+                null);
+        }
+
+        public bool ShowFormattedFeedbackAt(
+            string key,
+            float durationSeconds,
+            float unscaledTime,
+            params object[] arguments)
         {
             if (string.IsNullOrWhiteSpace(key) ||
                 durationSeconds <= 0f ||
@@ -72,6 +106,10 @@ namespace BarPromenade
             }
 
             feedbackKey = key.Trim();
+            feedbackArguments =
+                arguments != null && arguments.Length > 0
+                    ? arguments
+                    : null;
             feedbackStartedAt = unscaledTime;
             feedbackExpiresAt = expiresAt;
             return true;
@@ -80,8 +118,29 @@ namespace BarPromenade
         public void ClearFeedback()
         {
             feedbackKey = string.Empty;
+            feedbackArguments = null;
             feedbackStartedAt = 0f;
             feedbackExpiresAt = 0f;
+        }
+
+        /// <summary>
+        /// The catalog line for whatever is on screen at that moment,
+        /// with any feedback arguments composed into it. This is the
+        /// only place the pipeline turns a key into text.
+        /// </summary>
+        public string GetDisplayedTextAt(float unscaledTime)
+        {
+            string key = GetPromptKeyAt(unscaledTime);
+            if (string.IsNullOrEmpty(key))
+            {
+                return string.Empty;
+            }
+
+            string text = LocalizationService.Get(key);
+            return feedbackArguments == null ||
+                   !IsFeedbackVisibleAt(unscaledTime)
+                ? text
+                : string.Format(text, feedbackArguments);
         }
 
         public string GetPromptKeyAt(float unscaledTime)
@@ -161,8 +220,7 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                string text = LocalizationService.Get(
-                    displayedPromptKey);
+                string text = GetDisplayedTextAt(unscaledTime);
                 bool clickable = IsClickableAt(unscaledTime);
                 Rect rect = CalculatePanelRect(text, clickable);
                 Rect textRect = clickable

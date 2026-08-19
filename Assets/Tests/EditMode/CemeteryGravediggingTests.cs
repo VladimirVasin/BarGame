@@ -75,6 +75,62 @@ namespace BarPromenade.Tests.EditMode
             Assert.DoesNotThrow(() =>
                 CemeteryGravediggingPlan.ValidateOrThrow(job.Plan));
 
+            // The lamp stands on the collar, on refilled earth rather
+            // than over the void it is there to light, and the whole
+            // fixture clears the mouth even turned off the axis.
+            var lamp = new Vector2(
+                job.Plan.LampGround.x,
+                job.Plan.LampGround.z);
+            Assert.That(job.Plan.PitMouth.Contains(lamp), Is.False);
+            Assert.That(
+                CityCemeteryPitWorldBuilder
+                    .GetExcavationRect(job.Plan)
+                    .Contains(lamp),
+                Is.True);
+            Assert.That(
+                job.Plan.LampGround.y,
+                Is.EqualTo(job.Plan.GroundTopY).Within(0.0001f));
+            float reach = CityHandLampWorldBuilder.SpanMeters *
+                          0.5f * Mathf.Sqrt(2f);
+            Assert.That(
+                Mathf.Min(
+                    Mathf.Abs(lamp.x - job.Plan.PitMouth.xMin),
+                    Mathf.Abs(lamp.x - job.Plan.PitMouth.xMax)),
+                Is.GreaterThan(reach));
+            Assert.That(
+                Mathf.Min(
+                    Mathf.Abs(lamp.y - job.Plan.PitMouth.yMin),
+                    Mathf.Abs(lamp.y - job.Plan.PitMouth.yMax)),
+                Is.GreaterThan(reach));
+
+            // The stone waiting for this plot is one of the four
+            // single-grave silhouettes, cut from fresh stone.
+            Assert.That(
+                new[]
+                {
+                    CityCemeteryGraveVariant.ClassicStele,
+                    CityCemeteryGraveVariant.ArchedHeadstone,
+                    CityCemeteryGraveVariant.OrthodoxCross,
+                    CityCemeteryGraveVariant.Obelisk
+                },
+                Does.Contain(job.Plan.Monument));
+            Assert.That(
+                new[]
+                {
+                    CityCemeteryStyle.GraniteDark,
+                    CityCemeteryStyle.MarbleLight
+                },
+                Does.Contain(job.Plan.MonumentStyle));
+
+            // The heading is the plot's own, snapped to the axis the
+            // hole is cut along.
+            Vector3 heading = job.Plan.Heading * Vector3.forward;
+            Assert.That(
+                Mathf.Abs(job.Plan.RunsAlongX
+                    ? heading.x
+                    : heading.z),
+                Is.EqualTo(1f).Within(0.0001f));
+
             // The same seed always sends him to the same grave.
             Job second = CreateJob();
             Assert.That(
@@ -172,6 +228,25 @@ namespace BarPromenade.Tests.EditMode
                         job.Plan)),
                 Is.False);
             Assert.That(excavation.Cuts.Count, Is.EqualTo(1));
+
+            // Filling it in puts the ground back exactly, and asking
+            // again is not an error: the work is restored from a
+            // stage, not from a list of holes.
+            Assert.That(
+                excavation.Fill(
+                    CityCemeteryPitWorldBuilder.GetExcavationRect(
+                        job.Plan)),
+                Is.True);
+            Assert.That(excavation.Cuts.Count, Is.EqualTo(0));
+            Assert.That(
+                CountGeometryOver(excavation.Ground, probe),
+                Is.GreaterThan(0),
+                "A filled grave is ground again.");
+            Assert.That(
+                excavation.Fill(
+                    CityCemeteryPitWorldBuilder.GetExcavationRect(
+                        job.Plan)),
+                Is.True);
         }
 
         [Test]
@@ -225,7 +300,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void AcceptedJob_MarksThePlotAndDiggingOpensTheGrave()
+        public void AcceptedJob_IsThreeActsAndOnlyTheLastOneIsAGrave()
         {
             Job job = CreateJob();
             CemeteryGravediggingController controller =
@@ -236,13 +311,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(controller.HasJob, Is.True);
             Assert.That(controller.IsAccepted, Is.False);
             Assert.That(
-                controller.TryDig(),
+                controller.TryAdvance(),
                 Is.False,
                 "Nobody digs a grave they were not asked to dig.");
 
             Assert.That(controller.TryAccept(), Is.True);
             Assert.That(controller.TryAccept(), Is.False);
-            Assert.That(controller.IsAccepted, Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Marked));
 
             CemeteryGraveDigSiteInteraction site = controller.Site;
             Assert.That(site, Is.Not.Null);
@@ -265,14 +342,25 @@ namespace BarPromenade.Tests.EditMode
                 0.5f);
             Assert.That(site.LastPulse, Is.GreaterThan(low));
 
-            Assert.That(controller.TryDig(), Is.True);
-            Assert.That(controller.IsDug, Is.True);
-            Assert.That(controller.Site, Is.Null);
+            // Act one: the hole, and the lamp that lights it.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Dug));
+            Assert.That(excavation.Cuts.Count, Is.EqualTo(1));
             Assert.That(
                 GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
-                Is.EqualTo(QuestStatus.Completed));
-            Assert.That(controller.TryDig(), Is.False);
-            Assert.That(excavation.Cuts.Count, Is.EqualTo(1));
+                Is.EqualTo(QuestStatus.Active),
+                "An open hole is not a finished grave.");
+            Assert.That(controller.Site, Is.SameAs(site));
+            Assert.That(
+                site.PromptKey,
+                Is.EqualTo(
+                    CemeteryGraveDigSiteInteraction.CoffinPromptKey));
+            Assert.That(
+                site.GetComponentsInChildren<Renderer>().Length,
+                Is.EqualTo(0),
+                "The hole is its own marker now.");
 
             // The grave itself: earth lining the hole, a floor at the
             // bottom of it and the cap that keeps the hero out.
@@ -295,6 +383,256 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 guard.GetComponent<BoxCollider>().isTrigger,
                 Is.False);
+
+            // The lamp is not a lamp of its own: it is the fixture
+            // the lake pier stands at the end of, set down here.
+            Transform lampObject = controller.transform.Find(
+                CemeteryGravediggingController.LampName);
+            Assert.That(lampObject, Is.Not.Null);
+            Assert.That(
+                lampObject.Find("Hand Lamp Glass"),
+                Is.Not.Null,
+                "The grave lamp is the shared hand lamp.");
+            Light lampLight =
+                lampObject.GetComponentInChildren<Light>();
+            Assert.That(lampLight, Is.Not.Null);
+            Assert.That(
+                lampLight.intensity,
+                Is.EqualTo(CityHandLampWorldBuilder.NightIntensity)
+                    .Within(0.0001f));
+            Assert.That(
+                lampLight.range,
+                Is.EqualTo(CityHandLampWorldBuilder.Range)
+                    .Within(0.0001f));
+            Assert.That(
+                lampLight.color,
+                Is.EqualTo(CityHandLampWorldBuilder.LampColor));
+            Assert.That(
+                lampLight.range,
+                Is.GreaterThan(
+                    CemeteryGravediggingPlan.PitLengthMeters));
+            Assert.That(
+                lampObject.position.y,
+                Is.EqualTo(job.Plan.GroundTopY).Within(0.001f),
+                "It stands on the ground, not in it.");
+            Assert.That(
+                new Vector2(
+                    lampObject.position.x - job.Plan.LampGround.x,
+                    lampObject.position.z - job.Plan.LampGround.z)
+                    .magnitude,
+                Is.LessThan(0.001f));
+            Assert.That(
+                lampObject.GetComponentsInChildren<Collider>().Length,
+                Is.EqualTo(0),
+                "Nobody squeezes past a lamp beside a grave.");
+
+            // Act two: the coffin, down at the bottom of the hole and
+            // clear of every wall of it.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Coffined));
+            Assert.That(
+                site.PromptKey,
+                Is.EqualTo(
+                    CemeteryGraveDigSiteInteraction.FillPromptKey));
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Active));
+            Transform coffin = controller.transform.Find(
+                CityCemeteryCoffinWorldBuilder.RootName);
+            Assert.That(coffin, Is.Not.Null);
+            Bounds box = Envelope(coffin);
+            Assert.That(
+                box.min.y,
+                Is.GreaterThanOrEqualTo(job.Plan.PitFloorY - 0.001f),
+                "It rests on the floor of the hole.");
+            Assert.That(
+                box.max.y,
+                Is.LessThan(job.Plan.GroundTopY),
+                "And stays down in it.");
+            Rect mouth = job.Plan.PitMouth;
+            Assert.That(box.min.x, Is.GreaterThan(mouth.xMin));
+            Assert.That(box.max.x, Is.LessThan(mouth.xMax));
+            Assert.That(box.min.z, Is.GreaterThan(mouth.yMin));
+            Assert.That(box.max.z, Is.LessThan(mouth.yMax));
+            Assert.That(
+                coffin.GetComponentsInChildren<Collider>().Length,
+                Is.EqualTo(0));
+
+            // Act three, and only now is it a grave: the earth goes
+            // back, the hole is gone and a stone stands at the head.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(
+                controller.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Completed));
+            Assert.That(controller.Site, Is.Null);
+            Assert.That(excavation.Cuts.Count, Is.EqualTo(0));
+            Assert.That(
+                controller.transform.Find(
+                    CityCemeteryPitWorldBuilder.RootName),
+                Is.Null,
+                "There is no hole left to line.");
+            Assert.That(
+                controller.transform.Find(
+                    CityCemeteryCoffinWorldBuilder.RootName),
+                Is.Null,
+                "The coffin is under the ground it was buried in.");
+            Assert.That(
+                controller.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "The lamp is picked up with the last spadeful.");
+            Assert.That(controller.TryAdvance(), Is.False);
+
+            Transform closed = controller.transform.Find(
+                CityCemeterySealedGraveWorldBuilder.RootName);
+            Assert.That(closed, Is.Not.Null);
+            Assert.That(
+                closed.Find(
+                    CityCemeterySealedGraveWorldBuilder.MoundName),
+                Is.Not.Null);
+            Bounds standing = Envelope(closed);
+            Assert.That(
+                standing.max.y,
+                Is.GreaterThan(job.Plan.GroundTopY + 1.0f),
+                "A monument stands at the head of it.");
+
+            // And it stays on its own plot, stone and mound alike.
+            Rect plot = job.Plan.Plot.Footprint;
+            Assert.That(standing.min.x, Is.GreaterThan(plot.xMin));
+            Assert.That(standing.max.x, Is.LessThan(plot.xMax));
+            Assert.That(standing.min.z, Is.GreaterThan(plot.yMin));
+            Assert.That(standing.max.z, Is.LessThan(plot.yMax));
+
+            // The stone is one of the yard's own, not a second
+            // vocabulary that only looks like one.
+            foreach (CityCemeteryPartDescriptor part in
+                     CityCemeterySealedGraveWorldBuilder
+                         .CreateMonumentParts(job.Plan))
+            {
+                Assert.That(
+                    part.Variant,
+                    Is.EqualTo(job.Plan.Monument));
+                Assert.That(
+                    part.Kind,
+                    Is.Not.EqualTo(CityCemeteryPartKind.GraveSlab),
+                    "A slab comes years later, not the same hour.");
+            }
+        }
+
+        [Test]
+        public void EveryStageIsRebuiltFromTheStageAlone()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingController controller =
+                CreateController(job, out _);
+            Assert.That(controller.TryAccept(), Is.True);
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(controller.TryAdvance(), Is.True);
+
+            // The hero goes indoors with the coffin already down.
+            CemeteryGravediggingController rebuilt =
+                CreateController(job, out _);
+            Assert.That(
+                rebuilt.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Coffined));
+            Assert.That(rebuilt.Site, Is.Not.Null);
+            Assert.That(
+                rebuilt.Site.PromptKey,
+                Is.EqualTo(
+                    CemeteryGraveDigSiteInteraction.FillPromptKey));
+            Assert.That(
+                rebuilt.transform.Find(
+                    CityCemeteryPitWorldBuilder.RootName),
+                Is.Not.Null);
+            Assert.That(
+                rebuilt.transform.Find(
+                    CityCemeteryCoffinWorldBuilder.RootName),
+                Is.Not.Null);
+            Assert.That(
+                rebuilt.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Not.Null);
+
+            // And again with the grave closed: no hole, no coffin, no
+            // worksite — a mound and a stone.
+            Assert.That(rebuilt.TryAdvance(), Is.True);
+            CemeteryGravediggingController finished =
+                CreateController(job, out _);
+            Assert.That(
+                finished.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+            Assert.That(finished.Site, Is.Null);
+            Assert.That(
+                finished.transform.Find(
+                    CityCemeteryPitWorldBuilder.RootName),
+                Is.Null);
+            Assert.That(
+                finished.transform.Find(
+                    CityCemeterySealedGraveWorldBuilder.RootName),
+                Is.Not.Null);
+            Assert.That(
+                finished.transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "A closed grave needs nothing lit over it.");
+        }
+
+        [Test]
+        public void FinishedGrave_IsPaidForOnceAtTheWatchmansWindow()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingController controller =
+                CreateController(job, out _);
+            CemeteryWatchmanInteraction watchman =
+                CreateWatchman(controller);
+            PlayerInteractor interactor = CreateInteractor();
+
+            watchman.Interact(interactor);
+            watchman.Interact(interactor);
+            Assert.That(controller.IsAccepted, Is.True);
+
+            // Unfinished work buys nothing: he only talks.
+            int wallet = GameSessionState.CashBalance;
+            Assert.That(controller.TryCollectWage(), Is.False);
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(controller.CanCollectWage, Is.False);
+            watchman.Interact(interactor);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(wallet));
+            Assert.That(
+                watchman.LastLineIndex,
+                Is.GreaterThanOrEqualTo(0));
+
+            // Closed and stoned, and the next word out of him is the
+            // wage.
+            Assert.That(controller.TryAdvance(), Is.True);
+            Assert.That(controller.CanCollectWage, Is.True);
+            watchman.Interact(interactor);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(
+                    wallet + CemeteryGravediggingController.Wage));
+            Assert.That(controller.IsPaid, Is.True);
+
+            // And he does not pay twice for one grave.
+            int lastLine = watchman.LastLineIndex;
+            watchman.Interact(interactor);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(
+                    wallet + CemeteryGravediggingController.Wage));
+            Assert.That(controller.TryCollectWage(), Is.False);
+            Assert.That(
+                watchman.LastLineIndex,
+                Is.Not.EqualTo(lastLine),
+                "He is back to being the same old man.");
         }
 
         // ------------------------------------------------------------
@@ -378,6 +716,22 @@ namespace BarPromenade.Tests.EditMode
             var host = new GameObject("Test Interactor");
             spawned.Add(host);
             return host.AddComponent<PlayerInteractor>();
+        }
+
+        /// <summary>The world box every renderer under a root
+        /// actually occupies.</summary>
+        private static Bounds Envelope(Transform root)
+        {
+            Renderer[] renderers =
+                root.GetComponentsInChildren<Renderer>();
+            Assert.That(renderers.Length, Is.GreaterThan(0));
+            Bounds bounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                bounds.Encapsulate(renderers[index].bounds);
+            }
+
+            return bounds;
         }
 
         private static float Planar(Vector3 point, Vector3 other)

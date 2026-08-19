@@ -87,11 +87,52 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
+            BuildPartBatches(root, plan.Parts, "Cemetery Chunk");
+
+            for (int index = 0; index < plan.Lamps.Count; index++)
+            {
+                CityCemeteryLampDescriptor lamp = plan.Lamps[index];
+                if (lamp.Kind == CityCemeteryLampKind.LodgePorch)
+                {
+                    BuildLodgePorchLamp(root, lamp);
+                }
+                else
+                {
+                    BuildAlleyLamp(root, lamp, index);
+                }
+            }
+
+            return root.gameObject;
+        }
+
+        /// <summary>
+        /// Batches a set of cemetery parts into one combined mesh per
+        /// 48 m chunk and style, on the style's own surface sheet and
+        /// collision rule. The graves the hero digs himself arrive one
+        /// at a time long after the precinct was built, and they go
+        /// through this same path so a raised stone is materially the
+        /// same object as the rows around it.
+        /// </summary>
+        internal static void BuildPartBatches(
+            Transform root,
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            string namePrefix)
+        {
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            if (parts == null)
+            {
+                throw new ArgumentNullException(nameof(parts));
+            }
+
             var batches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
-            for (int index = 0; index < plan.Parts.Count; index++)
+            for (int index = 0; index < parts.Count; index++)
             {
-                CityCemeteryPartDescriptor part = plan.Parts[index];
+                CityCemeteryPartDescriptor part = parts[index];
                 var key = new BatchKey(
                     Mathf.FloorToInt(
                         part.Center.x / SpatialChunkSize),
@@ -125,7 +166,7 @@ namespace BarPromenade
                     : (float?)null;
                 GameObject chunk =
                     RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                        $"Cemetery Chunk {key.X} {key.Z} {key.Style}",
+                        $"{namePrefix} {key.X} {key.Z} {key.Style}",
                         root,
                         batches[key],
                         ResolveColor(key.Style),
@@ -139,21 +180,6 @@ namespace BarPromenade
                         ResolveColor(key.Style));
                 }
             }
-
-            for (int index = 0; index < plan.Lamps.Count; index++)
-            {
-                CityCemeteryLampDescriptor lamp = plan.Lamps[index];
-                if (lamp.Kind == CityCemeteryLampKind.LodgePorch)
-                {
-                    BuildLodgePorchLamp(root, lamp);
-                }
-                else
-                {
-                    BuildAlleyLamp(root, lamp, index);
-                }
-            }
-
-            return root.gameObject;
         }
 
         /// <summary>

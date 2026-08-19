@@ -5,14 +5,22 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// The plot the watchman marked out, standing on the ground until
-    /// somebody digs it: a pulsing plate the size of the hole to come,
-    /// four pegs at its corners, and one interaction that turns the
-    /// whole thing into a grave.
+    /// The worksite, standing on the plot from the moment the job is
+    /// taken until the stone is up. It is one interaction across all
+    /// three acts of the work — dig the hole, lower the coffin, fill
+    /// it in — because they happen on the same square metre and the
+    /// hero approaches them the same way; only the prompt and what is
+    /// standing on the ground change.
     ///
-    /// The marker owns no state of its own. It asks the gravedigging
-    /// controller to dig and disappears when the controller says the
-    /// hole is open.
+    /// While the plot is only marked out it shows a pulsing plate the
+    /// size of the hole to come and four pegs at its corners. The
+    /// first cut of the spade is the end of those: after that the hole
+    /// itself is the marker, and the site is a trigger with nothing
+    /// visible in it.
+    ///
+    /// The site owns no state of its own. It asks the gravedigging
+    /// controller to take the next step and is told which stage the
+    /// work reached.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CemeteryGraveDigSiteInteraction :
@@ -21,7 +29,14 @@ namespace BarPromenade
     {
         public const string RuntimeRootName = "Grave Dig Site";
         public const string DigPromptKey = "interaction.dig_grave";
+        public const string CoffinPromptKey =
+            "interaction.lower_coffin";
+        public const string FillPromptKey = "interaction.fill_grave";
         public const string DugFeedbackKey =
+            "cemetery.gravedigging.dug";
+        public const string CoffinFeedbackKey =
+            "cemetery.gravedigging.coffin";
+        public const string SealedFeedbackKey =
             "cemetery.gravedigging.done";
         public const float FeedbackDurationSeconds = 3.0f;
 
@@ -46,25 +61,32 @@ namespace BarPromenade
         private readonly Renderer[] marks = new Renderer[5];
 
         private Vector3 standPosition;
-        private Func<bool> digAction;
+        private Func<bool> advanceAction;
+        private CemeteryGraveWorkStage stage;
         private int markCount;
         private bool isInitialized;
 
-        public string PromptKey => DigPromptKey;
+        public string PromptKey => GetPromptKey(stage);
         public Vector3 InteractionPosition => standPosition;
+
+        /// <summary>Which act of the work the site is offering.
+        /// </summary>
+        public CemeteryGraveWorkStage Stage => stage;
 
         /// <summary>The pulse phase last written, for tests.</summary>
         public float LastPulse { get; private set; } = 1f;
 
         /// <summary>
-        /// Raises the marker over one planned grave. The dig action
-        /// returns false when the ground refuses the hole, and the
-        /// marker then simply stays up.
+        /// Raises the worksite over one planned grave at the stage the
+        /// work has actually reached. The advance action returns false
+        /// when the step could not be taken, and the site then simply
+        /// stays as it is.
         /// </summary>
         public static CemeteryGraveDigSiteInteraction Create(
             Transform parent,
             CemeteryGravediggingPlan plan,
-            Func<bool> onDig)
+            CemeteryGraveWorkStage stage,
+            Func<bool> onAdvance)
         {
             if (parent == null)
             {
@@ -87,9 +109,14 @@ namespace BarPromenade
 
             var site =
                 root.AddComponent<CemeteryGraveDigSiteInteraction>();
-            site.Build(plan);
+            site.stage = stage;
+            if (stage == CemeteryGraveWorkStage.Marked)
+            {
+                site.Build(plan);
+            }
+
             site.standPosition = plan.Ground;
-            site.digAction = onDig;
+            site.advanceAction = onAdvance;
             site.isInitialized = true;
 
             // The hero reaches the plot from wherever he is standing
@@ -105,11 +132,47 @@ namespace BarPromenade
             return site;
         }
 
+        /// <summary>
+        /// Moves the site on to the act the work has reached. The
+        /// marked-out plate and its pegs come down with the first
+        /// spadeful and never come back.
+        /// </summary>
+        public void SetStage(CemeteryGraveWorkStage value)
+        {
+            stage = value;
+            if (value == CemeteryGraveWorkStage.Marked)
+            {
+                return;
+            }
+
+            for (int index = 0; index < markCount; index++)
+            {
+                Renderer mark = marks[index];
+                marks[index] = null;
+                if (mark == null)
+                {
+                    continue;
+                }
+
+                if (Application.isPlaying)
+                {
+                    Destroy(mark.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(mark.gameObject);
+                }
+            }
+
+            markCount = 0;
+        }
+
         public bool CanInteract(PlayerInteractor interactor)
         {
             return isInitialized &&
                    isActiveAndEnabled &&
-                   digAction != null &&
+                   advanceAction != null &&
+                   IsWorkingStage(stage) &&
                    interactor != null &&
                    interactor.isActiveAndEnabled &&
                    interactor.InputEnabled &&
@@ -123,11 +186,53 @@ namespace BarPromenade
                 return;
             }
 
-            if (digAction())
+            CemeteryGraveWorkStage attempted = stage;
+            if (advanceAction())
             {
                 interactor.ShowFeedback(
-                    DugFeedbackKey,
+                    GetFeedbackKey(attempted),
                     FeedbackDurationSeconds);
+            }
+        }
+
+        /// <summary>The three acts that are the hero's to take. A
+        /// finished grave offers nothing.</summary>
+        internal static bool IsWorkingStage(
+            CemeteryGraveWorkStage value)
+        {
+            return value == CemeteryGraveWorkStage.Marked ||
+                   value == CemeteryGraveWorkStage.Dug ||
+                   value == CemeteryGraveWorkStage.Coffined;
+        }
+
+        internal static string GetPromptKey(
+            CemeteryGraveWorkStage value)
+        {
+            switch (value)
+            {
+                case CemeteryGraveWorkStage.Dug:
+                    return CoffinPromptKey;
+                case CemeteryGraveWorkStage.Coffined:
+                    return FillPromptKey;
+                default:
+                    return DigPromptKey;
+            }
+        }
+
+        /// <summary>What he says to himself once the act is done. It
+        /// is keyed on the stage he took it from, not the one he
+        /// arrived at, because the line is about the work.</summary>
+        internal static string GetFeedbackKey(
+            CemeteryGraveWorkStage value)
+        {
+            switch (value)
+            {
+                case CemeteryGraveWorkStage.Dug:
+                    return CoffinFeedbackKey;
+                case CemeteryGraveWorkStage.Coffined:
+                    return SealedFeedbackKey;
+                default:
+                    return DugFeedbackKey;
             }
         }
 

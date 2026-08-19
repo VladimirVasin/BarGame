@@ -38,6 +38,19 @@ namespace BarPromenade
         public const float SpoilLengthMeters = 1.90f;
         public const float SpoilWidthMeters = 0.85f;
 
+        /// <summary>
+        /// Where the work lamp is set down: on the collar at the head
+        /// end of the hole, on its right-hand corner. It stands on
+        /// refilled earth rather than over the void, and the offsets
+        /// put it on the middle of the collar ring, so the whole
+        /// fixture — a hand's span across — clears the mouth even
+        /// turned off the axis.
+        /// </summary>
+        public const float LampLongOffsetMeters =
+            PitLengthMeters * 0.5f + PitWallThicknessMeters * 0.5f;
+        public const float LampLateralOffsetMeters =
+            PitWidthMeters * 0.5f + PitWallThicknessMeters * 0.5f;
+
         private static readonly CemeteryGravediggingPlan AbsentPlan =
             new CemeteryGravediggingPlan();
 
@@ -48,11 +61,19 @@ namespace BarPromenade
 
         private CemeteryGravediggingPlan(
             CityCemeteryPlotDescriptor plot,
-            bool runsAlongX,
+            float headingYawDegrees,
             float groundTopY)
         {
             IsPresent = true;
             Plot = plot;
+            Heading = Quaternion.Euler(0f, headingYawDegrees, 0f);
+            // The mouth runs along world X exactly when the snapped
+            // heading points that way, so the hole and everything the
+            // digging later stands over it can never disagree.
+            bool runsAlongX =
+                Mathf.Abs(
+                    Mathf.Abs(Mathf.DeltaAngle(headingYawDegrees, 0f)) -
+                    90f) < 45f;
             RunsAlongX = runsAlongX;
             GroundTopY = groundTopY;
             Ground = new Vector3(
@@ -76,6 +97,26 @@ namespace BarPromenade
                 spoilCenter,
                 runsAlongX ? SpoilLengthMeters : SpoilWidthMeters,
                 runsAlongX ? SpoilWidthMeters : SpoilLengthMeters);
+            Vector3 lampOffset = Heading * new Vector3(
+                LampLateralOffsetMeters,
+                0f,
+                LampLongOffsetMeters);
+            LampGround = new Vector3(
+                Ground.x + lampOffset.x,
+                groundTopY,
+                Ground.z + lampOffset.z);
+
+            // Which stone ends up over him is fixed by the plot rather
+            // than by when the hero gets round to filling the hole in:
+            // the same seed always raises the same monument here. Only
+            // the four single-grave silhouettes are eligible — a family
+            // vault is not what one man digs in an afternoon, and an
+            // overgrown slab cannot be an hour old.
+            uint stoneHash = StableHash(plot.StableId);
+            Monument = (CityCemeteryGraveVariant)(stoneHash % 4u);
+            MonumentStyle = ((stoneHash >> 8) & 1u) == 0u
+                ? CityCemeteryStyle.GraniteDark
+                : CityCemeteryStyle.MarbleLight;
         }
 
         /// <summary>False when the city has no cemetery, no lodge, or
@@ -92,6 +133,27 @@ namespace BarPromenade
         /// <summary>True when the hole's long axis runs along world X.
         /// </summary>
         public bool RunsAlongX { get; }
+
+        /// <summary>
+        /// The plot's own heading snapped to the nearest compass
+        /// quarter, local +Z at the head of the grave. Everything the
+        /// digging puts on this plot — the lamp, the coffin, the mound
+        /// and the stone — is placed in this frame, so all of them
+        /// agree with the axis-aligned hole.
+        /// </summary>
+        public Quaternion Heading { get; }
+
+        /// <summary>Where the work lamp stands while the grave is
+        /// open.</summary>
+        public Vector3 LampGround { get; }
+
+        /// <summary>The stone that goes up when the grave is closed.
+        /// </summary>
+        public CityCemeteryGraveVariant Monument { get; }
+
+        /// <summary>The stone it is cut from. Fresh work, so never the
+        /// weathered concrete of the old rows.</summary>
+        public CityCemeteryStyle MonumentStyle { get; }
 
         public float GroundTopY { get; }
 
@@ -183,11 +245,12 @@ namespace BarPromenade
             // closest to: the cemetery frame only ever faces the four
             // compass directions, and the jitter is four degrees.
             Vector3 forward = best.Yaw * Vector3.forward;
-            bool runsAlongX =
-                Mathf.Abs(forward.x) > Mathf.Abs(forward.z);
+            float headingYawDegrees = Mathf.Round(
+                Mathf.Atan2(forward.x, forward.z) *
+                Mathf.Rad2Deg / 90f) * 90f;
             return new CemeteryGravediggingPlan(
                 best,
-                runsAlongX,
+                headingYawDegrees,
                 cemeteryPlan.GroundTopY);
         }
 
@@ -225,6 +288,15 @@ namespace BarPromenade
                     "hole.");
             }
 
+            if (!plan.WorkFootprint.Contains(new Vector2(
+                    plan.LampGround.x,
+                    plan.LampGround.z)))
+            {
+                throw new InvalidOperationException(
+                    "The gravedigger's lamp must stand on the " +
+                    "worksite.");
+            }
+
             Rect footprint = plan.WorkFootprint;
             Rect plot = plan.Plot.Footprint;
             if (footprint.xMin < plot.xMin ||
@@ -235,6 +307,27 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     $"The gravedigging worksite leaves plot " +
                     $"'{plan.Plot.StableId}'.");
+            }
+        }
+
+        /// <summary>
+        /// FNV-1a over the plot's stable id. The plan carries no seed
+        /// of its own, and that id already encodes the lattice cell
+        /// the city seed put the plot on.
+        /// </summary>
+        private static uint StableHash(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                string text = value ?? string.Empty;
+                for (int index = 0; index < text.Length; index++)
+                {
+                    hash ^= text[index];
+                    hash *= 16777619u;
+                }
+
+                return hash;
             }
         }
 

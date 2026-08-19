@@ -106,6 +106,56 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void FormattedFeedback_KeepsTheKeyAndComposesTheValue()
+        {
+            var gameObject = new GameObject("Interaction Prompt Test");
+            try
+            {
+                InteractionPromptView view =
+                    gameObject.AddComponent<InteractionPromptView>();
+                view.SetPrompt("interaction.test", () => true);
+
+                // The catalog owns the wording around the number, so
+                // what the view keeps is still a key — everything that
+                // reads PromptKey must go on seeing one.
+                Assert.That(
+                    view.ShowFormattedFeedbackAt(
+                        "cemetery.gravedigging.paid",
+                        3f,
+                        10f,
+                        150),
+                    Is.True);
+                Assert.That(
+                    view.GetPromptKeyAt(10f),
+                    Is.EqualTo("cemetery.gravedigging.paid"));
+                string composed = view.GetDisplayedTextAt(10f);
+                Assert.That(composed, Does.Contain("150"));
+                Assert.That(composed, Does.Not.Contain("{0}"));
+
+                // The prompt underneath never takes the arguments with
+                // it once the line expires.
+                Assert.That(
+                    view.GetDisplayedTextAt(13f),
+                    Is.EqualTo("interaction.test"));
+
+                // And an ordinary unformatted line clears them.
+                Assert.That(
+                    view.ShowFeedbackAt(
+                        "cemetery.gravedigging.paid",
+                        3f,
+                        20f),
+                    Is.True);
+                Assert.That(
+                    view.GetDisplayedTextAt(20f),
+                    Does.Contain("{0}"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
         public void PlayerInteractor_DisablingInputClearsTimedFeedback()
         {
             var gameObject = new GameObject("Player Interactor Test");

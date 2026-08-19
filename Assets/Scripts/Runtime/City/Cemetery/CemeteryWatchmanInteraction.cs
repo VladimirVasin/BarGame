@@ -14,6 +14,11 @@ namespace BarPromenade
     /// the offer up in place of the prompt, and the hero answers with
     /// the interact key or the refuse key. A refusal costs nothing:
     /// the hole still needs digging and he will say so again.
+    ///
+    /// And he is where the work turns into money. Coming back to his
+    /// window with the grave closed and the stone standing pays it
+    /// out, once, on the ordinary talk interaction — there is no
+    /// second panel for a wage.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CemeteryWatchmanInteraction :
@@ -32,6 +37,8 @@ namespace BarPromenade
             "cemetery.gravedigging.accepted";
         public const string DeclinedFeedbackKey =
             "cemetery.gravedigging.declined";
+        public const string PaidFeedbackKey =
+            "cemetery.gravedigging.paid";
         public const float ResponseDurationSeconds = 3.0f;
 
         private Vector3 standPosition;
@@ -100,6 +107,21 @@ namespace BarPromenade
             {
                 IsOffering = true;
                 offerListener = interactor;
+                return;
+            }
+
+            // A finished grave is worth exactly one of these: after
+            // the wage he is back to being the same old man.
+            if (gravedigging != null &&
+                gravedigging.TryCollectWage())
+            {
+                // He counts it out loud: the wage is the one number in
+                // this job the player never sees anywhere else, and the
+                // pocket it lands in is two menus away.
+                interactor.ShowFormattedFeedback(
+                    PaidFeedbackKey,
+                    ResponseDurationSeconds,
+                    CemeteryGravediggingController.Wage);
                 return;
             }
 

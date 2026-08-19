@@ -1377,6 +1377,37 @@ namespace BarPromenade
                 : CityCemeteryGraveVariant.OvergrownSlab;
         }
 
+        /// <summary>
+        /// The parts of one grave on its own, outside a planned
+        /// cemetery: the hero's own burial raises exactly the same
+        /// silhouettes as the standing rows rather than a second
+        /// vocabulary that only looks similar.
+        /// </summary>
+        public static IReadOnlyList<CityCemeteryPartDescriptor>
+            CreateGraveParts(
+                int ordinal,
+                Vector3 ground,
+                Quaternion yaw,
+                CityCemeteryGraveVariant variant,
+                CityCemeteryStyle stoneStyle,
+                float tiltDegrees,
+                bool enclosure,
+                bool offering)
+        {
+            var parts = new List<CityCemeteryPartDescriptor>(12);
+            EmitGrave(
+                parts,
+                ordinal,
+                ground,
+                yaw,
+                variant,
+                stoneStyle,
+                tiltDegrees,
+                enclosure,
+                offering);
+            return parts;
+        }
+
         private static void EmitGrave(
             ICollection<CityCemeteryPartDescriptor> parts,
             int ordinal,

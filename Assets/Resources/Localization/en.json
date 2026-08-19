@@ -1213,6 +1213,14 @@
       "value": "E — dig the grave"
     },
     {
+      "key": "interaction.lower_coffin",
+      "value": "E — lower the coffin"
+    },
+    {
+      "key": "interaction.fill_grave",
+      "value": "E — fill it in and set the stone"
+    },
+    {
       "key": "cemetery.gravedigging.accepted",
       "value": "The plot is marked out. Find your own spade."
     },
@@ -1221,8 +1229,20 @@
       "value": "Suit yourself. The work will keep."
     },
     {
+      "key": "cemetery.gravedigging.dug",
+      "value": "The hole is ready. The coffin next."
+    },
+    {
+      "key": "cemetery.gravedigging.coffin",
+      "value": "Down it goes. Now fill it in."
+    },
+    {
       "key": "cemetery.gravedigging.done",
-      "value": "Done. Straighter than the last man’s."
+      "value": "Done. Straighter than the last man’s. Now back to the watchman for the money."
+    },
+    {
+      "key": "cemetery.gravedigging.paid",
+      "value": "“Here. You earned it.”   +${0}"
     },
     {
       "key": "quest.dig_grave.title",
@@ -1230,11 +1250,11 @@
     },
     {
       "key": "quest.dig_grave.description.active",
-      "value": "The watchman marked out a vacant plot at the cemetery. I should dig the grave."
+      "value": "The watchman marked out a vacant plot at the cemetery. Dig the hole, lower the coffin, fill it in and set the stone."
     },
     {
       "key": "quest.dig_grave.description.completed",
-      "value": "The grave is dug. The watchman did not even wince."
+      "value": "The grave is closed and the stone is up. The watchman settles up at his window."
     }
   ]
 }

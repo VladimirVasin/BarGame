@@ -59,36 +59,12 @@ namespace BarPromenade
         internal static readonly Color Silt =
             new Color(0.13f, 0.13f, 0.11f);
 
-        // The hand lamp at the end of the boards: a kerosene-warm
-        // filament, well to the orange side of the hut bulb. Warm light
-        // is what shows on dark water, and this is a lamp somebody
-        // carried out and set down, not a fitting the town installed.
-        internal static readonly Color HeadLampColor =
-            new Color(1.00f, 0.74f, 0.42f);
-
-        // It never goes out. The station is abandoned, but this lamp is
-        // still burning, and the day floor is what makes that legible:
-        // "always working" has to read at noon too, not merely survive
-        // the night factor.
+        // The hand lamp at the end of the boards is
+        // CityHandLampWorldBuilder's, colour, intensities, range and
+        // all: it is a lamp somebody carried out and set down, not a
+        // fitting the town installed, and the gravedigger sets down the
+        // same one. Its constants live with the fixture.
         //
-        // Sized as an object rather than as infrastructure. A municipal
-        // post out here would say the pier is still maintained, which is
-        // the opposite of true, so this throws a close pool over the end
-        // of the deck and the water beside it and no further.
-        internal const float HeadLampNightIntensity = 46f;
-        internal const float HeadLampDayIntensity = 16f;
-
-        // Still far enough to reach the water it stands over. The water
-        // shader's additional-light glint is a lit highlight, not a
-        // mirror, so it exists only where the fixture's own range covers
-        // the surface: a short-ranged lamp puts no reflection on the
-        // water at all, however bright it is. This number and ForcePixel
-        // below are load bearing, not art direction.
-        internal const float HeadLampRange = 11.0f;
-
-        // Height of the flame above the rail cap it is standing on.
-        internal const float HeadLampHeight = 0.13f;
-
         // The hut bulb is the same value as the cemetery lodge's porch
         // bulb on purpose: it is the same kind of bulb over the same
         // kind of door, and inventing a second warm tungsten for it
@@ -226,132 +202,23 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The hand lamp standing on the rail cap at the end of the
-        /// pier: a small tin body, a warm glass, a wire bail over the
-        /// top, and the point light that is the only thing lighting the
-        /// water.
-        ///
-        /// Everything about it is object-scale. It is roughly a
-        /// forearm tall and it sits where a person would have put it
-        /// down, at hand height on the rail, so it reads as something
-        /// left behind rather than as a fitting the town installed and
-        /// still maintains.
-        ///
-        /// Two deliberate registry choices. The light goes on the site
-        /// registry through the day-floor overload, so it burns around
-        /// the clock. The glass stays OUT of the glow registry: that
-        /// registry lerps every registered emissive down to a tenth of
-        /// itself under a day sky, which is right for a lamp that
-        /// switches off and wrong for one that does not - the light
-        /// would still be thrown while the lamp itself looked dead. The
-        /// always-on yard spotlight sits outside it for the same reason.
-        ///
-        /// No collider: it stands on a rail at the end of a deck barely
-        /// two metres wide, and a collider here would be something the
-        /// player has to squeeze past to reach the end.
+        /// The station's one working light, standing on the rail cap at
+        /// the end of the pier: the shared kerosene hand lamp, put down
+        /// at hand height where a person would have left it. Every
+        /// decision about the fixture itself — the always-on day floor,
+        /// the glass kept out of the glow registry, ForcePixel and the
+        /// range that lets the water shader see it — lives with the
+        /// lamp rather than here.
         /// </summary>
         private static void BuildPierHeadLamp(
             Transform parent,
             CityLakeLampDescriptor descriptor)
         {
-            Transform assembly = new GameObject(
-                "Lake Pier Hand Lamp").transform;
-            assembly.SetParent(parent, false);
-            assembly.SetPositionAndRotation(
+            CityHandLampWorldBuilder.Build(
+                parent,
+                "Lake Pier Hand Lamp",
                 descriptor.GroundPosition,
-                Quaternion.Euler(0f, descriptor.YawDegrees, 0f));
-
-            // The foot it stands on, and the tin cap over the glass.
-            RuntimePrimitiveFactory.CreateBox(
-                "Hand Lamp Foot",
-                assembly,
-                new Vector3(0f, 0.02f, 0f),
-                new Vector3(0.13f, 0.04f, 0.13f),
-                LampIronColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Hand Lamp Cap",
-                assembly,
-                new Vector3(0f, 0.215f, 0f),
-                new Vector3(0.14f, 0.04f, 0.14f),
-                LampIronColor,
-                false);
-
-            // The bail: two uprights and a cross piece, so the lamp has
-            // the one silhouette that says "carried" at this size.
-            for (int side = 0; side < 2; side++)
-            {
-                float sign = side == 0 ? -1f : 1f;
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Hand Lamp Bail {side}",
-                    assembly,
-                    new Vector3(sign * 0.055f, 0.262f, 0f),
-                    new Vector3(0.012f, 0.07f, 0.012f),
-                    LampIronColor,
-                    false);
-            }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Hand Lamp Handle",
-                assembly,
-                new Vector3(0f, 0.292f, 0f),
-                new Vector3(0.122f, 0.012f, 0.012f),
-                LampIronColor,
-                false);
-
-            // A low multiplier on purpose, and the number is set by the
-            // blue channel rather than by taste.
-            //
-            // The street fixtures push their lens hard because they are
-            // read from across a district. This one is read from two
-            // metres, and the moment the multiplier lifts blue past 1
-            // all three channels clip together and the amber glass
-            // becomes a white chip - the cast light stays warm while the
-            // lamp making it looks like a fluorescent tube. At 1.5x this
-            // colour's blue lands at 0.63, so red and green saturate
-            // into a hot core while the glass keeps its hue.
-            Color glow = MultiplyRgb(HeadLampColor, 1.5f, 1f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Hand Lamp Glass",
-                assembly,
-                new Vector3(0f, HeadLampHeight, 0f),
-                new Vector3(0.095f, 0.145f, 0.095f),
-                glow,
-                CityNightResources.EmissiveMaterial,
-                false);
-
-            GameObject emitter = new GameObject("Hand Lamp Light");
-            emitter.transform.SetParent(assembly, false);
-            emitter.transform.localPosition =
-                new Vector3(0f, HeadLampHeight, 0f);
-            Light light = emitter.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = HeadLampColor;
-            light.intensity = HeadLampNightIntensity;
-            light.range = HeadLampRange;
-            light.shadows = LightShadows.None;
-
-            // ForcePixel is not a quality setting here: a vertex-mode
-            // light is not an additional light the water shader can
-            // read, and the reflection is the whole point of the lamp.
-            light.renderMode = LightRenderMode.ForcePixel;
-            light.lightmapBakeType = LightmapBakeType.Realtime;
-
-            GameObject haloObject = new GameObject("Hand Lamp Halo");
-            haloObject.transform.SetParent(emitter.transform, false);
-            CityLightHalo halo =
-                haloObject.AddComponent<CityLightHalo>();
-            halo.Initialize(
-                CityNightResources.AtmosphereMaterial,
-                0.26f,
-                0.80f,
-                MultiplyRgb(HeadLampColor, 1.9f, 0.20f),
-                MultiplyRgb(HeadLampColor, 1.1f, 0.06f));
-            CityNightSiteLightRegistry.Register(
-                light,
-                HeadLampNightIntensity,
-                HeadLampDayIntensity,
-                halo);
+                descriptor.YawDegrees);
         }
 
         /// <summary>

@@ -1213,6 +1213,14 @@
       "value": "E — копать могилу"
     },
     {
+      "key": "interaction.lower_coffin",
+      "value": "E — опустить гроб"
+    },
+    {
+      "key": "interaction.fill_grave",
+      "value": "E — закопать и поставить камень"
+    },
+    {
       "key": "cemetery.gravedigging.accepted",
       "value": "Место я отметил. Лопату сам найдёшь."
     },
@@ -1221,8 +1229,20 @@
       "value": "Как знаешь. Работа не убежит."
     },
     {
+      "key": "cemetery.gravedigging.dug",
+      "value": "Яма готова. Теперь гроб."
+    },
+    {
+      "key": "cemetery.gravedigging.coffin",
+      "value": "Опустил. Осталось закопать."
+    },
+    {
       "key": "cemetery.gravedigging.done",
-      "value": "Готово. Ровнее, чем у прошлого."
+      "value": "Готово. Ровнее, чем у прошлого. Теперь — к сторожу за расчётом."
+    },
+    {
+      "key": "cemetery.gravedigging.paid",
+      "value": "«Держи. Заработал.»   +${0}"
     },
     {
       "key": "quest.dig_grave.title",
@@ -1230,11 +1250,11 @@
     },
     {
       "key": "quest.dig_grave.description.active",
-      "value": "Сторож отметил свободное место на кладбище. Надо выкопать могилу."
+      "value": "Сторож отметил свободное место на кладбище. Выкопать яму, опустить гроб, закопать и поставить камень."
     },
     {
       "key": "quest.dig_grave.description.completed",
-      "value": "Могила выкопана. Сторож даже не поморщился."
+      "value": "Могила закрыта, камень стоит. Расчёт — у сторожа."
     }
   ]
 }

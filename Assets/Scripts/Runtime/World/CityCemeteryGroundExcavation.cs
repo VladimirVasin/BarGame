@@ -92,6 +92,51 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Closes one hole again and rebuilds the slab over it — the
+        /// grave being filled in. True when the ground ends up whole,
+        /// which includes the case where this rectangle was never cut
+        /// out in the first place: filling is idempotent, because the
+        /// work that asks for it is restored from a stage rather than
+        /// from a list of holes.
+        /// </summary>
+        public bool Fill(Rect mouth)
+        {
+            if (!IsInitialized || ground == null)
+            {
+                return false;
+            }
+
+            int index = IndexOf(mouth);
+            if (index < 0)
+            {
+                return true;
+            }
+
+            Rect removed = cuts[index];
+            cuts.RemoveAt(index);
+            if (!Rebuild())
+            {
+                cuts.Insert(index, removed);
+                return false;
+            }
+
+            return true;
+        }
+
+        private int IndexOf(Rect mouth)
+        {
+            for (int index = 0; index < cuts.Count; index++)
+            {
+                if (cuts[index] == mouth)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
         private bool Rebuild()
         {
             Transform host = transform;
