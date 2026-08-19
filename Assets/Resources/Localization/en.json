@@ -1309,10 +1309,6 @@
       "value": "E — read the plaque"
     },
     {
-      "key": "cemetery.plaque.title",
-      "value": "Grave plaque"
-    },
-    {
       "key": "cemetery.plaque.name",
       "value": "Unnamed"
     },
@@ -1327,6 +1323,10 @@
     {
       "key": "cemetery.plaque.hint",
       "value": "Type a line.   Enter — cut it,   Esc — leave it bare"
+    },
+    {
+      "key": "cemetery.plaque.read.hint",
+      "value": "Esc or E — step back"
     },
     {
       "key": "cemetery.plaque.empty",

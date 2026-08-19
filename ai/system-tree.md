@@ -362,7 +362,6 @@ Assets/
         (World) CityCemeteryPlaqueWorldBuilder.cs  the board, fitted to the stone's measured face
         (World) CemeteryPlaqueFont.cs  a runtime TMP font asset off a Cyrillic .ttf
         (World) CemeteryPlaqueSurface.cs  the board's three lines, reset when the line is cut
-        (UI) CemeteryPlaqueView.cs  the three lines the board actually says
         CemeteryShovelAnimator.cs  drive, lever, lift, dump — the only animated thing here
         CemeteryGraveTrestle.cs  two bearers, four slings, and the coffin pose they imply
         (World) CityCemeteryCoffinRestWorldBuilder.cs  the two blocks the box waits on

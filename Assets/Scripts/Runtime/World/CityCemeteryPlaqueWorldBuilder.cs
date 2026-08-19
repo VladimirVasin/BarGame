@@ -109,6 +109,12 @@ namespace BarPromenade
             float seat = bounds.min.y +
                          (bounds.size.y * SeatHeightFraction);
 
+            // TextMeshPro lays its quads out with normals of
+            // `(0, 0, -1)`, so a line of text is readable from its own
+            // local -Z. Facing the board's +Z into the stone puts that
+            // readable side out at the reader, and nothing may then be
+            // turned a further half-circle on top of it — which is
+            // exactly what showed the words back to front.
             root.transform.SetPositionAndRotation(
                 new Vector3(face.x, seat, face.z),
                 Quaternion.LookRotation(-outward, Vector3.up));
@@ -116,7 +122,7 @@ namespace BarPromenade
             RuntimePrimitiveFactory.CreateBox(
                 BezelName,
                 root.transform,
-                new Vector3(0f, 0f, BezelThicknessMeters * 0.5f),
+                new Vector3(0f, 0f, BezelThicknessMeters * 0.6f),
                 new Vector3(
                     width + BezelMeters,
                     height + BezelMeters,
@@ -143,10 +149,11 @@ namespace BarPromenade
             float width,
             float height)
         {
+            // The brass sits behind the words, toward the stone.
             RuntimePrimitiveFactory.CreateBox(
                 PlateName,
                 parent,
-                new Vector3(0f, 0f, -PlateThicknessMeters * 0.5f),
+                new Vector3(0f, 0f, PlateThicknessMeters * 0.5f),
                 new Vector3(width, height, PlateThicknessMeters),
                 Plate,
                 false);
@@ -208,12 +215,13 @@ namespace BarPromenade
         {
             var line = new GameObject(name);
             line.transform.SetParent(parent, false);
+            // A hair in front of the brass, and unturned: the board is
+            // already facing the right way.
             line.transform.localPosition = new Vector3(
                 0f,
                 offsetY,
-                -PlateThicknessMeters - 0.002f);
-            line.transform.localRotation =
-                Quaternion.Euler(0f, 180f, 0f);
+                -0.002f);
+            line.transform.localRotation = Quaternion.identity;
 
             var text = line.AddComponent<TextMeshPro>();
             text.font = font;

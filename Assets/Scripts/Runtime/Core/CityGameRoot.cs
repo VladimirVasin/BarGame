@@ -65,11 +65,6 @@ namespace BarPromenade
             get;
             private set;
         }
-        public CemeteryPlaqueView GravePlaque
-        {
-            get;
-            private set;
-        }
         public LakeFishermanPresentation LakeFisherman
         {
             get;
@@ -642,13 +637,14 @@ namespace BarPromenade
                 camera,
                 intoxicationHud,
                 ui.transform);
-            // And the board on the finished stone. It carries no
-            // letters of its own, so reading it is the only way the
-            // line the player wrote is ever seen again.
-            GravePlaque = ui.AddComponent<CemeteryPlaqueView>();
-            if (Gravedigging != null)
+            // Reading the board on a finished stone is a camera move
+            // rather than a panel: the words are real letters on the
+            // brass, so there is nothing to put on screen that is not
+            // already on the grave.
+            if (Gravedigging != null && GraveWork != null)
             {
-                Gravedigging.PlaqueRead += GravePlaque.Show;
+                Gravedigging.PlaqueRead += () =>
+                    GraveWork.TryBeginReading();
             }
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.

@@ -123,6 +123,7 @@ namespace BarPromenade
         private int target;
         private int strikeCount;
         private bool inscribing;
+        private bool reading;
         private string epitaphDraft = string.Empty;
         private float ropeCue;
         private float tampCue;
@@ -166,23 +167,18 @@ namespace BarPromenade
         /// </summary>
         public bool IsInscribing => inscribing;
 
-        /// <summary>
-        /// What is on the board so far. The view writes to it as the
-        /// player types and refuses anything past the word count, so
-        /// the field can never hold a line the plaque could not.
+        /// <summary>True while the hero is stood at a finished stone
+        /// reading the board on it.</summary>
+        public bool IsReading => reading;
+
+        /// <summary>What is on the board so far.</summary>
+        public string EpitaphDraft => epitaphDraft;
+
+        /// <summary>How many words of the eight are left to him.
         /// </summary>
-        public string EpitaphDraft
-        {
-            get => epitaphDraft;
-            set
-            {
-                if (inscribing &&
-                    CemeteryEpitaph.IsWithinLimits(value))
-                {
-                    epitaphDraft = value ?? string.Empty;
-                }
-            }
-        }
+        public int EpitaphWordsLeft =>
+            CemeteryEpitaph.MaximumWords -
+            CemeteryEpitaph.CountWords(epitaphDraft);
 
         public CemeteryGravediggingPlan Plan =>
             job != null ? job.Plan : null;
@@ -235,6 +231,43 @@ namespace BarPromenade
 
             gravedigging.SetWorkSession(controller);
             return controller;
+        }
+
+        /// <summary>
+        /// Steps up to a finished board and reads it. The plaque
+        /// carries its words as real letters on the brass, so reading
+        /// is a camera move and not a panel — there is nothing to put
+        /// on screen that is not already on the stone.
+        /// </summary>
+        public bool TryBeginReading()
+        {
+            if (IsActive ||
+                !isActiveAndEnabled ||
+                job == null ||
+                !job.HasJob ||
+                interactor == null ||
+                cameraFollow == null ||
+                workCamera == null ||
+                SceneTransitionService.IsTransitioning)
+            {
+                return false;
+            }
+
+            if (!modalLock.TryCaptureAndDisable(
+                    interactor,
+                    cameraFollow,
+                    hud))
+            {
+                return false;
+            }
+
+            reading = true;
+            act = CemeteryGraveWorkStage.Sealed;
+            phase = CemeteryGraveWorkPhase.Entering;
+            pendingFeedbackKey = null;
+            heroHidden = visibility?.AcquireHidden(this);
+            BeginCameraBlend(CemeteryGraveWorkPhase.Entering);
+            return true;
         }
 
         /// <inheritdoc />
@@ -363,6 +396,17 @@ namespace BarPromenade
                 return;
             }
 
+            if (reading)
+            {
+                if (WasLeavePressed() || WasWorkPressed())
+                {
+                    reading = false;
+                    BeginLeaving();
+                }
+
+                return;
+            }
+
             if (inscribing)
             {
                 UpdateInscribing();
@@ -421,6 +465,7 @@ namespace BarPromenade
             RestoreCameraOwnership();
             pendingFeedbackKey = null;
             phase = CemeteryGraveWorkPhase.None;
+            reading = false;
             heroHidden?.Dispose();
             heroHidden = null;
             modalLock.Restore();
@@ -666,6 +711,7 @@ namespace BarPromenade
         private void UpdateStoneSetting(float deltaTime)
         {
             ApplyStonePose();
+            EnsurePlaque();
             if (spadeAnimator != null && spadeAnimator.IsStriking)
             {
                 return;
@@ -684,6 +730,12 @@ namespace BarPromenade
                 return;
             }
 
+            // The board is fitted the moment the stone is upright and
+            // not before: `Attach` measures the monument to find its
+            // face, and a stone still on its back measures to a
+            // different shape entirely — which left the plaque hanging
+            // in the air once it stood up.
+            EnsurePlaque();
             stroke.Advance(deltaTime);
             spadeAnimator?.SetSwing(stroke.Position);
             if (IsWorkHeld())
@@ -734,6 +786,26 @@ namespace BarPromenade
                 0f,
                 Mathf.Lerp(StoneLiftMeters, 0f, settle.Set01),
                 0f);
+        }
+
+        /// <summary>
+        /// Fits the board once the stone is standing. Measuring it
+        /// against a stone still on its back is what put the plaque in
+        /// mid-air, so this is deliberately not done at act start.
+        /// </summary>
+        private void EnsurePlaque()
+        {
+            if (sessionPlaque != null ||
+                borrowedStone == null ||
+                settle == null ||
+                settle.Phase == CemeteryStonePhase.Raising)
+            {
+                return;
+            }
+
+            sessionPlaque = CityCemeteryPlaqueWorldBuilder.Attach(
+                borrowedStone,
+                job.Plan);
         }
 
         /// <summary>Roughly where a blow would land on the top of the
@@ -895,17 +967,6 @@ namespace BarPromenade
             borrowedStone = job.LyingStone;
             settle = new CemeteryStoneSettleModel(
                 CemeteryStoneSettleSettings.Default);
-            // The board goes on before he is asked what to put on it:
-            // the shot walks round to the front of the monument, and a
-            // bare face there would be asking him to inscribe nothing.
-            if (borrowedStone != null)
-            {
-                sessionPlaque =
-                    CityCemeteryPlaqueWorldBuilder.Attach(
-                        borrowedStone,
-                        job.Plan);
-            }
-
             ApplyStonePose();
             TakeUpSpade();
         }
@@ -921,8 +982,60 @@ namespace BarPromenade
             inscribing = true;
             epitaphDraft = string.Empty;
             stroke.Cancel();
+            // The letters go on the brass as they are typed. There is
+            // no field and no panel to type into: the board is in
+            // front of him at arm's length and it is the board that
+            // fills up, which is the only presentation of this that is
+            // not a form.
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                keyboard.onTextInput += OnEpitaphTyped;
+            }
+
+            ShowDraftOnPlaque();
             // Round to the front rather than cut to it.
             BeginCameraBlend(CemeteryGraveWorkPhase.Entering);
+        }
+
+        /// <summary>
+        /// One character as the platform reports it, so layouts and
+        /// dead keys behave the way they do everywhere else. Anything
+        /// past the word count is simply not accepted — the board
+        /// stops filling rather than quietly trimming later.
+        /// </summary>
+        private void OnEpitaphTyped(char typed)
+        {
+            if (!inscribing || char.IsControl(typed))
+            {
+                return;
+            }
+
+            string next = epitaphDraft + typed;
+            if (!CemeteryEpitaph.IsWithinLimits(next))
+            {
+                return;
+            }
+
+            epitaphDraft = next;
+            ShowDraftOnPlaque();
+        }
+
+        /// <summary>Puts the half-written line on the brass.</summary>
+        private void ShowDraftOnPlaque()
+        {
+            sessionPlaque
+                ?.GetComponent<CemeteryPlaqueSurface>()
+                ?.ShowDraft(epitaphDraft);
+        }
+
+        private void StopListeningForText()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                keyboard.onTextInput -= OnEpitaphTyped;
+            }
         }
 
         /// <summary>
@@ -938,6 +1051,16 @@ namespace BarPromenade
                 return;
             }
 
+            if (keyboard.backspaceKey.wasPressedThisFrame &&
+                epitaphDraft.Length > 0)
+            {
+                epitaphDraft = epitaphDraft.Substring(
+                    0,
+                    epitaphDraft.Length - 1);
+                ShowDraftOnPlaque();
+                return;
+            }
+
             bool cut = keyboard.enterKey.wasPressedThisFrame ||
                        keyboard.numpadEnterKey.wasPressedThisFrame;
             bool leaveBlank =
@@ -946,6 +1069,8 @@ namespace BarPromenade
             {
                 return;
             }
+
+            StopListeningForText();
 
             if (cut &&
                 GameSessionState.TrySetGraveEpitaph(epitaphDraft) &&
@@ -1031,6 +1156,11 @@ namespace BarPromenade
         private void TearDownAct()
         {
             stroke.Cancel();
+            if (inscribing)
+            {
+                StopListeningForText();
+            }
+
             inscribing = false;
             epitaphDraft = string.Empty;
             lattice = null;
@@ -1056,6 +1186,25 @@ namespace BarPromenade
                 slings.Dismantle();
                 slings = null;
             }
+        }
+
+        /// <summary>
+        /// Where the board actually is: the session's own while an act
+        /// is running, the finished grave's once one is standing, and
+        /// a guess from the plan only when neither exists yet.
+        /// </summary>
+        private Vector3 GetBoardPosition()
+        {
+            if (sessionPlaque != null)
+            {
+                return sessionPlaque.transform.position;
+            }
+
+            Transform board = job.Plaque;
+            return board != null
+                ? board.position
+                : CityCemeteryPlaqueWorldBuilder.GetNominalSeat(
+                    job.Plan);
         }
 
         private void BeginLeaving()
@@ -1276,14 +1425,11 @@ namespace BarPromenade
             out Quaternion rotation,
             out float fieldOfView)
         {
-            if (inscribing)
+            if (inscribing || reading)
             {
                 CemeteryGraveWorkStance.EvaluatePlaqueCamera(
                     job.Plan,
-                    sessionPlaque != null
-                        ? sessionPlaque.transform.position
-                        : CityCemeteryPlaqueWorldBuilder
-                            .GetNominalSeat(job.Plan),
+                    GetBoardPosition(),
                     out position,
                     out rotation);
                 fieldOfView =

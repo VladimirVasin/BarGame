@@ -50,6 +50,24 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Shows a line that is still being typed, with a cut mark at
+        /// the end of it so the hero can see where he is. This is the
+        /// entire text-entry interface: the board fills up in front of
+        /// him and there is no field anywhere.
+        /// </summary>
+        public void ShowDraft(string draft)
+        {
+            if (epitaphLine == null)
+            {
+                return;
+            }
+
+            epitaphLine.text = string.IsNullOrEmpty(draft)
+                ? "_"
+                : draft + "_";
+        }
+
+        /// <summary>
         /// Sets the three lines from whatever the session currently
         /// holds. The first two are what nobody could tell him; the
         /// third falls back to a stated absence, because a blank line

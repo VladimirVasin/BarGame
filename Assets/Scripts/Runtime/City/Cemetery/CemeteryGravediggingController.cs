@@ -151,6 +151,11 @@ namespace BarPromenade
                 ? spade.GetComponent<CemeteryShovelAnimator>()
                 : null;
 
+        /// <summary>The board on the finished stone, for the shot
+        /// that reads it.</summary>
+        public Transform Plaque =>
+            plaque != null ? plaque.transform : null;
+
         /// <summary>The coffin waiting on its blocks, for the act that
         /// carries it to the hole.</summary>
         public Transform WaitingCoffin =>
@@ -663,9 +668,8 @@ namespace BarPromenade
             RaiseMound();
             if (stone == null && mound != null)
             {
-                stone = CityCemeterySealedGraveWorldBuilder.BuildStone(
-                    mound.transform,
-                    plan);
+                stone = CityCemeterySealedGraveWorldBuilder
+                    .BuildStandingStone(mound.transform, plan);
                 DestroyPart(ref lyingStone);
             }
 

@@ -104,6 +104,27 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   against four balance-point phases, and `FollowingTheBalancePointLandsIt`
   proves the intended play lands across three deadzones, three reaction delays
   and four phases — a window one reaction speed wide is not a mechanic.
+- **Five faults in the stone act, and two of them were mine at the root.**
+  The committed monument floated because it was placed by its authored parts
+  while the one in the hero's hands was placed by its own measured bounds —
+  two different rules for where a stone sits. `BuildStandingStone` now routes
+  the final one through the same `ApplyLyingPose` that seats it during the
+  act, so what he lets go of is what stays. The board showed its words back to
+  front because I turned the text a further half-circle on top of a board that
+  was already facing the reader: TextMeshPro lays its quads out with normals
+  of `(0, 0, -1)`, so a line is readable from its own local -Z and needs no
+  flip at all. The board hung in the air because `Attach` measures the stone
+  to find its face and I was calling it at act start — against a stone still
+  flat on the grass, whose bounds are a different shape entirely; it is now
+  fitted the moment the stone comes upright. `ApplyLyingPose` also stopped
+  letting the plaque vote on where the stone's foot is.
+- **No field to type into, and reading is a camera move.** The inscription is
+  taken straight off `Keyboard.onTextInput` and drawn on the brass as it
+  arrives, with a cut mark at the end; the only thing left on screen is one
+  bare hint line with the words remaining. `CemeteryPlaqueView` is deleted
+  outright — with real letters on the stone there is nothing to put on screen
+  that is not already on the grave — and `TryBeginReading` takes the modal
+  lock and brings the camera to the board instead.
 - **The plaque letters are TextMeshPro, not a hand-made font.** The user asked
   the obvious question — Minecraft signs just draw text onto a texture, and
   Russian works there — and they were right that nothing fundamental was in the

@@ -23,7 +23,15 @@ namespace BarPromenade
     {
         public const string RootName = "Sealed Grave";
         public const string MoundName = "Grave Mound";
+        /// <summary>
+        /// The monument as an object in the world: the mover whose
+        /// pivot every pose of it turns about. Its batched parts hang
+        /// under it with a name of their own, so a lookup for "the
+        /// monument" finds the thing that can be moved rather than the
+        /// geometry inside it.
+        /// </summary>
         public const string StoneName = "Grave Monument";
+        public const string StonePartsName = "Grave Monument Parts";
         public const string LyingStoneName = "Grave Monument Lying";
 
         /// <summary>
@@ -75,10 +83,32 @@ namespace BarPromenade
             GameObject root = BuildMound(parent, plan);
             if (root != null)
             {
-                BuildStone(root.transform, plan);
+                BuildStandingStone(root.transform, plan);
             }
 
             return root;
+        }
+
+        /// <summary>
+        /// The monument on its foot, seated by the same measurement
+        /// that seats it while it is being heaved up. That is the whole
+        /// point of routing it through here: a stone placed by its
+        /// authored parts and a stone placed by its own bounds do not
+        /// land in the same spot, and the difference shows as a jump —
+        /// or a float — at the instant the act commits.
+        /// </summary>
+        public static GameObject BuildStandingStone(
+            Transform parent,
+            CemeteryGravediggingPlan plan)
+        {
+            GameObject mover = BuildLyingStone(parent, plan);
+            if (mover != null)
+            {
+                mover.name = StoneName;
+                ApplyLyingPose(mover.transform, plan, 0f);
+            }
+
+            return mover;
         }
 
         /// <summary>
@@ -153,7 +183,7 @@ namespace BarPromenade
                 return null;
             }
 
-            Transform root = new GameObject(StoneName).transform;
+            Transform root = new GameObject(StonePartsName).transform;
             root.SetParent(parent, false);
             CityCemeteryWorldBuilder.BuildPartBatches(
                 root,
@@ -278,12 +308,23 @@ namespace BarPromenade
             float lowest = float.MaxValue;
             for (int index = 0; index < renderers.Length; index++)
             {
+                // The plaque rides the stone; it is not part of what
+                // decides where the stone's foot is.
+                if (renderers[index]
+                    .GetComponentInParent<CemeteryPlaqueSurface>() !=
+                    null)
+                {
+                    continue;
+                }
+
                 lowest = Mathf.Min(
                     lowest,
                     renderers[index].bounds.min.y);
             }
 
-            return lowest;
+            return lowest == float.MaxValue
+                ? mover.position.y
+                : lowest;
         }
 
         /// <summary>

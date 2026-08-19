@@ -177,7 +177,7 @@ namespace BarPromenade.Tests.EditMode
             "cemetery.soil.root",
             "cemetery.soil.spoil",
             "interaction.read_plaque",
-            "cemetery.plaque.title",
+            "cemetery.plaque.read.hint",
             "cemetery.plaque.name",
             "cemetery.plaque.years",
             "cemetery.plaque.words",

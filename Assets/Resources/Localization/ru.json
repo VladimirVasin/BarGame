@@ -1309,10 +1309,6 @@
       "value": "E — прочитать табличку"
     },
     {
-      "key": "cemetery.plaque.title",
-      "value": "Надгробная табличка"
-    },
-    {
       "key": "cemetery.plaque.name",
       "value": "Безымянный"
     },
@@ -1327,6 +1323,10 @@
     {
       "key": "cemetery.plaque.hint",
       "value": "Наберите строку.   Enter — вырезать,   Esc — оставить пустой"
+    },
+    {
+      "key": "cemetery.plaque.read.hint",
+      "value": "Esc или E — отойти"
     },
     {
       "key": "cemetery.plaque.empty",

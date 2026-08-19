@@ -57,9 +57,9 @@ namespace BarPromenade
         /// stone up onto it.</summary>
         public const string RaiseLabelKey =
             "cemetery.work.stone.raise";
-        public const string PlaqueTitleKey = "cemetery.plaque.title";
         public const string PlaqueWordsKey = "cemetery.plaque.words";
         public const string EmptyEpitaphKey = "cemetery.plaque.empty";
+        public const string ReadHintKey = "cemetery.plaque.read.hint";
 
         private const string EpitaphControlName = "grave-epitaph";
 
@@ -81,8 +81,6 @@ namespace BarPromenade
         private GUIStyle titleStyle;
         private GUIStyle labelStyle;
         private GUIStyle hintStyle;
-        private GUIStyle plaqueStyle;
-        private GUIStyle fieldStyle;
 
         public void Bind(
             CemeteryGraveWorkController controller,
@@ -96,7 +94,8 @@ namespace BarPromenade
         /// </summary>
         public bool Visible =>
             work != null &&
-            work.Phase == CemeteryGraveWorkPhase.Working;
+            (work.Phase == CemeteryGraveWorkPhase.Working ||
+             work.IsReading);
 
         /// <summary>
         /// The one place a kind of ground becomes a colour, so the map
@@ -139,9 +138,6 @@ namespace BarPromenade
 
             EnsureStyles();
             GUI.depth = -85;
-            // The field wants the keyboard, so the panel has to be a
-            // real control group rather than a painting.
-            GUI.enabled = true;
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
@@ -149,18 +145,13 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                if (work.IsInscribing)
+                if (work.IsReading)
                 {
-                    CreateLayout(
-                        out Rect plaquePanel,
-                        out _,
-                        out _,
-                        out _);
-                    RetroUiTheme.DrawPanel(
-                        plaquePanel,
-                        RetroUiTheme.Panel,
-                        RetroUiTheme.BorderMuted);
-                    DrawInscribing(plaquePanel);
+                    DrawReading();
+                }
+                else if (work.IsInscribing)
+                {
+                    DrawInscribing();
                 }
                 else
                 {
@@ -683,89 +674,46 @@ namespace BarPromenade
         // ---- the plaque ---------------------------------------
 
         /// <summary>
-        /// The board, as the hero is cutting it. Three lines: two he
-        /// was never told and one he has to find. The field is the only
-        /// place in the game a player writes anything, so it says
-        /// plainly how much room is left rather than silently refusing
-        /// the ninth word.
+        /// While the board is being cut there is no panel at all —
+        /// the words go on the brass in front of him, which is the
+        /// whole point. All that is left on screen is the line that
+        /// says how to finish and how much room is left, drawn bare
+        /// rather than in a frame so nothing sits between him and the
+        /// plaque.
         /// </summary>
-        private void DrawInscribing(Rect panel)
+        private void DrawInscribing()
         {
-            float inner = panel.width - (PanelPadding * 2f);
-            var title = new Rect(
-                panel.x + PanelPadding,
-                panel.y + PanelPadding,
-                inner,
-                TitleHeight);
+            var hint = new Rect(
+                (RetroUiTheme.LogicalWidth - PanelWidth) * 0.5f,
+                RetroUiTheme.LogicalHeight -
+                HintHeight -
+                PanelBottomMargin,
+                PanelWidth,
+                HintHeight);
             GUI.Label(
-                title,
-                LocalizationService.Get(PlaqueTitleKey),
-                titleStyle);
-
-            var name = new Rect(
-                panel.x + PanelPadding,
-                title.yMax + 3f,
-                inner,
-                12f);
-            GUI.Label(
-                name,
+                hint,
                 LocalizationService.Get(
-                    CemeteryEpitaph.UnknownNameKey),
-                plaqueStyle);
-            var years = new Rect(
-                panel.x + PanelPadding,
-                name.yMax,
-                inner,
-                12f);
-            GUI.Label(
-                years,
-                LocalizationService.Get(
-                    CemeteryEpitaph.UnknownYearsKey),
-                plaqueStyle);
+                    CemeteryGraveWorkController.PlaqueHintKey) +
+                "   " +
+                LocalizationService.Get(PlaqueWordsKey) +
+                " " +
+                work.EpitaphWordsLeft,
+                hintStyle);
+        }
 
-            var field = new Rect(
-                panel.x + PanelPadding,
-                years.yMax + 6f,
-                inner,
-                16f);
-            RetroUiTheme.DrawPanel(
-                field,
-                RetroUiTheme.PanelInset,
-                RetroUiTheme.Accent,
-                false,
-                1f,
-                1f);
-            GUI.SetNextControlName(EpitaphControlName);
-            string typed = GUI.TextField(
-                new Rect(
-                    field.x + 3f,
-                    field.y + 2f,
-                    field.width - 6f,
-                    field.height - 4f),
-                work.EpitaphDraft,
-                CemeteryEpitaph.MaximumCharacters,
-                fieldStyle);
-            work.EpitaphDraft = typed;
-            GUI.FocusControl(EpitaphControlName);
-
-            int left = CemeteryEpitaph.MaximumWords -
-                       CemeteryEpitaph.CountWords(work.EpitaphDraft);
+        /// <summary>One line saying how to step back. The board says
+        /// everything else.</summary>
+        private void DrawReading()
+        {
             GUI.Label(
                 new Rect(
-                    panel.x + PanelPadding,
-                    field.yMax + 1f,
-                    inner,
-                    11f),
-                LocalizationService.Get(PlaqueWordsKey) + " " + left,
-                labelStyle);
-            GUI.Label(
-                new Rect(
-                    panel.x + PanelPadding,
-                    panel.yMax - 15f,
-                    inner,
-                    12f),
-                LocalizationService.Get(
-                    CemeteryGraveWorkController.PlaqueHintKey),
+                    (RetroUiTheme.LogicalWidth - PanelWidth) * 0.5f,
+                    RetroUiTheme.LogicalHeight -
+                    HintHeight -
+                    PanelBottomMargin,
+                    PanelWidth,
+                    HintHeight),
+                LocalizationService.Get(ReadHintKey),
                 hintStyle);
         }
 
@@ -815,14 +763,6 @@ namespace BarPromenade
                 RetroUiTheme.Muted,
                 false,
                 true);
-            plaqueStyle = RetroUiTheme.CreateLabelStyle(
-                11,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale);
-            fieldStyle = RetroUiTheme.CreateLabelStyle(
-                11,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text);
         }
     }
 }
