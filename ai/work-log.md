@@ -6,6 +6,83 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-19 — The yard counts its empty places and the first grave is dug
+
+- **The cemetery is divided into burial plots.** `CityCemeteryPlan.Plots`
+  partitions the whole dressed interior at the grave pitch into `Occupied` /
+  `Vacant` / `Obstructed`. Default city: `168` plots on a `14 x 12` lattice
+  over `74 x 52 m` — `46` occupied, `60` vacant, `62` not burial ground
+  (`58` of those are the alleys and their margin, three the vegetation, one
+  the lodge). Plot geometry comes from `GraveDetailSalt` alone, so an empty
+  plot already knows where its future monument stands; the accept hash only
+  picks which clear cells are occupied today. Because that hash is now read
+  after the geometry test rather than before it, the standing graves are
+  unchanged: the SHA-256 of all `479` parts and `7` lamps matched the
+  pre-change build exactly.
+- **A vacant plot is a promise, and `MarkObstructedPlots` keeps it.** Trees
+  and bushes are planned around standing monuments only, so the pass runs
+  last and demotes any vacant plot the vegetation landed on; `ValidatePlots`
+  then throws if anything at grave height still overlaps one.
+- **The watchman has work to give.** `QuestId.DigTheGrave`. Talking to him
+  puts the offer up in place of the prompt — `E` takes it, `Q` refuses, and a
+  refusal costs nothing because the hole still needs digging. Taking it marks
+  out the nearest vacant plot to his own post with a pulsing plate and four
+  pegs; interacting with that digs the grave and completes the quest. State
+  lives in the quest log, so `CemeteryGravediggingController.Restore` puts the
+  marker or the finished hole back on every city build.
+- **The hole is a real hole.** The cemetery ground is not the continuous
+  terrain skin — `UsesContinuousTop` is false for `CemeteryGround`, so it is a
+  solid slab of boxes from the terrain floor to the soil top. Digging
+  subtracts the rectangle from `CreateSurfacePatches` and rebuilds the slab
+  (`CityCemeteryGroundExcavation`), which leaves a genuine rectangular void;
+  `CityCemeteryPitWorldBuilder` over-cuts by the collar thickness and refills
+  the ring with box-projected soil, so the walls carry true UVs instead of the
+  slab's planar ones smeared down a vertical face. An invisible cap over the
+  mouth keeps the hero out of a `1.6 m` pit he has no jump or climb to leave;
+  it is named and commented for removal the day he can climb.
+- **The twelve standing test failures were the tests.** Five ran against the
+  legacy blueprint for features only the shipped one has; three were stale
+  invariants (the driver's gaze eases back over the closing beat, a toilet
+  flush is `2.6 s`, the river surfaces cells no area declares); two compared
+  geometry more tightly than it can be computed (a 3D tangent on a graded
+  street reads a `1.5 m` lane offset as `1.4989`; `Mathf.Approximately` is a
+  `1e-6` relative test and a sidewalk lands two microns off a metre); two ate
+  the tin the stairwell cat has first claim on. One was the product:
+  `DayNightVisualSample.IsVisuallyEquivalentTo` compared quaternions bitwise,
+  so the first minute of dusk — identical in every colour, intensity and
+  factor — read as a change because `Quaternion.Slerp` renormalises. It now
+  compares within a hundredth of a degree. `CityBlueprintBuilder.From` gained
+  an id overload so a clone keeps its river and its area requirements.
+- **The pedestrian graph was starved, not over-pruned.** `FindTwoCore` is
+  deliberate and asserted, but it peels iteratively, so a single unjoined
+  pavement end unravels the street behind it. Two junction gaps left `70`
+  loose ends and cost `59%` of the graph — `880` of `2137` nodes, `138` of
+  `210` streets, and every signature stair. The `21` cul-de-sacs now close
+  across the head of the street (`TryConnectDeadEndCap`), and a junction
+  builds its mouth for any leg with no pavement rather than only for legs with
+  no road at all, which covers the `14` park-path legs. Loose ends fell to
+  `4`; every street keeps its pavement and all four stairs are walkable on all
+  three seeds checked. The cul-de-sac lane also stopped overshooting the head
+  by `3.65 m` into ground whose height cannot be sampled. This matters beyond
+  the NPCs: the hero's own walkable area is built from this graph.
+- **The cat's tin is borrowed, not taken.** The requirement left the inventory
+  before the feeding animation and was only committed at its loop phase, and
+  an abort in between — walking out of the stairwell, the cat failing to
+  start — spent it with the quest still active. Since the shop sells only
+  closed tins and nothing opens them, that stranded the reservation for good.
+  `CloseInternal` now refunds anything not yet committed, and
+  `CommitRequirement` spends it at the instant the cat has its head in the
+  tin, which is the same instant the quest closes.
+- **Verification.** Full EditMode `1257/1257` under `6000.5.5f1`, including
+  four new cemetery-plot and gravedigging contracts, four for the tin, and one
+  that walks the reservation across the cat quest's whole life. The dug grave
+  was also eyeballed through a headless `Camera.Render` capture. After the
+  `6000.5.9f1` upgrade only the two assemblies were recompiled; the suite has
+  not been re-run on the new editor.
+- **Unity `6000.5.9f1`.** The upgrade re-serialized nothing: only
+  `ProjectVersion.txt`, `ProjectAuditorSettings.asset` and the package lock
+  (`collab-proxy` `2.13.6`, `burst` `1.8.30`) moved. URP stays `17.5.0`.
+
 ## 2026-08-19 — And the boards start playing back
 
 - Sitting on either free park plank now starts a real game on that table.

@@ -4,7 +4,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
-- **Accepted:** Unity `6000.5.5f1` with URP `17.5.0`.
+- **Accepted:** Unity `6000.5.9f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
   in seven explicit build scenes.

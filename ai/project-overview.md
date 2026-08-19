@@ -3,7 +3,7 @@
 ## Current
 
 - Product name: **Барный Променад** (Bar Promenade).
-- Engine: Unity `6000.5.5f1`.
+- Engine: Unity `6000.5.9f1`.
 - Rendering: Universal Render Pipeline package `17.5.0` with one PC quality
   level and one PC render-pipeline profile. PC is the current and default
   quality at index `0` for every serialized platform key, has no platform
