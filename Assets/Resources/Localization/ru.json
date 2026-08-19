@@ -1203,6 +1203,38 @@
     {
       "key": "park.board.checkers.again.02",
       "value": "Расставляй — клавиша R."
+    },
+    {
+      "key": "interaction.gravedigging_offer",
+      "value": "«Могилу выкопать надо. Возьмёшься?»   E — берусь,   Q — не берусь"
+    },
+    {
+      "key": "interaction.dig_grave",
+      "value": "E — копать могилу"
+    },
+    {
+      "key": "cemetery.gravedigging.accepted",
+      "value": "Место я отметил. Лопату сам найдёшь."
+    },
+    {
+      "key": "cemetery.gravedigging.declined",
+      "value": "Как знаешь. Работа не убежит."
+    },
+    {
+      "key": "cemetery.gravedigging.done",
+      "value": "Готово. Ровнее, чем у прошлого."
+    },
+    {
+      "key": "quest.dig_grave.title",
+      "value": "Работа могильщика"
+    },
+    {
+      "key": "quest.dig_grave.description.active",
+      "value": "Сторож отметил свободное место на кладбище. Надо выкопать могилу."
+    },
+    {
+      "key": "quest.dig_grave.description.completed",
+      "value": "Могила выкопана. Сторож даже не поморщился."
     }
   ]
 }

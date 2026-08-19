@@ -117,6 +117,7 @@ namespace BarPromenade
             var interaction = trigger
                 .AddComponent<CemeteryWatchmanInteraction>();
             interaction.Initialize(stance.Position, citySeed);
+            presentation.Talk = interaction;
 
             GameLog.Info(
                 "city",

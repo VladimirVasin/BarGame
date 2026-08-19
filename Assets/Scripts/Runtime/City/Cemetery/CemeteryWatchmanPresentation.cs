@@ -29,6 +29,11 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public AnimationClip ActiveClip { get; private set; }
 
+        /// <summary>His talk stub, so whatever he has to say — a
+        /// snide line or a job — can be reached from the one handle
+        /// the factory hands back.</summary>
+        public CemeteryWatchmanInteraction Talk { get; internal set; }
+
         public void Initialize(
             CityPedestrianAssetRegistry registry,
             CemeteryWatchmanStance stance)

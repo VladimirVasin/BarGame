@@ -6,7 +6,13 @@ namespace BarPromenade
     public enum QuestId
     {
         None = 0,
-        FeedTheCat = 1
+        FeedTheCat = 1,
+
+        /// <summary>
+        /// The gravedigger's first job: the cemetery watchman marks
+        /// out a vacant plot and the hero digs the hole.
+        /// </summary>
+        DigTheGrave = 2
     }
 
     public enum QuestStatus
@@ -58,7 +64,12 @@ namespace BarPromenade
                 QuestId.FeedTheCat,
                 "quest.feed_cat.title",
                 "quest.feed_cat.description.active",
-                "quest.feed_cat.description.completed")
+                "quest.feed_cat.description.completed"),
+            new QuestDefinition(
+                QuestId.DigTheGrave,
+                "quest.dig_grave.title",
+                "quest.dig_grave.description.active",
+                "quest.dig_grave.description.completed")
         };
 
         private static readonly IReadOnlyList<QuestDefinition>

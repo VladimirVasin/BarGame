@@ -55,6 +55,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public CemeteryGravediggingController Gravedigging
+        {
+            get;
+            private set;
+        }
         public LakeFishermanPresentation LakeFisherman
         {
             get;
@@ -446,10 +451,27 @@ namespace BarPromenade
             // The gate lodge is attended: one snide old watchman at
             // his window post, eyes on the arch, answering every
             // "поговорить" with the next line of his repertoire.
+            CemeteryWatchmanPlan watchmanPlan =
+                CemeteryWatchmanPlan.Create(World.CemeteryPlan);
             CemeteryWatchman = CemeteryWatchmanFactory.Create(
                 transform,
-                CemeteryWatchmanPlan.Create(World.CemeteryPlan),
+                watchmanPlan,
                 GameSessionState.CitySeed);
+            // The hero works this yard for a living, and the old man
+            // at the gate has the only job going: a vacant plot near
+            // his own post, marked out on the ground the moment it is
+            // taken and a real hole in the ground once it is dug.
+            Gravedigging = CemeteryGravediggingController.Create(
+                transform,
+                CemeteryGravediggingPlan.Create(
+                    World.CemeteryPlan,
+                    watchmanPlan),
+                World.CemeteryGroundExcavation);
+            if (CemeteryWatchman != null &&
+                CemeteryWatchman.Talk != null)
+            {
+                CemeteryWatchman.Talk.AttachGravedigging(Gravedigging);
+            }
             // The boat station is not abandoned by everybody: one man
             // sits on the end of the мостки with his back to the shore
             // and answers about the water whether or not he was asked.

@@ -75,7 +75,8 @@ namespace BarPromenade
                 world,
                 layout,
                 settings,
-                out GameObject parkLawn);
+                out GameObject parkLawn,
+                out CityCemeteryGroundExcavation cemeteryExcavation);
             CityTerrainSafetyWorldBuilder.Build(
                 world,
                 layout);
@@ -156,6 +157,7 @@ namespace BarPromenade
                 openAreaDecorationPlan,
                 openAreaDecorationRoot,
                 cemeteryPlan,
+                cemeteryExcavation,
                 lakePlan,
                 decorationPlan,
                 decorationRoot,
@@ -167,12 +169,12 @@ namespace BarPromenade
             Transform parent,
             CityLayout layout,
             CityGenerationSettings settings,
-            out GameObject parkLawn)
+            out GameObject parkLawn,
+            out CityCemeteryGroundExcavation cemeteryExcavation)
         {
             Transform surfaces = new GameObject("City Surfaces").transform;
             surfaces.SetParent(parent, false);
             var lakeShore = new List<Bounds>();
-            var cemetery = new List<Bounds>();
             var water = new List<Bounds>();
             float terrainBottom =
                 layout.ElevationPlan.MinimumElevation - 0.32f;
@@ -213,9 +215,6 @@ namespace BarPromenade
                     {
                         case CitySurfaceKind.LakeShore:
                             lakeShore.Add(bounds);
-                            break;
-                        case CitySurfaceKind.CemeteryGround:
-                            cemetery.Add(bounds);
                             break;
                         case CitySurfaceKind.Water:
                             // The sea keeps its flat slab. The lake's
@@ -278,25 +277,23 @@ namespace BarPromenade
                     CityLakeSurfaceKind.Bank,
                     CityExteriorAppearance.LakeShore);
             }
-            if (cemetery.Count > 0)
-            {
-                // The cemetery slab gets the leaf-litter soil sheet the
-                // way roads get asphalt: planar world UVs at the soil
-                // pitch, tinted with the same colour it always had.
-                GameObject cemeteryGround =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
-                        "Cemetery Ground",
-                        surfaces,
-                        cemetery,
-                        CityExteriorAppearance.CemeteryGround,
-                        true,
-                        CityCemeterySurfaceAppearance.GetRecipe(
-                            CityCemeterySurfaceKind.Soil).MetersPerTile);
-                CityCemeterySurfaceAppearance.ApplyCombined(
-                    cemeteryGround.GetComponent<Renderer>(),
-                    CityCemeterySurfaceKind.Soil,
-                    CityExteriorAppearance.CemeteryGround);
-            }
+            // The cemetery slab is built apart from the other
+            // surfaces because it is the one ground in the city that
+            // changes after the world is built: a dug grave is a
+            // rectangle taken out of it and the slab comes back
+            // without that rectangle. The excavation register that
+            // owns those rebuilds rides on the surfaces root.
+            GameObject cemeteryGround =
+                CityCemeteryGroundWorldBuilder.Build(
+                    surfaces,
+                    layout,
+                    null);
+            cemeteryExcavation = cemeteryGround == null
+                ? null
+                : CityCemeteryGroundExcavation.Attach(
+                    surfaces.gameObject,
+                    layout,
+                    cemeteryGround);
             BuildCombinedBoxesIfAny(
                 "Water",
                 surfaces,

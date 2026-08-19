@@ -25,7 +25,8 @@ namespace BarPromenade
             CitySurfaceKind kind,
             Color color,
             bool applyGroundAppearance,
-            float? worldUvTileSize = null)
+            float? worldUvTileSize = null,
+            IReadOnlyList<Rect> excavations = null)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -39,6 +40,123 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(parent));
             }
 
+            Mesh mesh = CreateMesh(
+                name,
+                layout,
+                kind,
+                worldUvTileSize,
+                excavations);
+            if (mesh == null)
+            {
+                return null;
+            }
+
+            var result = new GameObject(name);
+            result.transform.SetParent(parent, false);
+            MeshFilter filter = result.AddComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            RuntimePrimitiveFactory.SetColor(renderer, color);
+            if (applyGroundAppearance)
+            {
+                CityExteriorAppearance.ApplyGroundSurface(renderer);
+            }
+
+            MeshCollider terrainCollider =
+                result.AddComponent<MeshCollider>();
+            terrainCollider.sharedMesh = mesh;
+            result.AddComponent<RuntimeGeneratedMeshOwner>()
+                .Initialize(mesh);
+            mesh.UploadMeshData(false);
+            return result;
+        }
+
+        /// <summary>
+        /// Re-skins a terrain surface built earlier with a different
+        /// set of excavations cut out of it. The renderer, its
+        /// property block and the place in the hierarchy all survive:
+        /// only the mesh under the filter and the collider is
+        /// replaced, and the one it replaces dies with it.
+        ///
+        /// This is what digging a grave does to the ground. The hole
+        /// is a rectangle missing from the skin, not a decal laid over
+        /// it.
+        /// </summary>
+        internal static bool TryRebuild(
+            GameObject target,
+            CityLayout layout,
+            CitySurfaceKind kind,
+            float? worldUvTileSize,
+            IReadOnlyList<Rect> excavations)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            MeshFilter filter = target.GetComponent<MeshFilter>();
+            if (filter == null)
+            {
+                return false;
+            }
+
+            Mesh mesh = CreateMesh(
+                target.name,
+                layout,
+                kind,
+                worldUvTileSize,
+                excavations);
+            if (mesh == null)
+            {
+                return false;
+            }
+
+            Mesh previous = filter.sharedMesh;
+            filter.sharedMesh = mesh;
+            MeshCollider collider = target.GetComponent<MeshCollider>();
+            if (collider != null)
+            {
+                collider.sharedMesh = mesh;
+            }
+
+            var owner =
+                target.GetComponent<RuntimeGeneratedMeshOwner>();
+            if (owner == null)
+            {
+                owner =
+                    target.AddComponent<RuntimeGeneratedMeshOwner>();
+            }
+
+            owner.Initialize(mesh);
+            mesh.UploadMeshData(false);
+            if (previous != null)
+            {
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(previous);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(previous);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The upward-facing skin of one surface kind, with the
+        /// authored stair and river cuts and any runtime excavations
+        /// subtracted. Null when the kind covers no ground at all.
+        /// </summary>
+        private static Mesh CreateMesh(
+            string name,
+            CityLayout layout,
+            CitySurfaceKind kind,
+            float? worldUvTileSize,
+            IReadOnlyList<Rect> excavations)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
@@ -63,7 +181,8 @@ namespace BarPromenade
 
                 List<Rect> patches = CreateSurfacePatches(
                     layout,
-                    surface);
+                    surface,
+                    excavations);
                 for (int patchIndex = 0;
                      patchIndex < patches.Count;
                      patchIndex++)
@@ -98,26 +217,7 @@ namespace BarPromenade
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(triangles, 0, true);
             mesh.RecalculateBounds();
-
-            var result = new GameObject(name);
-            result.transform.SetParent(parent, false);
-            MeshFilter filter = result.AddComponent<MeshFilter>();
-            filter.sharedMesh = mesh;
-            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-            RuntimePrimitiveFactory.SetColor(renderer, color);
-            if (applyGroundAppearance)
-            {
-                CityExteriorAppearance.ApplyGroundSurface(renderer);
-            }
-
-            MeshCollider terrainCollider =
-                result.AddComponent<MeshCollider>();
-            terrainCollider.sharedMesh = mesh;
-            result.AddComponent<RuntimeGeneratedMeshOwner>()
-                .Initialize(mesh);
-            mesh.UploadMeshData(false);
-            return result;
+            return mesh;
         }
 
         /// <summary>
@@ -148,7 +248,8 @@ namespace BarPromenade
 
         internal static List<Rect> CreateSurfacePatches(
             CityLayout layout,
-            CitySurfaceDescriptor surface)
+            CitySurfaceDescriptor surface,
+            IReadOnlyList<Rect> excavations = null)
         {
             if (layout == null)
             {
@@ -156,6 +257,21 @@ namespace BarPromenade
             }
 
             var patches = new List<Rect> { surface.WorldBounds };
+            // Runtime holes come out first. A dug grave is a rectangle
+            // missing from the skin exactly like an authored stair cut,
+            // and it has to survive everything the authored cuts do to
+            // the patch list afterwards.
+            if (excavations != null)
+            {
+                for (int index = 0; index < excavations.Count; index++)
+                {
+                    SubtractFromPatches(
+                        patches,
+                        excavations[index],
+                        surface.WorldBounds);
+                }
+            }
+
             for (int stairIndex = 0;
                  stairIndex < layout.ElevationPlan.SignatureStairs.Count;
                  stairIndex++)

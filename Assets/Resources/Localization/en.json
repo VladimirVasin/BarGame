@@ -1203,6 +1203,38 @@
     {
       "key": "park.board.checkers.again.02",
       "value": "Set them up — R."
+    },
+    {
+      "key": "interaction.gravedigging_offer",
+      "value": "“A grave wants digging. You up for it?”   E — I am,   Q — not today"
+    },
+    {
+      "key": "interaction.dig_grave",
+      "value": "E — dig the grave"
+    },
+    {
+      "key": "cemetery.gravedigging.accepted",
+      "value": "The plot is marked out. Find your own spade."
+    },
+    {
+      "key": "cemetery.gravedigging.declined",
+      "value": "Suit yourself. The work will keep."
+    },
+    {
+      "key": "cemetery.gravedigging.done",
+      "value": "Done. Straighter than the last man’s."
+    },
+    {
+      "key": "quest.dig_grave.title",
+      "value": "Gravedigger’s work"
+    },
+    {
+      "key": "quest.dig_grave.description.active",
+      "value": "The watchman marked out a vacant plot at the cemetery. I should dig the grave."
+    },
+    {
+      "key": "quest.dig_grave.description.completed",
+      "value": "The grave is dug. The watchman did not even wince."
     }
   ]
 }

@@ -21,6 +21,7 @@ namespace BarPromenade
             CityOpenAreaDecorationPlan openAreaDecorationPlan,
             GameObject openAreaDecorationRoot,
             CityCemeteryPlan cemeteryPlan,
+            CityCemeteryGroundExcavation cemeteryGroundExcavation,
             CityLakePlan lakePlan,
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
@@ -50,6 +51,8 @@ namespace BarPromenade
                     nameof(openAreaDecorationRoot));
             // Null when the blueprint carries no dressable cemetery.
             CemeteryPlan = cemeteryPlan;
+            // Null with it: no cemetery ground, nothing to dig into.
+            CemeteryGroundExcavation = cemeteryGroundExcavation;
             // Null when the blueprint carries no dressable lake.
             LakePlan = lakePlan;
             DecorationPlan = decorationPlan ??
@@ -80,6 +83,16 @@ namespace BarPromenade
         public CityOpenAreaDecorationPlan OpenAreaDecorationPlan { get; }
         public GameObject OpenAreaDecorationRoot { get; }
         public CityCemeteryPlan CemeteryPlan { get; }
+
+        /// <summary>
+        /// The register of holes cut out of the cemetery ground, and
+        /// the only sanctioned way to open a new one.
+        /// </summary>
+        public CityCemeteryGroundExcavation CemeteryGroundExcavation
+        {
+            get;
+        }
+
         public CityLakePlan LakePlan { get; }
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
