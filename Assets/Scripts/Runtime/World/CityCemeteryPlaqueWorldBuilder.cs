@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 
 namespace BarPromenade
@@ -48,15 +49,16 @@ namespace BarPromenade
         /// stone has been measured.</summary>
         public const float NominalSeatHeightMeters = 0.74f;
 
+        public const float PlateThicknessMeters = 0.010f;
+
+        /// <summary>Dull brass, and the near-black a stamped letter
+        /// reads as against it.</summary>
+        internal static readonly Color Plate =
+            new Color(0.55f, 0.49f, 0.28f);
+        internal static readonly Color Ink =
+            new Color(0.12f, 0.10f, 0.06f);
         internal static readonly Color Bezel =
             new Color(0.29f, 0.31f, 0.24f);
-
-        private static readonly int BaseMapId =
-            Shader.PropertyToID("_BaseMap");
-        private static readonly int BaseColorId =
-            Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId =
-            Shader.PropertyToID("_Color");
 
         /// <summary>
         /// Fixes a board to a stone that is already built, measuring
@@ -121,81 +123,118 @@ namespace BarPromenade
                     BezelThicknessMeters),
                 Bezel,
                 false);
+            root.AddComponent<CemeteryPlaqueSurface>();
             BuildPlate(root.transform, width, height);
-            root.AddComponent<CemeteryPlaqueSurface>().Refresh();
+            root.GetComponent<CemeteryPlaqueSurface>().Refresh();
             return root;
         }
 
         /// <summary>
-        /// The plate: one quad facing the reader, with its own UVs so
-        /// the stamping runs the right way up and the right way round.
+        /// The plate and the three lines standing on it.
+        ///
+        /// The words are real text rather than a picture of text: the
+        /// source face carries the whole Russian alphabet, so anything
+        /// a player can type has a letter, which a hand-drawn font
+        /// could only promise for the characters somebody remembered
+        /// to draw.
         /// </summary>
         private static void BuildPlate(
             Transform parent,
             float width,
             float height)
         {
-            var plate = new GameObject(PlateName);
-            plate.transform.SetParent(parent, false);
-            plate.transform.localPosition =
-                new Vector3(0f, 0f, -0.001f);
+            RuntimePrimitiveFactory.CreateBox(
+                PlateName,
+                parent,
+                new Vector3(0f, 0f, -PlateThicknessMeters * 0.5f),
+                new Vector3(width, height, PlateThicknessMeters),
+                Plate,
+                false);
 
-            float halfWidth = width * 0.5f;
-            float halfHeight = height * 0.5f;
-            var mesh = new Mesh { name = PlateName };
-            mesh.SetVertices(new[]
-            {
-                new Vector3(-halfWidth, -halfHeight, 0f),
-                new Vector3(-halfWidth, halfHeight, 0f),
-                new Vector3(halfWidth, halfHeight, 0f),
-                new Vector3(halfWidth, -halfHeight, 0f)
-            });
-            mesh.SetUVs(0, new[]
-            {
-                new Vector2(0f, 0f),
-                new Vector2(0f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(1f, 0f)
-            });
-            mesh.SetNormals(new[]
-            {
-                Vector3.back,
-                Vector3.back,
-                Vector3.back,
-                Vector3.back
-            });
-            mesh.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0);
-            mesh.RecalculateBounds();
-
-            plate.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var renderer = plate.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
-            renderer.shadowCastingMode = UnityEngine.Rendering
-                .ShadowCastingMode.Off;
-        }
-
-        /// <summary>
-        /// Hands one plate its stamped texture. Kept here so the
-        /// property names live beside the material that wants them.
-        /// </summary>
-        internal static void ApplyPlate(
-            Renderer renderer,
-            Texture2D stamp)
-        {
-            if (renderer == null || stamp == null)
+            var surface = parent.GetComponent<CemeteryPlaqueSurface>();
+            TMP_FontAsset font = CemeteryPlaqueFont.Get();
+            if (font == null)
             {
                 return;
             }
 
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, stamp);
-            properties.SetColor(BaseColorId, Color.white);
-            properties.SetColor(ColorId, Color.white);
-            renderer.SetPropertyBlock(properties);
+            // Laid out top to bottom on the plate's own face, each
+            // line in its own rect so none of them can push another
+            // off the brass.
+            TMP_Text name = CreateLine(
+                parent,
+                "Plaque Name",
+                font,
+                width,
+                height * 0.30f,
+                height * 0.29f,
+                CemeteryPlaqueSurface.NameSize,
+                false);
+            TMP_Text years = CreateLine(
+                parent,
+                "Plaque Years",
+                font,
+                width,
+                height * 0.22f,
+                height * 0.04f,
+                CemeteryPlaqueSurface.YearsSize,
+                false);
+            TMP_Text epitaph = CreateLine(
+                parent,
+                "Plaque Epitaph",
+                font,
+                width,
+                height * 0.40f,
+                -height * 0.24f,
+                CemeteryPlaqueSurface.EpitaphSize,
+                true);
+            surface.Bind(name, years, epitaph);
+        }
+
+        /// <summary>
+        /// One line of the board: a text mesh laid flat against the
+        /// plate, a hair proud of it so it never fights the brass for
+        /// the same pixels.
+        /// </summary>
+        private static TMP_Text CreateLine(
+            Transform parent,
+            string name,
+            TMP_FontAsset font,
+            float width,
+            float height,
+            float offsetY,
+            float size,
+            bool autoSize)
+        {
+            var line = new GameObject(name);
+            line.transform.SetParent(parent, false);
+            line.transform.localPosition = new Vector3(
+                0f,
+                offsetY,
+                -PlateThicknessMeters - 0.002f);
+            line.transform.localRotation =
+                Quaternion.Euler(0f, 180f, 0f);
+
+            var text = line.AddComponent<TextMeshPro>();
+            text.font = font;
+            text.fontSize = size;
+            text.color = Ink;
+            text.alignment = TextAlignmentOptions.Center;
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Truncate;
+            text.enableAutoSizing = autoSize;
+            if (autoSize)
+            {
+                text.fontSizeMin =
+                    CemeteryPlaqueSurface.EpitaphMinimumSize;
+                text.fontSizeMax = size;
+            }
+
+            text.rectTransform.sizeDelta =
+                new Vector2(width * 0.92f, height);
+            text.GetComponent<Renderer>().shadowCastingMode =
+                UnityEngine.Rendering.ShadowCastingMode.Off;
+            return text;
         }
 
         /// <summary>

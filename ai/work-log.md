@@ -104,6 +104,30 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   against four balance-point phases, and `FollowingTheBalancePointLandsIt`
   proves the intended play lands across three deadzones, three reaction delays
   and four phases — a window one reaction speed wide is not a mechanic.
+- **The plaque letters are TextMeshPro, not a hand-made font.** The user asked
+  the obvious question — Minecraft signs just draw text onto a texture, and
+  Russian works there — and they were right that nothing fundamental was in the
+  way. Two simpler paths existed and I had not said so: Unity's built-in font
+  renders Cyrillic (the whole UI proves it), and `Unity.TextMeshPro.dll` was
+  already compiled in `Library/ScriptAssemblies`, shipped inside
+  `com.unity.ugui` 2.5.0, merely unreferenced by our asmdef. The hand-authored
+  `5 x 7` font was a defensible choice — headlessly pixel-testable, no imported
+  binaries, exactly the PS1 look — but it was a choice, and its glyph shapes
+  were drawn blind.
+  Now: asmdef references `Unity.TextMeshPro`, TMP Essential Resources are
+  imported (`Assets/TextMesh Pro`, 79 files — the project's first imported
+  binary assets, and the price of this route), `Roboto-Regular.ttf` sits in
+  `Assets/Resources/Fonts` (Apache-2.0, taken from a Unity package this
+  project already pulls, and its cmap verified to carry all 64 of А-я plus Ё),
+  and `CemeteryPlaqueFont` builds a dynamic-atlas `TMP_FontAsset` from it at
+  runtime so no generated SDF asset is committed. The board's three lines are
+  world-space `TextMeshPro` objects laid on the plate, the epitaph auto-sizing
+  so any line the word limit allows fits. `CemeteryPlaqueTexture` and its
+  pixel tests are gone; what replaces them checks the face itself carries the
+  whole Russian alphabet, which is the thing that could quietly be swapped for
+  a Latin-only one.
+  Note what was lost: the old test proved ink actually reached the plate. TMP
+  renders through a graphics device, so that guarantee is now an eyeball one.
 - **One stone, a board really on it, and words really on the board.** Three
   faults in the first pass at act four, all of them visible at a glance.
   The session was building a second monument beside the one already lying by

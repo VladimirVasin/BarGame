@@ -360,8 +360,8 @@ Assets/
         CemeteryEpitaph.cs  the eight words a plaque holds, counted and cut
         CemeteryPlaqueReadInteraction.cs  the finished grave's board, read again
         (World) CityCemeteryPlaqueWorldBuilder.cs  the board, fitted to the stone's measured face
-        (World) CemeteryPlaqueTexture.cs  a 5x7 font, Cyrillic and Latin, stamped into brass
-        (World) CemeteryPlaqueSurface.cs  re-stamps the plate the moment the line is cut
+        (World) CemeteryPlaqueFont.cs  a runtime TMP font asset off a Cyrillic .ttf
+        (World) CemeteryPlaqueSurface.cs  the board's three lines, reset when the line is cut
         (UI) CemeteryPlaqueView.cs  the three lines the board actually says
         CemeteryShovelAnimator.cs  drive, lever, lift, dump — the only animated thing here
         CemeteryGraveTrestle.cs  two bearers, four slings, and the coffin pose they imply
