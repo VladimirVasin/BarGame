@@ -354,6 +354,10 @@ namespace BarPromenade
                 ownsCatPreparation = false;
                 ownsCatFeeding = true;
                 catFeedingStarted = true;
+                // The cat has its head in the tin: nothing after this
+                // can un-feed it, so the tin stops being refundable at
+                // the same instant the quest it was kept for is done.
+                targetInteraction.CommitRequirement();
                 GameSessionState.TryCompleteQuest(
                     QuestId.FeedTheCat);
                 return;

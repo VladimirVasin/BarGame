@@ -537,6 +537,10 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void FoodUse_ClearsFractionalHungerProgress()
         {
+            // A new game owes the stairwell cat a can, and a
+            // reserved can cannot be eaten. This test is about hunger
+            // arithmetic, so settle with the cat first.
+            GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             GameSessionState.UpdateNeeds(60, 0);
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
@@ -562,9 +566,73 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(26));
         }
 
+        /// <summary>
+        /// The cat's claim on the stew lasts exactly as long as the cat
+        /// is owed a tin: not a moment before the quest, and never again
+        /// once it has been fed.
+        /// </summary>
+        [Test]
+        public void StewReservation_LastsExactlyAsLongAsTheCatQuest()
+        {
+            Assert.That(
+                GameSessionState.IsQuestActive(QuestId.FeedTheCat),
+                Is.True,
+                "A new game opens owing the stairwell cat a tin.");
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan,
+                    2),
+                Is.True);
+            GameSessionState.UpdateNeeds(60, 0);
+
+            Assert.That(
+                GameSessionState.IsInventoryItemReservedForQuest(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            InventoryItemUseResult blocked =
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan);
+            Assert.That(blocked.Succeeded, Is.False);
+            Assert.That(
+                blocked.Status,
+                Is.EqualTo(InventoryItemUseStatus.ReservedForQuest));
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(2),
+                "A refused use costs nothing.");
+
+            // Feeding the cat ends the claim.
+            Assert.That(
+                GameSessionState.TryCompleteQuest(QuestId.FeedTheCat),
+                Is.True);
+            Assert.That(
+                GameSessionState.IsInventoryItemReservedForQuest(
+                    InventoryItemId.OpenStewCan),
+                Is.False);
+            Assert.That(
+                GameSessionState.TryConsumeInventoryItem(
+                    InventoryItemId.OpenStewCan).Succeeded,
+                Is.True);
+
+            // And nothing can hand the claim back afterwards.
+            Assert.That(
+                GameSessionState.TryActivateQuest(QuestId.FeedTheCat),
+                Is.False);
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.FeedTheCat),
+                Is.EqualTo(QuestStatus.Completed));
+            Assert.That(
+                GameSessionState.IsInventoryItemReservedForQuest(
+                    InventoryItemId.OpenStewCan),
+                Is.False);
+        }
+
         [Test]
         public void CheapFoodUse_StopsAtFloorAndKeepsUnusedItem()
         {
+            // As above: the cat's can is not the hero's to eat.
+            GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             GameSessionState.UpdateNeeds(60, 40);
             Assert.That(
                 GameSessionState.TryAddInventoryItem(

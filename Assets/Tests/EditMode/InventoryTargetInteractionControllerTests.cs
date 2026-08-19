@@ -216,6 +216,92 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(interactor.InputEnabled, Is.True);
         }
 
+        [Test]
+        public void AbandonedExecution_GivesTheRequirementBack()
+        {
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            var handler = new RecordingHandler(true, interactor);
+            BeginExecution(handler);
+
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.Zero,
+                "The requirement leaves the bag while the work runs.");
+
+            Assert.That(controller.AbortExecution(), Is.True);
+
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1),
+                "Work that never happened may not eat the item.");
+        }
+
+        [Test]
+        public void ClosingForTheHandler_GivesTheRequirementBack()
+        {
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            var handler = new RecordingHandler(true, interactor);
+            BeginExecution(handler);
+
+            // Walking out of the scene mid-animation takes this path.
+            Assert.That(controller.CloseForHandler(handler), Is.True);
+
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CommittedRequirement_IsSpentForGood()
+        {
+            Assert.That(
+                GameSessionState.TryAddInventoryItem(
+                    InventoryItemId.OpenStewCan),
+                Is.True);
+            var handler = new RecordingHandler(true, interactor);
+            BeginExecution(handler);
+
+            Assert.That(controller.CommitRequirement(), Is.True);
+            Assert.That(
+                controller.CommitRequirement(),
+                Is.False,
+                "There is nothing left to commit twice.");
+
+            Assert.That(controller.AbortExecution(), Is.True);
+
+            Assert.That(
+                GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.OpenStewCan),
+                Is.Zero,
+                "Once the work is past its point of no return the item " +
+                "is gone, however the session ends.");
+        }
+
+        private void BeginExecution(RecordingHandler handler)
+        {
+            Assert.That(
+                controller.Open(
+                    interactor,
+                    CreateDefinition(),
+                    handler),
+                Is.True);
+            controller.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+            Assert.That(controller.Confirm(), Is.True);
+            controller.SelectConfirmation(true);
+            Assert.That(controller.Confirm(), Is.True);
+            Assert.That(controller.IsExecuting, Is.True);
+        }
+
         private static InventoryTargetInteractionDefinition
             CreateDefinition()
         {

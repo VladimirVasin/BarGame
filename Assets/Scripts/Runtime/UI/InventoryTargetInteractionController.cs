@@ -36,6 +36,13 @@ namespace BarPromenade
         private int inputUnlockFrame;
         private bool handlerOwnsWork;
 
+        /// <summary>
+        /// The requirement has left the inventory and the interaction has
+        /// not yet reached the point where spending it means anything.
+        /// Until it does, every way out of here has to put it back.
+        /// </summary>
+        private bool requirementTaken;
+
         public static bool IsAnyOpen =>
             activeController != null && activeController.IsOpen;
         public bool IsInitialized { get; private set; }
@@ -114,6 +121,7 @@ namespace BarPromenade
             definition = interactionDefinition;
             handler = interactionHandler;
             handlerOwnsWork = false;
+            requirementTaken = false;
             model.Open();
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
@@ -178,7 +186,29 @@ namespace BarPromenade
             }
 
             handlerOwnsWork = false;
+            // An interaction that ran to its end spent what it took.
+            requirementTaken = false;
             return CloseInternal();
+        }
+
+        /// <summary>
+        /// Marks the requirement as spent for good, from the moment the
+        /// handler's work becomes irreversible — the cat has its tin open
+        /// in front of it and no abort can un-feed it. Before this the
+        /// item is only borrowed and comes back if the interaction is
+        /// abandoned; after it, it is gone.
+        ///
+        /// False when nothing was taken to commit.
+        /// </summary>
+        public bool CommitRequirement()
+        {
+            if (!requirementTaken)
+            {
+                return false;
+            }
+
+            requirementTaken = false;
+            return true;
         }
 
         public bool AbortExecution()
@@ -311,6 +341,7 @@ namespace BarPromenade
                 return;
             }
 
+            requirementTaken = true;
             try
             {
                 currentHandler.BeginInventoryInteraction();
@@ -318,17 +349,6 @@ namespace BarPromenade
             catch (Exception exception)
             {
                 Debug.LogException(exception, this);
-                if (!GameSessionState.TryAddInventoryItem(
-                        requirement.ItemId,
-                        requirement.Count))
-                {
-                    Debug.LogError(
-                        $"Could not refund {requirement.Count}x " +
-                        $"{requirement.ItemId} after target interaction " +
-                        "startup failed.",
-                        this);
-                }
-
                 AbortExecution();
             }
         }
@@ -347,6 +367,7 @@ namespace BarPromenade
         private bool CloseInternal()
         {
             bool hadState = IsOpen || modalLock.IsLocked;
+            RefundUncommittedRequirement();
             bool cleanupHandler =
                 model.State ==
                     InventoryTargetInteractionState.Executing &&
@@ -370,6 +391,37 @@ namespace BarPromenade
             }
 
             return hadState;
+        }
+
+        /// <summary>
+        /// Gives back what an abandoned interaction already took. The
+        /// requirement leaves the inventory before the handler starts its
+        /// work, so a close that never reached
+        /// <see cref="CommitRequirement"/> has to put it back. Without
+        /// this the item is simply gone, and anything waiting on the hero
+        /// still owning it — the cat's tin, and the quest reservation that
+        /// follows it — is stranded with no way to finish.
+        /// </summary>
+        private void RefundUncommittedRequirement()
+        {
+            if (!requirementTaken)
+            {
+                return;
+            }
+
+            requirementTaken = false;
+            InventoryItemRequirement requirement =
+                definition.Requirement;
+            if (!GameSessionState.TryAddInventoryItem(
+                    requirement.ItemId,
+                    requirement.Count))
+            {
+                Debug.LogError(
+                    $"Could not refund {requirement.Count}x " +
+                    $"{requirement.ItemId} after an abandoned target " +
+                    "interaction.",
+                    this);
+            }
         }
 
         private static void CancelPreparation(
