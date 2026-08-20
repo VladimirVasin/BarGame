@@ -256,6 +256,7 @@ namespace BarPromenade.Tests.EditMode
             "map.bus.route",
             "map.bus.stop",
             "map.bus.stop_legend",
+            "map.mountain.tunnel_closed",
             "bus.stop.default_coastal.industrial",
             "bus.stop.default_coastal.nightlife",
             "bus.stop.default_coastal.residential",

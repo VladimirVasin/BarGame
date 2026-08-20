@@ -66,6 +66,8 @@ namespace BarPromenade
                 RoadFencePlanner.CreatePlan(layout);
             RoadWalkableArea walkableArea =
                 RoadWalkableArea.FromLayout(layout);
+            CityMountainBoundaryPlan mountainBoundaryPlan =
+                CityMountainBoundaryPlanner.Create(layout);
             CityDecorationPlan decorationPlan =
                 CityDecorationPlanner.CreatePlan(
                     layout,
@@ -80,6 +82,15 @@ namespace BarPromenade
             CityTerrainSafetyWorldBuilder.Build(
                 world,
                 layout);
+            GameObject mountainBoundaryRoot =
+                CityMountainBoundaryWorldBuilder.Build(
+                    world,
+                    layout,
+                    mountainBoundaryPlan);
+            CityMountainBackdropWorldResult mountainBackdrop =
+                mountainBoundaryPlan.IsEnabled
+                    ? CityMountainBackdropWorldBuilder.Build(world)
+                    : null;
             BuildRoads(world, layout);
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
@@ -162,6 +173,9 @@ namespace BarPromenade
                 decorationPlan,
                 decorationRoot,
                 riverRoot,
+                mountainBoundaryPlan,
+                mountainBoundaryRoot,
+                mountainBackdrop,
                 bounds);
         }
 

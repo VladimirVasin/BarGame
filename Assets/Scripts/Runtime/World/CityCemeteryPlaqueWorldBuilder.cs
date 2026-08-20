@@ -247,7 +247,7 @@ namespace BarPromenade
             text.fontSize = size;
             text.color = Ink;
             text.alignment = TextAlignmentOptions.Center;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Truncate;
             // Every line shrinks to fit rather than being dropped:
             // `Truncate` on a line that does not fit renders nothing

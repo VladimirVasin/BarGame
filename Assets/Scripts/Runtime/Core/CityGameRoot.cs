@@ -698,7 +698,8 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 BusPlan,
-                World.LakePlan);
+                World.LakePlan,
+                World.MountainBoundaryPlan);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

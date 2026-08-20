@@ -24,6 +24,9 @@ namespace BarPromenade
         private const float MinimumMapCellPixels = 22f;
         private const float KeyboardPanSpeed = 116f;
         private const float MouseWheelStep = 18f;
+        private const float MountainTunnelMarkerWidth = 19f;
+        private const float MountainTunnelMarkerHeight = 17f;
+        private const float MountainTunnelMarkerEdgePadding = 3f;
 
         private readonly struct MapProjection
         {
@@ -142,6 +145,16 @@ namespace BarPromenade
             new Color32(26, 77, 103, 255);
         private static readonly Color RiverPromenade =
             new Color32(112, 106, 91, 255);
+        private static readonly Color MountainToe =
+            new Color32(112, 108, 96, 255);
+        private static readonly Color MountainOuter =
+            new Color32(72, 75, 70, 255);
+        private static readonly Color MountainHatch =
+            new Color32(90, 91, 82, 255);
+        private static readonly Color MountainTunnelThroat =
+            new Color32(25, 28, 27, 255);
+        private static readonly Color MountainTunnelGate =
+            new Color32(178, 139, 72, 255);
         private static readonly Color WorksBridge =
             new Color32(105, 116, 121, 255);
         private static readonly Color TimberBridge =
@@ -307,7 +320,7 @@ namespace BarPromenade
                     content.height);
 
                 mapViewport.Configure(
-                    controller.Layout.MapWorldXZBounds,
+                    controller.DisplayWorldXZBounds,
                     controller.Layout.NodeSpacing,
                     mapArea.size,
                     MinimumMapCellPixels);
@@ -315,7 +328,7 @@ namespace BarPromenade
                 {
                     mapViewport.CenterOnWorld(
                         controller.PlayerWorldPosition,
-                        controller.Layout.MapWorldXZBounds);
+                        controller.DisplayWorldXZBounds);
                     wasOpen = true;
                 }
 
@@ -372,10 +385,12 @@ namespace BarPromenade
             DrawSurfaces(projection);
             DrawAreaGrounds(projection);
             DrawRiver(projection);
+            DrawMountainBoundary(projection);
             DrawBuildings(projection);
             DrawRoads(projection);
             DrawRiverBridges(projection);
             DrawAreaOutlines(projection);
+            DrawMountainTunnel(projection);
             DrawLakeStation(projection);
             DrawBusRoute(projection);
             DrawRoute(projection);
@@ -385,6 +400,7 @@ namespace BarPromenade
             DrawBars(projection);
             DrawPlayerHome(projection);
             DrawPlayer(projection);
+            DrawMountainTunnelMarker(projection);
             DrawBusLegend();
             DrawAreaSelectionPass(projection);
         }
@@ -731,6 +747,322 @@ namespace BarPromenade
                     1f,
                     RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.72f));
             }
+        }
+
+        private void DrawMountainBoundary(MapProjection projection)
+        {
+            CityMountainBoundaryPlan plan =
+                controller.MountainBoundaryPlan;
+            if (plan == null || !plan.IsEnabled)
+            {
+                return;
+            }
+
+            // Carry the existing river colour through the deliberate gap in
+            // the south ridge before laying the mountain strokes over it.
+            if (plan.HasRiverNotch)
+            {
+                DrawSolidRect(
+                    ProjectWorldRect(
+                        projection,
+                        plan.RiverNotch.OpeningBounds),
+                    RiverWater);
+            }
+
+            for (int index = 0; index < plan.Ridges.Count; index++)
+            {
+                DrawMountainRidge(projection, plan.Ridges[index]);
+            }
+        }
+
+        private void DrawMountainRidge(
+            MapProjection projection,
+            CityMountainRidgeDescriptor ridge)
+        {
+            IReadOnlyList<CityMountainRidgeStation> stations =
+                ridge.Stations;
+            for (int index = 1; index < stations.Count; index++)
+            {
+                CityMountainRidgeStation first = stations[index - 1];
+                CityMountainRidgeStation second = stations[index];
+                Vector2 firstToe = projection.WorldToScreen(first.Toe);
+                Vector2 secondToe = projection.WorldToScreen(second.Toe);
+                Vector2 firstOuter = projection.WorldToScreen(
+                    first.OuterFoot);
+                Vector2 secondOuter = projection.WorldToScreen(
+                    second.OuterFoot);
+
+                DrawLine(
+                    firstOuter,
+                    secondOuter,
+                    3f,
+                    RetroUiTheme.Ink);
+                DrawLine(
+                    firstOuter,
+                    secondOuter,
+                    1f,
+                    MountainOuter);
+                DrawLine(firstToe, secondOuter, 1f, MountainHatch);
+                DrawLine(secondToe, firstOuter, 1f, MountainHatch);
+                DrawLine(
+                    firstToe,
+                    secondToe,
+                    4f,
+                    RetroUiTheme.Ink);
+                DrawLine(firstToe, secondToe, 2f, MountainToe);
+            }
+        }
+
+        private void DrawMountainTunnel(MapProjection projection)
+        {
+            CityMountainBoundaryPlan plan =
+                controller.MountainBoundaryPlan;
+            if (plan == null || !plan.IsEnabled || !plan.HasTunnel)
+            {
+                return;
+            }
+
+            CityMountainTunnelDescriptor tunnel = plan.Tunnel;
+            Rect throat = ProjectWorldRect(
+                projection,
+                CreateMountainTunnelThroatBounds(tunnel));
+            DrawSolidRect(throat, MountainTunnelThroat);
+            RetroUiTheme.StrokeRect(
+                throat,
+                1f,
+                RetroUiTheme.Ink);
+
+            if (!tunnel.IsSealed)
+            {
+                return;
+            }
+
+            Vector3 axis = FlattenMountainAxis(tunnel.Axis);
+            Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
+            Vector3 gateCenter = tunnel.PortalGroundCenter +
+                                 axis * tunnel.GateInset;
+            float gateHalfWidth = tunnel.OpeningWidth * 0.5f;
+            Vector2 gateStart = projection.WorldToScreen(
+                gateCenter - right * gateHalfWidth);
+            Vector2 gateEnd = projection.WorldToScreen(
+                gateCenter + right * gateHalfWidth);
+            DrawLine(
+                gateStart,
+                gateEnd,
+                5f,
+                RetroUiTheme.Ink);
+            DrawLine(
+                gateStart,
+                gateEnd,
+                3f,
+                MountainTunnelGate);
+
+            float crossHalfWidth = Mathf.Min(
+                1.45f,
+                tunnel.OpeningWidth * 0.22f);
+            const float crossHalfDepth = 1.05f;
+            Vector3 crossRight = right * crossHalfWidth;
+            Vector3 crossDepth = axis * crossHalfDepth;
+            DrawLine(
+                projection.WorldToScreen(
+                    gateCenter - crossRight - crossDepth),
+                projection.WorldToScreen(
+                    gateCenter + crossRight + crossDepth),
+                2f,
+                MountainTunnelGate);
+            DrawLine(
+                projection.WorldToScreen(
+                    gateCenter - crossRight + crossDepth),
+                projection.WorldToScreen(
+                    gateCenter + crossRight - crossDepth),
+                2f,
+                MountainTunnelGate);
+        }
+
+        private void DrawMountainTunnelMarker(MapProjection projection)
+        {
+            CityMountainBoundaryPlan plan =
+                controller.MountainBoundaryPlan;
+            if (plan == null || !plan.IsEnabled || !plan.HasTunnel)
+            {
+                return;
+            }
+
+            CityMountainTunnelDescriptor tunnel = plan.Tunnel;
+            Vector3 axis = FlattenMountainAxis(tunnel.Axis);
+            Vector3 gateCenter = tunnel.PortalGroundCenter +
+                                 axis * tunnel.GateInset;
+            Vector2 projectedCenter =
+                projection.WorldToScreen(gateCenter);
+            Rect marker = CreateMountainTunnelMarkerRect(
+                projectedCenter,
+                mapLineClipRect);
+
+            if (!mapLineClipRect.Contains(projectedCenter))
+            {
+                Vector2 direction = projectedCenter - marker.center;
+                if (direction.sqrMagnitude > 0.01f)
+                {
+                    DrawLine(
+                        marker.center,
+                        marker.center + direction.normalized * 16f,
+                        3f,
+                        MountainTunnelGate);
+                }
+            }
+
+            DrawSolidRect(marker, RetroUiTheme.Ink);
+            Rect mouth = new Rect(
+                marker.x + 2f,
+                marker.y + 2f,
+                marker.width - 4f,
+                marker.height - 4f);
+            DrawSolidRect(mouth, MountainTunnelThroat);
+
+            Vector2 leftBottom = new Vector2(
+                mouth.x + 1f,
+                mouth.yMax - 1f);
+            Vector2 leftShoulder = new Vector2(
+                mouth.x + 1f,
+                mouth.y + 4f);
+            Vector2 crown = new Vector2(
+                mouth.center.x,
+                mouth.y + 1f);
+            Vector2 rightShoulder = new Vector2(
+                mouth.xMax - 1f,
+                mouth.y + 4f);
+            Vector2 rightBottom = new Vector2(
+                mouth.xMax - 1f,
+                mouth.yMax - 1f);
+            DrawLine(
+                leftBottom,
+                leftShoulder,
+                2f,
+                MountainTunnelGate);
+            DrawLine(
+                leftShoulder,
+                crown,
+                2f,
+                MountainTunnelGate);
+            DrawLine(
+                crown,
+                rightShoulder,
+                2f,
+                MountainTunnelGate);
+            DrawLine(
+                rightShoulder,
+                rightBottom,
+                2f,
+                MountainTunnelGate);
+
+            Vector2 gateLeftTop = new Vector2(
+                mouth.x + 4f,
+                mouth.y + 6f);
+            Vector2 gateRightTop = new Vector2(
+                mouth.xMax - 4f,
+                mouth.y + 6f);
+            Vector2 gateLeftBottom = new Vector2(
+                gateLeftTop.x,
+                mouth.yMax - 2f);
+            Vector2 gateRightBottom = new Vector2(
+                gateRightTop.x,
+                mouth.yMax - 2f);
+            DrawLine(
+                gateLeftTop,
+                gateRightBottom,
+                2f,
+                MountainTunnelGate);
+            DrawLine(
+                gateRightTop,
+                gateLeftBottom,
+                2f,
+                MountainTunnelGate);
+
+            RegisterHoverTarget(
+                Rect.MinMaxRect(
+                    marker.xMin - 2f,
+                    marker.yMin - 2f,
+                    marker.xMax + 2f,
+                    marker.yMax + 2f),
+                marker.center,
+                LocalizationService.Get(
+                    "map.mountain.tunnel_closed"),
+                LandmarkHoverPriority);
+        }
+
+        internal static Rect CreateMountainTunnelMarkerRect(
+            Vector2 projectedCenter,
+            Rect viewport)
+        {
+            float halfWidth = MountainTunnelMarkerWidth * 0.5f;
+            float halfHeight = MountainTunnelMarkerHeight * 0.5f;
+            float centerX = viewport.width >=
+                            MountainTunnelMarkerWidth +
+                            MountainTunnelMarkerEdgePadding * 2f
+                ? Mathf.Clamp(
+                    projectedCenter.x,
+                    viewport.xMin + halfWidth +
+                    MountainTunnelMarkerEdgePadding,
+                    viewport.xMax - halfWidth -
+                    MountainTunnelMarkerEdgePadding)
+                : viewport.center.x;
+            float centerY = viewport.height >=
+                            MountainTunnelMarkerHeight +
+                            MountainTunnelMarkerEdgePadding * 2f
+                ? Mathf.Clamp(
+                    projectedCenter.y,
+                    viewport.yMin + halfHeight +
+                    MountainTunnelMarkerEdgePadding,
+                    viewport.yMax - halfHeight -
+                    MountainTunnelMarkerEdgePadding)
+                : viewport.center.y;
+            return CreateCenteredRect(
+                new Vector2(centerX, centerY),
+                MountainTunnelMarkerWidth,
+                MountainTunnelMarkerHeight);
+        }
+
+        internal static Rect CreateMountainTunnelThroatBounds(
+            CityMountainTunnelDescriptor tunnel)
+        {
+            Vector3 axis = FlattenMountainAxis(tunnel.Axis);
+            Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
+            float halfWidth = tunnel.OpeningWidth * 0.5f;
+            Vector3 start = tunnel.PortalGroundCenter;
+            Vector3 end = start + axis * tunnel.ThroatDepth;
+            Vector3 startLeft = start - right * halfWidth;
+            Vector3 startRight = start + right * halfWidth;
+            Vector3 endLeft = end - right * halfWidth;
+            Vector3 endRight = end + right * halfWidth;
+            return Rect.MinMaxRect(
+                Mathf.Min(
+                    startLeft.x,
+                    startRight.x,
+                    endLeft.x,
+                    endRight.x),
+                Mathf.Min(
+                    startLeft.z,
+                    startRight.z,
+                    endLeft.z,
+                    endRight.z),
+                Mathf.Max(
+                    startLeft.x,
+                    startRight.x,
+                    endLeft.x,
+                    endRight.x),
+                Mathf.Max(
+                    startLeft.z,
+                    startRight.z,
+                    endLeft.z,
+                    endRight.z));
+        }
+
+        private static Vector3 FlattenMountainAxis(Vector3 direction)
+        {
+            direction.y = 0f;
+            return direction.sqrMagnitude <= 0.0001f
+                ? Vector3.back
+                : direction.normalized;
         }
 
         private void DrawOpenPublicPlaceLot(
@@ -2311,8 +2643,7 @@ namespace BarPromenade
 
         private MapProjection CreateProjection(Rect mapRect)
         {
-            CityLayout layout = controller.Layout;
-            Rect bounds = layout.MapWorldXZBounds;
+            Rect bounds = controller.DisplayWorldXZBounds;
             float minimumX = bounds.xMin;
             float maximumX = bounds.xMax;
             float minimumZ = bounds.yMin;

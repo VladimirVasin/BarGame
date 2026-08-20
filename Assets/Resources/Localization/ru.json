@@ -525,6 +525,10 @@
       "value": "Лодочная станция"
     },
     {
+      "key": "map.mountain.tunnel_closed",
+      "value": "Закрытый тоннель"
+    },
+    {
       "key": "map.area_at",
       "value": "{0} [{1}, {2}]"
     },

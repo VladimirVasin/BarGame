@@ -72,6 +72,22 @@ The vertical slice contains:
   shifting the eastern half one cell outward. It retains the full-width
   northern beach and sea strip. Active cells, roads and surfaces may form a
   connected sparse, non-rectangular footprint inside their map bounds;
+- one default-blueprint-only mountain boundary plan closes the physical west
+  and south edges with deterministic flat-shaded low-poly ridge strips whose
+  toes sample the authoritative terrain top. The south rim is split around a
+  dedicated river notch and around one `8 x 5.5 m` tunnel portal derived from
+  `yard-south-west-access`. Its short dark throat ends at a collidered metal
+  gate: it has no prompt, interaction, destination scene, transition or
+  addition to `RoadWalkableArea`. The north remains the open sea edge and the
+  east remains deliberately unbounded for a separate pass. One two-layer
+  camera-relative presentation shell adds only west/south ridge silhouette at
+  `39.4-43.2 m`, inside the unchanged `48 m` far plane; it keeps fixed world
+  azimuth and has no collider/light/navigation/world-bounds role. Physical
+  ridge chunks use one shared opaque `CityMountainPhysical` material with the
+  deterministic `CityMountainRockAlbedo`: matching forward/depth/depth-normal
+  passes dither the horizontal-distance handoff from `43 m` to `31 m`, retain
+  a `0.55` visibility floor beyond `12 m` and return to native Exp2 by `9 m`.
+  Portal, throat and gate pieces deliberately retain `RuntimePrimitiveLit`;
 - one immutable river contract splits that default urban envelope with a
   `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
   road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
@@ -688,7 +704,8 @@ The vertical slice contains:
   gameplay state. Completion, cancellation, transition, disable and destroy
   all restore the graph, neutral rig, kinematic bodies, disabled ragdoll
   colliders and ordinary contact shadow;
-- a full-screen city map projected from the blueprint's centered map bounds,
+- a full-screen city map projected from a display envelope seeded by the
+  blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
   beach, sea, river, promenade, lake-shore and cemetery surfaces and paths,
   plus separate map treatments for the Works, Mouth and timber bridges,
@@ -699,7 +716,14 @@ The vertical slice contains:
   marker shows its localized name in a bounded high-contrast tooltip. Public
   lots are drawn as open ground rather than buildings, and all landmark data
   comes directly from the canonical validated layout used by the world
-  builder. It also draws the canonical Route 01 loop as a blue ink-outlined
+  builder. It consumes `CityWorldResult.MountainBoundaryPlan`, expands its
+  display bounds only toward west and south, explicitly including the tunnel
+  throat, and draws each ridge as a toe-to-outer-foot hatch while carrying the
+  river through the southern notch. The closed portal uses a fixed `19 x 17`
+  high-contrast marker with a localized hover label; when its world position is
+  outside the scrolling viewport, the marker clamps to the visible edge as a
+  direction indicator. North and east keep the layout's original map maxima.
+  It also draws the canonical Route 01 loop as a blue ink-outlined
   line below the orange player itinerary, adds five numbered stop markers in
   the default layout with localized hover labels and keeps both symbols in a
   compact legend. The map deliberately has no live bus marker. With the

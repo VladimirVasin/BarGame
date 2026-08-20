@@ -129,7 +129,6 @@ namespace BarPromenade
         private bool reading;
         private string epitaphDraft = string.Empty;
         private float ropeCue;
-        private float tampCue;
 
         private bool cameraOwned;
         private CemeteryGraveWorkPhase cameraPhase;
@@ -869,7 +868,6 @@ namespace BarPromenade
             target = -1;
             strikeCount = 0;
             ropeCue = 0f;
-            tampCue = 0f;
             stroke.Cancel();
             switch (act)
             {

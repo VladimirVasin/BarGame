@@ -1,0 +1,43 @@
+{
+  "sheetSize": 1024,
+  "runtimeImportSize": 512,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityMountainRockAlbedo",
+      "grammar": "mountain_rock",
+      "resourcePath": "Textures/CityMountainRockAlbedo",
+      "meanLinearLuminance": 0.500334,
+      "albedoCompensation": 1.4065,
+      "brightnessError": 0.022466,
+      "metersPerTile": 6.0,
+      "smoothness": 0.025,
+      "metallic": 0.0,
+      "exposure": 0.686062,
+      "tints": {
+        "CityMountainBoundaryWorldBuilder.ForeRock": [
+          0.21,
+          0.235,
+          0.215
+        ],
+        "CityMountainBoundaryWorldBuilder.MidRock": [
+          0.255,
+          0.28,
+          0.255
+        ],
+        "CityMountainBoundaryWorldBuilder.HighRock": [
+          0.295,
+          0.32,
+          0.3
+        ]
+      },
+      "edgeDelta": 3.6416,
+      "seamRatio": 0.8399,
+      "contrast": 92,
+      "channelRatio": 1.0278,
+      "sha256": "C83131AA2D31F9BC3F84FED68A098E1F74458F6EC6DB933F695169D9F182A72E"
+    }
+  ]
+}

@@ -14,8 +14,24 @@ and water edge and four urban districts with four graph-separated bars. The
 default footprint also extends east to a
 reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
-access. The sparse footprint can be non-rectangular, and the same data-first
-area contract supports reordered urban areas. The runtime places one visually
+access. The default city now reads as a coastal basin: physical flat-shaded
+mountain ridges close only its western and southern edges, with a separate
+southern notch left around the river. A sealed tunnel portal at the
+south-west Yard access is a visible future-location placeholder only — it
+adds no interaction, scene transition or walkable surface. A camera-relative
+west/south ridge shell keeps that enclosing silhouette inside City's fixed
+`48 m` far plane without closing the northern sea or the deliberately
+untouched eastern horizon. Physical ridge chunks use one shared opaque
+`CityMountainPhysical` shader: a horizontal-distance dither hands the backdrop
+to real rock from `43 m` through `31 m`, while a `0.55` fog-visibility floor
+beyond `12 m` blends back to native Exp2 by `9 m`. Matching forward, depth and
+depth-normal passes prevent the real ridge from erasing the silhouette before
+it is readable; tunnel pieces remain ordinary `RuntimePrimitiveLit` geometry.
+The City map consumes that same mountain plan, expands its display only west
+and south, and draws the ridge toe/outer hatch, continued river notch and
+sealed tunnel gate without inventing a north or east boundary. The sparse
+footprint can be non-rectangular, and the same data-first area contract supports
+reordered urban areas. The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
 supermarket, instantiates the same modular low-poly 3D hero in all five gameplay
 roots, loads separate bar, supermarket, stairwell and home interiors, and
@@ -326,7 +342,10 @@ untouched: it does not dim daylight, wet surfaces or reach interior windows.
 Startup truth begins at `Assets/Scripts/Runtime/Scenes/MainMenuRoot.cs` and
 `Assets/Scripts/Runtime/Scenes/HomeOpeningController.cs`; generated-city truth
 continues from `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
-`Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; supermarket truth starts
+`Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; the default-city
+mountain rim starts at `CityMountainBoundaryPlanner.cs` and materializes
+through `CityMountainBoundaryWorldBuilder.cs` plus the presentation-only
+`CityMountainBackdropWorldBuilder.cs`; supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
 `Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,

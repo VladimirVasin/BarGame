@@ -23,6 +23,7 @@ Assets/
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Textures/
       CityGroundSoilAlbedo.png     generated compacted-soil ground; 512 runtime, Repeat/mips
+      CityMountainRockAlbedo.png   deterministic weathered rock; 512 runtime, Repeat/mips
       CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
       CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
       CityRoadMarkingAlbedo.png    generated worn white traffic-paint material tile
@@ -40,6 +41,8 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      CityMountainBackdrop.shader camera-relative west/south silhouette inside the 48 m cap
+      CityMountainPhysical.shader shared opaque ridge handoff, fog floor + matching depth passes
       CityRiverWater.shader      quantized animated river flow with night/rain response
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
@@ -195,6 +198,13 @@ Assets/
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
         CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
         CityTerrainSurfaceWorldBuilder.cs triangulated terrain meshes + matching mesh colliders
+        CityMountainBoundaryPlan.cs default-only west/south ridges, river notch + sealed tunnel contract
+        CityMountainBoundaryPlanner.cs deterministic terrain-sampled boundary materialization plan
+        CityMountainBoundaryValidator.cs side/opening/tunnel invariants
+        CityMountainBoundaryMeshFactory.cs flat-shaded physical ridge and portal-frame meshes
+        CityMountainBoundaryWorldBuilder.cs physical ridges, approach, portal, throat + collidered gate
+        CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
+        CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
@@ -513,6 +523,8 @@ Assets/
       CityBusDriverDoorTimelineTests.cs phase, contact + chunk-independent samples
       CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
+      CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
+      CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake identity, clearance and determinism
@@ -574,6 +586,8 @@ ArtSource/
   Stairwell/
     Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
   City/
+    mountain-contact-sheet.png    deterministic physical-ridge albedo review sheet
+    mountain-textures.json        generated mountain texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     generated park chess-set .blend and the six-silhouette review row
   Home/                          apartment albedo contract, manifest and contact sheet
@@ -594,6 +608,7 @@ tools/
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
   build-city-park-textures.py       deterministic park surface albedos (ground, objects and landmark materials) + validator
+  build-city-mountain-textures.py   deterministic weathered-rock albedo + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/
@@ -625,6 +640,13 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> split 16-cell centered park
                                           -> north-edge beach + water
                                           -> default eastern Lake/Cemetery areas
+                                          -> default mountain boundary plan
+                                             -> physical west/south ridges
+                                                -> shared opaque physical shader
+                                                -> 43-31 m dither handoff + fog floor
+                                             -> south river notch
+                                             -> sealed south-west tunnel stub
+                                             -> camera-relative west/south backdrop
                                           -> CityLayoutGenerator -> validated CityLayout
                                            -> 13x12 envelope preserving 144 lots
                                            -> four UrbanBuilt areas + central park
@@ -654,6 +676,8 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> district-aware CityMap
                                                 -> clipped readable viewport
                                                 -> independent X/Y pan when overflowing
+                                                -> mountain plan hatch/notch/sealed gate
+                                                -> display bounds grow west/south only
                                            -> RoadFencePlanner
                                               -> water/unmapped/map-boundary rails
                                               -> true degree-one Street caps

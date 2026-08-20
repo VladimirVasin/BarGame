@@ -26,6 +26,9 @@ namespace BarPromenade
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
             GameObject riverRoot,
+            CityMountainBoundaryPlan mountainBoundaryPlan,
+            GameObject mountainBoundaryRoot,
+            CityMountainBackdropWorldResult mountainBackdrop,
             Bounds bounds)
         {
             Root = root;
@@ -61,6 +64,11 @@ namespace BarPromenade
                 ? decorationRoot
                 : throw new ArgumentNullException(nameof(decorationRoot));
             RiverRoot = riverRoot;
+            MountainBoundaryPlan = mountainBoundaryPlan ??
+                throw new ArgumentNullException(
+                    nameof(mountainBoundaryPlan));
+            MountainBoundaryRoot = mountainBoundaryRoot;
+            MountainBackdrop = mountainBackdrop;
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
@@ -97,6 +105,9 @@ namespace BarPromenade
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public GameObject RiverRoot { get; }
+        public CityMountainBoundaryPlan MountainBoundaryPlan { get; }
+        public GameObject MountainBoundaryRoot { get; }
+        public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public Bounds Bounds { get; }
 
         public bool TryGetBar(string barId, out BarEntrance entrance)

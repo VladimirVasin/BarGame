@@ -39,6 +39,45 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   deterministic runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
+- **Accepted — The coastal basin closes only west and south:**
+  `CityMountainBoundaryDefinition` opts in only `default-coastal`; custom and
+  legacy layouts receive `CityMountainBoundaryPlan.Empty` instead of acquiring
+  scenery from coincidentally named cells. The planner derives flat-shaded
+  physical ridges from the stable west/south perimeter Yards and samples every
+  toe from `CityTerrainSurfacePlan`. South is explicitly split around both the
+  river corridor and the portal opening, and a diagonal south-west strip closes
+  the otherwise empty `(-1,-1)` corner. The west ridge tapers toward the
+  northern beach; north remains the sea and east is deliberately untouched.
+  The physical ridge chunks use one shared opaque `CityMountainPhysical`
+  material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
+  owns collision, while the tall rear mass casts no huge distant shadow. A
+  screen-space dither uses horizontal camera distance so the camera-relative
+  silhouette yields to physical coverage over `43-31 m` instead of being
+  erased by an almost fully fogged opaque depth write. The shader holds a
+  `0.55` visibility floor beyond `12 m`, blends back to native City Exp2 by
+  `9 m`, and repeats the identical clip contract in `DepthOnly` and
+  `DepthNormalsOnly`. Portal frame, throat, gate and approach remain ordinary
+  `RuntimePrimitiveLit` pieces because they are close-range props, not part of
+  the silhouette handoff.
+  The one portal is derived from `yard-south-west-access`: an approximately
+  `8 x 5.5 m` opening, short dark rock throat and visible metal gate with a
+  collider. It is a sealed future-location stub, not a gameplay tunnel: there
+  is no prompt, interaction component, `SceneIds` entry, transition target or
+  `RoadWalkableArea` expansion.
+  Because ordinary geometry at the fixed `48 m` plane disappears into City's
+  `0.070` Exp2 fog, a separate presentation-only two-layer shell sits at
+  `39.4-43.2 m`. `CityMountainBackdropFollower` copies camera translation but
+  never rotation, so west/south remain world directions while finite-radius
+  parallax cannot expose the shell. Its shader skips Unity distance fog and
+  bakes one restrained mix with `RuntimeSceneSetup.CityFogColor`; the shell
+  has no collider, Light, shadow, probe, navigation, map or `CityWorldResult`
+  bounds role. It contains only west and south sectors, repeats the river-axis
+  notch in both layers, leaves north and east open, and does not change fog,
+  grade or far clip. The schematic map does not consume this presentation
+  shell; it consumes `CityWorldResult.MountainBoundaryPlan`, expands display
+  bounds only at the west/south minima, and renders the physical toe/outer-foot
+  hatch, river continuation and sealed tunnel gate. The layout's north/east
+  maxima remain exact.
 - **Accepted — Water is a surface the engine does not ship:** Unity has a
   full water system, but only in HDRP; URP 17 has no official water package
   and Unity's own URP samples author water as an ordinary Shader Graph.
@@ -206,8 +245,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   slots, pedestrians and debug teleports read the elevation or terrain sampler
   rather than adding an absolute Y.
   Declared bridge decks may cross non-walkable water and river stairs may
-  reach their own lower platforms. Tunnels and overlapping walkable levels at
-  the same XZ projection remain outside this navigation architecture.
+  reach their own lower platforms. Traversable tunnels and overlapping
+  walkable levels at the same XZ projection remain outside this navigation
+  architecture.
   Street intersections and stop pads are level. Between their `4 m` setbacks,
   oriented road/sidewalk strips may grade up to `6%` for Street/Route 01 and
   `8.3%` for pedestrian ParkPath. The bus route excludes non-bus transitions,
@@ -1476,6 +1516,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   itinerary: POIs independently own nearby Route 01 stop targets, but the
   landmark markers do not change bar
   selection or player pathfinding.
+  The City composition also passes the already validated
+  `CityWorldResult.MountainBoundaryPlan` into the overlay. Map projection uses
+  a separate display envelope that may grow only to the physical western and
+  southern outer feet; it never extends the north/east maxima. Cross-hatched
+  toe-to-outer strips describe the ridge mass, the river colour continues
+  through the authored south notch, and the tunnel is a dark throat terminated
+  by a crossed gate rather than a selectable destination.
 - **Accepted — Shared-lock gameplay pause:** City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad

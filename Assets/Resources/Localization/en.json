@@ -525,6 +525,10 @@
       "value": "Boat station"
     },
     {
+      "key": "map.mountain.tunnel_closed",
+      "value": "Closed tunnel"
+    },
+    {
       "key": "map.area_at",
       "value": "{0} [{1}, {2}]"
     },

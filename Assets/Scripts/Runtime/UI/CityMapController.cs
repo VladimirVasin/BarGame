@@ -78,6 +78,8 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityMapController : MonoBehaviour
     {
+        private const float MountainMapPadding = 2f;
+
         private enum CommandType
         {
             ToggleMap,
@@ -167,6 +169,12 @@ namespace BarPromenade
         /// draws stand exactly where the player will find them.
         /// </summary>
         public CityLakePlan LakePlan { get; private set; }
+        public CityMountainBoundaryPlan MountainBoundaryPlan
+        {
+            get;
+            private set;
+        } = CityMountainBoundaryPlan.Empty;
+        public Rect DisplayWorldXZBounds { get; private set; }
         public IReadOnlyList<BuildingLot> MapObjects =>
             Layout?.BuildingLots ?? Array.Empty<BuildingLot>();
         public BuildingLot PlayerHome => Layout?.PlayerHome;
@@ -211,7 +219,8 @@ namespace BarPromenade
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
             CityBusPlan busPlan,
-            CityLakePlan lakePlan = null)
+            CityLakePlan lakePlan = null,
+            CityMountainBoundaryPlan mountainBoundaryPlan = null)
         {
             Layout = layout ?? throw new ArgumentNullException(nameof(layout));
             player = playerRuntime;
@@ -221,6 +230,11 @@ namespace BarPromenade
             areaRegions = CityMapAreaOverlayBuilder.Create(Layout);
             CollectMapAreaTargets();
             LakePlan = lakePlan;
+            MountainBoundaryPlan = mountainBoundaryPlan ??
+                                   CityMountainBoundaryPlan.Empty;
+            DisplayWorldXZBounds = CreateDisplayWorldXZBounds(
+                Layout.MapWorldXZBounds,
+                MountainBoundaryPlan);
             walkableArea = null;
 
             bars.Clear();
@@ -274,6 +288,67 @@ namespace BarPromenade
                 GameLog.Field(
                     "path_length",
                     CurrentPath.TotalLength));
+        }
+
+        internal static Rect CreateDisplayWorldXZBounds(
+            Rect layoutBounds,
+            CityMountainBoundaryPlan mountainBoundaryPlan)
+        {
+            if (mountainBoundaryPlan == null ||
+                !mountainBoundaryPlan.IsEnabled)
+            {
+                return layoutBounds;
+            }
+
+            float minimumX = layoutBounds.xMin;
+            float minimumZ = layoutBounds.yMin;
+            for (int index = 0;
+                 index < mountainBoundaryPlan.Ridges.Count;
+                 index++)
+            {
+                Rect ridgeBounds = mountainBoundaryPlan.Ridges[index].XZBounds;
+                minimumX = Mathf.Min(
+                    minimumX,
+                    ridgeBounds.xMin - MountainMapPadding);
+                minimumZ = Mathf.Min(
+                    minimumZ,
+                    ridgeBounds.yMin - MountainMapPadding);
+            }
+
+            if (mountainBoundaryPlan.HasRiverNotch)
+            {
+                Rect notchBounds =
+                    mountainBoundaryPlan.RiverNotch.OpeningBounds;
+                minimumX = Mathf.Min(
+                    minimumX,
+                    notchBounds.xMin - MountainMapPadding);
+                minimumZ = Mathf.Min(
+                    minimumZ,
+                    notchBounds.yMin - MountainMapPadding);
+            }
+
+            if (mountainBoundaryPlan.HasTunnel)
+            {
+                Rect tunnelBounds =
+                    CityMapView.CreateMountainTunnelThroatBounds(
+                        mountainBoundaryPlan.Tunnel);
+                minimumX = Mathf.Min(
+                    minimumX,
+                    tunnelBounds.xMin - MountainMapPadding);
+                minimumZ = Mathf.Min(
+                    minimumZ,
+                    tunnelBounds.yMin - MountainMapPadding);
+            }
+
+            // Mountains belong only to the west and south. Keeping these two
+            // maxima exact prevents their map presentation from inventing a
+            // northern or eastern boundary while still giving the physical
+            // outer feet enough room to remain legible.
+            return Rect.MinMaxRect(
+                minimumX,
+                minimumZ,
+                layoutBounds.xMax,
+                layoutBounds.yMax);
         }
 
         public void Initialize(

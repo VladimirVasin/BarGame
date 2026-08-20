@@ -6,6 +6,79 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-20 — The closed tunnel is readable on the scrolling map
+
+- Replaced the map-scale gate speck with a fixed `19 x 17` high-contrast
+  closed-portal marker and a localized hover label.
+- When the portal lies outside the current scroll viewport, the same marker
+  clamps to the visible edge and points toward it. The tunnel throat now
+  explicitly participates in the west/south-only display-bound expansion.
+- **Verification:** focused `CityMapMountainPresentationTests` passed `3/3`,
+  including fixed marker size, off-screen edge clamping and explicit tunnel
+  throat coverage without changing the north/east maxima.
+
+## 2026-08-20 — The mountain handoff stays visible and reaches the City map
+
+- Diagnosed the close-approach disappearance as a depth handoff, not camera
+  clipping: the opaque physical crest began hiding the camera-relative shell
+  while City's `0.070` Exp2 fog still left the replacement rock visually equal
+  to the fog colour.
+- Moved physical ridge chunks onto one shared opaque
+  `CityMountainPhysical` material. Its screen-space dither is driven by
+  horizontal camera distance and raises physical coverage over `43-31 m`;
+  distant rock keeps a `0.55` visibility floor beyond `12 m` and blends back to
+  native Exp2 by `9 m`. `DepthOnly` and `DepthNormalsOnly` repeat the same clip,
+  so no prepass can erase backdrop pixels that the forward pass did not draw.
+  The portal, throat, approach and sealed gate retain `RuntimePrimitiveLit`.
+- Passed `World.MountainBoundaryPlan` into the City map. Its presentation
+  envelope may expand only at the west and south minima, never the north/east
+  maxima. The view now hatches every ridge from toe to outer foot, continues
+  river blue through the south notch, and ends the tunnel throat at a crossed
+  sealed-gate mark.
+- **Verification:** focused `CityMapMountainPresentationTests` passed `2/2`.
+  Focused `CityMountainBoundaryTests` reported `5/6`: both new physical-handoff
+  and world-builder material/pass tests passed. The remaining
+  `LegacyAndCustomBlueprints_StayOptOut` failed during pre-existing
+  custom-layout setup in `CityElevationValidator` because the test river datum
+  is inconsistent; it did not reach mountain planning. Unity imported and
+  compiled `CityMountainPhysical.shader` without shader errors.
+
+## 2026-08-20 — The coastal city now sits inside a west/south mountain basin
+
+- Added an opt-in `CityMountainBoundaryPlan` for `default-coastal`. Its pure
+  planner and validator derive only West and South ridge strips from the
+  stable perimeter Yard IDs and authoritative terrain samples; legacy and
+  custom blueprints keep an empty plan. West tapers before the northern beach,
+  the south-west corner receives a diagonal join, North and East receive no
+  mountain descriptors, and the south rim owns a separate river notch.
+- Materialized the physical boundary as chunked flat-shaded low-poly rock.
+  The near toe owns collision; the tall rear mass is presentation-only and
+  casts no large distant shadows. One dedicated deterministic weathered-rock
+  sheet, `CityMountainRockAlbedo`, is generated and validated by
+  `tools/build-city-mountain-textures.py`, then applied through MPBs on the
+  shared primitive material.
+- Derived one south-west portal from `yard-south-west-access`: an approximately
+  `8 x 5.5 m` rock opening, worn approach, short dark throat and a visible
+  collidered metal gate. It is intentionally sealed. No interaction, prompt,
+  scene ID, transition target or walkable-mask contribution was added.
+- Added a separate two-layer camera-relative ridge shell at `39.4-43.2 m` for
+  only the world-west and world-south sectors. It follows camera translation
+  without rotation, contributes no collision, light, shadow, map, navigation
+  or City result bounds, keeps the river-axis gorge open, and uses a dedicated
+  shader that mixes the authored silhouette with City's haze instead of
+  applying distance fog again. The
+  existing `0.070` Exp2 fog and `48 m` far clip remain unchanged.
+- Integrated the physical boundary and backdrop into `CityWorldBuilder` while
+  retaining the original gameplay bounds and walkable area.
+- **Verification:** `python tools/build-city-mountain-textures.py --verify`
+  passed the deterministic sheet contract (`2.2%` brightness error,
+  `0.84x` seam ratio). Unity `6000.5.9f1` imported and compiled the runtime,
+  EditMode fixture and backdrop shader without errors after one NUnit syntax
+  correction. The intended focused fixture did not execute: the second and
+  final fast-mode invocation accepted `-quit` immediately after refresh, so
+  it produced no results XML. A rendered day/night boundary review was not
+  run in batch mode and remains the manual visual check.
+
 ## 2026-08-20 — Waking is four beats, and none of them is a roll
 
 - **The user watched it and said it was still wrong, then said exactly what he
