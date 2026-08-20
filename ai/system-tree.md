@@ -348,6 +348,9 @@ Assets/
         CemeteryGraveWorkStage.cs  the monotone ladder the whole worksite is rebuilt from
         CemeteryGravediggingPlan.cs  hole, spoil, lamp seat, heading + the stone this plot will wear
         CemeteryGravediggingController.cs  the four acts, their world, restore and the wage
+        CemeteryGravediggingRegister.cs  every grave he has going at once + the next offer
+        CemeteryGraveWorkLedger.cs  the book of work: one rung and one epitaph per plot
+        ICemeteryWorkGiver.cs  what the watchman's window speaks for: one grave or the yard
         CemeteryGraveDigSiteInteraction.cs  one staged worksite stub: dig, lower, fill, set
         ICemeteryGraveWorkSession.cs  the seam that lets an act be earned instead of pressed
         CemeteryGraveWorkController.cs  the modal session: camera, hero lease, input, commit

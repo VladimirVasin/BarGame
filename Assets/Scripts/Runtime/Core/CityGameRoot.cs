@@ -55,7 +55,7 @@ namespace BarPromenade
             get;
             private set;
         }
-        public CemeteryGravediggingController Gravedigging
+        public CemeteryGravediggingRegister Gravedigging
         {
             get;
             private set;
@@ -463,14 +463,16 @@ namespace BarPromenade
                 watchmanPlan,
                 GameSessionState.CitySeed);
             // The hero works this yard for a living, and the old man
-            // at the gate has the only job going: a vacant plot near
-            // his own post, marked out on the ground the moment it is
-            // taken and a real hole in the ground once it is dug.
-            Gravedigging = CemeteryGravediggingController.Create(
+            // at the gate has the only work going: vacant plots near
+            // his own post, handed over one at a time and marked out
+            // on the ground the moment they are taken. The register
+            // stands every grave he has already sent the hero to back
+            // up as well — a hole left half dug and a stone standing
+            // over a finished one both survive a trip indoors.
+            Gravedigging = CemeteryGravediggingRegister.Create(
                 transform,
-                CemeteryGravediggingPlan.Create(
-                    World.CemeteryPlan,
-                    watchmanPlan),
+                World.CemeteryPlan,
+                watchmanPlan,
                 World.CemeteryGroundExcavation);
             if (CemeteryWatchman != null &&
                 CemeteryWatchman.Talk != null)
@@ -626,9 +628,14 @@ namespace BarPromenade
             SpeechBubbles.Initialize(camera);
             // Every act of the gravedigger's job is now a piece of
             // work rather than a press. Raised here rather than beside
-            // the job itself because it takes the camera down onto the
-            // hole and leases the hero out of sight while he digs, and
-            // neither of those exists until this far down.
+            // the jobs themselves because it takes the camera down onto
+            // the hole and leases the hero out of sight while he digs,
+            // and neither of those exists until this far down. One
+            // session serves the whole yard: it binds to whichever
+            // grave the hero is standing over, and to the board of
+            // whichever finished stone he stops to read — reading is a
+            // camera move rather than a panel, because the words are
+            // real letters on the brass.
             GraveWork = CemeteryGraveWorkController.Create(
                 transform,
                 Gravedigging,
@@ -637,15 +644,6 @@ namespace BarPromenade
                 camera,
                 intoxicationHud,
                 ui.transform);
-            // Reading the board on a finished stone is a camera move
-            // rather than a panel: the words are real letters on the
-            // brass, so there is nothing to put on screen that is not
-            // already on the grave.
-            if (Gravedigging != null && GraveWork != null)
-            {
-                Gravedigging.PlaqueRead += () =>
-                    GraveWork.TryBeginReading();
-            }
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.
             ParkQuarrel = CityParkQuarrelController.Create(

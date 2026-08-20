@@ -14,11 +14,18 @@ namespace BarPromenade
     public interface ICemeteryGraveWorkSession
     {
         /// <summary>
-        /// Opens the work for one act. True when the session took it,
-        /// and the caller must then leave the stage alone until the
-        /// session commits it. False when this act is not one the
-        /// session knows how to run, or one is already open.
+        /// Opens the work for one act on one grave. True when the
+        /// session took it, and the caller must then leave the stage
+        /// alone until the session commits it. False when this act is
+        /// not one the session knows how to run, or one is already
+        /// open.
+        ///
+        /// The grave is passed in rather than held: there are several
+        /// worksites in the yard at once and only one camera, so the
+        /// session belongs to whichever hole the hero is standing in.
         /// </summary>
-        bool TryBegin(CemeteryGraveWorkStage stage);
+        bool TryBegin(
+            CemeteryGravediggingController job,
+            CemeteryGraveWorkStage stage);
     }
 }

@@ -742,6 +742,279 @@ namespace BarPromenade.Tests.EditMode
                 "He is back to being the same old man.");
         }
 
+        [Test]
+        public void TheWatchmanGivesGraveAfterGraveUpToWhatAManHolds()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingRegister register =
+                CreateRegister(job, out _);
+            CemeteryWatchmanInteraction watchman =
+                CreateWatchman(register);
+            PlayerInteractor interactor = CreateInteractor();
+
+            Assert.That(register.HasWork, Is.True);
+            Assert.That(register.CanOffer, Is.True);
+            Assert.That(
+                register.Pending.PlotId,
+                Is.EqualTo(job.Plan.Plot.StableId),
+                "The first hole is still the one nearest his post.");
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.NotStarted));
+
+            // He works outward from the lodge: every hole he hands
+            // over is a plot he has not signed over before, and none
+            // of them is nearer his post than the one before.
+            var plots = new List<string>();
+            var reach = new List<float>();
+            Vector3 post = job.Watchman.Stance.Position;
+            for (int index = 0;
+                 index < CemeteryGravediggingRegister.MaximumOpenJobs;
+                 index++)
+            {
+                Assert.That(register.CanOffer, Is.True);
+                CemeteryGravediggingController offered =
+                    register.Pending;
+                watchman.Interact(interactor);
+                Assert.That(watchman.IsOffering, Is.True);
+                watchman.Interact(interactor);
+                Assert.That(watchman.IsOffering, Is.False);
+                Assert.That(offered.IsAccepted, Is.True);
+                Assert.That(offered.Site, Is.Not.Null);
+                plots.Add(offered.PlotId);
+                reach.Add(Planar(offered.Plan.Plot.Ground, post));
+                Assert.That(
+                    register.OpenJobCount,
+                    Is.EqualTo(index + 1));
+                Assert.That(
+                    GameSessionState.GetQuestStatus(
+                        QuestId.DigTheGrave),
+                    Is.EqualTo(QuestStatus.Active));
+            }
+
+            Assert.That(
+                plots.Distinct().Count(),
+                Is.EqualTo(plots.Count),
+                "He never sends two men to the same hole.");
+            for (int index = 1; index < reach.Count; index++)
+            {
+                Assert.That(
+                    reach[index],
+                    Is.GreaterThanOrEqualTo(reach[index - 1] - 0.001f),
+                    "The near ground goes first.");
+            }
+
+            // Three open holes are as much as he will let one man
+            // hold: the next word out of him is a quip, not a plot.
+            Assert.That(register.CanOffer, Is.False);
+            watchman.Interact(interactor);
+            Assert.That(watchman.IsOffering, Is.False);
+            Assert.That(
+                watchman.LastLineIndex,
+                Is.GreaterThanOrEqualTo(0));
+
+            // Closing one frees the hand it was in, and the log still
+            // carries the job because two holes are still open.
+            CemeteryGravediggingController first = register.Jobs[0];
+            for (int act = 0; act < 4; act++)
+            {
+                Assert.That(first.TryAdvance(), Is.True);
+            }
+
+            Assert.That(first.IsSealed, Is.True);
+            Assert.That(register.OpenJobCount, Is.EqualTo(2));
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Active));
+            Assert.That(register.CanOffer, Is.True);
+
+            // But the money comes before the next hole: he settles up
+            // for the one closed grave and offers only after that.
+            int wallet = GameSessionState.CashBalance;
+            watchman.Interact(interactor);
+            Assert.That(watchman.IsOffering, Is.False);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(
+                    wallet + CemeteryGravediggingController.Wage));
+            watchman.Interact(interactor);
+            Assert.That(watchman.IsOffering, Is.True);
+            Assert.That(watchman.Decline(), Is.True);
+
+            // Two graves closed at once are paid out as one sum.
+            wallet = GameSessionState.CashBalance;
+            for (int index = 1; index < 3; index++)
+            {
+                CemeteryGravediggingController other =
+                    register.Jobs[index];
+                for (int act = 0; act < 4; act++)
+                {
+                    Assert.That(other.TryAdvance(), Is.True);
+                }
+            }
+
+            Assert.That(register.OpenJobCount, Is.EqualTo(0));
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Completed),
+                "With no hole open the job is done - for now.");
+            Assert.That(register.IsOwedWages, Is.True);
+            watchman.Interact(interactor);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(
+                    wallet +
+                    (CemeteryGravediggingController.Wage * 2)),
+                "He counts out both graves at once.");
+            Assert.That(register.IsOwedWages, Is.False);
+
+            // And the yard is not finished with him: the next plot is
+            // there and taking it puts the same job back up in the log.
+            watchman.Interact(interactor);
+            Assert.That(watchman.IsOffering, Is.True);
+            watchman.Interact(interactor);
+            Assert.That(
+                GameSessionState.GetQuestStatus(QuestId.DigTheGrave),
+                Is.EqualTo(QuestStatus.Active));
+            Assert.That(
+                GameSessionState.GraveWork,
+                Has.Count.EqualTo(4));
+        }
+
+        [Test]
+        public void EveryGraveHeGaveComesBackOnTheNextCityBuild()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingRegister register =
+                CreateRegister(job, out _);
+
+            // One grave dug and left open, one closed and paid for.
+            Assert.That(register.TryAccept(), Is.True);
+            CemeteryGravediggingController opened = register.Jobs[0];
+            Assert.That(opened.TryAdvance(), Is.True);
+            Assert.That(register.TryAccept(), Is.True);
+            CemeteryGravediggingController closed = register.Jobs[1];
+            for (int act = 0; act < 4; act++)
+            {
+                Assert.That(closed.TryAdvance(), Is.True);
+            }
+
+            Assert.That(
+                register.CollectWages(),
+                Is.EqualTo(CemeteryGravediggingController.Wage));
+
+            // The city goes away and comes back. The book of work is
+            // all that crossed over, and the yard is rebuilt from it.
+            CemeteryGravediggingRegister rebuilt =
+                CreateRegister(job, out _);
+
+            Assert.That(rebuilt.Jobs, Has.Count.EqualTo(2));
+            Assert.That(
+                rebuilt.Jobs[0].PlotId,
+                Is.EqualTo(opened.PlotId));
+            Assert.That(
+                rebuilt.Jobs[0].Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Dug));
+            Assert.That(
+                rebuilt.Jobs[0].Site,
+                Is.Not.Null,
+                "An open hole is still worked.");
+            Assert.That(
+                rebuilt.Jobs[1].PlotId,
+                Is.EqualTo(closed.PlotId));
+            Assert.That(
+                rebuilt.Jobs[1].Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Paid));
+            Assert.That(
+                rebuilt.Jobs[1].Site,
+                Is.Null,
+                "A finished grave has nothing left to work.");
+            Assert.That(
+                rebuilt.Jobs[1].transform.Find(
+                    CemeteryGravediggingController.LampName),
+                Is.Null,
+                "And nothing left to light.");
+
+            // The offer moves on rather than pointing at either of
+            // them a second time.
+            Assert.That(rebuilt.CanOffer, Is.True);
+            Assert.That(
+                rebuilt.Pending.PlotId,
+                Is.Not.EqualTo(opened.PlotId));
+            Assert.That(
+                rebuilt.Pending.PlotId,
+                Is.Not.EqualTo(closed.PlotId));
+        }
+
+        [Test]
+        public void EveryGraveInTheYardIsWorkedThroughTheOneSession()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingRegister register =
+                CreateRegister(job, out _);
+            PlayerInteractor interactor = CreateInteractor();
+            var session = new RecordingWorkSession();
+
+            // The session is raised after the register is, which is
+            // the order the city builds in, and the very next grave
+            // the hero takes must still be worked rather than handed
+            // over.
+            register.SetWorkSession(session);
+            Assert.That(register.TryAccept(), Is.True);
+            CemeteryGravediggingController first = register.Jobs[0];
+            Assert.That(register.TryAccept(), Is.True);
+            CemeteryGravediggingController second = register.Jobs[1];
+
+            first.Site.Interact(interactor);
+            Assert.That(
+                session.LastJob,
+                Is.SameAs(first),
+                "The session belongs to the hole he is standing in.");
+            Assert.That(
+                session.LastStage,
+                Is.EqualTo(CemeteryGraveWorkStage.Marked));
+            Assert.That(
+                first.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Marked),
+                "A session that took the act commits nothing yet.");
+
+            // And it is the same session for the next hole over.
+            second.Site.Interact(interactor);
+            Assert.That(session.LastJob, Is.SameAs(second));
+            Assert.That(session.Calls, Is.EqualTo(2));
+
+            // A session that refuses the act leaves the old contract
+            // standing: the prompt commits it on the spot.
+            session.Accepts = false;
+            first.Site.Interact(interactor);
+            Assert.That(
+                first.Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Dug));
+        }
+
+        private sealed class RecordingWorkSession :
+            ICemeteryGraveWorkSession
+        {
+            public bool Accepts { get; set; } = true;
+            public int Calls { get; private set; }
+            public CemeteryGravediggingController LastJob
+            {
+                get;
+                private set;
+            }
+            public CemeteryGraveWorkStage LastStage { get; private set; }
+
+            public bool TryBegin(
+                CemeteryGravediggingController job,
+                CemeteryGraveWorkStage stage)
+            {
+                Calls++;
+                LastJob = job;
+                LastStage = stage;
+                return Accepts;
+            }
+        }
+
         // ------------------------------------------------------------
 
         private readonly struct Job
@@ -804,8 +1077,32 @@ namespace BarPromenade.Tests.EditMode
                 excavation);
         }
 
+        private CemeteryGravediggingRegister CreateRegister(
+            Job job,
+            out CityCemeteryGroundExcavation excavation)
+        {
+            var host = new GameObject("Test Cemetery Surfaces");
+            spawned.Add(host);
+            GameObject ground = CityCemeteryGroundWorldBuilder.Build(
+                host.transform,
+                job.Layout,
+                null);
+            excavation = CityCemeteryGroundExcavation.Attach(
+                host,
+                job.Layout,
+                ground);
+
+            var root = new GameObject("Test City");
+            spawned.Add(root);
+            return CemeteryGravediggingRegister.Create(
+                root.transform,
+                job.Cemetery,
+                job.Watchman,
+                excavation);
+        }
+
         private CemeteryWatchmanInteraction CreateWatchman(
-            CemeteryGravediggingController controller)
+            ICemeteryWorkGiver controller)
         {
             var host = new GameObject("Test Watchman Talk");
             spawned.Add(host);

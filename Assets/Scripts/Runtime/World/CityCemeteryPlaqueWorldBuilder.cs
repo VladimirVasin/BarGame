@@ -144,9 +144,13 @@ namespace BarPromenade
                     BezelThicknessMeters),
                 Bezel,
                 false);
-            root.AddComponent<CemeteryPlaqueSurface>();
+            var surface = root.AddComponent<CemeteryPlaqueSurface>();
+            // The board reads its own grave's line and no other one's:
+            // there are several finished stones in the yard now, each
+            // with a different stranger under it.
+            surface.Initialize(plan.Plot.StableId);
             BuildPlate(root.transform, width, height);
-            root.GetComponent<CemeteryPlaqueSurface>().Refresh();
+            surface.Refresh();
             return root;
         }
 

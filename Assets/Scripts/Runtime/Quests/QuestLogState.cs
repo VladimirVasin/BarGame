@@ -30,12 +30,33 @@ namespace BarPromenade
                 : QuestStatus.NotStarted;
         }
 
+        /// <summary>
+        /// Puts a quest up in the log. A repeatable one that was
+        /// finished goes back up in its old place rather than as a
+        /// second line — the watchman's next hole is the same job, not
+        /// a new one, and the journal should read that way.
+        /// </summary>
         public bool TryActivate(QuestId questId)
         {
-            if (!QuestCatalog.TryGet(questId, out _) ||
-                FindIndex(questId) >= 0)
+            if (!QuestCatalog.TryGet(
+                    questId,
+                    out QuestDefinition definition))
             {
                 return false;
+            }
+
+            int index = FindIndex(questId);
+            if (index >= 0)
+            {
+                if (!definition.IsRepeatable ||
+                    entries[index].Status != QuestStatus.Completed)
+                {
+                    return false;
+                }
+
+                entries[index] =
+                    new QuestLogEntry(questId, QuestStatus.Active);
+                return true;
             }
 
             entries.Add(

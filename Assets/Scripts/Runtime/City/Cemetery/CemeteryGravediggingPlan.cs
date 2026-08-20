@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -289,6 +290,21 @@ namespace BarPromenade
             CityCemeteryPlan cemeteryPlan,
             CemeteryWatchmanPlan watchmanPlan)
         {
+            return Create(cemeteryPlan, watchmanPlan, null);
+        }
+
+        /// <summary>
+        /// The next job he has, skipping every plot already signed
+        /// over. He works outward from his own post one grave at a
+        /// time, so the second hole is the second nearest and the
+        /// tenth is a walk — and when the yard is full he has nothing
+        /// left to give.
+        /// </summary>
+        public static CemeteryGravediggingPlan Create(
+            CityCemeteryPlan cemeteryPlan,
+            CemeteryWatchmanPlan watchmanPlan,
+            ICollection<string> takenPlotIds)
+        {
             if (cemeteryPlan == null ||
                 watchmanPlan == null ||
                 !watchmanPlan.IsPresent)
@@ -306,7 +322,9 @@ namespace BarPromenade
             {
                 CityCemeteryPlotDescriptor plot =
                     cemeteryPlan.Plots[index];
-                if (!plot.IsVacant)
+                if (!plot.IsVacant ||
+                    (takenPlotIds != null &&
+                     takenPlotIds.Contains(plot.StableId)))
                 {
                     continue;
                 }
@@ -337,17 +355,63 @@ namespace BarPromenade
                 return AbsentPlan;
             }
 
-            // The plot's heading turned into the world axis it is
-            // closest to: the cemetery frame only ever faces the four
-            // compass directions, and the jitter is four degrees.
-            Vector3 forward = best.Yaw * Vector3.forward;
+            return FromPlot(best, cemeteryPlan.GroundTopY);
+        }
+
+        /// <summary>
+        /// The job written against one named plot, for a grave the
+        /// hero was already sent to. Every city build finds his work
+        /// again through this: the book of work keeps plot ids, and a
+        /// half-dug hole has to come back on the same ground it was
+        /// left in.
+        /// </summary>
+        public static CemeteryGravediggingPlan CreateFor(
+            CityCemeteryPlan cemeteryPlan,
+            string plotId)
+        {
+            if (cemeteryPlan == null || string.IsNullOrEmpty(plotId))
+            {
+                return AbsentPlan;
+            }
+
+            for (int index = 0;
+                 index < cemeteryPlan.Plots.Count;
+                 index++)
+            {
+                CityCemeteryPlotDescriptor plot =
+                    cemeteryPlan.Plots[index];
+                if (!plot.IsVacant ||
+                    !string.Equals(
+                        plot.StableId,
+                        plotId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return FromPlot(plot, cemeteryPlan.GroundTopY);
+            }
+
+            return AbsentPlan;
+        }
+
+        /// <summary>
+        /// The plot's heading turned into the world axis it is closest
+        /// to: the cemetery frame only ever faces the four compass
+        /// directions, and the jitter is four degrees.
+        /// </summary>
+        private static CemeteryGravediggingPlan FromPlot(
+            CityCemeteryPlotDescriptor plot,
+            float groundTopY)
+        {
+            Vector3 forward = plot.Yaw * Vector3.forward;
             float headingYawDegrees = Mathf.Round(
                 Mathf.Atan2(forward.x, forward.z) *
                 Mathf.Rad2Deg / 90f) * 90f;
             return new CemeteryGravediggingPlan(
-                best,
+                plot,
                 headingYawDegrees,
-                cemeteryPlan.GroundTopY);
+                groundTopY);
         }
 
         /// <summary>

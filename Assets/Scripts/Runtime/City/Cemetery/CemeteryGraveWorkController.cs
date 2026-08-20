@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -193,7 +194,7 @@ namespace BarPromenade
 
         public static CemeteryGraveWorkController Create(
             Transform parent,
-            CemeteryGravediggingController gravedigging,
+            CemeteryGravediggingRegister register,
             PlayerRuntime player,
             PlayerCameraFollow follow,
             Camera camera,
@@ -205,7 +206,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(parent));
             }
 
-            if (gravedigging == null || !gravedigging.HasJob)
+            if (register == null || !register.HasWork)
             {
                 return null;
             }
@@ -214,7 +215,6 @@ namespace BarPromenade
             root.transform.SetParent(parent, false);
             var controller =
                 root.AddComponent<CemeteryGraveWorkController>();
-            controller.job = gravedigging;
             controller.playerRoot = player.GameObject != null
                 ? player.GameObject.transform
                 : null;
@@ -231,8 +231,38 @@ namespace BarPromenade
                 controller.view.Bind(controller, camera);
             }
 
-            gravedigging.SetWorkSession(controller);
+            register.SetWorkSession(controller);
+            controller.BindBoards(register);
             return controller;
+        }
+
+        /// <summary>
+        /// Listens at every board in the yard, the ones already
+        /// standing and the ones still to be stood up. Reading is a
+        /// camera move on one particular stone, so the grave has to
+        /// come with the request.
+        /// </summary>
+        private void BindBoards(CemeteryGravediggingRegister register)
+        {
+            IReadOnlyList<CemeteryGravediggingController> raised =
+                register.Jobs;
+            for (int index = 0; index < raised.Count; index++)
+            {
+                BindBoard(raised[index]);
+            }
+
+            BindBoard(register.Pending);
+            register.JobRaised += BindBoard;
+        }
+
+        private void BindBoard(CemeteryGravediggingController raised)
+        {
+            if (raised == null)
+            {
+                return;
+            }
+
+            raised.PlaqueRead += () => TryBeginReading(raised);
         }
 
         /// <summary>
@@ -241,12 +271,13 @@ namespace BarPromenade
         /// is a camera move and not a panel — there is nothing to put
         /// on screen that is not already on the stone.
         /// </summary>
-        public bool TryBeginReading()
+        public bool TryBeginReading(
+            CemeteryGravediggingController grave)
         {
             if (IsActive ||
                 !isActiveAndEnabled ||
-                job == null ||
-                !job.HasJob ||
+                grave == null ||
+                !grave.HasJob ||
                 interactor == null ||
                 cameraFollow == null ||
                 workCamera == null ||
@@ -263,6 +294,7 @@ namespace BarPromenade
                 return false;
             }
 
+            job = grave;
             reading = true;
             act = CemeteryGraveWorkStage.Sealed;
             phase = CemeteryGraveWorkPhase.Entering;
@@ -273,12 +305,14 @@ namespace BarPromenade
         }
 
         /// <inheritdoc />
-        public bool TryBegin(CemeteryGraveWorkStage stage)
+        public bool TryBegin(
+            CemeteryGravediggingController grave,
+            CemeteryGraveWorkStage stage)
         {
             if (IsActive ||
                 !isActiveAndEnabled ||
-                job == null ||
-                !job.HasJob ||
+                grave == null ||
+                !grave.HasJob ||
                 interactor == null ||
                 cameraFollow == null ||
                 workCamera == null ||
@@ -296,6 +330,7 @@ namespace BarPromenade
                 return false;
             }
 
+            job = grave;
             act = stage;
             phase = CemeteryGraveWorkPhase.Entering;
             pendingFeedbackKey = null;
@@ -306,6 +341,7 @@ namespace BarPromenade
             GameLog.Info(
                 "city",
                 "cemetery_grave_work_begun",
+                GameLog.Field("plot", job.PlotId),
                 GameLog.Field("act", stage.ToString()));
             return true;
         }
@@ -1074,7 +1110,9 @@ namespace BarPromenade
             StopListeningForText();
 
             if (cut &&
-                GameSessionState.TrySetGraveEpitaph(epitaphDraft) &&
+                GameSessionState.TrySetGraveEpitaph(
+                    job.PlotId,
+                    epitaphDraft) &&
                 sessionPlaque != null)
             {
                 sessionPlaque

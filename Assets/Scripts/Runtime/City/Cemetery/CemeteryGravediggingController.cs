@@ -10,14 +10,21 @@ namespace BarPromenade
     /// and only the last of them is a finished grave. Coming back to
     /// the old man afterwards is what turns it into money.
     ///
+    /// One of these stands for one grave. The watchman hands out more
+    /// than one — see <see cref="CemeteryGravediggingRegister"/>, which
+    /// keeps the whole yard of them — and each keeps its own plot, its
+    /// own tools and its own rung of the ladder.
+    ///
     /// It owns nothing the player can see except the plot: the offer
     /// lives on the watchman's own talk stub, and how far the work has
-    /// got lives in <see cref="GameSessionState.GraveWorkStage"/>, so
+    /// got lives in the book of work under this plot's own id, so
     /// walking out of the city and back finds it exactly as it was
     /// left.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class CemeteryGravediggingController : MonoBehaviour
+    public sealed class CemeteryGravediggingController :
+        MonoBehaviour,
+        ICemeteryWorkGiver
     {
         public const string RuntimeRootName = "Cemetery Gravedigging";
 
@@ -63,11 +70,16 @@ namespace BarPromenade
         /// plot to point at.</summary>
         public bool HasJob => plan != null && plan.IsPresent;
 
+        /// <summary>The plot this job was written against, by the id
+        /// the book of work files it under.</summary>
+        public string PlotId =>
+            HasJob ? plan.Plot.StableId : string.Empty;
+
         /// <summary>How far the work has got. Without a job there is
         /// nothing to have got anywhere.</summary>
         public CemeteryGraveWorkStage Stage =>
             HasJob
-                ? GameSessionState.GraveWorkStage
+                ? GameSessionState.GetGraveWorkStage(PlotId)
                 : CemeteryGraveWorkStage.Unclaimed;
 
         /// <summary>True while the old man still has the job to give.
@@ -101,6 +113,17 @@ namespace BarPromenade
             Stage == CemeteryGraveWorkStage.Sealed;
 
         public bool IsPaid => Stage == CemeteryGraveWorkStage.Paid;
+
+        /// <summary>
+        /// What this one grave is worth at the window, and nothing
+        /// when it is unfinished or already settled. The whole yard
+        /// answers the same question through
+        /// <see cref="CemeteryGravediggingRegister"/>.
+        /// </summary>
+        public int CollectWages()
+        {
+            return TryCollectWage() ? Wage : 0;
+        }
 
         /// <summary>The worksite, while one is standing.</summary>
         public CemeteryGraveDigSiteInteraction Site => site;
@@ -250,7 +273,7 @@ namespace BarPromenade
 
             CemeteryGravediggingPlan.ValidateOrThrow(gravediggingPlan);
 
-            var root = new GameObject(RuntimeRootName);
+            var root = new GameObject(GetRootName(gravediggingPlan));
             root.transform.SetParent(parent, false);
             var controller =
                 root.AddComponent<CemeteryGravediggingController>();
@@ -258,6 +281,19 @@ namespace BarPromenade
             controller.excavation = groundExcavation;
             controller.Restore();
             return controller;
+        }
+
+        /// <summary>
+        /// The plot's own id goes in the hierarchy name: there are
+        /// several of these in the yard at once and a row of identical
+        /// nodes is no use to anybody reading it.
+        /// </summary>
+        private static string GetRootName(
+            CemeteryGravediggingPlan gravediggingPlan)
+        {
+            return gravediggingPlan.IsPresent
+                ? RuntimeRootName + " " + gravediggingPlan.Plot.StableId
+                : RuntimeRootName;
         }
 
         /// <summary>
@@ -269,12 +305,12 @@ namespace BarPromenade
         {
             if (!CanOffer ||
                 !GameSessionState.TryAdvanceGraveWork(
+                    PlotId,
                     CemeteryGraveWorkStage.Marked))
             {
                 return false;
             }
 
-            GameSessionState.TryActivateQuest(QuestId.DigTheGrave);
             RaiseSite();
             // The tools come with the job too: a coffin waiting on its
             // blocks past the feet and a spade stood in the ground
@@ -336,6 +372,7 @@ namespace BarPromenade
             }
 
             GameSessionState.TryAdvanceGraveWork(
+                PlotId,
                 CemeteryGraveWorkStage.Paid);
             GameLog.Info(
                 "city",
@@ -394,6 +431,7 @@ namespace BarPromenade
         {
             if (!OpenPit() ||
                 !GameSessionState.TryAdvanceGraveWork(
+                    PlotId,
                     CemeteryGraveWorkStage.Dug))
             {
                 return false;
@@ -413,6 +451,7 @@ namespace BarPromenade
             RaiseCoffin();
             if (coffin == null ||
                 !GameSessionState.TryAdvanceGraveWork(
+                    PlotId,
                     CemeteryGraveWorkStage.Coffined))
             {
                 return false;
@@ -441,6 +480,7 @@ namespace BarPromenade
                     CityCemeteryPitWorldBuilder.GetExcavationRect(
                         plan)) ||
                 !GameSessionState.TryAdvanceGraveWork(
+                    PlotId,
                     CemeteryGraveWorkStage.Filled))
             {
                 return false;
@@ -467,6 +507,7 @@ namespace BarPromenade
             RaiseStoneObject();
             if (stone == null ||
                 !GameSessionState.TryAdvanceGraveWork(
+                    PlotId,
                     CemeteryGraveWorkStage.Sealed))
             {
                 return false;
@@ -483,7 +524,6 @@ namespace BarPromenade
             // know it has nothing left to offer.
             site?.SetStage(CemeteryGraveWorkStage.Sealed);
             DestroyPart(ref site);
-            GameSessionState.TryCompleteQuest(QuestId.DigTheGrave);
             GameLog.Info(
                 "city",
                 "cemetery_grave_sealed",
@@ -518,7 +558,8 @@ namespace BarPromenade
         /// </summary>
         private bool RequestAdvance()
         {
-            if (workSession != null && workSession.TryBegin(Stage))
+            if (workSession != null &&
+                workSession.TryBegin(this, Stage))
             {
                 return false;
             }

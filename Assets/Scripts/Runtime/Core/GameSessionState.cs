@@ -96,6 +96,8 @@ namespace BarPromenade
             new InventoryState();
         private static readonly QuestLogState questLog =
             new QuestLogState();
+        private static readonly CemeteryGraveWorkLedger graveWork =
+            new CemeteryGraveWorkLedger();
         private static readonly GameTimeState gameTime =
             new GameTimeState();
         private static readonly PlayerNeedsProgressionState needsProgression =
@@ -147,25 +149,19 @@ namespace BarPromenade
         public static int CashBalance { get; private set; } = DefaultCash;
 
         /// <summary>
-        /// How far the cemetery watchman's job has got. It is
-        /// carried here rather than in the quest log because the
-        /// log only knows taken and finished, and the work has
-        /// three separate acts in between.
+        /// Every grave the cemetery watchman has sent the hero to,
+        /// with how far the work on each has got and the line cut
+        /// into its board. It is carried here rather than in the
+        /// quest log because the log only knows taken and finished,
+        /// and each grave has three separate acts in between.
         /// </summary>
-        public static CemeteryGraveWorkStage GraveWorkStage
-        {
-            get;
-            private set;
-        } = CemeteryGraveWorkStage.Unclaimed;
+        public static IReadOnlyList<CemeteryGraveWorkRecord>
+            GraveWork => graveWork.Records;
 
-        /// <summary>
-        /// The line the hero cut into the plaque over the grave he
-        /// dug. The only text in the game a player composes, and once
-        /// it is on the board it never changes — a man does not go
-        /// back and revise a stranger's epitaph.
-        /// </summary>
-        public static string GraveEpitaph { get; private set; } =
-            string.Empty;
+        /// <summary>How many graves he is holding open at once: taken
+        /// and not yet closed with a stone at the head.</summary>
+        public static int UnfinishedGraveWorkCount =>
+            graveWork.UnfinishedCount;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
@@ -265,8 +261,7 @@ namespace BarPromenade
             LastAlcoholicDrink = DrinkId.None;
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
-            GraveWorkStage = CemeteryGraveWorkStage.Unclaimed;
-            GraveEpitaph = string.Empty;
+            graveWork.Reset();
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
@@ -316,33 +311,64 @@ namespace BarPromenade
             return completed;
         }
 
+        /// <summary>How far the work on one plot has got. Unclaimed
+        /// for a plot he was never sent to.</summary>
+        public static CemeteryGraveWorkStage GetGraveWorkStage(
+            string plotId)
+        {
+            return graveWork.GetStage(plotId);
+        }
+
         /// <summary>
-        /// Moves the gravedigging work one or more rungs up its
-        /// ladder. Refuses anything that is not forward: the worksite
-        /// is rebuilt from this value alone, so a stage that could go
-        /// back would be a grave that closes and opens again.
+        /// Moves one grave one or more rungs up its ladder, opening a
+        /// record for it the first time. Refuses anything that is not
+        /// forward: each worksite is rebuilt from its own record
+        /// alone, so a stage that could go back would be a grave that
+        /// closes and opens again.
+        ///
+        /// The quest log is kept in step here rather than by the
+        /// worksites, because it is one entry over however many holes
+        /// are open: taking any grave puts it up, and only the last
+        /// unfinished one takes it down again.
         /// </summary>
         public static bool TryAdvanceGraveWork(
+            string plotId,
             CemeteryGraveWorkStage stage)
         {
-            if (stage <= GraveWorkStage ||
-                !Enum.IsDefined(typeof(CemeteryGraveWorkStage), stage))
+            CemeteryGraveWorkStage previous =
+                graveWork.GetStage(plotId);
+            if (!graveWork.TryAdvance(plotId, stage))
             {
                 return false;
             }
 
-            CemeteryGraveWorkStage previous = GraveWorkStage;
-            GraveWorkStage = stage;
             GameLog.Info(
                 "quest",
                 "grave_work_advanced",
+                GameLog.Field("plot", plotId),
                 GameLog.Field("previous_stage", previous.ToString()),
                 GameLog.Field("stage", stage.ToString()));
+            if (stage == CemeteryGraveWorkStage.Marked)
+            {
+                TryActivateQuest(QuestId.DigTheGrave);
+            }
+            else if (graveWork.UnfinishedCount == 0)
+            {
+                TryCompleteQuest(QuestId.DigTheGrave);
+            }
+
             return true;
         }
 
+        /// <summary>The line standing on one grave's board, or empty
+        /// while it is bare.</summary>
+        public static string GetGraveEpitaph(string plotId)
+        {
+            return graveWork.GetEpitaph(plotId);
+        }
+
         /// <summary>
-        /// Cuts the hero's line into the plaque. It is written once:
+        /// Cuts the hero's line into one plaque. It is written once:
         /// a second attempt is refused rather than allowed to correct
         /// the first, because the board has already been nailed on and
         /// the whole point of the thing is that it is final.
@@ -351,26 +377,23 @@ namespace BarPromenade
         /// before it is kept, so the stored value and the rendered one
         /// are the same string.
         /// </summary>
-        public static bool TrySetGraveEpitaph(string text)
+        public static bool TrySetGraveEpitaph(
+            string plotId,
+            string text)
         {
-            if (!string.IsNullOrEmpty(GraveEpitaph))
+            if (!graveWork.TrySetEpitaph(plotId, text))
             {
                 return false;
             }
 
-            string cut = CemeteryEpitaph.Sanitize(text);
-            if (string.IsNullOrEmpty(cut))
-            {
-                return false;
-            }
-
-            GraveEpitaph = cut;
             GameLog.Info(
                 "quest",
                 "grave_epitaph_written",
+                GameLog.Field("plot", plotId),
                 GameLog.Field(
                     "words",
-                    CemeteryEpitaph.CountWords(cut)));
+                    CemeteryEpitaph.CountWords(
+                        graveWork.GetEpitaph(plotId))));
             return true;
         }
 

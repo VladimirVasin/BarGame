@@ -450,39 +450,69 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ThePlaqueIsWrittenOnceAndThenItIsCut()
+        public void EveryPlaqueIsWrittenOnceAndThenItIsCut()
         {
+            const string first = "cemetery-plot-a";
+            const string second = "cemetery-plot-b";
+
             Assert.That(
-                GameSessionState.GraveEpitaph,
+                GameSessionState.GetGraveEpitaph(first),
                 Is.Empty,
                 "A new game starts with a bare board.");
             Assert.That(
-                GameSessionState.TrySetGraveEpitaph("   "),
+                GameSessionState.TrySetGraveEpitaph(first, "поздно"),
+                Is.False,
+                "There is no board on a grave he was never sent to.");
+
+            GameSessionState.TryAdvanceGraveWork(
+                first,
+                CemeteryGraveWorkStage.Marked);
+            GameSessionState.TryAdvanceGraveWork(
+                second,
+                CemeteryGraveWorkStage.Marked);
+            Assert.That(
+                GameSessionState.TrySetGraveEpitaph(first, "   "),
                 Is.False,
                 "Whitespace is not an inscription.");
 
             Assert.That(
                 GameSessionState.TrySetGraveEpitaph(
+                    first,
                     "  спи   спокойно, незнакомец  "),
                 Is.True);
             Assert.That(
-                GameSessionState.GraveEpitaph,
+                GameSessionState.GetGraveEpitaph(first),
                 Is.EqualTo("спи спокойно, незнакомец"),
                 "It is kept as the plaque would carry it.");
 
             Assert.That(
-                GameSessionState.TrySetGraveEpitaph("другое"),
+                GameSessionState.TrySetGraveEpitaph(first, "другое"),
                 Is.False,
                 "Nobody goes back and revises a stranger's epitaph.");
             Assert.That(
-                GameSessionState.GraveEpitaph,
+                GameSessionState.GetGraveEpitaph(first),
                 Is.EqualTo("спи спокойно, незнакомец"));
+
+            // One line belongs to one grave: the next stone in the
+            // yard is bare until its own board is cut.
+            Assert.That(
+                GameSessionState.GetGraveEpitaph(second),
+                Is.Empty);
+            Assert.That(
+                GameSessionState.TrySetGraveEpitaph(second, "и тебе"),
+                Is.True);
+            Assert.That(
+                GameSessionState.GetGraveEpitaph(first),
+                Is.EqualTo("спи спокойно, незнакомец"));
+            Assert.That(
+                GameSessionState.GetGraveEpitaph(second),
+                Is.EqualTo("и тебе"));
 
             GameSessionState.BeginNewGame();
             Assert.That(
-                GameSessionState.GraveEpitaph,
+                GameSessionState.GetGraveEpitaph(first),
                 Is.Empty,
-                "A new game is a new grave.");
+                "A new game is a new yard.");
         }
 
         [Test]

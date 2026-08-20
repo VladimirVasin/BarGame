@@ -9,16 +9,21 @@ namespace BarPromenade
     /// the old man owns a seeded repertoire, and every interaction
     /// serves the next snide line, never the same one twice in a row.
     ///
-    /// He is also the only man in the city with work to give. While
-    /// the gravedigging job is unclaimed the first interaction puts
-    /// the offer up in place of the prompt, and the hero answers with
-    /// the interact key or the refuse key. A refusal costs nothing:
-    /// the hole still needs digging and he will say so again.
+    /// He is also the only man in the city with work to give, and he
+    /// never runs out of it. While he has a plot to point at the first
+    /// interaction puts the offer up in place of the prompt, and the
+    /// hero answers with the interact key or the refuse key. A refusal
+    /// costs nothing: the hole still needs digging and he will say so
+    /// again. Taking one does not end it either — he finds the next
+    /// free plot and offers that, up to as many holes as he will let
+    /// one man hold open at a time.
     ///
     /// And he is where the work turns into money. Coming back to his
-    /// window with the grave closed and the stone standing pays it
-    /// out, once, on the ordinary talk interaction — there is no
-    /// second panel for a wage.
+    /// window with a grave closed and its stone standing pays it out
+    /// on the ordinary talk interaction — there is no second panel for
+    /// a wage — and the wage is settled before the next hole is
+    /// offered, because a man who has just filled one in wants paying
+    /// before he is asked to open another.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CemeteryWatchmanInteraction :
@@ -45,7 +50,7 @@ namespace BarPromenade
         private uint quipState;
         private int lastLineIndex = -1;
         private bool isInitialized;
-        private CemeteryGravediggingController gravedigging;
+        private ICemeteryWorkGiver gravedigging;
         private PlayerInteractor offerListener;
 
         public string PromptKey =>
@@ -71,12 +76,14 @@ namespace BarPromenade
             isInitialized = true;
         }
 
-        /// <summary>Hands him the job he has to give. Without one he
-        /// is the same old man he always was.</summary>
-        public void AttachGravedigging(
-            CemeteryGravediggingController controller)
+        /// <summary>
+        /// Hands him the work he has to give — one grave or a whole
+        /// yard of them, he speaks for either. Without any he is the
+        /// same old man he always was.
+        /// </summary>
+        public void AttachGravedigging(ICemeteryWorkGiver workGiver)
         {
-            gravedigging = controller;
+            gravedigging = workGiver;
             CloseOffer();
         }
 
@@ -103,25 +110,26 @@ namespace BarPromenade
                 return;
             }
 
+            // Money first. A man who has closed a grave is owed for it
+            // and is not going to hear about the next hole until the
+            // old man has counted it out — and the wage is the one
+            // number in this job the player never sees anywhere else,
+            // because the pocket it lands in is two menus away.
+            int wage =
+                gravedigging != null ? gravedigging.CollectWages() : 0;
+            if (wage > 0)
+            {
+                interactor.ShowFormattedFeedback(
+                    PaidFeedbackKey,
+                    ResponseDurationSeconds,
+                    wage);
+                return;
+            }
+
             if (gravedigging != null && gravedigging.CanOffer)
             {
                 IsOffering = true;
                 offerListener = interactor;
-                return;
-            }
-
-            // A finished grave is worth exactly one of these: after
-            // the wage he is back to being the same old man.
-            if (gravedigging != null &&
-                gravedigging.TryCollectWage())
-            {
-                // He counts it out loud: the wage is the one number in
-                // this job the player never sees anywhere else, and the
-                // pocket it lands in is two menus away.
-                interactor.ShowFormattedFeedback(
-                    PaidFeedbackKey,
-                    ResponseDurationSeconds,
-                    CemeteryGravediggingController.Wage);
                 return;
             }
 

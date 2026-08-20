@@ -6,6 +6,47 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-20 — The watchman has a yard of work, not one hole
+
+- **The job is repeatable and there can be several of them at once.**
+  `CemeteryGravediggingRegister` owns one `CemeteryGravediggingController`
+  per grave the hero was ever sent to plus the one on offer, and finds the
+  next offer with `CemeteryGravediggingPlan.Create(plan, watchman, taken)` —
+  the nearest vacant plot he has not signed over yet, so the work walks
+  outward from the lodge. `MaximumOpenJobs` is `3`: three unfinished holes is
+  as much as he will let one man hold, and until one is closed the window
+  gives quips instead of plots. The offer, the acceptance and the refusal are
+  the same three keys they always were.
+- **The stage is per plot now.** `GameSessionState.GraveWorkStage` and
+  `GraveEpitaph` are gone; `CemeteryGraveWorkLedger` holds one record per
+  plot id — stage and epitaph — and `TryAdvanceGraveWork(plotId, stage)` /
+  `TrySetGraveEpitaph(plotId, text)` are keyed by it. Each worksite is still
+  a pure function of one stored value, so a city rebuild stands the whole
+  yard back up: half-dug holes open, finished stones standing, each board
+  carrying its own line (`CemeteryPlaqueSurface.Initialize`). A record whose
+  plot the current seed does not have is logged and skipped.
+- **One log entry, however many holes.** `QuestDefinition.IsRepeatable`
+  marks `DigTheGrave`, `QuestLogState.TryActivate` revives a completed
+  repeatable quest in place rather than adding a second line, and the quest
+  is driven from `TryAdvanceGraveWork` instead of from the controller: up on
+  any `Marked`, down only when nothing is unfinished.
+- **Money before the next hole.** `ICemeteryWorkGiver` is what the watchman
+  now speaks for — one controller answers it, and so does the register, which
+  is what keeps `CemeteryWatchmanTests` and the single-job tests honest. He
+  pays for every closed grave in one sum (`CollectWages`) and only offers
+  after there is nothing owed, because a man who has just filled one in wants
+  paying before he is asked to open another.
+- **One session, many worksites.** `ICemeteryGraveWorkSession.TryBegin` takes
+  the grave as an argument and `CemeteryGraveWorkController` binds to
+  whichever hole raised the request, and to whichever finished board the hero
+  stops to read. There is one camera and one hero, so there is still exactly
+  one session.
+- **Verified:** EditMode `CemeteryGravedigging`, `CemeteryGraveWork` and
+  `CemeteryWatchman` fixtures — 37/37 green, including the two new contracts
+  (`TheWatchmanGivesGraveAfterGraveUpToWhatAManHolds`,
+  `EveryGraveHeGaveComesBackOnTheNextCityBuild`). Not run: the rest of the
+  EditMode suite and any PlayMode work.
+
 ## 2026-08-20 — The spade acts stop being a swing, and the soil goes with it
 
 - **Digging and filling are a choice of square and a press.** The timing bar

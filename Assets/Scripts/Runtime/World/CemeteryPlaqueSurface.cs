@@ -47,11 +47,23 @@ namespace BarPromenade
         private TMP_Text nameLine;
         private TMP_Text yearsLine;
         private TMP_Text epitaphLine;
+        private string plotId = string.Empty;
+
+        /// <summary>Which grave's board this is. The line on it is
+        /// looked up under this id and no other.</summary>
+        public string PlotId => plotId;
 
         /// <summary>The hero's own line as it stands on the board.
         /// </summary>
         public string EpitaphText =>
             epitaphLine != null ? epitaphLine.text : string.Empty;
+
+        /// <summary>Tells the board which grave it stands on, before
+        /// anything is written on it.</summary>
+        public void Initialize(string gravePlotId)
+        {
+            plotId = gravePlotId ?? string.Empty;
+        }
 
         internal void Bind(
             TMP_Text name,
@@ -107,7 +119,7 @@ namespace BarPromenade
                 return;
             }
 
-            string written = GameSessionState.GraveEpitaph;
+            string written = GameSessionState.GetGraveEpitaph(plotId);
             epitaphLine.text = string.IsNullOrEmpty(written)
                 ? LocalizationService.Get(
                     CemeteryGraveWorkView.EmptyEpitaphKey)

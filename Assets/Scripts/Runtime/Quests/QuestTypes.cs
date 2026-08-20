@@ -28,9 +28,11 @@ namespace BarPromenade
             QuestId id,
             string titleLocalizationKey,
             string activeDescriptionLocalizationKey,
-            string completedDescriptionLocalizationKey)
+            string completedDescriptionLocalizationKey,
+            bool isRepeatable = false)
         {
             Id = id;
+            IsRepeatable = isRepeatable;
             TitleLocalizationKey = titleLocalizationKey;
             ActiveDescriptionLocalizationKey =
                 activeDescriptionLocalizationKey;
@@ -42,6 +44,14 @@ namespace BarPromenade
         public string TitleLocalizationKey { get; }
         public string ActiveDescriptionLocalizationKey { get; }
         public string CompletedDescriptionLocalizationKey { get; }
+
+        /// <summary>
+        /// True for work that is given again once it is done. The
+        /// gravedigging is the only such job: the watchman always has
+        /// another hole, so a finished entry in the log goes back to
+        /// active rather than standing there closed for good.
+        /// </summary>
+        public bool IsRepeatable { get; }
     }
 
     public readonly struct QuestLogEntry
@@ -69,7 +79,8 @@ namespace BarPromenade
                 QuestId.DigTheGrave,
                 "quest.dig_grave.title",
                 "quest.dig_grave.description.active",
-                "quest.dig_grave.description.completed")
+                "quest.dig_grave.description.completed",
+                true)
         };
 
         private static readonly IReadOnlyList<QuestDefinition>

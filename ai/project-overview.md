@@ -466,11 +466,15 @@ The vertical slice contains:
   main alley on alternating sides (a pair at the gate, one roughly every
   `15 m`, one at the far end); ground, alleys, mounds and stone carry
   dedicated `CityCemetery*Albedo` sheets. The watchman at the gate carries
-  the game's one paid job, and it is four worked acts on one vacant plot —
+  the game's one paid job, and it is four worked acts on a vacant plot —
   dig, lower, fill, set the stone — each a modal session that takes the
   camera down onto the grave, hides the hero and animates a procedural spade
-  alone. Nothing is committed until an act finishes, so the worksite stays a
-  pure function of `GameSessionState.GraveWorkStage`;
+  alone. He gives that job over and over: `CemeteryGravediggingRegister`
+  hands out the next free plot outward from his post, up to three unfinished
+  holes at once, and settles up for every closed grave in one sum. Nothing is
+  committed until an act finishes, so every worksite in the yard stays a pure
+  function of its own rung in the book of work (`CemeteryGraveWorkLedger`,
+  one stage and one epitaph per plot);
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24
