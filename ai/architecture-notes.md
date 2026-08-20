@@ -1365,8 +1365,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the smoking interaction and does not change generic `PlayerCameraFollow`
   behavior. A separate non-spatial
   `HomeSmokingMusicPlayer` loads only the optional user-supplied
-  `Resources/Audio/SmokingMusic/smoking_theme`, fades from zero over `3.2 s`,
-  fades with the exit and treats a missing clip as a silent no-op.
+  `Resources/Audio/SmokingMusic/smoking_theme`. It obeys the shared mixing
+  rule rather than the timeline: it waits for the apartment theme to finish
+  leaving, eases in over `MusicMix.FadeInSeconds`, leaves over
+  `MusicMix.FadeOutSeconds` and treats a missing clip as a silent no-op.
 - **Accepted — Diegetic Home practicals and fixed 3D shots:** The Home
   atmosphere retains exactly two shadowless practical realtime lights. A
   visible HDR emitter and depth-tested halo are physically co-located with
@@ -1688,17 +1690,49 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `home_theme` from `Resources/Audio/HomeMusic`. Each clip background-streams
   through a non-spatial looping `AudioSource`, mild low-pass filter and the
   shared `Music` group under its matching scene root. `SceneMusicPlayer` owns
-  a one-second smooth unscaled gain envelope, waits for background-streamed
-  clip data before starting that envelope and fails silent if loading fails.
-  `SceneTransitionService`
-  preloads the destination with activation held until every active-scene
-  theme reaches zero, then the new scene begins its own fade-in. Disabled or
-  missing players complete that handshake immediately, with a bounded safety
-  timeout preventing scene activation from deadlocking. Home alone reads the fixed-camera
-  Balcony shot: it fades `home_theme` to zero, pauses while preserving the
-  sample position and resumes through the same envelope only after the shot
-  returns indoors. The interaction-local `smoking_theme` retains its separate
-  animation-driven envelope.
+  a smooth unscaled gain envelope, waits for background-streamed clip data
+  before starting it and fails silent if loading fails. Home alone reads the
+  fixed-camera Balcony shot: it fades `home_theme` to zero, pauses while
+  preserving the sample position and resumes through the same envelope only
+  after the shot returns indoors.
+- **Accepted — One mixing rule for every music change:** `MusicMix` holds the
+  whole rule: `FadeOutSeconds = 4`, `FadeInSeconds = 1`, and a registry of the
+  sources that are still leaving. A theme starts only through
+  `BeginFadeInThroughRule`, which refuses to sound while
+  `MusicMix.IsFadeOutActive` and retries each frame, so themes hand over
+  instead of crossfading. Because a scene unload would cut a four-second tail
+  dead, `MusicMix.BeginDetachedFadeOut` reparents the departing music object
+  out of its scene into `DontDestroyOnLoad` — the same `AudioSource` keeps
+  playing, so a streaming clip is never re-seeked — and the player destroys
+  its own carrier when the fade reaches zero. That removes the old activation
+  gate: `SceneTransitionService` now only asks every `IMusicMixSource` in the
+  outgoing scene to leave, and the tail finishes across the door presentation
+  while the destination streams in. The registry self-prunes on destroyed,
+  stopped or silent sources, and a source releases itself before fading back
+  in so a theme never waits on its own tail. `HomeSmokingMusicPlayer`
+  implements the same interface: it defers `BeginFromStart` until the mix is
+  clear, eases in over `FadeInSeconds` when it had to wait, and leaves through
+  `BeginRuleFadeOut` at the `Exiting` phase instead of the shorter
+  camera-restore ramp.
+- **Accepted — Music bound to a place, not only to a scene:** `City` keeps
+  `city_theme` as its default and hands the mix to a place theme whenever the
+  hero stands on grounds that have one. `CityLocationMusicDirector` holds a
+  table of `CityLocationMusicSlot` (`locationId`, world-XZ `Rect`, player) and
+  resolves the active place each frame through the pure
+  `CityLocationMusicZones.Resolve`, which keeps the active place until the
+  hero is `ExitMarginMeters` (`4 m`) clear of its grounds — without that hold
+  a walk along a fence would flap the mix, and every flap costs a full
+  fade-out and fade-in. The handover is the shared rule at its one length —
+  `MusicMix.FadeOutSeconds`, the same `4 s` as a scene change — so there is a
+  single number for every music change in the game. Place themes are parked
+  with
+  `FadeOutAndPause(0f)` at initialization and resume from their own sample, so
+  leaving and returning continues both tracks where they stopped. A slot whose
+  optional clip is absent is dropped at initialization rather than accepted —
+  an empty slot must never be able to silence the city. The first observation
+  performs no handover: whatever the hero is standing in simply owns the mix.
+  The only slot today is the cemetery, whose grounds come from
+  `CityCemeteryPlan.Grounds`; a seed without a cemetery contributes no slot.
 - **Accepted — Generated retro SFX:** `RetroSfx` deterministically synthesizes
   the mono `22050 Hz` UI, footstep, door latch and sustained hinge creak
   clips in memory.

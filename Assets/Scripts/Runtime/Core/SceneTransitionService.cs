@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -9,9 +8,6 @@ namespace BarPromenade
 {
     public sealed class SceneTransitionService : MonoBehaviour
     {
-        private const float MusicFadeSafetyTimeoutSeconds =
-            SceneMusicPlayer.DefaultFadeDurationSeconds + 0.5f;
-
         private static SceneTransitionService instance;
         private static long operationSequence;
         private static string activeOperationId = string.Empty;
@@ -23,11 +19,6 @@ namespace BarPromenade
         private static bool activeUsedFallback;
 
         public static bool IsTransitioning { get; private set; }
-        public static bool IsOutgoingMusicFadeGateComplete
-        {
-            get;
-            private set;
-        }
         public static string CurrentOperationId => activeOperationId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -35,7 +26,6 @@ namespace BarPromenade
         {
             instance = null;
             IsTransitioning = false;
-            IsOutgoingMusicFadeGateComplete = false;
             operationSequence = 0L;
             ClearActiveOperation();
         }
@@ -164,7 +154,6 @@ namespace BarPromenade
 
             EnsureInstance();
             IsTransitioning = true;
-            IsOutgoingMusicFadeGateComplete = false;
             activeOperationId = operationId;
             activeSourceScene = GetActiveSceneName();
             activeTargetScene = sceneName;
@@ -224,11 +213,8 @@ namespace BarPromenade
             }
 
             operation.allowSceneActivation = false;
-            SceneMusicPlayer[] outgoingMusic =
-                RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(
-                operation,
-                outgoingMusic);
+            RequestOutgoingMusicFade();
+            yield return WaitForActivationReady(operation);
             operation.allowSceneActivation = true;
             while (!operation.isDone)
             {
@@ -256,11 +242,8 @@ namespace BarPromenade
             }
 
             transitionOperation.allowSceneActivation = false;
-            SceneMusicPlayer[] outgoingMusic =
-                RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(
-                transitionOperation,
-                outgoingMusic);
+            RequestOutgoingMusicFade();
+            yield return WaitForActivationReady(transitionOperation);
             transitionOperation.allowSceneActivation = true;
             while (!transitionOperation.isDone)
             {
@@ -370,119 +353,49 @@ namespace BarPromenade
             }
         }
 
-        private static SceneMusicPlayer[] RequestOutgoingMusicFade()
+        /// <summary>
+        /// Every theme alive in the scene being left leaves through the
+        /// shared mixing rule. Each one detaches from the scene first, so
+        /// the load never cuts a fade-out short and never has to wait for
+        /// one either.
+        /// </summary>
+        private static void RequestOutgoingMusicFade()
         {
             Scene activeScene = SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded)
             {
-                return Array.Empty<SceneMusicPlayer>();
-            }
-
-            SceneMusicPlayer[] candidates =
-                FindObjectsByType<SceneMusicPlayer>(
-                    FindObjectsInactive.Include);
-            var waiting = new List<SceneMusicPlayer>(
-                candidates.Length);
-            for (int index = 0; index < candidates.Length; index++)
-            {
-                SceneMusicPlayer player = candidates[index];
-                if (player == null ||
-                    player.gameObject.scene != activeScene)
-                {
-                    continue;
-                }
-
-                if (!player.isActiveAndEnabled)
-                {
-                    player.CompleteSceneExitFadeImmediately();
-                    continue;
-                }
-
-                if (player.RequestSceneExitFade())
-                {
-                    waiting.Add(player);
-                }
-            }
-
-            return waiting.ToArray();
-        }
-
-        private static IEnumerator WaitForActivationReady(
-            AsyncOperation operation,
-            SceneMusicPlayer[] outgoingMusic)
-        {
-            float musicFadeDeadline =
-                Time.realtimeSinceStartup +
-                MusicFadeSafetyTimeoutSeconds;
-            while (operation != null)
-            {
-                bool loadReady = operation.progress >= 0.9f;
-                bool musicReady =
-                    AreMusicFadesComplete(outgoingMusic);
-                if (loadReady && musicReady)
-                {
-                    break;
-                }
-
-                if (!musicReady &&
-                    Time.realtimeSinceStartup >= musicFadeDeadline)
-                {
-                    CompleteMusicFadesImmediately(outgoingMusic);
-                }
-
-                yield return null;
-            }
-
-            IsOutgoingMusicFadeGateComplete = true;
-        }
-
-        private static bool AreMusicFadesComplete(
-            SceneMusicPlayer[] players)
-        {
-            if (players == null)
-            {
-                return true;
-            }
-
-            for (int index = 0; index < players.Length; index++)
-            {
-                SceneMusicPlayer player = players[index];
-                if (player == null)
-                {
-                    continue;
-                }
-
-                if (!player.isActiveAndEnabled &&
-                    !player.IsSceneExitFadeComplete)
-                {
-                    player.CompleteSceneExitFadeImmediately();
-                }
-
-                if (!player.IsSceneExitFadeComplete)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static void CompleteMusicFadesImmediately(
-            SceneMusicPlayer[] players)
-        {
-            if (players == null)
-            {
                 return;
             }
 
-            for (int index = 0; index < players.Length; index++)
+            MonoBehaviour[] candidates =
+                FindObjectsByType<MonoBehaviour>(
+                    FindObjectsInactive.Include);
+            for (int index = 0; index < candidates.Length; index++)
             {
-                SceneMusicPlayer player = players[index];
-                if (player != null &&
-                    !player.IsSceneExitFadeComplete)
+                MonoBehaviour candidate = candidates[index];
+                if (candidate == null ||
+                    !(candidate is IMusicMixSource music) ||
+                    candidate.gameObject.scene != activeScene)
                 {
-                    player.CompleteSceneExitFadeImmediately();
+                    continue;
                 }
+
+                if (!candidate.isActiveAndEnabled)
+                {
+                    music.CompleteSceneExitFadeImmediately();
+                    continue;
+                }
+
+                music.BeginSceneExitFadeOut();
+            }
+        }
+
+        private static IEnumerator WaitForActivationReady(
+            AsyncOperation operation)
+        {
+            while (operation != null && operation.progress < 0.9f)
+            {
+                yield return null;
             }
         }
 
@@ -657,11 +570,8 @@ namespace BarPromenade
             }
 
             operation.allowSceneActivation = false;
-            SceneMusicPlayer[] outgoingMusic =
-                RequestOutgoingMusicFade();
-            yield return WaitForActivationReady(
-                operation,
-                outgoingMusic);
+            RequestOutgoingMusicFade();
+            yield return WaitForActivationReady(operation);
             operation.allowSceneActivation = true;
             while (!operation.isDone)
             {

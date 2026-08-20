@@ -8,7 +8,14 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class HomeSmokingMusicPlayerPlayModeTests
     {
         private GameObject musicObject;
+        private GameObject outgoingObject;
         private AudioClip testClip;
+
+        [SetUp]
+        public void SetUp()
+        {
+            MusicMix.ClearFadeOuts();
+        }
 
         [UnityTest]
         public IEnumerator Awake_ConfiguresSilentSceneLocalMusicSource()
@@ -132,12 +139,98 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(source.volume, Is.Zero);
         }
 
+        [UnityTest]
+        public IEnumerator BeginFromStart_WaitsForAnUnfinishedFadeOut()
+        {
+            HomeSmokingMusicPlayer player = CreatePlayer();
+            testClip = AudioClip.Create(
+                "Smoking Music Rule Test Clip",
+                44100,
+                1,
+                44100,
+                false);
+            player.Source.clip = testClip;
+
+            outgoingObject = new GameObject("Outgoing Theme");
+            AudioSource outgoing =
+                outgoingObject.AddComponent<AudioSource>();
+            outgoing.clip = testClip;
+            outgoing.loop = true;
+            outgoing.volume = 1f;
+            outgoing.Play();
+            Assert.That(MusicMix.BeginFadeOut(outgoing), Is.True);
+
+            player.BeginFromStart();
+            player.ApplyNormalizedGain(1f);
+            Assert.That(player.IsStartDeferred, Is.True);
+            Assert.That(player.Source.isPlaying, Is.False);
+            Assert.That(
+                player.Source.volume,
+                Is.Zero.Within(0.0001f),
+                "The vignette theme stays silent until the mix is clear.");
+
+            outgoing.Stop();
+            player.AdvanceMix(0.1f);
+            Assert.That(player.IsStartDeferred, Is.False);
+            Assert.That(player.Source.isPlaying, Is.True);
+            Assert.That(
+                player.Source.volume,
+                Is.LessThan(HomeSmokingMusicPlayer.TargetVolume),
+                "It eases in instead of snapping to full level.");
+
+            player.AdvanceMix(MusicMix.FadeInSeconds);
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(HomeSmokingMusicPlayer.TargetVolume)
+                    .Within(0.001f));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BeginRuleFadeOut_LeavesThroughTheSharedFade()
+        {
+            HomeSmokingMusicPlayer player = CreatePlayer();
+            testClip = AudioClip.Create(
+                "Smoking Music Exit Test Clip",
+                44100,
+                1,
+                44100,
+                false);
+            player.Source.clip = testClip;
+            player.BeginFromStart();
+            player.ApplyNormalizedGain(1f);
+
+            Assert.That(player.BeginRuleFadeOut(), Is.True);
+            Assert.That(player.IsRuleFadeOutActive, Is.True);
+            Assert.That(MusicMix.IsFadeOutActive, Is.True);
+
+            player.AdvanceMix(MusicMix.FadeOutSeconds * 0.5f);
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(HomeSmokingMusicPlayer.TargetVolume * 0.5f)
+                    .Within(0.001f));
+            Assert.That(player.Source.isPlaying, Is.True);
+
+            player.AdvanceMix(MusicMix.FadeOutSeconds * 0.5f);
+            Assert.That(player.IsRuleFadeOutActive, Is.False);
+            Assert.That(player.Source.isPlaying, Is.False);
+            Assert.That(player.Source.volume, Is.Zero.Within(0.0001f));
+            Assert.That(MusicMix.IsFadeOutActive, Is.False);
+            yield return null;
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            MusicMix.ClearFadeOuts();
             if (musicObject != null)
             {
                 Object.Destroy(musicObject);
+            }
+
+            if (outgoingObject != null)
+            {
+                Object.Destroy(outgoingObject);
             }
 
             if (testClip != null)

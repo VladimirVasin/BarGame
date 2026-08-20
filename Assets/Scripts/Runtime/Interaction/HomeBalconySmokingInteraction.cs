@@ -351,7 +351,19 @@ namespace BarPromenade
             }
 
             ApplyCamera(timeline.CameraBlend);
-            music?.ApplyNormalizedGain(timeline.MusicGain);
+            if (timeline.Phase ==
+                PlayerAnimatedInteractionPhase.Exiting)
+            {
+                // Leaving the vignette is a music change like any other, so
+                // the theme goes out through the shared rule instead of the
+                // shorter camera-restore ramp.
+                music?.BeginRuleFadeOut();
+            }
+            else
+            {
+                music?.ApplyNormalizedGain(timeline.MusicGain);
+            }
+
             ApplyPrompt();
         }
 
@@ -548,7 +560,7 @@ namespace BarPromenade
             timeline?.Reset();
             SetCigaretteVisible(false);
             exhaleEffect?.StopAndClear();
-            music?.StopImmediate();
+            music?.BeginRuleFadeOut();
             home?.InteractionPrompt?.SetPrompt(string.Empty);
             modalLock.Restore();
             home?.FixedCamera?.ReapplyActiveShot();

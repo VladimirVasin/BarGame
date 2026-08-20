@@ -16,7 +16,6 @@ namespace BarPromenade
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
         public const float ThemeOutputVolume = 0.35f;
-        public const float BalconyFadeDurationSeconds = 1f;
 
         private HomeFixedCameraController cameraController;
         private bool hasObservedBalconyState;
@@ -93,11 +92,11 @@ namespace BarPromenade
 
             if (balconyActive)
             {
-                FadeOutAndPause(BalconyFadeDurationSeconds);
+                FadeOutAndPause(MusicMix.FadeOutSeconds);
             }
             else if (hadObservation)
             {
-                ResumeWithFadeIn(BalconyFadeDurationSeconds);
+                ResumeWithFadeIn(MusicMix.FadeInSeconds);
             }
 
             return true;

@@ -6,6 +6,90 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-20 — A theme can belong to a place, not only to a scene
+
+- **The place is already in the data.** `CityDistrictKind` has carried
+  `Cemetery` all along, and `CityCemeteryPlan.Grounds` is the fenced footprint
+  in world XZ. Nothing new had to be authored to know where the cemetery is;
+  the music just had to read it.
+- **`CityLocationMusicDirector` holds the table.** One
+  `CityLocationMusicSlot` per place — id, grounds, player — with `city_theme`
+  as the default underneath. It resolves the hero's place each frame and hands
+  the mix over on a change. Adding another place is one more slot, not more
+  logic. The only slot today is the cemetery, and a seed without one
+  contributes nothing.
+- **The boundary is pure and tested.** `CityLocationMusicZones.Resolve` takes
+  the grounds, the active index and the hero's XZ; the active place keeps the
+  mix until he is `ExitMarginMeters` (`4 m`) clear of it. Without that hold a
+  walk along the fence would flap the mix, and each flap costs a whole
+  fade-out and fade-in.
+- **The handover is the existing rule at its existing length.** A shorter
+  `2 s` in-world fade was built and then dropped on the user's call: one rule
+  means one number, so walking between places in the city costs the same `4 s`
+  as a scene change. Nothing in the director spells the length out — it reads
+  `MusicMix.FadeOutSeconds` like everything else, and the order comes for free
+  because `FadeOutAndPause` registers with the mix and `ResumeWithFadeIn`
+  defers on it.
+- **Two things a place theme must not do.** It must not play before the hero
+  ever walked in, so every slot is parked with `FadeOutAndPause(0f)` at
+  initialization; and an empty optional slot must not be able to silence the
+  city, so a slot whose clip is absent is dropped rather than accepted. Both
+  themes resume from their own sample, so leaving and returning continues each
+  track where it stopped.
+- **Verification.** EditMode `CityLocationMusicZonesTests` 7/7 (hysteresis,
+  neighbouring grounds, degenerate rects, rejected margin). PlayMode
+  `CityLocationMusicDirectorPlayModeTests` 3/3 (handover through the rule,
+  the hold margin, an empty slot leaving the city playing, and opening
+  already inside the grounds). PlayMode
+  `SceneFlowSmokeTests.EnterAndExitBar_ReturnsToSameBarInSameCity` green with
+  the director wired into `CityGameRoot`. Runtime, EditMode and PlayMode
+  assemblies compile.
+- **Pre-existing failure, left alone.**
+  `SceneFlowSmokeTests.CityScene_BootstrapsGeneratedWorldPlayerAndFourBars`
+  fails on a stale city-size assertion — `Layout.BlockCount` expects
+  `(12, 12)`, the default city is `(17, 14)`. Unrelated to audio and out of
+  scope; the location-music coverage was moved into the bar round-trip test,
+  which actually runs.
+
+## 2026-08-20 — One theme leaves before the next one starts
+
+- **The rule lives in one place.** `MusicMix` owns `FadeOutSeconds = 4`,
+  `FadeInSeconds = 1` and the registry of themes that are still leaving.
+  `SceneMusicPlayer.DefaultFadeDurationSeconds` and
+  `HomeMusicPlayer.BalconyFadeDurationSeconds` are gone; every fade in the
+  game now reads its length from the rule.
+- **Nothing starts over an unfinished fade.** A theme can only begin through
+  `BeginFadeInThroughRule`, which holds it in the new `WaitingForMix` state
+  while `MusicMix.IsFadeOutActive` and starts it — `Play()` included, so the
+  track begins at its head — the frame the mix clears. Themes hand over
+  instead of crossfading.
+- **The tail outlives its scene instead of blocking it.** Four seconds of
+  fade-out and a `3.15 s` door presentation would have stacked into a
+  seven-second pause at every door. `MusicMix.BeginDetachedFadeOut` reparents
+  the music object into `DontDestroyOnLoad` and keeps the same `AudioSource`
+  running, so the streaming clip is never re-seeked and never clicks; the
+  player destroys its own carrier at zero. The old activation gate
+  (`IsOutgoingMusicFadeGateComplete`, `MusicFadeSafetyTimeoutSeconds`,
+  `AreMusicFadesComplete`) is deleted — `SceneTransitionService` just asks
+  every `IMusicMixSource` in the outgoing scene to leave.
+- **The in-scene changes obey the same rule.** Home fades `home_theme` out
+  over `4 s` on the Balcony shot and back in over `1 s` indoors, and
+  `HomeSmokingMusicPlayer` waits for that fade before its first note, eases in
+  over `FadeInSeconds` when it had to wait, and leaves through
+  `BeginRuleFadeOut` at the `Exiting` phase rather than the shorter
+  camera-restore ramp.
+- **Verification.** Focused PlayMode run of
+  `SceneMusicPlayerPlayModeTests`, `HomeMusicPlayerPlayModeTests` and
+  `HomeSmokingMusicPlayerPlayModeTests`: 15/15 green, including two new
+  cases proving a theme stays silent until the outgoing one reaches zero and
+  that the vignette theme leaves through the shared fade. Because the change
+  is shared, one more focused run covered the real round trip:
+  `SceneFlowSmokeTests.EnterAndExitBar_ReturnsToSameBarInSameCity` is green,
+  with its old "City music must stop when the bar replaces City" assertion
+  rewritten — a surviving city player is now allowed only as a detached
+  fade-out, and the test waits for it to go. The rest of the scene-flow suite
+  was out of scope.
+
 ## 2026-08-20 — The watchman has a yard of work, not one hole
 
 - **The job is repeatable and there can be several of them at once.**

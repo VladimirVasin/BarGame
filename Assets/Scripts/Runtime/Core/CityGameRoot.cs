@@ -21,6 +21,11 @@ namespace BarPromenade
         public CityWeatherController Weather { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
+        public CityLocationMusicDirector LocationMusic
+        {
+            get;
+            private set;
+        }
         public CityAmbiencePlayer Ambience { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
@@ -382,6 +387,11 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
+            LocationMusic = CityLocationMusicDirector.Create(
+                transform,
+                Player.GameObject.transform,
+                Music,
+                World.CemeteryPlan);
             CityStreetSurfacePlan pedestrianStreetSurfacePlan =
                 CityStreetSurfacePlanner.Create(Layout);
             PedestrianPlan = CityPedestrianPlanner.Create(

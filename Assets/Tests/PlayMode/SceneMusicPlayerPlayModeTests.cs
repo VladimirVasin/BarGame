@@ -8,6 +8,13 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class SceneMusicPlayerPlayModeTests
     {
         private GameObject musicObject;
+        private GameObject secondMusicObject;
+
+        [SetUp]
+        public void SetUp()
+        {
+            MusicMix.ClearFadeOuts();
+        }
 
         [UnityTest]
         public IEnumerator Awake_StartsThemeAtZeroAndFadesToTargetGain()
@@ -32,7 +39,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(SceneMusicPlaybackState.FadingIn));
 
             player.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds * 0.5f);
+                MusicMix.FadeInSeconds * 0.5f);
             Assert.That(
                 player.NormalizedGain,
                 Is.EqualTo(0.5f).Within(0.0001f));
@@ -41,7 +48,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(0.325f).Within(0.0001f));
 
             player.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds * 0.5f);
+                MusicMix.FadeInSeconds * 0.5f);
             Assert.That(player.NormalizedGain, Is.EqualTo(1f));
             Assert.That(player.Source.volume, Is.EqualTo(0.65f));
             Assert.That(player.IsFadeActive, Is.False);
@@ -56,7 +63,7 @@ namespace BarPromenade.Tests.PlayMode
             CityMusicPlayer player = CreatePlayer();
             yield return WaitForThemeReady(player);
             player.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds);
+                MusicMix.FadeInSeconds);
             player.Source.timeSamples = 4096;
             int expectedPausedSample = player.Source.timeSamples;
 
@@ -104,7 +111,7 @@ namespace BarPromenade.Tests.PlayMode
             CityMusicPlayer player = CreatePlayer();
             yield return WaitForThemeReady(player);
             player.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds);
+                MusicMix.FadeInSeconds);
 
             Assert.That(player.RequestSceneExitFade(0.6f), Is.True);
             Assert.That(player.IsSceneExitFadeRequested, Is.True);
@@ -146,7 +153,7 @@ namespace BarPromenade.Tests.PlayMode
             CityMusicPlayer player = CreatePlayer();
             yield return WaitForThemeReady(player);
             player.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds);
+                MusicMix.FadeInSeconds);
 
             Assert.That(player.RequestSceneExitFade(), Is.True);
             Assert.That(player.IsSceneExitFadeComplete, Is.False);
@@ -161,6 +168,48 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator OutgoingTheme_HoldsTheNextThemeSilentUntilItEnds()
+        {
+            CityMusicPlayer outgoing = CreatePlayer();
+            yield return WaitForThemeReady(outgoing);
+            outgoing.AdvanceFade(MusicMix.FadeInSeconds);
+            Assert.That(outgoing.NormalizedGain, Is.EqualTo(1f));
+
+            Assert.That(outgoing.RequestSceneExitFade(), Is.True);
+            Assert.That(
+                outgoing.IsDetachedForSceneExit,
+                Is.True,
+                "The departing theme keeps fading outside its scene.");
+            Assert.That(MusicMix.IsFadeOutActive, Is.True);
+
+            secondMusicObject = new GameObject("Scene Music Rule Test");
+            BarMusicPlayer incoming =
+                secondMusicObject.AddComponent<BarMusicPlayer>();
+            yield return WaitForThemeReady(incoming);
+
+            Assert.That(
+                incoming.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.WaitingForMix),
+                "A new theme must not start over an unfinished fade-out.");
+            Assert.That(incoming.IsFadeInDeferred, Is.True);
+            Assert.That(incoming.Source.isPlaying, Is.False);
+            Assert.That(incoming.NormalizedGain, Is.Zero.Within(0.0001f));
+
+            outgoing.AdvanceFade(MusicMix.FadeOutSeconds);
+            Assert.That(outgoing.IsSceneExitFadeComplete, Is.True);
+            Assert.That(MusicMix.IsFadeOutActive, Is.False);
+            yield return null;
+
+            Assert.That(incoming.IsFadeInDeferred, Is.False);
+            Assert.That(incoming.Source.isPlaying, Is.True);
+            incoming.AdvanceFade(MusicMix.FadeInSeconds);
+            Assert.That(
+                incoming.PlaybackState,
+                Is.EqualTo(SceneMusicPlaybackState.Playing));
+            Assert.That(incoming.NormalizedGain, Is.EqualTo(1f));
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
@@ -169,6 +218,12 @@ namespace BarPromenade.Tests.PlayMode
                 Object.Destroy(musicObject);
             }
 
+            if (secondMusicObject != null)
+            {
+                Object.Destroy(secondMusicObject);
+            }
+
+            MusicMix.ClearFadeOuts();
             yield return null;
         }
 

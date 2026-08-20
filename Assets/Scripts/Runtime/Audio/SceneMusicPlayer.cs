@@ -11,16 +11,17 @@ namespace BarPromenade
         Playing,
         FadingOut,
         Paused,
-        Silent
+        Silent,
+        WaitingForMix
     }
 
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AudioSource))]
     [RequireComponent(typeof(AudioLowPassFilter))]
-    public abstract class SceneMusicPlayer : MonoBehaviour
+    public abstract class SceneMusicPlayer :
+        MonoBehaviour,
+        IMusicMixSource
     {
-        public const float DefaultFadeDurationSeconds = 1f;
-
         private const float SilentGainThreshold = 0.0001f;
 
         [SerializeField] private AudioSource audioSource;
@@ -35,8 +36,12 @@ namespace BarPromenade
         private bool sourcePaused;
         private bool waitingForClipLoad;
         private bool resumeWhenClipLoads;
+        private bool detachedForSceneExit;
+        private bool fadeInDeferred;
+        private float deferredFadeInDurationSeconds =
+            MusicMix.FadeInSeconds;
         private float pendingFadeInDurationSeconds =
-            DefaultFadeDurationSeconds;
+            MusicMix.FadeInSeconds;
 
         public AudioSource Source => audioSource;
         public AudioLowPassFilter ToneFilter => toneFilter;
@@ -49,6 +54,18 @@ namespace BarPromenade
         public bool IsPaused =>
             PlaybackState == SceneMusicPlaybackState.Paused;
         public bool IsFadeActive => fadeActive;
+
+        /// <summary>
+        /// True while this theme is held silent because an earlier one is
+        /// still fading out. The mixing rule never lets the two overlap.
+        /// </summary>
+        public bool IsFadeInDeferred => fadeInDeferred;
+
+        /// <summary>
+        /// True once the theme has left its scene to finish its fade-out in
+        /// the persistent mix.
+        /// </summary>
+        public bool IsDetachedForSceneExit => detachedForSceneExit;
         public bool IsSceneExitFadeRequested { get; private set; }
         public bool IsSceneExitFadeComplete =>
             IsSceneExitFadeRequested &&
@@ -71,6 +88,7 @@ namespace BarPromenade
         protected virtual void Update()
         {
             RefreshClipLoadState();
+            RefreshDeferredFadeIn();
             AdvanceFade(Time.unscaledDeltaTime);
         }
 
@@ -83,10 +101,14 @@ namespace BarPromenade
             }
         }
 
+        public bool BeginSceneExitFadeOut()
+        {
+            return RequestSceneExitFade();
+        }
+
         public bool RequestSceneExitFade()
         {
-            return RequestSceneExitFade(
-                DefaultFadeDurationSeconds);
+            return RequestSceneExitFade(MusicMix.FadeOutSeconds);
         }
 
         public bool RequestSceneExitFade(float durationSeconds)
@@ -98,6 +120,7 @@ namespace BarPromenade
             }
 
             IsSceneExitFadeRequested = true;
+            fadeInDeferred = false;
             if (ActiveClip == null ||
                 NormalizedGain <= SilentGainThreshold)
             {
@@ -110,19 +133,24 @@ namespace BarPromenade
                 return false;
             }
 
+            // The tail outlives the scene that owns it, so a location change
+            // hears the whole fade-out instead of standing still for it.
+            detachedForSceneExit =
+                MusicMix.BeginDetachedFadeOut(audioSource);
             BeginFade(0f, durationSeconds, false);
             return fadeActive;
         }
 
         public void FadeOutAndPause()
         {
-            FadeOutAndPause(DefaultFadeDurationSeconds);
+            FadeOutAndPause(MusicMix.FadeOutSeconds);
         }
 
         public void FadeOutAndPause(float durationSeconds)
         {
             ValidateDuration(durationSeconds);
             IsSceneExitFadeRequested = false;
+            fadeInDeferred = false;
             if (ActiveClip == null)
             {
                 CancelFade();
@@ -141,12 +169,13 @@ namespace BarPromenade
                 return;
             }
 
+            MusicMix.BeginFadeOut(audioSource);
             BeginFade(0f, durationSeconds, true);
         }
 
         public void ResumeWithFadeIn()
         {
-            ResumeWithFadeIn(DefaultFadeDurationSeconds);
+            ResumeWithFadeIn(MusicMix.FadeInSeconds);
         }
 
         public void ResumeWithFadeIn(float durationSeconds)
@@ -156,6 +185,7 @@ namespace BarPromenade
             if (ActiveClip == null)
             {
                 CancelFade();
+                fadeInDeferred = false;
                 ApplyNormalizedGain(0f);
                 PlaybackState = SceneMusicPlaybackState.Unavailable;
                 return;
@@ -164,6 +194,7 @@ namespace BarPromenade
             if (waitingForClipLoad)
             {
                 CancelFade();
+                fadeInDeferred = false;
                 resumeWhenClipLoads = true;
                 sourcePaused = false;
                 pendingFadeInDurationSeconds = durationSeconds;
@@ -172,14 +203,14 @@ namespace BarPromenade
                 return;
             }
 
-            EnsurePlaybackRunning();
-            BeginFade(1f, durationSeconds, false);
+            BeginFadeInThroughRule(durationSeconds);
         }
 
         public void CompleteSceneExitFadeImmediately()
         {
             IsSceneExitFadeRequested = true;
             CancelFade();
+            fadeInDeferred = false;
             resumeWhenClipLoads = false;
             sourcePaused = false;
             if (audioSource != null)
@@ -191,6 +222,7 @@ namespace BarPromenade
             PlaybackState = ActiveClip == null
                 ? SceneMusicPlaybackState.Unavailable
                 : SceneMusicPlaybackState.Silent;
+            ReleaseDetachedSceneExit();
         }
 
         public void AdvanceFade(float unscaledDeltaTime)
@@ -266,8 +298,7 @@ namespace BarPromenade
             }
 
             resumeWhenClipLoads = true;
-            pendingFadeInDurationSeconds =
-                DefaultFadeDurationSeconds;
+            pendingFadeInDurationSeconds = MusicMix.FadeInSeconds;
             if (clip.loadState == AudioDataLoadState.Loaded)
             {
                 CompleteClipLoad();
@@ -322,11 +353,7 @@ namespace BarPromenade
                 return;
             }
 
-            EnsurePlaybackRunning();
-            BeginFade(
-                1f,
-                pendingFadeInDurationSeconds,
-                false);
+            BeginFadeInThroughRule(pendingFadeInDurationSeconds);
         }
 
         private void FailClipLoad()
@@ -334,11 +361,45 @@ namespace BarPromenade
             waitingForClipLoad = false;
             resumeWhenClipLoads = false;
             sourcePaused = false;
+            fadeInDeferred = false;
             CancelFade();
             audioSource.Stop();
             audioSource.clip = null;
             ApplyNormalizedGain(0f);
             PlaybackState = SceneMusicPlaybackState.Unavailable;
+        }
+
+        /// <summary>
+        /// The only way a theme is allowed to start. It never plays a note
+        /// while an earlier theme is still fading out; it waits silently and
+        /// begins the moment the mix is clear.
+        /// </summary>
+        private void BeginFadeInThroughRule(float durationSeconds)
+        {
+            MusicMix.ReleaseFadeOut(audioSource);
+            if (MusicMix.IsFadeOutActive)
+            {
+                CancelFade();
+                fadeInDeferred = true;
+                deferredFadeInDurationSeconds = durationSeconds;
+                ApplyNormalizedGain(0f);
+                PlaybackState = SceneMusicPlaybackState.WaitingForMix;
+                return;
+            }
+
+            fadeInDeferred = false;
+            EnsurePlaybackRunning();
+            BeginFade(1f, durationSeconds, false);
+        }
+
+        private void RefreshDeferredFadeIn()
+        {
+            if (!fadeInDeferred || MusicMix.IsFadeOutActive)
+            {
+                return;
+            }
+
+            BeginFadeInThroughRule(deferredFadeInDurationSeconds);
         }
 
         private void BeginFade(
@@ -385,6 +446,7 @@ namespace BarPromenade
                 PlaybackState = sourcePaused
                     ? SceneMusicPlaybackState.Paused
                     : SceneMusicPlaybackState.Silent;
+                ReleaseDetachedSceneExit();
             }
             else
             {
@@ -392,6 +454,30 @@ namespace BarPromenade
             }
 
             pauseWhenFadeCompletes = false;
+        }
+
+        /// <summary>
+        /// A theme that left its scene has nothing to come back to once it
+        /// reaches zero, so it takes its carrier object with it.
+        /// </summary>
+        private void ReleaseDetachedSceneExit()
+        {
+            MusicMix.ReleaseFadeOut(audioSource);
+            if (!detachedForSceneExit)
+            {
+                return;
+            }
+
+            detachedForSceneExit = false;
+            if (audioSource != null)
+            {
+                audioSource.Stop();
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(gameObject);
+            }
         }
 
         private void CancelFade()

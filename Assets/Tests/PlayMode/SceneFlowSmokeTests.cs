@@ -1217,12 +1217,20 @@ namespace BarPromenade.Tests.PlayMode
                 () => firstCity.IsInitialized,
                 "Initial city did not finish initialization.");
             Assert.That(firstCity.Music, Is.Not.Null);
+            Assert.That(firstCity.LocationMusic, Is.Not.Null);
+            Assert.That(firstCity.LocationMusic.IsInitialized, Is.True);
+            Assert.That(
+                firstCity.LocationMusic.ActiveLocationId,
+                Is.EqualTo(CityLocationMusicDirector.DefaultLocationId),
+                "The hero spawns on the street, not on a place theme.");
+            Assert.That(
+                firstCity.LocationMusic.ActiveTheme,
+                Is.SameAs(firstCity.Music));
             yield return WaitUntil(
                 () => firstCity.Music.PlaybackState !=
                       SceneMusicPlaybackState.Loading,
                 "City music did not finish loading.");
-            firstCity.Music.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds);
+            firstCity.Music.AdvanceFade(MusicMix.FadeInSeconds);
             CityMusicPlayer outgoingCityMusic = firstCity.Music;
 
             BarEntrance entrance = firstCity.World.Bars[1];
@@ -1259,19 +1267,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 outgoingCityMusic.IsSceneExitFadeRequested,
                 Is.True);
-            while (!SceneTransitionService
-                       .IsOutgoingMusicFadeGateComplete)
-            {
-                Assert.That(
-                    SceneManager.GetActiveScene().name,
-                    Is.EqualTo(SceneIds.City),
-                    "Scene activation must remain held until the outgoing " +
-                    "music gate completes.");
-                Assert.That(
-                    SceneTransitionService.IsTransitioning,
-                    Is.True);
-                yield return null;
-            }
+            Assert.That(
+                outgoingCityMusic.IsDetachedForSceneExit,
+                Is.True,
+                "The outgoing theme must leave its scene so the rule " +
+                "fade-out survives the load.");
+            Assert.That(
+                MusicMix.IsFadeOutActive,
+                Is.True,
+                "The city theme must still be fading through the mix.");
 
             DoorTransitionRoot enteringDoor = null;
             yield return WaitForLoadedRoot<DoorTransitionRoot>(
@@ -1305,11 +1309,21 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitUntil(
                 () => interior.IsInitialized && !SceneTransitionService.IsTransitioning,
                 "Bar transition did not settle.");
-            Assert.That(
+            CityMusicPlayer[] leavingCityMusic =
                 UnityEngine.Object.FindObjectsByType<CityMusicPlayer>(
-                    FindObjectsInactive.Include),
-                Is.Empty,
-                "City music must stop when the bar interior replaces City.");
+                    FindObjectsInactive.Include);
+            for (int i = 0; i < leavingCityMusic.Length; i++)
+            {
+                Assert.That(
+                    leavingCityMusic[i].IsDetachedForSceneExit,
+                    Is.True,
+                    "Only a detached rule fade-out may outlive City.");
+            }
+
+            yield return WaitUntil(
+                () => UnityEngine.Object.FindObjectsByType<CityMusicPlayer>(
+                          FindObjectsInactive.Include).Length == 0,
+                "The city theme must finish its fade-out and then go.");
             Assert.That(interior.Music, Is.Not.Null);
             Assert.That(
                 interior.Music.ActiveClip.name,

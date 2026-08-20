@@ -392,18 +392,32 @@ The vertical slice contains:
   `Resources/Audio/SupermarketMusic` in `SupermarketInterior`, and the
   optional `stairwell_theme` slot loads only from
   `Resources/Audio/StairwellMusic` in `StairwellInterior`; Home adds an optional
-  `Resources/Audio/HomeMusic/home_theme` loop. Every scene theme starts at
-  zero gain, waits for its background-streamed clip data and fades in over one
-  unscaled second. The apartment theme alone caps its source volume at `0.35`
-  instead of the shared `0.65` scene-music level. Before a Single-load
-  activates, the destination preloads while the current scene remains alive
-  long enough for its theme to fade fully out. Home pauses `home_theme` after
-  its fade-out whenever the Balcony shot owns the doorway-hysteresis zone,
-  then resumes the same sample through a fade-in only after returning indoors.
-  Home also owns an optional interaction-local
-  `Resources/Audio/SmokingMusic/smoking_theme` loop: it starts from the
-  beginning with a `3.2 s` fade when the balcony-smoking vignette begins and
-  fades out with its `2 s` exit. Missing optional tracks are silent-safe. All
+  `Resources/Audio/HomeMusic/home_theme` loop. One mixing rule (`MusicMix`)
+  governs every music change, whether the hero loads into it or walks into
+  it: a theme always leaves through an unscaled `4 s` fade-out, and no other
+  theme may sound a note until that tail reaches zero, after which it starts
+  from silence with an unscaled `1 s` fade-in.
+  Every scene theme waits for its background-streamed clip data before that
+  entry. The apartment theme alone caps its source volume at `0.35` instead of
+  the shared `0.65` scene-music level. A departing theme detaches from its
+  scene into the persistent mix, so a Single-load never cuts the fade-out
+  short and never waits for it either: the tail finishes over the door
+  presentation while the destination streams in, and the destination theme
+  enters after it. Home pauses `home_theme` after the same `4 s` fade-out
+  whenever the Balcony shot owns the doorway-hysteresis zone, then resumes the
+  same sample through the `1 s` fade-in only after returning indoors and only
+  once the mix is clear. Home also owns an optional interaction-local
+  `Resources/Audio/SmokingMusic/smoking_theme` loop: it holds silent until the
+  apartment theme has finished leaving, eases in over the shared `1 s`, and
+  leaves through the shared `4 s` fade-out when the vignette exits.
+  Music is also bound to places, not only to scenes: `City` hands the mix to
+  an optional place theme whenever the hero stands on grounds that have one,
+  and takes it back on the way out. The one slot today is
+  `Resources/Audio/CemeteryMusic/cemetery_theme` over
+  `CityCemeteryPlan.Grounds`; the place keeps the mix until the hero is `4 m`
+  clear of those grounds, and both tracks resume from their own sample.
+  Missing optional tracks are silent-safe — an empty place slot simply leaves
+  the city theme playing. All
   themes route through the shared `Music` mixer group, receive a mild
   low-pass treatment and remain owned by their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
@@ -942,9 +956,10 @@ The vertical slice contains:
   envelope in and back to exactly zero during the smooth `2 s` Balcony-shot
   restoration. FOV has no extra pulse and generic `PlayerCameraFollow` remains
   unchanged. The
-  separate optional `smoking_theme` music starts from silence and fades with
-  the camera; without a supplied clip, the complete interaction remains
-  playable and silent;
+  separate optional `smoking_theme` music starts from silence once the
+  mixing rule clears the apartment theme, and leaves through the same shared
+  `4 s` fade-out rather than the camera ramp; without a supplied clip, the
+  complete interaction remains playable and silent;
 - one reusable animated-interaction timeline and player controller with a
   visible `Positioning` pre-phase followed by
   `Entering -> Looping -> Exiting`; each interaction supplies separate entry

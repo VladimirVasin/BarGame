@@ -29,8 +29,7 @@ namespace BarPromenade.Tests.PlayMode
                 HomeMusicPlayer.ResourcePath,
                 Is.EqualTo("Audio/HomeMusic/home_theme"));
             bool hasTheme = music.ActiveClip != null;
-            music.AdvanceFade(
-                SceneMusicPlayer.DefaultFadeDurationSeconds);
+            music.AdvanceFade(MusicMix.FadeInSeconds);
             Assert.That(
                 music.PlaybackState,
                 hasTheme
@@ -60,8 +59,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(HomeCameraShotKind.Balcony));
             Assert.That(music.RefreshBalconyState(), Is.True);
             Assert.That(music.IsBalconyActive, Is.True);
-            music.AdvanceFade(
-                HomeMusicPlayer.BalconyFadeDurationSeconds);
+            music.AdvanceFade(MusicMix.FadeOutSeconds);
             Assert.That(
                 music.PlaybackState,
                 hasTheme
@@ -87,8 +85,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(HomeCameraShotKind.MainRoom));
             Assert.That(music.RefreshBalconyState(), Is.True);
             Assert.That(music.IsBalconyActive, Is.False);
-            music.AdvanceFade(
-                HomeMusicPlayer.BalconyFadeDurationSeconds);
+            music.AdvanceFade(MusicMix.FadeInSeconds);
             Assert.That(
                 music.PlaybackState,
                 hasTheme
@@ -162,8 +159,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 music.PlaybackState,
                 Is.EqualTo(SceneMusicPlaybackState.FadingOut));
-            music.AdvanceFade(
-                HomeMusicPlayer.BalconyFadeDurationSeconds);
+            music.AdvanceFade(MusicMix.FadeOutSeconds);
 
             int pausedSample = music.Source.timeSamples;
             Assert.That(music.IsPaused, Is.True);
@@ -182,8 +178,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 music.PlaybackState,
                 Is.EqualTo(SceneMusicPlaybackState.FadingIn));
-            music.AdvanceFade(
-                HomeMusicPlayer.BalconyFadeDurationSeconds);
+            music.AdvanceFade(MusicMix.FadeInSeconds);
             Assert.That(
                 music.PlaybackState,
                 Is.EqualTo(SceneMusicPlaybackState.Playing));
