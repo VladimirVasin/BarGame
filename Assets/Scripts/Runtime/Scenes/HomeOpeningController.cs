@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -23,7 +23,9 @@ namespace BarPromenade
 
         private const float ClockFieldOfView = 42f;
         private const float SleeperFieldOfView = 57f;
-        public const float OpeningWakeDurationMultiplier = 2f;
+        // BedExit now carries its own four beats over six seconds, so the
+        // opening only stretches it a little rather than doubling it.
+        public const float OpeningWakeDurationMultiplier = 1.15f;
         public const float WakeCameraPathHeight = 0.32f;
 
         private readonly BarMinigameModalLock modalLock =
@@ -494,9 +496,11 @@ namespace BarPromenade
             }
             else
             {
+                // Aim between the hips and the chest of the man on the
+                // mattress, not at the pelvis bone itself.
                 Vector3 target =
                     home.BedInteractionPlan.ActionHipPosition +
-                    new Vector3(0f, 0.08f, 0f);
+                    new Vector3(0f, 0.14f, 0f);
                 position =
                     new Vector3(-4.54f, 2.25f, -2.82f);
                 rotation = LookAt(position, target);

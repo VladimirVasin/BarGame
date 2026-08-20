@@ -981,15 +981,26 @@ The vertical slice contains:
   props, partner animation and contact shadow through owned cleanup;
 - one reachable bed interaction on the long `zMin` side nearest the Home door:
   the first `E` walks and turns the 3D hero to a clear foot-side segment of
-  that edge, holds neutral for one frame and plays the three-second `BedEnter`
-  on the continuous rig. A dedicated low seated-pelvis waypoint holds the
-  character on the mattress edge with both feet grounded before movement can
-  continue between the standing dock and bed centre. The
+  that edge, holds neutral for one frame and plays the `3.75 s` `BedEnter`
+  on the continuous rig — the one contextual action authored on eased curves
+  with staggered keys, so the pelvis and legs lead each landmark and the
+  chest, head, arms and face reach it a few frames behind. A dedicated seated
+  pelvis waypoint holds the character on the mattress edge with both feet
+  grounded before movement can continue between the standing dock and bed
+  centre. The
   deterministic `BedSleepLoop` repeats with the existing breathing holds until
-  a second `E` plays `BedExit`; the opening can begin directly in that loop and
-  apply its one-shot wake-duration multiplier. Per-sample pelvis alignment
+  a second `E` plays the `6.0 s` `BedExit`; the opening can begin directly in
+  that loop and apply its one-shot wake-duration multiplier. Waking is a
+  four-beat sit-up rather than a roll: he curls onto his elbows into a
+  half-crouch on the mattress with both boots drawn under him, drops the right
+  leg over the near edge, then the left, and only then stands. Per-sample pelvis alignment
   keeps the sleeper at the authored bed action anchor, with the head at the
-  `xMin` pillow. Only a normally completed `BedExit` resets session fatigue;
+  `xMin` pillow. Both hip anchors are the mattress top plus a measured body
+  offset rather than a clearance guess: the generator reports how far the
+  supine back, the lifted head and the seated weight hang below the pelvis
+  bone, `PlayerCharacterDimensions` mirrors those numbers, and the pillow,
+  blanket and crumpled shirt are placed around the pose instead of through it.
+  Only a normally completed `BedExit` resets session fatigue;
   cancellation, transition, disable and destroy preserve it. Localized prompts
   and all normal/abnormal cleanup remain;
 - one bed-relative low-poly nightstand and 3D alarm clock that remain visible

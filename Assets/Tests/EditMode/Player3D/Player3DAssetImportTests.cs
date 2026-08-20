@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
@@ -47,6 +47,33 @@ namespace BarPromenade.Tests
             Assert.That(manifest.action_count, Is.EqualTo(29));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
+            // HomeBedInteraction builds its timeline from these same frame
+            // counts, so a re-timed bed clip has to fail here rather than
+            // quietly desynchronise the pelvis waypoint from the pose.
+            AssertActionMetadata(
+                manifest,
+                "BedEnter",
+                "bed",
+                3.75f,
+                false,
+                45,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "BedSleepLoop",
+                "bed",
+                4f,
+                true,
+                16,
+                4f);
+            AssertActionMetadata(
+                manifest,
+                "BedExit",
+                "bed",
+                6f,
+                false,
+                72,
+                12f);
             AssertActionMetadata(
                 manifest,
                 "BusBoardEnter",
@@ -283,6 +310,143 @@ namespace BarPromenade.Tests
             }
         }
 
+        /// <summary>
+        /// The bed timeline is built from frame counts held in C#, while the
+        /// clips it drives are authored in Blender. Nothing else compares the
+        /// two: drift here would leave every bed test green while the wake
+        /// played at the wrong speed, because they all recompute from the same
+        /// C# constants they are supposed to be checking.
+        /// </summary>
+        [Test]
+        public void BedTimingConstants_ReproduceTheAuthoredClipDurations()
+        {
+            TextAsset manifestAsset =
+                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+            if (manifestAsset == null)
+            {
+                Assert.Ignore(
+                    "Production Player 3D manifest has not been generated yet.");
+            }
+
+            Player3DManifest manifest =
+                JsonUtility.FromJson<Player3DManifest>(manifestAsset.text);
+
+            AssertRuntimeTiming(
+                manifest,
+                "BedEnter",
+                HomeBedInteraction.BedEnterFrameCount,
+                HomeBedInteraction.BedTransitionFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "BedSleepLoop",
+                HomeBedInteraction.SleepLoopFrameCount,
+                HomeBedInteraction.SleepLoopFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "BedExit",
+                HomeBedInteraction.BedExitFrameCount,
+                HomeBedInteraction.BedTransitionFramesPerSecond);
+        }
+
+        /// <summary>
+        /// Where the hero's weight lands on the bed, and when he is sitting on
+        /// its edge, are decided in Blender against the real posed meshes. The
+        /// Unity side only mirrors those numbers, and a mirror that nothing
+        /// reads is a mirror that drifts — the seat window had already drifted
+        /// once. The generator publishes them; this is what compares them.
+        /// </summary>
+        [Test]
+        public void BedContract_MatchesTheMeasuredGeneratorValues()
+        {
+            TextAsset manifestAsset =
+                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+            if (manifestAsset == null)
+            {
+                Assert.Ignore(
+                    "Production Player 3D manifest has not been generated yet.");
+            }
+
+            Player3DManifest manifest =
+                JsonUtility.FromJson<Player3DManifest>(manifestAsset.text);
+            Player3DManifestBedContract bed = manifest.bed_contract;
+            Assert.That(
+                bed,
+                Is.Not.Null,
+                "The manifest must publish the measured bed contract.");
+
+            AssertMirrored(
+                "supine pelvis support",
+                PlayerCharacterDimensions.SupinePelvisSupportOffset,
+                bed.supine_pelvis_offset_m);
+            AssertMirrored(
+                "supine head support",
+                PlayerCharacterDimensions.SupineHeadSupportOffset,
+                bed.supine_head_offset_m);
+            AssertMirrored(
+                "seated pelvis lift",
+                PlayerCharacterDimensions.SeatedPelvisSupportOffset,
+                bed.seated_pelvis_lift_m);
+            AssertMirrored(
+                "mattress height",
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight,
+                bed.mattress_above_floor_m);
+            AssertMirrored(
+                "enter seat arrival",
+                HomeBedInteractionPlan.EnterSeatArrivalProgress,
+                bed.enter_seat_arrival);
+            AssertMirrored(
+                "enter seat departure",
+                HomeBedInteractionPlan.EnterSeatDepartureProgress,
+                bed.enter_seat_departure);
+            AssertMirrored(
+                "exit seat arrival",
+                HomeBedInteractionPlan.ExitSeatArrivalProgress,
+                bed.exit_seat_arrival);
+            AssertMirrored(
+                "exit seat departure",
+                HomeBedInteractionPlan.ExitSeatDepartureProgress,
+                bed.exit_seat_departure);
+        }
+
+        private static void AssertMirrored(
+            string what,
+            float runtimeValue,
+            float authoredValue)
+        {
+            Assert.That(
+                runtimeValue,
+                Is.EqualTo(authoredValue).Within(0.0001f),
+                $"The runtime {what} is {runtimeValue:F4}, but the generator " +
+                $"measured {authoredValue:F4}. Re-run the Blender build and " +
+                "take the number from it; do not tune the Unity side.");
+        }
+
+        private static void AssertRuntimeTiming(
+            Player3DManifest manifest,
+            string name,
+            int runtimeFrameCount,
+            float runtimeFramesPerSecond)
+        {
+            Player3DManifestAction action = Array.Find(
+                manifest.actions,
+                candidate => string.Equals(
+                    candidate.name,
+                    name,
+                    StringComparison.Ordinal));
+            Assert.That(action, Is.Not.Null, $"Missing action '{name}'.");
+            Assert.That(
+                runtimeFrameCount / runtimeFramesPerSecond,
+                Is.EqualTo(action.duration_seconds).Within(0.0001f),
+                $"The runtime timeline plays '{name}' over " +
+                $"{runtimeFrameCount / runtimeFramesPerSecond:F3} s, but the " +
+                $"authored clip is {action.duration_seconds:F3} s long.");
+            Assert.That(
+                runtimeFrameCount,
+                Is.EqualTo(action.source_frame_count),
+                $"The runtime frame count for '{name}' must be the one the " +
+                "generator authored, or the held frames land elsewhere.");
+        }
+
         private static void AssertActionMetadata(
             Player3DManifest manifest,
             string name,
@@ -437,6 +601,20 @@ namespace BarPromenade.Tests
             public int action_count;
             public Player3DManifestPart[] parts;
             public Player3DManifestAction[] actions;
+            public Player3DManifestBedContract bed_contract;
+        }
+
+        [Serializable]
+        private sealed class Player3DManifestBedContract
+        {
+            public float supine_pelvis_offset_m;
+            public float supine_head_offset_m;
+            public float seated_pelvis_lift_m;
+            public float mattress_above_floor_m;
+            public float enter_seat_arrival;
+            public float enter_seat_departure;
+            public float exit_seat_arrival;
+            public float exit_seat_departure;
         }
 
         [Serializable]

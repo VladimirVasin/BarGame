@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -9,16 +9,32 @@ namespace BarPromenade
         private const float TriggerDepth = 0.72f;
         private const float TriggerHeight = 1.80f;
         private const float TriggerLength = 0.90f;
-        internal const float BedSurfaceClearance = 0.045f;
         internal const float ActionHipFootwardOffset = 0.135f;
         internal const float DoorSideDockFootInset = 0.45f;
-        internal const float DoorSideSeatInset = 0.07f;
+        internal const float DoorSideSeatInset = 0.16f;
+
+        // Both hip heights are the mattress plus the measured distance the
+        // authored pose hangs below the pelvis bone. Nothing here is a
+        // clearance guess: too little and he sinks into the bedding, too much
+        // and he sits in mid-air over it.
         internal const float SeatedHipHeight =
-            HomeInteriorWorldBuilder.BedDressingSurfaceHeight - 0.015f;
+            HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
+            PlayerCharacterDimensions.SeatedPelvisSupportOffset;
+        internal const float SleepingHipHeight =
+            HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
+            PlayerCharacterDimensions.SupinePelvisSupportOffset;
+
+        // The window each clip actually spends sitting on the edge. Waking is
+        // the longer one: he is seated from the half-crouch at 0.50 until his
+        // weight goes over his feet at 0.88, with the legs leaving the bed one
+        // at a time in between. These mirror the BedEnter and BedExit
+        // landmarks in tools/build-player-3d-model.py, which publishes them as
+        // `bed_contract` in the model manifest so drift fails a test rather
+        // than silently sliding the hero across the mattress.
         internal const float EnterSeatArrivalProgress = 0.28f;
-        internal const float EnterSeatDepartureProgress = 0.38f;
-        internal const float ExitSeatArrivalProgress = 0.63f;
-        internal const float ExitSeatDepartureProgress = 0.78f;
+        internal const float EnterSeatDepartureProgress = 0.44f;
+        internal const float ExitSeatArrivalProgress = 0.50f;
+        internal const float ExitSeatDepartureProgress = 0.88f;
         public const float UprightVisualOffset = 0.005f;
 
         private HomeBedInteractionPlan(
@@ -143,8 +159,7 @@ namespace BarPromenade
             Vector3 actionHip = new Vector3(
                 bounds.center.x +
                 (headToFootAxis.x * ActionHipFootwardOffset),
-                HomeInteriorWorldBuilder.BedDressingSurfaceHeight +
-                BedSurfaceClearance,
+                SleepingHipHeight,
                 centerZ +
                 (headToFootAxis.z * ActionHipFootwardOffset));
             Vector3 triggerSize = new Vector3(

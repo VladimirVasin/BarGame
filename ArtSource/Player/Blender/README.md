@@ -118,17 +118,46 @@ breaths shift weight through the pelvis and legs while the spine, chest, head,
 upper arms and forearms counter-move. `Walk` is a one-second eight-phase gait:
 each side passes through contact, down, passing and up poses with independent
 elbow, knee and ankle articulation and opposite arm swing. These two
-locomotion Actions alone use auto-clamped Bezier curves; contextual, facial
-and fall Actions plus `Relaxed` retain their authored linear timing.
+locomotion Actions and the three bed Actions use auto-clamped
+Bezier curves; the remaining contextual, facial and fall Actions plus
+`Relaxed` retain their authored linear timing.
+
+The bed Actions also stagger their keys. `BED_LEADING_BONES` (pelvis, spine
+and both legs) takes a landmark first and `BED_TRAILING_BONES` (chest, neck,
+head, both arms and the face) takes the same landmark a few frames later, so
+the hips lead a move and the chest, head and hands answer it. Both endpoints
+still key the whole rig, keeping the neutral and terminal seams exact.
+`_create_action` refuses a partial key on either endpoint.
 
 With the Home bed dock facing the room, the bed's source-space headboard
 direction is `-X` and the door-side long edge is `-Y`. `BedEnter` first seats
 the hero on that long edge, then swings both legs onto the mattress and lowers
 through an arm-supported side pose; `BedSleepLoop` keeps the head toward `-X`,
-the face upward and both eyes closed. `BedExit` wakes and rolls the hero,
-pushes the chest up while the legs leave the mattress, holds a grounded seated
-pose on the edge, leans weight over the planted feet and only then stands. The
-same Actions drive ordinary bed use and the slower opening wake.
+the face upward and both eyes closed. `BedExit` does not roll him: he stirs,
+lifts his head, curls onto his elbows and pushes up into a half-crouch on the
+mattress with both boots drawn under him, drops the right leg over the near
+edge, then the left, gathers on the edge and only then stands. A dedicated key
+holds the left leg up on the bedding while the right one finds the floor, so
+the two swings cannot blur into one. The same Actions drive ordinary bed use
+and the slightly slower opening wake.
+
+Runtime pins these Actions to the world by the pelvis bone and grounds nothing
+while they play, so how deep the hero sits in the bedding is decided here.
+`validate_bed_support_contract` measures the posed meshes and locks three
+numbers that `PlayerCharacterDimensions` mirrors: `BED_BODY_SUPPORT_OFFSET_M`
+(how far his back hangs below the pelvis bone when supine),
+`BED_HEAD_SUPPORT_OFFSET_M` (the same for the back of his lifted head, which
+is where the pillow's top is built) and `BED_SEATED_PELVIS_LIFT_M` (the pelvis
+height over the mattress that plants both boots on the floor). It also checks
+that nothing breaks the mattress plane through the sleep loop and the stretches
+either side of it, and that the head-side hand reaches the bed while the torso
+lowers. Since the wake became a sit-up rather than a roll, every sample from
+the first frame to the moment the first boot leaves the bedding is asserted,
+and a separate check states the beat itself: both boots up on the bed for the
+half-crouch, then the right one down while the left is still up, then both on
+the floor before he stands. Only the lie-down still rolls, so only its tail is
+held to the plane — a rolling body's support genuinely moves and the shared
+pelvis path carries one waypoint, not a profile.
 
 `SmokeEnter` settles the stance, reaches to the jacket, draws the cigarette,
 raises the right hand to the mouth, cups the first light with the left hand,

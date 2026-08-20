@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -14,7 +14,12 @@ namespace BarPromenade
             "Home Bed Crumpled Shirt";
         public const int SleepLoopFrameCount = 16;
         public const float SleepLoopFramesPerSecond = 4f;
-        public const int BedTransitionFrameCount = 36;
+        // Both are 12 fps in tools/build-player-3d-model.py: 45 frames is the
+        // 3.75 s BedEnter, 72 is the 6.0 s BedExit. Waking is the longer of
+        // the two on purpose — it has four separate beats to get through (sit
+        // up, right leg, left leg, stand) and a weary man rushes none of them.
+        public const int BedEnterFrameCount = 45;
+        public const int BedExitFrameCount = 72;
         public const float BedTransitionFramesPerSecond = 12f;
         public const int FullExhaleLoopFrameOffset = 3;
         public const float FullExhaleExtraHoldSeconds = 0.75f;
@@ -86,13 +91,13 @@ namespace BarPromenade
                     "BedEnter",
                     "BedSleepLoop",
                     "BedExit",
-                    enterFrameCount: BedTransitionFrameCount,
+                    enterFrameCount: BedEnterFrameCount,
                     enterFramesPerSecond:
                         BedTransitionFramesPerSecond,
                     loopFrameCount: SleepLoopFrameCount,
                     loopFramesPerSecond:
                         SleepLoopFramesPerSecond,
-                    exitFrameCount: BedTransitionFrameCount,
+                    exitFrameCount: BedExitFrameCount,
                     exitFramesPerSecond:
                         BedTransitionFramesPerSecond,
                     loopFrameExtraHoldSeconds:

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -290,7 +290,11 @@ namespace BarPromenade.Tests.PlayMode
                     "Sleep must remain in its loop until another E press.");
                 Assert.That(
                     home.AnimatedInteraction.FrameIndex,
-                    Is.InRange(24, 39));
+                    Is.InRange(
+                        home.Bed.Definition.LoopStartFrame,
+                        home.Bed.Definition.LoopStartFrame +
+                            home.Bed.Definition.LoopFrameCount - 1),
+                    "Sleep must keep cycling inside its own loop frames.");
                 frameChanged |=
                     home.AnimatedInteraction.FrameIndex !=
                     initialLoopFrame;
@@ -580,6 +584,12 @@ namespace BarPromenade.Tests.PlayMode
                 "The bed must not replace an interaction it already owns.");
             yield return null;
             AssertSleepingHeadToFootOrientation(home);
+            AssertBodyRestsOnMattress(
+                home,
+                "BedSleepLoop",
+                true,
+                SleepBeddingGive);
+            AssertHeadRestsOnPillow(home);
 
             Assert.That(home.Bed.RequestWake(), Is.True);
             Assert.That(
@@ -635,6 +645,48 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            Bed_SleepAndWakeNeverPushTheHeroThroughTheMattress()
+        {
+            yield return LoadHome();
+
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+            yield return null;
+
+            // The loop is the pose the player stares at, so it is held to
+            // resting on the mattress rather than merely clearing it.
+            for (int frame = 0; frame < 12; frame++)
+            {
+                AssertBodyRestsOnMattress(
+                    home,
+                    "BedSleepLoop",
+                    true,
+                    SleepBeddingGive);
+                AssertHeadRestsOnPillow(home);
+                yield return null;
+            }
+
+            Assert.That(home.Bed.RequestWake(), Is.True);
+
+            // Rolling over and pushing up all happen on the mattress. Past
+            // roughly a fifth of the wake he is sitting on the edge with his
+            // boots on the floor, where being below the mattress is correct.
+            float elapsed = 0f;
+            while (elapsed < 0.6f &&
+                   home.AnimatedInteraction.Phase ==
+                       PlayerAnimatedInteractionPhase.Exiting)
+            {
+                AssertBodyRestsOnMattress(
+                    home,
+                    $"BedExit at {elapsed:F2}s",
+                    false,
+                    WakeBeddingGive);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator
             Bed_FatigueResetsOnlyAfterCompletedWake()
         {
             yield return LoadHome();
@@ -685,6 +737,91 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(83),
                 "Cancelling an exiting bed interaction must not count as " +
                 "a completed sleep.");
+        }
+
+        /// <summary>
+        /// The complaint this exists for is "he sinks into the bed". Nothing
+        /// grounds the rig while a contextual clip owns it, so the only proof
+        /// is to look at where the visible meshes actually are.
+        /// </summary>
+        // Renderer AABBs are conservative and bedding compresses, so the
+        // allowance is not zero. The held sleeping pose is still near-exact;
+        // waking gets the same soft-goods give the Blender bed support
+        // validator grants it, because runtime eases the pelvis toward the
+        // bedside seat from the first frame of the wake.
+        private const float SleepBeddingGive = 0.01f;
+        private const float WakeBeddingGive = 0.03f;
+
+        private static void AssertBodyRestsOnMattress(
+            HomeInteriorRoot home,
+            string context,
+            bool requireContact,
+            float give)
+        {
+            Player3DCharacterPresentation presentation =
+                home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            float mattress =
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight;
+
+            float lowest = float.PositiveInfinity;
+            string lowestPart = "none";
+            foreach (Player3DAnatomicalPartBinding binding in
+                     presentation.Registry.AnatomicalParts)
+            {
+                if (binding?.Renderer == null)
+                {
+                    continue;
+                }
+
+                float bottom = binding.Renderer.bounds.min.y;
+                if (bottom < lowest)
+                {
+                    lowest = bottom;
+                    lowestPart = binding.Part.ToString();
+                }
+            }
+
+            Assert.That(
+                lowest,
+                Is.GreaterThan(mattress - give),
+                $"{context}: {lowestPart} reaches {lowest:F3}, below the " +
+                $"mattress at {mattress:F3} — the hero is inside the bed.");
+            if (requireContact)
+            {
+                Assert.That(
+                    lowest,
+                    Is.LessThan(mattress + 0.05f),
+                    $"{context}: the lowest part of him sits at " +
+                    $"{lowest:F3}, well over the mattress at {mattress:F3} " +
+                    "— he is lying on thin air.");
+            }
+        }
+
+        private static void AssertHeadRestsOnPillow(
+            HomeInteriorRoot home)
+        {
+            Player3DCharacterPresentation presentation =
+                home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            Assert.That(
+                presentation.Registry.TryGetPart(
+                    Player3DAnatomicalPart.Head,
+                    out Player3DAnatomicalPartBinding head),
+                Is.True);
+
+            float pillow =
+                HomeInteriorWorldBuilder.BedPillowSurfaceHeight;
+            Assert.That(
+                head.Renderer.bounds.min.y,
+                Is.GreaterThan(pillow - 0.03f),
+                "The sleeper's head must lie on the pillow, not inside it.");
+            Assert.That(
+                head.Renderer.bounds.min.y,
+                Is.GreaterThan(
+                    HomeInteriorWorldBuilder
+                        .BedMattressSurfaceHeight + 0.02f),
+                "and it must ride clear of the bare mattress.");
         }
 
         private static void AssertSleepingHeadToFootOrientation(

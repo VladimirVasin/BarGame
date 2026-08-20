@@ -212,9 +212,9 @@ namespace BarPromenade.Tests.EditMode
                 plan.ActionHipPosition.y,
                 Is.EqualTo(
                     HomeInteriorWorldBuilder
-                        .BedDressingSurfaceHeight +
-                    HomeBedInteractionPlan
-                        .BedSurfaceClearance)
+                        .BedMattressSurfaceHeight +
+                    PlayerCharacterDimensions
+                        .SupinePelvisSupportOffset)
                     .Within(Tolerance));
 
             AssertVector(

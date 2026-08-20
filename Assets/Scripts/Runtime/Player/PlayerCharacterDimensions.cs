@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace BarPromenade
 {
@@ -14,6 +14,18 @@ namespace BarPromenade
         // Matches the production A-pose pelvis bone head relative to the
         // grounded model root in tools/build-player-3d-model.py.
         public const float PelvisHeight = 0.70f;
+
+        // Contextual clips are pinned to the world by their pelvis bone and
+        // nothing grounds the rig while one plays, so how far the hero's
+        // weight hangs below that bone has to be a known quantity rather than
+        // a guessed clearance. tools/build-player-3d-model.py measures all
+        // three against the real posed meshes on every rebuild and publishes
+        // them as `bed_contract` in the model manifest; Player3DAssetImportTests
+        // fails if these copies drift from it. Take a new number from the
+        // generator's report — never tune one here.
+        public const float SupinePelvisSupportOffset = 0.1377f;
+        public const float SupineHeadSupportOffset = 0.0656f;
+        public const float SeatedPelvisSupportOffset = 0.0239f;
 
         public static Vector3 GetUprightPelvisPosition(
             Vector3 rootPosition,

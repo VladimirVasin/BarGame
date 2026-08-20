@@ -222,9 +222,12 @@ namespace BarPromenade.Tests.PlayMode
                 home.Room,
                 "Home Kitchen Top Left",
                 "Home Kitchen Dirty Dishes");
+            // The blanket has been shoved off the sleeper's half of the bed,
+            // so the shirt lies on the mattress it was always meant to be
+            // dropped on rather than on top of the bedding.
             AssertRestingOn(
                 home.Room,
-                "Home Bed Crooked Blanket",
+                "Home Bed Mattress",
                 "Home Bed Crumpled Shirt",
                 0.08f);
             AssertRestingOn(

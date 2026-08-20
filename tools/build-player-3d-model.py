@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.6.0"
+GENERATOR_VERSION = "2.7.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -166,6 +166,58 @@ REQUIRED_FACE_BONES = (
     "face.mouth",
 )
 
+# How far the supine sleeper's back and the back of his lifted head sit under
+# the pelvis bone that runtime pins to the mattress. Mirrored by
+# PlayerCharacterDimensions in the Unity runtime; validate_bed_support_contract
+# measures both against the real posed meshes and refuses a silent drift.
+BED_BODY_SUPPORT_OFFSET_M = 0.1377
+BED_HEAD_SUPPORT_OFFSET_M = 0.0656
+BED_SEATED_SUPPORT_OFFSET_M = 0.0109
+BED_SEATED_PELVIS_LIFT_M = 0.0239
+# Mirrors HomeInteriorWorldBuilder.BedMattressSurfaceHeight: how far the
+# mattress he sits on stands above the floor his boots have to reach.
+BED_MATTRESS_ABOVE_FLOOR_M = 0.56
+# Mirror HomeBedInteractionPlan: the windows each transition spends sitting on
+# the bedside edge, in normalized clip time.
+BED_ENTER_SEAT_ARRIVAL = 0.28
+BED_ENTER_SEAT_DEPARTURE = 0.44
+BED_EXIT_SEAT_ARRIVAL = 0.50
+BED_EXIT_SEAT_DEPARTURE = 0.88
+
+# The bed Actions stagger their landmarks: the pelvis and legs drive a move
+# and the chest, head, arms and face arrive at the same landmark a few frames
+# behind. Splitting the rig this way is what allows overlap at all — a key
+# that names every bone forces the whole body to turn on one frame.
+BED_LEADING_BONES = (
+    "pelvis",
+    "spine",
+    "thigh.L",
+    "shin.L",
+    "foot.L",
+    "thigh.R",
+    "shin.R",
+    "foot.R",
+)
+
+BED_TRAILING_BONES = (
+    "chest",
+    "neck",
+    "head",
+    "clavicle.L",
+    "upper_arm.L",
+    "forearm.L",
+    "hand.L",
+    "clavicle.R",
+    "upper_arm.R",
+    "forearm.R",
+    "hand.R",
+    "face.eye.L",
+    "face.eye.R",
+    "face.brow.L",
+    "face.brow.R",
+    "face.mouth",
+)
+
 REQUIRED_ACTIONS = (
     "Relaxed",
     "Idle",
@@ -242,6 +294,14 @@ class BonePose:
     target_direction: tuple[float, float, float] | None = None
     armature_direction: tuple[float, float, float] | None = None
     armature_location_m: tuple[float, float, float] | None = None
+
+
+# One authored landmark: normalized time, the full pose, and optionally the
+# only bones that take a key there. Both endpoints must key the whole rig.
+ActionKey = (
+    tuple[float, dict[str, BonePose]]
+    | tuple[float, dict[str, BonePose], tuple[str, ...]]
+)
 
 
 @dataclass(frozen=True)
@@ -2097,7 +2157,7 @@ class CharacterBuilder:
         loop: bool,
         source_frame_count: int,
         source_fps: float,
-        keys: Sequence[tuple[float, dict[str, BonePose]]],
+        keys: Sequence[ActionKey],
         interpolation: str = "LINEAR",
     ) -> None:
         if self.result is None:
@@ -2106,6 +2166,10 @@ class CharacterBuilder:
             raise ValueError(f"Duplicate Action {name}")
         if not keys or keys[0][0] != 0.0 or keys[-1][0] != 1.0:
             raise ValueError(f"Action {name} needs normalized 0 and 1 endpoints")
+        if len(keys[0]) > 2 or len(keys[-1]) > 2:
+            raise ValueError(
+                f"Action {name} must key the whole rig on both endpoints"
+            )
 
         action = bpy.data.actions.new(name)
         action.use_fake_user = True
@@ -2126,11 +2190,27 @@ class CharacterBuilder:
         animation_data.action = action
         keyed_bones = (*REQUIRED_BONES, *REQUIRED_FACE_BONES)
         previous_quaternions: dict[str, Quaternion] = {}
-        for normalized_time, pose in keys:
+        for key in keys:
+            normalized_time, pose = key[0], key[1]
+            # A key may name a subset of bones. Bones left out keep
+            # interpolating through this moment, which is the only way a
+            # chest, head or hand can lag behind the pelvis that leads it.
+            subset = key[2] if len(key) > 2 else None
+            if subset is not None:
+                unknown = tuple(
+                    bone_name for bone_name in subset
+                    if bone_name not in keyed_bones
+                )
+                if unknown:
+                    raise ValueError(
+                        f"Action {name} keys unknown bones {unknown}"
+                    )
             self._reset_pose()
             self._apply_pose(pose)
             frame = round(action.frame_end * normalized_time)
             for bone_name in keyed_bones:
+                if subset is not None and bone_name not in subset:
+                    continue
                 pose_bone = rig.pose.bones[bone_name]
                 quaternion = pose_bone.rotation_quaternion.copy()
                 previous_quaternion = previous_quaternions.get(bone_name)
@@ -3106,6 +3186,33 @@ class CharacterBuilder:
                 ),
             )
 
+        # A tired man shifts his weight before he folds. The lead-in gives
+        # the sit something to come out of instead of starting at speed.
+        bed_stand_shift = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-1.5, 0.0, -3.5),
+                    location_m=(0.0, -0.012, 0.0),
+                ),
+                "spine": BonePose(rotation_degrees=(-4.5, 0.0, 3.0)),
+                "chest": BonePose(rotation_degrees=(4.0, 0.0, -2.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, 0.0, 1.5)),
+                "head": BonePose(rotation_degrees=(4.0, 0.0, -1.5)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.070, -0.020, -0.330)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.055, -0.004, -0.331)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-7.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-8.0, -3.0, 2.0)),
+                "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
+                "thigh.R": BonePose(rotation_degrees=(-2.0, 0.0, -2.0)),
+                "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+            },
+        )
         bed_edge_bend = self.merge_pose(
             relaxed,
             {
@@ -3143,12 +3250,42 @@ class CharacterBuilder:
                 "forearm.R": BonePose(
                     rotation_degrees=(4.0, 0.0, -10.0)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(-35.0, 0.0, 5.0)),
-                "thigh.R": BonePose(rotation_degrees=(-40.0, 0.0, -5.0)),
-                "shin.L": BonePose(rotation_degrees=(40.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(40.0, 0.0, 0.0)),
+                # The mattress stands higher than his knee, so he perches
+                # with his heels drawn back under him. Straighter legs would
+                # leave the boots hanging in the air.
+                "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-47.0, 0.0, -5.0)),
+                "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "foot.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
                 "foot.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+            },
+        )
+        # The mattress absorbs him: the hips land, the spine compresses and
+        # the shoulders drop a beat later. Without this the sit is a snap.
+        bed_edge_settle = self.merge_pose(
+            bed_edge_sit,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-1.0, 0.0, 0.0),
+                    location_m=(0.0, 0.004, -0.085),
+                ),
+                "spine": BonePose(rotation_degrees=(11.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-6.0, 0.0, 2.0)),
+                "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(3.0, 0.0, -1.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.085, 0.020, -0.300)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.085, 0.020, -0.300)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(2.0, 0.0, 8.0)),
+                "forearm.R": BonePose(rotation_degrees=(2.0, 0.0, -8.0)),
+                "thigh.L": BonePose(rotation_degrees=(-45.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-49.0, 0.0, -5.0)),
+                "shin.L": BonePose(rotation_degrees=(33.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(33.0, 0.0, 0.0)),
             },
         )
         bed_edge_scoot = self.merge_pose(
@@ -3186,10 +3323,48 @@ class CharacterBuilder:
                 "chest": BonePose(rotation_degrees=(13.0, -2.0, 7.0)),
                 "neck": BonePose(rotation_degrees=(8.0, 0.0, -2.0)),
                 "head": BonePose(rotation_degrees=(-2.0, 0.0, -5.0)),
+                # The head-side arm is already reaching back for the bed
+                # rather than swinging beside it.
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.070, -0.050, -0.250)
+                ),
+                "forearm.R": BonePose(rotation_degrees=(-14.0, -4.0, 4.0)),
+                "hand.R": BonePose(rotation_degrees=(16.0, 6.0, -3.0)),
                 "thigh.L": BonePose(rotation_degrees=(-18.0, 4.0, 7.0)),
                 "thigh.R": BonePose(rotation_degrees=(-22.0, -4.0, -7.0)),
                 "shin.L": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+            },
+        )
+        # He does not simply fall over: the head-side hand takes the weight
+        # on the mattress and the torso rides down that arm.
+        bed_lower_brace = self.merge_pose(
+            bed_leg_swing,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-24.0, 37.0, 45.0),
+                    location_m=(0.0, 0.025, -0.24),
+                ),
+                "spine": BonePose(rotation_degrees=(-17.0, 3.0, -9.0)),
+                "chest": BonePose(rotation_degrees=(13.0, -3.0, 8.0)),
+                "neck": BonePose(rotation_degrees=(9.0, 0.0, -3.0)),
+                "head": BonePose(rotation_degrees=(-4.0, 0.0, -6.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.090, 0.030, -0.255)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.070, -0.050, -0.250)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-6.0, 3.0, -3.0)),
+                "forearm.R": BonePose(rotation_degrees=(-14.0, -4.0, 4.0)),
+                "hand.L": BonePose(rotation_degrees=(6.0, -5.0, 2.0)),
+                "hand.R": BonePose(rotation_degrees=(16.0, 6.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-3.0, 3.0, 8.0)),
+                "thigh.R": BonePose(rotation_degrees=(-8.0, -4.0, -8.0)),
+                "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.72, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.70, 1.0)),
             },
         )
         bed_lower_side = self.merge_pose(
@@ -3206,15 +3381,17 @@ class CharacterBuilder:
                 "upper_arm.L": BonePose(
                     target_direction=(0.08, -0.04, -0.23)
                 ),
+                # Still propped on the same arm, now folding under him.
                 "upper_arm.R": BonePose(
-                    target_direction=(-0.08, 0.04, -0.23)
+                    target_direction=(-0.075, -0.060, -0.190)
                 ),
                 "forearm.L": BonePose(
                     rotation_degrees=(-4.0, 3.0, -2.0)
                 ),
                 "forearm.R": BonePose(
-                    rotation_degrees=(-5.0, -3.0, 2.0)
+                    rotation_degrees=(-25.0, -4.0, 4.0)
                 ),
+                "hand.R": BonePose(rotation_degrees=(12.0, 6.0, -3.0)),
                 "thigh.L": BonePose(rotation_degrees=(12.0, 3.0, 8.0)),
                 "thigh.R": BonePose(rotation_degrees=(6.0, -4.0, -8.0)),
                 "shin.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
@@ -3248,11 +3425,11 @@ class CharacterBuilder:
             ),
             "spine": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
             "chest": BonePose(rotation_degrees=(7.0, 0.0, 4.0)),
-            "neck": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
-            "head": BonePose(rotation_degrees=(-12.0, 0.0, -4.0)),
+            "neck": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(-15.0, 0.0, -4.0)),
             "upper_arm.L": BonePose(rotation_degrees=(18.0, -8.0, 10.0)),
             "upper_arm.R": BonePose(rotation_degrees=(-12.0, 6.0, -12.0)),
-            "forearm.L": BonePose(rotation_degrees=(-35.0, 0.0, 18.0)),
+            "forearm.L": BonePose(rotation_degrees=(-50.0, 0.0, 18.0)),
             "forearm.R": BonePose(rotation_degrees=(-42.0, 0.0, -14.0)),
             "thigh.L": BonePose(rotation_degrees=(10.0, 0.0, 4.0)),
             "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -5.0)),
@@ -3261,130 +3438,240 @@ class CharacterBuilder:
             "face.eye.L": BonePose(scale=(1.0, 0.08, 1.0)),
             "face.eye.R": BonePose(scale=(1.0, 0.08, 1.0)),
         }
-        lying_breath = self.merge_pose(
+        # The terminal landmark is the deepest the body ever goes, so the
+        # settle arrives just short of it and eases the rest of the way in.
+        # Only the trailing half of the rig takes this key, which is what
+        # leaves the head a few frames behind the shoulders.
+        bed_settle_press = self.merge_pose(
             lying,
             {
-                "spine": BonePose(rotation_degrees=(-4.8, 0.0, -3.0)),
-                "chest": BonePose(rotation_degrees=(9.5, 0.0, 4.0)),
-                "neck": BonePose(rotation_degrees=(8.5, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(-12.5, 0.0, -4.0)),
+                "chest": BonePose(rotation_degrees=(4.5, 0.0, 4.0)),
+                "neck": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-10.0, 0.0, -4.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(15.0, -8.0, 10.0)),
+                "upper_arm.R": BonePose(rotation_degrees=(-14.0, 6.0, -12.0)),
+                "forearm.L": BonePose(rotation_degrees=(-44.0, 0.0, 18.0)),
+                "forearm.R": BonePose(rotation_degrees=(-38.0, 0.0, -14.0)),
+            },
+        )
+        # Sleep is not a metronome: the inhale is short, the exhale long, and
+        # the chest, shoulder, arm and hand all take part. The neutral pose is
+        # the fully exhaled one, so every breath lifts him off the mattress
+        # rather than pressing him into it.
+        lying_inhale_rise = self.merge_pose(
+            lying,
+            {
+                "chest": BonePose(rotation_degrees=(6.2, 0.0, 4.1)),
+                "neck": BonePose(rotation_degrees=(15.2, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-15.1, 0.0, -4.1)),
+                "upper_arm.R": BonePose(rotation_degrees=(-12.4, 6.2, -12.2)),
+            },
+        )
+        lying_inhale = self.merge_pose(
+            lying,
+            {
+                "spine": BonePose(rotation_degrees=(-4.4, 0.0, -3.0)),
+                "chest": BonePose(rotation_degrees=(4.9, 0.0, 4.2)),
+                "neck": BonePose(rotation_degrees=(15.6, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-15.4, 0.0, -4.3)),
+                "upper_arm.L": BonePose(rotation_degrees=(17.4, -8.4, 10.4)),
+                "upper_arm.R": BonePose(rotation_degrees=(-12.8, 6.4, -12.5)),
+                "forearm.L": BonePose(rotation_degrees=(-50.6, 0.0, 18.3)),
+                "forearm.R": BonePose(rotation_degrees=(-42.6, 0.0, -14.3)),
+                "hand.L": BonePose(rotation_degrees=(1.4, -5.0, 2.0)),
+            },
+        )
+        lying_exhale_fall = self.merge_pose(
+            lying,
+            {
+                "chest": BonePose(rotation_degrees=(6.0, 0.0, 4.0)),
+                "neck": BonePose(rotation_degrees=(15.3, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-15.2, 0.0, -4.1)),
+                "upper_arm.L": BonePose(rotation_degrees=(17.8, -8.2, 10.2)),
+                "forearm.R": BonePose(rotation_degrees=(-42.3, 0.0, -14.1)),
+            },
+        )
+        lying_settle = self.merge_pose(
+            lying,
+            {
+                "chest": BonePose(rotation_degrees=(6.8, 0.0, 3.9)),
+                "neck": BonePose(rotation_degrees=(15.1, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-15.1, 0.0, -3.9)),
+                "upper_arm.L": BonePose(rotation_degrees=(17.9, -7.9, 9.8)),
+                "forearm.L": BonePose(rotation_degrees=(-50.2, 0.0, 17.8)),
+                "thigh.R": BonePose(rotation_degrees=(-6.4, 0.0, -5.0)),
+                "shin.R": BonePose(rotation_degrees=(15.6, 0.0, 0.0)),
+            },
+        )
+        lying_drift = self.merge_pose(
+            lying,
+            {
+                "chest": BonePose(rotation_degrees=(6.9, 0.0, 3.9)),
+                "neck": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-14.9, 0.0, -3.8)),
+                "hand.L": BonePose(rotation_degrees=(1.2, -5.4, 2.2)),
+                "hand.R": BonePose(rotation_degrees=(2.6, 5.3, -2.2)),
             },
         )
         bed_wake_stir = self.merge_pose(
             lying,
             {
-                "spine": BonePose(rotation_degrees=(-10.0, 0.0, -2.0)),
-                "chest": BonePose(rotation_degrees=(16.0, 0.0, 3.0)),
-                "neck": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(-4.0, 0.0, -2.0)),
+                "spine": BonePose(rotation_degrees=(-4.5, 0.0, -2.0)),
+                "chest": BonePose(rotation_degrees=(6.5, 0.0, 3.0)),
+                "neck": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-13.0, 0.0, -2.0)),
                 "upper_arm.L": BonePose(
-                    rotation_degrees=(24.0, -8.0, 12.0)
+                    rotation_degrees=(18.0, -8.0, 10.0)
                 ),
                 "forearm.L": BonePose(
-                    rotation_degrees=(-48.0, 0.0, 20.0)
+                    rotation_degrees=(-56.0, 0.0, 20.0)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(24.0, 0.0, 5.0)),
-                "shin.L": BonePose(rotation_degrees=(-34.0, 0.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(4.0, 0.0, 5.0)),
+                "shin.L": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.42, 1.0)),
                 "face.eye.R": BonePose(scale=(1.0, 0.42, 1.0)),
             },
         )
-        bed_wake_roll = self.merge_pose(
-            bed_roll_back,
+        # Waking starts at the head. The chest and the near arm answer it,
+        # and only then does the body follow them over onto its side.
+        bed_wake_head_lift = self.merge_pose(
+            bed_wake_stir,
             {
-                "pelvis": BonePose(
-                    rotation_degrees=(-30.0, 50.0, 60.0),
-                    location_m=(0.0, 0.03, -0.31),
-                ),
-                "spine": BonePose(rotation_degrees=(-20.0, 4.0, -11.0)),
-                "chest": BonePose(rotation_degrees=(16.0, -4.0, 10.0)),
-                "neck": BonePose(rotation_degrees=(12.0, 0.0, -3.0)),
-                "head": BonePose(rotation_degrees=(-1.0, 0.0, -7.0)),
-                "upper_arm.L": BonePose(
-                    target_direction=(0.08, -0.04, -0.23)
-                ),
-                "upper_arm.R": BonePose(
-                    target_direction=(-0.08, 0.04, -0.23)
-                ),
-                "forearm.L": BonePose(
-                    rotation_degrees=(-4.0, 3.0, -2.0)
-                ),
-                "forearm.R": BonePose(
-                    rotation_degrees=(-5.0, -3.0, 2.0)
-                ),
-                "thigh.L": BonePose(rotation_degrees=(18.0, 0.0, 6.0)),
-                "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -6.0)),
-                "shin.L": BonePose(rotation_degrees=(-28.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "face.eye.L": BonePose(scale=(1.0, 0.90, 1.0)),
-                "face.eye.R": BonePose(scale=(1.0, 0.90, 1.0)),
+                "spine": BonePose(rotation_degrees=(-5.0, 0.0, -2.0)),
+                "chest": BonePose(rotation_degrees=(6.0, 0.0, 3.0)),
+                "neck": BonePose(rotation_degrees=(32.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-14.0, 0.0, -2.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(18.0, -9.0, 10.0)),
+                "forearm.L": BonePose(rotation_degrees=(-60.0, 0.0, 22.0)),
+                "hand.L": BonePose(rotation_degrees=(10.0, -6.0, 3.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.60, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.58, 1.0)),
             },
         )
-        bed_wake_push = self.merge_pose(
-            bed_leg_swing,
+        # Waking is a sit-up, not a roll. He curls onto his elbows, pushes up
+        # onto his hands and arrives hunched on the mattress with both feet
+        # drawn under him — then the legs go over the edge one at a time.
+        bed_wake_elbows = self.merge_pose(
+            lying,
             {
                 "pelvis": BonePose(
-                    rotation_degrees=(-18.0, 24.0, 28.0),
-                    location_m=(0.0, 0.02, -0.20),
+                    rotation_degrees=(-62.0, 64.0, 0.0),
+                    location_m=(0.0, 0.03, -0.38),
                 ),
-                "spine": BonePose(rotation_degrees=(-27.0, 2.0, -8.0)),
-                "chest": BonePose(rotation_degrees=(19.0, -2.0, 8.0)),
-                "neck": BonePose(rotation_degrees=(11.0, 0.0, -2.0)),
-                "head": BonePose(rotation_degrees=(5.0, 0.0, -5.0)),
+                "spine": BonePose(rotation_degrees=(4.0, 0.0, -2.0)),
+                "chest": BonePose(rotation_degrees=(2.0, 0.0, 3.0)),
+                "neck": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-10.0, 0.0, -3.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(34.0, -14.0, 16.0)),
+                "upper_arm.R": BonePose(rotation_degrees=(-30.0, 12.0, -18.0)),
+                "forearm.L": BonePose(rotation_degrees=(-74.0, 0.0, 24.0)),
+                "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, -20.0)),
+                # The thighs have to fold as fast as the pelvis rises. Left
+                # at their lying angle they would swing straight down through
+                # the mattress as the torso comes up.
+                "thigh.L": BonePose(rotation_degrees=(-28.0, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-38.0, 0.0, -5.0)),
+                "shin.L": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.72, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.70, 1.0)),
+            },
+        )
+        bed_wake_curl = self.merge_pose(
+            bed_wake_elbows,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-32.0, 34.0, 0.0),
+                    location_m=(0.0, 0.02, -0.24),
+                ),
+                "spine": BonePose(rotation_degrees=(14.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
+                "neck": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(6.0, 0.0, -2.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(22.0, -10.0, 12.0)),
+                "upper_arm.R": BonePose(rotation_degrees=(-20.0, 9.0, -13.0)),
+                "forearm.L": BonePose(rotation_degrees=(-44.0, 0.0, 16.0)),
+                "forearm.R": BonePose(rotation_degrees=(-42.0, 0.0, -14.0)),
+                "thigh.L": BonePose(rotation_degrees=(-78.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-86.0, 0.0, -6.0)),
+                "shin.L": BonePose(rotation_degrees=(56.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(64.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 0.88, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 0.86, 1.0)),
+            },
+        )
+        # The half-crouch on the mattress: knees drawn up, both boots flat on
+        # the bedding, weight forward over them, head still down.
+        bed_wake_hunch = self.merge_pose(
+            bed_wake_curl,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-4.0, 3.0, 0.0),
+                    location_m=(0.0, 0.01, -0.10),
+                ),
+                "spine": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-10.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(14.0, 0.0, -1.0)),
                 "upper_arm.L": BonePose(
-                    target_direction=(0.08, 0.08, -0.26)
+                    target_direction=(0.085, 0.070, -0.300)
                 ),
                 "upper_arm.R": BonePose(
-                    target_direction=(-0.08, 0.10, -0.26)
+                    target_direction=(-0.085, 0.070, -0.300)
                 ),
-                "forearm.L": BonePose(
-                    rotation_degrees=(-4.0, 3.0, -2.0)
+                "forearm.L": BonePose(rotation_degrees=(-30.0, 3.0, 6.0)),
+                "forearm.R": BonePose(rotation_degrees=(-31.0, -3.0, -6.0)),
+                "hand.L": BonePose(rotation_degrees=(8.0, -5.0, 2.0)),
+                "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -2.0)),
+                "thigh.L": BonePose(rotation_degrees=(-122.0, 0.0, 7.0)),
+                "thigh.R": BonePose(rotation_degrees=(-128.0, 0.0, -7.0)),
+                "shin.L": BonePose(rotation_degrees=(92.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(96.0, 0.0, 0.0)),
+                "face.eye.L": BonePose(scale=(1.0, 1.0, 1.0)),
+                "face.eye.R": BonePose(scale=(1.0, 1.0, 1.0)),
+            },
+        )
+        # The right leg is the one nearest the door-side edge, so it goes
+        # first. The knee opens outward before the foot ever leaves the bed.
+        bed_wake_right_lead = self.merge_pose(
+            bed_wake_hunch,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-2.0, -4.0, 0.0),
+                    location_m=(0.0, 0.01, -0.09),
                 ),
-                "forearm.R": BonePose(
-                    rotation_degrees=(-5.0, -3.0, 2.0)
+                "thigh.R": BonePose(rotation_degrees=(-122.0, -14.0, -18.0)),
+                "shin.R": BonePose(rotation_degrees=(88.0, 0.0, 0.0)),
+            },
+        )
+        bed_wake_right_down = self.merge_pose(
+            bed_wake_hunch,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(0.0, -2.0, 0.0),
+                    location_m=(0.0, 0.005, -0.08),
                 ),
-                "thigh.L": BonePose(rotation_degrees=(-17.0, 3.0, 8.0)),
-                "thigh.R": BonePose(rotation_degrees=(-22.0, -4.0, -8.0)),
+                "spine": BonePose(rotation_degrees=(20.0, 0.0, -1.0)),
+                "chest": BonePose(rotation_degrees=(-8.0, 0.0, 2.0)),
+                "head": BonePose(rotation_degrees=(11.0, 0.0, -2.0)),
+                "thigh.R": BonePose(rotation_degrees=(-47.0, -4.0, -6.0)),
+                "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+            },
+        )
+        bed_wake_left_down = self.merge_pose(
+            bed_wake_right_down,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(0.0, 0.0, 0.0),
+                    location_m=(0.0, 0.0, -0.07),
+                ),
+                "spine": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
+                "head": BonePose(rotation_degrees=(9.0, 0.0, -1.0)),
+                "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 5.0)),
                 "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(32.0, 0.0, 0.0)),
-            },
-        )
-        bed_wake_swing = self.merge_pose(
-            bed_edge_scoot,
-            {
-                "pelvis": BonePose(
-                    rotation_degrees=(-8.0, 6.0, 8.0),
-                    location_m=(0.0, 0.01, -0.13),
-                ),
-                "spine": BonePose(rotation_degrees=(-26.0, 0.0, -4.0)),
-                "chest": BonePose(rotation_degrees=(16.0, 0.0, 5.0)),
-                "head": BonePose(rotation_degrees=(6.0, 0.0, -3.0)),
-                "thigh.L": BonePose(rotation_degrees=(-28.0, 1.0, 6.0)),
-                "thigh.R": BonePose(rotation_degrees=(-33.0, -1.0, -6.0)),
-                "shin.L": BonePose(rotation_degrees=(35.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(37.0, 0.0, 0.0)),
-            },
-        )
-        bed_wake_sit_supported = self.merge_pose(
-            bed_edge_sit,
-            {
-                "pelvis": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
-                "spine": BonePose(rotation_degrees=(6.0, 0.0, -1.0)),
-                "chest": BonePose(rotation_degrees=(-3.0, 0.0, 2.0)),
-                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(4.0, 0.0, -1.0)),
-                "upper_arm.L": BonePose(
-                    target_direction=(0.04, 0.10, -0.28)
-                ),
-                "upper_arm.R": BonePose(
-                    target_direction=(-0.04, 0.10, -0.28)
-                ),
-                "forearm.L": BonePose(
-                    rotation_degrees=(-4.0, 3.0, -2.0)
-                ),
-                "forearm.R": BonePose(
-                    rotation_degrees=(-5.0, -3.0, 2.0)
-                ),
+                "foot.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
             },
         )
         bed_wake_sit = self.merge_pose(
@@ -3407,6 +3694,32 @@ class CharacterBuilder:
                 "forearm.R": BonePose(
                     rotation_degrees=(-14.0, 0.0, -8.0)
                 ),
+            },
+        )
+        # One held beat on the edge with his hands on his knees. It is the
+        # difference between a man waking up and a puppet being stood up.
+        bed_wake_gather = self.merge_pose(
+            bed_wake_sit,
+            {
+                "pelvis": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    target_direction=(0.075, 0.055, -0.315)
+                ),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.075, 0.055, -0.315)
+                ),
+                "forearm.L": BonePose(rotation_degrees=(-26.0, 2.0, 6.0)),
+                "forearm.R": BonePose(rotation_degrees=(-27.0, -2.0, -6.0)),
+                "hand.L": BonePose(rotation_degrees=(10.0, -4.0, 2.0)),
+                "hand.R": BonePose(rotation_degrees=(10.0, 4.0, -2.0)),
+                "thigh.L": BonePose(rotation_degrees=(-37.0, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-41.0, 0.0, -4.0)),
+                "shin.L": BonePose(rotation_degrees=(43.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
             },
         )
         bed_wake_lean = self.merge_pose(
@@ -3457,37 +3770,80 @@ class CharacterBuilder:
                 "shin.R": BonePose(rotation_degrees=(39.0, 0.0, 0.0)),
             },
         )
+        # Bed is the one place the hero gives his whole weight to the world,
+        # so its three Actions carry eased curves and staggered keys. The
+        # pelvis takes a landmark first and the chest, head and arms take the
+        # same landmark a few frames later, which is what reads as a body
+        # instead of a plank. Both endpoints still key the whole rig, so the
+        # neutral and terminal seams stay exact.
         self._create_action(
-            "BedEnter", "bed", 3.0, False, 36, 12,
+            "BedEnter", "bed", 3.75, False, 45, 12,
             (
                 (0.0, relaxed),
-                (0.12, bed_edge_bend),
-                (0.28, bed_edge_sit),
-                (0.38, bed_edge_scoot),
-                (0.52, bed_leg_swing),
-                (0.72, bed_lower_side),
-                (0.90, bed_roll_back),
+                (0.07, bed_stand_shift),
+                (0.17, bed_edge_bend),
+                (0.28, bed_edge_sit, BED_LEADING_BONES),
+                (0.31, bed_edge_sit, BED_TRAILING_BONES),
+                (0.36, bed_edge_settle),
+                (0.44, bed_edge_scoot),
+                (0.55, bed_leg_swing, BED_LEADING_BONES),
+                (0.59, bed_leg_swing, BED_TRAILING_BONES),
+                (0.67, bed_lower_brace),
+                (0.78, bed_lower_side, BED_LEADING_BONES),
+                (0.82, bed_lower_side, BED_TRAILING_BONES),
+                (0.89, bed_roll_back, BED_LEADING_BONES),
+                (0.93, bed_roll_back, BED_TRAILING_BONES),
+                (0.97, bed_settle_press, BED_TRAILING_BONES),
                 (1.0, lying),
             ),
+            interpolation="BEZIER",
         )
         self._create_action(
             "BedSleepLoop", "bed", 4.0, True, 16, 4,
-            ((0.0, lying), (0.5, lying_breath), (1.0, lying)),
-        )
-        self._create_action(
-            "BedExit", "bed", 3.0, False, 36, 12,
             (
                 (0.0, lying),
-                (0.10, bed_wake_stir),
-                (0.25, bed_wake_roll),
-                (0.42, bed_wake_push),
-                (0.54, bed_wake_swing),
-                (0.63, bed_wake_sit_supported),
-                (0.73, bed_wake_sit),
-                (0.82, bed_wake_lean),
-                (0.92, bed_wake_rise),
+                (0.16, lying_inhale_rise, BED_TRAILING_BONES),
+                (0.40, lying_inhale),
+                (0.58, lying_exhale_fall, BED_TRAILING_BONES),
+                (0.78, lying_settle),
+                (0.90, lying_drift, BED_TRAILING_BONES),
+                (1.0, lying),
+            ),
+            interpolation="BEZIER",
+        )
+        # Waking has four beats and they are deliberately separate: he sits up
+        # on the mattress into a half-crouch, drops the right leg over the
+        # near edge, then the left, and only then stands. There is no roll —
+        # a man getting out of bed on the door side has no reason to turn
+        # onto his shoulder first, and the sit-up keeps his weight over the
+        # bed the whole way, which is also what makes it checkable.
+        self._create_action(
+            "BedExit", "bed", 6.0, False, 72, 12,
+            (
+                (0.0, lying),
+                (0.05, bed_wake_stir),
+                (0.11, bed_wake_head_lift, BED_TRAILING_BONES),
+                (0.20, bed_wake_elbows),
+                (0.30, bed_wake_curl, BED_LEADING_BONES),
+                (0.33, bed_wake_curl, BED_TRAILING_BONES),
+                (0.43, bed_wake_hunch, BED_LEADING_BONES),
+                (0.46, bed_wake_hunch, BED_TRAILING_BONES),
+                (0.55, bed_wake_right_lead, BED_LEADING_BONES),
+                (0.63, bed_wake_right_down, BED_LEADING_BONES),
+                (0.66, bed_wake_right_down, BED_TRAILING_BONES),
+                # The left leg is held up on the bedding while the right one
+                # finds the floor. Without this key the two swings blur into
+                # one and the whole point of the beat is lost.
+                (0.68, bed_wake_hunch, ("thigh.L", "shin.L", "foot.L")),
+                (0.74, bed_wake_left_down, BED_LEADING_BONES),
+                (0.77, bed_wake_left_down, BED_TRAILING_BONES),
+                (0.80, bed_wake_sit),
+                (0.85, bed_wake_gather),
+                (0.91, bed_wake_lean),
+                (0.96, bed_wake_rise),
                 (1.0, relaxed),
             ),
+            interpolation="BEZIER",
         )
 
         smoke_rest = self.merge_pose(
@@ -4345,6 +4701,359 @@ def validate_manifold(obj: bpy.types.Object) -> None:
         bm.free()
 
 
+def validate_bed_support_contract(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Measure and lock the plane the sleeper's weight actually rests on.
+
+    Runtime pins the pelvis bone to one authored world point and nothing
+    grounds the rig while a clip owns it, so how deep the body sits in the
+    mattress is decided here and nowhere else. These offsets are mirrored in
+    Assets/Scripts/Runtime/Player/PlayerCharacterDimensions.cs; the report
+    below is the only honest source for those two numbers.
+    """
+
+    names = ("BedEnter", "BedSleepLoop", "BedExit")
+    if any(result.actions.get(name) is None for name in names):
+        return
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+
+    head_bones = {"head", *REQUIRED_FACE_BONES}
+    tolerance = 0.004
+
+    def sample(action_name: str, normalized_time: float) -> None:
+        record = result.actions[action_name]
+        animation_data.action = record.action
+        scene.frame_set(round(record.action.frame_end * normalized_time))
+        bpy.context.view_layer.update()
+
+    def lowest_named(selector) -> tuple[float, str]:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        minimum = math.inf
+        culprit = "?"
+        for part in result.parts:
+            if not selector(part):
+                continue
+            evaluated = part.obj.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            try:
+                if mesh is None:
+                    continue
+                for vertex in mesh.vertices:
+                    height = (evaluated.matrix_world @ vertex.co).z
+                    if height < minimum:
+                        minimum = height
+                        culprit = part.obj.name
+            finally:
+                evaluated.to_mesh_clear()
+        return minimum, culprit
+
+    def lowest(selector) -> float:
+        return lowest_named(selector)[0]
+
+    def is_body(part: PartRecord) -> bool:
+        # The satchel strap is soft goods pinned between his back and the
+        # bedding; the plane is where his body rests, not where its buckle
+        # presses in.
+        return (
+            part.bone not in head_bones
+            and part.bone != "neck"
+            and not part.obj.name.startswith("ACC_")
+        )
+
+    def is_head(part: PartRecord) -> bool:
+        # Loose hair spikes are allowed to press into a soft pillow; the
+        # skull and its cap are what must never disappear into one.
+        return (
+            part.bone in head_bones
+            and not part.obj.name.startswith("GEO_HairTuft")
+        )
+
+    def pelvis_height() -> float:
+        return (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+
+    try:
+        for name in names:
+            for fcurve in iter_action_fcurves(result.actions[name].action):
+                for keyframe in fcurve.keyframe_points:
+                    if keyframe.interpolation != "BEZIER":
+                        errors.append(
+                            f"{name} must use eased Bezier keys so the body "
+                            "does not change speed in a single frame"
+                        )
+                        break
+                else:
+                    continue
+                break
+
+        sample("BedEnter", 1.0)
+        pelvis = pelvis_height()
+        body_low, body_part = lowest_named(is_body)
+        head_low, head_part = lowest_named(is_head)
+        body_offset = pelvis - body_low
+        head_offset = pelvis - head_low
+        print(
+            "  Bed support offsets: "
+            f"body {body_offset:.4f} m ({body_part}), "
+            f"head {head_offset:.4f} m ({head_part}), "
+            f"head rides {body_offset - head_offset:.4f} m proud"
+        )
+        # Limbs may float over the mattress but must never break its plane;
+        # naming the offender is what makes a failure here actionable.
+        for probe in ("GEO_Hand.L", "GEO_Hand.R", "GEO_Foot.L", "GEO_Foot.R"):
+            depth = pelvis - lowest(lambda p, n=probe: p.obj.name == n)
+            if depth > BED_BODY_SUPPORT_OFFSET_M + tolerance:
+                errors.append(
+                    f"{probe} hangs {depth - BED_BODY_SUPPORT_OFFSET_M:.4f} m "
+                    "below the mattress in the sleeping pose"
+                )
+        if abs(body_offset - BED_BODY_SUPPORT_OFFSET_M) > tolerance:
+            errors.append(
+                "The supine body rests "
+                f"{body_offset:.4f} m under the pelvis bone, but "
+                f"BED_BODY_SUPPORT_OFFSET_M declares "
+                f"{BED_BODY_SUPPORT_OFFSET_M:.4f} m"
+            )
+        if abs(head_offset - BED_HEAD_SUPPORT_OFFSET_M) > tolerance:
+            errors.append(
+                "The supine head rests "
+                f"{head_offset:.4f} m under the pelvis bone, but "
+                f"BED_HEAD_SUPPORT_OFFSET_M declares "
+                f"{BED_HEAD_SUPPORT_OFFSET_M:.4f} m"
+            )
+        if head_offset >= body_offset - 0.02:
+            errors.append(
+                "The sleeper's head must ride clearly above the body plane "
+                "so a pillow can be built under it"
+            )
+
+        # Runtime slides the pelvis between the bedside seat and the sleeping
+        # target on a smoothstep, so the mattress sits a moving distance under
+        # the pelvis bone during both transitions. These mirror
+        # PlayerAnimatedInteractionPelvisTransition; measuring against a fixed
+        # offset would accuse an honest pose of clipping.
+        def eased(span: float) -> float:
+            span = min(1.0, max(0.0, span))
+            return span * span * (3.0 - (2.0 * span))
+
+        def entering_support_offset(normalized_time: float) -> float:
+            if normalized_time <= BED_ENTER_SEAT_DEPARTURE:
+                return BED_SEATED_PELVIS_LIFT_M
+            return BED_SEATED_PELVIS_LIFT_M + eased(
+                (normalized_time - BED_ENTER_SEAT_DEPARTURE) /
+                (1.0 - BED_ENTER_SEAT_DEPARTURE)
+            ) * (BED_BODY_SUPPORT_OFFSET_M - BED_SEATED_PELVIS_LIFT_M)
+
+        def exiting_support_offset(normalized_time: float) -> float:
+            if normalized_time >= BED_EXIT_SEAT_ARRIVAL:
+                return BED_SEATED_PELVIS_LIFT_M
+            return BED_BODY_SUPPORT_OFFSET_M + eased(
+                normalized_time / BED_EXIT_SEAT_ARRIVAL
+            ) * (BED_SEATED_PELVIS_LIFT_M - BED_BODY_SUPPORT_OFFSET_M)
+
+        # Since the wake became a sit-up rather than a roll, his weight stays
+        # on the bed from the first frame to the moment the first boot leaves
+        # it, and every one of those samples is checkable. Only the lie-down
+        # still rolls, so only its tail is asserted.
+        # The arrival and the long-held sleep are exact. Waking gets the same
+        # soft-goods allowance the bedside seat gets, because runtime starts
+        # easing the pelvis down toward the edge the instant the wake begins
+        # while he is still, correctly, lying flat and stirring.
+        windows = (
+            ("BedEnter", (0.95, 0.98, 1.0), entering_support_offset, tolerance),
+            (
+                "BedSleepLoop",
+                (0.0, 0.16, 0.4, 0.58, 0.78, 0.9, 1.0),
+                lambda _: BED_BODY_SUPPORT_OFFSET_M,
+                tolerance,
+            ),
+            # The wake has no roll any more, so the whole climb from flat to
+            # the half-crouch is checkable: he never leaves the mattress until
+            # the first leg goes over the edge.
+            (
+                "BedExit",
+                (0.0, 0.05, 0.11, 0.20, 0.26, 0.30, 0.36, 0.43, 0.46, 0.50),
+                exiting_support_offset,
+                0.02,
+            ),
+        )
+
+        for name, times, offset_at, give in windows:
+            for normalized_time in times:
+                sample(name, normalized_time)
+                plane = pelvis_height() - offset_at(normalized_time)
+                low, culprit = lowest_named(is_body)
+                if low < plane - give:
+                    errors.append(
+                        f"{name} at {normalized_time:.2f} pushes {culprit} "
+                        f"{plane - low:.4f} m through the mattress plane"
+                    )
+                head_low, head_part = lowest_named(is_head)
+                if head_low < plane - give:
+                    errors.append(
+                        f"{name} at {normalized_time:.2f} pushes {head_part} "
+                        f"{plane - head_low:.4f} m into the bed"
+                    )
+                elif head_low < plane + 0.02:
+                    errors.append(
+                        f"{name} at {normalized_time:.2f} drops the head "
+                        "below its pillow"
+                    )
+
+        # Sitting rests on a different part of him than lying does, so the
+        # edge of the bed needs its own measured offset.
+        sample("BedEnter", 0.36)
+        seat_pelvis = pelvis_height()
+        seat_low, seat_part = lowest_named(
+            lambda part: part.bone == "pelvis"
+        )
+        seat_offset = seat_pelvis - seat_low
+        seat_feet = seat_pelvis - lowest(
+            lambda part: part.bone in ("foot.L", "foot.R")
+        )
+        print(
+            f"  Bed seated support offset: {seat_offset:.4f} m ({seat_part}), "
+            f"boots {seat_feet:.4f} m under the pelvis"
+        )
+        if abs(seat_offset - BED_SEATED_SUPPORT_OFFSET_M) > tolerance:
+            errors.append(
+                f"The seated hero rests {seat_offset:.4f} m under the pelvis "
+                f"bone, but BED_SEATED_SUPPORT_OFFSET_M declares "
+                f"{BED_SEATED_SUPPORT_OFFSET_M:.4f} m"
+            )
+        # Sitting on the edge only works if one pelvis height both plants his
+        # boots on the floor and keeps his weight on the mattress. The boots
+        # decide it, because a floating foot is the more visible lie; what is
+        # left over is how much clearance stays under him.
+        seat_lift = seat_feet - BED_MATTRESS_ABOVE_FLOOR_M
+        print(
+            f"  Bed seated pelvis lift: {seat_lift:.4f} m above the mattress, "
+            f"leaving {seat_lift - seat_offset:.4f} m under him"
+        )
+        if abs(seat_lift - BED_SEATED_PELVIS_LIFT_M) > tolerance:
+            errors.append(
+                f"The seated landmark needs the pelvis {seat_lift:.4f} m over "
+                "the mattress to plant both boots, but "
+                f"BED_SEATED_PELVIS_LIFT_M declares "
+                f"{BED_SEATED_PELVIS_LIFT_M:.4f} m"
+            )
+        if not 0.0 <= seat_lift - seat_offset <= 0.03:
+            errors.append(
+                "Planting the boots must not lift the seated hero off the "
+                f"mattress or push him into it; clearance is "
+                f"{seat_lift - seat_offset:.4f} m"
+            )
+
+        # Bedding gives under a man's weight, so the edge gets a soft-goods
+        # allowance the long-held sleeping pose does not.
+        seated_give = 0.025
+        for name, times in (
+            ("BedEnter", (BED_ENTER_SEAT_ARRIVAL + 0.03, 0.36, 0.44)),
+            ("BedExit", (0.46, 0.55, 0.63, 0.74, 0.80, 0.85, 0.88)),
+        ):
+            for normalized_time in times:
+                sample(name, normalized_time)
+                seated_plane = pelvis_height() - BED_SEATED_SUPPORT_OFFSET_M
+                if lowest(lambda part: part.bone == "pelvis") < (
+                    seated_plane - seated_give
+                ):
+                    errors.append(
+                        f"{name} at {normalized_time:.2f} sinks the seated "
+                        "hero into the edge of the bed"
+                    )
+
+        # The wake's whole shape is that the legs leave one at a time, the
+        # near one first. Nothing else in the pipeline can notice if that
+        # order is lost, so it is stated here as a measurement: the right boot
+        # is already down while the left is still up on the bedding, and both
+        # are down before he stands.
+        def boot_drop(normalized_time: float, side: str) -> float:
+            sample("BedExit", normalized_time)
+            floor = pelvis_height() - BED_SEATED_PELVIS_LIFT_M - (
+                BED_MATTRESS_ABOVE_FLOOR_M
+            )
+            return lowest(lambda part: part.bone == f"foot.{side}") - floor
+
+        both_up = (boot_drop(0.46, "L"), boot_drop(0.46, "R"))
+        right_only = (boot_drop(0.68, "L"), boot_drop(0.68, "R"))
+        both_down = (boot_drop(0.80, "L"), boot_drop(0.80, "R"))
+        print(
+            "  Bed wake boots over the floor: "
+            f"crouch L{both_up[0]:+.3f} R{both_up[1]:+.3f}, "
+            f"right down L{right_only[0]:+.3f} R{right_only[1]:+.3f}, "
+            f"seated L{both_down[0]:+.3f} R{both_down[1]:+.3f}"
+        )
+        if min(both_up) < BED_MATTRESS_ABOVE_FLOOR_M - 0.05:
+            errors.append(
+                "BedExit must draw both boots up onto the bedding for the "
+                "half-crouch before either leg leaves the bed"
+            )
+        if right_only[1] > 0.06:
+            errors.append(
+                "BedExit must have the right boot down by 0.68; it hangs "
+                f"{right_only[1]:.3f} m over the floor"
+            )
+        if right_only[0] < right_only[1] + 0.20:
+            errors.append(
+                "BedExit must drop the right leg first and hold the left up "
+                f"meanwhile; left {right_only[0]:.3f} m, right "
+                f"{right_only[1]:.3f} m over the floor"
+            )
+        if max(both_down) > 0.03 or min(both_down) < -0.03:
+            errors.append(
+                "BedExit must plant both boots on the floor before he stands; "
+                f"left {both_down[0]:.3f} m, right {both_down[1]:.3f} m"
+            )
+
+        # The lowering is only believable if a hand actually meets the bed.
+        # The pelvis is still near seat height through this window, so the
+        # seated plane is the honest thing to measure a reaching hand
+        # against. This is a "reads as contact" band, not solved IK.
+        reaches = []
+        for normalized_time in (0.55, 0.60, 0.67, 0.74, 0.80):
+            sample("BedEnter", normalized_time)
+            plane = pelvis_height() - entering_support_offset(normalized_time)
+            reaches.append(
+                (
+                    normalized_time,
+                    lowest(lambda part: part.bone in ("hand.R", "forearm.R"))
+                    - plane,
+                )
+            )
+        print(
+            "  Bed brace hand: "
+            + ", ".join(f"{t:.2f}={reach:+.4f}" for t, reach in reaches)
+        )
+        deepest = min(reach for _, reach in reaches)
+        closest = min(abs(reach) for _, reach in reaches)
+        if deepest < -0.08:
+            errors.append(
+                "The bracing hand drops toward the floor while the torso "
+                f"lowers, {-deepest:.4f} m under the bed"
+            )
+        if closest > 0.05:
+            errors.append(
+                "The head-side hand must reach the mattress while the torso "
+                f"lowers; its closest approach is {closest:.4f} m"
+            )
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
 def validate_bed_sleep_pose(
     result: BuildResult,
     errors: list[str],
@@ -5177,6 +5886,7 @@ def validate_result(
                     break
 
     validate_bed_sleep_pose(result, errors)
+    validate_bed_support_contract(result, errors)
     validate_smoking_pose(result, errors)
     validate_seated_interaction_pose(
         result,
@@ -5546,6 +6256,20 @@ def write_manifest(
         "sprite_parts": list(SPRITE_PARTS),
         "bones": [bone.name for bone in result.rig.data.bones],
         "sockets": list(REQUIRED_SOCKET_BONES),
+        # The Unity runtime places the sleeper from these measurements and
+        # times his seat from these windows. Publishing them is what lets
+        # Player3DAssetImportTests fail on drift instead of trusting a comment
+        # in two files to stay in step.
+        "bed_contract": {
+            "supine_pelvis_offset_m": BED_BODY_SUPPORT_OFFSET_M,
+            "supine_head_offset_m": BED_HEAD_SUPPORT_OFFSET_M,
+            "seated_pelvis_lift_m": BED_SEATED_PELVIS_LIFT_M,
+            "mattress_above_floor_m": BED_MATTRESS_ABOVE_FLOOR_M,
+            "enter_seat_arrival": BED_ENTER_SEAT_ARRIVAL,
+            "enter_seat_departure": BED_ENTER_SEAT_DEPARTURE,
+            "exit_seat_arrival": BED_EXIT_SEAT_ARRIVAL,
+            "exit_seat_departure": BED_EXIT_SEAT_DEPARTURE,
+        },
         "actions": [
             {
                 "name": name,

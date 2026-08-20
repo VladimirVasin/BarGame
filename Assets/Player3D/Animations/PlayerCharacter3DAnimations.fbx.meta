@@ -36,7 +36,7 @@ ModelImporter:
       takeName: RIG_Player|BedEnter
       internalID: -6617112425389331939
       firstFrame: 0
-      lastFrame: 72
+      lastFrame: 90
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -65,7 +65,7 @@ ModelImporter:
       takeName: RIG_Player|BedExit
       internalID: 6206997764505020634
       firstFrame: 0
-      lastFrame: 72
+      lastFrame: 144
       wrapMode: 0
       orientationOffsetY: 0
       level: 0

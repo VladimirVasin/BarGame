@@ -6,7 +6,26 @@ namespace BarPromenade
 {
     public static class HomeInteriorWorldBuilder
     {
-        internal const float BedDressingSurfaceHeight = 0.67f;
+        // The bed is layered, so it has no single "surface". The mattress is
+        // the one the hero's weight actually lands on, both sitting on the
+        // edge and lying down, and the bedding is kept clear of him rather
+        // than left for him to sink through. Derived from the boxes below so
+        // the number cannot drift away from the geometry.
+        internal const float BedMattressCenterHeight = 0.47f;
+        internal const float BedMattressThickness = 0.18f;
+        internal const float BedMattressSurfaceHeight =
+            BedMattressCenterHeight + (BedMattressThickness * 0.5f);
+
+        // The pillow is not decoration: its top is exactly where the authored
+        // sleep pose puts the back of the hero's head, so it follows the clip
+        // rather than the clip having to dodge it.
+        internal const float BedPillowThickness = 0.10f;
+        internal const float BedPillowSurfaceHeight =
+            BedMattressSurfaceHeight +
+            PlayerCharacterDimensions.SupinePelvisSupportOffset -
+            PlayerCharacterDimensions.SupineHeadSupportOffset;
+        internal const float BedPillowCenterHeight =
+            BedPillowSurfaceHeight - (BedPillowThickness * 0.5f);
         internal const float KitchenDressingSurfaceHeight = 1.03f;
         internal const float TableDressingSurfaceHeight = 0.88f;
         internal const float BookcaseDressingSurfaceHeight = 2.25f;
@@ -829,24 +848,27 @@ namespace BarPromenade
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bed Mattress",
                 room,
-                center + (Vector3.up * 0.47f),
+                center + (Vector3.up * BedMattressCenterHeight),
                 new Vector3(
                     bounds.width - 0.16f,
-                    0.18f,
+                    BedMattressThickness,
                     bounds.height - 0.18f),
                 DirtyLinen,
                 HomeSurfaceKind.BedLinen,
                 SurfaceProjection.BoxXZ,
                 false));
+            // Shoved against the wall side and down toward the foot, clear of
+            // where he lies. An unmade bed still reads; a blanket under the
+            // sleeper would only read as a body sunk into it.
             GameObject blanket = HomeSurfacePrimitives.CreateBox(
                 "Home Bed Crooked Blanket",
                 room,
                 center +
-                new Vector3(0.24f, 0.61f, 0.10f),
+                new Vector3(0.45f, 0.60f, 0.545f),
                 new Vector3(
-                    bounds.width * 0.62f,
-                    0.10f,
-                    bounds.height * 0.82f),
+                    bounds.width * 0.45f,
+                    0.12f,
+                    bounds.height * 0.18f),
                 new Color(0.17f, 0.255f, 0.23f),
                 HomeSurfaceKind.Upholstery,
                 SurfaceProjection.BoxXZ,
@@ -854,15 +876,17 @@ namespace BarPromenade
             parts.Add(blanket);
             blanket.transform.localRotation =
                 Quaternion.Euler(0f, 5f, -2f);
+            // Worn flat and pressed into the mattress, so the authored sleep
+            // pose lands the back of his head on it instead of inside it.
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Pillow",
                 room,
                 center +
                 new Vector3(
                     -bounds.width * 0.28f,
-                    0.64f,
+                    BedPillowCenterHeight,
                     0f),
-                new Vector3(0.62f, 0.18f, 1.05f),
+                new Vector3(0.62f, BedPillowThickness, 1.05f),
                 new Color(0.47f, 0.43f, 0.34f),
                 HomeSurfaceKind.BedLinen,
                 SurfaceProjection.BoxXZ,

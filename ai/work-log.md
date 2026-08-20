@@ -6,6 +6,127 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-20 — Waking is four beats, and none of them is a roll
+
+- **The user watched it and said it was still wrong, then said exactly what he
+  wanted:** sit up into a half-crouch on the bed, drop the right leg, then the
+  left, and only then stand. So `BedExit` was re-cut to that and the roll onto
+  the side deleted outright.
+- **It is also the anatomically obvious motion.** The hero sleeps head toward
+  `-X`, face up, and the only way off the bed is the door-side `-Z` edge —
+  which puts his *right* side toward that edge. The near leg going first is
+  not a stylistic choice; it is the one that can go first.
+- **Removing the roll bought the checkability back.** The previous pass had to
+  leave the mid-roll unasserted, because a rolling body's support genuinely
+  moves and `PlayerAnimatedInteractionPelvisTransition` carries one waypoint,
+  not a profile. A sit-up keeps his weight on the mattress from the first frame
+  to the moment the first boot leaves it, so all ten samples through `0.50`
+  are now asserted against the eased pelvis path instead of excused.
+- **The beat itself is a measurement now.** `validate_bed_support_contract`
+  reports, and refuses to drift on: both boots up on the bedding for the
+  half-crouch (`L+0.547 R+0.540` over the floor, mattress at `0.560`), the
+  right boot down while the left is still up (`L+0.523 R-0.015` — half a metre
+  of separation), and both planted before he stands (`L-0.009 R-0.015`).
+  Nothing else in the pipeline could notice if that order were lost.
+- **The thighs have to fold as fast as the pelvis rises.** Authored blind, they
+  swung straight down through the mattress — `0.40 m` below the pelvis at the
+  elbow-prop landmark against `0.098 m` of clearance. In this rig the pelvis
+  rotation carries the legs, so a lying-pose thigh angle points the legs at the
+  floor the moment the torso comes up. Four measured passes fixed it; the body
+  now tracks the runtime plane within the stated bedding give at every sample.
+- **`BedExit` grew 3.75 s → 6.0 s** (72 frames at 12 fps) because four beats do
+  not fit in four seconds. That forced `BedTransitionFrameCount` to split into
+  `BedEnterFrameCount`/`BedExitFrameCount`, moved the seat window to
+  `0.50`–`0.88`, and dropped `OpeningWakeDurationMultiplier` to `1.15`.
+- **One silent-pass hazard found and closed.** Every bed and opening assertion
+  recomputes from `Definition.ExitFrameCount`, so the C# frame count and the
+  authored clip could have drifted apart with the whole suite green and the
+  wake playing at the wrong speed. `Player3DAssetImportTests`
+  `BedTimingConstants_ReproduceTheAuthoredClipDurations` now compares the
+  runtime constants against the manifest for all three bed clips.
+- **Verification:** generator clean; full export; `Player3DAssetSetup.Run`
+  (the `BedExit` clip kept its `internalID`, so the prefab's binding survived);
+  full EditMode **1299/1299**; PlayMode `HomeBedInteractionPlayModeTests`
+  **5/5**. `HomeOpeningPlayModeTests` still fails on its AudioSource count —
+  the same pre-existing failure proven against a stashed baseline earlier.
+- **Not run, and not runnable here:** whether it now looks like a man getting
+  out of bed. Batch mode has no game view.
+
+## 2026-08-20 — The bed was built beside the sleeper, not under him
+
+- **Two complaints, two measurable causes.** "Like a wooden doll" was
+  `_create_action`'s `interpolation="LINEAR"` default: only `Idle` and `Walk`
+  ever passed `BEZIER`, so eight landmarks in three seconds meant constant
+  speed inside each segment and an infinite-acceleration corner at every one.
+  "Sinks into the bed" was `BedDressingSurfaceHeight = 0.67`, a number that
+  matched no surface the builder actually made — mattress `0.56`, crooked
+  blanket `0.66`, pillow `0.73`.
+- **Nothing catches him.** Runtime pins a contextual clip by its pelvis bone
+  (`AlignActiveClipAnchor`) and `ApplyProceduralStatusPose` returns early for
+  as long as a clip is active, so `GroundOrdinaryPose` never corrects the
+  lying body. One guessed clearance decided everything, and it was wrong in
+  three directions at once: hips three centimetres inside the blanket, head
+  twelve inside the pillow, and — measured for the first time here — the
+  bedside sit eight centimetres above the bedding with both boots off the
+  floor. He was not sitting on the bed; he was hovering over it.
+- **Measure, then build.** Authoring blind does not work on this rig, so
+  `validate_bed_support_contract` reports rather than guesses: it samples the
+  real posed meshes and prints how far the supine back (`0.1377`, the jacket),
+  the back of the lifted head (`0.0656`, the hair cap) and the seated weight
+  (`0.0239`, the lift that plants both boots) hang below the pelvis bone.
+  `PlayerCharacterDimensions` mirrors those three; `HomeBedInteractionPlan`
+  adds them to `BedMattressSurfaceHeight`; the pillow's top is then *derived*
+  from the head offset instead of being placed and hoped for. Four probe runs
+  fixed the axis signs — both of my first guesses were inverted, and shin
+  rotation turned out to barely move the boot at all while the thigh moved it
+  `0.012 m` per degree.
+- **Overlap needed new machinery.** `_create_action` keyed all 25 bones on
+  every landmark, which makes lag physically impossible. A key may now name a
+  subset; `BED_LEADING_BONES` takes a landmark and `BED_TRAILING_BONES` takes
+  the same one a few frames later. Both endpoints must still key the whole
+  rig, and the function refuses a partial one. That plus Bezier is what
+  removed the doll read; `BedEnter`/`BedExit` also grew from `3.0 s` to
+  `3.75 s` with anticipation, a bedside settle, a hand planted on the mattress
+  through the lowering, and a held beat with his hands on his knees before he
+  stands.
+- **The blanket moved, not the sleeper.** Per the user's decision he lies on
+  the mattress; the crooked blanket is shoved to the wall side clear of his
+  corridor and the crumpled shirt now lies on the mattress it was always meant
+  to be dropped on. `HomeInteriorPresentationPlayModeTests` asserted the shirt
+  rests on the blanket, and now asserts the mattress.
+- **What is deliberately not asserted.** The roll between edge and back. A
+  rolling body's support genuinely moves — on your side your hips ride higher
+  than on your back — and `PlayerAnimatedInteractionPelvisTransition` carries
+  one waypoint, not a profile, so asserting through it would be asserting
+  against the runtime rather than against the pose. Modelling it properly
+  means reshaping code shared by five interactions, and the user scoped this
+  to the bed. The held poses either side of the roll are exact; the bedside
+  seat and the waking stir carry a stated soft-goods allowance because bedding
+  compresses and runtime starts easing the pelvis edge-ward from the wake's
+  first frame.
+- **Verification:** `blender --background --factory-startup --python
+  tools/build-player-3d-model.py` clean, then the full export; `dotnet build`
+  on Runtime, EditModeTests and PlayModeTests (0 errors); `Unity.exe
+  -batchmode -executeMethod Player3DAssetSetup.Run`; the **whole** EditMode
+  suite — `1298/1298`, including the five new `HomeBedDressingGeometryTests`;
+  PlayMode `HomeBedInteractionPlayModeTests` `5/5` with the new
+  `Bed_SleepAndWakeNeverPushTheHeroThroughTheMattress` sweeping every
+  anatomical renderer through the loop and the wake.
+- **Pre-existing red, confirmed by baseline rather than assumed.** Six
+  PlayMode failures survive on this branch and are none of mine — I stashed my
+  work and re-ran to prove it: two bus-passenger tests, the city route's
+  boarding dock, `Smoking_ClickableExitQueuesAtCalmFrameAndRestores`, the home
+  entry lamp's viewport framing (identical to five decimals with my changes
+  absent), and `HomeOpeningPlayModeTests`' AudioSource count (`13` vs `10`),
+  which counts sources long before the wake and belongs to the place-music
+  work committed just before this. `StatusFaceFallsAndContactShadowDrive3DBonesAndCleanUp` is
+  marginally red either way and floats — `0.526 / 0.565 / 1.004` against a
+  `0.5` threshold across runs.
+- **Not run, and not runnable here:** the look of it. Batch mode has no game
+  view, and no test can tell whether a man now lies down like a man. That
+  wants a play-mode look from the Home room shot and from the opening's
+  sleeper camera.
+
 ## 2026-08-20 — A theme can belong to a place, not only to a scene
 
 - **The place is already in the data.** `CityDistrictKind` has carried

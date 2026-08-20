@@ -271,6 +271,7 @@ Assets/
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
         HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + static Home stop
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
+                                   -> hip heights measured off the mattress, not guessed
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
         HomeRefrigeratorPlan.cs  body/approach/camera/audio anchors + eight slots
         HomeRefrigeratorWorldBuilder.cs  worn hollow cabinet, shelves, bins and contents
@@ -907,6 +908,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> shared dither fade / hold / restore
                                    -> full opacity during Home modal presentation
        -> HomeBedInteractionPlan -> reachable door-side trigger + seated waypoint
+                                 -> PlayerCharacterDimensions supine/seated support offsets
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
                                        -> visible Positioning -> Entering/Looping/Exiting

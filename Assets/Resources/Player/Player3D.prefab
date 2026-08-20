@@ -832,12 +832,12 @@ MonoBehaviour:
   - clipName: BedEnter
     category: bed
     clip: {fileID: -6617112425389331939, guid: d422d4befc223294aabace05eb97a274, type: 3}
-    authoredDuration: 3
+    authoredDuration: 3.75
     looping: 0
   - clipName: BedExit
     category: bed
     clip: {fileID: 6206997764505020634, guid: d422d4befc223294aabace05eb97a274, type: 3}
-    authoredDuration: 3
+    authoredDuration: 6
     looping: 0
   - clipName: BedSleepLoop
     category: bed
@@ -990,10 +990,10 @@ MonoBehaviour:
       m_Center: {x: -0.00000011920929, y: 0.875, z: 0.04145053}
       m_Extent: {x: 0.77390814, y: 0.875, z: 0.18854946}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 2.6.0
+  sourceGeneratorVersion: 2.7.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: eb7ff9d6dc8b6bc3745c4c7464364923
+  buildSignature: 5db5de1a8ea4a27846e2f2744e62c6d5
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

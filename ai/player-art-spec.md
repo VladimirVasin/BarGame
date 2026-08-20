@@ -49,8 +49,11 @@
   asymmetric breath/weight-shift phrases move the pelvis, spine, chest, head,
   arms and softly loaded knees. Walk uses contact/down/passing/up phases for
   both sides with independent elbow, knee and ankle articulation, opposite arm
-  swing and a closed neutral-root loop. Both locomotion clips use auto-clamped
-  Bezier interpolation; contextual and fall timing remains linear.
+  swing and a closed neutral-root loop. Both locomotion clips and the three bed
+  clips use auto-clamped Bezier interpolation; the remaining contextual and
+  fall timing stays linear. The bed clips additionally stagger their keys, so
+  the pelvis and legs take a landmark first and the chest, head, arms and face
+  reach it a few frames later. Both endpoints still key the whole rig.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing on registered face bones.
 - Left and right balance failures use `FallLeft/Right`, `DownLeft/Right` and
@@ -66,12 +69,20 @@
   neither side is produced by runtime mirroring. These are samples inside the
   existing `Rising` phase, not new gameplay states. The physical player root
   remains upright and fixed throughout.
-- Bed uses three-second `BedEnter` and `BedExit` clips around the persistent
+- Bed uses a `3.75 s` `BedEnter` and a `6.0 s` `BedExit` around the persistent
   `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
   swings both legs onto the mattress and lowers through a supported side pose
-  with his head toward the pillow. Waking rolls to the edge, plants both feet,
-  holds a supported seated pose, leans weight over the feet and only then
-  stands. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
+  with his head toward the pillow. Waking is a sit-up rather than a roll and
+  has four separate beats: he curls onto his elbows and pushes up into a
+  half-crouch on the mattress with both boots drawn under him, drops the right
+  leg over the near edge, then the left, and only then stands. The right leg
+  goes first because it is the one nearest the door-side edge; the left is
+  held up on the bedding until the right boot is down. Because runtime pins these clips by the pelvis bone and grounds
+  nothing while they play, the generator measures how far his back, the back of
+  his lifted head and his seated weight hang below that bone, and
+  `PlayerCharacterDimensions` mirrors those three numbers. The mattress is the
+  surface he rests on and the pillow's top is built at his head, rather than
+  the clip being asked to dodge bedding placed independently of it. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
   right hand retrieves a socket-bound cigarette, brings its mouth end to the
   lips for a held inhale, lowers for an outward exhale and discards it before
   returning to `Relaxed`. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
@@ -108,7 +119,13 @@
 - Rebuild through Blender with `tools/build-player-3d-model.py`; its validators
   own exact height, outward winding, unique mesh data, weights, triangle budget,
   required parts/bones/sockets/actions, no root motion, signature asymmetry and
-  the bed loop's head-to-foot, face-up and closed-eye orientation. Fall
+  the bed loop's head-to-foot, face-up and closed-eye orientation. Bed support
+  validation additionally measures the supine, head and seated offsets against
+  the real posed meshes, refuses eased-curve drift on the three bed clips, and
+  proves that nothing breaks the mattress plane through the sleep loop or the
+  stretches either side of it, that the seated landmark plants both boots
+  without hovering, and that the head-side hand reaches the bed while the
+  torso lowers. Fall
   validation also owns full-body `Down`/`Rise` seams, the two-key all-fours
   hold, grounded hand/knee/foot contacts, every exported Rise frame's visible
   floor boundary and the exact final `Relaxed` pose.

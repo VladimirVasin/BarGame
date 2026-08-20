@@ -1264,6 +1264,40 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the independent exit and the neutral ordinary rig stays locked until its
   final `LateUpdate` restoration frame. Normal and abnormal exits end the clip,
   reset its model-root spatial offset and restore owned presentation state.
+- **Accepted — The bed is built around the sleeper, not beside him:**
+  A contextual clip is pinned to the world by its pelvis bone and
+  `GroundOrdinaryPose` is off for as long as it owns the rig, so a single
+  guessed clearance decides whether the hero rests on the bed or inside it.
+  `HomeInteriorWorldBuilder.BedDressingSurfaceHeight` was one such guess and
+  matched no real surface: the mattress top is `0.56`, the crooked blanket
+  `0.66` and the pillow `0.73`, while the hero was placed at `0.715` — hips
+  three centimetres inside the blanket, head twelve inside the pillow, and
+  seated eight centimetres above the bedding with his boots off the floor.
+  The bed now derives from measurement in both directions.
+  `validate_bed_support_contract` in `tools/build-player-3d-model.py` samples
+  the real posed meshes and reports how far the supine back, the back of the
+  lifted head and the seated weight hang below the pelvis bone;
+  `PlayerCharacterDimensions` mirrors those three numbers and
+  `HomeBedInteractionPlan` adds them to `BedMattressSurfaceHeight`. The pillow's
+  top is then built at the head the clip authors, the crooked blanket is shoved
+  clear of the sleeper's corridor, and the crumpled shirt lies on the mattress.
+  The generator refuses drift in either the offsets or the poses; EditMode owns
+  the built geometry and PlayMode sweeps the real renderers through sleep and
+  wake. Bedding compresses, so the bedside seat and the waking stir carry a
+  stated soft-goods allowance while the held sleeping pose does not. The roll
+  itself is deliberately unasserted: a rolling body's support moves and the
+  shared pelvis transition carries one waypoint rather than a profile, so
+  asserting through it would assert against the runtime instead of the pose.
+  The three bed clips also became the first contextual Actions on auto-clamped
+  Bezier curves with staggered keys, which is what removed the wooden-doll
+  read; the other four contextual triads keep their linear timing until they
+  are re-authored in turn. Waking was then re-cut at the user's direction from
+  a roll into a four-beat sit-up — half-crouch on the mattress, right leg over
+  the near edge, then the left, then stand — which is both what a man getting
+  out on the door side actually does and what makes the whole wake checkable:
+  with no roll, his weight stays on the bed until the first boot leaves it, so
+  every sample of it is asserted, and the leg order is stated as its own
+  measurement rather than left to survive by accident.
 - **Accepted — Separate vertical home stairwell:** The exterior home door and
   apartment door connect through `StairwellInterior`, a deterministic
   `8.6 x 9.6 x 6.25 m` runtime-composed space with street, middle and apartment

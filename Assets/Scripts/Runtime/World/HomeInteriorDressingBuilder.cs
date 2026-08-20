@@ -239,7 +239,7 @@ namespace BarPromenade
             Vector3 center = new Vector3(
                 bed.Bounds.center.x,
                 HomeInteriorWorldBuilder
-                    .BedDressingSurfaceHeight,
+                    .BedMattressSurfaceHeight,
                 bed.Bounds.center.y);
             GameObject shirt = RuntimePrimitiveFactory.CreateBox(
                 "Home Bed Crumpled Shirt",
