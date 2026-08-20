@@ -88,6 +88,18 @@ The vertical slice contains:
   passes dither the horizontal-distance handoff from `43 m` to `31 m`, retain
   a `0.55` visibility floor beyond `12 m` and return to native Exp2 by `9 m`.
   Portal, throat and gate pieces deliberately retain `RuntimePrimitiveLit`;
+- one immutable default-only `CityFringeYardPlan` turns all five typed Yard
+  areas into authored middle ground derived from their canonical bounds,
+  declared access and sampled terrain. Four west/south variants share an old
+  municipal service-belt grammar of graded maintenance trace, drainage,
+  retaining work, sparse poles/cables and bounded repair/rockfall pockets; the
+  south-west variant owns the `6.9 m` tunnel forecourt and keeps a validated
+  drive-clear strip wider than `6 m`. The eastern variant stays a separate low
+  road/drain/pole/shed/berm utility edge and creates no ridge. Large masses are
+  physical, small traces and cables are visual only; declared street accesses
+  remain walkable, and the plan adds no interaction, destination, realtime
+  light, north/east mountain or world-bounds expansion. Portal frame, throat
+  and sealed gate remain owned by `CityMountainBoundaryPlan`;
 - one immutable river contract splits that default urban envelope with a
   `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
   road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic

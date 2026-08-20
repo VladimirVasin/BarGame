@@ -68,6 +68,10 @@ namespace BarPromenade
                 RoadWalkableArea.FromLayout(layout);
             CityMountainBoundaryPlan mountainBoundaryPlan =
                 CityMountainBoundaryPlanner.Create(layout);
+            CityFringeYardPlan fringeYardPlan =
+                CityFringeYardPlanner.Create(
+                    layout,
+                    mountainBoundaryPlan);
             CityDecorationPlan decorationPlan =
                 CityDecorationPlanner.CreatePlan(
                     layout,
@@ -87,6 +91,10 @@ namespace BarPromenade
                     world,
                     layout,
                     mountainBoundaryPlan);
+            GameObject fringeYardRoot =
+                CityFringeYardWorldBuilder.Build(
+                    world,
+                    fringeYardPlan);
             CityMountainBackdropWorldResult mountainBackdrop =
                 mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
@@ -175,6 +183,8 @@ namespace BarPromenade
                 riverRoot,
                 mountainBoundaryPlan,
                 mountainBoundaryRoot,
+                fringeYardPlan,
+                fringeYardRoot,
                 mountainBackdrop,
                 bounds);
         }

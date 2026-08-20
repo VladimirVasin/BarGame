@@ -28,6 +28,8 @@ namespace BarPromenade
             GameObject riverRoot,
             CityMountainBoundaryPlan mountainBoundaryPlan,
             GameObject mountainBoundaryRoot,
+            CityFringeYardPlan fringeYardPlan,
+            GameObject fringeYardRoot,
             CityMountainBackdropWorldResult mountainBackdrop,
             Bounds bounds)
         {
@@ -68,6 +70,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(
                     nameof(mountainBoundaryPlan));
             MountainBoundaryRoot = mountainBoundaryRoot;
+            FringeYardPlan = fringeYardPlan ??
+                throw new ArgumentNullException(nameof(fringeYardPlan));
+            FringeYardRoot = fringeYardRoot;
             MountainBackdrop = mountainBackdrop;
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
@@ -107,6 +112,8 @@ namespace BarPromenade
         public GameObject RiverRoot { get; }
         public CityMountainBoundaryPlan MountainBoundaryPlan { get; }
         public GameObject MountainBoundaryRoot { get; }
+        public CityFringeYardPlan FringeYardPlan { get; }
+        public GameObject FringeYardRoot { get; }
         public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public Bounds Bounds { get; }
 

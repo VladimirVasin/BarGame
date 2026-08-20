@@ -423,9 +423,9 @@ namespace BarPromenade.Tests
                 walkable.Contains(accessSurface.Center, 0.28f),
                 Is.True);
 
-            // The typed fringe precincts stay bare: the dressed yard is
-            // the gap immediately left of the home-frontage bar, not this
-            // pocket.
+            // The home-yard decorator does not claim typed fringe precincts:
+            // the gap immediately left of the home-frontage bar and the
+            // separately authored city edge remain distinct systems.
             CityOpenAreaDecorationPlan decorations =
                 CityOpenAreaDecorationPlanner.Create(layout);
             Rect pocket = layout.Surfaces
@@ -447,7 +447,7 @@ namespace BarPromenade.Tests
                             descriptor.Bounds.center.x,
                             descriptor.Bounds.center.z))),
                 Is.False,
-                "The eastern pocket carries no yard decoration.");
+                "The eastern pocket carries no home-yard decoration.");
 
             CityLayout repeat = CityLayoutGenerator.Generate(
                 blueprint,

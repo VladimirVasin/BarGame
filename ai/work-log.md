@@ -6,6 +6,27 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — The five fringe yards became an authored service belt
+
+- Added one deterministic `CityFringeYardPlan` for all five typed perimeter
+  Yards. Four west/south strips now share retaining, drainage, maintenance-track
+  and sparse utility language; the eastern Yard uses a separate low utility
+  edge and does not create an eastern mountain.
+- Moved the worn tunnel approach out of the mountain renderer and expanded it
+  into a protected freight sequence: street apron, cross-drain, wheel ruts,
+  paired tunnel cheeks and sealed portal. The mountain system still owns the
+  frame, dark throat and collidered gate, with no prompt or transition.
+- Added pure planning/validation plus 48-metre style/collision batches. Large
+  walls, stock and utility masses are physical; tracks, drains, cables and
+  markings stay colliderless, and every declared street access remains clear.
+- **Verification:** `BarPromenade.Runtime.csproj` built with `0` errors (the
+  existing `17` provider-field warnings remain). Two focused Unity invocations
+  exercised `CityFringeYardTests`: after correcting an NUnit iterator assertion,
+  planning, validation and materialization completed; the second run reached
+  only the authored renderer-budget check (`106` actual versus `96` expected).
+  The cap was corrected to `128`, matching the existing 48-metre batching
+  contract; fast-mode's two-invocation ceiling prevented another Unity rerun.
+
 ## 2026-08-20 — The closed tunnel is readable on the scrolling map
 
 - Replaced the map-scale gate speck with a fixed `19 x 17` high-contrast

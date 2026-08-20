@@ -16,9 +16,14 @@ reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
 access. The default city now reads as a coastal basin: physical flat-shaded
 mountain ridges close only its western and southern edges, with a separate
-southern notch left around the river. A sealed tunnel portal at the
-south-west Yard access is a visible future-location placeholder only — it
-adds no interaction, scene transition or walkable surface. A camera-relative
+southern notch left around the river. All five typed fringe Yards now carry
+deterministic authored edge compositions. The four west/south strips form one
+old municipal service belt of retaining work, drainage, a narrow maintenance
+trace, sparse utility verticals and repair/rockfall pockets; at the south-west
+access it contracts into a readable freight forecourt for the sealed tunnel.
+The eastern Yard uses a separate low utility-edge composition and creates no
+eastern ridge. The portal still adds no interaction, scene transition or
+walkable continuation. A camera-relative
 west/south ridge shell keeps that enclosing silhouette inside City's fixed
 `48 m` far plane without closing the northern sea or the deliberately
 untouched eastern horizon. Physical ridge chunks use one shared opaque
@@ -345,7 +350,9 @@ continues from `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
 `Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; the default-city
 mountain rim starts at `CityMountainBoundaryPlanner.cs` and materializes
 through `CityMountainBoundaryWorldBuilder.cs` plus the presentation-only
-`CityMountainBackdropWorldBuilder.cs`; supermarket truth starts
+`CityMountainBackdropWorldBuilder.cs`; the authored ground before that rim and
+the separate eastern utility edge start at `CityFringeYardPlanner.cs` and
+materialize through `CityFringeYardWorldBuilder.cs`; supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
 `Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,

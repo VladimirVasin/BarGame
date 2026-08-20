@@ -202,9 +202,13 @@ Assets/
         CityMountainBoundaryPlanner.cs deterministic terrain-sampled boundary materialization plan
         CityMountainBoundaryValidator.cs side/opening/tunnel invariants
         CityMountainBoundaryMeshFactory.cs flat-shaded physical ridge and portal-frame meshes
-        CityMountainBoundaryWorldBuilder.cs physical ridges, approach, portal, throat + collidered gate
+        CityMountainBoundaryWorldBuilder.cs physical ridges, portal, throat + collidered gate
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
+        CityFringeYardPlan.cs     five typed Yard profiles, parts + sealed forecourt contract
+        CityFringeYardPlanner.cs  terrain-graded service belt and separate low east utility edge
+        CityFringeYardValidator.cs area/access/corridor/vocabulary/budget invariants
+        CityFringeYardWorldBuilder.cs 48 m shared-material batches + large-mass collision only
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
@@ -525,6 +529,7 @@ Assets/
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
       CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
+      CityFringeYardTests.cs             five profiles, deterministic parts, clear sealed forecourt + inert build
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake identity, clearance and determinism
@@ -647,6 +652,10 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> south river notch
                                              -> sealed south-west tunnel stub
                                              -> camera-relative west/south backdrop
+                                          -> five typed fringe Yards
+                                             -> west/south municipal service belt
+                                             -> sealed tunnel forecourt with >=6 m clear lane
+                                             -> low eastern utility edge, no ridge
                                           -> CityLayoutGenerator -> validated CityLayout
                                            -> 13x12 envelope preserving 144 lots
                                            -> four UrbanBuilt areas + central park

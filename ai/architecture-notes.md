@@ -56,9 +56,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   erased by an almost fully fogged opaque depth write. The shader holds a
   `0.55` visibility floor beyond `12 m`, blends back to native City Exp2 by
   `9 m`, and repeats the identical clip contract in `DepthOnly` and
-  `DepthNormalsOnly`. Portal frame, throat, gate and approach remain ordinary
+  `DepthNormalsOnly`. Portal frame, throat and gate remain ordinary
   `RuntimePrimitiveLit` pieces because they are close-range props, not part of
-  the silhouette handoff.
+  the silhouette handoff; the graded approach, ruts, cross-drain, forecourt
+  cheeks and repair pocket belong to the sibling fringe-Yard plan.
   The one portal is derived from `yard-south-west-access`: an approximately
   `8 x 5.5 m` opening, short dark rock throat and visible metal gate with a
   collider. It is a sealed future-location stub, not a gameplay tunnel: there
@@ -160,15 +161,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   declared crossing metadata. World construction, navigation, pedestrians,
   bus routing and the City map consume the same validated plan rather than
   rediscovering the corridor from coordinates.
-- **Accepted — Typed yards instead of boundary voids:** The former unmapped
-  gaps behind the eastern, southern and western boundary streets are five
-  `Yard` areas: one `4 x 6` pocket east of the player's home and four
-  one-cell perimeter strips, each halved so it aligns to its own access
-  datum on the terraced perimeter. They reuse the open-area contract
-  wholesale — one declared street access, `OpenGround` surface, walkable
-  `OpenLand`, guard rails on the unsafe spans — and carry no decoration in
-  v1: they are authored placeholders, filled in later one at a time. The
-  lot and road-grid footprint is still normalized to `(0,0)` because every
+- **Accepted — Typed yards are authored edge areas, not boundary voids:** The
+  former gaps behind the eastern, southern and western boundary streets are
+  five `Yard` areas: one `4 x 6` pocket east of the player's home and four
+  one-cell perimeter strips, each halved so it aligns to its own access datum
+  on the terraced perimeter. They reuse the open-area contract wholesale —
+  one declared street access, sampled `OpenGround`, walkable `OpenLand` and
+  guard rails on unsafe spans — and a separate default-only
+  `CityFringeYardPlan` derives deterministic geometry from those same bounds,
+  accesses and terrain samples. Four west/south profiles share the grammar of
+  an old municipal service belt: graded maintenance trace, drainage,
+  retaining work, sparse poles/cables, repair stock and restrained rockfall.
+  The south-west profile owns the readable sealed-tunnel forecourt and keeps a
+  physical corridor wider than `6 m`; the east profile instead stays low with
+  a longitudinal service road, drain, poles, locked utility masses and broken
+  spoil berm, and never creates an east ridge. Large masses collide; tracks,
+  drains, cables and small traces do not. There is no new light, interaction,
+  prompt, scene or navigation continuation. The lot and road-grid footprint is
+  still normalized to `(0,0)` because every
   per-cell random stream hashes raw cell coordinates; only the
   `OpenLand`/`Water` fringe may reach `-1`, and the `(-1,-1)` corner stays
   void. Yards are excluded from signature stairs and from bus-stop corner
@@ -180,7 +190,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   walkable roadless gap immediately left of that bar, between it and the
   neighbouring supermarket. The dead tree and sparse traces therefore stay
   beside the bar instead of using the large eastern `Yard` precinct; all five
-  typed fringe yards remain separate bare areas. The rider's circuit is deliberately
+  typed fringe yards remain separate authored edge areas and do not inherit
+  the rider, ring or always-on light contract. The rider's circuit is deliberately
   unmarked — no drawn ring — and lives only in the yard site contract that
   the wheelchair plan, the slot clearances and the leaning utilities share. The same pure plan owns one
   stable wall-light descriptor. `CityOpenAreaWorldBuilder` mounts its static

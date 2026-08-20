@@ -149,8 +149,8 @@ namespace BarPromenade
         private const float WaterEdgeThickness = 0.42f;
         private const float AccessClearance = 0.45f;
 
-        // The yard immediately left of the selected bar. The
-        // typed fringe precincts are a different thing and stay bare.
+        // The yard immediately left of the selected bar. Typed fringe
+        // precincts are a different thing owned by CityFringeYardPlan.
         private const string HomeYardId = "home-yard";
         private const float YardRingEdgeMargin = 2.2f;
         private const float YardEdgeOffset = 3.4f;
@@ -542,7 +542,8 @@ namespace BarPromenade
         /// houses that belongs to nobody and is crossed by everybody.
         ///
         /// The typed <see cref="CityAreaFeatureKind.Yard"/> precincts on
-        /// the city fringe are a different thing and stay bare.
+        /// the city fringe are a different thing and are deliberately not
+        /// claimed by this home-yard planner.
         /// </summary>
         private static void BuildHomeYard(
             CityLayout layout,
