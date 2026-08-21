@@ -153,6 +153,8 @@ namespace BarPromenade
             new Color32(90, 91, 82, 255);
         private static readonly Color MountainTunnelThroat =
             new Color32(25, 28, 27, 255);
+        private static readonly Color MountainRiverCaveMouth =
+            new Color32(20, 24, 24, 255);
         private static readonly Color MountainTunnelGate =
             new Color32(178, 139, 72, 255);
         private static readonly Color WorksBridge =
@@ -758,20 +760,68 @@ namespace BarPromenade
                 return;
             }
 
-            // Carry the existing river colour through the deliberate gap in
-            // the south ridge before laying the mountain strokes over it.
-            if (plan.HasRiverNotch)
+            if (plan.HasRiverCave)
             {
-                DrawSolidRect(
-                    ProjectWorldRect(
-                        projection,
-                        plan.RiverNotch.OpeningBounds),
-                    RiverWater);
+                DrawRiverCaveApproach(projection, plan.RiverCave);
             }
 
             for (int index = 0; index < plan.Ridges.Count; index++)
             {
                 DrawMountainRidge(projection, plan.Ridges[index]);
+            }
+
+            if (plan.HasRiverCave)
+            {
+                DrawRiverCaveMouth(projection, plan.RiverCave);
+            }
+        }
+
+        private void DrawRiverCaveApproach(
+            MapProjection projection,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            DrawRiverCaveBank(projection, cave.WestBankBounds);
+            DrawRiverCaveBank(projection, cave.EastBankBounds);
+            DrawSolidRect(
+                ProjectWorldRect(projection, cave.WaterApproachBounds),
+                RiverWater);
+        }
+
+        private void DrawRiverCaveBank(
+            MapProjection projection,
+            Rect worldBounds)
+        {
+            Rect bank = ProjectWorldRect(projection, worldBounds);
+            DrawSolidRect(bank, RiverPromenade);
+            RetroUiTheme.StrokeRect(
+                bank,
+                1f,
+                RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.72f));
+        }
+
+        private void DrawRiverCaveMouth(
+            MapProjection projection,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Rect mouth = ProjectWorldRect(projection, cave.MouthBounds);
+            DrawSolidRect(mouth, MountainRiverCaveMouth);
+            RetroUiTheme.StrokeRect(
+                mouth,
+                2f,
+                RetroUiTheme.Ink);
+            float hatchDepth = Mathf.Min(5f, mouth.height);
+            float hatchRun = Mathf.Min(4f, mouth.width * 0.18f);
+            for (int index = 1; index <= 3; index++)
+            {
+                float x = Mathf.Lerp(
+                    mouth.xMin,
+                    mouth.xMax,
+                    index * 0.25f);
+                DrawLine(
+                    new Vector2(x, mouth.yMin),
+                    new Vector2(x - hatchRun, mouth.yMin + hatchDepth),
+                    1f,
+                    MountainHatch);
             }
         }
 

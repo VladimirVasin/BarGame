@@ -498,12 +498,12 @@ namespace BarPromenade
                     0.14f);
             }
 
-            if (mountains.HasRiverNotch &&
-                part.Footprint.Overlaps(mountains.RiverNotch.OpeningBounds))
+            if (mountains.HasRiverCave &&
+                part.Footprint.Overlaps(mountains.RiverCave.ApproachBounds))
             {
                 throw new InvalidOperationException(
                     $"Fringe part '{part.StableId}' intrudes into the river " +
-                    "mountain notch.");
+                    "cave approach.");
             }
 
             bool hasOwnerSample = false;

@@ -64,10 +64,12 @@ namespace BarPromenade
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
             RoadFencePlan fencePlan =
                 RoadFencePlanner.CreatePlan(layout);
-            RoadWalkableArea walkableArea =
-                RoadWalkableArea.FromLayout(layout);
             CityMountainBoundaryPlan mountainBoundaryPlan =
                 CityMountainBoundaryPlanner.Create(layout);
+            RoadWalkableArea walkableArea =
+                RoadWalkableArea.FromLayout(
+                    layout,
+                    mountainBoundaryPlan);
             CityFringeYardPlan fringeYardPlan =
                 CityFringeYardPlanner.Create(
                     layout,
@@ -103,7 +105,8 @@ namespace BarPromenade
             BuildRoads(world, layout);
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
-                layout);
+                layout,
+                mountainBoundaryPlan);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
             GameObject parkRoot = BuildPark(

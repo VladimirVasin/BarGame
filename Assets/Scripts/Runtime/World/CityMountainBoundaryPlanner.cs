@@ -141,7 +141,7 @@ namespace BarPromenade
                     southWestBounds,
                     southWestJoin);
 
-            CityMountainRiverNotchDescriptor notch = CreateRiverNotch(
+            CityMountainRiverNotchDescriptor notch = CreateRiverCave(
                 layout,
                 southWestBounds,
                 southEastBounds,
@@ -437,7 +437,7 @@ namespace BarPromenade
                    point.y <= bounds.yMax + BoundsTolerance;
         }
 
-        private static CityMountainRiverNotchDescriptor CreateRiverNotch(
+        private static CityMountainRiverNotchDescriptor CreateRiverCave(
             CityLayout layout,
             Rect southWestBounds,
             Rect southEastBounds,
@@ -452,23 +452,101 @@ namespace BarPromenade
 
             CityRiverSegmentDescriptor southRiver =
                 layout.River.Segments[0];
+            CityRiverPromenadeDescriptor westPromenade = default;
+            CityRiverPromenadeDescriptor eastPromenade = default;
+            bool hasWestPromenade = false;
+            bool hasEastPromenade = false;
+            for (int index = 0;
+                 index < layout.River.Promenades.Count;
+                 index++)
+            {
+                CityRiverPromenadeDescriptor promenade =
+                    layout.River.Promenades[index];
+                if (promenade.WestBank)
+                {
+                    westPromenade = promenade;
+                    hasWestPromenade = true;
+                }
+                else
+                {
+                    eastPromenade = promenade;
+                    hasEastPromenade = true;
+                }
+            }
+
+            if (!hasWestPromenade || !hasEastPromenade)
+            {
+                throw new InvalidOperationException(
+                    "The river cave requires both promenade banks.");
+            }
+
             float mountainLineZ = Mathf.Min(
                 southWestBounds.yMin,
                 southEastBounds.yMin);
-            Rect opening = Rect.MinMaxRect(
+            Rect approach = Rect.MinMaxRect(
                 southWestBounds.xMax,
-                mountainLineZ -
-                CityMountainBoundaryDefinition.RiverNotchOutwardDepth,
+                mountainLineZ,
                 southEastBounds.xMin,
+                southRiver.WaterBounds.yMin);
+            Rect waterApproach = Rect.MinMaxRect(
+                southRiver.WaterBounds.xMin,
+                mountainLineZ,
+                southRiver.WaterBounds.xMax,
+                southRiver.WaterBounds.yMin);
+            float portalHalfDepth =
+                CityMountainBoundaryDefinition.RiverCavePortalDepth * 0.5f;
+            Rect mouth = Rect.MinMaxRect(
+                southRiver.WaterBounds.xMin,
+                mountainLineZ - portalHalfDepth,
+                southRiver.WaterBounds.xMax,
+                mountainLineZ + portalHalfDepth);
+            Rect throatWater = Rect.MinMaxRect(
+                southRiver.WaterBounds.xMin,
+                mountainLineZ -
+                CityMountainBoundaryDefinition.RiverCaveThroatDepth,
+                southRiver.WaterBounds.xMax,
+                mountainLineZ);
+            Rect westBank = Rect.MinMaxRect(
+                westPromenade.Bounds.xMin,
+                mountainLineZ,
+                southRiver.WaterBounds.xMin,
+                southRiver.WaterBounds.yMin);
+            Rect eastBank = Rect.MinMaxRect(
+                southRiver.WaterBounds.xMax,
+                mountainLineZ,
+                eastPromenade.Bounds.xMax,
+                southRiver.WaterBounds.yMin);
+            Rect westPromenadeApproach = Rect.MinMaxRect(
+                westPromenade.Bounds.xMin,
+                mountainLineZ,
+                westPromenade.Bounds.xMax,
+                southRiver.WaterBounds.yMin);
+            Rect eastPromenadeApproach = Rect.MinMaxRect(
+                eastPromenade.Bounds.xMin,
+                mountainLineZ,
+                eastPromenade.Bounds.xMax,
                 southRiver.WaterBounds.yMin);
             CityMountainRidgeStation westStation =
                 westRidge.Stations[westRidge.Stations.Count - 1];
             CityMountainRidgeStation eastStation = eastRidge.Stations[0];
             return new CityMountainRiverNotchDescriptor(
-                "mountain-south-river-notch",
-                opening,
-                Vector3.forward,
+                "mountain-south-river-cave",
+                approach,
+                waterApproach,
+                mouth,
+                throatWater,
+                westBank,
+                eastBank,
+                westPromenadeApproach,
+                eastPromenadeApproach,
+                Vector3.back,
                 southRiver.SouthWaterY,
+                westPromenade.SouthY,
+                westStation.BaseY,
+                eastPromenade.SouthY,
+                eastStation.BaseY,
+                CityMountainBoundaryDefinition.RiverCaveOpeningHeight,
+                CityMountainBoundaryDefinition.RiverCaveThroatDepth,
                 westStation.PeakY,
                 eastStation.PeakY);
         }

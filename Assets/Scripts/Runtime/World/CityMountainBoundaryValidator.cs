@@ -63,7 +63,7 @@ namespace BarPromenade
                 plan.SouthWestCornerClosure,
                 southWestJoin);
             ValidateTunnel(layout, plan.Tunnel);
-            ValidateRiverNotch(layout, plan.RiverNotch);
+            ValidateRiverCave(layout, plan.RiverCave);
             ValidateOpenings(plan);
         }
 
@@ -494,42 +494,75 @@ namespace BarPromenade
             }
         }
 
-        private static void ValidateRiverNotch(
+        private static void ValidateRiverCave(
             CityLayout layout,
-            CityMountainRiverNotchDescriptor notch)
+            CityMountainRiverNotchDescriptor cave)
         {
             if (!layout.River.IsEnabled ||
                 layout.River.Segments.Count == 0 ||
                 !string.Equals(
-                    notch.StableId,
-                    "mountain-south-river-notch",
+                    cave.StableId,
+                    "mountain-south-river-cave",
                     StringComparison.Ordinal) ||
-                notch.Side != CityMountainBoundarySide.South ||
-                !IsPositiveRect(notch.OpeningBounds) ||
-                !IsFinite(notch.ChannelAxis) ||
-                Vector3.Dot(notch.ChannelAxis, Vector3.forward) < 0.995f ||
-                notch.ClearWidth <=
+                cave.Side != CityMountainBoundarySide.South ||
+                !IsPositiveRect(cave.ApproachBounds) ||
+                !IsPositiveRect(cave.WaterApproachBounds) ||
+                !IsPositiveRect(cave.MouthBounds) ||
+                !IsPositiveRect(cave.ThroatWaterBounds) ||
+                !IsPositiveRect(cave.WestBankBounds) ||
+                !IsPositiveRect(cave.EastBankBounds) ||
+                !IsPositiveRect(cave.WestPromenadeBounds) ||
+                !IsPositiveRect(cave.EastPromenadeBounds) ||
+                !IsFinite(cave.Axis) ||
+                Vector3.Dot(cave.Axis, Vector3.back) < 0.995f ||
+                cave.ClearWidth <=
                 layout.River.Definition.ChannelWidth + Tolerance ||
-                !IsFinite(notch.BaseY) ||
-                !IsFinite(notch.WestPeakY) ||
-                !IsFinite(notch.EastPeakY) ||
                 Mathf.Abs(
-                    notch.BaseY -
+                    cave.WaterApproachBounds.width -
+                    layout.River.Definition.ChannelWidth) > Tolerance ||
+                Mathf.Abs(
+                    cave.ThroatWaterBounds.width -
+                    cave.WaterApproachBounds.width) > Tolerance ||
+                Mathf.Abs(
+                    cave.WaterApproachBounds.yMax -
+                    layout.River.Segments[0].WaterBounds.yMin) > Tolerance ||
+                Mathf.Abs(
+                    cave.ThroatWaterBounds.yMax -
+                    cave.ApproachBounds.yMin) > Tolerance ||
+                Mathf.Abs(
+                    cave.ThroatWaterBounds.height -
+                    cave.ThroatDepth) > Tolerance ||
+                cave.MouthBounds.xMin >
+                    cave.WaterApproachBounds.xMin + Tolerance ||
+                cave.MouthBounds.xMax <
+                    cave.WaterApproachBounds.xMax - Tolerance ||
+                cave.OpeningHeight <=
+                    cave.WaterApproachBounds.width * 0.5f ||
+                cave.ThroatDepth <= RuntimeSceneSetup.CityFarClipPlane ||
+                !IsFinite(cave.BaseY) ||
+                !IsFinite(cave.WestCityBankY) ||
+                !IsFinite(cave.WestMouthBankY) ||
+                !IsFinite(cave.EastCityBankY) ||
+                !IsFinite(cave.EastMouthBankY) ||
+                !IsFinite(cave.WestPeakY) ||
+                !IsFinite(cave.EastPeakY) ||
+                Mathf.Abs(
+                    cave.BaseY -
                     layout.River.Segments[0].SouthWaterY) > Tolerance)
             {
                 throw new InvalidOperationException(
-                    "The south river gorge descriptor is invalid.");
+                    "The south river cave descriptor is invalid.");
             }
         }
 
         private static void ValidateOpenings(CityMountainBoundaryPlan plan)
         {
             Rect portal = plan.Tunnel.PortalBounds;
-            Rect river = plan.RiverNotch.OpeningBounds;
+            Rect river = plan.RiverCave.ApproachBounds;
             if (OverlapsStrict(portal, river))
             {
                 throw new InvalidOperationException(
-                    "The tunnel and river gorge overlap.");
+                    "The tunnel and river cave approach overlap.");
             }
 
             float southZ = plan.Tunnel.PortalGroundCenter.z;

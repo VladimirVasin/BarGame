@@ -81,7 +81,292 @@ namespace BarPromenade
                 BuildTunnel(root.transform, plan.Tunnel);
             }
 
+            if (plan.HasRiverCave)
+            {
+                BuildRiverCave(root.transform, plan.RiverCave);
+            }
+
             return root;
+        }
+
+        private static void BuildRiverCave(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            var root = new GameObject("South River Cave");
+            root.transform.SetParent(parent, false);
+            BuildRiverCaveForefield(root.transform, cave);
+            BuildRiverCaveRockStop(root.transform, cave);
+            BuildRiverCaveLining(root.transform, cave);
+        }
+
+        private static void BuildRiverCaveForefield(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            const float thickness = 0.22f;
+            var shoulders = new List<RuntimeOrientedBox>(2);
+            AddSlopedGround(
+                shoulders,
+                Rect.MinMaxRect(
+                    cave.ApproachBounds.xMin,
+                    cave.ApproachBounds.yMin,
+                    cave.WestBankBounds.xMin,
+                    cave.ApproachBounds.yMax),
+                cave.WestMouthBankY,
+                cave.WestCityBankY,
+                thickness);
+            AddSlopedGround(
+                shoulders,
+                Rect.MinMaxRect(
+                    cave.EastBankBounds.xMax,
+                    cave.ApproachBounds.yMin,
+                    cave.ApproachBounds.xMax,
+                    cave.ApproachBounds.yMax),
+                cave.EastMouthBankY,
+                cave.EastCityBankY,
+                thickness);
+            if (shoulders.Count == 0)
+            {
+                return;
+            }
+
+            HomeSurfaceRecipe recipe =
+                CityFringeYardSurfaceAppearance.GetRecipe(
+                    CityFringeYardSurfaceKind.ForefieldGround);
+            GameObject forefield =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "River Cave Forefield",
+                    parent,
+                    shoulders,
+                    CityExteriorAppearance.YardGround,
+                    true,
+                    recipe.MetersPerTile,
+                    RuntimeWorldUvMode.XZPlanar);
+            CityFringeYardSurfaceAppearance.ApplyCombined(
+                forefield.GetComponent<Renderer>(),
+                CityFringeYardSurfaceKind.ForefieldGround,
+                CityExteriorAppearance.YardGround);
+        }
+
+        private static void AddSlopedGround(
+            ICollection<RuntimeOrientedBox> target,
+            Rect bounds,
+            float southTopY,
+            float northTopY,
+            float thickness)
+        {
+            if (bounds.width <= 0.01f || bounds.height <= 0.01f)
+            {
+                return;
+            }
+
+            Vector3 start = new Vector3(
+                bounds.center.x,
+                southTopY - thickness * 0.5f,
+                bounds.yMin);
+            Vector3 end = new Vector3(
+                bounds.center.x,
+                northTopY - thickness * 0.5f,
+                bounds.yMax);
+            Vector3 delta = end - start;
+            target.Add(new RuntimeOrientedBox(
+                (start + end) * 0.5f,
+                Quaternion.LookRotation(delta.normalized, Vector3.up),
+                new Vector3(bounds.width, thickness, delta.magnitude)));
+        }
+
+        private static void BuildRiverCaveRockStop(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            const float ringThickness = 1.15f;
+            const float facadeDepth = 4f;
+            const float overlap = 0.12f;
+            float portalBaseY = cave.BaseY +
+                                CitySurfaceDescriptor.WaterTopOffset -
+                                CityRiverWorldBuilder.RiverBedDepth;
+            float mouthZ = cave.ApproachBounds.yMin;
+            var portalDescriptor = new CityMountainTunnelDescriptor(
+                "mountain-south-river-cave-portal",
+                string.Empty,
+                string.Empty,
+                new Vector3(
+                    cave.WaterApproachBounds.center.x,
+                    portalBaseY,
+                    mouthZ),
+                cave.Axis,
+                cave.MouthBounds,
+                cave.ApproachBounds,
+                cave.WaterApproachBounds.width,
+                cave.OpeningHeight,
+                cave.ThroatDepth,
+                0f,
+                false);
+            GameObject portal =
+                CityMountainBoundaryMeshFactory.CreatePortalFrame(
+                    parent,
+                    portalDescriptor);
+            portal.name = "River Cave Portal";
+
+            float leftInner =
+                cave.WaterApproachBounds.xMin - ringThickness;
+            float rightInner =
+                cave.WaterApproachBounds.xMax + ringThickness;
+            float crownBottomY = portalBaseY + cave.OpeningHeight - overlap;
+            float facadeTopY = Mathf.Max(
+                crownBottomY + 4f,
+                Mathf.Min(cave.WestPeakY, cave.EastPeakY));
+            float facadeBottomY = portalBaseY - 0.45f;
+            Quaternion rotation = Quaternion.LookRotation(
+                Flatten(cave.Axis),
+                Vector3.up);
+            Vector3 depthOffset = Flatten(cave.Axis) *
+                                  (facadeDepth * 0.5f);
+            var rock = new List<RuntimeOrientedBox>(3);
+            AddFacadeBox(
+                rock,
+                cave.ApproachBounds.xMin,
+                leftInner + overlap,
+                facadeBottomY,
+                cave.WestPeakY,
+                mouthZ,
+                depthOffset,
+                rotation,
+                facadeDepth);
+            AddFacadeBox(
+                rock,
+                rightInner - overlap,
+                cave.ApproachBounds.xMax,
+                facadeBottomY,
+                cave.EastPeakY,
+                mouthZ,
+                depthOffset,
+                rotation,
+                facadeDepth);
+            AddFacadeBox(
+                rock,
+                leftInner,
+                rightInner,
+                crownBottomY,
+                facadeTopY,
+                mouthZ,
+                depthOffset,
+                rotation,
+                facadeDepth);
+            GameObject stop =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "River Cave Rock Stop",
+                    parent,
+                    rock,
+                    MidRock,
+                    true,
+                    CityMountainSurfaceAppearance.MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            CityMountainSurfaceAppearance.ApplyCombined(
+                stop.GetComponent<Renderer>(),
+                MidRock);
+        }
+
+        private static void AddFacadeBox(
+            ICollection<RuntimeOrientedBox> target,
+            float xMin,
+            float xMax,
+            float bottomY,
+            float topY,
+            float mouthZ,
+            Vector3 depthOffset,
+            Quaternion rotation,
+            float depth)
+        {
+            float width = xMax - xMin;
+            float height = topY - bottomY;
+            if (width <= 0.01f || height <= 0.01f)
+            {
+                return;
+            }
+
+            target.Add(new RuntimeOrientedBox(
+                new Vector3(
+                    (xMin + xMax) * 0.5f,
+                    (bottomY + topY) * 0.5f,
+                    mouthZ) + depthOffset,
+                rotation,
+                new Vector3(width, height, depth)));
+        }
+
+        private static void BuildRiverCaveLining(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            const float wallThickness = 0.90f;
+            const float portalOverlap = 0.45f;
+            float portalBaseY = cave.BaseY +
+                                CitySurfaceDescriptor.WaterTopOffset -
+                                CityRiverWorldBuilder.RiverBedDepth;
+            Vector3 axis = Flatten(cave.Axis);
+            Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
+            float depth = cave.ThroatDepth + portalOverlap;
+            float centreDistance = depth * 0.5f;
+            float centreX = cave.WaterApproachBounds.center.x;
+            float halfWidth = cave.WaterApproachBounds.width * 0.5f;
+            Vector3 origin = new Vector3(
+                centreX,
+                portalBaseY,
+                cave.ApproachBounds.yMin);
+            var lining = new List<RuntimeOrientedBox>(4)
+            {
+                new RuntimeOrientedBox(
+                    origin + axis * centreDistance +
+                    Vector3.left * (halfWidth + wallThickness * 0.5f) +
+                    Vector3.up * (cave.OpeningHeight * 0.5f),
+                    rotation,
+                    new Vector3(
+                        wallThickness,
+                        cave.OpeningHeight,
+                        depth)),
+                new RuntimeOrientedBox(
+                    origin + axis * centreDistance +
+                    Vector3.right * (halfWidth + wallThickness * 0.5f) +
+                    Vector3.up * (cave.OpeningHeight * 0.5f),
+                    rotation,
+                    new Vector3(
+                        wallThickness,
+                        cave.OpeningHeight,
+                        depth)),
+                new RuntimeOrientedBox(
+                    origin + axis * centreDistance +
+                    Vector3.up * (cave.OpeningHeight + 0.35f),
+                    rotation,
+                    new Vector3(
+                        cave.WaterApproachBounds.width +
+                        wallThickness * 2f,
+                        0.70f,
+                        depth)),
+                new RuntimeOrientedBox(
+                    origin + axis * (cave.ThroatDepth + 0.45f) +
+                    Vector3.up * (cave.OpeningHeight * 0.5f),
+                    rotation,
+                    new Vector3(
+                        cave.WaterApproachBounds.width +
+                        wallThickness * 2f,
+                        cave.OpeningHeight,
+                        0.90f))
+            };
+            GameObject liningObject =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "River Cave Dark Lining",
+                    parent,
+                    lining,
+                    ThroatRock,
+                    false,
+                    CityMountainSurfaceAppearance.MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            Renderer renderer = liningObject.GetComponent<Renderer>();
+            CityMountainSurfaceAppearance.ApplyCombined(
+                renderer,
+                ThroatRock);
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         private static void BuildTunnel(

@@ -315,16 +315,16 @@ namespace BarPromenade
                     ridgeBounds.yMin - MountainMapPadding);
             }
 
-            if (mountainBoundaryPlan.HasRiverNotch)
+            if (mountainBoundaryPlan.HasRiverCave)
             {
-                Rect notchBounds =
-                    mountainBoundaryPlan.RiverNotch.OpeningBounds;
+                Rect approachBounds =
+                    mountainBoundaryPlan.RiverCave.ApproachBounds;
                 minimumX = Mathf.Min(
                     minimumX,
-                    notchBounds.xMin - MountainMapPadding);
+                    approachBounds.xMin - MountainMapPadding);
                 minimumZ = Mathf.Min(
                     minimumZ,
-                    notchBounds.yMin - MountainMapPadding);
+                    approachBounds.yMin - MountainMapPadding);
             }
 
             if (mountainBoundaryPlan.HasTunnel)

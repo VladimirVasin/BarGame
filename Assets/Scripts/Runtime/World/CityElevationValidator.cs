@@ -194,6 +194,16 @@ namespace BarPromenade
                 return;
             }
 
+            // The river valley is carved by the terracing, and the
+            // terracing is keyed to the exact default blueprint id — a
+            // renamed copy deliberately keeps the river but loses the
+            // terraces ("the copy is a stranger"). Demanding valley banks
+            // from a flat plan would make every such copy ungenerable.
+            if (!plan.IsElevated)
+            {
+                return;
+            }
+
             float previousWater = float.PositiveInfinity;
             for (int z = river.CoreMinimumZ;
                  z <= river.CoreMaximumZExclusive;

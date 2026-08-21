@@ -69,6 +69,17 @@ namespace BarPromenade
             Transform parent,
             CityLayout layout)
         {
+            return Build(
+                parent,
+                layout,
+                CityMountainBoundaryPlanner.Create(layout));
+        }
+
+        internal static GameObject Build(
+            Transform parent,
+            CityLayout layout,
+            CityMountainBoundaryPlan mountainPlan)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -77,6 +88,11 @@ namespace BarPromenade
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (mountainPlan == null)
+            {
+                throw new ArgumentNullException(nameof(mountainPlan));
             }
 
             if (!layout.River.IsEnabled)
@@ -95,7 +111,13 @@ namespace BarPromenade
             BuildWater(root, layout.River);
             BuildPromenades(root, layout);
             BuildRetainingWalls(root, layout);
-            BuildUpperQuayRails(root, layout);
+            BuildUpperQuayRails(root, layout, mountainPlan);
+            if (mountainPlan.HasRiverCave)
+            {
+                BuildRiverCaveExtension(
+                    root,
+                    mountainPlan.RiverCave);
+            }
             BuildBridges(root, layout);
             BuildLandings(root, layout);
             BuildPromenadeLights(root, layout);
@@ -383,7 +405,8 @@ namespace BarPromenade
 
         private static void BuildUpperQuayRails(
             Transform parent,
-            CityLayout layout)
+            CityLayout layout,
+            CityMountainBoundaryPlan mountainPlan)
         {
             Transform rails = new GameObject("Quay Guard Rails").transform;
             rails.SetParent(parent, false);
@@ -426,14 +449,19 @@ namespace BarPromenade
                         Iron);
                 }
 
-                BuildTransverseQuayRail(
-                    rails,
-                    $"{(promenade.WestBank ? "West" : "East")} " +
-                    "Quay South End Rail",
-                    physicalBounds.xMin,
-                    physicalBounds.xMax,
-                    physicalBounds.yMin,
-                    SamplePromenadeY(promenade, physicalBounds.yMin));
+                if (!mountainPlan.HasRiverCave)
+                {
+                    BuildTransverseQuayRail(
+                        rails,
+                        $"{(promenade.WestBank ? "West" : "East")} " +
+                        "Quay South End Rail",
+                        physicalBounds.xMin,
+                        physicalBounds.xMax,
+                        physicalBounds.yMin,
+                        SamplePromenadeY(
+                            promenade,
+                            physicalBounds.yMin));
+                }
                 BuildTransverseQuayRail(
                     rails,
                     $"{(promenade.WestBank ? "West" : "East")} " +
@@ -443,6 +471,277 @@ namespace BarPromenade
                     physicalBounds.yMax,
                     SamplePromenadeY(promenade, physicalBounds.yMax));
             }
+        }
+
+        private static void BuildRiverCaveExtension(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform root = new GameObject("River Cave Extension").transform;
+            root.SetParent(parent, false);
+            BuildRiverCaveWater(root, cave);
+            BuildRiverCaveBed(root, cave);
+            BuildRiverCaveBanks(root, cave);
+            BuildRiverCaveWalls(root, cave);
+            BuildRiverCaveRails(root, cave);
+        }
+
+        private static void BuildRiverCaveWater(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform water = new GameObject("Flowing Water").transform;
+            water.SetParent(parent, false);
+            float waterTopY = cave.BaseY +
+                              CitySurfaceDescriptor.WaterTopOffset;
+            CreateCaveWaterSurface(
+                "River Cave Water Approach",
+                water,
+                cave.WaterApproachBounds,
+                waterTopY,
+                true);
+            CreateCaveWaterSurface(
+                "River Cave Water Throat",
+                water,
+                cave.ThroatWaterBounds,
+                waterTopY,
+                false);
+        }
+
+        private static void CreateCaveWaterSurface(
+            string name,
+            Transform parent,
+            Rect sourceBounds,
+            float waterTopY,
+            bool overlapCitySeam)
+        {
+            const float jointOverlap = 0.04f;
+            Rect bounds = Rect.MinMaxRect(
+                sourceBounds.xMin - WaterWallOverlap,
+                sourceBounds.yMin -
+                (overlapCitySeam ? jointOverlap : 0f),
+                sourceBounds.xMax + WaterWallOverlap,
+                sourceBounds.yMax + jointOverlap);
+            CityWaterSurfaceFactory.CreateSlopedSurface(
+                name,
+                parent,
+                bounds,
+                waterTopY,
+                waterTopY,
+                CityRiverResources.WaterMaterial);
+        }
+
+        private static void BuildRiverCaveBed(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform bed = new GameObject("Channel Floor").transform;
+            bed.SetParent(parent, false);
+            BuildRiverCaveBedSpan(
+                bed,
+                "River Cave Bed Approach",
+                cave.WaterApproachBounds,
+                cave.BaseY,
+                true);
+            BuildRiverCaveBedSpan(
+                bed,
+                "River Cave Bed Throat",
+                cave.ThroatWaterBounds,
+                cave.BaseY,
+                false);
+        }
+
+        private static void BuildRiverCaveBedSpan(
+            Transform parent,
+            string name,
+            Rect sourceBounds,
+            float waterDatumY,
+            bool overlapCitySeam)
+        {
+            const float jointOverlap = 0.04f;
+            float waterTopY = waterDatumY +
+                              CitySurfaceDescriptor.WaterTopOffset;
+            float floorY = waterTopY - RiverBedDepth;
+            float zMin = sourceBounds.yMin -
+                         (overlapCitySeam ? jointOverlap : 0f);
+            float zMax = sourceBounds.yMax + jointOverlap;
+            CreateSlopedSurface(
+                name,
+                parent,
+                Rect.MinMaxRect(
+                    sourceBounds.xMin - SubmergedSideThickness,
+                    zMin,
+                    sourceBounds.xMax + SubmergedSideThickness,
+                    zMax),
+                floorY,
+                floorY,
+                0.30f,
+                Riverbed,
+                null,
+                false,
+                CityRiverSurfaceKind.Bed);
+
+            float sideTopY = waterTopY - SubmergedSideTop;
+            float sideHeight = sideTopY - floorY;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float x = side < 0
+                    ? sourceBounds.xMin -
+                      SubmergedSideThickness * 0.5f
+                    : sourceBounds.xMax +
+                      SubmergedSideThickness * 0.5f;
+                CreateBeamBetween(
+                    $"{name} {(side < 0 ? "West" : "East")} Side",
+                    parent,
+                    new Vector3(
+                        x,
+                        sideTopY - sideHeight * 0.5f,
+                        zMin),
+                    new Vector3(
+                        x,
+                        sideTopY - sideHeight * 0.5f,
+                        zMax),
+                    SubmergedSideThickness,
+                    sideHeight,
+                    Riverbed,
+                    false,
+                    CityRiverSurfaceKind.Bed);
+            }
+        }
+
+        private static void BuildRiverCaveBanks(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform banks = new GameObject("Upper Embankments").transform;
+            banks.SetParent(parent, false);
+            BuildRiverCaveBank(
+                banks,
+                "River Cave West Bank Approach",
+                "river-promenade-west-cave-approach",
+                cave.WestBankBounds,
+                cave.WestMouthBankY,
+                cave.WestCityBankY);
+            BuildRiverCaveBank(
+                banks,
+                "River Cave East Bank Approach",
+                "river-promenade-east-cave-approach",
+                cave.EastBankBounds,
+                cave.EastMouthBankY,
+                cave.EastCityBankY);
+        }
+
+        private static void BuildRiverCaveBank(
+            Transform parent,
+            string rootName,
+            string name,
+            Rect sourceBounds,
+            float mouthY,
+            float cityY)
+        {
+            const float seamOverlap = 0.04f;
+            Transform root = new GameObject(rootName).transform;
+            root.SetParent(parent, false);
+            CreateSlopedSurface(
+                name,
+                root,
+                Rect.MinMaxRect(
+                    sourceBounds.xMin,
+                    sourceBounds.yMin,
+                    sourceBounds.xMax,
+                    sourceBounds.yMax + seamOverlap),
+                mouthY,
+                cityY,
+                PromenadeThickness,
+                Granite,
+                null,
+                true,
+                CityRiverSurfaceKind.Paving);
+        }
+
+        private static void BuildRiverCaveWalls(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform walls = new GameObject("Granite Quay Walls").transform;
+            walls.SetParent(parent, false);
+            BuildRiverCaveWall(
+                walls,
+                "West River Cave Quay Wall",
+                cave.WaterApproachBounds.xMin - 0.22f,
+                cave.WaterApproachBounds.yMin,
+                cave.WaterApproachBounds.yMax + 0.04f,
+                cave.WestMouthBankY,
+                cave.WestCityBankY,
+                cave.BaseY);
+            BuildRiverCaveWall(
+                walls,
+                "East River Cave Quay Wall",
+                cave.WaterApproachBounds.xMax + 0.22f,
+                cave.WaterApproachBounds.yMin,
+                cave.WaterApproachBounds.yMax + 0.04f,
+                cave.EastMouthBankY,
+                cave.EastCityBankY,
+                cave.BaseY);
+        }
+
+        private static void BuildRiverCaveWall(
+            Transform parent,
+            string name,
+            float x,
+            float zMin,
+            float zMax,
+            float mouthBankY,
+            float cityBankY,
+            float waterDatumY)
+        {
+            float height = Mathf.Max(
+                mouthBankY - waterDatumY,
+                cityBankY - waterDatumY) + 0.32f;
+            CreateBeamBetween(
+                name,
+                parent,
+                new Vector3(
+                    x,
+                    (mouthBankY + waterDatumY) * 0.5f - 0.08f,
+                    zMin),
+                new Vector3(
+                    x,
+                    (cityBankY + waterDatumY) * 0.5f - 0.08f,
+                    zMax),
+                0.44f,
+                height,
+                GraniteEdge,
+                true,
+                CityRiverSurfaceKind.Quay);
+        }
+
+        private static void BuildRiverCaveRails(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            Transform rails = new GameObject("Quay Guard Rails").transform;
+            rails.SetParent(parent, false);
+            BuildSlopedRailSpan(
+                rails,
+                "West River Cave Quay Rail",
+                cave.WaterApproachBounds.xMin -
+                CityRiverPlanner.QuayEdgeOffset,
+                cave.WestBankBounds.yMin,
+                cave.WestBankBounds.yMax,
+                cave.WestMouthBankY,
+                cave.WestCityBankY,
+                Iron);
+            BuildSlopedRailSpan(
+                rails,
+                "East River Cave Quay Rail",
+                cave.WaterApproachBounds.xMax +
+                CityRiverPlanner.QuayEdgeOffset,
+                cave.EastBankBounds.yMin,
+                cave.EastBankBounds.yMax,
+                cave.EastMouthBankY,
+                cave.EastCityBankY,
+                Iron);
         }
 
         private static void BuildBridges(

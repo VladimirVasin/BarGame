@@ -344,9 +344,23 @@ namespace BarPromenade
 
         public static RoadWalkableArea FromLayout(CityLayout layout)
         {
+            return FromLayout(
+                layout,
+                CityMountainBoundaryPlanner.Create(layout));
+        }
+
+        public static RoadWalkableArea FromLayout(
+            CityLayout layout,
+            CityMountainBoundaryPlan mountainPlan)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (mountainPlan == null)
+            {
+                throw new ArgumentNullException(nameof(mountainPlan));
             }
 
             var area = new RoadWalkableArea(layout.CreateRoadRects());
@@ -406,6 +420,35 @@ namespace BarPromenade
                         layout.River.Landings[landingIndex];
                     area.Add(landing.StairBounds);
                     area.Add(landing.PlatformBounds);
+                }
+
+                if (mountainPlan.HasRiverCave)
+                {
+                    // The cave approaches ABUT the city promenades at the
+                    // fringe line. Abutting rects do not union for a
+                    // non-zero radius (a point must sit radius-inside one
+                    // single rect), so without a bridging seam the walk
+                    // south clamps 0.32 m short of the line — an invisible
+                    // wall exactly where the new area begins. Same idiom
+                    // as the promenade↔road seam strip above.
+                    float caveSeamReach =
+                        CityGroundTraversalPlanner.ConnectorReach;
+                    Rect westApproach =
+                        mountainPlan.RiverCave.WestPromenadeBounds;
+                    Rect eastApproach =
+                        mountainPlan.RiverCave.EastPromenadeBounds;
+                    area.Add(westApproach);
+                    area.Add(eastApproach);
+                    area.Add(Rect.MinMaxRect(
+                        westApproach.xMin,
+                        westApproach.yMax - caveSeamReach,
+                        westApproach.xMax,
+                        westApproach.yMax + caveSeamReach));
+                    area.Add(Rect.MinMaxRect(
+                        eastApproach.xMin,
+                        eastApproach.yMax - caveSeamReach,
+                        eastApproach.xMax,
+                        eastApproach.yMax + caveSeamReach));
                 }
             }
 

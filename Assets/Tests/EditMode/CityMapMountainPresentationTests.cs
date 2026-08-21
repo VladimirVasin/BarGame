@@ -7,7 +7,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [Test]
         [Category("CityMountain")]
-        public void DefaultCoastal_ExpandsOnlyWestAndSouthForMountainMap()
+        public void DefaultCoastal_MapsVisibleRiverCaveWithoutHiddenThroat()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -34,12 +34,13 @@ namespace BarPromenade.Tests.EditMode
                     controller.MountainBoundaryPlan,
                     Is.SameAs(plan));
                 Assert.That(plan.IsEnabled, Is.True);
-                Assert.That(plan.HasRiverNotch, Is.True);
+                Assert.That(plan.HasRiverCave, Is.True);
                 Assert.That(plan.HasTunnel, Is.True);
                 Assert.That(plan.Tunnel.IsSealed, Is.True);
 
                 Rect layoutBounds = layout.MapWorldXZBounds;
                 Rect displayBounds = controller.DisplayWorldXZBounds;
+                CityMountainRiverNotchDescriptor cave = plan.RiverCave;
                 float expectedMinimumX = layoutBounds.xMin;
                 float expectedMinimumZ = layoutBounds.yMin;
                 for (int index = 0; index < plan.Ridges.Count; index++)
@@ -54,10 +55,10 @@ namespace BarPromenade.Tests.EditMode
                 }
                 expectedMinimumX = Mathf.Min(
                     expectedMinimumX,
-                    plan.RiverNotch.OpeningBounds.xMin - 2f);
+                    cave.ApproachBounds.xMin - 2f);
                 expectedMinimumZ = Mathf.Min(
                     expectedMinimumZ,
-                    plan.RiverNotch.OpeningBounds.yMin - 2f);
+                    cave.ApproachBounds.yMin - 2f);
                 Rect throat =
                     CityMapView.CreateMountainTunnelThroatBounds(
                         plan.Tunnel);
@@ -80,6 +81,27 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     displayBounds.yMin,
                     Is.LessThanOrEqualTo(layoutBounds.yMin));
+                Assert.That(
+                    displayBounds.xMin,
+                    Is.LessThanOrEqualTo(cave.ApproachBounds.xMin),
+                    "The visible river-cave approach must fit inside the " +
+                    "western map extent.");
+                Assert.That(
+                    displayBounds.yMin,
+                    Is.LessThanOrEqualTo(cave.ApproachBounds.yMin),
+                    "The visible river-cave approach must fit inside the " +
+                    "southern map extent.");
+                Assert.That(
+                    displayBounds.xMax,
+                    Is.GreaterThanOrEqualTo(cave.ApproachBounds.xMax));
+                Assert.That(
+                    displayBounds.yMax,
+                    Is.GreaterThanOrEqualTo(cave.ApproachBounds.yMax));
+                Assert.That(
+                    displayBounds.yMin,
+                    Is.GreaterThan(cave.ThroatWaterBounds.yMin),
+                    "The hidden cave throat must not expand the map to its " +
+                    "unseen southern end.");
                 Assert.That(
                     displayBounds.xMin,
                     Is.LessThanOrEqualTo(throat.xMin),
@@ -113,16 +135,54 @@ namespace BarPromenade.Tests.EditMode
                         new Vector2(gateCenter.x, gateCenter.z)),
                     Is.True,
                     "The sealed map crossbar must remain inside the throat.");
-                bool openingsAreSeparate =
-                    plan.RiverNotch.OpeningBounds.xMax <=
-                    plan.Tunnel.PortalBounds.xMin ||
-                    plan.RiverNotch.OpeningBounds.xMin >=
-                    plan.Tunnel.PortalBounds.xMax;
+
+                Rect waterApproach = cave.WaterApproachBounds;
+                Rect cityChannel = layout.River.Segments[0].WaterBounds;
                 Assert.That(
-                    openingsAreSeparate,
-                    Is.True,
-                    "The river continuation and sealed tunnel must stay " +
-                    "separate map openings.");
+                    waterApproach.width,
+                    Is.EqualTo(cityChannel.width).Within(0.001f),
+                    "The mapped approach must keep the authored channel " +
+                    "width.");
+                Assert.That(
+                    waterApproach.width,
+                    Is.LessThan(cave.ApproachBounds.width),
+                    "Only the narrow water channel, not the full approach, " +
+                    "is represented as water.");
+                Assert.That(
+                    waterApproach.xMin,
+                    Is.GreaterThanOrEqualTo(cave.ApproachBounds.xMin));
+                Assert.That(
+                    waterApproach.xMax,
+                    Is.LessThanOrEqualTo(cave.ApproachBounds.xMax));
+                Assert.That(
+                    waterApproach.yMin,
+                    Is.GreaterThanOrEqualTo(cave.ApproachBounds.yMin));
+                Assert.That(
+                    waterApproach.yMax,
+                    Is.LessThanOrEqualTo(cave.ApproachBounds.yMax));
+
+                Assert.That(cave.WestBankBounds.width, Is.GreaterThan(0f));
+                Assert.That(cave.EastBankBounds.width, Is.GreaterThan(0f));
+                Assert.That(
+                    cave.WestBankBounds.xMin,
+                    Is.GreaterThanOrEqualTo(cave.ApproachBounds.xMin));
+                Assert.That(
+                    cave.WestBankBounds.xMax,
+                    Is.EqualTo(waterApproach.xMin).Within(0.001f));
+                Assert.That(
+                    cave.EastBankBounds.xMin,
+                    Is.EqualTo(waterApproach.xMax).Within(0.001f));
+                Assert.That(
+                    cave.EastBankBounds.xMax,
+                    Is.LessThanOrEqualTo(cave.ApproachBounds.xMax));
+                Assert.That(
+                    cave.WestBankBounds.Overlaps(waterApproach),
+                    Is.False,
+                    "The west bank must remain a separate map surface.");
+                Assert.That(
+                    cave.EastBankBounds.Overlaps(waterApproach),
+                    Is.False,
+                    "The east bank must remain a separate map surface.");
             }
             finally
             {

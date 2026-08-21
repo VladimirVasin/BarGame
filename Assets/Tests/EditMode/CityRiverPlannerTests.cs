@@ -437,9 +437,12 @@ namespace BarPromenade.Tests
             var parent = new GameObject("River Test Parent");
             try
             {
+                CityMountainBoundaryPlan mountainPlan =
+                    CityMountainBoundaryPlanner.Create(layout);
                 GameObject river = CityRiverWorldBuilder.Build(
                     parent.transform,
-                    layout);
+                    layout,
+                    mountainPlan);
 
                 Assert.That(river, Is.Not.Null);
                 Transform water = river.transform.Find("Flowing Water");
@@ -496,6 +499,12 @@ namespace BarPromenade.Tests
                 Assert.That(rails, Is.Not.Null);
                 Assert.That(
                     rails.Find("West Quay South End Rail"),
+                    Is.Null);
+                Assert.That(
+                    rails.Find("East Quay South End Rail"),
+                    Is.Null);
+                Assert.That(
+                    rails.Find("West Quay North End Rail"),
                     Is.Not.Null);
                 Assert.That(
                     rails.Find("East Quay North End Rail"),

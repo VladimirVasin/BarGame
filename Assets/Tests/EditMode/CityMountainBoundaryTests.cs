@@ -26,7 +26,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.GetRidgeCount(CityMountainBoundarySide.South),
                 Is.EqualTo(3));
-            Assert.That(first.HasRiverNotch, Is.True);
+            Assert.That(first.HasRiverCave, Is.True);
             Assert.That(first.HasTunnel, Is.True);
             Assert.That(
                 first.Ridges.Count(item => item.IsSouthWestJoin),
@@ -55,13 +55,13 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
-        public void SouthRim_LeavesTunnelAndRiverOpenings()
+        public void SouthRim_LeavesSealedTunnelAndAuthoredRiverCaveMouth()
         {
             CityLayout layout = CreateDefaultLayout();
             CityMountainBoundaryPlan plan =
                 CityMountainBoundaryPlanner.Create(layout);
             CityMountainTunnelDescriptor tunnel = plan.Tunnel;
-            CityMountainRiverNotchDescriptor notch = plan.RiverNotch;
+            CityMountainRiverNotchDescriptor cave = plan.RiverCave;
 
             CityOpenAreaAccessDescriptor access = layout.OpenAreaAccesses
                 .Single(item =>
@@ -86,14 +86,18 @@ namespace BarPromenade.Tests.EditMode
                 tunnel.OpeningHeight,
                 Is.EqualTo(5.5f).Within(0.01f));
 
-            Assert.That(notch.Side, Is.EqualTo(
+            Assert.That(cave.Side, Is.EqualTo(
                 CityMountainBoundarySide.South));
-            Assert.That(notch.ChannelAxis, Is.EqualTo(Vector3.forward));
+            Assert.That(cave.Axis, Is.EqualTo(Vector3.back));
             Assert.That(
-                notch.ClearWidth,
+                cave.ApproachBounds.width,
                 Is.GreaterThan(layout.River.Definition.ChannelWidth));
             Assert.That(
-                OverlapsStrict(tunnel.PortalBounds, notch.OpeningBounds),
+                cave.WaterApproachBounds.width,
+                Is.EqualTo(layout.River.Definition.ChannelWidth)
+                    .Within(0.01f));
+            Assert.That(
+                OverlapsStrict(tunnel.PortalBounds, cave.ApproachBounds),
                 Is.False);
 
             AssertSouthOpeningShoulders(
@@ -103,8 +107,8 @@ namespace BarPromenade.Tests.EditMode
                 tunnel.PortalGroundCenter.z);
             AssertSouthOpeningShoulders(
                 plan,
-                notch.OpeningBounds.xMin,
-                notch.OpeningBounds.xMax,
+                cave.ApproachBounds.xMin,
+                cave.ApproachBounds.xMax,
                 tunnel.PortalGroundCenter.z);
 
             foreach (CityMountainRidgeDescriptor ridge in plan.Ridges)
@@ -124,10 +128,230 @@ namespace BarPromenade.Tests.EditMode
                         SegmentCrossesRect(
                             first,
                             second,
-                            notch.OpeningBounds),
+                            cave.ApproachBounds),
                         Is.False,
-                        $"{ridge.StableId} closes the river gorge.");
+                        $"{ridge.StableId} crosses the authored cave " +
+                        "forefield.");
                 }
+            }
+        }
+
+        [Test]
+        [Category("CityMountain")]
+        public void SouthRiverCave_ExtendsBeyondVisibilityAndKeepsBothBanksWalkableToRock()
+        {
+            const float playerRadius = 0.32f;
+            const float tolerance = 0.01f;
+            CityLayout layout = CreateDefaultLayout();
+            CityMountainBoundaryPlan plan =
+                CityMountainBoundaryPlanner.Create(layout);
+
+            Assert.That(plan.HasRiverCave, Is.True);
+            Assert.That(plan.RiverCave, Is.EqualTo(plan.RiverNotch));
+            CityMountainRiverNotchDescriptor cave = plan.RiverCave;
+            CityRiverSegmentDescriptor cityWater = layout.River.Segments[0];
+            Assert.That(cave.Axis, Is.EqualTo(Vector3.back));
+            Assert.That(
+                cave.ThroatDepth,
+                Is.GreaterThan(RuntimeSceneSetup.CityFarClipPlane));
+            Assert.That(
+                cave.ThroatWaterBounds.height,
+                Is.EqualTo(cave.ThroatDepth).Within(tolerance));
+            Assert.That(
+                cave.WaterApproachBounds.yMax,
+                Is.EqualTo(cityWater.WaterBounds.yMin).Within(tolerance));
+            Assert.That(
+                cave.ThroatWaterBounds.yMax,
+                Is.EqualTo(cave.WaterApproachBounds.yMin).Within(tolerance));
+            Rect[] bankRoutes =
+            {
+                cave.WestPromenadeBounds,
+                cave.EastPromenadeBounds
+            };
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout, plan);
+            for (int bankIndex = 0; bankIndex < bankRoutes.Length; bankIndex++)
+            {
+                Rect route = bankRoutes[bankIndex];
+                for (int sample = 0; sample <= 12; sample++)
+                {
+                    float z = Mathf.Lerp(
+                        route.yMax - playerRadius,
+                        route.yMin + playerRadius,
+                        sample / 12f);
+                    Assert.That(
+                        walkable.Contains(
+                            new Vector3(route.center.x, 0f, z),
+                            playerRadius),
+                        Is.True,
+                        $"Bank {bankIndex} route sample {sample} is clamped.");
+                }
+
+                // Per-sample containment cannot see a seam: two abutting
+                // rects each contain their own samples while the 2-radius
+                // band between them clamps the walk. Only a continuous
+                // constrained walk from the CITY promenade proves the
+                // route is actually reachable, not merely walkable.
+                Vector3 walker = new Vector3(
+                    route.center.x, 0f, route.yMax + 6f);
+                Assert.That(
+                    walkable.Contains(walker, playerRadius),
+                    Is.True,
+                    $"Bank {bankIndex} city-side start is clamped.");
+                for (int step = 0; step < 4000; step++)
+                {
+                    Vector3 next = walkable.Constrain(
+                        walker,
+                        walker + new Vector3(0f, 0f, -0.01f),
+                        playerRadius);
+                    if (next.z >= walker.z - 0.0001f)
+                    {
+                        break;
+                    }
+
+                    walker = next;
+                }
+
+                Assert.That(
+                    walker.z,
+                    Is.LessThanOrEqualTo(
+                        route.yMin + playerRadius + tolerance),
+                    $"Bank {bankIndex}: the southbound walk from the city " +
+                    "promenade must reach the rock instead of clamping " +
+                    "at an invisible seam.");
+
+                Vector3 atRock = new Vector3(
+                    route.center.x,
+                    0f,
+                    route.yMin + playerRadius);
+                Assert.That(
+                    walkable.Contains(
+                        atRock + cave.Axis * (playerRadius * 2f),
+                        playerRadius),
+                    Is.False,
+                    $"Bank {bankIndex} continues behind the rock mouth.");
+            }
+
+            for (int sample = 0; sample <= 12; sample++)
+            {
+                float z = Mathf.Lerp(
+                    cave.WaterApproachBounds.yMax - playerRadius,
+                    cave.WaterApproachBounds.yMin + playerRadius,
+                    sample / 12f);
+                Assert.That(
+                    walkable.Contains(
+                        new Vector3(
+                            cave.WaterApproachBounds.center.x,
+                            0f,
+                            z),
+                        playerRadius),
+                    Is.False,
+                    $"The cave channel became walkable at sample {sample}.");
+            }
+            Assert.That(
+                walkable.Contains(
+                    new Vector3(
+                        cave.ThroatWaterBounds.center.x,
+                        0f,
+                        cave.ThroatWaterBounds.yMax - playerRadius),
+                    playerRadius),
+                Is.False);
+
+            var host = new GameObject("River Cave Test Host");
+            try
+            {
+                GameObject river = CityRiverWorldBuilder.Build(
+                    host.transform,
+                    layout,
+                    plan);
+                CityMountainBoundaryWorldBuilder.Build(
+                    host.transform,
+                    layout,
+                    plan);
+
+                Transform cityWaterObject = FindChild(
+                    river.transform,
+                    $"River Water {cityWater.Cell.y}");
+                Transform approachWater = FindChild(
+                    host.transform,
+                    "River Cave Water Approach");
+                Transform throatWater = FindChild(
+                    host.transform,
+                    "River Cave Water Throat");
+                Transform cityBedObject = FindChild(
+                    river.transform,
+                    $"River Floor {cityWater.Cell.y}");
+                Transform approachBed = FindChild(
+                    host.transform,
+                    "River Cave Bed Approach");
+                Transform throatBed = FindChild(
+                    host.transform,
+                    "River Cave Bed Throat");
+                Assert.That(
+                    approachWater.GetComponentsInChildren<Collider>(true),
+                    Is.Empty);
+                Assert.That(
+                    throatWater.GetComponentsInChildren<Collider>(true),
+                    Is.Empty);
+                Transform[] approachSurfaces = { approachWater, approachBed };
+                Transform[] citySurfaces = { cityWaterObject, cityBedObject };
+                Transform[] throatSurfaces = { throatWater, throatBed };
+                for (int surfaceIndex = 0; surfaceIndex < 2; surfaceIndex++)
+                {
+                    Assert.That(
+                        approachSurfaces[surfaceIndex]
+                            .GetComponent<Renderer>().bounds.max.z,
+                        Is.GreaterThanOrEqualTo(citySurfaces[surfaceIndex]
+                            .GetComponent<Renderer>().bounds.min.z - tolerance),
+                        "The cave approach left a city river seam.");
+                    Assert.That(
+                        throatSurfaces[surfaceIndex]
+                            .GetComponent<Renderer>().bounds.max.z,
+                        Is.GreaterThanOrEqualTo(approachSurfaces[surfaceIndex]
+                            .GetComponent<Renderer>().bounds.min.z - tolerance),
+                        "The cave throat left an approach seam.");
+                }
+
+                string[] bankNames =
+                {
+                    "River Cave West Bank Approach",
+                    "River Cave East Bank Approach"
+                };
+                for (int bankIndex = 0; bankIndex < bankNames.Length;
+                     bankIndex++)
+                {
+                    Transform bank = FindChild(
+                        host.transform,
+                        bankNames[bankIndex]);
+                    Collider[] colliders =
+                        bank.GetComponentsInChildren<Collider>(true);
+                    Assert.That(colliders, Is.Not.Empty, bankNames[bankIndex]);
+                }
+
+                Transform rails = river.transform.Find("Quay Guard Rails");
+                Assert.That(
+                    rails.GetComponentsInChildren<Transform>(true).Any(item =>
+                        item.name.EndsWith(
+                            "Quay South End Rail",
+                            System.StringComparison.Ordinal)),
+                    Is.False,
+                    "The old transverse rail still blocks a cave approach.");
+                Assert.That(
+                    FindChild(host.transform, "River Cave Portal")
+                        .GetComponentsInChildren<Renderer>(true),
+                    Is.Not.Empty);
+                Assert.That(
+                    FindChild(host.transform, "River Cave Dark Lining")
+                        .GetComponentsInChildren<Renderer>(true),
+                    Is.Not.Empty);
+                Assert.That(
+                    FindChild(host.transform, "River Cave Rock Stop")
+                        .GetComponentsInChildren<Collider>(true),
+                    Is.Not.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
             }
         }
 
@@ -918,8 +1142,9 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(riverAxisHeights.Length, Is.GreaterThan(1));
                     Assert.That(
                         riverAxisHeights.Max() - riverAxisHeights.Min(),
-                        Is.LessThan(0.02f),
-                        "The distant south rim closes the river gorge.");
+                        Is.GreaterThan(1f),
+                        "The distant south rim still collapses over the " +
+                        "closed cave mouth.");
                 }
 
                 backdrop.Follower.AlignToCamera(camera);

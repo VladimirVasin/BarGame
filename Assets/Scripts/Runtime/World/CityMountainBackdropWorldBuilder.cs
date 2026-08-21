@@ -107,7 +107,6 @@ namespace BarPromenade
                 WestEndDegrees,
                 true,
                 false,
-                false,
                 layer,
                 sharedMaterial));
             renderers.Add(BuildSector(
@@ -116,7 +115,6 @@ namespace BarPromenade
                 SouthStartDegrees,
                 SouthEndDegrees,
                 false,
-                true,
                 true,
                 layer,
                 sharedMaterial));
@@ -129,7 +127,6 @@ namespace BarPromenade
             float endDegrees,
             bool taperStart,
             bool taperEnd,
-            bool carveRiverNotch,
             RidgeLayer layer,
             Material sharedMaterial)
         {
@@ -141,7 +138,6 @@ namespace BarPromenade
                 endDegrees,
                 taperStart,
                 taperEnd,
-                carveRiverNotch,
                 layer);
             var ridge = new GameObject(name);
             ridge.transform.SetParent(parent, false);
@@ -159,7 +155,7 @@ namespace BarPromenade
             ridge.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             // This mesh is tiny and intentionally remains readable so the
-            // river-axis notch can be verified as presentation data.
+            // complete sector silhouette can be verified as presentation data.
             mesh.UploadMeshData(false);
             return renderer;
         }
@@ -170,7 +166,6 @@ namespace BarPromenade
             float endDegrees,
             bool taperStart,
             bool taperEnd,
-            bool carveRiverNotch,
             RidgeLayer layer)
         {
             int triangleCount = SegmentsPerSector * 2;
@@ -210,17 +205,6 @@ namespace BarPromenade
                     secondT,
                     taperStart,
                     taperEnd);
-                firstPeakHeight = ApplyRiverNotch(
-                    firstPeakHeight,
-                    firstBottomHeight,
-                    firstAngle,
-                    carveRiverNotch);
-                secondPeakHeight = ApplyRiverNotch(
-                    secondPeakHeight,
-                    secondBottomHeight,
-                    secondAngle,
-                    carveRiverNotch);
-
                 Vector3 firstBottom = CreatePoint(
                     firstAngle,
                     SampleRadius(firstAngle, layer),
@@ -304,26 +288,6 @@ namespace BarPromenade
                     Mathf.Clamp01((1f - sectorT) / 0.18f));
             }
 
-            return Mathf.Lerp(bottomHeight, peakHeight, envelope);
-        }
-
-        private static float ApplyRiverNotch(
-            float peakHeight,
-            float bottomHeight,
-            float angleDegrees,
-            bool carveRiverNotch)
-        {
-            if (!carveRiverNotch)
-            {
-                return peakHeight;
-            }
-
-            float distanceFromSouth = Mathf.Abs(
-                Mathf.DeltaAngle(270f, angleDegrees));
-            float envelope = Mathf.SmoothStep(
-                0f,
-                1f,
-                Mathf.InverseLerp(10f, 22f, distanceFromSouth));
             return Mathf.Lerp(bottomHeight, peakHeight, envelope);
         }
 

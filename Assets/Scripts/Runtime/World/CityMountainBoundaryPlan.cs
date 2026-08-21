@@ -37,7 +37,9 @@ namespace BarPromenade
         public const float TunnelGateInset = 3.8f;
         public const float TunnelPortalDepth = 1.6f;
 
-        public const float RiverNotchOutwardDepth = 20f;
+        public const float RiverCaveOpeningHeight = 8f;
+        public const float RiverCaveThroatDepth = 56f;
+        public const float RiverCavePortalDepth = 1.6f;
 
         private static readonly CityMountainBoundaryDefinition
             DefaultDefinition = new CityMountainBoundaryDefinition(
@@ -591,16 +593,42 @@ namespace BarPromenade
     {
         public CityMountainRiverNotchDescriptor(
             string stableId,
-            Rect openingBounds,
-            Vector3 channelAxis,
+            Rect approachBounds,
+            Rect waterApproachBounds,
+            Rect mouthBounds,
+            Rect throatWaterBounds,
+            Rect westBankBounds,
+            Rect eastBankBounds,
+            Rect westPromenadeBounds,
+            Rect eastPromenadeBounds,
+            Vector3 axis,
             float baseY,
+            float westCityBankY,
+            float westMouthBankY,
+            float eastCityBankY,
+            float eastMouthBankY,
+            float openingHeight,
+            float throatDepth,
             float westPeakY,
             float eastPeakY)
         {
             StableId = stableId ?? string.Empty;
-            OpeningBounds = openingBounds;
-            ChannelAxis = channelAxis;
+            ApproachBounds = approachBounds;
+            WaterApproachBounds = waterApproachBounds;
+            MouthBounds = mouthBounds;
+            ThroatWaterBounds = throatWaterBounds;
+            WestBankBounds = westBankBounds;
+            EastBankBounds = eastBankBounds;
+            WestPromenadeBounds = westPromenadeBounds;
+            EastPromenadeBounds = eastPromenadeBounds;
+            Axis = axis;
             BaseY = baseY;
+            WestCityBankY = westCityBankY;
+            WestMouthBankY = westMouthBankY;
+            EastCityBankY = eastCityBankY;
+            EastMouthBankY = eastMouthBankY;
+            OpeningHeight = openingHeight;
+            ThroatDepth = throatDepth;
             WestPeakY = westPeakY;
             EastPeakY = eastPeakY;
         }
@@ -608,12 +636,39 @@ namespace BarPromenade
         public string StableId { get; }
         public CityMountainBoundarySide Side =>
             CityMountainBoundarySide.South;
-        public Rect OpeningBounds { get; }
-        public Vector3 ChannelAxis { get; }
+        /// <summary>
+        /// The complete visible forefield between the authored city river and
+        /// the mountain toe. It is deliberately wider than the water because
+        /// it also owns both bank approaches and their natural shoulders.
+        /// </summary>
+        public Rect ApproachBounds { get; }
+
+        public Rect WaterApproachBounds { get; }
+        public Rect MouthBounds { get; }
+        public Rect ThroatWaterBounds { get; }
+        public Rect WestBankBounds { get; }
+        public Rect EastBankBounds { get; }
+        public Rect WestPromenadeBounds { get; }
+        public Rect EastPromenadeBounds { get; }
+
+        /// <summary>Direction from the city into the mountain.</summary>
+        public Vector3 Axis { get; }
+
         public float BaseY { get; }
+        public float WestCityBankY { get; }
+        public float WestMouthBankY { get; }
+        public float EastCityBankY { get; }
+        public float EastMouthBankY { get; }
+        public float OpeningHeight { get; }
+        public float ThroatDepth { get; }
         public float WestPeakY { get; }
         public float EastPeakY { get; }
-        public float ClearWidth => OpeningBounds.width;
+
+        // Compatibility vocabulary for older consumers while the descriptor
+        // now represents a closed cave terminus rather than an open notch.
+        public Rect OpeningBounds => ApproachBounds;
+        public Vector3 ChannelAxis => -Axis;
+        public float ClearWidth => ApproachBounds.width;
 
         public bool Equals(CityMountainRiverNotchDescriptor other)
         {
@@ -621,9 +676,22 @@ namespace BarPromenade
                        StableId,
                        other.StableId,
                        StringComparison.Ordinal) &&
-                   OpeningBounds.Equals(other.OpeningBounds) &&
-                   ChannelAxis.Equals(other.ChannelAxis) &&
+                   ApproachBounds.Equals(other.ApproachBounds) &&
+                   WaterApproachBounds.Equals(other.WaterApproachBounds) &&
+                   MouthBounds.Equals(other.MouthBounds) &&
+                   ThroatWaterBounds.Equals(other.ThroatWaterBounds) &&
+                   WestBankBounds.Equals(other.WestBankBounds) &&
+                   EastBankBounds.Equals(other.EastBankBounds) &&
+                   WestPromenadeBounds.Equals(other.WestPromenadeBounds) &&
+                   EastPromenadeBounds.Equals(other.EastPromenadeBounds) &&
+                   Axis.Equals(other.Axis) &&
                    BaseY.Equals(other.BaseY) &&
+                   WestCityBankY.Equals(other.WestCityBankY) &&
+                   WestMouthBankY.Equals(other.WestMouthBankY) &&
+                   EastCityBankY.Equals(other.EastCityBankY) &&
+                   EastMouthBankY.Equals(other.EastMouthBankY) &&
+                   OpeningHeight.Equals(other.OpeningHeight) &&
+                   ThroatDepth.Equals(other.ThroatDepth) &&
                    WestPeakY.Equals(other.WestPeakY) &&
                    EastPeakY.Equals(other.EastPeakY);
         }
@@ -640,9 +708,22 @@ namespace BarPromenade
             {
                 int hash = StringComparer.Ordinal.GetHashCode(
                     StableId ?? string.Empty);
-                hash = (hash * 397) ^ OpeningBounds.GetHashCode();
-                hash = (hash * 397) ^ ChannelAxis.GetHashCode();
+                hash = (hash * 397) ^ ApproachBounds.GetHashCode();
+                hash = (hash * 397) ^ WaterApproachBounds.GetHashCode();
+                hash = (hash * 397) ^ MouthBounds.GetHashCode();
+                hash = (hash * 397) ^ ThroatWaterBounds.GetHashCode();
+                hash = (hash * 397) ^ WestBankBounds.GetHashCode();
+                hash = (hash * 397) ^ EastBankBounds.GetHashCode();
+                hash = (hash * 397) ^ WestPromenadeBounds.GetHashCode();
+                hash = (hash * 397) ^ EastPromenadeBounds.GetHashCode();
+                hash = (hash * 397) ^ Axis.GetHashCode();
                 hash = (hash * 397) ^ BaseY.GetHashCode();
+                hash = (hash * 397) ^ WestCityBankY.GetHashCode();
+                hash = (hash * 397) ^ WestMouthBankY.GetHashCode();
+                hash = (hash * 397) ^ EastCityBankY.GetHashCode();
+                hash = (hash * 397) ^ EastMouthBankY.GetHashCode();
+                hash = (hash * 397) ^ OpeningHeight.GetHashCode();
+                hash = (hash * 397) ^ ThroatDepth.GetHashCode();
                 hash = (hash * 397) ^ WestPeakY.GetHashCode();
                 return (hash * 397) ^ EastPeakY.GetHashCode();
             }
@@ -799,6 +880,8 @@ namespace BarPromenade
         }
         public bool HasRiverNotch { get; }
         public CityMountainRiverNotchDescriptor RiverNotch { get; }
+        public bool HasRiverCave => HasRiverNotch;
+        public CityMountainRiverNotchDescriptor RiverCave => RiverNotch;
         public bool HasTunnel { get; }
         public CityMountainTunnelDescriptor Tunnel { get; }
 
