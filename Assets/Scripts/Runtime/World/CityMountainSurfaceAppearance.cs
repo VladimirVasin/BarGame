@@ -21,7 +21,7 @@ namespace BarPromenade
         public const string PhysicalShaderResourcePath =
             "Shaders/CityMountainPhysical";
         public const float MetersPerTile = 6.0f;
-        public const float PhysicalVisibilityFloor = 0.55f;
+        public const float PhysicalVisibilityFloor = 0.10f;
         public const float NativeFogNearDistance = 9f;
         public const float NativeFogFarDistance = 12f;
         public const float PhysicalHandoffNearDistance = 31f;

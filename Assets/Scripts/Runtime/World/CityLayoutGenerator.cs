@@ -95,6 +95,10 @@ namespace BarPromenade
                 allEdges);
             EnsureEveryBlockHasFrontage(snapshot, seed, roads);
             EnsureYardAccessEdges(snapshot, roads);
+            EnsureDefaultOuterBoundaryStreets(
+                snapshot,
+                allEdges,
+                roads);
             roads.Sort(RoadEdge.Compare);
 
             Vector3 origin = anchorAtBlueprintCenter
@@ -713,6 +717,61 @@ namespace BarPromenade
                 {
                     roads.Add(best);
                     roadSet.Add(best);
+                }
+            }
+        }
+
+        private static void EnsureDefaultOuterBoundaryStreets(
+            CityGenerationSettings settings,
+            IReadOnlyList<RoadEdge> availableEdges,
+            ICollection<RoadEdge> roads)
+        {
+            CityBlueprint blueprint = settings.Blueprint;
+            if (blueprint == null ||
+                !string.Equals(
+                    blueprint.Id,
+                    CityBlueprintCatalog.DefaultBlueprintId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            // The exterior circuit is authored city structure, not an
+            // optional random loop. Append it after all seeded graph and
+            // access passes so the existing interior road selection stays
+            // intact. The river-bank edges are part of this boundary and
+            // its two required road bridges join the west and east sides.
+            var available = new HashSet<RoadEdge>(availableEdges);
+            var roadSet = new HashSet<RoadEdge>(roads);
+            for (int cellIndex = 0;
+                 cellIndex < blueprint.Cells.Count;
+                 cellIndex++)
+            {
+                CityBlueprintCell descriptor = blueprint.Cells[cellIndex];
+                if (!descriptor.ParticipatesInRoadGrid)
+                {
+                    continue;
+                }
+
+                for (int directionIndex = 0;
+                     directionIndex < CardinalDirections.Length;
+                     directionIndex++)
+                {
+                    Vector2Int direction =
+                        CardinalDirections[directionIndex];
+                    if (blueprint.ParticipatesInRoadGrid(
+                            descriptor.Cell + direction))
+                    {
+                        continue;
+                    }
+
+                    AddRequiredEdge(
+                        roads,
+                        roadSet,
+                        available,
+                        RoadEdge.ForCellFrontage(
+                            descriptor.Cell,
+                            direction));
                 }
             }
         }

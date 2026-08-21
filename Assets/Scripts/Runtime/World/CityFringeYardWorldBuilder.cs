@@ -8,11 +8,13 @@ namespace BarPromenade
     /// <summary>
     /// Materializes the planned fringe as a small set of 48-metre batches.
     /// Tracks, drains and cables stay visual; walls, large stock, sheds and
-    /// berms carry the only new collision. No light or interaction is built.
+    /// berms carry the only new collision. Four emissive lenses expose poses
+    /// to the existing night pool; no Light component or interaction is built.
     /// </summary>
     internal static class CityFringeYardWorldBuilder
     {
         private const float SpatialChunkSize = 48f;
+        internal const float PracticalLensForwardOffset = 0.24f;
 
         private static readonly Color ServiceGround =
             new Color(0.30f, 0.275f, 0.215f, 1f);
@@ -31,7 +33,7 @@ namespace BarPromenade
         private static readonly Color Rock =
             new Color(0.235f, 0.26f, 0.235f, 1f);
 
-        internal static GameObject Build(
+        internal static CityFringeYardWorldResult Build(
             Transform parent,
             CityFringeYardPlan plan)
         {
@@ -105,6 +107,7 @@ namespace BarPromenade
                 ApplyAppearance(renderer, key.Style, color);
                 if (!key.BlocksMovement &&
                     (key.Style == CityFringeYardStyle.ServiceGround ||
+                     key.Style == CityFringeYardStyle.ServiceTrack ||
                      key.Style == CityFringeYardStyle.Drainage ||
                      key.Style == CityFringeYardStyle.Iron))
                 {
@@ -112,7 +115,46 @@ namespace BarPromenade
                 }
             }
 
-            return root;
+            IList<CityFringePracticalAnchor> practicalAnchors =
+                BuildPracticalAnchors(root.transform, plan.Practicals);
+            return new CityFringeYardWorldResult(root, practicalAnchors);
+        }
+
+        private static IList<CityFringePracticalAnchor>
+            BuildPracticalAnchors(
+                Transform parent,
+                IReadOnlyList<CityFringeYardPracticalDescriptor> practicals)
+        {
+            var result = new List<CityFringePracticalAnchor>(
+                practicals.Count);
+            for (int index = 0; index < practicals.Count; index++)
+            {
+                CityFringeYardPracticalDescriptor descriptor =
+                    practicals[index];
+                Transform anchor = new GameObject(
+                    $"Fringe Practical {descriptor.Kind}").transform;
+                anchor.SetParent(parent, false);
+                anchor.localPosition = descriptor.Position;
+                anchor.localRotation = Quaternion.LookRotation(
+                    descriptor.Forward,
+                    Vector3.up);
+                GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                    "Practical Emissive Lens",
+                    anchor,
+                    Vector3.forward * PracticalLensForwardOffset,
+                    descriptor.LensSize,
+                    descriptor.LitColor,
+                    CityNightResources.EmissiveMaterial,
+                    false);
+                CityNightGlowRegistry.Register(
+                    lens.GetComponent<Renderer>(),
+                    descriptor.LitColor);
+                result.Add(new CityFringePracticalAnchor(
+                    descriptor.YardKind,
+                    anchor));
+            }
+
+            return result;
         }
 
         private static void ApplyAppearance(
@@ -126,6 +168,12 @@ namespace BarPromenade
                     CityExteriorAppearance.ApplyGroundSurface(renderer);
                     RuntimePrimitiveFactory.SetColor(renderer, color);
                     break;
+                case CityFringeYardStyle.ServiceTrack:
+                    CityFringeYardSurfaceAppearance.ApplyCombined(
+                        renderer,
+                        CityFringeYardSurfaceKind.ServiceTrack,
+                        color);
+                    break;
                 case CityFringeYardStyle.Drainage:
                     CityRiverSurfaceAppearance.ApplyCombined(
                         renderer,
@@ -133,11 +181,20 @@ namespace BarPromenade
                         color);
                     break;
                 case CityFringeYardStyle.OldMasonry:
-                case CityFringeYardStyle.Concrete:
-                case CityFringeYardStyle.Gabion:
-                    CityRiverSurfaceAppearance.ApplyCombined(
+                    CityFringeYardSurfaceAppearance.ApplyCombined(
                         renderer,
-                        CityRiverSurfaceKind.Quay,
+                        CityFringeYardSurfaceKind.Masonry,
+                        color);
+                    break;
+                case CityFringeYardStyle.Concrete:
+                    CityFringeYardSurfaceAppearance.ApplyCombined(
+                        renderer,
+                        CityFringeYardSurfaceKind.Concrete,
+                        color);
+                    break;
+                case CityFringeYardStyle.Gabion:
+                    CityMountainSurfaceAppearance.ApplyCombined(
+                        renderer,
                         color);
                     break;
                 case CityFringeYardStyle.Iron:
@@ -166,14 +223,20 @@ namespace BarPromenade
             {
                 case CityFringeYardStyle.ServiceGround:
                     return CityExteriorAppearance.GroundTextureTileSize;
+                case CityFringeYardStyle.ServiceTrack:
+                    return CityFringeYardSurfaceAppearance.GetRecipe(
+                        CityFringeYardSurfaceKind.ServiceTrack).MetersPerTile;
                 case CityFringeYardStyle.Drainage:
                     return CityRiverSurfaceAppearance
                         .GetRecipe(CityRiverSurfaceKind.Bed).MetersPerTile;
                 case CityFringeYardStyle.OldMasonry:
+                    return CityFringeYardSurfaceAppearance.GetRecipe(
+                        CityFringeYardSurfaceKind.Masonry).MetersPerTile;
                 case CityFringeYardStyle.Concrete:
+                    return CityFringeYardSurfaceAppearance.GetRecipe(
+                        CityFringeYardSurfaceKind.Concrete).MetersPerTile;
                 case CityFringeYardStyle.Gabion:
-                    return CityRiverSurfaceAppearance
-                        .GetRecipe(CityRiverSurfaceKind.Quay).MetersPerTile;
+                    return CityMountainSurfaceAppearance.MetersPerTile;
                 case CityFringeYardStyle.Iron:
                 case CityFringeYardStyle.UtilityPaint:
                     return CityRiverSurfaceAppearance
@@ -192,6 +255,7 @@ namespace BarPromenade
             CityFringeYardStyle style)
         {
             return style == CityFringeYardStyle.ServiceGround ||
+                   style == CityFringeYardStyle.ServiceTrack ||
                    style == CityFringeYardStyle.Drainage
                 ? RuntimeWorldUvMode.XZPlanar
                 : RuntimeWorldUvMode.BoxProjected;
@@ -202,6 +266,7 @@ namespace BarPromenade
             switch (style)
             {
                 case CityFringeYardStyle.ServiceGround:
+                case CityFringeYardStyle.ServiceTrack:
                     return ServiceGround;
                 case CityFringeYardStyle.Drainage:
                     return Drainage;

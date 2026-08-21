@@ -23,6 +23,9 @@ Assets/
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Textures/
       CityGroundSoilAlbedo.png     generated compacted-soil ground; 512 runtime, Repeat/mips
+      CityFringeServiceTrackAlbedo.png measured compacted aggregate; 512 runtime, Repeat/mips
+      CityFringeConcreteAlbedo.png measured board-formed concrete; 512 runtime, Repeat/mips
+      CityFringeMasonryAlbedo.png measured old irregular masonry; 512 runtime, Repeat/mips
       CityMountainRockAlbedo.png   deterministic weathered rock; 512 runtime, Repeat/mips
       CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
       CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
@@ -205,10 +208,14 @@ Assets/
         CityMountainBoundaryWorldBuilder.cs physical ridges, portal, throat + collidered gate
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
-        CityFringeYardPlan.cs     five typed Yard profiles, parts + sealed forecourt contract
+        CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
         CityFringeYardPlanner.cs  terrain-graded service belt and separate low east utility edge
+        CityFringeYardLandmarkPlanner.cs four west/south macro anchors and close-read vocabulary
+        CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
+        CityFringeYardSurfaceAppearance.cs three measured shared surface families
         CityFringeYardValidator.cs area/access/corridor/vocabulary/budget invariants
-        CityFringeYardWorldBuilder.cs 48 m shared-material batches + large-mass collision only
+        CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
+        CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
@@ -531,7 +538,9 @@ Assets/
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
       CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
-      CityFringeYardTests.cs             five profiles, deterministic parts, clear sealed forecourt + inert build
+      CityFringeYardTests.cs             five profiles, four anchors, clear sealed forecourt + light-free build
+      CityFringeYardSurfaceAppearanceTests.cs measured sheets, imports + shared MPB application
+      CityNightAtmosphereTests.cs         nearest fringe practical leases one existing street Spot
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  Lake identity, clearance and determinism
@@ -596,6 +605,8 @@ ArtSource/
   City/
     mountain-contact-sheet.png    deterministic physical-ridge albedo review sheet
     mountain-textures.json        generated mountain texture manifest
+    fringe-contact-sheet.png      service-track/concrete/masonry comparison sheet
+    fringe-textures.json          measured fringe texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     generated park chess-set .blend and the six-silhouette review row
   Home/                          apartment albedo contract, manifest and contact sheet
@@ -617,6 +628,7 @@ tools/
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
   build-city-park-textures.py       deterministic park surface albedos (ground, objects and landmark materials) + validator
   build-city-mountain-textures.py   deterministic weathered-rock albedo + validator
+  build-city-fringe-textures.py     three measured fringe albedos + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/
@@ -661,6 +673,9 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> low eastern utility edge, no ridge
                                           -> CityLayoutGenerator -> validated CityLayout
                                            -> 13x12 envelope preserving 144 lots
+                                           -> mandatory default outer Street circuit
+                                              -> appended after seeded interior/access passes
+                                              -> bank roads + two road bridges close the loop
                                            -> four UrbanBuilt areas + central park
                                            -> typed surfaces + open-area accesses
                                            -> distant bars via CityTravelDistance

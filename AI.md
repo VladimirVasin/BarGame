@@ -11,6 +11,9 @@ Two road bridges reconnect its outer edges; the 16-cell central park is split
 into two `2 x 4` halves joined by a timber footbridge, and four bank stairs
 reach lower waterside platforms. The city retains a reachable northern beach
 and water edge and four urban districts with four graph-separated bars. The
+default road footprint now has a mandatory uninterrupted outer Street circuit:
+the two road bridges and their continuous bank roads close it across the river,
+while only the interior street loops remain seed-optional. The
 default footprint also extends east to a
 reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
@@ -19,19 +22,26 @@ mountain ridges close only its western and southern edges, with a separate
 southern notch left around the river. All five typed fringe Yards now carry
 deterministic authored edge compositions. The four west/south strips form one
 old municipal service belt of retaining work, drainage, a narrow maintenance
-trace, sparse utility verticals and repair/rockfall pockets; at the south-west
-access it contracts into a readable freight forecourt for the sealed tunnel.
-The eastern Yard uses a separate low utility-edge composition and creates no
-eastern ridge. The portal still adds no interaction, scene transition or
-walkable continuation. A camera-relative
+trace, sparse utility verticals and repair/rockfall pockets. Four large anchors
+keep that belt from becoming repeated noise: stepped masonry and a culvert,
+an industrial repair frame, the sealed-tunnel freight forecourt, and caged
+floodworks with a gauge. Dedicated service-track, board-formed concrete and
+old-masonry sheets carry the close read. Each anchor owns one small emissive
+practical; at night the nearest one may lease the last of the existing eight
+street Spot slots, so `CityNightAtmosphere` still owns exactly `12` realtime
+Lights rather than adding four more. The eastern Yard uses a separate low,
+unlit utility-edge composition and creates no eastern ridge. The portal still
+adds no interaction, scene transition or walkable continuation. A camera-relative
 west/south ridge shell keeps that enclosing silhouette inside City's fixed
 `48 m` far plane without closing the northern sea or the deliberately
 untouched eastern horizon. Physical ridge chunks use one shared opaque
 `CityMountainPhysical` shader: a horizontal-distance dither hands the backdrop
-to real rock from `43 m` through `31 m`, while a `0.55` fog-visibility floor
-beyond `12 m` blends back to native Exp2 by `9 m`. Matching forward, depth and
-depth-normal passes prevent the real ridge from erasing the silhouette before
-it is readable; tunnel pieces remain ordinary `RuntimePrimitiveLit` geometry.
+to real rock from `43 m` through `31 m`, while a restrained `0.10`
+fog-visibility floor beyond roughly `22 m` returns to native Exp2 on approach.
+The fog-exempt shell is mixed `0.86` toward City fog, so distant mountains read
+only as a faint mass and real rock emerges near the toe. Matching forward,
+depth and depth-normal passes keep that handoff consistent; tunnel pieces
+remain ordinary `RuntimePrimitiveLit` geometry.
 The City map consumes that same mountain plan, expands its display only west
 and south, and draws the ridge toe/outer hatch, continued river notch and
 sealed tunnel gate without inventing a north or east boundary. The sparse
@@ -356,7 +366,10 @@ mountain rim starts at `CityMountainBoundaryPlanner.cs` and materializes
 through `CityMountainBoundaryWorldBuilder.cs` plus the presentation-only
 `CityMountainBackdropWorldBuilder.cs`; the authored ground before that rim and
 the separate eastern utility edge start at `CityFringeYardPlanner.cs` and
-materialize through `CityFringeYardWorldBuilder.cs`; supermarket truth starts
+`CityFringeYardLandmarkPlanner.cs`, receive measured surfaces through
+`CityFringeYardSurfaceAppearance.cs`, and materialize through
+`CityFringeYardWorldBuilder.cs`; its four runtime practical anchors are leased
+by `CityNightAtmosphere.cs` without expanding that pool. Supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
 `Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,

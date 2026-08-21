@@ -75,11 +75,11 @@ namespace BarPromenade
                     false),
                 CreateEastUtilityYard(layout)
             };
-            var plan = new CityFringeYardPlan(yards, true, forecourt);
-            CityFringeYardValidator.ValidateOrThrow(
+            CityFringeYardPlan plan = CityFringeYardLandmarkPlanner.CreatePlan(
                 layout,
-                mountains,
-                plan);
+                yards,
+                forecourt);
+            CityFringeYardValidator.ValidateOrThrow(layout, mountains, plan);
             return plan;
         }
         private static CityTunnelForecourtDescriptor CreateTunnelForecourt(

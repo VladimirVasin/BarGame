@@ -60,12 +60,42 @@ namespace BarPromenade
             EnsureComponents();
             ConfigureParticleSystem();
             ConfigureRenderer(sharedMaterial);
+            SetAppearance(
+                innerSize,
+                outerSize,
+                innerColor,
+                outerColor);
+            SetVisible(intensityFactor > 0.0001f);
+        }
+
+        public void SetAppearance(
+            float innerSize,
+            float outerSize,
+            Color innerColor,
+            Color outerColor)
+        {
+            if (innerSize <= 0f || outerSize <= innerSize)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(outerSize),
+                    "The outer halo must be larger than the inner halo.");
+            }
+
+            bool appearanceChanged =
+                !Mathf.Approximately(this.innerSize, innerSize) ||
+                !Mathf.Approximately(this.outerSize, outerSize) ||
+                !this.innerColor.Equals(innerColor) ||
+                !this.outerColor.Equals(outerColor);
             this.innerSize = innerSize;
             this.outerSize = outerSize;
             this.innerColor = innerColor;
             this.outerColor = outerColor;
-            ApplyIntensity();
-            SetVisible(intensityFactor > 0.0001f);
+            if (appearanceChanged &&
+                particles != null &&
+                haloRenderer != null)
+            {
+                ApplyIntensity();
+            }
         }
 
         public void SetIntensityFactor(float factor)

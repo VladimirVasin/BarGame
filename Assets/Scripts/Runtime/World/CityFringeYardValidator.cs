@@ -37,6 +37,7 @@ namespace BarPromenade
                 if (plan.IsEnabled ||
                     plan.Yards.Count != 0 ||
                     plan.PartCount != 0 ||
+                    plan.Practicals.Count != 0 ||
                     plan.HasTunnelForecourt)
                 {
                     throw new InvalidOperationException(
@@ -76,6 +77,7 @@ namespace BarPromenade
             }
 
             ValidateExpectedMapping(plan);
+            CityFringeYardPracticalValidator.ValidateOrThrow(layout, plan);
         }
 
         private static void ValidateYard(

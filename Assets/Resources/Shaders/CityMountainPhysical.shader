@@ -6,7 +6,7 @@ Shader "Bar Promenade/City Mountain Physical"
         _BaseColor("Rock Tint", Color) = (1, 1, 1, 1)
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
         _FogDensity("City Fog Density", Float) = 0.070
-        _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.55
+        _VisibilityFloor("Distant Visibility Floor", Range(0, 1)) = 0.10
         _NativeFogNear("Native Fog Near", Float) = 9
         _NativeFogFar("Native Fog Far", Float) = 12
         _HandoffNear("Opaque Handoff Near", Float) = 31

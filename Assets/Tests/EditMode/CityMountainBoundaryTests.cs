@@ -193,11 +193,25 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
-        public void PhysicalFogHandoff_KeepsReadableContrastAcrossBackdrop()
+        public void MountainFog_KeepsDistantSilhouetteFaintAndLetsCloseDetailEmerge()
         {
+            float closeVisibility = CityMountainSurfaceAppearance
+                .EvaluatePhysicalFogVisibility(
+                    CityMountainSurfaceAppearance.NativeFogNearDistance *
+                    0.5f);
+            float nativeNearVisibility = CityMountainSurfaceAppearance
+                .EvaluatePhysicalFogVisibility(
+                    CityMountainSurfaceAppearance.NativeFogNearDistance);
+            float nativeFarVisibility = CityMountainSurfaceAppearance
+                .EvaluatePhysicalFogVisibility(
+                    CityMountainSurfaceAppearance.NativeFogFarDistance);
+            Assert.That(closeVisibility, Is.GreaterThan(0.85f));
+            Assert.That(
+                nativeNearVisibility,
+                Is.GreaterThan(nativeFarVisibility));
+
             float[] distantSamples =
             {
-                CityMountainSurfaceAppearance.NativeFogFarDistance,
                 CityMountainSurfaceAppearance.PhysicalHandoffNearDistance,
                 CityMountainBackdropWorldBuilder.NearLayerRadius,
                 CityMountainSurfaceAppearance.PhysicalHandoffFarDistance,
@@ -210,11 +224,20 @@ namespace BarPromenade.Tests.EditMode
                     CityMountainSurfaceAppearance
                         .EvaluatePhysicalFogVisibility(
                             distantSamples[index]),
-                    Is.GreaterThanOrEqualTo(
+                    Is.EqualTo(
                         CityMountainSurfaceAppearance
-                            .PhysicalVisibilityFloor - 0.001f),
+                            .PhysicalVisibilityFloor)
+                        .Within(0.001f),
                     distantSamples[index].ToString("F2"));
             }
+
+            Assert.That(
+                CityMountainSurfaceAppearance.PhysicalVisibilityFloor,
+                Is.LessThanOrEqualTo(0.10f));
+            Assert.That(
+                closeVisibility -
+                CityMountainSurfaceAppearance.PhysicalVisibilityFloor,
+                Is.GreaterThan(0.70f));
 
             Assert.That(
                 CityMountainSurfaceAppearance.PhysicalHandoffNearDistance,
@@ -247,6 +270,27 @@ namespace BarPromenade.Tests.EditMode
                     epsilon);
             Assert.That(Mathf.Abs(nearLeft - nearRight), Is.LessThan(0.01f));
             Assert.That(Mathf.Abs(farLeft - farRight), Is.LessThan(0.01f));
+
+            Material physicalMaterial =
+                CityMountainSurfaceAppearance.PhysicalRidgeMaterial;
+            Assert.That(
+                physicalMaterial.HasProperty("_VisibilityFloor"),
+                Is.True);
+            Assert.That(
+                physicalMaterial.GetFloat("_VisibilityFloor"),
+                Is.EqualTo(
+                    CityMountainSurfaceAppearance.PhysicalVisibilityFloor)
+                    .Within(0.001f));
+
+            Material backdropMaterial =
+                CityMountainBackdropResources.SharedMaterial;
+            Assert.That(
+                backdropMaterial.HasProperty("_HazeStrength"),
+                Is.True);
+            Assert.That(
+                backdropMaterial.GetFloat("_HazeStrength"),
+                Is.EqualTo(CityMountainBackdropResources.HazeStrength)
+                    .Within(0.001f));
         }
 
         [Test]

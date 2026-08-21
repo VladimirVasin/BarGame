@@ -109,11 +109,16 @@ namespace BarPromenade
             }
         }
 
-        public void InitializeLighting(Transform player, int citySeed)
+        public void InitializeLighting(
+            Transform player,
+            int citySeed,
+            IReadOnlyList<CityFringePracticalAnchor>
+                fringePracticalAnchors = null)
         {
             InitializeAtmosphere(
                 player,
-                barLightPositions);
+                barLightPositions,
+                fringePracticalAnchors);
             if (FogField != null)
             {
                 return;
@@ -128,7 +133,9 @@ namespace BarPromenade
 
         public void InitializeAtmosphere(
             Transform player,
-            IReadOnlyList<Vector3> lightPositions)
+            IReadOnlyList<Vector3> lightPositions,
+            IReadOnlyList<CityFringePracticalAnchor>
+                fringePracticalAnchors = null)
         {
             if (Atmosphere != null)
             {
@@ -144,7 +151,8 @@ namespace BarPromenade
             Atmosphere.Initialize(
                 player,
                 LampAnchors,
-                lightPositions);
+                lightPositions,
+                fringePracticalAnchors);
             Atmosphere.SetNightFactor(nightFactor);
         }
     }

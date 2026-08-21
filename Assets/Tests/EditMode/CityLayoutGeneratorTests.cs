@@ -658,6 +658,69 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void DefaultCoastalBlueprint_CreatesContinuousOuterStreetRing()
+        {
+            CityBlueprint blueprint = CityBlueprintCatalog.Default;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                blueprint,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            var directions = new[]
+            {
+                Vector2Int.down,
+                Vector2Int.right,
+                Vector2Int.up,
+                Vector2Int.left
+            };
+            var boundary = new HashSet<RoadEdge>();
+
+            foreach (CityBlueprintCell descriptor in blueprint.Cells)
+            {
+                if (!descriptor.ParticipatesInRoadGrid)
+                {
+                    continue;
+                }
+
+                foreach (Vector2Int direction in directions)
+                {
+                    if (!blueprint.ParticipatesInRoadGrid(
+                            descriptor.Cell + direction))
+                    {
+                        boundary.Add(RoadEdge.ForCellFrontage(
+                            descriptor.Cell,
+                            direction));
+                    }
+                }
+            }
+
+            Assert.That(boundary, Is.Not.Empty);
+            foreach (RoadEdge edge in boundary)
+            {
+                Assert.That(
+                    layout.HasRoad(edge),
+                    Is.True,
+                    $"The outer street ring is broken at {edge}.");
+                Assert.That(
+                    layout.GetPathKind(edge),
+                    Is.EqualTo(CityPathKind.Street),
+                    edge.ToString());
+            }
+
+            CityBridgeDefinition[] roadBridges = blueprint.River.Bridges
+                .Where(bridge => bridge.CarriesRoadTraffic)
+                .ToArray();
+            Assert.That(roadBridges, Has.Length.EqualTo(2));
+            Assert.That(
+                roadBridges.All(bridge =>
+                    layout.HasRoad(bridge.CrossingEdge) &&
+                    layout.GetPathKind(bridge.CrossingEdge) ==
+                    CityPathKind.Street),
+                Is.True,
+                "Both road bridges must join the two sides of the ring.");
+            Assert.DoesNotThrow(layout.ValidateOrThrow);
+        }
+
+        [Test]
         public void DefaultSeed_KeepsCanonicalHomePlacement()
         {
             // Canary against random-stream drift: the river shift must keep

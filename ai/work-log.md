@@ -6,6 +6,59 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — The western and southern fringe gained authored anchors
+
+- Expanded the existing five-Yard service-belt plan without changing access,
+  terrain or navigation ownership. The four mountain-facing strips now own one
+  deterministic macro anchor apiece: stepped masonry and a culvert, an
+  industrial repair frame with winch and pipe stock, the sealed-tunnel return
+  light/forecourt, and caged floodworks with a gauge and silt fan. The eastern
+  utility edge stays low and deliberately dark.
+- Added three measured deterministic surface families for service aggregate,
+  board-formed concrete and old masonry. Their generator emits a manifest and
+  contact sheet, validates compensation/wrap/brightness, and imports the
+  runtime sheets at `512` with Repeat/mips. Rock, silt and iron continue to use
+  the existing City families.
+- Added four separate emissive practical anchors while keeping the combined
+  fringe root free of `Light` components. Within `20 m`, the nearest supported
+  anchor leases the eighth existing street Spot: the atmosphere changes from
+  `4` bar + `8` street to `4+7+1`, never above its existing `12`-Light cap.
+  The tunnel light points back toward the city; the sealed throat and east edge
+  stay dark.
+- Rebalanced the mountain handoff for the same fog hierarchy. Physical rock now
+  floors at `0.10` visibility instead of `0.55`, while the camera-relative
+  shell mixes `0.86` toward City fog, leaving a faint distant mass and allowing
+  real rock and fringe detail to emerge only on approach.
+- **Verification:** `tools/build-city-fringe-textures.py --verify` passed all
+  three measured sheets. One focused Unity EditMode invocation passed `13/13`:
+  the outer Street circuit, fringe plan/build, nine texture/import cases,
+  12-Light lease contract and fog handoff. Final visual code review found that
+  the emissive lens planes sat inside their opaque housings; moving them
+  `0.24 m` onto the aimed face and correcting the industrial lamp to point
+  across its repair stock were followed by one exact fringe regression, which
+  passed `1/1`. Full suites, a player build and a manual day/night City capture
+  were intentionally not run in fast mode.
+
+## 2026-08-21 — The default city's outer road is one complete circuit
+
+- Traced the visible edge gaps to road topology rather than rendering. The
+  Kruskal graph guaranteed global connectivity, but each unused outer edge was
+  still only admitted by the `0.28` optional-loop roll; the production seed
+  consequently omitted nine south, north and east boundary segments.
+- Added a default-blueprint-only post-pass after the seeded graph, frontage and
+  Yard-access repairs. It appends every road-grid-to-exterior frontage as
+  Street without rerolling or replacing any interior edge. The existing
+  continuous river-bank streets and two road bridges join the two sides, so
+  the complete city edge can be followed as a closed circuit.
+- Added a focused regression that inventories every exterior frontage, asserts
+  that it is Street, and confirms both road bridges still join the circuit.
+- **Verification:** the focused Unity EditMode regressions
+  `DefaultCoastalBlueprint_CreatesContinuousOuterStreetRing` and
+  `DefaultCoastal_BuildsClosedWindingTargetRoute` each passed `1/1`, covering
+  both the new perimeter contract and the retained closed Route 01 plan. Full
+  EditMode/PlayMode suites, a player build and a manual driving smoke were
+  intentionally not run in fast mode.
+
 ## 2026-08-21 — Ordinary city roofs disappear into the fog
 
 - Split the building-height contract into a retained `5–13 m` range for bars

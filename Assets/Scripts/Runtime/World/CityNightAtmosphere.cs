@@ -11,6 +11,7 @@ namespace BarPromenade
 
         private const float ReassignmentInterval = 0.35f;
         private const float ReassignmentDistance = 1.25f;
+        internal const float PracticalLeaseDistance = 20f;
 
         // The mast grew from 2.92 m to 4.70 m of source height; the
         // inverse-square law wants (4.70/2.92)^2 = 2.6x the luminous
@@ -36,6 +37,8 @@ namespace BarPromenade
 
         private Transform player;
         private Transform[] lampAnchors = Array.Empty<Transform>();
+        private CityFringePracticalAnchor[] practicalAnchors =
+            Array.Empty<CityFringePracticalAnchor>();
         private Light[] streetLightPool = Array.Empty<Light>();
         private Light[] barLights = Array.Empty<Light>();
         private CityLightHalo[] streetLightHalos =
@@ -44,6 +47,8 @@ namespace BarPromenade
             Array.Empty<CityLightHalo>();
         private int[] selectedAnchorIndices = Array.Empty<int>();
         private float[] selectedAnchorDistances = Array.Empty<float>();
+        private float[] pooledLightBaseIntensities = Array.Empty<float>();
+        private int activePracticalIndex = -1;
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
         private float nightFactor = 1f;
@@ -56,11 +61,25 @@ namespace BarPromenade
         public int ReassignmentCount { get; private set; }
         public int RealtimeLightCount =>
             streetLightPool.Length + barLights.Length;
+        internal bool IsPracticalSlotLeased { get; private set; }
+        internal CityFringeYardKind? ActivePracticalKind =>
+            IsPracticalSlotLeased &&
+            activePracticalIndex >= 0 &&
+            activePracticalIndex < practicalAnchors.Length
+                ? practicalAnchors[activePracticalIndex].Kind
+                : null;
+        internal Light ActivePracticalLight =>
+            IsPracticalSlotLeased && streetLightPool.Length > 0
+                ? streetLightPool[streetLightPool.Length - 1]
+                : null;
+        internal int AssignedStreetLightCount { get; private set; }
 
         public void Initialize(
             Transform playerTransform,
             IReadOnlyList<Transform> streetLampAnchors,
-            IReadOnlyList<Vector3> barLightPositions)
+            IReadOnlyList<Vector3> barLightPositions,
+            IReadOnlyList<CityFringePracticalAnchor>
+                fringePracticalAnchors = null)
         {
             player = playerTransform != null
                 ? playerTransform
@@ -76,6 +95,8 @@ namespace BarPromenade
             }
 
             lampAnchors = CopyAnchors(streetLampAnchors);
+            practicalAnchors = CopyPracticalAnchors(
+                fringePracticalAnchors);
             int barLightCount = Mathf.Min(
                 barLightPositions.Count,
                 MaximumRealtimeLights);
@@ -104,8 +125,10 @@ namespace BarPromenade
             streetLightHalos = new CityLightHalo[streetLightCount];
             selectedAnchorIndices = new int[streetLightCount];
             selectedAnchorDistances = new float[streetLightCount];
+            pooledLightBaseIntensities = new float[streetLightCount];
             for (int index = 0; index < streetLightCount; index++)
             {
+                pooledLightBaseIntensities[index] = StreetLightIntensity;
                 streetLightPool[index] = CreateLight(
                     $"Pooled Street Light {index + 1}",
                     transform.position,
@@ -163,7 +186,7 @@ namespace BarPromenade
             for (int index = 0; index < streetLightPool.Length; index++)
             {
                 streetLightPool[index].intensity =
-                    StreetLightIntensity * nightFactor;
+                    pooledLightBaseIntensities[index] * nightFactor;
                 if (!visible)
                 {
                     streetLightPool[index].enabled = false;
@@ -209,6 +232,14 @@ namespace BarPromenade
                 selectedAnchorDistances[index] = float.PositiveInfinity;
             }
 
+            activePracticalIndex = FindNearestPractical(
+                playerPosition);
+            IsPracticalSlotLeased =
+                activePracticalIndex >= 0 &&
+                streetLightPool.Length > 0;
+            int streetSlotCount = streetLightPool.Length -
+                                  (IsPracticalSlotLeased ? 1 : 0);
+
             for (int anchorIndex = 0;
                  anchorIndex < lampAnchors.Length;
                  anchorIndex++)
@@ -217,11 +248,25 @@ namespace BarPromenade
                 float distance = anchor != null
                     ? (anchor.position - playerPosition).sqrMagnitude
                     : float.PositiveInfinity;
-                InsertNearest(anchorIndex, distance);
+                InsertNearest(
+                    anchorIndex,
+                    distance,
+                    streetSlotCount);
             }
 
+            AssignedStreetLightCount = 0;
             for (int index = 0; index < streetLightPool.Length; index++)
             {
+                if (IsPracticalSlotLeased &&
+                    index == streetLightPool.Length - 1)
+                {
+                    AssignPracticalLight(
+                        index,
+                        practicalAnchors[activePracticalIndex]);
+                    continue;
+                }
+
+                ApplyStreetProfile(index);
                 int anchorIndex = selectedAnchorIndices[index];
                 Light light = streetLightPool[index];
                 bool hasAnchor =
@@ -235,6 +280,7 @@ namespace BarPromenade
                 streetLightHalos[index].SetVisible(visible);
                 if (hasAnchor)
                 {
+                    AssignedStreetLightCount++;
                     Transform anchor = lampAnchors[anchorIndex];
                     light.transform.SetPositionAndRotation(
                         anchor.position,
@@ -247,16 +293,19 @@ namespace BarPromenade
             ReassignmentCount++;
         }
 
-        private void InsertNearest(int anchorIndex, float distance)
+        private void InsertNearest(
+            int anchorIndex,
+            float distance,
+            int slotCount)
         {
-            for (int slot = 0; slot < selectedAnchorDistances.Length; slot++)
+            for (int slot = 0; slot < slotCount; slot++)
             {
                 if (distance >= selectedAnchorDistances[slot])
                 {
                     continue;
                 }
 
-                for (int move = selectedAnchorDistances.Length - 1;
+                for (int move = slotCount - 1;
                      move > slot;
                      move--)
                 {
@@ -269,6 +318,162 @@ namespace BarPromenade
                 selectedAnchorDistances[slot] = distance;
                 selectedAnchorIndices[slot] = anchorIndex;
                 return;
+            }
+        }
+
+        private int FindNearestPractical(Vector3 playerPosition)
+        {
+            int nearestIndex = -1;
+            float nearestDistance =
+                PracticalLeaseDistance * PracticalLeaseDistance;
+            for (int index = 0; index < practicalAnchors.Length; index++)
+            {
+                Transform anchor = practicalAnchors[index].Anchor;
+                if (anchor == null)
+                {
+                    continue;
+                }
+
+                float distance =
+                    (anchor.position - playerPosition).sqrMagnitude;
+                if (distance > nearestDistance ||
+                    (nearestIndex >= 0 &&
+                     distance >= nearestDistance))
+                {
+                    continue;
+                }
+
+                nearestIndex = index;
+                nearestDistance = distance;
+            }
+
+            return nearestIndex;
+        }
+
+        private void AssignPracticalLight(
+            int poolIndex,
+            CityFringePracticalAnchor practical)
+        {
+            PracticalLightProfile profile = GetPracticalProfile(
+                practical.Kind);
+            Light light = streetLightPool[poolIndex];
+            CityLightHalo halo = streetLightHalos[poolIndex];
+            ApplyPooledLightProfile(
+                poolIndex,
+                profile.Color,
+                profile.Intensity,
+                profile.Range,
+                profile.SpotAngle,
+                profile.InnerSpotAngle,
+                profile.HaloInnerSize,
+                profile.HaloOuterSize,
+                profile.HaloInnerColor,
+                profile.HaloOuterColor);
+            light.transform.SetPositionAndRotation(
+                practical.Anchor.position,
+                practical.Anchor.rotation);
+            bool visible = nightFactor > VisibleFactorThreshold;
+            light.enabled = visible;
+            halo.SetVisible(visible);
+        }
+
+        private void ApplyStreetProfile(int poolIndex)
+        {
+            ApplyPooledLightProfile(
+                poolIndex,
+                StreetLightColor,
+                StreetLightIntensity,
+                StreetLightRange,
+                105f,
+                55f,
+                1.15f,
+                3.10f,
+                StreetHaloInner,
+                StreetHaloOuter);
+        }
+
+        private void ApplyPooledLightProfile(
+            int poolIndex,
+            Color color,
+            float intensity,
+            float range,
+            float spotAngle,
+            float innerSpotAngle,
+            float innerHaloSize,
+            float outerHaloSize,
+            Color innerHaloColor,
+            Color outerHaloColor)
+        {
+            Light light = streetLightPool[poolIndex];
+            light.type = LightType.Spot;
+            light.color = color;
+            light.range = range;
+            light.spotAngle = spotAngle;
+            light.innerSpotAngle = innerSpotAngle;
+            light.shadows = LightShadows.None;
+            pooledLightBaseIntensities[poolIndex] = intensity;
+            light.intensity = intensity * nightFactor;
+            streetLightHalos[poolIndex].SetAppearance(
+                innerHaloSize,
+                outerHaloSize,
+                innerHaloColor,
+                outerHaloColor);
+        }
+
+        private static PracticalLightProfile GetPracticalProfile(
+            CityFringeYardKind kind)
+        {
+            switch (kind)
+            {
+                case CityFringeYardKind.WestStoneTerraces:
+                    return new PracticalLightProfile(
+                        new Color(1f, 0.63f, 0.32f),
+                        18f,
+                        8f,
+                        65f,
+                        38f,
+                        0.82f,
+                        2.10f,
+                        new Color(3.6f, 1.65f, 0.35f, 0.16f),
+                        new Color(1.9f, 1.0f, 0.30f, 0.04f));
+                case CityFringeYardKind.WestIndustrialBelt:
+                    return new PracticalLightProfile(
+                        new Color(0.72f, 1f, 0.80f),
+                        21f,
+                        9f,
+                        72f,
+                        42f,
+                        0.90f,
+                        2.30f,
+                        new Color(1.55f, 3.65f, 1.95f, 0.17f),
+                        new Color(0.72f, 1.95f, 1.02f, 0.045f));
+                case CityFringeYardKind.SouthTunnelForecourt:
+                    return new PracticalLightProfile(
+                        new Color(1f, 0.56f, 0.28f),
+                        24f,
+                        10f,
+                        80f,
+                        48f,
+                        1.0f,
+                        2.55f,
+                        new Color(4.0f, 1.55f, 0.34f, 0.18f),
+                        new Color(2.15f, 0.92f, 0.30f, 0.05f));
+                case CityFringeYardKind.SouthFloodWorks:
+                    return new PracticalLightProfile(
+                        new Color(0.66f, 1f, 0.72f),
+                        20f,
+                        9f,
+                        70f,
+                        40f,
+                        0.88f,
+                        2.25f,
+                        new Color(1.6f, 3.6f, 1.8f, 0.16f),
+                        new Color(0.72f, 1.9f, 0.92f, 0.04f));
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(kind),
+                        kind,
+                        "The fringe kind has no practical-light profile.");
             }
         }
 
@@ -344,6 +549,82 @@ namespace BarPromenade
             }
 
             return result;
+        }
+
+        private static CityFringePracticalAnchor[] CopyPracticalAnchors(
+            IReadOnlyList<CityFringePracticalAnchor> anchors)
+        {
+            if (anchors == null || anchors.Count == 0)
+            {
+                return Array.Empty<CityFringePracticalAnchor>();
+            }
+
+            var result = new List<CityFringePracticalAnchor>(
+                anchors.Count);
+            for (int index = 0; index < anchors.Count; index++)
+            {
+                CityFringePracticalAnchor candidate = anchors[index];
+                if (!IsSupportedPracticalKind(candidate.Kind))
+                {
+                    continue;
+                }
+
+                if (candidate.Anchor == null)
+                {
+                    throw new ArgumentException(
+                        "Supported fringe practicals cannot contain a " +
+                        "null anchor.",
+                        nameof(anchors));
+                }
+
+                result.Add(candidate);
+            }
+
+            return result.ToArray();
+        }
+
+        private static bool IsSupportedPracticalKind(
+            CityFringeYardKind kind)
+        {
+            return kind == CityFringeYardKind.WestStoneTerraces ||
+                   kind == CityFringeYardKind.WestIndustrialBelt ||
+                   kind == CityFringeYardKind.SouthTunnelForecourt ||
+                   kind == CityFringeYardKind.SouthFloodWorks;
+        }
+
+        private readonly struct PracticalLightProfile
+        {
+            public PracticalLightProfile(
+                Color color,
+                float intensity,
+                float range,
+                float spotAngle,
+                float innerSpotAngle,
+                float haloInnerSize,
+                float haloOuterSize,
+                Color haloInnerColor,
+                Color haloOuterColor)
+            {
+                Color = color;
+                Intensity = intensity;
+                Range = range;
+                SpotAngle = spotAngle;
+                InnerSpotAngle = innerSpotAngle;
+                HaloInnerSize = haloInnerSize;
+                HaloOuterSize = haloOuterSize;
+                HaloInnerColor = haloInnerColor;
+                HaloOuterColor = haloOuterColor;
+            }
+
+            public Color Color { get; }
+            public float Intensity { get; }
+            public float Range { get; }
+            public float SpotAngle { get; }
+            public float InnerSpotAngle { get; }
+            public float HaloInnerSize { get; }
+            public float HaloOuterSize { get; }
+            public Color HaloInnerColor { get; }
+            public Color HaloOuterColor { get; }
         }
     }
 }

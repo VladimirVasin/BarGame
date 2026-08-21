@@ -1,0 +1,81 @@
+{
+  "sheetSize": 1024,
+  "runtimeImportSize": 512,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "CityFringeServiceTrackAlbedo",
+      "grammar": "city_fringe_service_track",
+      "resourcePath": "Textures/CityFringeServiceTrackAlbedo",
+      "meanLinearLuminance": 0.479973,
+      "albedoCompensation": 1.436,
+      "brightnessError": 0.018983,
+      "metersPerTile": 4.0,
+      "smoothness": 0.035,
+      "metallic": 0.0,
+      "exposure": 0.742584,
+      "tints": {
+        "CityFringeYardWorldBuilder.ServiceGround": [
+          0.3,
+          0.275,
+          0.215
+        ]
+      },
+      "edgeDelta": 5.4245,
+      "seamRatio": 1.0509,
+      "contrast": 85,
+      "channelRatio": 1.0698,
+      "sha256": "47340534E572824D9551C1E245C4C5B07D58770FC445C8A6815ABC85B61177E8"
+    },
+    {
+      "key": "CityFringeConcreteAlbedo",
+      "grammar": "city_fringe_concrete",
+      "resourcePath": "Textures/CityFringeConcreteAlbedo",
+      "meanLinearLuminance": 0.499919,
+      "albedoCompensation": 1.3965,
+      "brightnessError": 0.004737,
+      "metersPerTile": 3.0,
+      "smoothness": 0.055,
+      "metallic": 0.0,
+      "exposure": 0.773395,
+      "tints": {
+        "CityFringeYardWorldBuilder.Concrete": [
+          0.285,
+          0.315,
+          0.305
+        ]
+      },
+      "edgeDelta": 3.1898,
+      "seamRatio": 1.5779,
+      "contrast": 67,
+      "channelRatio": 1.0236,
+      "sha256": "3B3BB9DFA005A484F76E1C35639EA25F3D16E42C42B253145EF730AFFA67172B"
+    },
+    {
+      "key": "CityFringeMasonryAlbedo",
+      "grammar": "city_fringe_masonry",
+      "resourcePath": "Textures/CityFringeMasonryAlbedo",
+      "meanLinearLuminance": 0.499928,
+      "albedoCompensation": 1.3895,
+      "brightnessError": 0.003223,
+      "metersPerTile": 2.4,
+      "smoothness": 0.035,
+      "metallic": 0.0,
+      "exposure": 0.908018,
+      "tints": {
+        "CityFringeYardWorldBuilder.OldMasonry": [
+          0.335,
+          0.35,
+          0.325
+        ]
+      },
+      "edgeDelta": 2.8104,
+      "seamRatio": 1.067,
+      "contrast": 70,
+      "channelRatio": 1.0418,
+      "sha256": "5DBBBA5AC2B5BB60A8EA21EC57EACF53C9394C2648DD0DE7D970695300140118"
+    }
+  ]
+}

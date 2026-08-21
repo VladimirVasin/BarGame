@@ -407,7 +407,8 @@ namespace BarPromenade
                 pedestrianWalkableArea);
             Night.InitializeLighting(
                 Player.GameObject.transform,
-                Layout.Seed);
+                Layout.Seed,
+                World.FringePracticalAnchors);
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
             BusPlan = CityBusPlanner.Create(

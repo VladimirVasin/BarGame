@@ -29,7 +29,7 @@ namespace BarPromenade
             CityMountainBoundaryPlan mountainBoundaryPlan,
             GameObject mountainBoundaryRoot,
             CityFringeYardPlan fringeYardPlan,
-            GameObject fringeYardRoot,
+            CityFringeYardWorldResult fringeYard,
             CityMountainBackdropWorldResult mountainBackdrop,
             Bounds bounds)
         {
@@ -72,7 +72,7 @@ namespace BarPromenade
             MountainBoundaryRoot = mountainBoundaryRoot;
             FringeYardPlan = fringeYardPlan ??
                 throw new ArgumentNullException(nameof(fringeYardPlan));
-            FringeYardRoot = fringeYardRoot;
+            FringeYard = fringeYard;
             MountainBackdrop = mountainBackdrop;
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
@@ -113,7 +113,12 @@ namespace BarPromenade
         public CityMountainBoundaryPlan MountainBoundaryPlan { get; }
         public GameObject MountainBoundaryRoot { get; }
         public CityFringeYardPlan FringeYardPlan { get; }
-        public GameObject FringeYardRoot { get; }
+        public CityFringeYardWorldResult FringeYard { get; }
+        public GameObject FringeYardRoot => FringeYard?.Root;
+        public IReadOnlyList<CityFringePracticalAnchor>
+            FringePracticalAnchors => FringeYard != null
+                ? FringeYard.PracticalAnchors
+                : Array.Empty<CityFringePracticalAnchor>();
         public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public Bounds Bounds { get; }
 

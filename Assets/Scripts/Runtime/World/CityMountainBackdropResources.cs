@@ -14,6 +14,7 @@ namespace BarPromenade
     {
         public const string ShaderResourcePath =
             "Shaders/CityMountainBackdrop";
+        public const float HazeStrength = 0.86f;
 
         private static readonly int HazeColorId =
             Shader.PropertyToID("_HazeColor");
@@ -46,7 +47,7 @@ namespace BarPromenade
                     sharedMaterial.SetColor(
                         HazeColorId,
                         RuntimeSceneSetup.CityFogColor);
-                    sharedMaterial.SetFloat(HazeStrengthId, 0.34f);
+                    sharedMaterial.SetFloat(HazeStrengthId, HazeStrength);
                 }
 
                 return sharedMaterial;

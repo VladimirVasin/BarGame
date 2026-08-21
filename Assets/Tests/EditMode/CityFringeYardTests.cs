@@ -31,6 +31,24 @@ namespace BarPromenade.Tests.EditMode
                 Is.InRange(120, CityFringeYardPlanner.MaximumPartCount));
             Assert.That(first.HasTunnelForecourt, Is.True);
             Assert.That(
+                first.Practicals,
+                Has.Count.EqualTo(
+                    CityFringeYardPracticalValidator.ExpectedPracticalCount));
+            Assert.That(first.Practicals, Is.EqualTo(second.Practicals));
+            Assert.That(
+                first.Practicals.Select(item => item.AreaId),
+                Is.EquivalentTo(new[]
+                {
+                    CityMountainBoundaryDefinition.WestNorthAreaId,
+                    CityMountainBoundaryDefinition.WestSouthAreaId,
+                    CityMountainBoundaryDefinition.SouthWestAreaId,
+                    CityMountainBoundaryDefinition.SouthEastAreaId
+                }));
+            Assert.That(
+                first.Practicals.Any(item =>
+                    item.YardKind == CityFringeYardKind.EastUtilityEdge),
+                Is.False);
+            Assert.That(
                 first.TunnelForecourt,
                 Is.EqualTo(second.TunnelForecourt));
             Assert.That(
@@ -112,6 +130,15 @@ namespace BarPromenade.Tests.EditMode
             }
 
             AssertVocabulary(first);
+            CityFringeYardPracticalDescriptor tunnelPractical =
+                first.Practicals.Single(item =>
+                    item.Kind ==
+                    CityFringeYardPracticalKind.TunnelReturnLamp);
+            Assert.That(
+                Vector3.Dot(
+                    tunnelPractical.Forward,
+                    -first.TunnelForecourt.Axis),
+                Is.GreaterThan(0.75f));
             Assert.DoesNotThrow(() =>
                 CityFringeYardValidator.ValidateOrThrow(
                     layout,
@@ -121,16 +148,37 @@ namespace BarPromenade.Tests.EditMode
             var host = new GameObject("Fringe Yard Test Host");
             try
             {
-                GameObject root = CityFringeYardWorldBuilder.Build(
+                CityFringeYardWorldResult result =
+                    CityFringeYardWorldBuilder.Build(
                     host.transform,
                     first);
+                GameObject root = result.Root;
                 Assert.That(root, Is.Not.Null);
+                Assert.That(
+                    result.PracticalAnchors,
+                    Has.Count.EqualTo(
+                        CityFringeYardPracticalValidator
+                            .ExpectedPracticalCount));
                 MeshRenderer[] renderers =
                     root.GetComponentsInChildren<MeshRenderer>(true);
                 Assert.That(
                     renderers.Length,
-                    Is.InRange(12, 128),
+                    Is.InRange(12, 116),
                     "The 48-metre style/collision batches must stay bounded.");
+                Assert.That(
+                    renderers.Count(item =>
+                        item.name == "Practical Emissive Lens"),
+                    Is.EqualTo(4));
+                foreach (MeshRenderer lens in renderers.Where(item =>
+                             item.name == "Practical Emissive Lens"))
+                {
+                    Assert.That(
+                        lens.transform.localPosition,
+                        Is.EqualTo(
+                            Vector3.forward *
+                            CityFringeYardWorldBuilder
+                                .PracticalLensForwardOffset));
+                }
                 Assert.That(
                     root.GetComponentsInChildren<MeshCollider>(true).Length,
                     Is.GreaterThan(0));
@@ -158,23 +206,30 @@ namespace BarPromenade.Tests.EditMode
                 [CityFringeYardKind.WestStoneTerraces] = new[]
                 {
                     CityFringeYardPartKind.RetainingSection,
-                    CityFringeYardPartKind.DrainChannel
+                    CityFringeYardPartKind.DrainChannel,
+                    CityFringeYardPartKind.TerraceShelf,
+                    CityFringeYardPartKind.CulvertHeadwall
                 },
                 [CityFringeYardKind.WestIndustrialBelt] = new[]
                 {
                     CityFringeYardPartKind.RepairStack,
-                    CityFringeYardPartKind.UtilityPole
+                    CityFringeYardPartKind.UtilityPole,
+                    CityFringeYardPartKind.RepairFrame,
+                    CityFringeYardPartKind.PipeStock
                 },
                 [CityFringeYardKind.SouthTunnelForecourt] = new[]
                 {
                     CityFringeYardPartKind.WheelRut,
                     CityFringeYardPartKind.DrainCover,
-                    CityFringeYardPartKind.TunnelCheek
+                    CityFringeYardPartKind.TunnelCheek,
+                    CityFringeYardPartKind.PracticalHousing
                 },
                 [CityFringeYardKind.SouthFloodWorks] = new[]
                 {
                     CityFringeYardPartKind.Gabion,
-                    CityFringeYardPartKind.DrainChannel
+                    CityFringeYardPartKind.DrainChannel,
+                    CityFringeYardPartKind.GabionCage,
+                    CityFringeYardPartKind.FloodGauge
                 },
                 [CityFringeYardKind.EastUtilityEdge] = new[]
                 {

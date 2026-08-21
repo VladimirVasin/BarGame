@@ -86,20 +86,29 @@ The vertical slice contains:
   ridge chunks use one shared opaque `CityMountainPhysical` material with the
   deterministic `CityMountainRockAlbedo`: matching forward/depth/depth-normal
   passes dither the horizontal-distance handoff from `43 m` to `31 m`, retain
-  a `0.55` visibility floor beyond `12 m` and return to native Exp2 by `9 m`.
+  a restrained `0.10` visibility floor only after native Exp2 reaches it and
+  return to native fog on approach. The fog-exempt shell mixes `0.86` toward
+  the City fog colour, leaving only a faint distant mass while close physical
+  rock becomes readable.
   Portal, throat and gate pieces deliberately retain `RuntimePrimitiveLit`;
 - one immutable default-only `CityFringeYardPlan` turns all five typed Yard
   areas into authored middle ground derived from their canonical bounds,
   declared access and sampled terrain. Four west/south variants share an old
   municipal service-belt grammar of graded maintenance trace, drainage,
-  retaining work, sparse poles/cables and bounded repair/rockfall pockets; the
-  south-west variant owns the `6.9 m` tunnel forecourt and keeps a validated
-  drive-clear strip wider than `6 m`. The eastern variant stays a separate low
-  road/drain/pole/shed/berm utility edge and creates no ridge. Large masses are
-  physical, small traces and cables are visual only; declared street accesses
-  remain walkable, and the plan adds no interaction, destination, realtime
-  light, north/east mountain or world-bounds expansion. Portal frame, throat
-  and sealed gate remain owned by `CityMountainBoundaryPlan`;
+  retaining work, sparse poles/cables and bounded repair/rockfall pockets.
+  Their macro anchors are a stepped culvert terrace, an industrial repair
+  frame, the `6.9 m` tunnel forecourt with a validated `>6 m` clear lane, and
+  caged floodworks with a gauge; dedicated measured sheets distinguish service
+  aggregate, board-formed concrete and old masonry at close range. Four small
+  emissive practicals remain separate from the combined geometry, while the
+  nearest supported anchor within `20 m` can lease the last existing street
+  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The
+  eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
+  edge and creates no ridge. Large masses are physical, small traces and cables
+  are visual only; declared street accesses remain walkable, and the plan adds
+  no interaction, destination, Light component, north/east mountain or
+  world-bounds expansion. Portal frame, throat and sealed gate remain owned by
+  `CityMountainBoundaryPlan`;
 - one immutable river contract splits that default urban envelope with a
   `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
   road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
@@ -479,8 +488,12 @@ The vertical slice contains:
   or water topology per cell. The legacy rectangular blueprint remains an
   explicit compatibility path;
 - a spanning-tree road graph over only the sparse road footprint, with
-  deterministic loops, filtered cross-city arterials, required open-area
-  access edges and exactly three declared river crossings;
+  deterministic optional interior loops, filtered cross-city arterials,
+  required open-area access edges and exactly three declared river crossings.
+  `default-coastal` additionally requires every exterior road-grid frontage as
+  Street after the seeded passes; the two road bridges and continuous bank
+  roads therefore close one drivable outer circuit instead of leaving random
+  gaps at the city edge;
 - four readable built areas—Old Town, Residential, Industrial and
   Nightlife—plus a fixed 16-cell central park split into two `2 x 4` regions
   with lawn, plazas, trees, benches and hedges. A dedicated timber footbridge

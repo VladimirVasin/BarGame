@@ -38,7 +38,15 @@ namespace BarPromenade
         UtilityShed = 14,
         UtilityDoor = 15,
         EarthBerm = 16,
-        TunnelCheek = 17
+        TunnelCheek = 17,
+        TerraceShelf = 18,
+        CulvertHeadwall = 19,
+        RepairFrame = 20,
+        PipeStock = 21,
+        PracticalHousing = 22,
+        GabionCage = 23,
+        FloodGauge = 24,
+        SiltFan = 25
     }
 
     /// <summary>
@@ -55,7 +63,8 @@ namespace BarPromenade
         Gabion = 4,
         Iron = 5,
         UtilityPaint = 6,
-        Rock = 7
+        Rock = 7,
+        ServiceTrack = 8
     }
 
     public readonly struct CityFringeYardPartDescriptor :
@@ -302,14 +311,18 @@ namespace BarPromenade
             new CityFringeYardPlan(
                 Array.Empty<CityFringeYardDescriptor>(),
                 false,
-                default);
+                default,
+                Array.Empty<CityFringeYardPracticalDescriptor>());
 
         private readonly ReadOnlyCollection<CityFringeYardDescriptor> yards;
+        private readonly ReadOnlyCollection<
+            CityFringeYardPracticalDescriptor> practicals;
 
         internal CityFringeYardPlan(
             IList<CityFringeYardDescriptor> source,
             bool hasTunnelForecourt,
-            CityTunnelForecourtDescriptor tunnelForecourt)
+            CityTunnelForecourtDescriptor tunnelForecourt,
+            IList<CityFringeYardPracticalDescriptor> sourcePracticals)
         {
             yards = new ReadOnlyCollection<CityFringeYardDescriptor>(
                 new List<CityFringeYardDescriptor>(source));
@@ -322,6 +335,10 @@ namespace BarPromenade
             PartCount = partCount;
             HasTunnelForecourt = hasTunnelForecourt;
             TunnelForecourt = tunnelForecourt;
+            practicals = new ReadOnlyCollection<
+                CityFringeYardPracticalDescriptor>(
+                new List<CityFringeYardPracticalDescriptor>(
+                    sourcePracticals));
         }
 
         public static CityFringeYardPlan Empty => EmptyPlan;
@@ -330,6 +347,8 @@ namespace BarPromenade
         public int PartCount { get; }
         public bool HasTunnelForecourt { get; }
         public CityTunnelForecourtDescriptor TunnelForecourt { get; }
+        public IReadOnlyList<CityFringeYardPracticalDescriptor> Practicals =>
+            practicals;
 
         public bool TryGetYard(
             string areaId,

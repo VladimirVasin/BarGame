@@ -20,7 +20,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 - **Accepted — Data-first generation:** A pure `CityLayout` is validated before GameObjects are created.
 - **Accepted — Stable local randomness:** Road stages and lot coordinates use stable hashes; Unity global random state is not used.
-- **Accepted — Finite connected graph:** Kruskal-style spanning tree plus deterministic optional loops.
+- **Accepted — Finite connected graph:** Kruskal-style spanning tree plus
+  deterministic optional interior loops. For `default-coastal`, every edge
+  where its road-grid footprint meets non-road-grid space is appended after
+  the seeded graph and access-repair passes as mandatory Street. This preserves
+  the existing interior selection while the continuous river-bank roads and
+  two road bridges join the west/east perimeters into one outer circuit.
+  Legacy and custom blueprints retain their prior graph policy.
 - **Accepted — Stable blueprint identity over position:** An immutable
   `CityBlueprint` owns stable area IDs, category, reusable visual archetype,
   placement policy and per-cell topology. Movable urban areas may swap cell
@@ -54,8 +60,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   screen-space dither uses horizontal camera distance so the camera-relative
   silhouette yields to physical coverage over `43-31 m` instead of being
   erased by an almost fully fogged opaque depth write. The shader holds a
-  `0.55` visibility floor beyond `12 m`, blends back to native City Exp2 by
-  `9 m`, and repeats the identical clip contract in `DepthOnly` and
+  restrained `0.10` visibility floor only once native City Exp2 reaches it,
+  so rock remains naturally stronger at `9-20 m`, and repeats the identical
+  clip contract in `DepthOnly` and
   `DepthNormalsOnly`. Portal frame, throat and gate remain ordinary
   `RuntimePrimitiveLit` pieces because they are close-range props, not part of
   the silhouette handoff; the graded approach, ruts, cross-drain, forecourt
@@ -70,7 +77,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `39.4-43.2 m`. `CityMountainBackdropFollower` copies camera translation but
   never rotation, so west/south remain world directions while finite-radius
   parallax cannot expose the shell. Its shader skips Unity distance fog and
-  bakes one restrained mix with `RuntimeSceneSetup.CityFogColor`; the shell
+  mixes `0.86` toward `RuntimeSceneSetup.CityFogColor`, leaving only a faint
+  distant mass whose contrast matches the physical `0.10` floor; the shell
   has no collider, Light, shadow, probe, navigation, map or `CityWorldResult`
   bounds role. It contains only west and south sectors, repeats the river-axis
   notch in both layers, leaves north and east open, and does not change fog,
@@ -172,12 +180,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   accesses and terrain samples. Four west/south profiles share the grammar of
   an old municipal service belt: graded maintenance trace, drainage,
   retaining work, sparse poles/cables, repair stock and restrained rockfall.
-  The south-west profile owns the readable sealed-tunnel forecourt and keeps a
-  physical corridor wider than `6 m`; the east profile instead stays low with
-  a longitudinal service road, drain, poles, locked utility masses and broken
-  spoil berm, and never creates an east ridge. Large masses collide; tracks,
-  drains, cables and small traces do not. There is no new light, interaction,
-  prompt, scene or navigation continuation. The lot and road-grid footprint is
+  One macro anchor distinguishes each mountain-facing strip: stepped masonry
+  around a stone culvert, a concrete repair frame with winch and pipe stock,
+  the readable sealed-tunnel forecourt, and caged floodworks with a gauge and
+  silt fan. Three deterministic measured sheets give the service track,
+  board-formed concrete and old masonry independent metre-scale reads; rock,
+  silt and iron reuse their existing City families. The south-west profile
+  keeps a physical corridor wider than `6 m`; the east profile instead stays
+  low and unlit with a longitudinal service road, drain, poles, locked utility
+  masses and broken spoil berm, and never creates an east ridge. Large masses
+  collide; tracks, drains, cables and small traces do not.
+  Four west/south anchors each expose one small emissive practical to
+  `CityNightGlowRegistry`, but the fringe root creates no `Light`. When the
+  player comes within `20 m`, only the nearest supported anchor can lease the
+  eighth street Spot already owned by `CityNightAtmosphere`: the pool remains
+  `4` bar + `7` street + `1` fringe, still `12` total, and returns to `4+8`
+  outside the activation radius. The tunnel practical aims back at the city,
+  never into the closed throat; the eastern edge has no practical. There is no
+  interaction, prompt, scene or navigation continuation. The lot and road-grid footprint is
   still normalized to `(0,0)` because every
   per-cell random stream hashes raw cell coordinates; only the
   `OpenLand`/`Water` fringe may reach `-1`, and the `(-1,-1)` corner stays

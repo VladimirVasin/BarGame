@@ -3,7 +3,7 @@ Shader "Bar Promenade/City Mountain Backdrop"
     Properties
     {
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
-        _HazeStrength("Haze Strength", Range(0, 1)) = 0.34
+        _HazeStrength("Haze Strength", Range(0, 1)) = 0.86
     }
 
     SubShader

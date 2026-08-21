@@ -91,7 +91,7 @@ namespace BarPromenade
                     world,
                     layout,
                     mountainBoundaryPlan);
-            GameObject fringeYardRoot =
+            CityFringeYardWorldResult fringeYard =
                 CityFringeYardWorldBuilder.Build(
                     world,
                     fringeYardPlan);
@@ -184,7 +184,7 @@ namespace BarPromenade
                 mountainBoundaryPlan,
                 mountainBoundaryRoot,
                 fringeYardPlan,
-                fringeYardRoot,
+                fringeYard,
                 mountainBackdrop,
                 bounds);
         }
