@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -57,11 +57,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 backPlane,
                 Is.EqualTo(
-                    HomeInteriorWorldBuilder.BedMattressSurfaceHeight)
+                    HomeInteriorWorldBuilder.BedMattressSurfaceHeight -
+                    HomeInteriorWorldBuilder.BedSleeperSinkDepth)
                     .Within(Tolerance),
                 "The lowest point of the supine pose must land on the " +
-                "mattress: lower and he sinks through it, higher and he " +
-                "floats over it.");
+                "dented mattress: the surface gives under him, and he " +
+                "lies in that dent rather than hovering over it.");
         }
 
         [Test]
@@ -118,11 +119,17 @@ namespace BarPromenade.Tests.EditMode
                     plan.ActionHipPosition.y -
                     PlayerCharacterDimensions.SupineHeadSupportOffset;
 
+                // The pillow dents too: its rest top rides one pillow-sink
+                // above the head plane, so the head lies in the dented
+                // pillow instead of inside a rigid one.
                 Assert.That(
                     pillow.max.y,
-                    Is.EqualTo(headPlane).Within(Tolerance),
-                    "The top of the pillow is where the authored pose puts " +
-                    "the back of his head.");
+                    Is.EqualTo(
+                        headPlane +
+                        HomeInteriorWorldBuilder.BedPillowSinkDepth)
+                        .Within(Tolerance),
+                    "The pillow's rest top must sit one dent above where " +
+                    "the sunken pose puts the back of his head.");
                 Assert.That(
                     pillow.max.y,
                     Is.GreaterThan(

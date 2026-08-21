@@ -6,6 +6,151 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — The dent existed and showed nothing
+
+- **The user looked at the opening and saw a flat bed.** He was right, and
+  the reason was mine twice over. First, every PlayMode assertion read the
+  MODEL through `GetSurfaceHeight` — the circular-test trap the earlier
+  adversarial review had warned about in general terms; the tests now read
+  the actual mesh vertices as well. Second, once a headless capture probe
+  rendered before/after PNGs from the real camera poses, the pixel diff
+  proved the dent WAS in the frame (1% of pixels, exactly under the torso)
+  and simultaneously invisible: a 4.5 cm bowl tilts smooth-shaded facets
+  under ten degrees, which is a few percent of brightness on albedos whose
+  own noise is far louder.
+- **Three presentation fixes, each verified by re-capture.** The top faces
+  became independent per-cell quads (faceted shading — the grazing-angle
+  capture shows the surface line dipping beautifully, so the geometry was
+  never in doubt); dented facet normals get their lateral component
+  steepened ~3x — the PS1-legitimate cheat that keeps geometry honest and
+  makes light answer it; and the exit-phase body weight no longer ramps to
+  zero by the bedside seat — it stays at one, sources vanish naturally as
+  parts rise, and the slow spring refills the hollow visibly behind the
+  rising body, which is the only moment the dent is not hidden under the
+  body that made it. The mattress skirt settled at 0.18 m after 0.12
+  (self-occluded) and 0.28 (too soft) both failed on screen.
+- **A third real bug fell out of the dense probe run**: `BeginLooping`
+  raises `PhaseChanged` before the bed sets its ownership flag, so the
+  equilibrium snap's ownership check always saw false — and in batch mode
+  frames are 1–3 ms, too short for the spring to take even one 1/120 step,
+  which is what exposed it. The snap now ignores ownership at event time;
+  LateUpdate re-resolves the weight, and snapping a foreign loop lands on
+  rest.
+- **Verification:** capture probe (since deleted, per the throwaway-script
+  rule) rendered rest/dented pairs at the sleeper close-up, the room shot,
+  a grazing angle and a raking light — the final pair reads under the
+  worst light; EditMode bed selection 15/15; PlayMode
+  `HomeBedInteractionPlayModeTests` 7/7 including the new mesh-vertex
+  assertions; the known unrelated reds unchanged.
+- **Round two, after the user still saw nothing:** the edit-mode probe
+  had bypassed the real pipeline (occluder-dither material, bulb light,
+  real camera), so a play-mode screen probe captured what the player
+  actually sees — and the dent was there but whisper-quiet at gameplay
+  distance. Three louder levers, each re-captured through the real
+  pipeline: a rim welt (displaced bedding bulges UP around the body,
+  `RimBulgeRatio`; the lit welt against the shaded hollow is what carries
+  the read), the sink deepened 0.045 → 0.065 so the sunken body reads
+  behind the untouched mattress rim, and cells coarsened 0.10 → 0.14 m so
+  the relief lands as hard facet light-steps instead of gradients. The
+  final real-pipeline capture shows the hero clearly seated IN the bed
+  with a lit welt and a deep boot pocket. Both probes deleted after use.
+  A further "нужно больше" pass cranked the numbers to their final
+  values — sink 0.10 (half the mattress), welt ratio 0.65, pillow sink
+  0.045 — and the real-pipeline re-capture reads unmistakably even from
+  the wide gameplay shot.
+
+## 2026-08-22 — The mattress finally gives under him
+
+- **The user's ask:** the bed should behave "like cloth, but thick" — it
+  should dent. Of the three techniques discussed, procedural grid
+  deformation won: the dent follows the real pose rather than one authored
+  blendshape state, stays deterministic, and is assertable to the vertex.
+  User picked ~4.5 cm of sink and a ~1.5 s slow refill after he rises.
+- **The load-bearing coupling, decided before any mesh existed.** Runtime
+  pins the sleep clip by the pelvis to `SleepingHipHeight` and grounds
+  nothing while a clip owns the rig — dent the mattress without lowering
+  that target and the hero hovers over his own dent. So `SleepingHipHeight`
+  descends by `BedSleeperSinkDepth`, the pillow's rest top is derived one
+  pillow-dent above the sunken head plane, and the bedside seat is
+  deliberately untouched: it is pinned by both boots on the floor, so a
+  dent there could only open a gap, not close one.
+- **Depth comes from penetration, not weights.** An adversarial design
+  review caught that weighted dent depths contradict a rigidly lowered
+  pose (0.35× under the feet would leave heels 2.9 cm inside the
+  mattress). Each source's target depth is its part's actual penetration
+  under the rest plane, read from live renderer bounds and clamped to the
+  sink — the surface meets each part's underside exactly: full 4.5 cm
+  under the torso (whose jacket defined the support offset), ~2 cm under
+  the boots, nothing under parts that float.
+- **The build.** `HomeBedDeformableSurfaceFactory` replaces the two
+  primitive boxes (which shared Unity's built-in cube mesh — writing to it
+  would have corrupted every primitive in the game) with closed boxes
+  whose tops are ~0.1 m grids; the border ring is pinned so the
+  single-quad sides stay welded and the rest silhouette, names, BedLinen
+  texturing (0..1 UVs under the ST transform), occlusion membership and
+  `bounds.max.y` are exactly what the boxes had; bounds grow downward only.
+  `HomeBedSurfaceDepressionModel` is a pure fixed-step spring in the
+  cemetery-model idiom (τ 0.10 s down, 0.50 s up, smoothstep skirt, edge
+  band, bit-deterministic). `HomeBedSurfaceDeformer` (order 400, after
+  every pose writer) resolves body weight from public `Phase` +
+  `FrameIndex` — zero across both seat windows, ramping over the lie-down
+  and the rise — so **no shared interaction code changed**; the one bed
+  API addition is `HomeBedInteraction.OwnsActiveInteraction`, without
+  which balcony smoking would dent the bed through the shared controller.
+- **Two real bugs found by the runs, not by review.** In batch mode frames
+  are 1–3 ms, so the two frames between `BeginSleeping` and the first
+  assert never accumulate one 1/120 integrator step — which exposed that
+  the equilibrium snap never fired: `PhaseChanged(Looping)` is raised
+  inside `BeginLooping`, before the bed sets its ownership flag, so the
+  snap's ownership check always saw false. The snap now ignores ownership
+  at event time (LateUpdate re-resolves weight; snapping a foreign loop
+  lands on rest, a no-op). And bilinear sampling leaked uncapped depth
+  across the pillow-shadow border from a neighbouring vertex, so the cap
+  rect pads itself by one cell.
+- **Verification:** `dotnet build` ×3 clean; EditMode **1348 total /
+  1347 passed** — 8 new `HomeBedDeformableSurfaceTests` green, the one red
+  is `CityMountainBoundaryTests.LegacyAndCustomBlueprints_StayOptOut`
+  from the mountain-fringe work (file sets fully disjoint from this
+  change); PlayMode bed suite **7/7** including the two new tests (dent
+  equals sink under the torso from the first frame of a programmatic
+  sleep; full refill within 2.5 s after wake AND after a cancelled
+  sleep); home presentation, opening and smoking suites show only the
+  three known pre-existing reds (lamp framing, AudioSource count,
+  smoking calm-frame — all baseline-proven earlier).
+- **Not run, and not runnable here:** how the dent reads on screen. That
+  wants the room camera during an ordinary sleep and the opening's
+  sleeper close-up.
+
+## 2026-08-21 — The southern river now disappears inside the mountain
+
+- Replaced the default coastal river-axis void with one validated cave
+  contract while retaining the historical `CityMountainRiverNotchDescriptor`
+  type name. Its cave aliases now expose the visible approach, `10 m`-wide water
+  mouth, two bank and promenade approaches, physical rock stop and a `56 m`
+  hidden water throat that extends beyond the unchanged `48 m` far plane.
+- Extended the river water and silt bed continuously from the city into that
+  throat. Both collidered `3 m` promenades, their quay walls and longitudinal
+  rails now continue from world `Z=-156` to `Z=-182`; the former transverse
+  south-end rails are gone, and `RoadWalkableArea` includes only those two bank
+  routes before collidered rock. The water and everything behind the stop stay
+  non-traversable, with no prompt, interaction, destination or transition.
+- Closed the physical and distant southern mountain silhouettes above a low,
+  dark mouth, then added the rock shoulders, dark lining and enough hidden
+  water/bed depth that no river end is visible. The City map consumes the same
+  descriptor but bounds and draws only the visible bank/water approach, closed
+  ridge and dark mouth; the hidden throat does not expand the map.
+- **Verification:** the focused Unity EditMode selection
+  `CityMountainBoundaryTests.SouthRiverCave_ExtendsBeyondVisibilityAndKeepsBothBanksWalkableToRock`
+  was requested, but Unity terminated during startup after `30 s` when Package
+  Manager could not connect to IPC stream `Upm-29284`; no test-results phase
+  ran, so there is no pass/fail result. The fallback
+  `dotnet build BarPromenade.EditModeTests.csproj --no-restore` then compiled
+  the runtime and focused regression with `0` errors; the reported `136`
+  warnings are unrelated serialized-field warnings in existing providers and
+  manifest DTOs. `git diff --check` passed.
+  Full suites, a player build and manual visual smoke were intentionally
+  omitted in fast mode.
+
 ## 2026-08-21 — The tunnel meets the ground and lights its throat
 
 - Traced the visible entrance gap to the throat floor starting `0.45 m` behind

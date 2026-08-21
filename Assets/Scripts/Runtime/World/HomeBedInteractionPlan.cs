@@ -16,13 +16,17 @@ namespace BarPromenade
         // Both hip heights are the mattress plus the measured distance the
         // authored pose hangs below the pelvis bone. Nothing here is a
         // clearance guess: too little and he sinks into the bedding, too much
-        // and he sits in mid-air over it.
+        // and he sits in mid-air over it. The sleeping hip additionally
+        // descends by the mattress dent: the surface gives under him, and he
+        // must lie in that dent rather than hover over it. The seated hip
+        // does NOT sink — it is pinned by both boots on the floor.
         internal const float SeatedHipHeight =
             HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
             PlayerCharacterDimensions.SeatedPelvisSupportOffset;
         internal const float SleepingHipHeight =
             HomeInteriorWorldBuilder.BedMattressSurfaceHeight +
-            PlayerCharacterDimensions.SupinePelvisSupportOffset;
+            PlayerCharacterDimensions.SupinePelvisSupportOffset -
+            HomeInteriorWorldBuilder.BedSleeperSinkDepth;
 
         // The window each clip actually spends sitting on the edge. Waking is
         // the longer one: he is seated from the half-crouch at 0.50 until his

@@ -687,6 +687,168 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            Bed_MattressDentsUnderTheSleeperAndSlowlyRecovers()
+        {
+            yield return LoadHome();
+            Assert.That(home.BedSurface, Is.Not.Null);
+
+            float restTop =
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight;
+            float sink =
+                HomeInteriorWorldBuilder.BedSleeperSinkDepth;
+            Vector3 hip = home.BedInteractionPlan.ActionHipPosition;
+
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(hip),
+                Is.EqualTo(restTop).Within(0.002f),
+                "Before anyone lies down the surface must be flat.");
+
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+            yield return null;
+
+            Player3DCharacterPresentation presentation =
+                home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+
+            // BeginSleeping enters the loop without a lie-down, so the
+            // deformer snaps to equilibrium immediately. The full sink
+            // depth belongs under the deepest part of the sleeper — the
+            // torso, whose underside defined the support offset — while
+            // shallower parts get shallower dents.
+            Assert.That(
+                presentation.Registry.TryGetPart(
+                    Player3DAnatomicalPart.Torso,
+                    out Player3DAnatomicalPartBinding torso),
+                Is.True);
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(
+                    torso.Renderer.bounds.center),
+                Is.EqualTo(restTop - sink).Within(0.005f),
+                "Under the sleeper's torso the mattress must be dented " +
+                "by exactly the depth his hip target descended.");
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(hip),
+                Is.LessThan(restTop - 0.02f),
+                "and the dent must still be clearly visible under his " +
+                "hips at the torso's skirt.");
+
+            // The model is not the picture: read the actual mesh, so a
+            // broken write path cannot hide behind green model asserts.
+            Transform mattressObject =
+                home.Room.Find("Home Bed Mattress");
+            Assert.That(mattressObject, Is.Not.Null);
+            HomeBedDeformableSurface mattressSurface =
+                mattressObject
+                    .GetComponent<HomeBedDeformableSurface>();
+            Vector3[] meshVertices =
+                mattressSurface.Mesh.vertices;
+            float lowestTopVertex = float.PositiveInfinity;
+            for (int index = 0;
+                 index < mattressSurface.TopVertexCount;
+                 index++)
+            {
+                lowestTopVertex = Mathf.Min(
+                    lowestTopVertex,
+                    meshVertices[index].y);
+            }
+
+            Assert.That(
+                lowestTopVertex,
+                Is.EqualTo(
+                    (HomeInteriorWorldBuilder.BedMattressThickness *
+                     0.5f) - sink)
+                    .Within(0.006f),
+                "The rendered mesh itself must carry the dent, not just " +
+                "the model behind it.");
+            Assert.That(
+                presentation.Registry.TryGetPart(
+                    Player3DAnatomicalPart.Head,
+                    out Player3DAnatomicalPartBinding head),
+                Is.True);
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(
+                    head.Renderer.bounds.center),
+                Is.LessThan(
+                    HomeInteriorWorldBuilder
+                        .BedPillowSurfaceHeight - 0.01f),
+                "The pillow must be dented under the sleeping head.");
+
+            Assert.That(home.Bed.RequestWake(), Is.True);
+            Time.timeScale = FastTimeScale;
+            yield return WaitForPhaseCompletion(
+                home,
+                PlayerAnimatedInteractionPhase.Idle);
+
+            // The dent refills on its own slow spring after he is up.
+            float recoveryDeadline = Time.time + 2.5f;
+            while (Time.time < recoveryDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(hip),
+                Is.EqualTo(restTop).Within(0.002f),
+                "The dent must have refilled within a couple of " +
+                "seconds of the hero standing up.");
+
+            Vector3[] restedVertices = mattressSurface.Mesh.vertices;
+            float lowestRestedTopVertex = float.PositiveInfinity;
+            for (int index = 0;
+                 index < mattressSurface.TopVertexCount;
+                 index++)
+            {
+                lowestRestedTopVertex = Mathf.Min(
+                    lowestRestedTopVertex,
+                    restedVertices[index].y);
+            }
+
+            Assert.That(
+                lowestRestedTopVertex,
+                Is.EqualTo(
+                    HomeInteriorWorldBuilder.BedMattressThickness *
+                    0.5f)
+                    .Within(0.003f),
+                "and the rendered mesh must be flat again once the " +
+                "dent has refilled.");
+        }
+
+        [UnityTest]
+        public IEnumerator
+            Bed_CancelledSleepLetsTheDentRecover()
+        {
+            yield return LoadHome();
+            Assert.That(home.BedSurface, Is.Not.Null);
+            Vector3 hip = home.BedInteractionPlan.ActionHipPosition;
+            float restTop =
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight;
+
+            Assert.That(home.Bed.BeginSleeping(), Is.True);
+            yield return null;
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(hip),
+                Is.LessThan(restTop - 0.03f));
+
+            home.AnimatedInteraction.CancelActiveInteraction();
+            Assert.That(
+                home.AnimatedInteraction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+
+            Time.timeScale = FastTimeScale;
+            float recoveryDeadline = Time.time + 2.5f;
+            while (Time.time < recoveryDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.BedSurface.GetSurfaceHeight(hip),
+                Is.EqualTo(restTop).Within(0.002f),
+                "An abandoned sleep must not leave a permanent dent.");
+        }
+
+        [UnityTest]
+        public IEnumerator
             Bed_FatigueResetsOnlyAfterCompletedWake()
         {
             yield return LoadHome();
@@ -761,8 +923,12 @@ namespace BarPromenade.Tests.PlayMode
             Player3DCharacterPresentation presentation =
                 home.Player.Visual as Player3DCharacterPresentation;
             Assert.That(presentation, Is.Not.Null);
+            // The mattress dents under him: the true support plane while
+            // his weight is on the bed is the dented one, and the hip
+            // target was lowered by exactly the sink depth.
             float mattress =
-                HomeInteriorWorldBuilder.BedMattressSurfaceHeight;
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight -
+                HomeInteriorWorldBuilder.BedSleeperSinkDepth;
 
             float lowest = float.PositiveInfinity;
             string lowestPart = "none";
@@ -810,18 +976,23 @@ namespace BarPromenade.Tests.PlayMode
                     out Player3DAnatomicalPartBinding head),
                 Is.True);
 
+            // The pillow dents under the head; the honest plane is the
+            // deformer's live surface at the head's own XZ.
             float pillow =
-                HomeInteriorWorldBuilder.BedPillowSurfaceHeight;
+                HomeInteriorWorldBuilder.BedPillowSurfaceHeight -
+                HomeInteriorWorldBuilder.BedPillowSinkDepth;
             Assert.That(
                 head.Renderer.bounds.min.y,
                 Is.GreaterThan(pillow - 0.03f),
-                "The sleeper's head must lie on the pillow, not inside it.");
+                "The sleeper's head must lie on the dented pillow, not " +
+                "inside it.");
+            Assert.That(home.BedSurface, Is.Not.Null);
             Assert.That(
                 head.Renderer.bounds.min.y,
                 Is.GreaterThan(
-                    HomeInteriorWorldBuilder
-                        .BedMattressSurfaceHeight + 0.02f),
-                "and it must ride clear of the bare mattress.");
+                    home.BedSurface.GetSurfaceHeight(
+                        head.Renderer.bounds.center) - 0.03f),
+                "and it must ride on the live deformed surface.");
         }
 
         private static void AssertSleepingHeadToFootOrientation(

@@ -32,6 +32,7 @@ namespace BarPromenade
             private set;
         }
         public HomeBedInteraction Bed { get; private set; }
+        public HomeBedSurfaceDeformer BedSurface { get; private set; }
         public HomeBedInteractionPlan BedInteractionPlan
         {
             get;
@@ -594,6 +595,40 @@ namespace BarPromenade
                 surfaceClutter == null
                     ? null
                     : surfaceClutter.gameObject);
+            BuildBedSurfaceDeformer();
+        }
+
+        private void BuildBedSurfaceDeformer()
+        {
+            Transform mattress = Room.Find("Home Bed Mattress");
+            Transform pillow = Room.Find("Home Pillow");
+            HomeBedDeformableSurface mattressSurface =
+                mattress == null
+                    ? null
+                    : mattress
+                        .GetComponent<HomeBedDeformableSurface>();
+            HomeBedDeformableSurface pillowSurface =
+                pillow == null
+                    ? null
+                    : pillow
+                        .GetComponent<HomeBedDeformableSurface>();
+            if (mattressSurface == null || pillowSurface == null)
+            {
+                return;
+            }
+
+            GameObject deformerObject =
+                new GameObject("Home Bed Surface Deformer");
+            deformerObject.transform.SetParent(transform, false);
+            BedSurface =
+                deformerObject
+                    .AddComponent<HomeBedSurfaceDeformer>();
+            BedSurface.Initialize(
+                Player,
+                AnimatedInteraction,
+                Bed,
+                mattressSurface,
+                pillowSurface);
         }
 
         private void BuildRefrigeratorInteraction()

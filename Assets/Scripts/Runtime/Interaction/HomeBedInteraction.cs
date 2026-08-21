@@ -50,6 +50,13 @@ namespace BarPromenade
             definition;
         public HomeBedInteractionPlan Plan => plan;
 
+        /// <summary>
+        /// Whether the shared controller's current interaction is this
+        /// bed's. The mattress deformer keys its body weight off this, so
+        /// smoking on the balcony cannot dent the bed.
+        /// </summary>
+        public bool OwnsActiveInteraction => ownsActiveInteraction;
+
         public void Initialize(
             PlayerRuntime player,
             PlayerAnimatedInteractionController

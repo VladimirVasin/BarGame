@@ -194,21 +194,22 @@ Assets/
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default 13x12 river city with eastern Lake/Cemetery, five Yards + legacy blueprint
-        CityRiverPlan.cs         10 m channel, dual promenades, three typed bridges + four lower landings
+        CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
         CityRiverResources.cs    shared animated water material and night/rain factors
+        CityRiverWorldBuilder.cs core river + mountain-plan cave water/bed/banks/rails
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
         CityElevationPlanner.cs  river-valley node profile, local lake basin + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
         CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
         CityTerrainSurfaceWorldBuilder.cs triangulated/filterable terrain batches + matching mesh colliders
-        CityMountainBoundaryPlan.cs west/south ridges, fenced natural SW ground, river notch + sealed tunnel
-        CityMountainBoundaryPlanner.cs deterministic terrain/toe-sampled boundary + corner-ground infill
-        CityMountainBoundaryValidator.cs side/opening/tunnel/corner geometry + natural-ground invariants
+        CityMountainBoundaryPlan.cs west/south ridges, fenced SW ground, river-cave terminus + sealed tunnel
+        CityMountainBoundaryPlanner.cs terrain/toe-sampled boundary, cave approaches + corner-ground infill
+        CityMountainBoundaryValidator.cs side/cave/tunnel/corner geometry + natural-ground invariants
         CityMountainBoundaryMeshFactory.cs ridges with buried toe bonds + shared render/collider corner earthwork
-        CityMountainBoundaryWorldBuilder.cs corner ground, ridges + seamless portal floor/lining and collidered gate
+        CityMountainBoundaryWorldBuilder.cs corner ground, ridges, river-cave rock stop + sealed tunnel lining
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
-        CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
+        CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative closed west/south shell only
         CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
         CityFringeYardPlanner.cs  terrain-graded service belt, grounded tunnel returns + low east utility edge
         CityFringeYardForefieldPlanner.cs road/middle/toe bands + 3-4 seeded meso anchors per mountain strip
@@ -287,7 +288,7 @@ Assets/
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
-        RoadWalkableArea.cs      ground/road/river-promenade union + sampled boundary-safe connectors
+        RoadWalkableArea.cs      ground/road/promenade union + mountain-plan cave-bank extensions
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -295,6 +296,7 @@ Assets/
         HomeExteriorContextPlan.cs  bounded street/decoration/pedestrian + Home-stop context
         HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
         HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + static Home stop
+        HomeBedDeformableSurfaceFactory.cs  grid-top mattress/pillow meshes + data component
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
                                    -> hip heights measured off the mattress, not guessed
         HomeBalconySmokingPlan.cs  entry/exit poses, trigger, camera + 24/24/16 timing
@@ -540,8 +542,9 @@ Assets/
       CityBusDriverDoorTimelineTests.cs phase, contact + chunk-independent samples
       CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
-      CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
-      CityMountainBoundaryTests.cs       deterministic ridges, seamless tunnel lining + fog-safe physical handoff
+      CityMapMountainPresentationTests.cs west/south-only bounds + cave-mouth/tunnel map contract
+      CityMountainBoundaryTests.cs       ridges, non-traversable river cave, tunnel lining + fog handoff
+      CityRiverPlannerTests.cs           core river builders + cave-aware south-rail ownership
       CityFringeYardTests.cs             five profiles, grounded portal/crown light, routes + light-free build
       CityFringeYardGroundWorldBuilderTests.cs exact terrain split, texture, UV + collider ownership
       CityFringeYardSurfaceAppearanceTests.cs measured sheets, imports + shared MPB application
@@ -669,7 +672,9 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> physical west/south ridges
                                                 -> shared opaque physical shader
                                                 -> 43-31 m dither handoff + fog floor
-                                             -> south river notch
+                                             -> low south river-cave mouth
+                                                -> >48 m hidden water + bed throat
+                                                -> two walkable promenades ending at rock
                                              -> sealed south-west tunnel stub
                                              -> camera-relative west/south backdrop
                                           -> five typed fringe Yards
@@ -700,17 +705,17 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                            -> fresh road-node spawn beside the home
                                             -> RoadWalkableArea
                                                -> streets + park + OpenLand
-                                               -> promenades, bridges + lower landings
+                                               -> core/cave promenades, bridges + lower landings
                                                -> complete BuildableGround regions
                                                -> radius-safe road/ground seams
-                                               -> water/unmapped/outside excluded
+                                               -> water/cave throat/unmapped/outside excluded
                                                -> physical colliders own obstacles
                                               -> PlayerMotor
                                           -> CityRoutePathfinder
                                              -> district-aware CityMap
                                                 -> clipped readable viewport
                                                 -> independent X/Y pan when overflowing
-                                                -> mountain plan hatch/notch/sealed gate
+                                                -> mountain hatch/cave mouth/sealed gate
                                                 -> display bounds grow west/south only
                                            -> RoadFencePlanner
                                               -> water/unmapped/map-boundary rails
@@ -971,6 +976,8 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> full opacity during Home modal presentation
        -> HomeBedInteractionPlan -> reachable door-side trigger + seated waypoint
                                  -> PlayerCharacterDimensions supine/seated support offsets
+                                 -> HomeBedSurfaceDeformer (order 400) -> HomeBedSurfaceDepressionModel
+                                    -> dents follow part penetration; sleeping hip descends by the sink
                                  -> HomeBedInteraction -> first/second E
                                     -> PlayerAnimatedInteractionController
                                        -> visible Positioning -> Entering/Looping/Exiting

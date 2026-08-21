@@ -208,13 +208,18 @@ namespace BarPromenade.Tests.EditMode
                 plan.ActionHipPosition.z,
                 Is.EqualTo(bed.Bounds.center.y)
                     .Within(Tolerance));
+            // The mattress dents under him, and he lies in that dent
+            // rather than hovering over it: the sleeping hip descends by
+            // the sink depth.
             Assert.That(
                 plan.ActionHipPosition.y,
                 Is.EqualTo(
                     HomeInteriorWorldBuilder
                         .BedMattressSurfaceHeight +
                     PlayerCharacterDimensions
-                        .SupinePelvisSupportOffset)
+                        .SupinePelvisSupportOffset -
+                    HomeInteriorWorldBuilder
+                        .BedSleeperSinkDepth)
                     .Within(Tolerance));
 
             AssertVector(

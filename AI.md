@@ -18,8 +18,13 @@ default footprint also extends east to a
 reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
 `3 x 2` cemetery; both have deterministic physical landmarks and street
 access. The default city now reads as a coastal basin: physical flat-shaded
-mountain ridges close only its western and southern edges, with a separate
-southern notch left around the river. All five typed fringe Yards now carry
+mountain ridges close only its western and southern edges. At the river axis
+the southern skyline stays closed above one low, dark `10 m`-wide water mouth
+instead of opening into an empty gorge. Water and its bed continue more than
+`48 m` behind the mountain, while both `3 m` promenades extend walkably from
+world `Z=-156` to the rock stop at `Z=-182`. The player can follow either bank
+all the way to that physical stop but cannot enter the cave; it has no prompt,
+interaction or transition. All five typed fringe Yards now carry
 deterministic authored edge compositions. The four west/south strips form one
 old municipal service belt of retaining work, drainage, a narrow maintenance
 trace, sparse utility verticals and repair/rockfall pockets. The complete
@@ -81,8 +86,9 @@ only as a faint mass and real rock emerges near the toe. Matching forward,
 depth and depth-normal passes keep that handoff consistent; tunnel pieces
 remain ordinary `RuntimePrimitiveLit` geometry.
 The City map consumes that same mountain plan, expands its display only west
-and south, and draws the ridge toe/outer hatch, continued river notch and
-sealed tunnel gate without inventing a north or east boundary. The sparse
+and south, and draws the ridge toe/outer hatch, only the visible narrow river
+approach into the mountain, and the sealed tunnel gate without inventing a
+north or east boundary. The sparse
 footprint can be non-rectangular, and the same data-first area contract supports
 reordered urban areas. The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
@@ -402,7 +408,9 @@ continues from `Assets/Scripts/Runtime/Core/CityGameRoot.cs` and
 `Assets/Scripts/Runtime/World/CityLayoutGenerator.cs`; the default-city
 mountain rim starts at `CityMountainBoundaryPlanner.cs` and materializes
 through `CityMountainBoundaryWorldBuilder.cs` plus the presentation-only
-`CityMountainBackdropWorldBuilder.cs`; the authored ground before that rim and
+`CityMountainBackdropWorldBuilder.cs`. Its river-cave descriptor also drives
+the water, bed, walkable banks and quay work in `CityRiverWorldBuilder.cs` and
+`RoadWalkableArea.cs`; the authored ground before that rim and
 the separate eastern utility edge start at `CityFringeYardPlanner.cs` and
 `CityFringeYardForefieldPlanner.cs` plus
 `CityFringeYardLandmarkPlanner.cs`, receive measured surfaces through

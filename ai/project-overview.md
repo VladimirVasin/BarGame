@@ -74,14 +74,16 @@ The vertical slice contains:
   connected sparse, non-rectangular footprint inside their map bounds;
 - one default-blueprint-only mountain boundary plan closes the physical west
   and south edges with deterministic flat-shaded low-poly ridge strips whose
-  toes sample the authoritative terrain top. The south rim is split around a
-  dedicated river notch and around one `8 x 5.5 m` tunnel portal derived from
-  `yard-south-west-access`. Its short throat has a terrain-overlapping raised
-  floor and non-coplanar, closed wall/ceiling joints, then ends at a collidered
-  metal gate: it has no prompt, interaction, destination scene, transition or
-  addition to `RoadWalkableArea`. The north remains the open sea edge and the
-  east remains deliberately unbounded for a separate pass. One two-layer
-  camera-relative presentation shell adds only west/south ridge silhouette at
+  toes sample the authoritative terrain top. The south skyline remains closed
+  over one low, dark `10 m`-wide river-cave water mouth; surrounding rock
+  terminates both bank routes physically, and the cave itself is never
+  walkable. A
+  separate `8 x 5.5 m` tunnel portal derived from `yard-south-west-access` has
+  a terrain-overlapping raised floor and non-coplanar, closed wall/ceiling
+  joints, then ends at a collidered metal gate. Neither opening has a prompt,
+  interaction, destination scene or transition. The north remains the open sea
+  edge and the east remains deliberately unbounded for a separate pass. One
+  two-layer camera-relative presentation shell adds only west/south ridge silhouette at
   `39.4-43.2 m`, inside the unchanged `48 m` far plane; it keeps fixed world
   azimuth and has no collider/light/navigation/world-bounds role. Physical
   ridge chunks use one shared opaque `CityMountainPhysical` material with the
@@ -133,9 +135,10 @@ The vertical slice contains:
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
   edge and creates no ridge. Large masses are physical, small traces and cables
   are visual only. Every physical ridge overlaps beneath its sampled terrain
-  toe and extends the near-toe collider across that join; intentional tunnel
-  and river openings remain open. Every level-safe ring-road seam into the four mountain Yards
-  is walkable, while true drops retain rails; three `6 m` routes reserve
+  toe and extends the near-toe collider across that join; only the sealed
+  tunnel portal and low river water mouth interrupt the rock, while the bank
+  ends close against it. Every level-safe ring-road seam into the four
+  mountain Yards is walkable, while true drops retain rails; three `6 m` routes reserve
   capsule-clear cuts through the retaining line to the rock toe. Two use broad
   gravel aprons, while the south-east flood route uses a narrow embedded trace
   on continuous terrain; the fourth route remains the sealed tunnel forecourt.
@@ -152,7 +155,12 @@ The vertical slice contains:
   bank, producing four navigable lower landings. River-owned parapets stop at
   the bank-road pads and preserve those four stair openings; generic road-edge
   fences treat bridge decks as support-only and do not duplicate them. Route
-  01 may use the road bridges but never the timber crossing;
+  01 may use the road bridges but never the timber crossing. In
+  `default-coastal`, water and its silt bed continue more than `48 m` behind
+  the southern mountain so their end remains beyond visibility. Both
+  promenades extend walkably from world `Z=-156` to physical rock stops at
+  `Z=-182`; the cave water and space behind those stops never enter the
+  navigation mask;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
@@ -789,9 +797,11 @@ The vertical slice contains:
   lots are drawn as open ground rather than buildings, and all landmark data
   comes directly from the canonical validated layout used by the world
   builder. It consumes `CityWorldResult.MountainBoundaryPlan`, expands its
-  display bounds only toward west and south, explicitly including the tunnel
-  throat, and draws each ridge as a toe-to-outer-foot hatch while carrying the
-  river through the southern notch. The closed portal uses a fixed `19 x 17`
+  display bounds only toward west and south, explicitly including the visible
+  cave approach and tunnel throat, and draws each ridge as a toe-to-outer-foot
+  hatch while carrying only the visible narrow river approach into its
+  mountain mouth. The hidden cave continuation is not drawn as open map space.
+  The closed portal uses a fixed `19 x 17`
   high-contrast marker with a localized hover label; when its world position is
   outside the scrolling viewport, the marker clamps to the visible edge as a
   direction indicator. North and east keep the layout's original map maxima.
@@ -1096,6 +1106,13 @@ The vertical slice contains:
   supine back, the lifted head and the seated weight hang below the pelvis
   bone, `PlayerCharacterDimensions` mirrors those numbers, and the pillow,
   blanket and crumpled shirt are placed around the pose instead of through it.
+  The mattress and pillow tops are deformable vertex grids: they dent under
+  the sleeper by his parts' actual penetration into the rest plane, his hip
+  target descends by the same sink depth so he lies in the dent rather than
+  hovering over it, and the dent visibly refills over about a second and a
+  half once he is up — the bed behaves like thick cloth, not a box. Sitting
+  on the edge dents nothing, because that pose is pinned by both boots on
+  the floor.
   Only a normally completed `BedExit` resets session fatigue;
   cancellation, transition, disable and destroy preserve it. Localized prompts
   and all normal/abnormal cleanup remain;

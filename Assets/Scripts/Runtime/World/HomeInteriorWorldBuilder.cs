@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,14 +16,25 @@ namespace BarPromenade
         internal const float BedMattressSurfaceHeight =
             BedMattressCenterHeight + (BedMattressThickness * 0.5f);
 
-        // The pillow is not decoration: its top is exactly where the authored
-        // sleep pose puts the back of the hero's head, so it follows the clip
-        // rather than the clip having to dodge it.
+        // The bedding gives under his weight: the mattress top is a grid that
+        // dents under the sleeper, and the sleeping hip target descends by the
+        // same depth so he lies in the dent instead of hovering over it. The
+        // bedside seat deliberately takes no dent — its hip height is pinned
+        // by both boots on the floor, so a dent there could only open a gap.
+        internal const float BedSleeperSinkDepth = 0.10f;
+        internal const float BedPillowSinkDepth = 0.045f;
+
+        // The pillow is not decoration: its rest top sits one pillow-dent
+        // above where the sunken sleep pose puts the back of the hero's head,
+        // so the head lies in the dented pillow rather than inside a rigid
+        // one. It follows the clip; the clip never dodges it.
         internal const float BedPillowThickness = 0.10f;
         internal const float BedPillowSurfaceHeight =
             BedMattressSurfaceHeight +
             PlayerCharacterDimensions.SupinePelvisSupportOffset -
-            PlayerCharacterDimensions.SupineHeadSupportOffset;
+            BedSleeperSinkDepth -
+            PlayerCharacterDimensions.SupineHeadSupportOffset +
+            BedPillowSinkDepth;
         internal const float BedPillowCenterHeight =
             BedPillowSurfaceHeight - (BedPillowThickness * 0.5f);
         internal const float KitchenDressingSurfaceHeight = 1.03f;
@@ -845,18 +856,25 @@ namespace BarPromenade
                 DarkWood,
                 HomeSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXZ));
-            parts.Add(HomeSurfacePrimitives.CreateBox(
-                "Home Bed Mattress",
-                room,
-                center + (Vector3.up * BedMattressCenterHeight),
-                new Vector3(
-                    bounds.width - 0.16f,
-                    BedMattressThickness,
-                    bounds.height - 0.18f),
-                DirtyLinen,
-                HomeSurfaceKind.BedLinen,
-                SurfaceProjection.BoxXZ,
-                false));
+            // The mattress and pillow are deformable grids, not primitive
+            // boxes: their tops dent under the sleeping hero and slowly
+            // refill after he gets up. Rest silhouette, names, texturing
+            // and occlusion membership stay exactly what the boxes had.
+            parts.Add(
+                HomeBedDeformableSurfaceFactory
+                    .CreateDeformableSurface(
+                        "Home Bed Mattress",
+                        room,
+                        center +
+                        (Vector3.up * BedMattressCenterHeight),
+                        new Vector3(
+                            bounds.width - 0.16f,
+                            BedMattressThickness,
+                            bounds.height - 0.18f),
+                        DirtyLinen,
+                        HomeSurfaceKind.BedLinen,
+                        SurfaceProjection.BoxXZ,
+                        BedSleeperSinkDepth));
             // Shoved against the wall side and down toward the foot, clear of
             // where he lies. An unmade bed still reads; a blanket under the
             // sleeper would only read as a body sunk into it.
@@ -876,21 +894,26 @@ namespace BarPromenade
             parts.Add(blanket);
             blanket.transform.localRotation =
                 Quaternion.Euler(0f, 5f, -2f);
-            // Worn flat and pressed into the mattress, so the authored sleep
-            // pose lands the back of his head on it instead of inside it.
-            parts.Add(HomeSurfacePrimitives.CreateBox(
-                "Home Pillow",
-                room,
-                center +
-                new Vector3(
-                    -bounds.width * 0.28f,
-                    BedPillowCenterHeight,
-                    0f),
-                new Vector3(0.62f, BedPillowThickness, 1.05f),
-                new Color(0.47f, 0.43f, 0.34f),
-                HomeSurfaceKind.BedLinen,
-                SurfaceProjection.BoxXZ,
-                false));
+            // Worn flat and pressed into the mattress; its dented top is
+            // where the sunken sleep pose lands the back of his head.
+            parts.Add(
+                HomeBedDeformableSurfaceFactory
+                    .CreateDeformableSurface(
+                        "Home Pillow",
+                        room,
+                        center +
+                        new Vector3(
+                            -bounds.width * 0.28f,
+                            BedPillowCenterHeight,
+                            0f),
+                        new Vector3(
+                            0.62f,
+                            BedPillowThickness,
+                            1.05f),
+                        new Color(0.47f, 0.43f, 0.34f),
+                        HomeSurfaceKind.BedLinen,
+                        SurfaceProjection.BoxXZ,
+                        BedPillowSinkDepth));
             RegisterFurnitureGroup(
                 occlusionRegistry,
                 BedOccluderId,

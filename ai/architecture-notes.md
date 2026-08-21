@@ -53,11 +53,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   toe from `CityTerrainSurfacePlan`. Each cross-section adds an exact toe
   anchor plus a shallow rock lip buried `0.04 m` under the terrain and extended
   `0.08 m` cityward; the renderer and near-toe collider cover the same join
-  instead of beginning at the former `0.35 m` outer foot inset. South is explicitly split around both the
-  river corridor and the portal opening, and a diagonal south-west strip closes
-  the otherwise empty `(-1,-1)` corner, so neither intentional opening is
-  bridged by the buried lip. The west ridge tapers toward the
-  northern beach; north remains the sea and east is deliberately untouched.
+  instead of beginning at the former `0.35 m` outer foot inset. South remains
+  one closed skyline: at the river axis the physical mass spans above a low,
+  dark `10 m`-wide water mouth and closes both promenade ends against rock.
+  Only the water opening itself and the separate portal interrupt the near toe. A
+  diagonal south-west strip closes the otherwise empty `(-1,-1)` corner. The
+  west ridge tapers toward the northern beach; north remains the sea and east
+  is deliberately untouched.
   The physical ridge chunks use one shared opaque `CityMountainPhysical`
   material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
   owns collision, while the tall rear mass casts no huge distant shadow. A
@@ -90,13 +92,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   mixes `0.86` toward `RuntimeSceneSetup.CityFogColor`, leaving only a faint
   distant mass whose contrast matches the physical `0.10` floor; the shell
   has no collider, Light, shadow, probe, navigation, map or `CityWorldResult`
-  bounds role. It contains only west and south sectors, repeats the river-axis
-  notch in both layers, leaves north and east open, and does not change fog,
-  grade or far clip. The schematic map does not consume this presentation
-  shell; it consumes `CityWorldResult.MountainBoundaryPlan`, expands display
+  bounds role. It contains only west and south sectors, keeps the southern
+  silhouette closed above the low physical river mouth, leaves north and east
+  open, and does not change fog, grade or far clip. The schematic map does not
+  consume this presentation shell; it consumes
+  `CityWorldResult.MountainBoundaryPlan`, expands display
   bounds only at the west/south minima, and renders the physical toe/outer-foot
-  hatch, river continuation and sealed tunnel gate. The layout's north/east
-  maxima remain exact.
+  hatch, the visible narrow river approach into rock and the sealed tunnel
+  gate. It does not expose the hidden cave as open map space. The layout's
+  north/east maxima remain exact.
 - **Accepted — Water is a surface the engine does not ship:** Unity has a
   full water system, but only in HDRP; URP 17 has no official water package
   and Unity's own URP samples author water as an ordinary Shader Graph.
@@ -178,7 +182,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   01, and bridge-adjacent furniture/spawn exclusions stay derived from the
   declared crossing metadata. World construction, navigation, pedestrians,
   bus routing and the City map consume the same validated plan rather than
-  rediscovering the corridor from coordinates.
+  rediscovering the corridor from coordinates. `default-coastal` extends that
+  contract south of the core: water and bed continue more than `48 m` behind
+  the mountain, while both `3 m` promenades remain walkable from world
+  `Z=-156` to physical rock stops at `Z=-182`. The player may walk to either
+  stop but cannot enter the cave; it owns no prompt, interaction, scene or
+  transition and contributes no walkable area behind the rock.
+  The existing `CityMountainRiverNotchDescriptor` type name is retained for
+  compatibility, but its expanded data is exposed through
+  `CityMountainBoundaryPlan.HasRiverCave`/`RiverCave`. That one descriptor
+  drives mountain closure, river materialization, walkable-bank footprints and
+  the map; no consumer reconstructs the terminus from coordinates.
 - **Accepted — Typed yards are authored edge areas, not boundary voids:** The
   former gaps behind the eastern, southern and western boundary streets are
   five `Yard` areas: one `4 x 6` pocket east of the player's home and four
@@ -339,9 +353,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   slots, pedestrians and debug teleports read the elevation or terrain sampler
   rather than adding an absolute Y.
   Declared bridge decks may cross non-walkable water and river stairs may
-  reach their own lower platforms. Traversable tunnels and overlapping
-  walkable levels at the same XZ projection remain outside this navigation
-  architecture.
+  reach their own lower platforms. The two southern promenade extensions are
+  ordinary single-level walkable footprints ending against collidered rock;
+  the water cave beyond them is not traversable. Traversable tunnels and
+  overlapping walkable levels at the same XZ projection remain outside this
+  navigation architecture.
   Street intersections and stop pads are level. Between their `4 m` setbacks,
   oriented road/sidewalk strips may grade up to `6%` for Street/Route 01 and
   `8.3%` for pedestrian ParkPath. The bus route excludes non-bus transitions,
@@ -1401,6 +1417,47 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the independent exit and the neutral ordinary rig stays locked until its
   final `LateUpdate` restoration frame. Normal and abnormal exits end the clip,
   reset its model-root spatial offset and restore owned presentation state.
+- **Accepted — The mattress is thick cloth, not a box:** The bed's mattress
+  and pillow tops are vertex grids (the project's first per-frame-written
+  meshes) that dent under the sleeping hero and slowly refill after he gets
+  up. `HomeBedSurfaceDepressionModel` is a pure fixed-step spring in the
+  cemetery-model idiom: per-source target depth is the part's actual
+  penetration under the rest plane read from live renderer bounds — not a
+  guessed weight, which would contradict the rigidly lowered pose — with a
+  smoothstep skirt, a pinned border ring the single-quad sides stay welded
+  to, fast denting (~0.25 s) and slow recovery (~1.5 s).
+  `HomeBedSurfaceDeformer` (order 400, after every pose writer) feeds it
+  `Phase` + `FrameIndex` from the shared controller — no shared interaction
+  code changed — and rewrites the meshes only on frames that moved.
+  The load-bearing coupling: `SleepingHipHeight` descends by
+  `BedSleeperSinkDepth` so the hero lies in the dent instead of hovering
+  over it, and the pillow's rest top is derived one pillow-dent above the
+  sunken head plane. The bedside seat deliberately takes no dent — its hip
+  height is pinned by both boots on the floor, so a dent there could only
+  open a gap; body weight is zero through the lie-down's seat window, and
+  stays at full one for the whole wake: the sources vanish naturally as
+  parts rise off the rest plane, and the slow spring refills the hollow
+  visibly BEHIND the rising body — the one moment the dent is not hidden
+  under the body that made it. Readability was capture-driven through the REAL pipeline (play-mode
+  renders of the actual camera, bulb light and occluder-dither material):
+  a smooth-normal bowl is invisible on the project's noisy albedos, so the
+  top faces are independent per-cell quads (coarse 0.14 m cells — hard
+  facet light-steps, not gradients), dented facet normals have their
+  lateral component steepened ~3x, the displaced bedding bulges UP in a
+  welt around the body (RimBulgeRatio of the local dent), and the sink is
+  0.10 m — half the mattress thickness, so the sunken body reads plainly
+  behind the untouched rim even from the far gameplay camera. Depth
+  started at the discussed 0.045 and was raised twice at the user's
+  direction after on-screen checks; the welt is 0.65 of the local dent
+  and the pillow swallows 0.045 of the head.
+  The mattress dent under the pillow footprint is capped to the pillow's
+  embed depth (padded a cell so bilinear sampling cannot leak past the
+  border), keeping a gap from opening beneath its rigid box. A loop entered
+  without a lie-down (the opening's `BeginLooping`) snaps the springs to
+  equilibrium; the snap trigger deliberately ignores the bed's ownership
+  flag at event time, because that flag is raised only after `BeginLooping`
+  returns — the weight is re-resolved in `LateUpdate` where snapping a
+  foreign loop lands harmlessly on rest.
 - **Accepted — The bed is built around the sleeper, not beside him:**
   A contextual clip is pinned to the world by its pelvis bone and
   `GroundOrdinaryPose` is off for as long as it owns the rig, so a single
@@ -1617,9 +1674,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityWorldResult.MountainBoundaryPlan` into the overlay. Map projection uses
   a separate display envelope that may grow only to the physical western and
   southern outer feet; it never extends the north/east maxima. Cross-hatched
-  toe-to-outer strips describe the ridge mass, the river colour continues
-  through the authored south notch, and the tunnel is a dark throat terminated
-  by a crossed gate rather than a selectable destination.
+  toe-to-outer strips describe the ridge mass, the narrow visible river
+  approach ends in its dark mountain mouth without drawing the hidden cave as
+  open territory, and the tunnel is a dark throat terminated by a crossed gate
+  rather than a selectable destination.
 - **Accepted — Shared-lock gameplay pause:** City, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad

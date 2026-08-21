@@ -82,7 +82,12 @@
   his lifted head and his seated weight hang below that bone, and
   `PlayerCharacterDimensions` mirrors those three numbers. The mattress is the
   surface he rests on and the pillow's top is built at his head, rather than
-  the clip being asked to dodge bedding placed independently of it. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
+  the clip being asked to dodge bedding placed independently of it. Both are
+  deformable grids at runtime: they dent under his weight by each part's
+  actual penetration, the sleeping hip target descends by
+  `HomeInteriorWorldBuilder.BedSleeperSinkDepth` so he lies in that dent, and
+  the dent slowly refills after he rises. The bedside seat takes no dent —
+  it is pinned by both boots on the floor. Balcony smoking uses `SmokeEnter`, `SmokeLoop`, `SmokeExit`: the
   right hand retrieves a socket-bound cigarette, brings its mouth end to the
   lips for a held inhale, lowers for an outward exhale and discards it before
   returning to `Relaxed`. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
