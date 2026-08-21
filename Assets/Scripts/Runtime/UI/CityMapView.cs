@@ -193,6 +193,12 @@ namespace BarPromenade
         internal static Color BusRouteColor => BusRoute;
 
         // Every marker plus one background target per visible area cell.
+        // Reused across IMGUI events: identical number strings and a
+        // tooltip GUIContent were otherwise re-allocated every pass for
+        // as long as the map stays open.
+        private readonly GUIContent tooltipContent = new GUIContent();
+        private string[] numberLabelCache;
+
         private readonly List<MapHoverTarget> hoverTargets =
             new List<MapHoverTarget>(320);
         private readonly CityMapViewport mapViewport =
@@ -1746,8 +1752,26 @@ namespace BarPromenade
                     BusStopHoverPriority);
                 DrawBusStopMarker(
                     position,
-                    stop.Ordinal.ToString());
+                    GetNumberLabel(stop.Ordinal));
             }
+        }
+
+        private string GetNumberLabel(int value)
+        {
+            if (value < 0)
+            {
+                return value.ToString();
+            }
+
+            if (numberLabelCache == null ||
+                numberLabelCache.Length <= value)
+            {
+                System.Array.Resize(
+                    ref numberLabelCache,
+                    Mathf.Max(16, value + 1));
+            }
+
+            return numberLabelCache[value] ??= value.ToString();
         }
 
         private void DrawBusStopMarker(
@@ -1860,7 +1884,7 @@ namespace BarPromenade
                 int routeOrder = controller.GetRouteOrder(bar.BarId);
                 bool selected = routeOrder >= 0;
                 int mapObjectIndex =
-                    controller.FindMapObjectIndex(bar);
+                    controller.GetBarMapObjectIndex(index);
                 bool focused = controller.DebugTeleportEnabled
                     ? mapObjectIndex ==
                       controller.SelectedMapObjectIndex
@@ -1892,7 +1916,7 @@ namespace BarPromenade
 
                 Color previousContentColor = GUI.contentColor;
                 GUI.contentColor = RetroUiTheme.Text;
-                string markerLabel = (index + 1).ToString();
+                string markerLabel = GetNumberLabel(index + 1);
                 if (GUI.Button(marker, markerLabel, markerButtonStyle))
                 {
                     if (controller.DebugTeleportEnabled)
@@ -2186,7 +2210,8 @@ namespace BarPromenade
                 return;
             }
 
-            var content = new GUIContent(label);
+            tooltipContent.text = label;
+            GUIContent content = tooltipContent;
             float maximumTextWidth = Mathf.Max(
                 48f,
                 Mathf.Min(176f, mapBounds.width - 20f));

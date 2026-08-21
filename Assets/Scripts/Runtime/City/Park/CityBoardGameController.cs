@@ -409,7 +409,12 @@ namespace BarPromenade
         private void Update()
         {
             if (active == null ||
-                SceneTransitionService.IsTransitioning)
+                SceneTransitionService.IsTransitioning ||
+                // The pause menu can open over the board (it takes no
+                // modal lock a bench game holds), so the whole session
+                // - input, speech and think timers run on unscaled
+                // time - must hold its breath while the game is paused.
+                PauseMenuController.IsAnyPaused)
             {
                 return;
             }
@@ -644,7 +649,7 @@ namespace BarPromenade
                 // Two draughts chains can end on the same square. The
                 // longer one is what a player pointing at that square
                 // meant, every time.
-                int captures = action.IsCapture ? 1 : 0;
+                int captures = action.CaptureCount;
                 if (captures > bestCaptures)
                 {
                     bestCaptures = captures;

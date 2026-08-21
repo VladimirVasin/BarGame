@@ -73,6 +73,9 @@ namespace BarPromenade
         private Pose previousFixedCameraPose;
         private float previousFixedFieldOfView;
         private CameraPhase cameraPhase;
+        private Vector3 doorTriggerBusPosition;
+        private Quaternion doorTriggerBusRotation;
+        private bool hasDoorTriggerPose;
         private Vector3 cameraBlendStartPosition;
         private Quaternion cameraBlendStartRotation;
         private float cameraBlendStartFieldOfView;
@@ -795,27 +798,49 @@ namespace BarPromenade
         {
             if (actor == null || !actor.IsSpawned)
             {
+                hasDoorTriggerPose = false;
                 return;
             }
 
-            if (TryBuildPlan(
-                    CityBusPassengerDoor.Front,
-                    out CityBusRidePlan frontPlan) &&
-                frontDoorTriggerObject != null)
+            // The door plans scan the city's sidewalk geometry, and the
+            // bus spends its dwell parked: rebuild them only when the bus
+            // has actually moved since the last build, and only while the
+            // door triggers exist to stand at (outside the ride).
+            bool doorsRelevant = State == CityBusRideState.Outside;
+            bool busMoved = !hasDoorTriggerPose ||
+                (actor.Position - doorTriggerBusPosition)
+                    .sqrMagnitude > 0.000001f ||
+                Quaternion.Angle(
+                    actor.Rotation,
+                    doorTriggerBusRotation) > 0.01f;
+            if (doorsRelevant && busMoved)
             {
-                frontDoorTriggerObject.transform.position =
-                    frontPlan.EntryPose.RootPosition +
-                    Vector3.up * 0.80f;
-            }
+                doorTriggerBusPosition = actor.Position;
+                doorTriggerBusRotation = actor.Rotation;
+                hasDoorTriggerPose = true;
+                if (TryBuildPlan(
+                        CityBusPassengerDoor.Front,
+                        out CityBusRidePlan frontPlan) &&
+                    frontDoorTriggerObject != null)
+                {
+                    frontDoorTriggerObject.transform.position =
+                        frontPlan.EntryPose.RootPosition +
+                        Vector3.up * 0.80f;
+                }
 
-            if (TryBuildPlan(
-                    CityBusPassengerDoor.Rear,
-                    out CityBusRidePlan rearPlan) &&
-                rearDoorTriggerObject != null)
+                if (TryBuildPlan(
+                        CityBusPassengerDoor.Rear,
+                        out CityBusRidePlan rearPlan) &&
+                    rearDoorTriggerObject != null)
+                {
+                    rearDoorTriggerObject.transform.position =
+                        rearPlan.EntryPose.RootPosition +
+                        Vector3.up * 0.80f;
+                }
+            }
+            else if (!doorsRelevant)
             {
-                rearDoorTriggerObject.transform.position =
-                    rearPlan.EntryPose.RootPosition +
-                    Vector3.up * 0.80f;
+                hasDoorTriggerPose = false;
             }
 
             CityBusAssetRegistry registry =

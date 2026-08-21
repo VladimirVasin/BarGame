@@ -268,35 +268,40 @@ namespace BarPromenade.Tests.EditMode
             YardWheelchairPose start =
                 YardWheelchairMotion.Sample(plan, 0f);
 
+            float lapLength = Mathf.PI * 2f * plan.Radius;
+            float previous = 0f;
             float distance = 0f;
             float elapsed = 0f;
             const float step = 1f / 60f;
-            while (elapsed < 240f)
+            while (elapsed < 240f && distance < lapLength)
             {
-                float next = YardWheelchairMotion.Advance(
+                previous = distance;
+                distance = YardWheelchairMotion.Advance(
                     plan,
                     distance,
                     step);
                 elapsed += step;
-                // Advance wraps at the lap, so a drop means a full circuit.
-                if (next < distance)
-                {
-                    distance = next;
-                    break;
-                }
-
-                distance = next;
             }
 
             Assert.That(
                 elapsed,
                 Is.LessThan(240f),
                 "The rider must complete a lap in a sane time.");
-            YardWheelchairPose wrapped =
+            YardWheelchairPose lapped =
                 YardWheelchairMotion.Sample(plan, distance);
             Assert.That(
-                Vector3.Distance(wrapped.Position, start.Position),
+                Vector3.Distance(lapped.Position, start.Position),
                 Is.LessThan(0.4f));
+
+            // The distance is never wrapped: the non-lap-periodic
+            // channels (wander, breath, push, wheels) would snap at a
+            // seam, so a lap boundary must leave the pose continuous.
+            YardWheelchairPose before =
+                YardWheelchairMotion.Sample(plan, previous);
+            Assert.That(
+                Vector3.Distance(before.Position, lapped.Position),
+                Is.LessThan(0.1f),
+                "Crossing the lap boundary must not snap the pose.");
         }
 
         [Test]

@@ -18,7 +18,13 @@ namespace BarPromenade.Editor
 
         static Ps1PresentationAssetSetup()
         {
-            EditorApplication.delayCall += EnsureInstalledSilently;
+            // Same guard as every other auto-setup: headless compiles
+            // and test runs must not mutate PC_Renderer.asset or fail
+            // error-sensitive batch runs over a missing profile.
+            if (!Application.isBatchMode)
+            {
+                EditorApplication.delayCall += EnsureInstalledSilently;
+            }
         }
 
         [MenuItem("Bar Promenade/Rendering/Install PS1 Presentation")]
@@ -83,11 +89,27 @@ namespace BarPromenade.Editor
                 feature.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(feature, rendererData);
                 rendererData.rendererFeatures.Add(feature);
+                feature.SetConfiguration(profile, material);
+                EditorUtility.SetDirty(feature);
+                EditorUtility.SetDirty(rendererData);
+                // Persist the new sub-asset BEFORE the feature map is
+                // stamped: an unsaved sub-asset yields localId 0 and
+                // poisons the map until the next reload rebuilds it.
+                AssetDatabase.SaveAssets();
             }
 
             bool mapChanged = UpdateFeatureMap(rendererData);
-            if (!created &&
-                !mapChanged &&
+            if (created)
+            {
+                if (mapChanged)
+                {
+                    AssetDatabase.SaveAssets();
+                }
+
+                return;
+            }
+
+            if (!mapChanged &&
                 feature.PresentationSettings == profile &&
                 feature.CompositeMaterial == material)
             {

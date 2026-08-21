@@ -78,10 +78,13 @@ namespace BarPromenade
             line.gameObject.GetComponent<Renderer>().shadowCastingMode =
                 ShadowCastingMode.Off;
 
+            // floatPoint is a world position; the factory takes a local
+            // one, and the two only coincide while the host hierarchy
+            // sits at identity - convert instead of relying on that.
             GameObject body = RuntimePrimitiveFactory.CreateBox(
                 "Float",
                 transform,
-                floatPoint,
+                transform.InverseTransformPoint(floatPoint),
                 new Vector3(
                     FloatWidthMeters,
                     FloatHeightMeters,

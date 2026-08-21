@@ -247,8 +247,27 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCachedResources()
         {
+            // The sheet is a Resources asset - only the cache is
+            // dropped. The lit materials are created here, so with
+            // domain reload disabled they must be destroyed or each
+            // play session leaks up to six.
             texture = null;
-            litMaterials = null;
+            if (litMaterials != null)
+            {
+                for (int index = 0;
+                     index < litMaterials.Length;
+                     index++)
+                {
+                    if (litMaterials[index] != null)
+                    {
+                        UnityEngine.Object.Destroy(
+                            litMaterials[index]);
+                    }
+                }
+
+                litMaterials = null;
+            }
+
             nightFactor = 1f;
         }
     }

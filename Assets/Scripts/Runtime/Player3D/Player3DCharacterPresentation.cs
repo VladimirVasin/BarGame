@@ -1150,7 +1150,12 @@ namespace BarPromenade
 
         private void EvaluateGraph(float deltaTime)
         {
+            // Both additive layers come off before the graph writes the
+            // frame: restoring them in LateUpdate instead would roll the
+            // freshly evaluated head/neck animation back to a stale base
+            // and freeze it for as long as the additive stays engaged.
             RestoreProceduralStatusPoseBase();
+            RestoreAttentionPoseBase();
             if (graph.IsValid())
             {
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
@@ -1160,6 +1165,7 @@ namespace BarPromenade
         private void DestroyGraph()
         {
             RestoreProceduralStatusPoseBase();
+            RestoreAttentionPoseBase();
             ResetClipSpatialOffset();
             if (graph.IsValid())
             {

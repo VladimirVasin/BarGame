@@ -308,8 +308,12 @@ namespace BarPromenade
                 // Taken men leave over the edge of the slab on the side
                 // whoever took them is sitting at, which is the way a
                 // hand actually does it.
+                bool heroTookIt =
+                    (view.IsLight
+                        ? BoardGameSide.Light
+                        : BoardGameSide.Dark) != table.HeroSide;
                 position += table.SeatFacing *
-                    (amount * -0.35f);
+                    (amount * (heroTookIt ? -0.35f : 0.35f));
                 view.Root.transform.position = position;
                 if (amount < 1f)
                 {

@@ -21,6 +21,11 @@ namespace BarPromenade
         private GUIStyle buttonStyle;
         private GUIStyle labelStyle;
 
+        // Reused for text measurement: the prompt renders during
+        // ordinary gameplay, and a fresh GUIContent per IMGUI event is
+        // steady garbage for text that changes rarely.
+        private readonly GUIContent measureContent = new GUIContent();
+
         public string PromptKey => GetPromptKeyAt(Time.unscaledTime);
         public bool IsClickable => IsClickableAt(Time.unscaledTime);
         public bool IsFeedbackVisible =>
@@ -178,7 +183,8 @@ namespace BarPromenade
         {
             EnsureStyles();
             GUIStyle style = clickable ? buttonStyle : labelStyle;
-            var content = new GUIContent(text ?? string.Empty);
+            measureContent.text = text ?? string.Empty;
+            GUIContent content = measureContent;
             Vector2 naturalSize = style.CalcSize(content);
             float width = Mathf.Clamp(
                 Mathf.Ceil(naturalSize.x + HorizontalTextInset * 2f),
@@ -233,8 +239,9 @@ namespace BarPromenade
                 GUIStyle activeStyle = clickable
                     ? buttonStyle
                     : labelStyle;
+                measureContent.text = text;
                 float requiredTextHeight = activeStyle.CalcHeight(
-                    new GUIContent(text),
+                    measureContent,
                     textRect.width);
                 LastRenderedText = text;
                 LastRenderedPanelRect = rect;

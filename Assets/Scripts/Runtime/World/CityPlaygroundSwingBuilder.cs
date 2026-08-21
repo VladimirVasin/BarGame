@@ -156,7 +156,16 @@ namespace BarPromenade
 
             BoxCollider push = swing.AddComponent<BoxCollider>();
             push.isTrigger = true;
-            push.center = seatCenter;
+            // Lifted just enough that the volume's floor clears the
+            // lawn: a box dipping into the park's MeshCollider keeps
+            // OnTriggerStay firing against the terrain every physics
+            // step for the whole session.
+            float pushLift = Mathf.Max(
+                0f,
+                (CityPlaygroundGeometry.PushVolumeHeight * 0.5f) +
+                0.01f -
+                seatCenter.y);
+            push.center = seatCenter + (Vector3.up * pushLift);
             push.size = new Vector3(
                 CityPlaygroundGeometry.PushVolumeWidth,
                 CityPlaygroundGeometry.PushVolumeHeight,

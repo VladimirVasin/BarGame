@@ -63,10 +63,12 @@ namespace BarPromenade.Tests.EditMode
                     "the appearance and occlusion passes accept it.");
                 Assert.That(
                     renderer.bounds.max.y,
-                    Is.EqualTo(0.47f + (MattressSize.y * 0.5f))
+                    Is.EqualTo(
+                        0.47f + (MattressSize.y * 0.5f) +
+                        HomeInteriorWorldBuilder.BedSleeperSinkDepth)
                         .Within(Tolerance),
-                    "The rest top must sit exactly where the box top " +
-                    "sat — live tests assert it.");
+                    "The bounds carry an upward allowance for the rim " +
+                    "welt so a welted surface cannot cull itself.");
                 Assert.That(
                     renderer.bounds.size.x,
                     Is.EqualTo(MattressSize.x).Within(Tolerance));

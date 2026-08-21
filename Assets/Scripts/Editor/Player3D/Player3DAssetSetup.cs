@@ -408,6 +408,13 @@ namespace BarPromenade.Editor
         private static Player3DAnimationBinding[] LoadAnimationBindings(
             Player3DManifest manifest)
         {
+            if (!Directory.Exists(AnimationFolderPath))
+            {
+                throw new InvalidOperationException(
+                    $"Player3D animation folder is missing at " +
+                    $"'{AnimationFolderPath}'.");
+            }
+
             Dictionary<string, AnimationClip> clips =
                 new Dictionary<string, AnimationClip>(StringComparer.Ordinal);
             string[] paths = Directory.GetFiles(

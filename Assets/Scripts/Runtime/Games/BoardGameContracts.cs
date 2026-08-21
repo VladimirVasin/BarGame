@@ -90,7 +90,8 @@ namespace BarPromenade
             int toFile,
             int toRank,
             bool isCapture,
-            bool isPromotion)
+            bool isPromotion,
+            int captureCount = -1)
         {
             Index = index;
             FromFile = fromFile;
@@ -99,6 +100,11 @@ namespace BarPromenade
             ToRank = toRank;
             IsCapture = isCapture;
             IsPromotion = isPromotion;
+            CaptureCount = captureCount >= 0
+                ? captureCount
+                : isCapture
+                    ? 1
+                    : 0;
         }
 
         public int Index { get; }
@@ -108,6 +114,11 @@ namespace BarPromenade
         public int ToRank { get; }
         public bool IsCapture { get; }
         public bool IsPromotion { get; }
+
+        /// <summary>How many men this action takes. Chess never takes
+        /// more than one; a draughts chain reports its full length, so
+        /// same-destination chains can be told apart.</summary>
+        public int CaptureCount { get; }
     }
 
     /// <summary>

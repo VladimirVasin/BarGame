@@ -42,8 +42,50 @@ namespace BarPromenade.Editor
         };
 
         private static bool isBuilding;
+        private static bool buildQueued;
 
         public static bool IsBuilding => isBuilding;
+
+        /// <summary>
+        /// The auto-run seam every sibling pipeline uses: one queued
+        /// delayCall regardless of how many imports ask for it, and a
+        /// caught build - art/contract drift becomes one logged error
+        /// instead of an unhandled delayCall exception repeated on
+        /// every domain reload.
+        /// </summary>
+        public static void QueueBuildWhenSourcesExist()
+        {
+            if (isBuilding ||
+                buildQueued ||
+                !File.Exists(ModelPath) ||
+                !File.Exists(ManifestPath))
+            {
+                return;
+            }
+
+            buildQueued = true;
+            EditorApplication.delayCall += RunQueuedBuild;
+        }
+
+        private static void RunQueuedBuild()
+        {
+            buildQueued = false;
+            if (!File.Exists(ModelPath) || !File.Exists(ManifestPath))
+            {
+                return;
+            }
+
+            try
+            {
+                BuildOrThrow();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    "Could not bind the city chess set provider: " +
+                    $"{exception}");
+            }
+        }
 
         static CityChessSetAssetSetup()
         {
@@ -260,19 +302,37 @@ namespace BarPromenade.Editor
                     manifest.build_signature,
                     StringComparison.Ordinal))
             {
-                BuildOrThrow();
+                QueueBuildWhenSourcesExist();
             }
         }
 
         private static Dictionary<string, Mesh> LoadMeshes()
         {
-            return AssetDatabase.LoadAllAssetsAtPath(ModelPath)
-                .OfType<Mesh>()
-                .GroupBy(mesh => mesh.name, StringComparer.Ordinal)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.First(),
-                    StringComparer.Ordinal);
+            // Duplicates throw, like every other pipeline's unique
+            // index: collapsing them silently would bind an arbitrary
+            // mesh and still pass validation.
+            var meshes = new Dictionary<string, Mesh>(
+                StringComparer.Ordinal);
+            UnityEngine.Object[] assets =
+                AssetDatabase.LoadAllAssetsAtPath(ModelPath);
+            for (int index = 0; index < assets.Length; index++)
+            {
+                if (!(assets[index] is Mesh mesh))
+                {
+                    continue;
+                }
+
+                if (meshes.ContainsKey(mesh.name))
+                {
+                    throw new InvalidOperationException(
+                        $"The chess set model contains two meshes " +
+                        $"named '{mesh.name}'.");
+                }
+
+                meshes.Add(mesh.name, mesh);
+            }
+
+            return meshes;
         }
 
         private static CityChessSetProvider LoadOrCreateProvider()
@@ -387,8 +447,8 @@ namespace BarPromenade.Editor
                         CityChessSetAssetSetup.ManifestPath,
                         StringComparison.OrdinalIgnoreCase))
                 {
-                    EditorApplication.delayCall +=
-                        CityChessSetAssetSetup.BuildOrThrow;
+                    CityChessSetAssetSetup
+                        .QueueBuildWhenSourcesExist();
                     return;
                 }
             }

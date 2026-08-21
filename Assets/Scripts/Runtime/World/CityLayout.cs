@@ -905,11 +905,16 @@ namespace BarPromenade
                         $"{ordinal} requires {expected}.");
                 }
 
+                // Only the standard four-bar configuration promises
+                // distinct areas; with more bars the generator may
+                // legally double up an area, and row-major order decides
+                // which four happen to be "first" - so the check stands
+                // down rather than fail a legal layout.
                 if (bars.Count <= 4 &&
                     !firstBarAreas.Add(bars[ordinal].AreaId))
                 {
                     throw new InvalidOperationException(
-                        "The first four bars must occupy different city areas.");
+                        "The four bars must occupy different city areas.");
                 }
             }
 

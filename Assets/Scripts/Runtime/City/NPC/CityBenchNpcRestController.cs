@@ -27,10 +27,14 @@ namespace BarPromenade
         public const float MinimumSitSeconds = 15f;
         public const float MaximumSitSeconds = 30f;
 
+        /// <summary>A return crossing that drags this long is let go.</summary>
+        public const float StandTimeoutSeconds = 10f;
+
         private enum RestPhase
         {
             Approaching = 0,
-            Sitting = 1
+            Sitting = 1,
+            Standing = 2
         }
 
         private sealed class Rest
@@ -98,10 +102,13 @@ namespace BarPromenade
             }
 
             AdvanceRests(Time.deltaTime);
-            if (Time.unscaledTime >= nextAttemptTime)
+            // Scaled time, like the rest phases: a paused simulation
+            // must not keep claiming benches for frozen walkers on a
+            // wall-clock cadence.
+            if (Time.time >= nextAttemptTime)
             {
                 nextAttemptTime =
-                    Time.unscaledTime + AttemptIntervalSeconds;
+                    Time.time + AttemptIntervalSeconds;
                 TryStartRest();
             }
         }
@@ -122,9 +129,13 @@ namespace BarPromenade
                 {
                     AdvanceApproach(index, rest);
                 }
-                else
+                else if (rest.Phase == RestPhase.Sitting)
                 {
                     AdvanceSitting(index, rest);
+                }
+                else
+                {
+                    AdvanceStanding(index, rest);
                 }
             }
         }
@@ -168,7 +179,24 @@ namespace BarPromenade
                 return;
             }
 
+            // The claim is held through the return crossing: releasing
+            // here would re-arm the hero's sit prompt (and free the
+            // bench for the next rester) while the previous sitter is
+            // still standing on the seat-front slot.
             rest.Walker.StandUpFromBench(rest.Point.StandSlot);
+            rest.Phase = RestPhase.Standing;
+            rest.PhaseSeconds = 0f;
+        }
+
+        private void AdvanceStanding(int index, Rest rest)
+        {
+            if (rest.Walker.MotionState ==
+                CityPedestrianMotionState.ReturningFromBench &&
+                rest.PhaseSeconds < StandTimeoutSeconds)
+            {
+                return;
+            }
+
             EndRest(index, true);
         }
 

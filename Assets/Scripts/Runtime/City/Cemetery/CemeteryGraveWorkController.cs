@@ -107,6 +107,12 @@ namespace BarPromenade
         private IDisposable heroHidden;
         private CemeteryGraveWorkPhase phase;
         private CemeteryGraveWorkStage act;
+
+        // True once the running act has been settled either way -
+        // committed by Complete or restored by Abandon. The leave blend
+        // still plays after that, and neither the transition check nor
+        // OnDisable may mistake that tail for abandoned work.
+        private bool actConcluded;
         private string pendingFeedbackKey;
 
         private CemeteryGraveLatticeModel lattice;
@@ -296,6 +302,7 @@ namespace BarPromenade
             job = grave;
             reading = true;
             act = CemeteryGraveWorkStage.Sealed;
+            actConcluded = false;
             phase = CemeteryGraveWorkPhase.Entering;
             pendingFeedbackKey = null;
             heroHidden = visibility?.AcquireHidden(this);
@@ -331,6 +338,7 @@ namespace BarPromenade
 
             job = grave;
             act = stage;
+            actConcluded = false;
             phase = CemeteryGraveWorkPhase.Entering;
             pendingFeedbackKey = null;
             heroHidden = visibility?.AcquireHidden(this);
@@ -419,7 +427,11 @@ namespace BarPromenade
 
             if (SceneTransitionService.IsTransitioning)
             {
-                Abandon();
+                if (!actConcluded)
+                {
+                    Abandon();
+                }
+
                 return;
             }
 
@@ -495,7 +507,11 @@ namespace BarPromenade
 
             CemeteryGraveWorkStage dropped = act;
             TearDownAct();
-            RestoreAbandonedWorld(dropped);
+            if (!actConcluded)
+            {
+                RestoreAbandonedWorld(dropped);
+            }
+
             job.Site?.SetMarksVisible(true);
             job.SetPitDressingVisible(true);
             // No frame is coming, so the spade cannot be put down over
@@ -1126,6 +1142,7 @@ namespace BarPromenade
         private void Complete()
         {
             CemeteryGraveWorkStage finished = act;
+            actConcluded = true;
             TearDownAct();
             bool committed = job.TryAdvance();
             pendingFeedbackKey = committed
@@ -1143,6 +1160,7 @@ namespace BarPromenade
         private void Abandon()
         {
             CemeteryGraveWorkStage dropped = act;
+            actConcluded = true;
             TearDownAct();
             RestoreAbandonedWorld(dropped);
             pendingFeedbackKey = AbandonedFeedbackKey;
@@ -1597,31 +1615,6 @@ namespace BarPromenade
             bool padLeft = gamepad.dpad.left.wasPressedThisFrame;
             bool padRight = gamepad.dpad.right.wasPressedThisFrame;
             return padLeft == padRight ? 0 : (padLeft ? -1 : 1);
-        }
-
-        private static float ReadLean()
-        {
-            float input = 0f;
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                bool left = keyboard.aKey.isPressed ||
-                            keyboard.leftArrowKey.isPressed;
-                bool right = keyboard.dKey.isPressed ||
-                             keyboard.rightArrowKey.isPressed;
-                input = (right ? 1f : 0f) - (left ? 1f : 0f);
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad == null)
-            {
-                return input;
-            }
-
-            float stick = gamepad.leftStick.x.ReadValue();
-            return Mathf.Abs(stick) > Mathf.Abs(input)
-                ? Mathf.Clamp(stick, -1f, 1f)
-                : input;
         }
 
         private static int WrapSegment(int segment)

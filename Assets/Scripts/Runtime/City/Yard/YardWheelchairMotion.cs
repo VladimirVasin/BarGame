@@ -167,14 +167,26 @@ namespace BarPromenade
                 Quaternion.Euler(0f, 0f, turn * LeanDegrees);
 
             // Differential: the outer wheel covers more ground than the
-            // inner one, and the drift adds scrub on top.
-            float scrub = 1f + Mathf.Abs(Mathf.Sin(slip * Mathf.Deg2Rad)) *
-                          0.35f;
+            // inner one, and the drift adds scrub on top. The scrub is
+            // integrated over the ground covered (linearised around the
+            // standing angle) - multiplying the total distance by the
+            // *current* scrub would swing the apparent wheel speed far
+            // off the ground speed whenever the slip breathes.
+            float breathRate = Mathf.PI * 2f /
+                (Mathf.Max(0.01f, SlipBreathLaps) * lapLength);
+            float scrubMean = 1f +
+                0.35f * Mathf.Sin(BaseSlipDegrees * Mathf.Deg2Rad);
+            float scrubSwing = 0.35f *
+                Mathf.Cos(BaseSlipDegrees * Mathf.Deg2Rad) *
+                SlipBreathDegrees * Mathf.Deg2Rad;
+            float rolled = scrubMean * distance +
+                scrubSwing / breathRate *
+                (1f - Mathf.Cos(breathRate * distance));
             float innerFactor =
-                (ridingRadius - WheelHalfTrack) / ridingRadius;
+                (radius - WheelHalfTrack) / radius;
             float outerFactor =
-                (ridingRadius + WheelHalfTrack) / ridingRadius;
-            float spin = distance * scrub / WheelRadius * Mathf.Rad2Deg;
+                (radius + WheelHalfTrack) / radius;
+            float spin = rolled / WheelRadius * Mathf.Rad2Deg;
             float leftSpin = spin *
                              (plan.Clockwise ? outerFactor : innerFactor);
             float rightSpin = spin *
@@ -221,7 +233,11 @@ namespace BarPromenade
 
         /// <summary>
         /// Distance covered over one step. Sampling the speed at the start
-        /// of the step keeps the advance a pure function of state.
+        /// of the step keeps the advance a pure function of state. The
+        /// distance is never wrapped: the wander, breath, push and wheel
+        /// channels are not lap-periodic, and a wrap snapped every one of
+        /// them once per circuit - a visible pop. Float precision holds
+        /// far past any session length at this pace.
         /// </summary>
         public static float Advance(
             YardWheelchairPlan plan,
@@ -236,10 +252,7 @@ namespace BarPromenade
             }
 
             YardWheelchairPose pose = Sample(plan, distance);
-            float lapLength = Mathf.PI * 2f * Mathf.Max(0.5f, plan.Radius);
-            return Mathf.Repeat(
-                distance + pose.Speed * deltaTime,
-                lapLength);
+            return distance + pose.Speed * deltaTime;
         }
     }
 }

@@ -121,6 +121,14 @@ namespace BarPromenade
         private readonly List<CityMapAreaTarget> mapAreaTargets =
             new List<CityMapAreaTarget>();
 
+        // Labels never change once the layout is bound (bars are numbered,
+        // precincts and lots are stamped with fixed cells), while the map
+        // asks for them on every IMGUI event - so they are built once.
+        private string[] mapObjectLabelCache;
+        private string[] barLabelCache;
+        private string[] busStopLabelCache;
+        private int[] barMapObjectIndexCache;
+
         private IReadOnlyList<CityMapAreaRegion> areaRegions =
             Array.Empty<CityMapAreaRegion>();
 
@@ -236,6 +244,10 @@ namespace BarPromenade
                 Layout.MapWorldXZBounds,
                 MountainBoundaryPlan);
             walkableArea = null;
+            mapObjectLabelCache = null;
+            barLabelCache = null;
+            busStopLabelCache = null;
+            barMapObjectIndexCache = null;
 
             bars.Clear();
             for (int index = 0; index < Layout.BuildingLots.Count; index++)
@@ -576,11 +588,47 @@ namespace BarPromenade
 
         public string GetBarLabel(int barIndex)
         {
-            return IsValidBarIndex(barIndex)
-                ? string.Format(
-                    LocalizationService.Get("map.bar_name"),
-                    barIndex + 1)
-                : string.Empty;
+            if (!IsValidBarIndex(barIndex))
+            {
+                return string.Empty;
+            }
+
+            if (barLabelCache == null ||
+                barLabelCache.Length != bars.Count)
+            {
+                barLabelCache = new string[bars.Count];
+            }
+
+            return barLabelCache[barIndex] ??= string.Format(
+                LocalizationService.Get("map.bar_name"),
+                barIndex + 1);
+        }
+
+        /// <summary>
+        /// The bar's index in the shared map-object selection space.
+        /// Cached: the view asks per bar per IMGUI event, and a linear
+        /// lot scan there is O(bars x lots) per event for a value fixed
+        /// at Initialize.
+        /// </summary>
+        public int GetBarMapObjectIndex(int barIndex)
+        {
+            if (!IsValidBarIndex(barIndex))
+            {
+                return -1;
+            }
+
+            if (barMapObjectIndexCache == null ||
+                barMapObjectIndexCache.Length != bars.Count)
+            {
+                barMapObjectIndexCache = new int[bars.Count];
+                for (int index = 0; index < bars.Count; index++)
+                {
+                    barMapObjectIndexCache[index] =
+                        FindMapObjectIndex(bars[index]);
+                }
+            }
+
+            return barMapObjectIndexCache[barIndex];
         }
 
         public string GetPointOfInterestLabel(int pointOfInterestIndex)
@@ -611,6 +659,19 @@ namespace BarPromenade
                 return string.Empty;
             }
 
+            if (busStopLabelCache == null ||
+                busStopLabelCache.Length != BusOverlay.Stops.Count)
+            {
+                busStopLabelCache =
+                    new string[BusOverlay.Stops.Count];
+            }
+
+            return busStopLabelCache[busStopIndex] ??=
+                BuildBusStopLabel(busStopIndex);
+        }
+
+        private string BuildBusStopLabel(int busStopIndex)
+        {
             CityMapBusStopMarker marker =
                 BusOverlay.Stops[busStopIndex];
             if (!string.IsNullOrWhiteSpace(
@@ -639,6 +700,18 @@ namespace BarPromenade
                 return string.Empty;
             }
 
+            if (mapObjectLabelCache == null ||
+                mapObjectLabelCache.Length != MapSelectionCount)
+            {
+                mapObjectLabelCache = new string[MapSelectionCount];
+            }
+
+            return mapObjectLabelCache[mapObjectIndex] ??=
+                BuildMapObjectLabel(mapObjectIndex);
+        }
+
+        private string BuildMapObjectLabel(int mapObjectIndex)
+        {
             if (TryGetAreaTarget(
                     mapObjectIndex,
                     out CityMapAreaTarget area))

@@ -186,10 +186,15 @@ namespace BarPromenade
 
         private static bool IsFinite(Rect value)
         {
-            return !float.IsNaN(value.xMin) &&
-                   !float.IsNaN(value.yMin) &&
-                   !float.IsInfinity(value.xMax) &&
-                   !float.IsInfinity(value.yMax);
+            return IsFinite(value.xMin) &&
+                   IsFinite(value.yMin) &&
+                   IsFinite(value.width) &&
+                   IsFinite(value.height);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }

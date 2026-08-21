@@ -598,12 +598,17 @@ namespace BarPromenade
 
         private void RestoreSessionClockDisplay()
         {
-            if (home != null &&
-                home.AlarmClock != null &&
-                home.AlarmClock.IsFollowingSessionTime)
+            if (home == null || home.AlarmClock == null)
             {
-                home.AlarmClock.FollowSessionTime();
+                return;
             }
+
+            // An abort before the wake beat must not strand the session
+            // on the timeline's frozen 05:59: game time starts here
+            // (idempotent - a wake that already started it wins) and the
+            // clock display goes back to following it.
+            GameSessionState.TryStartGameTimeFromWake();
+            home.AlarmClock.FollowSessionTime();
         }
 
         private void OnGUI()
@@ -662,13 +667,14 @@ namespace BarPromenade
             const float titleX = 34f;
             const float titleY = 270f;
             const float titleWidth = 355f;
+            string title = LocalizationService.Get("opening.title");
             GUI.Label(
                 new Rect(
                     titleX + 2f,
                     titleY + 2f,
                     titleWidth,
                     32f),
-                LocalizationService.Get("opening.title"),
+                title,
                 titleShadowStyle);
             GUI.Label(
                 new Rect(
@@ -676,7 +682,7 @@ namespace BarPromenade
                     titleY,
                     titleWidth,
                     32f),
-                LocalizationService.Get("opening.title"),
+                title,
                 titleStyle);
 
             Rect wakeRect = new Rect(425f, 260f, 184f, 28f);
@@ -701,7 +707,8 @@ namespace BarPromenade
         {
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
-            if (rect.Contains(mouse))
+            if (rect.Contains(mouse) &&
+                Event.current.type == EventType.MouseMove)
             {
                 SelectedOption = option;
             }

@@ -23,6 +23,7 @@ namespace BarPromenade
         private bool ruleFadeOutActive;
         private float ruleFadeOutStartVolume;
         private float ruleFadeOutElapsedSeconds;
+        private bool detachedForSceneExit;
 
         public AudioSource Source { get; private set; }
         public AudioLowPassFilter ToneFilter { get; private set; }
@@ -147,13 +148,32 @@ namespace BarPromenade
                 return false;
             }
 
-            MusicMix.BeginDetachedFadeOut(Source);
+            detachedForSceneExit = MusicMix.BeginDetachedFadeOut(Source);
             return true;
         }
 
         public void CompleteSceneExitFadeImmediately()
         {
             StopImmediate();
+            ReleaseDetachedSceneExit();
+        }
+
+        /// <summary>
+        /// A vignette theme that left its scene has nothing to come back
+        /// to once it reaches zero, so it takes its carrier object with it.
+        /// </summary>
+        private void ReleaseDetachedSceneExit()
+        {
+            if (!detachedForSceneExit)
+            {
+                return;
+            }
+
+            detachedForSceneExit = false;
+            if (Application.isPlaying)
+            {
+                Destroy(gameObject);
+            }
         }
 
         public void StopImmediate()
@@ -261,6 +281,7 @@ namespace BarPromenade
             if (normalizedTime >= 1f)
             {
                 StopImmediate();
+                ReleaseDetachedSceneExit();
             }
         }
 

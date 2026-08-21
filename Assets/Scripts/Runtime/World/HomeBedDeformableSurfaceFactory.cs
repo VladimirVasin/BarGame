@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace BarPromenade
@@ -13,6 +14,10 @@ namespace BarPromenade
     {
         private Mesh mesh;
         private Vector3[] baseVertices;
+
+        // Reused per-frame while the surface settles; GetNormals fills it
+        // in place, so the shading pass allocates nothing steady-state.
+        private List<Vector3> normalScratch;
         private int columns;
         private int rows;
         private float sizeX;
@@ -116,7 +121,7 @@ namespace BarPromenade
 
             mesh.SetVertices(buffer);
             mesh.RecalculateNormals();
-            ExaggerateDentShading();
+            ExaggerateDentShading(buffer);
         }
 
         /// <summary>
@@ -126,11 +131,11 @@ namespace BarPromenade
         /// of dented facet normals is the PS1-legitimate cheat: geometry
         /// stays honest, the light answers it three times louder.
         /// </summary>
-        private void ExaggerateDentShading()
+        private void ExaggerateDentShading(Vector3[] current)
         {
             const float lateralGain = 3.25f;
-            Vector3[] normals = mesh.normals;
-            Vector3[] current = mesh.vertices;
+            normalScratch ??= new List<Vector3>(mesh.vertexCount);
+            mesh.GetNormals(normalScratch);
             int topCount = TopVertexCount;
             bool touched = false;
             for (int index = 0; index < topCount; index++)
@@ -142,16 +147,16 @@ namespace BarPromenade
                     continue;
                 }
 
-                Vector3 normal = normals[index];
+                Vector3 normal = normalScratch[index];
                 normal.x *= lateralGain;
                 normal.z *= lateralGain;
-                normals[index] = normal.normalized;
+                normalScratch[index] = normal.normalized;
                 touched = true;
             }
 
             if (touched)
             {
-                mesh.SetNormals(normals);
+                mesh.SetNormals(normalScratch);
             }
         }
 
@@ -219,11 +224,12 @@ namespace BarPromenade
                 color);
 
             // The dent moves vertices the natural bounds know nothing
-            // about. Only the floor of the AABB grows: live tests assert
-            // the rest top and the X/Z extents, and nothing asserts the
-            // bottom (verified).
+            // about, and the rim welt rises past the rest top, so the
+            // AABB grows a full dent depth both ways - the welt must not
+            // cull itself any more than the hollow may.
             Bounds bounds = mesh.bounds;
             bounds.min -= new Vector3(0f, maxDepth, 0f);
+            bounds.max += new Vector3(0f, maxDepth, 0f);
             mesh.bounds = bounds;
 
             HomeBedDeformableSurface surface =

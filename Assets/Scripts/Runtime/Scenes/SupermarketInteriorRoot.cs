@@ -119,7 +119,6 @@ namespace BarPromenade
             World = SupermarketInteriorWorldBuilder.Build(
                 transform,
                 Layout,
-                camera,
                 sourceId =>
                     !GameSessionState.IsWorldItemCollected(sourceId));
 

@@ -8,6 +8,28 @@ namespace BarPromenade
     {
         private const float PointEpsilonSquared = 0.000001f;
 
+        // The road graph is immutable once built, while validation and
+        // home-lot selection ask for hundreds of distances over the same
+        // node/edge lists - rebuilding the weighted graph per call made
+        // generation super-linear in bars and lots for nothing. Keyed by
+        // list identity plus counts, so a regrown list drops the cache.
+        private static IReadOnlyList<Vector2Int> cachedNodes;
+        private static IReadOnlyList<RoadEdge> cachedEdges;
+        private static int cachedNodeCount;
+        private static int cachedEdgeCount;
+        private static WeightedGraph cachedGraph;
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCache()
+        {
+            cachedNodes = null;
+            cachedEdges = null;
+            cachedNodeCount = 0;
+            cachedEdgeCount = 0;
+            cachedGraph = null;
+        }
+
         public static float BetweenBars(
             CityLayout layout,
             BuildingLot first,
@@ -62,10 +84,27 @@ namespace BarPromenade
                     nameof(getNodeWorldPosition));
             }
 
-            WeightedGraph graph = WeightedGraph.Create(
-                nodes,
-                edges,
-                getNodeWorldPosition);
+            WeightedGraph graph;
+            if (ReferenceEquals(nodes, cachedNodes) &&
+                ReferenceEquals(edges, cachedEdges) &&
+                nodes.Count == cachedNodeCount &&
+                edges.Count == cachedEdgeCount)
+            {
+                graph = cachedGraph;
+            }
+            else
+            {
+                graph = WeightedGraph.Create(
+                    nodes,
+                    edges,
+                    getNodeWorldPosition);
+                cachedNodes = nodes;
+                cachedEdges = edges;
+                cachedNodeCount = nodes.Count;
+                cachedEdgeCount = edges.Count;
+                cachedGraph = graph;
+            }
+
             Vector3 validatedFirstAnchor = ValidateAnchor(
                 graph,
                 firstEdge,

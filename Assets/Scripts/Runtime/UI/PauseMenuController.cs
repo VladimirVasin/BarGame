@@ -380,7 +380,8 @@ namespace BarPromenade
         {
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
-            if (rect.Contains(mouse))
+            if (rect.Contains(mouse) &&
+                Event.current.type == EventType.MouseMove)
             {
                 model.SelectOption(option);
             }
@@ -442,7 +443,8 @@ namespace BarPromenade
         {
             Vector2 mouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
-            if (rect.Contains(mouse))
+            if (rect.Contains(mouse) &&
+                Event.current.type == EventType.MouseMove)
             {
                 model.SelectConfirmation(yes);
             }

@@ -245,6 +245,11 @@ namespace BarPromenade
                 sharedMaterial);
         }
 
+        // Shared scratch block: GetPropertyBlock overwrites it with the
+        // renderer's current state, so per-frame callers (colour pulses)
+        // reuse it instead of allocating one per call.
+        private static MaterialPropertyBlock sharedPropertyBlock;
+
         public static void SetColor(Renderer renderer, Color color)
         {
             if (renderer == null)
@@ -252,7 +257,8 @@ namespace BarPromenade
                 return;
             }
 
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            MaterialPropertyBlock properties = sharedPropertyBlock ??=
+                new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetColor(BaseColorId, color);
             properties.SetColor(ColorId, color);

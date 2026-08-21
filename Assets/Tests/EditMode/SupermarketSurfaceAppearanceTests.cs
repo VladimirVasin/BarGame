@@ -295,8 +295,7 @@ namespace BarPromenade.Tests.EditMode
                     SupermarketInteriorLayoutPlanner.Generate(20260815);
                 SupermarketInteriorWorldBuilder.Build(
                     parent.transform,
-                    plan,
-                    null);
+                    plan);
 
                 var expectedTextures = new HashSet<Texture>();
                 foreach (SupermarketSurfaceKind kind in

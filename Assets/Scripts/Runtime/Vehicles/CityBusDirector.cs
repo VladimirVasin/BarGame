@@ -79,6 +79,8 @@ namespace BarPromenade
         private float loopLength;
         private Vector3 previousPlayerPosition;
         private Vector3 playerVelocity;
+        private float playerRadius;
+        private bool playerRadiusCached;
         private bool hasPlayerSample;
         private Action passengerCleanup;
 
@@ -604,9 +606,10 @@ namespace BarPromenade
             float clearance = float.PositiveInfinity;
             if (!actor.HasPlayerPassenger)
             {
+                float playerRadius = GetPlayerRadius();
                 CheckObstacle(
                     player.position,
-                    GetControllerRadius(player, 0.32f),
+                    playerRadius,
                     lookAhead,
                     ref clearance);
                 if (playerVelocity.sqrMagnitude > 0.0001f)
@@ -614,7 +617,7 @@ namespace BarPromenade
                     CheckObstacle(
                         player.position +
                         (playerVelocity * PlayerPredictionSeconds),
-                        GetControllerRadius(player, 0.32f),
+                        playerRadius,
                         lookAhead,
                         ref clearance);
                 }
@@ -701,7 +704,6 @@ namespace BarPromenade
                 InitialApproachCompletionDistance)
             {
                 initialApproachCompleted = true;
-                actor.CompleteInitialApproach();
             }
         }
 
@@ -995,6 +997,29 @@ namespace BarPromenade
             return controller != null && controller.radius > 0f
                 ? controller.radius
                 : fallback;
+        }
+
+        /// <summary>
+        /// The player's capsule radius never changes, so it is resolved
+        /// once instead of via GetComponent per obstacle probe per frame.
+        /// Keeps probing only until the controller first exists.
+        /// </summary>
+        private float GetPlayerRadius()
+        {
+            if (!playerRadiusCached)
+            {
+                CharacterController controller =
+                    player.GetComponent<CharacterController>();
+                if (controller == null || controller.radius <= 0f)
+                {
+                    return 0.32f;
+                }
+
+                playerRadius = controller.radius;
+                playerRadiusCached = true;
+            }
+
+            return playerRadius;
         }
 
         private static float SanitizeDeltaTime(float deltaTime)

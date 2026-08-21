@@ -8,6 +8,12 @@ namespace BarPromenade
         private GUIStyle labelStyle;
         private GUIStyle stageStyle;
 
+        // The HUD runs during ordinary gameplay whenever intoxication
+        // is above zero, and the level changes rarely - the formatted
+        // label is rebuilt only when it actually does.
+        private int cachedLevel = -1;
+        private string cachedLabel = string.Empty;
+
         public bool Visible { get; set; } = true;
         public bool ShouldRender =>
             Visible && GameSessionState.IntoxicationLevel > 0;
@@ -44,9 +50,17 @@ namespace BarPromenade
                     2f,
                     1f);
 
-                string label = string.Format(
-                    LocalizationService.Get("drinking.intoxication"),
-                    GameSessionState.IntoxicationLevel);
+                int level = GameSessionState.IntoxicationLevel;
+                if (level != cachedLevel)
+                {
+                    cachedLevel = level;
+                    cachedLabel = string.Format(
+                        LocalizationService.Get(
+                            "drinking.intoxication"),
+                        level);
+                }
+
+                string label = cachedLabel;
                 GUI.Label(
                     new Rect(x + 6f, y + 3f, 93f, 12f),
                     label,

@@ -155,7 +155,8 @@ namespace BarPromenade
                     DraughtsPosition.FileOf(destination),
                     DraughtsPosition.RankOf(destination),
                     move.IsCapture,
-                    move.Crowns));
+                    move.Crowns,
+                    move.CaptureCount));
             }
 
             pieces.Clear();

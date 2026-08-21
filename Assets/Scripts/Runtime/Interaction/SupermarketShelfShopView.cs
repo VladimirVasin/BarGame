@@ -15,6 +15,12 @@ namespace BarPromenade
 
         private SupermarketShelfShopController controller;
         private Camera worldCamera;
+
+        // Bound once at Initialize: method-group and lambda arguments
+        // would otherwise allocate a fresh delegate per IMGUI event for
+        // as long as the shop stays open.
+        private System.Action confirmAction;
+        private System.Action exitAction;
         private GUIStyle titleStyle;
         private GUIStyle nameStyle;
         private GUIStyle balanceStyle;
@@ -30,6 +36,12 @@ namespace BarPromenade
         {
             controller = shopController;
             worldCamera = camera;
+            confirmAction = shopController == null
+                ? null
+                : () => shopController.ConfirmSelection();
+            exitAction = shopController == null
+                ? null
+                : (System.Action)shopController.Exit;
         }
 
         public bool ContainsPointerBlockingWorldSelection(
@@ -118,7 +130,7 @@ namespace BarPromenade
             DrawButton(
                 new Rect(590f, 22f, 27f, 27f),
                 "X",
-                controller.Exit,
+                exitAction,
                 false);
         }
 
@@ -154,12 +166,12 @@ namespace BarPromenade
             DrawButton(
                 new Rect(430f, 296f, 104f, 38f),
                 LocalizationService.Get("supermarket.shop.buy"),
-                () => controller.ConfirmSelection(),
+                confirmAction,
                 true);
             DrawButton(
                 new Rect(541f, 296f, 72f, 38f),
                 LocalizationService.Get("supermarket.shop.back"),
-                controller.Exit,
+                exitAction,
                 true);
         }
 

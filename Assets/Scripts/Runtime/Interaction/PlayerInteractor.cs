@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,6 +9,11 @@ namespace BarPromenade
     {
         private const float InteractionRadius = 1.65f;
         private readonly Collider[] overlapBuffer = new Collider[24];
+
+        // Filled in place every Update; the array-returning overload
+        // would allocate one array per overlapped collider per frame.
+        private readonly List<MonoBehaviour> behaviourBuffer =
+            new List<MonoBehaviour>();
         private InteractionPromptView promptView;
         private IInteractable activeInteractable;
         private Func<bool> promptAction;
@@ -117,9 +123,11 @@ namespace BarPromenade
                     continue;
                 }
 
-                MonoBehaviour[] behaviours =
-                    candidateCollider.GetComponentsInParent<MonoBehaviour>(true);
-                for (int j = 0; j < behaviours.Length; j++)
+                candidateCollider.GetComponentsInParent(
+                    true,
+                    behaviourBuffer);
+                List<MonoBehaviour> behaviours = behaviourBuffer;
+                for (int j = 0; j < behaviours.Count; j++)
                 {
                     if (!(behaviours[j] is IInteractable candidate) ||
                         !candidate.CanInteract(this))

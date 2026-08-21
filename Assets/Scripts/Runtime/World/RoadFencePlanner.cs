@@ -816,62 +816,6 @@ namespace BarPromenade
             return openings;
         }
 
-        private static List<BoundarySpan> SubtractOpenings(
-            IList<BoundarySpan> boundary,
-            IReadOnlyList<RoadFenceOpeningDescriptor> openings)
-        {
-            var remaining = new List<BoundarySpan>(boundary);
-            for (int openingIndex = 0;
-                 openingIndex < openings.Count;
-                 openingIndex++)
-            {
-                RoadFenceOpeningDescriptor opening =
-                    openings[openingIndex];
-                var next = new List<BoundarySpan>(
-                    remaining.Count + 1);
-
-                for (int spanIndex = 0;
-                     spanIndex < remaining.Count;
-                     spanIndex++)
-                {
-                    BoundarySpan span = remaining[spanIndex];
-                    if (!Matches(span, opening))
-                    {
-                        next.Add(span);
-                        continue;
-                    }
-
-                    float overlapMinimum = Mathf.Max(
-                        span.Minimum,
-                        opening.MinimumCoordinate);
-                    float overlapMaximum = Mathf.Min(
-                        span.Maximum,
-                        opening.MaximumCoordinate);
-                    if (overlapMaximum - overlapMinimum <=
-                        CoordinateEpsilon)
-                    {
-                        next.Add(span);
-                        continue;
-                    }
-
-                    AddSpanIfPositive(
-                        next,
-                        span,
-                        span.Minimum,
-                        overlapMinimum);
-                    AddSpanIfPositive(
-                        next,
-                        span,
-                        overlapMaximum,
-                        span.Maximum);
-                }
-
-                remaining = next;
-            }
-
-            return remaining;
-        }
-
         private static void AddSpanIfPositive(
             ICollection<BoundarySpan> destination,
             BoundarySpan source,
@@ -889,18 +833,6 @@ namespace BarPromenade
                 minimum,
                 maximum,
                 source.Outward));
-        }
-
-        private static bool Matches(
-            BoundarySpan span,
-            RoadFenceOpeningDescriptor opening)
-        {
-            return span.Horizontal == opening.IsHorizontal &&
-                   Mathf.Abs(
-                       span.Fixed -
-                       opening.FixedCoordinate) <= CoordinateEpsilon &&
-                   (span.Outward - opening.OutwardNormal).sqrMagnitude <=
-                   CoordinateEpsilon * CoordinateEpsilon;
         }
 
         private static bool BelongsToSameLine(

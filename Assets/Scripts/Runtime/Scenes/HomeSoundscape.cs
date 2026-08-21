@@ -319,6 +319,7 @@ namespace BarPromenade
             StopAndClear(balconySource);
             StopAndClear(rareCueSource);
             StopAndClear(bathroomLightCrackleSource);
+            StopAndClear(showerWaterSource);
 
             DestroyRuntimeClip(ref refrigeratorClip);
             DestroyRuntimeClip(ref openRefrigeratorClip);
@@ -328,22 +329,26 @@ namespace BarPromenade
             DestroyRuntimeClip(ref radioMurmurClip);
             DestroyRuntimeClip(ref bathroomDetailClip);
             DestroyRuntimeClip(ref bathroomLightCrackleClip);
+            DestroyRuntimeClip(ref showerWaterClip);
             DestroyOwnedSource(refrigeratorSource);
             DestroyOwnedSource(openRefrigeratorSource);
             DestroyOwnedSource(balconySource);
             DestroyOwnedSource(rareCueSource);
             DestroyOwnedSource(bathroomLightCrackleSource);
+            DestroyOwnedSource(showerWaterSource);
 
             refrigeratorSource = null;
             openRefrigeratorSource = null;
             balconySource = null;
             rareCueSource = null;
             bathroomLightCrackleSource = null;
+            showerWaterSource = null;
             refrigeratorFilter = null;
             openRefrigeratorFilter = null;
             balconyFilter = null;
             rareCueFilter = null;
             bathroomLightCrackleFilter = null;
+            showerWaterFilter = null;
             IsInitialized = false;
         }
 

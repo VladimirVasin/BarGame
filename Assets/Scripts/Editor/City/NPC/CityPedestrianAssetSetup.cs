@@ -1016,6 +1016,11 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         ParkCheckersPlayerProvider.DesignId,
                         StringComparison.Ordinal)));
+                BindLakeFishermanProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        LakeFishermanProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }

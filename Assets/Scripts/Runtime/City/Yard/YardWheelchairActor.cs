@@ -49,7 +49,10 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            Advance(Time.deltaTime);
+            // Bounded like every other staged NPC's step: a frame hitch
+            // must not teleport the chair metres along the ring while
+            // its arm animation advances a clamped step.
+            Advance(Mathf.Min(Time.deltaTime, 0.1f));
         }
 
         private void ApplyPose(float deltaTime, bool immediate)

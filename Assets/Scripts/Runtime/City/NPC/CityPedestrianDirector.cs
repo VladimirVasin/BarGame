@@ -77,6 +77,8 @@ namespace BarPromenade
         private Vector3 previousPlayerPosition;
         private Vector3 smoothedPlayerVelocity;
         private bool hasPreviousPlayerPosition;
+        private CharacterController playerController;
+        private bool playerControllerCached;
         private Vector3 approachRefreshPosition;
         private bool hasApproachRefreshPosition;
         private int[] initialApproachComponentByNode = Array.Empty<int>();
@@ -1072,11 +1074,14 @@ namespace BarPromenade
             float radius,
             CityPedestrianActor ignoredActor)
         {
-            float playerRadius = GetControllerRadius(player, radius);
+            float playerRadius = GetControllerRadius(
+                GetPlayerController(),
+                radius);
             if (VerticalCapsulesOverlap(
                     position,
                     CityPedestrianActor.CollisionHeight,
                     player,
+                    GetPlayerController(),
                     CityPedestrianActor.CollisionHeight,
                     CollisionActivationPadding) &&
                 PlanarCirclesOverlap(
@@ -1155,6 +1160,7 @@ namespace BarPromenade
                     actor.Position,
                     CityPedestrianActor.CollisionHeight,
                     player,
+                    GetPlayerController(),
                     CityPedestrianActor.CollisionHeight,
                     CollisionActivationPadding) &&
                 IsAheadWithin(
@@ -1861,25 +1867,39 @@ namespace BarPromenade
         }
 
         private static float GetControllerRadius(
-            Transform target,
+            CharacterController controller,
             float fallback)
         {
-            CharacterController controller =
-                target.GetComponent<CharacterController>();
             return controller != null && controller.radius > 0f
                 ? controller.radius
                 : fallback;
+        }
+
+        /// <summary>
+        /// The player's controller never changes, so it is resolved once
+        /// instead of via GetComponent per avoidance probe per frame.
+        /// Keeps probing only until the controller first exists.
+        /// </summary>
+        private CharacterController GetPlayerController()
+        {
+            if (!playerControllerCached)
+            {
+                playerController =
+                    player.GetComponent<CharacterController>();
+                playerControllerCached = playerController != null;
+            }
+
+            return playerController;
         }
 
         private static bool VerticalCapsulesOverlap(
             Vector3 firstRoot,
             float firstHeight,
             Transform secondRoot,
+            CharacterController controller,
             float fallbackSecondHeight,
             float padding)
         {
-            CharacterController controller =
-                secondRoot.GetComponent<CharacterController>();
             float secondHeight = controller != null &&
                                  controller.height > 0f
                 ? controller.height

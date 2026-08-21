@@ -76,8 +76,9 @@ namespace BarPromenade.Editor
         {
             ValidateOrThrow();
             Debug.Log(
-                "Supermarket cashier imported model and passive prefab " +
-                "contract are valid.");
+                "Supermarket cashier passive prefab contract is " +
+                "valid. (The imported model itself is not diffed - " +
+                "only the built prefab is checked.)");
         }
 
         public static bool SourcesExist()

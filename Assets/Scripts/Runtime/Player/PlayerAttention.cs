@@ -167,6 +167,11 @@ namespace BarPromenade
         public const float ScanInterval = 0.18f;
 
         private readonly Collider[] overlapBuffer = new Collider[32];
+
+        // Filled in place per scan; the array-returning overload would
+        // allocate one array per overlapped collider per scan.
+        private readonly List<MonoBehaviour> behaviourBuffer =
+            new List<MonoBehaviour>();
         private PlayerInteractor interactor;
         private Player3DCharacterPresentation presentation;
         private AttentionTarget currentTarget;
@@ -272,10 +277,12 @@ namespace BarPromenade
                     continue;
                 }
 
-                MonoBehaviour[] behaviours = candidateCollider
-                    .GetComponentsInParent<MonoBehaviour>(true);
+                candidateCollider.GetComponentsInParent(
+                    true,
+                    behaviourBuffer);
+                List<MonoBehaviour> behaviours = behaviourBuffer;
                 for (int behaviourIndex = 0;
-                     behaviourIndex < behaviours.Length;
+                     behaviourIndex < behaviours.Count;
                      behaviourIndex++)
                 {
                     if (!(behaviours[behaviourIndex] is

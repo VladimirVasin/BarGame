@@ -132,6 +132,11 @@ namespace BarPromenade
         private int sourceCount;
         private float bodyWeight;
         private float accumulator;
+
+        // True while every depth sits exactly at rest with nothing
+        // pressing - the common case for the whole home scene - so idle
+        // frames skip the full target scan and integrator outright.
+        private bool settledAtRest = true;
         private bool hasShadowRect;
         private float shadowMinX;
         private float shadowMinZ;
@@ -225,19 +230,26 @@ namespace BarPromenade
         /// </summary>
         public bool Advance(float deltaTime)
         {
+            bool unloaded = sourceCount == 0 || bodyWeight <= 0f;
+            if (settledAtRest && unloaded)
+            {
+                accumulator = 0f;
+                return false;
+            }
+
             RefreshTargets();
             accumulator += Mathf.Clamp(deltaTime, 0f, 0.5f);
             bool changed = false;
+            bool stepped = false;
             while (accumulator + 0.000001f >= FixedStep)
             {
                 accumulator -= FixedStep;
+                stepped = true;
                 for (int index = 0; index < depths.Length; index++)
                 {
                     float target = targets[index];
                     float current = depths[index];
-                    float alpha = target > current
-                        ? dentAlpha
-                        : recoverAlpha;
+                    float alpha = SelectAlpha(target, current);
                     float next = current + ((target - current) * alpha);
                     if (Mathf.Abs(next - current) > ChangeEpsilon)
                     {
@@ -248,7 +260,48 @@ namespace BarPromenade
                 }
             }
 
+            if (changed)
+            {
+                settledAtRest = false;
+            }
+            else if (stepped && unloaded)
+            {
+                // The refill has decayed below per-step noise (under a
+                // millimetre) with nothing pressing: finish it outright
+                // so every following idle frame costs nothing.
+                for (int index = 0; index < depths.Length; index++)
+                {
+                    depths[index] = 0f;
+                }
+
+                settledAtRest = true;
+            }
+
             return changed;
+        }
+
+        /// <summary>
+        /// Deformation - the body pressing the surface anywhere off its
+        /// rest plane, hollow down or displaced welt up - moves fast so
+        /// the surface keeps up with him; the return to rest is the slow
+        /// thick-cloth half, on both sides of the plane alike.
+        /// </summary>
+        private float SelectAlpha(float target, float current)
+        {
+            if (target == 0f)
+            {
+                return recoverAlpha;
+            }
+
+            if (current == 0f || (target > 0f) == (current > 0f))
+            {
+                return Mathf.Abs(target) > Mathf.Abs(current)
+                    ? dentAlpha
+                    : recoverAlpha;
+            }
+
+            // Driven across the rest plane by pressure.
+            return dentAlpha;
         }
 
         /// <summary>
@@ -265,6 +318,7 @@ namespace BarPromenade
             }
 
             accumulator = 0f;
+            settledAtRest = false;
         }
 
         public void ResetToRest()
@@ -275,6 +329,7 @@ namespace BarPromenade
             }
 
             accumulator = 0f;
+            settledAtRest = true;
         }
 
         /// <summary>Bilinear depth at a local XZ point, clamped to the grid.</summary>

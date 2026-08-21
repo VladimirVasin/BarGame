@@ -25,10 +25,12 @@ namespace BarPromenade.Tests.EditMode
             try
             {
                 Transform bed = BuildBed(parent);
-                Bounds mattress = FindPart(bed, "Home Bed Mattress");
 
+                // Measured from the surface's own rest plane, not the
+                // renderer AABB: the bounds carry welt/dent allowances
+                // above and below the geometry on purpose.
                 Assert.That(
-                    mattress.max.y,
+                    FindSurfaceRestTop(bed, "Home Bed Mattress"),
                     Is.EqualTo(
                         HomeInteriorWorldBuilder
                             .BedMattressSurfaceHeight)
@@ -111,6 +113,8 @@ namespace BarPromenade.Tests.EditMode
             {
                 Transform bed = BuildBed(parent);
                 Bounds pillow = FindPart(bed, "Home Pillow");
+                float pillowRestTop =
+                    FindSurfaceRestTop(bed, "Home Pillow");
                 HomeBedInteractionPlan plan =
                     HomeBedInteractionPlan.Create(
                         HomeInteriorLayoutPlanner.Generate());
@@ -121,9 +125,11 @@ namespace BarPromenade.Tests.EditMode
 
                 // The pillow dents too: its rest top rides one pillow-sink
                 // above the head plane, so the head lies in the dented
-                // pillow instead of inside a rigid one.
+                // pillow instead of inside a rigid one. Measured from the
+                // surface's rest plane - the AABB carries welt and dent
+                // allowances on purpose.
                 Assert.That(
-                    pillow.max.y,
+                    pillowRestTop,
                     Is.EqualTo(
                         headPlane +
                         HomeInteriorWorldBuilder.BedPillowSinkDepth)
@@ -131,7 +137,7 @@ namespace BarPromenade.Tests.EditMode
                     "The pillow's rest top must sit one dent above where " +
                     "the sunken pose puts the back of his head.");
                 Assert.That(
-                    pillow.max.y,
+                    pillowRestTop,
                     Is.GreaterThan(
                         HomeInteriorWorldBuilder
                             .BedMattressSurfaceHeight),
@@ -216,6 +222,25 @@ namespace BarPromenade.Tests.EditMode
                 Has.Count.EqualTo(1),
                 $"Expected exactly one '{name}' in the built bed.");
             return matches[0].bounds;
+        }
+
+        private static float FindSurfaceRestTop(
+            Transform root,
+            string name)
+        {
+            foreach (HomeBedDeformableSurface surface in
+                     root.GetComponentsInChildren<
+                         HomeBedDeformableSurface>(true))
+            {
+                if (surface.gameObject.name == name)
+                {
+                    return surface.RestTopWorldY;
+                }
+            }
+
+            Assert.Fail(
+                $"Expected a deformable '{name}' in the built bed.");
+            return 0f;
         }
     }
 }

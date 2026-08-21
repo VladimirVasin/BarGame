@@ -6,6 +6,86 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — Full-project audit: nine reviewers, one soft-lock, a leak chorus
+
+- **A parallel review swept the whole runtime, tests and editor tooling**
+  (nine areas, findings verified against the code before any fix). The one
+  high-severity gameplay bug: restoring a city at the `Coffined` grave
+  stage never raised the lying monument, so after fill the stone act
+  borrowed a null stone and soft-locked until the next city rebuild —
+  `Restore()` now delivers the stone at `Coffined` like every other stage.
+  A cousin guard (`actConcluded`) keeps a committed act from being
+  "restored as abandoned" when a scene transition or disable lands during
+  the leave blend.
+- **Input and state bugs:** the pause menu's resting-mouse hover overrode
+  keyboard navigation every IMGUI pass (now gated on `MouseMove`, like the
+  inventory; same fix in the opening menu); the park board game kept
+  playing — clicks, restart, unscaled-time speech — behind an open pause
+  menu (now holds its breath on `IsAnyPaused`); a draughts click that
+  could mean two capture chains ending on one square silently played the
+  first-enumerated one (`BoardGameAction` now carries `CaptureCount` and
+  the longer chain wins, as the comment always promised); an aborted home
+  opening left the whole session frozen at day 0 05:59 with no recovery
+  (`RestoreSessionClockDisplay` was a self-guarded no-op; it now starts
+  game time idempotently and re-follows it).
+- **Leaks:** `HomeSmokingMusicPlayer`'s detached scene-exit carrier
+  outlived its fade forever (now destroys itself like `SceneMusicPlayer`);
+  `HomeSoundscape.OnDestroy` skipped the shower clip/source — the PlayMode
+  suite had asserted 5 sources against a constant of 6 and could never
+  have passed; `CityNightResources`/`CityWindowAppearance` nulled created
+  materials without destroying them in their domain-reload-disabled reset.
+- **Per-frame costs:** `PlayerInteractor`/`PlayerAttention` allocated a
+  `MonoBehaviour[]` per overlapped collider per frame (list overload now);
+  the bed deformer's shading pass allocated two full vertex arrays per
+  surface per settling frame (reuses the write buffer + a `GetNormals`
+  scratch list) and the depression model now early-outs when settled at
+  rest; `RuntimePrimitiveFactory.SetColor` made a `MaterialPropertyBlock`
+  per call under the cemetery mark pulse; the bus obstacle probe was
+  O(walkers x probe steps x link samples) from a linear sample scan (now
+  bisected) and rebuilt two ride plans twice per frame during dwell (now
+  pose-keyed); city-map/bar/bus-stop labels, tooltip `GUIContent`, prompt
+  and speech-bubble measurement, the intoxication HUD line and the shelf
+  shop's per-event delegates are all cached now; `CityTravelDistance`
+  rebuilt the weighted road graph per query inside validation's bar-pair
+  loops (now cached by list identity).
+- **Motion and geometry:** the yard wheelchair's lap wrap snapped every
+  non-lap-periodic channel once per circuit (distance now unbounded, wheel
+  scrub integrated in closed form; the lap test asserts seam continuity);
+  captured board-game men always swept toward the hero regardless of who
+  took them; the hanging bar sign mirrored its tankard into the wall on
+  -X/-Z frontages; the deformable bed's AABB only grew downward while the
+  rim welt rises above the rest top (grows both ways now, test updated);
+  the swing's push trigger dipped 3 cm into the lawn and fired
+  `OnTriggerStay` against the terrain every physics step forever (lifted,
+  plus a last-miss collider cache); a timed-out bus alighting resumed the
+  walker mid-carriageway (now stood on the wait slot first, like aborts);
+  bench rest claims released while the sitter still stood on the
+  seat-front slot (a `Standing` phase holds the claim through the return)
+  and rest attempts ticked on wall-clock time through pauses.
+- **Editor pipeline:** the full pedestrian rebuild bound six providers but
+  never the lake fisherman's; the chess-set auto-build ran unwrapped in
+  `delayCall` (now queued+caught like every sibling) and collapsed
+  duplicate mesh names silently (now throws); PS1 presentation auto-setup
+  ran in batch mode (guarded now) and stamped the feature map before the
+  new sub-asset was saved (localId 0; save now precedes the stamp); the
+  bus prefab save gained its missing `out bool` check; the
+  cashier/bartender "Validate Imported Contract" logs no longer claim a
+  model diff that does not run.
+- **Deliberately not fixed** (need a design decision): the home-yard bin
+  resolves the same corner slot as the sandpit (five edge objects, four
+  corner slots — someone must lose an object or gain a wall scheme); the
+  dead-end sidewalk extension is neutralised by a `Clamp01` (restoring it
+  changes world geometry); coplanar board-marker plates can z-fight;
+  `CityElevationPlanner`'s stair rise can leave the validator band on a
+  dead code path. All recorded here rather than guessed at.
+- **Verification:** all four csproj compile clean (0 errors) after every
+  batch; full headless EditMode suite run on 6000.5.9f1 (first full run
+  since the upgrade) — results in the entry's own session notes; the
+  updated tests are `HomeBedDeformableSurfaceTests` (bounds allowance up),
+  `YardWheelchairMotionTests` (lap continuity), and
+  `InteriorSoundscapePlayModeTests` (six sources, nine clips, shower clip
+  in the destroy sweep).
+
 ## 2026-08-22 — The dent existed and showed nothing
 
 - **The user looked at the opening and saw a flat bed.** He was right, and

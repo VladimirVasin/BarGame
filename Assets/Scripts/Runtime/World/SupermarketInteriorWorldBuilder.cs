@@ -44,7 +44,6 @@ namespace BarPromenade
         public static SupermarketInteriorWorldResult Build(
             Transform parent,
             SupermarketInteriorLayoutPlan plan,
-            Camera camera,
             Func<string, bool> shouldBuildSource = null)
         {
             if (parent == null)

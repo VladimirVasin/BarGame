@@ -281,9 +281,15 @@ namespace BarPromenade
                 return;
             }
 
-            NightFactor = IsFinite(factor)
+            float next = IsFinite(factor)
                 ? Mathf.Clamp01(factor)
                 : 0f;
+            if (Mathf.Approximately(next, NightFactor))
+            {
+                return;
+            }
+
+            NightFactor = next;
             RefreshLights();
         }
 

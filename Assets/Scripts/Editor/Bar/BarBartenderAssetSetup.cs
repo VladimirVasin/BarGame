@@ -91,8 +91,9 @@ namespace BarPromenade.Editor
         {
             ValidateOrThrow();
             Debug.Log(
-                "Bar bartender imported model and passive prefab " +
-                "contract are valid.");
+                "Bar bartender passive prefab contract is valid. " +
+                "(The imported model itself is not diffed - only the " +
+                "built prefab is checked.)");
         }
 
         public static bool SourcesExist()

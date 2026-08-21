@@ -137,7 +137,6 @@ namespace BarPromenade
         private AudioSource engineAudioSource;
         private Bounds localVisualBounds;
         private CityBusDimensions dimensions;
-        private IReadOnlyList<float> approachNodeDistances;
         private int currentLinkIndex = -1;
         private int loopBoundaryLinkIndex = -1;
         private int currentStopIndex = -1;
@@ -245,8 +244,7 @@ namespace BarPromenade
         public void PrepareSpawn(
             CityBusPlan busPlan,
             CityBusSpawnAnchor anchor,
-            uint behaviorSeed,
-            IReadOnlyList<float> initialApproachNodeDistances = null)
+            uint behaviorSeed)
         {
             if (!IsInitialized)
             {
@@ -297,7 +295,6 @@ namespace BarPromenade
             randomState = behaviorSeed != 0u
                 ? behaviorSeed
                 : RandomFallbackSeed;
-            approachNodeDistances = initialApproachNodeDistances;
             SpawnAnchorId = anchor.Id;
             speed = 0f;
             distanceSinceSpawn = 0f;
@@ -375,11 +372,6 @@ namespace BarPromenade
 
             ResetSpawnState();
             return released;
-        }
-
-        public void CompleteInitialApproach()
-        {
-            approachNodeDistances = null;
         }
 
         /// <summary>
@@ -955,14 +947,6 @@ namespace BarPromenade
                 approachingStop ? stopIndex : -1,
                 approachingStop ? stopDistance : float.PositiveInfinity);
             distanceSinceSpawn += travelled;
-            ReportApproachStall(
-                travelled,
-                travel,
-                deltaTime,
-                approachingStop,
-                stopIndex,
-                stopDistance,
-                obstacles);
             if (MotionState != CityBusMotionState.Dwelling &&
                 MotionState != CityBusMotionState.RouteEnded)
             {
@@ -974,6 +958,17 @@ namespace BarPromenade
                             ? CityBusMotionState.Entering
                             : CityBusMotionState.Cruising;
             }
+
+            // After the state refresh, so the stall diagnostic reads the
+            // frame's actual motion state instead of last frame's.
+            ReportApproachStall(
+                travelled,
+                travel,
+                deltaTime,
+                approachingStop,
+                stopIndex,
+                stopDistance,
+                obstacles);
 
             if (MotionState == CityBusMotionState.RouteEnded)
             {
@@ -1330,14 +1325,33 @@ namespace BarPromenade
             }
 
             float clamped = Mathf.Clamp(distance, 0f, link.Length);
-            for (int index = 1; index < samples.Count; index++)
-            {
-                CityBusPathSample second = samples[index];
-                if (clamped > second.Distance + DistanceTolerance)
-                {
-                    continue;
-                }
 
+            // Samples are ordered by distance at ~0.1 m spacing, and the
+            // obstacle probe evaluates this for every probe step of every
+            // tracked walker per frame - a linear scan from the start
+            // made that O(samples) per step, so the segment is found by
+            // bisection instead.
+            int low = 1;
+            int high = samples.Count - 1;
+            while (low < high)
+            {
+                int middle = (low + high) >> 1;
+                if (clamped > samples[middle].Distance +
+                    DistanceTolerance)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            if (samples.Count > 1 &&
+                clamped <= samples[low].Distance + DistanceTolerance)
+            {
+                int index = low;
+                CityBusPathSample second = samples[index];
                 CityBusPathSample first = samples[index - 1];
                 float span = second.Distance - first.Distance;
                 float t = span > DistanceTolerance
@@ -1373,7 +1387,6 @@ namespace BarPromenade
         private void ResetSpawnState()
         {
             plan = null;
-            approachNodeDistances = null;
             currentLinkIndex = -1;
             loopBoundaryLinkIndex = -1;
             currentStopIndex = -1;

@@ -78,6 +78,10 @@ namespace BarPromenade
         private Camera worldCamera;
         private GUIStyle labelStyle;
 
+        // Reused for measurement: a fresh GUIContent per bubble per
+        // IMGUI event is steady garbage for lines that change rarely.
+        private readonly GUIContent measureContent = new GUIContent();
+
         /// <summary>
         /// How solid the lines are drawn right now. Owned by whoever is
         /// running the scene rather than by the panel: distance from the
@@ -395,7 +399,8 @@ namespace BarPromenade
         private Vector2 CalculatePanelSize(string text)
         {
             EnsureStyles();
-            var content = new GUIContent(text);
+            measureContent.text = text;
+            GUIContent content = measureContent;
             float natural = labelStyle.CalcSize(content).x;
             float width = Mathf.Clamp(
                 Mathf.Ceil(natural + HorizontalTextInset * 2f),

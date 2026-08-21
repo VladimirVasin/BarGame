@@ -490,12 +490,21 @@ namespace BarPromenade
                 {
                     kind =
                         CityDecorationKind.RoadsideRoadworkAndBicycle;
+                    float roadworkRadius = CityDecorationValidator
+                        .ResolveProtectionRadius(kind);
+                    // Re-check both gates at the roadwork's larger
+                    // radius - the anchor was cleared for the smaller
+                    // utility footprint, and a cluster that fits a booth
+                    // slot could still crowd a neighbour's clearance.
                     if (CityDecorationValidator.IsProtectedGroundAnchor(
                             position,
-                            CityDecorationValidator
-                                .ResolveProtectionRadius(kind),
+                            roadworkRadius,
                             fencePlan,
-                            nightPlan))
+                            nightPlan) ||
+                        !IsSeparated(
+                            position,
+                            occupiedGroundPositions,
+                            roadworkRadius + 1.35f))
                     {
                         continue;
                     }

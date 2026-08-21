@@ -197,6 +197,7 @@ namespace BarPromenade
             BuildHangingSign(
                 marker,
                 markerObject.transform,
+                direction,
                 frontageIsX,
                 material,
                 colorScale,
@@ -218,6 +219,7 @@ namespace BarPromenade
         private static void BuildHangingSign(
             BarBuildingMarker marker,
             Transform parent,
+            Vector3 direction,
             bool frontageIsX,
             Material material,
             float colorScale,
@@ -226,9 +228,10 @@ namespace BarPromenade
         {
             // `direction` runs out from the wall along the bracket arm, so the
             // panel spans it and the blade thickness runs across the frontage.
-            Vector3 outward = frontageIsX
-                ? new Vector3(1f, 0f, 0f)
-                : new Vector3(0f, 0f, 1f);
+            // The frontage's sign matters: on a -X or -Z frontage an unsigned
+            // axis would mirror the tankard into the wall and swap the
+            // inner/outer hangers.
+            Vector3 outward = direction;
             Vector3 across = frontageIsX
                 ? new Vector3(0f, 0f, 1f)
                 : new Vector3(1f, 0f, 0f);

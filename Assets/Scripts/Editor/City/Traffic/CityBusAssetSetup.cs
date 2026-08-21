@@ -727,7 +727,16 @@ namespace BarPromenade.Editor
                         "PIVOT_WiperR"));
                 registry.ResetArticulation();
 
-                PrefabUtility.SaveAsPrefabAsset(prefabRoot, PrefabPath);
+                PrefabUtility.SaveAsPrefabAsset(
+                    prefabRoot,
+                    PrefabPath,
+                    out bool saved);
+                if (!saved)
+                {
+                    throw new InvalidOperationException(
+                        $"Could not save the city bus prefab at " +
+                        $"'{PrefabPath}'.");
+                }
             }
             finally
             {

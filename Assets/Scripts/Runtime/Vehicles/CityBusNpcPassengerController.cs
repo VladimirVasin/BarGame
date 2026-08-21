@@ -539,6 +539,7 @@ namespace BarPromenade
                 return true;
             }
 
+            bool completed = waiter.Walker.TransferCompleted;
             actor.ReleaseServiceHold(waiter);
             actor.ReleasePassenger(waiter);
             int rejoinNode = waitPlan.TryGetWaitPoint(
@@ -546,6 +547,17 @@ namespace BarPromenade
                 out CityBusStopWaitPoint point)
                 ? point.PedestrianNodeIndex
                 : -1;
+            if (!completed &&
+                point != null &&
+                point.WaitSlots.Count > 0)
+            {
+                // A timed-out crossing strands the walker mid-doorway on
+                // the carriageway with his collider back on - stand him
+                // on the wait slot first, the way an aborted transfer
+                // already does.
+                waiter.Walker.transform.position = point.WaitSlots[0];
+            }
+
             waiter.Walker.ResumeRoaming(rejoinNode);
             GameLog.Info(
                 "bus_npc",

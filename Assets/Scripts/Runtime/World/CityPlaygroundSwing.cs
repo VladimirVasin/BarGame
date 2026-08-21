@@ -32,6 +32,7 @@ namespace BarPromenade
         private Rigidbody body;
         private Vector3 seatLocalCenter;
         private Vector3 pushAxis = Vector3.forward;
+        private Collider lastNonWalkerCollider;
 
         public bool IsInitialized { get; private set; }
 
@@ -84,10 +85,20 @@ namespace BarPromenade
                 return;
             }
 
+            // A collider's walker-ness never changes, and a static
+            // overlap (a terrain edge, a slab) re-fires every physics
+            // step - remember the last miss instead of paying a
+            // GetComponentInParent for it each time.
+            if (other == lastNonWalkerCollider)
+            {
+                return;
+            }
+
             CharacterController walker =
                 other.GetComponentInParent<CharacterController>();
             if (walker == null)
             {
+                lastNonWalkerCollider = other;
                 return;
             }
 

@@ -64,8 +64,16 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
+            // The emissive material is a Resources asset - only the
+            // cache is dropped. The atmosphere material is created here,
+            // so with domain reload disabled it must be destroyed or
+            // each play session leaks one.
             emissiveMaterial = null;
-            atmosphereMaterial = null;
+            if (atmosphereMaterial != null)
+            {
+                UnityEngine.Object.Destroy(atmosphereMaterial);
+                atmosphereMaterial = null;
+            }
         }
     }
 }

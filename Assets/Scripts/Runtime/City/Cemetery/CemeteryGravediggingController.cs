@@ -409,6 +409,7 @@ namespace BarPromenade
                     RaiseLamp();
                     RaiseCoffin();
                     RaiseSpade();
+                    RaiseLyingStone();
                     RaiseCoffinBlocks();
                     RaiseSite();
                     break;
