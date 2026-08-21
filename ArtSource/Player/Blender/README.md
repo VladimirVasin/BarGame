@@ -219,8 +219,11 @@ Before saving, the script fails with a non-zero Blender exit code unless:
   during the inhale;
 - the bus boarding, seated loop and alighting Actions keep the root fixed and
   match across the complete `Relaxed -> seated -> Relaxed` endpoint chain;
+- the door-use trio keeps both feet planted while the chest inclines and the
+  physical right hand makes one short forward press before returning exactly
+  to `Relaxed`;
 - presentation-only objects cannot enter an export selection.
 
 The production model currently builds as 73 independent mesh objects, 31 bones
-(including six sockets), 26 Actions and `1,534` triangles. Exact counts are
+(including six sockets), 32 Actions and `1,534` triangles. Exact counts are
 reported by the script and manifest.

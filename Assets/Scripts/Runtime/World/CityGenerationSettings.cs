@@ -7,6 +7,10 @@ namespace BarPromenade
     public sealed class CityGenerationSettings
     {
         public const float DefaultRoadWidth = 8f;
+        public const float DefaultMinimumOrdinaryBuildingHeight = 36f;
+        public const float DefaultMaximumOrdinaryBuildingHeight = 52f;
+        public const float FogHiddenRoofReferenceCameraHeight = 4f;
+        public const float MaximumFogHiddenRoofTransmittance = 0.01f;
 
         [Min(1)] public int BlocksX = 12;
         [Min(1)] public int BlocksZ = 12;
@@ -19,8 +23,18 @@ namespace BarPromenade
         [Min(2.01f)] public float RoadWidth = DefaultRoadWidth;
         [Range(0f, 1f)] public float LoopChance = 0.28f;
         [Min(0f)] public float BuildingInset = 1.25f;
+        // Bars retain this original 5-13 m range. The home and supermarket
+        // also keep using its maximum as their existing authored clamp.
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;
         [Min(0.1f)] public float MaximumBuildingHeight = 13f;
+        // At the production City fog density, even the lowest ordinary roof
+        // retains less than one percent of its colour from the highest
+        // ordinary chase-camera position. The upper range may pass the fixed
+        // far plane, so these masses read as continuing into the fog.
+        [Min(0.1f)] public float MinimumOrdinaryBuildingHeight =
+            DefaultMinimumOrdinaryBuildingHeight;
+        [Min(0.1f)] public float MaximumOrdinaryBuildingHeight =
+            DefaultMaximumOrdinaryBuildingHeight;
 
         internal CityBlueprint Blueprint { get; set; }
 
@@ -127,6 +141,10 @@ namespace BarPromenade
                 BuildingInset = BuildingInset,
                 MinimumBuildingHeight = MinimumBuildingHeight,
                 MaximumBuildingHeight = MaximumBuildingHeight,
+                MinimumOrdinaryBuildingHeight =
+                    MinimumOrdinaryBuildingHeight,
+                MaximumOrdinaryBuildingHeight =
+                    MaximumOrdinaryBuildingHeight,
                 Blueprint = Blueprint
             };
         }
@@ -222,6 +240,12 @@ namespace BarPromenade
             RequireNonNegativeFinite(BuildingInset, nameof(BuildingInset));
             RequirePositiveFinite(MinimumBuildingHeight, nameof(MinimumBuildingHeight));
             RequirePositiveFinite(MaximumBuildingHeight, nameof(MaximumBuildingHeight));
+            RequirePositiveFinite(
+                MinimumOrdinaryBuildingHeight,
+                nameof(MinimumOrdinaryBuildingHeight));
+            RequirePositiveFinite(
+                MaximumOrdinaryBuildingHeight,
+                nameof(MaximumOrdinaryBuildingHeight));
 
             if (!IsFinite(LoopChance) || LoopChance < 0f || LoopChance > 1f)
             {
@@ -241,6 +265,15 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(
                     nameof(MaximumBuildingHeight),
                     "Maximum height must be at least the minimum height.");
+            }
+
+            if (MaximumOrdinaryBuildingHeight <
+                MinimumOrdinaryBuildingHeight)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(MaximumOrdinaryBuildingHeight),
+                    "Maximum ordinary-building height must be at least " +
+                    "the minimum ordinary-building height.");
             }
         }
 

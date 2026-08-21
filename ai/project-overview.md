@@ -594,6 +594,13 @@ The vertical slice contains:
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
+- ordinary building lots use their own `36–52 m` height envelope while
+  preserving the existing district bands inside it. From the conservative
+  `4 m` maximum chase-camera height, the lowest roof is at least `32 m` deep
+  and retains only about `0.66%` of its source colour under City's fixed
+  `0.070` Exp2 fog. Bars keep their former `5–13 m` envelope, the player home
+  stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
+  remain open land rather than receiving a tall mass;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
   full-width caps at true degree-one street dead ends. Street-to-park
@@ -650,6 +657,12 @@ The vertical slice contains:
   offsets only the pelvis vertically so the lower visible sole stays at its
   neutral grounded height; the physical player root, model root and contextual
   clips remain untouched;
+- one shared source-scene action for all eight ordinary bar, supermarket,
+  home and stairwell location doors. After the existing interact command, the
+  constrained motor guides the visible hero to an explicit grounded dock and
+  facing, holds a neutral frame, then plays the planted
+  `DoorUseEnter/Loop/Exit` lean and short physical-right-hand press. Only the
+  terminal neutral completion may request the separate scene transition;
 - ordinary URP mesh shadows cast from the real character geometry in every
   gameplay root, plus one small light-independent analytic contact patch fixed
   to the grounded player root. The patch follows foot plant and expands,
@@ -758,7 +771,7 @@ The vertical slice contains:
   kind, a separate stairwell-arrival side and a consumed
   `Normal`/`OpeningSleep` Home arrival value and a resettable one-shot
   `DebugCityMapOnArrivalRequested` flag;
-- a dedicated `3.15 s` `DoorTransition` scene between connected locations:
+- a dedicated `3.15 s` `DoorTransition` scene after that source-scene gesture:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;

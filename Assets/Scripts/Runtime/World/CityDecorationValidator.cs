@@ -475,10 +475,7 @@ namespace BarPromenade
                  index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
-                if (!lot.HasBuilding ||
-                    lot.IsBar ||
-                    lot.IsPlayerHome ||
-                    lot.IsSupermarket)
+                if (!lot.IsOrdinaryBuilding)
                 {
                     continue;
                 }

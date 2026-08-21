@@ -40,6 +40,6 @@ with Blender:
 ```
 
 It preserves independently rigged anatomical, clothing and signature-detail
-meshes, uses an A-pose bind skeleton, and emits 23 bone-only in-place Actions
+meshes, uses an A-pose bind skeleton, and emits 32 bone-only in-place Actions
 plus stable hand/mouth prop sockets. See `Blender/README.md` for the hierarchy,
 side convention, outputs and built-in validation.

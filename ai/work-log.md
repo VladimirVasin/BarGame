@@ -6,6 +6,61 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — Ordinary city roofs disappear into the fog
+
+- Split the building-height contract into a retained `5–13 m` range for bars
+  and special buildings and a new `36–52 m` range for ordinary buildings. The
+  canonical ordinary predicate excludes bars, the supermarket, the player's
+  home, parks and district points of interest; the special authored heights
+  remain unchanged.
+- At the minimum ordinary height, the roof is `32 m` above the conservative
+  `4 m` camera reference and retains only `0.66%` colour through City's
+  `0.070` Exp2 fog. The repeating facade treatment continues through the upper
+  mass, while roof motifs and rooftop landmarks intentionally disappear with
+  the roof.
+- Expanded `CityWorldResult.Bounds` to cover the taller generated masses and
+  extended the facade-height sweep to both new endpoints.
+- **Verification:** the focused EditMode regression
+  `DefaultSettings_HideOnlyOrdinaryBuildingRoofsInFog` passed `1/1` in Unity.
+  `BarPromenade.EditModeTests.csproj` also compiled with `0` errors (the
+  existing `123` warnings remain). Full suites, a player build and a visual
+  shadow review were intentionally not run in fast mode.
+
+## 2026-08-21 — Door transitions now begin with the hero's own gesture
+
+- Authored and exported the bone-only `DoorUseEnter`, `DoorUseLoop` and
+  `DoorUseExit` actions on the production 3D rig. The planted sequence adds a
+  subtle forward chest lean and short physical-right-hand press, with exact
+  `Relaxed` seams and no root motion or Animation Events.
+- Added one shared positioned door-action adapter to `PlayerFactory`. All eight
+  ordinary bar, supermarket, home and stairwell doors now guide the visible
+  hero to an explicit grounded dock and facing, hold the neutral handoff frame,
+  play the action, restore the terminal neutral pose and only then request the
+  existing scene transition. Owned cancellation restores input and releases
+  the door for reuse, including controller-side approach aborts.
+- A live Home playthrough exposed that the first interior docks used authored
+  spawn height instead of the CharacterController's settled root height: Home
+  was `0.08 m` outside the action system's `0.02 m` vertical tolerance, so a
+  real `E` press was silently rejected. Home, bar, supermarket and both
+  stairwell levels now derive their dock Y from the physical floor plus
+  `GroundedRootOffset`. The opening-flow regression now acquires the real
+  `PlayerInteractor` target and presses `E` from the settled floor height
+  instead of calling the exit component directly.
+- Rebuilt the production Blender, FBX, manifest and runtime-prefab assets. The
+  generator reports `32` Actions, `1,534/4,500` triangles and valid full-rig,
+  root, foot, right-grip, forward-reach and chest-incline contracts.
+- **Verification:** the canonical Blender generator completed with
+  `BP3D BUILD OK`; `Player3DAssetSetup` rebuilt the runtime prefab with all
+  three registered clips. Focused `PlayerDoorActionPlayModeTests` passed
+  `2/2`, covering terminal-only completion and both target/controller-side
+  cancellation cleanup. After the live Home fix,
+  `BarPromenade.PlayModeTests.csproj` compiled with `0` errors (the existing
+  `17` serialized-provider warnings remain); the strengthened real-`E` Unity
+  regression was not launched in a second Editor while the project was open.
+  The new EditMode coverage compiled during asset refresh, but its filtered
+  batch invocation did not execute because Unity exited after that refresh;
+  full suites and a player build were intentionally not run in fast mode.
+
 ## 2026-08-21 — The five fringe yards became an authored service belt
 
 - Added one deterministic `CityFringeYardPlan` for all five typed perimeter

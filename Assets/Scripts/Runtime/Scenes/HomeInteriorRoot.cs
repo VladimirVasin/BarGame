@@ -252,7 +252,7 @@ namespace BarPromenade
                     BalconyLayout.WalkableRectangles),
                 InteractionPrompt);
             AnimatedInteraction =
-                Player.GameObject.AddComponent<
+                Player.GameObject.GetComponent<
                     PlayerAnimatedInteractionController>();
             AnimatedInteraction.Initialize(Player, camera);
 
@@ -554,6 +554,18 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
             Exit = exitObject.AddComponent<HomeExit>();
+            Vector3 localDock = new Vector3(
+                Layout.ExitPosition.x,
+                PlayerFactory.GroundedRootOffset,
+                Layout.WalkableBounds.yMin +
+                PlayerDoorActionPlan.DockBoundaryClearance);
+            PlayerDoorActionTarget doorAction =
+                exitObject.AddComponent<PlayerDoorActionTarget>();
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    exitObject.transform.position,
+                    transform.TransformPoint(localDock),
+                    transform.TransformDirection(Vector3.back)));
         }
 
         private void BuildBedInteraction()

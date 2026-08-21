@@ -927,7 +927,17 @@ namespace BarPromenade.Tests.EditMode
         private static IEnumerable<BuildingLot> EnumerateLotSweep()
         {
             float[] widths = { 11.78f, 12.6f, 13.4f, 13.97f, 14.6f, 15.5f };
-            float[] heights = { 5f, 6.4f, 7.56f, 9.64f, 10.76f, 13f };
+            float[] heights =
+            {
+                5f,
+                6.4f,
+                7.56f,
+                9.64f,
+                10.76f,
+                13f,
+                36f,
+                52f
+            };
             Vector2Int[] frontages =
             {
                 new Vector2Int(1, 0),

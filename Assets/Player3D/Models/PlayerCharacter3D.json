@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model.py",
-  "generator_version": "2.7.0",
+  "generator_version": "2.8.0",
   "blender_version": "5.0.1",
   "design_source": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "runtime_integrated": true,
@@ -12,7 +12,7 @@
   "object_count": 75,
   "mesh_count": 73,
   "triangle_count": 1534,
-  "action_count": 29,
+  "action_count": 32,
   "socket_count": 6,
   "bounds_min": [
     -0.773908,
@@ -217,6 +217,39 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 96.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseEnter",
+      "category": "door_use",
+      "duration_seconds": 0.5,
+      "loop": false,
+      "source_frame_count": 6,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 12.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseExit",
+      "category": "door_use",
+      "duration_seconds": 0.5,
+      "loop": false,
+      "source_frame_count": 6,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 12.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseLoop",
+      "category": "door_use",
+      "duration_seconds": 0.25,
+      "loop": true,
+      "source_frame_count": 2,
+      "source_fps": 8,
+      "frame_start": 0.0,
+      "frame_end": 6.0,
       "root_motion": false
     },
     {

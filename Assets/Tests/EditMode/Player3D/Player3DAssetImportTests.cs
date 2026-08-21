@@ -44,7 +44,7 @@ namespace BarPromenade.Tests
             Assert.That(manifest.parts, Has.Length.EqualTo(manifest.mesh_count));
             Assert.That(manifest.triangle_count, Is.InRange(1, 4500));
             Assert.That(manifest.actions, Has.Length.EqualTo(manifest.action_count));
-            Assert.That(manifest.action_count, Is.EqualTo(29));
+            Assert.That(manifest.action_count, Is.EqualTo(32));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
             // HomeBedInteraction builds its timeline from these same frame
@@ -73,6 +73,30 @@ namespace BarPromenade.Tests
                 6f,
                 false,
                 72,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "DoorUseEnter",
+                "door_use",
+                0.5f,
+                false,
+                6,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "DoorUseLoop",
+                "door_use",
+                0.25f,
+                true,
+                2,
+                8f);
+            AssertActionMetadata(
+                manifest,
+                "DoorUseExit",
+                "door_use",
+                0.5f,
+                false,
+                6,
                 12f);
             AssertActionMetadata(
                 manifest,
@@ -346,6 +370,37 @@ namespace BarPromenade.Tests
                 "BedExit",
                 HomeBedInteraction.BedExitFrameCount,
                 HomeBedInteraction.BedTransitionFramesPerSecond);
+        }
+
+        [Test]
+        public void DoorTimingConstants_ReproduceTheAuthoredClipDurations()
+        {
+            TextAsset manifestAsset =
+                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+            if (manifestAsset == null)
+            {
+                Assert.Ignore(
+                    "Production Player 3D manifest has not been generated yet.");
+            }
+
+            Player3DManifest manifest =
+                JsonUtility.FromJson<Player3DManifest>(manifestAsset.text);
+
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseEnter",
+                PlayerDoorActionController.EnterFrameCount,
+                PlayerDoorActionController.TransitionFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseLoop",
+                PlayerDoorActionController.LoopFrameCount,
+                PlayerDoorActionController.LoopFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseExit",
+                PlayerDoorActionController.ExitFrameCount,
+                PlayerDoorActionController.TransitionFramesPerSecond);
         }
 
         /// <summary>

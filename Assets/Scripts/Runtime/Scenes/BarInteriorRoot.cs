@@ -476,6 +476,15 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
             exit.AddComponent<BarExit>();
+            Vector3 exitDock = Layout.ExitApproachPosition;
+            exitDock.y = PlayerFactory.GroundedRootOffset;
+            PlayerDoorActionTarget doorAction =
+                exit.AddComponent<PlayerDoorActionTarget>();
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    exit.transform.position,
+                    transform.TransformPoint(exitDock),
+                    transform.TransformDirection(Vector3.back)));
 
             RuntimePrimitiveFactory.CreateBox(
                 "Exit Header",

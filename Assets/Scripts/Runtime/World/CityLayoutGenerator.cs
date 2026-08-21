@@ -1570,7 +1570,17 @@ namespace BarPromenade
                         6.4f,
                         settings.MinimumBuildingHeight,
                         settings.MaximumBuildingHeight)
-                : CreateBuildingHeight(settings, district, ref random);
+                : isBar
+                    ? CreateBuildingHeight(
+                        settings.MinimumBuildingHeight,
+                        settings.MaximumBuildingHeight,
+                        district,
+                        ref random)
+                    : CreateBuildingHeight(
+                        settings.MinimumOrdinaryBuildingHeight,
+                        settings.MaximumOrdinaryBuildingHeight,
+                        district,
+                        ref random);
             Vector3 center = GetLotCenter(settings, origin, cell);
 
             Vector3 direction = new Vector3(frontage.x, 0f, frontage.y);
@@ -1764,7 +1774,8 @@ namespace BarPromenade
         }
 
         private static float CreateBuildingHeight(
-            CityGenerationSettings settings,
+            float minimumHeight,
+            float maximumHeight,
             CityDistrictKind district,
             ref DeterministicRandom random)
         {
@@ -1795,8 +1806,8 @@ namespace BarPromenade
             }
 
             return Mathf.Lerp(
-                settings.MinimumBuildingHeight,
-                settings.MaximumBuildingHeight,
+                minimumHeight,
+                maximumHeight,
                 random.Range(minimumT, maximumT));
         }
 

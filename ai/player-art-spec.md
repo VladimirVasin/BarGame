@@ -86,7 +86,10 @@
   right hand retrieves a socket-bound cigarette, brings its mouth end to the
   lips for a held inhale, lowers for an outward exhale and discards it before
   returning to `Relaxed`. Cat feeding uses `CatFeedEnter`, `CatFeedLoop`,
-  `CatFeedExit`.
+  `CatFeedExit`. Ordinary location doors use the planted
+  `DoorUseEnter`, `DoorUseLoop`, `DoorUseExit` trio: the chest inclines toward
+  the door while the physical right hand makes one short press, both feet stay
+  fixed, and the exit returns to the exact `Relaxed` seam.
 - Every production action is bone-only and in-place. Gameplay owns normalized
   clip sampling, pelvis alignment and terminal holds; root motion and Animation
   Events remain disabled. The ragdoll is a procedural runtime phase rather than
@@ -129,6 +132,8 @@
   validation also owns full-body `Down`/`Rise` seams, the two-key all-fours
   hold, grounded hand/knee/foot contacts, every exported Rise frame's visible
   floor boundary and the exact final `Relaxed` pose.
+  Door-use validation owns the complete action-family seams, fixed root and
+  feet, physical-right grip side, bounded forward reach and subtle chest lean.
 - Direct `.blend` and GLB imports are not production paths. The deterministic
   FBX, animation FBX and JSON manifest are the Unity inputs; the generated
   transparent portrait is a separate Resources asset.

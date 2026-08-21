@@ -1258,8 +1258,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryAddRouteStop(remainingBarId),
                 Is.True);
+            PlacePlayerAtDoor(firstCity.Player, entrance);
             entrance.Interact(firstCity.Player.Interactor);
-            Assert.That(SceneTransitionService.IsTransitioning, Is.True);
+            Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+            Assert.That(
+                firstCity.Player.GameObject.GetComponent<
+                    PlayerDoorActionController>().IsPlaying,
+                Is.True);
+            yield return WaitUntil(
+                () => SceneTransitionService.IsTransitioning,
+                "The source-scene bar door action did not complete.");
             yield return WaitUntil(
                 () => outgoingCityMusic != null &&
                       outgoingCityMusic.IsSceneExitFadeRequested,
@@ -1338,6 +1346,7 @@ namespace BarPromenade.Tests.PlayMode
 
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
             Assert.That(exit, Is.Not.Null);
+            PlacePlayerAtDoor(interior.Player, exit);
             exit.Interact(interior.Player.Interactor);
 
             DoorTransitionRoot exitingDoor = null;
@@ -1438,6 +1447,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryAddRouteStop(routeBarId),
                 Is.True);
+            PlacePlayerAtDoor(firstCity.Player, entrance);
             entrance.Interact(firstCity.Player.Interactor);
 
             DoorTransitionRoot enteringDoor = null;
@@ -1474,6 +1484,9 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.ReturnKind,
                 Is.EqualTo(CityReturnKind.None));
 
+            PlacePlayerAtDoor(
+                enteringStairwell.Player,
+                enteringStairwell.ApartmentEntrance);
             enteringStairwell.ApartmentEntrance.Interact(
                 enteringStairwell.Player.Interactor);
 
@@ -1594,6 +1607,7 @@ namespace BarPromenade.Tests.PlayMode
                 new[] { routeBarId },
                 GameSessionState.PlannedBarRoute);
 
+            PlacePlayerAtDoor(home.Player, home.Exit);
             home.Exit.Interact(home.Player.Interactor);
 
             DoorTransitionRoot exitingDoor = null;
@@ -1635,6 +1649,9 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.ReturnKind,
                 Is.EqualTo(CityReturnKind.None));
 
+            PlacePlayerAtDoor(
+                exitingStairwell.Player,
+                exitingStairwell.StreetExit);
             exitingStairwell.StreetExit.Interact(
                 exitingStairwell.Player.Interactor);
 
@@ -2101,6 +2118,20 @@ namespace BarPromenade.Tests.PlayMode
 
             opening = default;
             return false;
+        }
+
+        private static void PlacePlayerAtDoor(
+            PlayerRuntime player,
+            Component door)
+        {
+            PlayerDoorActionTarget action =
+                door.GetComponent<PlayerDoorActionTarget>();
+            Assert.That(action, Is.Not.Null, door.name);
+            Assert.That(action.IsConfigured, Is.True, door.name);
+            player.Motor.Teleport(action.Plan.EntryRootPosition);
+            player.GameObject.transform.rotation =
+                action.Plan.EntryRotation;
+            Physics.SyncTransforms();
         }
 
         private static void ResetSessionState()

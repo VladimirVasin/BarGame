@@ -9,7 +9,11 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            return !SceneTransitionService.IsTransitioning;
+            PlayerDoorActionTarget doorAction =
+                GetComponent<PlayerDoorActionTarget>();
+            return !SceneTransitionService.IsTransitioning &&
+                   doorAction != null &&
+                   doorAction.CanInteract(interactor);
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -19,10 +23,19 @@ namespace BarPromenade
                 return;
             }
 
-            PlayerMotor motor =
-                interactor == null
-                    ? null
-                    : interactor.GetComponent<PlayerMotor>();
+            PlayerDoorActionTarget doorAction =
+                GetComponent<PlayerDoorActionTarget>();
+            doorAction.TryBegin(
+                interactor,
+                () => CompleteDoorAction(interactor));
+        }
+
+        private static void CompleteDoorAction(
+            PlayerInteractor interactor)
+        {
+            PlayerMotor motor = interactor == null
+                ? null
+                : interactor.GetComponent<PlayerMotor>();
             motor?.SetInputEnabled(false);
             bool accepted = SceneTransitionService.RequestDoorLoad(
                 SceneIds.StairwellInterior,

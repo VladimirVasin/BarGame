@@ -111,6 +111,79 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void DefaultSettings_HideOnlyOrdinaryBuildingRoofsInFog()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                settings,
+                GameSessionState.DefaultCitySeed);
+            BuildingLot[] ordinary = layout.BuildingLots
+                .Where(lot => lot.IsOrdinaryBuilding)
+                .ToArray();
+            BuildingLot[] bars = layout.BuildingLots
+                .Where(lot => lot.IsBar)
+                .ToArray();
+
+            Assert.That(
+                settings.MinimumOrdinaryBuildingHeight,
+                Is.EqualTo(36f));
+            Assert.That(
+                settings.MaximumOrdinaryBuildingHeight,
+                Is.EqualTo(52f));
+            Assert.That(
+                settings.MinimumBuildingHeight,
+                Is.EqualTo(5f));
+            Assert.That(
+                settings.MaximumBuildingHeight,
+                Is.EqualTo(13f));
+            Assert.That(ordinary, Is.Not.Empty);
+            Assert.That(
+                ordinary.All(lot =>
+                    lot.Height >=
+                        settings.MinimumOrdinaryBuildingHeight &&
+                    lot.Height <=
+                        settings.MaximumOrdinaryBuildingHeight),
+                Is.True);
+
+            float minimumRoofDepth =
+                settings.MinimumOrdinaryBuildingHeight -
+                CityGenerationSettings
+                    .FogHiddenRoofReferenceCameraHeight;
+            float fogTerm =
+                RuntimeSceneSetup.CityFogDensity * minimumRoofDepth;
+            float roofTransmittance =
+                Mathf.Exp(-(fogTerm * fogTerm));
+            Assert.That(
+                roofTransmittance,
+                Is.LessThanOrEqualTo(
+                    CityGenerationSettings
+                        .MaximumFogHiddenRoofTransmittance));
+
+            Assert.That(bars, Has.Length.EqualTo(settings.BarCount));
+            Assert.That(
+                bars.All(lot =>
+                    lot.Height >= settings.MinimumBuildingHeight &&
+                    lot.Height <= settings.MaximumBuildingHeight),
+                Is.True,
+                "Bars must retain their original low-rise range.");
+            Assert.That(
+                layout.PlayerHome.Height,
+                Is.EqualTo(
+                        PlayerHomeBalconyGeometry
+                            .ResolveBuildingHeight(settings))
+                    .Within(0.001f));
+            Assert.That(
+                layout.Supermarket.Height,
+                Is.EqualTo(
+                        Mathf.Clamp(
+                            6.4f,
+                            settings.MinimumBuildingHeight,
+                            settings.MaximumBuildingHeight))
+                    .Within(0.001f));
+        }
+
+        [Test]
         public void DefaultCoastalBlueprint_CreatesReachableBeachLakeAndCemetery()
         {
             CityGenerationSettings settings =

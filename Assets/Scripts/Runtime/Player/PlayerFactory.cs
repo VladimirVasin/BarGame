@@ -112,13 +112,21 @@ namespace BarPromenade
             PlayerAttentionController attention =
                 player.AddComponent<PlayerAttentionController>();
             attention.Initialize(interactor, visual);
-            return new PlayerRuntime(
+            var runtime = new PlayerRuntime(
                 player,
                 motor,
                 interactor,
                 visual,
                 contactShadow,
                 ragdoll);
+            PlayerAnimatedInteractionController animatedInteraction =
+                player.AddComponent<
+                    PlayerAnimatedInteractionController>();
+            animatedInteraction.Initialize(runtime, camera);
+            PlayerDoorActionController doorAction =
+                player.AddComponent<PlayerDoorActionController>();
+            doorAction.Initialize(animatedInteraction);
+            return runtime;
         }
     }
 }

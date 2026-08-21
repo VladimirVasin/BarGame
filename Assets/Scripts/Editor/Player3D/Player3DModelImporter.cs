@@ -20,6 +20,7 @@ namespace BarPromenade.Editor
                 "BedSleepLoop",
                 "SmokeLoop",
                 "CatFeedLoop",
+                "DoorUseLoop",
                 "BusRideLoop",
                 "ChessSeatPlayLoop"
             };

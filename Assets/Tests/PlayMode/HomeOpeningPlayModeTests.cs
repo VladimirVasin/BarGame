@@ -650,7 +650,30 @@ namespace BarPromenade.Tests.PlayMode
                     home.FixedCamera.ActiveShot.Rotation),
                 Is.LessThan(0.01f));
 
-            home.Exit.Interact(home.Player.Interactor);
+            PlayerDoorActionTarget exitAction =
+                home.Exit.GetComponent<PlayerDoorActionTarget>();
+            Assert.That(exitAction, Is.Not.Null);
+            Assert.That(
+                exitAction.Plan.EntryRootPosition.y,
+                Is.EqualTo(PlayerFactory.GroundedRootOffset)
+                    .Within(0.0001f));
+            Vector3 exitApproach =
+                exitAction.Plan.EntryRootPosition +
+                Vector3.forward * 0.45f;
+            exitApproach.y = PlayerFactory.GroundedRootOffset;
+            home.Player.Motor.Teleport(exitApproach);
+            Physics.SyncTransforms();
+            yield return WaitUntil(
+                () => ReferenceEquals(
+                    home.Player.Interactor.ActiveInteractable,
+                    home.Exit),
+                "The grounded Home exit did not become the active E target.");
+            yield return PressAndRelease(keyboard.eKey);
+            Assert.That(
+                home.Player.GameObject.GetComponent<
+                    PlayerDoorActionController>().IsPlaying,
+                Is.True,
+                "The real E-key path did not start the Home door action.");
             Time.timeScale = 20f;
             StairwellInteriorRoot stairwell = null;
             yield return WaitUntil(

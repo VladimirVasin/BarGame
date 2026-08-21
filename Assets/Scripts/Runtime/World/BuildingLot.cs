@@ -62,6 +62,11 @@ namespace BarPromenade
         public bool IsBar { get; }
         public bool IsPlayerHome { get; }
         public bool IsSupermarket { get; }
+        public bool IsOrdinaryBuilding =>
+            HasBuilding &&
+            !IsBar &&
+            !IsPlayerHome &&
+            !IsSupermarket;
         public string BarId { get; }
         public BarActivityKind BarActivity { get; }
         public Vector2Int FrontageDirection { get; }

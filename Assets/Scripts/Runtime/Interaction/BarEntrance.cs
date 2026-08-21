@@ -53,7 +53,12 @@ namespace BarPromenade
 
         public bool CanInteract(PlayerInteractor interactor)
         {
-            return !string.IsNullOrEmpty(BarId) && !SceneTransitionService.IsTransitioning;
+            PlayerDoorActionTarget doorAction =
+                GetComponent<PlayerDoorActionTarget>();
+            return !string.IsNullOrEmpty(BarId) &&
+                   !SceneTransitionService.IsTransitioning &&
+                   doorAction != null &&
+                   doorAction.CanInteract(interactor);
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -88,12 +93,26 @@ namespace BarPromenade
                 return;
             }
 
-            PlayerMotor motor = interactor.GetComponent<PlayerMotor>();
+            PlayerDoorActionTarget doorAction =
+                GetComponent<PlayerDoorActionTarget>();
+            if (!doorAction.TryBegin(
+                    interactor,
+                    () => CompleteDoorAction(interactor)))
+            {
+                LogResult(false, string.Empty, "door_action_rejected");
+            }
+        }
+
+        private void CompleteDoorAction(PlayerInteractor interactor)
+        {
+            PlayerMotor motor = interactor == null
+                ? null
+                : interactor.GetComponent<PlayerMotor>();
             motor?.SetInputEnabled(false);
             bool accepted = SceneTransitionService.RequestDoorLoad(
-                    SceneIds.BarInterior,
-                    DoorTransitionDirection.EnterBar,
-                    out string operationId);
+                SceneIds.BarInterior,
+                DoorTransitionDirection.EnterBar,
+                out string operationId);
             if (accepted)
             {
                 GameSessionState.EnterBar(
@@ -106,6 +125,17 @@ namespace BarPromenade
                 motor?.SetInputEnabled(true);
             }
 
+            LogResult(
+                accepted,
+                operationId,
+                accepted ? "accepted" : "transition_rejected");
+        }
+
+        private void LogResult(
+            bool accepted,
+            string operationId,
+            string reason)
+        {
             GameLog.Info(
                 "interaction",
                 "bar_enter_result",
@@ -114,14 +144,8 @@ namespace BarPromenade
                     "activity",
                     BarActivity.ToString()),
                 GameLog.Field("accepted", accepted),
-                GameLog.Field(
-                    "operation_id",
-                    operationId),
-                GameLog.Field(
-                    "reason",
-                    accepted
-                        ? "accepted"
-                        : "transition_rejected"));
+                GameLog.Field("operation_id", operationId),
+                GameLog.Field("reason", reason));
         }
     }
 }

@@ -47,7 +47,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.7.0"
+GENERATOR_VERSION = "2.8.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -242,6 +242,9 @@ REQUIRED_ACTIONS = (
     "CatFeedEnter",
     "CatFeedLoop",
     "CatFeedExit",
+    "DoorUseEnter",
+    "DoorUseLoop",
+    "DoorUseExit",
     "BusBoardEnter",
     "BusRideLoop",
     "BusAlightExit",
@@ -4086,6 +4089,81 @@ class CharacterBuilder:
             ((0.0, feed_pose), (1.0, relaxed)),
         )
 
+        # A compact standing door gesture. The feet and pelvis stay on the
+        # ordinary dock while the upper body inclines into one short physical-
+        # right-hand press. Runtime aligns the fixed pelvis to each authored
+        # doorway, so the source Action does not translate the gameplay root.
+        door_anticipation = self.merge_pose(
+            relaxed,
+            {
+                "spine": BonePose(rotation_degrees=(0.5, 0.0, 0.8)),
+                "chest": BonePose(rotation_degrees=(1.0, 0.0, -0.8)),
+                "neck": BonePose(rotation_degrees=(-1.0, 0.0, 0.4)),
+                "head": BonePose(rotation_degrees=(1.0, 0.0, -0.3)),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.050, -0.090, -0.285)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-26.0, -5.0, 8.0)
+                ),
+                "hand.R": BonePose(rotation_degrees=(5.0, -7.0, 6.0)),
+            },
+        )
+        door_reach = self.merge_pose(
+            relaxed,
+            {
+                "spine": BonePose(rotation_degrees=(4.0, 0.0, 0.6)),
+                "chest": BonePose(rotation_degrees=(-0.5, 0.0, -0.6)),
+                "neck": BonePose(rotation_degrees=(-1.5, 0.0, 0.2)),
+                "head": BonePose(rotation_degrees=(2.5, 0.0, -0.2)),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.070, -0.215, -0.115)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-18.0, -6.0, 10.0)
+                ),
+                "hand.R": BonePose(rotation_degrees=(6.0, -9.0, 8.0)),
+            },
+        )
+        door_contact = self.merge_pose(
+            relaxed,
+            {
+                "spine": BonePose(rotation_degrees=(7.0, 0.0, 0.4)),
+                "chest": BonePose(rotation_degrees=(-2.0, 0.0, -0.4)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.1)),
+                "head": BonePose(rotation_degrees=(3.5, 0.0, -0.1)),
+                "upper_arm.R": BonePose(
+                    target_direction=(-0.075, -0.215, -0.115)
+                ),
+                "forearm.R": BonePose(
+                    rotation_degrees=(-16.0, -7.0, 11.0)
+                ),
+                "hand.R": BonePose(rotation_degrees=(7.0, -10.0, 9.0)),
+            },
+        )
+        self._create_action(
+            "DoorUseEnter", "door_use", 0.5, False, 6, 12,
+            (
+                (0.0, relaxed),
+                (0.20, door_anticipation),
+                (0.62, door_reach),
+                (1.0, door_contact),
+            ),
+        )
+        self._create_action(
+            "DoorUseLoop", "door_use", 0.25, True, 2, 8,
+            ((0.0, door_contact), (1.0, door_contact)),
+        )
+        self._create_action(
+            "DoorUseExit", "door_use", 0.5, False, 6, 12,
+            (
+                (0.0, door_contact),
+                (0.38, door_reach),
+                (0.72, door_anticipation),
+                (1.0, relaxed),
+            ),
+        )
+
         bus_board_step = self.merge_pose(
             relaxed,
             {
@@ -5290,14 +5368,14 @@ def validate_smoking_pose(
         bpy.context.view_layer.update()
 
 
-def validate_seated_interaction_pose(
+def validate_interaction_pose(
     result: BuildResult,
     errors: list[str],
     enter_name: str,
     loop_name: str,
     exit_name: str,
 ) -> None:
-    """Verify one fixed-root seat family and its full-rig handoff seams."""
+    """Verify one fixed-root interaction family and its full-rig seams."""
 
     action_names = (
         "Relaxed",
@@ -5405,6 +5483,140 @@ def validate_seated_interaction_pose(
                         "every authored phase"
                     )
                     break
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
+def validate_door_use_pose(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """Verify the planted standing press and its physical-right-hand reach."""
+
+    enter_name = "DoorUseEnter"
+    loop_name = "DoorUseLoop"
+    exit_name = "DoorUseExit"
+    validate_interaction_pose(
+        result,
+        errors,
+        enter_name,
+        loop_name,
+        exit_name,
+    )
+
+    action_names = ("Relaxed", enter_name, loop_name, exit_name)
+    if any(result.actions.get(name) is None for name in action_names):
+        return
+
+    rig = result.rig
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+    scale = (
+        float(result.root.get("bp_canonical_height_m", CANONICAL_HEIGHT))
+        / CANONICAL_HEIGHT
+    )
+
+    def matrix_error(left: Matrix, right: Matrix) -> float:
+        return max(
+            abs(left[row][column] - right[row][column])
+            for row in range(4)
+            for column in range(4)
+        )
+
+    def sample_bone(
+        action_record: ActionRecord,
+        normalized_time: float,
+        bone_name: str,
+    ) -> Matrix:
+        animation_data.action = action_record.action
+        scene.frame_set(round(action_record.action.frame_end * normalized_time))
+        bpy.context.view_layer.update()
+        return rig.pose.bones[bone_name].matrix.copy()
+
+    try:
+        relaxed = result.actions["Relaxed"]
+        contact = result.actions[loop_name]
+        relaxed_grip = sample_bone(
+            relaxed,
+            0.0,
+            "SOCKET_Grip.R",
+        ).translation
+        contact_grip = sample_bone(
+            contact,
+            0.0,
+            "SOCKET_Grip.R",
+        ).translation
+        forward_reach = relaxed_grip.y - contact_grip.y
+        minimum_reach = 0.16 * scale
+        maximum_reach = 0.52 * scale
+        if not minimum_reach <= forward_reach <= maximum_reach:
+            errors.append(
+                "DoorUse physical-right grip must make one short forward "
+                f"press ({forward_reach:.4f} m, expected "
+                f"{minimum_reach:.4f}..{maximum_reach:.4f} m)"
+            )
+        if contact_grip.x >= -0.01 * scale:
+            errors.append(
+                "DoorUse contact must stay on physical right/source -X "
+                f"(grip X {contact_grip.x:.4f} m)"
+            )
+
+        relaxed_chest = sample_bone(
+            relaxed,
+            0.0,
+            "chest",
+        ).translation
+        contact_chest = sample_bone(
+            contact,
+            0.0,
+            "chest",
+        ).translation
+        torso_lean = relaxed_chest.y - contact_chest.y
+        if not 0.015 * scale <= torso_lean <= 0.12 * scale:
+            errors.append(
+                "DoorUse chest must incline subtly toward source -Y "
+                f"({torso_lean:.4f} m forward)"
+            )
+
+        relaxed_feet = {
+            bone_name: sample_bone(relaxed, 0.0, bone_name)
+            for bone_name in ("foot.L", "foot.R")
+        }
+        foot_tolerance = 1e-5 * max(1.0, scale)
+        for action_name in action_names[1:]:
+            action_record = result.actions[action_name]
+            animation_data.action = action_record.action
+            for frame in range(
+                math.ceil(action_record.action.frame_start),
+                math.floor(action_record.action.frame_end) + 1,
+            ):
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                for bone_name, relaxed_matrix in relaxed_feet.items():
+                    drift = matrix_error(
+                        rig.pose.bones[bone_name].matrix,
+                        relaxed_matrix,
+                    )
+                    if drift > foot_tolerance:
+                        errors.append(
+                            f"{action_name} frame {frame} must keep "
+                            f"{bone_name} planted (matrix drift "
+                            f"{drift:.7f})"
+                        )
+                        break
+                else:
+                    continue
+                break
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)
@@ -5888,14 +6100,15 @@ def validate_result(
     validate_bed_sleep_pose(result, errors)
     validate_bed_support_contract(result, errors)
     validate_smoking_pose(result, errors)
-    validate_seated_interaction_pose(
+    validate_door_use_pose(result, errors)
+    validate_interaction_pose(
         result,
         errors,
         "BusBoardEnter",
         "BusRideLoop",
         "BusAlightExit",
     )
-    validate_seated_interaction_pose(
+    validate_interaction_pose(
         result,
         errors,
         "ChessSeatEnter",

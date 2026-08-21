@@ -42,13 +42,17 @@ supermarket, instantiates the same modular low-poly 3D hero in all five gameplay
 roots, loads separate bar, supermarket, stairwell and home interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
-for locomotion and contextual actions, hands failed balance falls from a
+for locomotion and contextual actions, including a grounded lean/right-hand
+press before every ordinary location-door transition, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
-production model. Building masses wear one of eight district wall albedos built
-by `tools/build-city-facade-textures.py`, tiled by the building's own bay and
-floor grid through `CityFacadeGrid` so the baked window band lands on the real
-panes rather than by metres. Road v2 gives ordinary City streets an `8 m` footprint
+production model. Ordinary building masses use a separate `36-52 m` height
+profile whose roofs fall below one-percent visibility in the fixed City fog;
+bars, the supermarket and the player home retain their original low-rise
+heights. Building masses wear one of eight district wall albedos built by
+`tools/build-city-facade-textures.py`, tiled by the building's own bay and floor
+grid through `CityFacadeGrid` so the baked window band lands on the real panes
+rather than by metres. Road v2 gives ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
 four `1 m` corner pads outward, cuts the raised curbs back by `4.5 m` on every

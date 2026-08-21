@@ -889,6 +889,21 @@ MonoBehaviour:
     clip: {fileID: -8500666027495548268, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+  - clipName: DoorUseEnter
+    category: door_use
+    clip: {fileID: -3819571249170146038, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 0.5
+    looping: 0
+  - clipName: DoorUseExit
+    category: door_use
+    clip: {fileID: -1934260736794440486, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 0.5
+    looping: 0
+  - clipName: DoorUseLoop
+    category: door_use
+    clip: {fileID: 231342779716977159, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 0.25
+    looping: 1
   - clipName: DownLeft
     category: fall
     clip: {fileID: -5620793988590711360, guid: d422d4befc223294aabace05eb97a274, type: 3}
@@ -990,10 +1005,10 @@ MonoBehaviour:
       m_Center: {x: -0.00000011920929, y: 0.875, z: 0.04145053}
       m_Extent: {x: 0.77390814, y: 0.875, z: 0.18854946}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 2.7.0
+  sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 5db5de1a8ea4a27846e2f2744e62c6d5
+  buildSignature: 2d9e3ea4488521f8d1bfa1d3a7f35e0a
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

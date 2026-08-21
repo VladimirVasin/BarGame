@@ -1102,7 +1102,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   archives, while `F8` writes and flushes a manual state snapshot.
 - **Accepted — Separate classic door transition:** Bar, supermarket, home and
   stairwell doors
-  reserve one transition guard for the complete
+  first run the shared source-scene `DoorUseEnter/Loop/Exit` action from an
+  explicit grounded dock. Its terminal neutral completion alone may reserve
+  one transition guard for the complete
   `source -> DoorTransition -> destination` chain. The intermediate scene
   runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
   black void while the destination loads asynchronously with activation held
@@ -1277,7 +1279,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Resources/Player/Player3D` prefab in all five gameplay roots. Its Generic
   Animator uses no root motion; the prefab contains a 31-bone armature with six
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
-  bindings, 16 required anatomical parts, metrics and 23 in-place Actions.
+  bindings, 16 required anatomical parts, metrics and 32 in-place Actions.
   `Player3DCharacterPresentation` owns locomotion, face,
   intoxication/balance and authored fall sampling, including the full-body
   side-down-to-all-fours-to-stand Rise actions; the companion ragdoll owns only
@@ -1294,7 +1296,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   future interaction in this class; the normative checklist lives in
   `ai/contextual-animation-standard.md`, and deviations require an explicit
   user-approved accepted exception here.
-  Interactive bed sleep, balcony smoking and cat feeding share a visible
+  Interactive bed sleep, balcony smoking, cat feeding and ordinary location
+  doors share a visible
   `Positioning` phase before `Entering -> Looping -> Exiting`. Each adapter
   provides independent entry root/pelvis/facing, action pelvis and exit
   root/pelvis/facing data. `PlayerMotor` advances the ordinary rig with its real
@@ -1341,7 +1344,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   asserting through it would assert against the runtime instead of the pose.
   The three bed clips also became the first contextual Actions on auto-clamped
   Bezier curves with staggered keys, which is what removed the wooden-doll
-  read; the other four contextual triads keep their linear timing until they
+  read; the other five contextual triads keep their linear timing until they
   are re-authored in turn. Waking was then re-cut at the user's direction from
   a roll into a four-beat sit-up — half-crouch on the mattress, right leg over
   the near edge, then the left, then stand — which is both what a man getting
@@ -1623,6 +1626,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   do not depend on Editor-only primitive defaults. Emissive and atmosphere
   effects reuse their cached specialized resources, with no per-instance
   materials or runtime `Shader.Find`.
+- **Accepted — Ordinary roofs disappear into City fog:** A building is
+  ordinary only when it has building land use and is not a bar, the player
+  home or the supermarket. Those lots use a separate `36–52 m` height range;
+  the old `5–13 m` range remains the bar envelope and the authored home and
+  supermarket remain `8.8 m` and `6.4 m`. At the conservative `4 m`
+  chase-camera height, the lowest roof is `32 m` away and native `0.070` Exp2
+  fog leaves `exp(-(.070 * 32)^2) = 0.0066` of its source colour, below the
+  accepted one-percent roof threshold. The `48 m` far plane therefore finishes
+  the tallest masses without changing City visibility settings. Roof-anchored
+  lot motifs and three rooftop district landmarks stay attached to the real
+  roof and are intentionally swallowed with it; facade and street-level
+  district language stays readable. The four geometric pane rows remain the
+  lit near-field layer while the four-floor facade sheet repeats at its exact
+  `2.35 m` pitch above them. `CityWorldResult.Bounds` uses the larger of the
+  ordinary and special height maxima rather than retaining the old `13 m`
+  vertical cap.
 - **Accepted — Geometry-locked district facade albedos:** City building masses
   wear one of eight district wall albedos, two per buildable district, through
   `MaterialPropertyBlock`s on the same shared `RuntimePrimitiveLit`. They are

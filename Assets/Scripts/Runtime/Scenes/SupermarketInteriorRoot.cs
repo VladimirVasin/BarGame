@@ -338,6 +338,18 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = Layout.ExitTriggerSize;
             Exit = exit.AddComponent<SupermarketExit>();
+            Vector3 localDock = new Vector3(
+                Layout.ExitPosition.x,
+                PlayerFactory.GroundedRootOffset,
+                Layout.WalkableBounds.yMin +
+                PlayerDoorActionPlan.DockBoundaryClearance);
+            PlayerDoorActionTarget doorAction =
+                exit.AddComponent<PlayerDoorActionTarget>();
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    exit.transform.position,
+                    World.Root.TransformPoint(localDock),
+                    World.Root.TransformDirection(Vector3.back)));
         }
 
         private int CountProducts()

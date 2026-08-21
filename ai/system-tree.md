@@ -117,7 +117,7 @@ Assets/
       PlayerCharacter3D.fbx             production Generic model
       PlayerCharacter3D.json            deterministic parts/bones/actions manifest
     Animations/
-      PlayerCharacter3DAnimations.fbx   26 in-place Actions; full-body 50-frame Rise L/R + bus trio
+      PlayerCharacter3DAnimations.fbx   32 in-place Actions; Rise, bus, chess-seat + door-use trios
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
   Pedestrians/
@@ -439,6 +439,7 @@ Assets/
       Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
+        PlayerDoorAction{Controller,Target}.cs  guided door gesture, terminal commit + owned cleanup
         HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
@@ -515,6 +516,7 @@ Assets/
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
       Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
+      PlayerDoorActionPlanTests.cs explicit grounded dock/facing + independent poses
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityTerrainSurfaceWorldBuilderTests.cs sampled mesh/collider/UV terrain contract
       CityVerticalTraversalAuditTests.cs     continuous seams + spawn-road reachability
@@ -573,6 +575,7 @@ Assets/
       Player3DOrdinaryPresentationPlayModeTests.cs  locomotion/status/falls/all-fours/shadow
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
+      PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
       Player3DGameplaySceneIntegrationPlayModeTests.cs  all five gameplay roots
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
@@ -822,9 +825,10 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below orange player route; no live bus marker
 five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
-                                      -> 29 Generic in-place Actions
+                                      -> 32 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall
                                          -> 50-frame full-body Rise via all fours
+                                         -> DoorUseEnter/DoorUseLoop/DoorUseExit
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
                                          -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
                                       -> real URP mesh shadows
@@ -832,7 +836,10 @@ player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> Route 01 front/rear door / fixed passenger seat
                             -> CityBusRideController board / later-stop exit
-                         -> BarEntrance/BarExit -> SceneTransitionService
+                         -> ordinary location door -> PlayerDoorActionPlan
+                            -> guided dock + DoorUseEnter/Loop/Exit
+                            -> terminal neutral pose -> SceneTransitionService
+                         -> BarEntrance/BarExit -> BarInterior/City
                          or SupermarketEntrance/Exit -> SupermarketInterior
                             -> matching City supermarket return
                          or HomeEntrance -> StairwellInterior

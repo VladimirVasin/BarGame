@@ -129,9 +129,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(supportsThirdFloor));
             Assert.That(
                 layout.BuildingLots
-                    .Where(lot => lot.HasBuilding)
+                    .Where(lot =>
+                        lot.HasBuilding &&
+                        !lot.IsOrdinaryBuilding)
                     .All(lot => lot.Height <= maximumHeight),
-                Is.True);
+                Is.True,
+                "The legacy maximum remains the special-building clamp.");
         }
 
         [TestCase(GameSessionState.DefaultCitySeed)]

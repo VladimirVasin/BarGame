@@ -327,7 +327,10 @@ namespace BarPromenade
             Rect footprint = layout.WorldXZBounds;
             float minimumY = layout.ElevationPlan.MinimumElevation - 0.5f;
             float maximumY = layout.ElevationPlan.MaximumElevation +
-                             settings.MaximumBuildingHeight + 2f;
+                             Mathf.Max(
+                                 settings.MaximumBuildingHeight,
+                                 settings.MaximumOrdinaryBuildingHeight) +
+                             2f;
             return new Bounds(
                 new Vector3(
                     footprint.center.x,
@@ -1162,6 +1165,20 @@ namespace BarPromenade
                 (Vector3.up *
                  (CityStreetSurfacePlanner.SidewalkTop +
                   PlayerFactory.GroundedRootOffset)));
+            PlayerDoorActionTarget doorAction =
+                entranceObject.AddComponent<PlayerDoorActionTarget>();
+            Vector3 doorDock =
+                lot.DoorPosition +
+                direction * 0.72f;
+            doorDock.y =
+                apronCenter.y +
+                CityStreetSurfacePlanner.SidewalkTop +
+                PlayerFactory.GroundedRootOffset;
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    entranceObject.transform.position,
+                    doorDock,
+                    -direction));
             bars.Add(entrance);
         }
 
@@ -1226,6 +1243,20 @@ namespace BarPromenade
                 Vector3.up *
                 (CityStreetSurfacePlanner.SidewalkTop +
                  PlayerFactory.GroundedRootOffset));
+            PlayerDoorActionTarget doorAction =
+                entranceObject.AddComponent<PlayerDoorActionTarget>();
+            Vector3 doorDock =
+                lot.DoorPosition +
+                direction * 0.82f;
+            doorDock.y =
+                apronCenter.y +
+                CityStreetSurfacePlanner.SidewalkTop +
+                PlayerFactory.GroundedRootOffset;
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    entranceObject.transform.position,
+                    doorDock,
+                    -direction));
         }
 
         private static void BuildHomeFront(
@@ -1370,6 +1401,20 @@ namespace BarPromenade
                 (Vector3.up *
                  (CityStreetSurfacePlanner.SidewalkTop +
                   PlayerFactory.GroundedRootOffset)));
+            PlayerDoorActionTarget doorAction =
+                entranceObject.AddComponent<PlayerDoorActionTarget>();
+            Vector3 doorDock =
+                lot.DoorPosition +
+                direction * 0.72f;
+            doorDock.y =
+                apronCenter.y +
+                CityStreetSurfacePlanner.SidewalkTop +
+                PlayerFactory.GroundedRootOffset;
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    entranceObject.transform.position,
+                    doorDock,
+                    -direction));
         }
 
         /// <summary>The digit on the hero's lit house-number plaque.</summary>

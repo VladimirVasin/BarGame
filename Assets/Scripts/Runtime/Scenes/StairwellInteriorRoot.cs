@@ -167,7 +167,7 @@ namespace BarPromenade
                 StairwellFixedCameraController
                     .CreateDefaultShots(Layout));
             AnimatedInteraction =
-                Player.GameObject.AddComponent<
+                Player.GameObject.GetComponent<
                     PlayerAnimatedInteractionController>();
             AnimatedInteraction.Initialize(Player, camera);
             TargetInteraction =
@@ -299,6 +299,19 @@ namespace BarPromenade
                 Layout.StreetExitTriggerSize;
             StreetExit =
                 street.AddComponent<StairwellStreetExit>();
+            Vector3 streetDockLocal = new Vector3(
+                Layout.StreetExitPosition.x,
+                Layout.StreetElevation +
+                PlayerFactory.GroundedRootOffset,
+                Layout.StreetLobbyBounds.yMin +
+                PlayerDoorActionPlan.DockBoundaryClearance);
+            PlayerDoorActionTarget streetDoorAction =
+                street.AddComponent<PlayerDoorActionTarget>();
+            streetDoorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    street.transform.position,
+                    transform.TransformPoint(streetDockLocal),
+                    transform.TransformDirection(Vector3.back)));
 
             GameObject apartment =
                 new GameObject("Apartment Entrance Interaction");
@@ -313,6 +326,19 @@ namespace BarPromenade
             ApartmentEntrance =
                 apartment.AddComponent<
                     StairwellApartmentEntrance>();
+            Vector3 apartmentDockLocal = new Vector3(
+                Layout.ApartmentLandingBounds.xMax -
+                PlayerDoorActionPlan.DockBoundaryClearance,
+                Layout.ApartmentElevation +
+                PlayerFactory.GroundedRootOffset,
+                Layout.ApartmentEntrancePosition.z);
+            PlayerDoorActionTarget apartmentDoorAction =
+                apartment.AddComponent<PlayerDoorActionTarget>();
+            apartmentDoorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    apartment.transform.position,
+                    transform.TransformPoint(apartmentDockLocal),
+                    transform.TransformDirection(Vector3.right)));
         }
     }
 }
